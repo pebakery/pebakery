@@ -42,7 +42,7 @@ namespace PEBakery.XZLib.Tests
     {
         [TestMethod]
         [TestCategory("XZLib")]
-        public void Decompress()
+        public void XZLib_Decompress()
         {
             Decompress_Template("A.xz", "A.pdf");
             Decompress_Template("B9.xz", "B.txt");

@@ -1548,7 +1548,7 @@ namespace PEBakery.Core
             const int finalFooterLen = 0x24;
             int finalFooterIdx = decoded.Length - finalFooterLen;
             // 0x00 - 0x04 : 4B -> CRC32
-            uint full_crc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
+            uint fullCrc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
             // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
             int compressedFooterLen = (int)BitConverter.ToUInt32(decoded, finalFooterIdx + 0x0C);
             int compressedFooterIdx = decoded.Length - (finalFooterLen + compressedFooterLen);
@@ -1558,8 +1558,8 @@ namespace PEBakery.Core
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
-            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
-            if (full_crc32 != calcFull_crc32)
+            uint calcFullCrc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
+            if (fullCrc32 != calcFullCrc32)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
             // [Stage 4] Decompress first footer
@@ -1593,7 +1593,7 @@ namespace PEBakery.Core
                         throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
                 case EncodeMode.XZ: // Type 3, LZMA
-                    if (compLevel < 1 || 9 < compLevel)
+                    if (9 < compLevel)
                         throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
                 default:

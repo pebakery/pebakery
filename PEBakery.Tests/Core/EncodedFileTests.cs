@@ -454,10 +454,10 @@ namespace PEBakery.Tests.Core
                 Assert.IsTrue(lines.SequenceEqual(comps));
             }
 
-            Template("BigData.bin", "BigDataBase64.txt", true);
-            Template("BigData.bin", "BigDataBase64.txt", false);
-            Template("Type3.pdf", "Type3Base64.txt", true);
-            Template("Type3.pdf", "Type3Base64.txt", false);
+            Template("BigData.bin", "BigDataEnc4090.txt", true);
+            Template("BigData.bin", "BigDataEnc4090.txt", false);
+            Template("Type3.pdf", "Type3Enc4090.txt", true);
+            Template("Type3.pdf", "Type3Enc4090.txt", false);
         }
 
         [TestMethod]
@@ -525,10 +525,12 @@ namespace PEBakery.Tests.Core
                 Assert.IsTrue(binDigest.SequenceEqual(encDigest));
             }
 
-            Template("BigData.bin", "BigDataBase64.txt", true);
-            Template("BigData.bin", "BigDataBase64.txt", false);
-            Template("Type3.pdf", "Type3Base64.txt", true);
-            Template("Type3.pdf", "Type3Base64.txt", false);
+            Template("BigData.bin", "BigDataEnc4090.txt", true);
+            Template("BigData.bin", "BigDataEnc4090.txt", false);
+            Template("Type3.pdf", "Type3Enc4090.txt", true);
+            Template("Type3.pdf", "Type3Enc4090.txt", false);
+            Template("Type3.pdf", "Type3Enc1024.txt", true);
+            Template("Type3.pdf", "Type3Enc1024.txt", false);
         }
         #endregion
     }

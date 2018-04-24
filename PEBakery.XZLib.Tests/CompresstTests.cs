@@ -39,7 +39,7 @@ namespace PEBakery.XZLib.Tests
     {
         [TestMethod]
         [TestCategory("XZLib")]
-        public void Compress()
+        public void XZLib_Compress()
         {
             Compress_Template("A.pdf", 1, 7);
             Compress_Template("B.txt", 1, XZStream.DefaultPreset);
@@ -48,7 +48,7 @@ namespace PEBakery.XZLib.Tests
 
         [TestMethod]
         [TestCategory("XZLib")]
-        public void CompressMultithread()
+        public void XZLib_CompressMulti()
         {
             Compress_Template("A.pdf", 2, 7);
             Compress_Template("B.txt", 2, 3);
