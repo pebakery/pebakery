@@ -32,7 +32,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-/* This file includes definition from external C library.
+/*
+ * This file includes definition from external C library.
  * This lines supresses error and warning from code analyzer, due to this file's C-style naming and others.
  */
 // ReSharper disable FieldCanBeMadeReadOnly.Local

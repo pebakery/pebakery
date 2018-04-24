@@ -49,10 +49,10 @@ namespace PEBakery.XZLib
         private LzmaStream _lzmaStream;
         private GCHandle _lzmaStreamPin;
 
-        private const int InternalBufferSize = 1024 * 1024; // 1MB
+        private static int _internalBufferSize = 4 * 1024 * 1024; // 4MB
         private int _internalBufPos = 0;
         private const int ReadDone = -1;
-        private readonly byte[] _internalBuf = new byte[InternalBufferSize];
+        private readonly byte[] _internalBuf = new byte[_internalBufferSize];
 
         // Property
         public Stream BaseStream => _baseStream;
@@ -172,7 +172,10 @@ namespace PEBakery.XZLib
                 if (_lzmaStream != null)
                 {
                     if (_mode == LzmaMode.Compress)
+                    {
+                        Flush();
                         FinishWrite();
+                    }
                     else
                         _internalBufPos = ReadDone;
 
@@ -200,7 +203,7 @@ namespace PEBakery.XZLib
         #endregion
 
         #region Global - (Static) GlobalInit, GlobalCleanup
-        public static void GlobalInit(string dllPath)
+        public static void GlobalInit(string dllPath, int bufferSize = 4 * 1024 * 1024)
         {
             if (NativeMethods.Loaded)
                 throw new InvalidOperationException(NativeMethods.MsgAlreadyInited);
@@ -224,6 +227,7 @@ namespace PEBakery.XZLib
             try
             {
                 NativeMethods.LoadFuntions();
+                _internalBufferSize = bufferSize;
             }
             catch (Exception)
             {
@@ -367,9 +371,6 @@ namespace PEBakery.XZLib
                 throw new ArgumentOutOfRangeException(nameof(count));
             if (count == 0)
                 return;
-
-            TotalIn += count;
-
             using (PinnedArray pinWrite = new PinnedArray(_internalBuf))
             using (PinnedArray pinBuffer = new PinnedArray(buffer))
             {
@@ -378,11 +379,12 @@ namespace PEBakery.XZLib
                 _lzmaStream.NextOut = pinWrite[_internalBufPos];
                 _lzmaStream.AvailOut = (uint)(_internalBuf.Length - _internalBufPos);
 
+                // Return condition : _lzmaStream.AvailIn == 0
                 while (_lzmaStream.AvailIn != 0)
                 {
-                    ulong bakAvailOut = _lzmaStream.AvailOut;
+                    // ulong bakAvailOut = _lzmaStream.AvailOut;
                     LzmaRet ret = NativeMethods.LzmaCode(_lzmaStream, LzmaAction.RUN);
-                    _internalBufPos = (int) (bakAvailOut - _lzmaStream.AvailOut);
+                    _internalBufPos = (int)((ulong)_internalBuf.Length - _lzmaStream.AvailOut);
 
                     // If the output buffer is full, write the data from the output bufffer to the output file.
                     if (_lzmaStream.AvailOut == 0)
@@ -401,6 +403,8 @@ namespace PEBakery.XZLib
                     XZException.CheckLzmaError(ret);
                 }
             }
+
+            TotalIn += count;
         }
 
         private void FinishWrite()
@@ -409,13 +413,17 @@ namespace PEBakery.XZLib
 
             using (PinnedArray pinWrite = new PinnedArray(_internalBuf))
             {
+                _lzmaStream.NextIn = IntPtr.Zero;
+                _lzmaStream.AvailIn = 0;
                 _lzmaStream.NextOut = pinWrite[_internalBufPos];
                 _lzmaStream.AvailOut = (uint)(_internalBuf.Length - _internalBufPos);
 
                 LzmaRet ret = LzmaRet.OK;
                 while (ret != LzmaRet.STREAM_END)
                 {
+                    ulong bakAvailOut = _lzmaStream.AvailOut;
                     ret = NativeMethods.LzmaCode(_lzmaStream, LzmaAction.FINISH);
+                    _internalBufPos = (int)(bakAvailOut - _lzmaStream.AvailOut);
 
                     // If the compression finished successfully,
                     // write the data from the output bufffer to the output file.
@@ -423,15 +431,13 @@ namespace PEBakery.XZLib
                     { // Write to _baseStream
                         // When lzma_code() has returned LZMA_STREAM_END, the output buffer is likely to be only partially
                         // full. Calculate how much new data there is to be written to the output file.
-                        int writeSize = (int)((ulong)_internalBuf.Length - _lzmaStream.AvailOut);
-
-                        _baseStream.Write(_internalBuf, 0, writeSize);
-                        TotalOut += writeSize;
+                        _baseStream.Write(_internalBuf, 0, _internalBufPos);
+                        TotalOut += _internalBufPos;
 
                         // Reset NextOut and AvailOut
                         _internalBufPos = 0;
                         _lzmaStream.NextOut = pinWrite;
-                        _lzmaStream.AvailOut = (uint)_internalBuf.Length;
+                        _lzmaStream.AvailOut = (uint)_internalBuf.Length;   
                     }
                     else
                     { // Once everything has been encoded successfully, the return value of lzma_code() will be LZMA_STREAM_END.
@@ -443,6 +449,45 @@ namespace PEBakery.XZLib
 
         public override void Flush()
         {
+            if (_mode == LzmaMode.Decompress)
+            {
+                _baseStream.Flush();
+                return;
+            }
+                
+            using (PinnedArray pinWrite = new PinnedArray(_internalBuf))
+            {
+                _lzmaStream.NextIn = IntPtr.Zero;
+                _lzmaStream.AvailIn = 0;
+                _lzmaStream.NextOut = pinWrite[_internalBufPos];
+                _lzmaStream.AvailOut = (uint)(_internalBuf.Length - _internalBufPos);
+
+                LzmaRet ret = LzmaRet.OK;
+                while (ret != LzmaRet.STREAM_END)
+                {
+                    int writeSize = 0;
+                    if (_lzmaStream.AvailOut != 0)
+                    {
+                        ulong bakAvailOut = _lzmaStream.AvailOut;
+                        ret = NativeMethods.LzmaCode(_lzmaStream, LzmaAction.FULL_FLUSH);
+                        writeSize += (int) (bakAvailOut - _lzmaStream.AvailOut);
+                    }
+                    _internalBufPos += writeSize;
+
+                    _baseStream.Write(_internalBuf, 0, _internalBufPos);
+                    TotalOut += _internalBufPos;
+
+                    // Reset NextOut and AvailOut
+                    _internalBufPos = 0;
+                    _lzmaStream.NextOut = pinWrite;
+                    _lzmaStream.AvailOut = (uint)_internalBuf.Length;
+
+                    // Once everything has been encoded successfully, the return value of lzma_code() will be LZMA_STREAM_END.
+                    if (ret != LzmaRet.OK && ret != LzmaRet.STREAM_END)
+                        throw new XZException(ret);
+                }
+            }
+
             _baseStream.Flush();
         }
 
