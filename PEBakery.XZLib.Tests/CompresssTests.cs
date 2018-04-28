@@ -35,7 +35,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace PEBakery.XZLib.Tests
 {
     [TestClass]
-    public class CompresstTests
+    public class CompresssTests
     {
         [TestMethod]
         [TestCategory("XZLib")]
@@ -67,6 +67,10 @@ namespace PEBakery.XZLib.Tests
                 using (XZStream xzs = new XZStream(xzCompFs, LzmaMode.Compress, preset, threads, true))
                 {
                     sampleFs.CopyTo(xzs);
+                    xzs.Flush();
+
+                    Assert.AreEqual(sampleFs.Length, xzs.TotalIn);
+                    Assert.AreEqual(xzCompFs.Length, xzs.TotalOut);
                 }
 
                 Process proc = new Process

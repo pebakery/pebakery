@@ -47,6 +47,16 @@ PEBakery.IniLib.Tests
 PEBakery.TreeLib
     MIT License
     https://opensource.org/licenses/MIT
+	
+PEBakery.XZLib
+PEBakery.XZLib.Tests
+    MIT License
+    https://opensource.org/licenses/MIT
+	
+PEBakery.LZ4Lib
+PEBakery.LZ4Lib.Tests
+    The 2-Clause BSD License
+    https://opensource.org/licenses/BSD-2-Clause
 
 ManagedWimLib
 ManagedWimLib.Tests

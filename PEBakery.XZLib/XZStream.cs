@@ -163,6 +163,7 @@ namespace PEBakery.XZLib
         ~XZStream()
         {
             Dispose(false);
+            GC.SuppressFinalize(this);
         }
 
         protected override void Dispose(bool disposing)

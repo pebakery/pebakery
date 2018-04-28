@@ -61,9 +61,13 @@ namespace PEBakery.LZ4Lib.Tests
                 string sampleFile = Path.Combine(TestSetup.SampleDir, sampleFileName);
                 using (FileStream lz4CompFs = new FileStream(tempLz4File, FileMode.Create, FileAccess.Write, FileShare.None))
                 using (FileStream sampleFs = new FileStream(sampleFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (LZ4FrameStream ls = new LZ4FrameStream(lz4CompFs, LZ4Mode.Compress, compLevel, true))
+                using (LZ4FrameStream lzs = new LZ4FrameStream(lz4CompFs, LZ4Mode.Compress, compLevel, true))
                 {
-                    sampleFs.CopyTo(ls);
+                    sampleFs.CopyTo(lzs);
+                    lzs.Flush();
+
+                    Assert.AreEqual(sampleFs.Length, lzs.TotalIn);
+                    Assert.AreEqual(lz4CompFs.Length, lzs.TotalOut);
                 }
 
                 Process proc = new Process

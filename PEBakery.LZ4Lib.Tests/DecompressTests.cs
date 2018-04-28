@@ -59,9 +59,13 @@ namespace PEBakery.LZ4Lib.Tests
             using (MemoryStream decompMs = new MemoryStream())
             {
                 using (FileStream compFs = new FileStream(lz4File, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (LZ4FrameStream xz = new LZ4FrameStream(compFs, LZ4Mode.Decompress))
+                using (LZ4FrameStream lzs = new LZ4FrameStream(compFs, LZ4Mode.Decompress))
                 {
-                    xz.CopyTo(decompMs);
+                    lzs.CopyTo(decompMs);
+                    decompMs.Flush();
+
+                    Assert.AreEqual(compFs.Length, lzs.TotalIn);
+                    Assert.AreEqual(decompMs.Length, lzs.TotalOut);
                 }
                 decompMs.Position = 0;
 

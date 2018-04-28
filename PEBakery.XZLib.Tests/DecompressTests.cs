@@ -63,6 +63,10 @@ namespace PEBakery.XZLib.Tests
                 using (XZStream xz = new XZStream(compFs, LzmaMode.Decompress))
                 {
                     xz.CopyTo(decompMs);
+                    decompMs.Flush();
+
+                    Assert.AreEqual(compFs.Length, xz.TotalIn);
+                    Assert.AreEqual(decompMs.Length, xz.TotalOut);
                 }
                 decompMs.Position = 0;
 

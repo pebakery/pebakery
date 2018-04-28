@@ -52,10 +52,7 @@ namespace PEBakery.LZ4Lib
 
         // Compression
         private const int SrcBufSizeMax = 4 * 1024 * 1024; // 4MB
-        // private const int SrcBufSizeMax = 4096; // 4MB
-        // private const int SrcBufSizeMax = 1024 * 1024; // 4MB
         private readonly uint _destBufSize; // 4MB
-
 
         // Decompression
         private const int DecompDone = -1;
@@ -153,20 +150,6 @@ namespace PEBakery.LZ4Lib
                     if (readHeaderSize != 4 || !headerBuf.SequenceEqual(FrameMagicNumber))
                     throw new InvalidDataException("BaseStream is not a valid LZ4 Frame Format");
 
-                    /*
-                    using (PinnedArray pinSrc = new PinnedArray(headerBuf))
-                    using (PinnedArray pinDest = new PinnedArray(destBuf))
-                    {
-                        UIntPtr nextToRunVal = NativeMethods.FrameDecompress(_dctx, pinDest, ref destBufSizePtr, pinSrc, ref headerBufSize, null);
-                        LZ4FrameException.CheckLZ4Error(nextToRunVal);
-
-                        Debug.Assert(destBufSizePtr.ToUInt64() <= int.MaxValue);
-                        int destBufSize = (int)destBufSizePtr.ToUInt32();
-
-                        _baseStream.Write(destBuf, 0, destBufSize);
-                        TotalOut += destBufSize;
-                    }
-                    */
                     break;
                 }    
                 default:
@@ -323,17 +306,6 @@ namespace PEBakery.LZ4Lib
             if (count == 0)
                 return 0;
 
-            /*
-             *  The number of bytes consumed from srcBuffer will be written into *srcSizePtr (necessarily <= original value).
-             *  The number of bytes decompressed into dstBuffer will be written into *dstSizePtr (necessarily <= original value).
-             *
-             *  The function does not necessarily read all input bytes, so always check value in *srcSizePtr.
-             *  Unconsumed source data must be presented again in subsequent invocations.
-             *
-             * `dstBuffer` can freely change between each consecutive function invocation.
-             * `dstBuffer` content will be overwritten.
-             */
-
             int readSize = 0;
 
             int destIdx = offset;
@@ -424,6 +396,7 @@ namespace PEBakery.LZ4Lib
             if (count == 0)
                 return;
 
+            TotalIn += count;
             byte[] destBuf = new byte[_destBufSize];
 
             using (PinnedArray pinSrc = new PinnedArray(buffer))
@@ -447,8 +420,6 @@ namespace PEBakery.LZ4Lib
                     Debug.Assert(0 <= count, $"0 <= {count}");
                 }
             }
-
-            TotalIn += count;
         }
 
         private void FinishWrite()
