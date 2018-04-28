@@ -147,10 +147,17 @@ namespace PEBakery.Tests.Core
                     {
                         sc = EncodedFile.AddFolder(sc, folderName, overwrite);
                     }
-                    catch (InvalidOperationException)
+                    catch (Exception e)
                     {
-                        Assert.IsFalse(result);
-                        return;
+                        switch (e)
+                        {
+                            case InvalidOperationException _:
+                                Assert.IsFalse(result);
+                                return;
+                            case ArgumentException _:
+                                Assert.IsFalse(result);
+                                return;
+                        }
                     }
 
                     Assert.AreEqual(sc.Sections.ContainsKey(folderName), result);
@@ -177,6 +184,12 @@ namespace PEBakery.Tests.Core
             Template("AuthorEncoded", true, true);
             Template("InterfaceEncoded", false, true);
             Template("InterfaceEncoded", true, true);
+
+            Template("Wrong[String]", false, false);
+            Template("Tab\tChar", false, false);
+            Template("New\r\nLine", false, false);
+            Template("Invalid?", false, false);
+            Template("Invalid:", false, false);
         }
         #endregion
 

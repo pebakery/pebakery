@@ -223,7 +223,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -258,7 +258,7 @@ namespace PEBakery.WPF
                         catch (Exception ex)
                         {
                             App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
                 }
@@ -282,7 +282,7 @@ namespace PEBakery.WPF
                 else
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                    MessageBox.Show($"Delete of logo had some issues.\r\n\r\n[Message]{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Delete of logo had some issues.\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
@@ -305,7 +305,14 @@ namespace PEBakery.WPF
         #region Buttons for Folder
         private void AddFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            string folderName = m.AddFolderName;
+            string folderName = m.AddFolderName.Trim();
+            m.AddFolderName = string.Empty;
+
+            if (folderName.Length == 0)
+            {
+                MessageBox.Show("Folder name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             try
             {
@@ -314,14 +321,14 @@ namespace PEBakery.WPF
                     MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
+
+                _sc = EncodedFile.AddFolder(_sc, folderName, false);
             }
             catch (Exception ex)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            _sc = EncodedFile.AddFolder(_sc, folderName, false);
 
             ReadScriptAttachment();
 
@@ -337,11 +344,7 @@ namespace PEBakery.WPF
 
             Debug.Assert(item.Detail == null);
 
-            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
-            {
-                SelectedPath = App.BaseDir,
-                Description = "Select Destination",
-            };
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
             if (dialog.ShowDialog(this) == true)
             {
@@ -402,7 +405,7 @@ namespace PEBakery.WPF
                     catch (Exception ex)
                     {
                         App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -427,7 +430,7 @@ namespace PEBakery.WPF
             else // Failure
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"Delete failed.\r\n\r\n[Message]{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         
@@ -481,7 +484,6 @@ namespace PEBakery.WPF
             string ext = System.IO.Path.GetExtension(info.FileName);
             SaveFileDialog dialog = new SaveFileDialog
             {
-                InitialDirectory = App.BaseDir,
                 OverwritePrompt = true,
                 Filter = $"{ext} file|*{ext}"
             };
