@@ -393,6 +393,7 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0"
+                  Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
                 <TreeView x:Name="MainTreeView"
                           Background="PaleGreen"
@@ -444,6 +445,7 @@
                 </TreeView>
             </Grid>
             <Grid Grid.Column="0"
+                  Margin="0, 0, 8, 0"
                   Visibility="{Binding BuildInterfaceVisibility}">
                 <TreeView Background="PaleGreen"
                           DataContext="{Binding BuildTree}"
@@ -485,11 +487,20 @@
                     </TreeView.ItemContainerStyle>
                 </TreeView>
             </Grid>
-            <GridSplitter Grid.Column="0"
-                          Width="3"
+            <GridSplitter Grid.Row="0" Grid.Column="0"
+                          Width="8"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Stretch"
-                          ResizeBehavior="CurrentAndNext"/>
+                          ResizeBehavior="CurrentAndNext">
+                <GridSplitter.Template>
+                    <ControlTemplate TargetType="{x:Type GridSplitter}">
+                        <Grid>
+                            <Button Content="⁞" />
+                            <Rectangle Fill="#00FFFFFF" />
+                        </Grid>
+                    </ControlTemplate>
+                </GridSplitter.Template>
+            </GridSplitter>
             <Grid Grid.Column="1"
                   Background="White">
                 <Grid.RowDefinitions>
