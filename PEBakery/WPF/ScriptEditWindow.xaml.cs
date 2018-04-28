@@ -200,12 +200,11 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Button Event - Logo
+        #region Event Handler - Logo
         private void ScriptLogoAttachButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                InitialDirectory = App.BaseDir,
                 Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
             };
 
@@ -289,6 +288,41 @@ namespace PEBakery.WPF
             {
                 MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        #endregion
+
+        #region Event Handler - Interface
+
+        private void DrawScript()
+        {
+            if (m == null)
+                return;
+
+            m.InterfaceCanvas.Children.Clear();
+
+            double scaleFactor = m.InterfaceScaleFactor / 100;
+            UIRenderer render = new UIRenderer(m.InterfaceCanvas, this, _sc, scaleFactor, false);
+            if (scaleFactor - 1 < double.Epsilon)
+                m.InterfaceCanvas.LayoutTransform = new ScaleTransform(1, 1);
+            else
+                m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
+            
+            render.Render();
+        }
+
+        private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DrawScript();
+        }
+
+        private void InterfaceLoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            DrawScript();
+        }
+
+        private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+
         }
         #endregion
 
@@ -444,7 +478,6 @@ namespace PEBakery.WPF
 
             OpenFileDialog dialog = new OpenFileDialog
             {
-                InitialDirectory = App.BaseDir,
                 Filter = "All Files|*.*",
             };
 
@@ -567,6 +600,8 @@ namespace PEBakery.WPF
             e.CanExecute = m.TabIndex == 0;
         }
         #endregion
+
+        
     }
     #endregion
 
@@ -577,6 +612,18 @@ namespace PEBakery.WPF
         public ScriptEditViewModel()
         {
             ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
+
+            Canvas canvas = new Canvas
+            {
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(10, 10, 10, 10),
+            };
+            Grid.SetRow(canvas, 0);
+            Grid.SetColumn(canvas, 0);
+            Panel.SetZIndex(canvas, -1);
+
+            InterfaceCanvas = canvas;
         }
         #endregion
 
@@ -803,6 +850,31 @@ namespace PEBakery.WPF
                     return string.Empty; // Empty value
 
                 return ScriptLogoInfo.EncodeMode == null ? string.Empty : ScriptLogoInfo.EncodeMode.ToString();
+            }
+        }
+        #endregion
+
+        #region Property - Interface
+
+        private Canvas _interfaceCanvas;
+        public Canvas InterfaceCanvas
+        {
+            get => _interfaceCanvas;
+            set
+            {
+                _interfaceCanvas = value;
+                OnPropertyUpdate(nameof(InterfaceCanvas));
+            }
+        }
+
+        private double _interfaceScaleFactor = 100;
+        public double InterfaceScaleFactor
+        {
+            get => _interfaceScaleFactor;
+            set
+            {
+                _interfaceScaleFactor = value;
+                OnPropertyUpdate(nameof(InterfaceScaleFactor));
             }
         }
         #endregion

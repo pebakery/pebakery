@@ -44,6 +44,7 @@ using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Windows.Media.Imaging;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
@@ -70,9 +71,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, MainWindow window, Script script, Logger logger, double scale)
+        public UIRenderer(Canvas canvas, Window window, Script script, double scale, bool viewMode)
         {
-            _logger = logger;
+            _logger = App.Logger;
             _variables = script.Project.Variables;
 
             // Check if script has custom interface section
@@ -80,25 +81,25 @@ namespace PEBakery.WPF
             if (script.MainInfo.ContainsKey("Interface")) 
                 interfaceSectionName = script.MainInfo["Interface"];
 
-            _renderInfo = new RenderInfo(canvas, window, logger, script, interfaceSectionName, scale);
+            _renderInfo = new RenderInfo(canvas, window, _logger, script, interfaceSectionName, scale, viewMode);
 
             if (script.Sections.ContainsKey(interfaceSectionName))
             {
                 try
                 {
                     _uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true).Where(x => x.Visibility).ToList();
-                    logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
+                    _logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
                 {
                     _uiCtrls = null;
-                    logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                    _logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
                 }
             }
             else
             {
                 _uiCtrls = null;
-                logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                _logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
             }
         }
         #endregion
@@ -188,20 +189,25 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            box.LostFocus += (object sender, RoutedEventArgs e) =>
-            {
-                TextBox tBox = sender as TextBox;
-                Debug.Assert(tBox != null);
 
-                info.Value = tBox.Text;
-                uiCtrl.Update();
-            };
+            if (r.ViewMode)
+            {
+                box.LostFocus += (object sender, RoutedEventArgs e) =>
+                {
+                    TextBox tBox = sender as TextBox;
+                    Debug.Assert(tBox != null);
+
+                    info.Value = tBox.Text;
+                    uiCtrl.Update();
+                };
+            }
+            
             SetToolTip(box, info.ToolTip);
             DrawToCanvas(r, box, uiCtrl.Rect);
 
-            if (uiCtrl.Text.Equals(string.Empty, StringComparison.Ordinal) == false)
+            if (0 < uiCtrl.Text.Length)
             {
-                TextBlock block = new TextBlock()
+                TextBlock block = new TextBlock
                 {
                     Text = uiCtrl.Text,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
@@ -277,11 +283,14 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            box.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
+            if (r.ViewMode)
             {
-                info.Value = (int)e.NewValue;
-                uiCtrl.Update();
-            };
+                box.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
+                {
+                    info.Value = (int)e.NewValue;
+                    uiCtrl.Update();
+                };
+            }
 
             SetToolTip(box, info.ToolTip);
             DrawToCanvas(r, box, uiCtrl.Rect);
@@ -306,7 +315,7 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (info.SectionName != null)
+            if (info.SectionName != null && r.ViewMode)
             {
                 checkBox.Click += (object sender, RoutedEventArgs e) =>
                 {
@@ -321,17 +330,20 @@ namespace PEBakery.WPF
                     }
                 };
             }
-            
-            checkBox.Checked += (object sender, RoutedEventArgs e) =>
+
+            if (r.ViewMode)
             {
-                info.Value = true;
-                uiCtrl.Update();
-            };
-            checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
-            {
-                info.Value = false;
-                uiCtrl.Update();
-            };
+                checkBox.Checked += (object sender, RoutedEventArgs e) =>
+                {
+                    info.Value = true;
+                    uiCtrl.Update();
+                };
+                checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
+                {
+                    info.Value = false;
+                    uiCtrl.Update();
+                };
+            }
 
             SetToolTip(checkBox, info.ToolTip);
             DrawToCanvas(r, checkBox, uiCtrl.Rect);
@@ -356,20 +368,23 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            comboBox.LostFocus += (object sender, RoutedEventArgs e) =>
+            if (r.ViewMode)
             {
-                ComboBox box = sender as ComboBox;
-                Debug.Assert(box != null);
-
-                if (info.Index != box.SelectedIndex)
+                comboBox.LostFocus += (object sender, RoutedEventArgs e) =>
                 {
-                    info.Index = box.SelectedIndex;
-                    uiCtrl.Text = info.Items[box.SelectedIndex];
-                    uiCtrl.Update();
-                }
-            };
+                    ComboBox box = sender as ComboBox;
+                    Debug.Assert(box != null);
 
-            if (info.SectionName != null)
+                    if (info.Index != box.SelectedIndex)
+                    {
+                        info.Index = box.SelectedIndex;
+                        uiCtrl.Text = info.Items[box.SelectedIndex];
+                        uiCtrl.Update();
+                    }
+                };
+            }
+
+            if (info.SectionName != null && r.ViewMode)
             {
                 comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs e) =>
                 {
@@ -400,15 +415,7 @@ namespace PEBakery.WPF
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
             Debug.Assert(info != null, "Invalid UIInfo");
 
-            Image image = new Image
-            {
-                StretchDirection = StretchDirection.DownOnly,
-                Stretch = Stretch.Uniform,
-                UseLayoutRounding = true,
-            };
-            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-            Button button;
-
+            BitmapImage bitmap;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
@@ -417,73 +424,92 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                button = new Button
-                {
-                    Style = (Style)r.Window.FindResource("ImageButton")
-                };
-
                 if (type == ImageHelper.ImageType.Svg)
                 {
                     double width = uiCtrl.Rect.Width * r.MasterScale;
                     double height = uiCtrl.Rect.Height * r.MasterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(ms, width, height);
+                    bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
                 }
                 else
                 {
-                    button.Background = ImageHelper.ImageToImageBrush(ms);
+                    bitmap = ImageHelper.ImageToBitmapImage(ms);
                 }
             }
-                
-            bool hasUrl = false;
-            if (!string.IsNullOrEmpty(info.URL))
-            {
-                if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri _)) // Success
-                    hasUrl = true;
-                else // Failure
-                    throw new InvalidUIControlException($"Invalid URL [{info.URL}]", uiCtrl);
-            }
 
-            string toolTip = info.ToolTip;
-            if (hasUrl)
-            { // Open URL
-                button.Click += (object sender, RoutedEventArgs e) =>
+
+            if (r.ViewMode)
+            {
+                Button button = new Button
                 {
-                    Process.Start(info.URL);
+                    Style = (Style)r.Window.FindResource("ImageButton"),
+                    Background = ImageHelper.BitmapImageToImageBrush(bitmap)
                 };
 
-                toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
+                bool hasUrl = false;
+                if (!string.IsNullOrEmpty(info.URL))
+                {
+                    if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri _)) // Success
+                        hasUrl = true;
+                    else // Failure
+                        throw new InvalidUIControlException($"Invalid URL [{info.URL}]", uiCtrl);
+                }
+
+                string toolTip = info.ToolTip;
+                if (hasUrl)
+                { // Open URL
+                    button.Click += (object sender, RoutedEventArgs e) =>
+                    {
+                        Process.Start(info.URL);
+                    };
+
+                    toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
+                }
+                else
+                { // Open picture with external viewer
+                    button.Click += (object sender, RoutedEventArgs e) =>
+                    {
+                        if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+                        {
+                            r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                            return;
+                        }
+
+                        string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
+
+                        using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
+                        using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+                        {
+                            ms.Position = 0;
+                            ms.CopyTo(fs);
+                        }
+
+                        ProcessStartInfo procInfo = new ProcessStartInfo
+                        {
+                            FileName = path,
+                            UseShellExecute = true
+                        };
+                        Process.Start(procInfo);
+                    };
+                }
+
+                SetToolTip(button, toolTip);
+                DrawToCanvas(r, button, uiCtrl.Rect);
             }
             else
-            { // Open picture with external viewer
-                button.Click += (object sender, RoutedEventArgs e) =>
+            {
+                
+                Image image = new Image
                 {
-                    if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
-                    {
-                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
-                        return;
-                    }
-
-                    string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
-
-                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
-                    using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
-                    {
-                        ms.Position = 0;
-                        ms.CopyTo(fs);
-                    }
-                        
-                    ProcessStartInfo procInfo = new ProcessStartInfo
-                    {
-                        Verb = "open",
-                        FileName = path,
-                        UseShellExecute = true
-                    };
-                    Process.Start(procInfo);
+                    StretchDirection = StretchDirection.DownOnly,
+                    Stretch = Stretch.Uniform,
+                    UseLayoutRounding = true,
+                    Source = bitmap,
                 };
-            }
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
-            SetToolTip(button, toolTip);
-            DrawToCanvas(r, button, uiCtrl.Rect);
+                SetToolTip(image, info.ToolTip);
+                DrawToCanvas(r, image, uiCtrl.Rect);
+            }
         }
 
         /// <summary>
@@ -535,23 +561,27 @@ namespace PEBakery.WPF
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            button.Click += (object sender, RoutedEventArgs e) =>
-            {
-                if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                {
-                    SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                    UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.ShowProgress);
-                }
-                else
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                    });
-                }
-            };
 
+            if (r.ViewMode)
+            {
+                button.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    {
+                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.ShowProgress);
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
+                            w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        });
+                    }
+                };
+            }
+                
             if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
@@ -632,10 +662,13 @@ namespace PEBakery.WPF
                 NavigateUri = new Uri(info.URL),
             };
             hyperLink.Inlines.Add(uiCtrl.Text);
-            hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
+            if (r.ViewMode)
             {
-                Process.Start(e.Uri.ToString());
-            };
+                hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
+                {
+                    Process.Start(e.Uri.ToString());
+                };
+            }
             block.Inlines.Add(hyperLink);
 
             string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
@@ -674,7 +707,7 @@ namespace PEBakery.WPF
             };
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
-            if (DisableBevelCaption == false &&
+            if (!DisableBevelCaption &&
                 !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 int fontSize = DefaultFontPoint;
@@ -731,7 +764,7 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (info.SectionName != null)
+            if (info.SectionName != null && r.ViewMode)
             {
                 radio.Click += (object sender, RoutedEventArgs e) =>
                 {
@@ -751,25 +784,28 @@ namespace PEBakery.WPF
                 };
             }
 
-            radio.Checked += (object sender, RoutedEventArgs e) =>
+            if (r.ViewMode)
             {
-                // RadioButton btn = sender as RadioButton;
-                info.Selected = true;
-
-                // Uncheck the other RadioButtons
-                List<UIControl> updateList = radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.Ordinal)).ToList();
-                foreach (UIControl uncheck in updateList)
+                radio.Checked += (object sender, RoutedEventArgs e) =>
                 {
-                    Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                    UIInfo_RadioButton unInfo = uncheck.Info as UIInfo_RadioButton;
-                    Debug.Assert(unInfo != null, "Invalid UIInfo");
+                    // RadioButton btn = sender as RadioButton;
+                    info.Selected = true;
 
-                    unInfo.Selected = false;
-                }
+                    // Uncheck the other RadioButtons
+                    List<UIControl> updateList = radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.Ordinal)).ToList();
+                    foreach (UIControl uncheck in updateList)
+                    {
+                        Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                        UIInfo_RadioButton unInfo = uncheck.Info as UIInfo_RadioButton;
+                        Debug.Assert(unInfo != null, "Invalid UIInfo");
 
-                updateList.Add(uiCtrl);
-                UIControl.Update(updateList);
-            };
+                        unInfo.Selected = false;
+                    }
+
+                    updateList.Add(uiCtrl);
+                    UIControl.Update(updateList);
+                };
+            }
 
             SetToolTip(radio, info.ToolTip);
             DrawToCanvas(r, radio, uiCtrl.Rect);
@@ -793,14 +829,19 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            box.TextChanged += (object sender, TextChangedEventArgs e) =>
-            {
-                TextBox tBox = sender as TextBox;
-                Debug.Assert(tBox != null);
 
-                uiCtrl.Text = tBox.Text;
-                uiCtrl.Update();
-            };
+            if (r.ViewMode)
+            {
+                box.TextChanged += (object sender, TextChangedEventArgs e) =>
+                {
+                    TextBox tBox = sender as TextBox;
+                    Debug.Assert(tBox != null);
+
+                    uiCtrl.Text = tBox.Text;
+                    uiCtrl.Update();
+                };
+            }
+                
             SetToolTip(box, info.ToolTip);
 
             Button button = new Button
@@ -810,50 +851,53 @@ namespace PEBakery.WPF
             };
             SetToolTip(button, info.ToolTip);
 
-            button.Click += (object sender, RoutedEventArgs e) =>
+            if (r.ViewMode)
             {
-                // Button bt = sender as Button;
-                
-                if (info.IsFile)
-                { // File
-                    string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
-                    if (File.Exists(currentPath))
-                        currentPath = Path.GetDirectoryName(currentPath);
-                    else
-                        currentPath = string.Empty;
-                    Debug.Assert(currentPath != null);
-                    
-                    Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
-                    { 
-                        Filter = "All Files|*.*",
-                        InitialDirectory = currentPath,
-                    };
-                    if (dialog.ShowDialog() == true)
-                    {
-                        box.Text = dialog.FileName;
-                    }
-                }
-                else
-                { // Directory
-                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+                button.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    // Button bt = sender as Button;
 
-                    string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
-                    if (Directory.Exists(currentPath))
-                        dialog.SelectedPath = currentPath;
+                    if (info.IsFile)
+                    { // File
+                        string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
+                        if (File.Exists(currentPath))
+                            currentPath = Path.GetDirectoryName(currentPath);
+                        else
+                            currentPath = string.Empty;
+                        Debug.Assert(currentPath != null);
 
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        if (dialog.ShowDialog(r.Window) == true)
+                        Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                         {
-                            box.Text = dialog.SelectedPath;
-                            if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
-                                box.Text += "\\";
+                            Filter = "All Files|*.*",
+                            InitialDirectory = currentPath,
+                        };
+                        if (dialog.ShowDialog() == true)
+                        {
+                            box.Text = dialog.FileName;
                         }
-                    });
-                }
-            };
+                    }
+                    else
+                    { // Directory
+                        VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
-            double margin = 5;
+                        string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
+                        if (Directory.Exists(currentPath))
+                            dialog.SelectedPath = currentPath;
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (dialog.ShowDialog(r.Window) == true)
+                            {
+                                box.Text = dialog.SelectedPath;
+                                if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
+                                    box.Text += "\\";
+                            }
+                        });
+                    }
+                };
+            }
+
+            const double margin = 5;
             Rect boxRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, uiCtrl.Rect.Width - (uiCtrl.Rect.Height + margin), uiCtrl.Rect.Height);
             Rect btnRect = new Rect(boxRect.Right + margin, uiCtrl.Rect.Top, uiCtrl.Rect.Height, uiCtrl.Rect.Height);
             DrawToCanvas(r, box, boxRect);
@@ -896,16 +940,19 @@ namespace PEBakery.WPF
                     IsChecked = i == info.Selected,
                 };
 
-                radio.Checked += (object sender, RoutedEventArgs e) =>
+                if (r.ViewMode)
                 {
-                    RadioButton btn = sender as RadioButton;
-                    Debug.Assert(btn != null);
+                    radio.Checked += (object sender, RoutedEventArgs e) =>
+                    {
+                        RadioButton btn = sender as RadioButton;
+                        Debug.Assert(btn != null);
 
-                    info.Selected = (int)btn.Tag;
-                    uiCtrl.Update();
-                };
+                        info.Selected = (int)btn.Tag;
+                        uiCtrl.Update();
+                    };
+                }
 
-                if (info.SectionName != null)
+                if (info.SectionName != null && r.ViewMode)
                 {
                     radio.Click += (object sender, RoutedEventArgs e) =>
                     {
@@ -1060,19 +1107,24 @@ namespace PEBakery.WPF
     {
         public readonly double MasterScale;
         public readonly Canvas Canvas;
-        public readonly MainWindow Window;
+        public readonly Window Window;
         public readonly Script Script;
         public readonly string InterfaceSectionName;
+        /// <summary>
+        /// true in MainWindow, false in ScriptEditWindow
+        /// </summary>
+        public readonly bool ViewMode;
         public readonly Logger Logger;
 
-        public RenderInfo(Canvas canvas, MainWindow window, Logger logger, Script script, string interfaceSectionName, double masterScale)
+        public RenderInfo(Canvas canvas, Window window, Logger logger, Script script, string interfaceSectionName, double masterScale, bool allowModify)
         {
+            MasterScale = masterScale;
             Canvas = canvas;
             Window = window;
             Logger = logger;
             Script = script;
             InterfaceSectionName = interfaceSectionName;
-            MasterScale = masterScale;
+            ViewMode = allowModify;
         }
     }
     #endregion

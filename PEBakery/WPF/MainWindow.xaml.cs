@@ -606,8 +606,12 @@ namespace PEBakery.WPF
                     Model.ScriptAuthorText = sc.Author;
 
                 double scaleFactor = Setting.Interface_ScaleFactor / 100;
-                ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
-                UIRenderer render = new UIRenderer(MainCanvas, this, sc, Logger, scaleFactor);
+                ScaleTransform scale;
+                if (scaleFactor - 1 < double.Epsilon)
+                    scale = new ScaleTransform(1, 1);
+                else
+                    scale = new ScaleTransform(scaleFactor, scaleFactor);
+                UIRenderer render = new UIRenderer(MainCanvas, this, sc, scaleFactor, true);
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
                 
@@ -1258,7 +1262,7 @@ namespace PEBakery.WPF
             MainTree = new TreeViewModel(null, null);
             BuildTree = new TreeViewModel(null, null);
 
-            Canvas canvas = new Canvas()
+            Canvas canvas = new Canvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -1283,57 +1287,57 @@ namespace PEBakery.WPF
             }
         }
 
-        private string scriptTitleText = "Welcome to PEBakery!";
+        private string _scriptTitleText = "Welcome to PEBakery!";
         public string ScriptTitleText
         {
-            get => scriptTitleText;
+            get => _scriptTitleText;
             set
             {
-                scriptTitleText = value;
+                _scriptTitleText = value;
                 OnPropertyUpdate(nameof(ScriptTitleText));
             }
         }
 
-        private string scriptAuthorText = string.Empty;
+        private string _scriptAuthorText = string.Empty;
         public string ScriptAuthorText
         {
-            get => scriptAuthorText;
+            get => _scriptAuthorText;
             set
             {
-                scriptAuthorText = value;
+                _scriptAuthorText = value;
                 OnPropertyUpdate(nameof(ScriptAuthorText));
             }
         }
 
-        private string scriptVersionText = Properties.Resources.StringVersionFull;
+        private string _scriptVersionText = Properties.Resources.StringVersionFull;
         public string ScriptVersionText
         {
-            get => scriptVersionText;
+            get => _scriptVersionText;
             set
             {
-                scriptVersionText = value;
+                _scriptVersionText = value;
                 OnPropertyUpdate(nameof(ScriptVersionText));
             }
         }
 
-        private string scriptDescriptionText = "PEBakery is now loading, please wait...";
+        private string _scriptDescriptionText = "PEBakery is now loading, please wait...";
         public string ScriptDescriptionText
         {
-            get => scriptDescriptionText;
+            get => _scriptDescriptionText;
             set
             {
-                scriptDescriptionText = value;
+                _scriptDescriptionText = value;
                 OnPropertyUpdate(nameof(ScriptDescriptionText));
             }
         }
 
-        private bool isTreeEntryFile = true;
+        private bool _isTreeEntryFile = true;
         public bool IsTreeEntryFile
         {
-            get => isTreeEntryFile;
+            get => _isTreeEntryFile;
             set
             {
-                isTreeEntryFile = value;
+                _isTreeEntryFile = value;
                 OnPropertyUpdate(nameof(IsTreeEntryFile));
                 OnPropertyUpdate(nameof(ScriptCheckVisiblility));
                 OnPropertyUpdate(nameof(OpenExternalButtonToopTip));
@@ -1344,13 +1348,13 @@ namespace PEBakery.WPF
         public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open Editor" : "Open Folder";
         public PackIconMaterialKind OpenExternalButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
 
-        private bool? scriptCheckResult = null;
+        private bool? _scriptCheckResult = null;
         public bool? ScriptCheckResult
         {
-            get => scriptCheckResult;
+            get => _scriptCheckResult;
             set
             {
-                scriptCheckResult = value;
+                _scriptCheckResult = value;
                 OnPropertyUpdate(nameof(ScriptCheckIcon));
                 OnPropertyUpdate(nameof(ScriptCheckColor));
                 OnPropertyUpdate(nameof(ScriptCheckVisiblility));
@@ -1361,7 +1365,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (scriptCheckResult)
+                switch (_scriptCheckResult)
                 {
                     case true:
                         return PackIconMaterialKind.Check;
@@ -1377,7 +1381,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (scriptCheckResult)
+                switch (_scriptCheckResult)
                 {
                     case true:
                         return new SolidColorBrush(Colors.Green);
@@ -1411,13 +1415,13 @@ namespace PEBakery.WPF
         }
 
         // True - StatusBar, False - ProgressBar
-        private bool switchStatusProgressBar = false;
+        private bool _switchStatusProgressBar = false;
         public bool SwitchStatusProgressBar
         {
-            get => switchStatusProgressBar;
+            get => _switchStatusProgressBar;
             set
             {
-                switchStatusProgressBar = value;
+                _switchStatusProgressBar = value;
                 if (value)
                 {
                     BottomStatusBarVisibility = Visibility.Visible;
@@ -1431,35 +1435,35 @@ namespace PEBakery.WPF
             }
         }
 
-        private Visibility bottomStatusBarVisibility = Visibility.Collapsed;
+        private Visibility _bottomStatusBarVisibility = Visibility.Collapsed;
         public Visibility BottomStatusBarVisibility
         {
-            get => bottomStatusBarVisibility;
+            get => _bottomStatusBarVisibility;
             set
             {
-                bottomStatusBarVisibility = value;
+                _bottomStatusBarVisibility = value;
                 OnPropertyUpdate(nameof(BottomStatusBarVisibility));
             }
         }
 
-        private double bottomProgressBarMinimum = 0;
+        private double _bottomProgressBarMinimum = 0;
         public double BottomProgressBarMinimum
         {
-            get => bottomProgressBarMinimum;
+            get => _bottomProgressBarMinimum;
             set
             {
-                bottomProgressBarMinimum = value;
+                _bottomProgressBarMinimum = value;
                 OnPropertyUpdate(nameof(BottomProgressBarMinimum));
             }
         }
 
-        private double bottomProgressBarMaximum = 100;
+        private double _bottomProgressBarMaximum = 100;
         public double BottomProgressBarMaximum
         {
-            get => bottomProgressBarMaximum;
+            get => _bottomProgressBarMaximum;
             set
             {
-                bottomProgressBarMaximum = value;
+                _bottomProgressBarMaximum = value;
                 OnPropertyUpdate(nameof(BottomProgressBarMaximum));
             }
         }
@@ -1487,13 +1491,13 @@ namespace PEBakery.WPF
         }
 
         // True - Normal, False - Build
-        private bool switchNormalBuildInterface = true;
+        private bool _switchNormalBuildInterface = true;
         public bool SwitchNormalBuildInterface
         {
-            get => switchNormalBuildInterface;
+            get => _switchNormalBuildInterface;
             set
             {
-                switchNormalBuildInterface = value;
+                _switchNormalBuildInterface = value;
                 if (value)
                 { // To Normal View
                     BuildScriptProgressBarValue = 0;
@@ -1518,48 +1522,48 @@ namespace PEBakery.WPF
             }
         }
 
-        private Visibility normalInterfaceVisibility = Visibility.Visible;
+        private Visibility _normalInterfaceVisibility = Visibility.Visible;
         public Visibility NormalInterfaceVisibility
         {
-            get => normalInterfaceVisibility;
+            get => _normalInterfaceVisibility;
             set
             {
-                normalInterfaceVisibility = value;
+                _normalInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(NormalInterfaceVisibility));
                 OnPropertyUpdate(nameof(ScriptCheckVisiblility));
             }
         }
 
-        private Visibility buildInterfaceVisibility = Visibility.Collapsed;
+        private Visibility _buildInterfaceVisibility = Visibility.Collapsed;
         public Visibility BuildInterfaceVisibility
         {
-            get => buildInterfaceVisibility;
+            get => _buildInterfaceVisibility;
             set
             {
-                buildInterfaceVisibility = value;
+                _buildInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(BuildInterfaceVisibility));
                 OnPropertyUpdate(nameof(ScriptCheckVisiblility));
             }
         }
 
-        private TreeViewModel mainTree;
+        private TreeViewModel _mainTree;
         public TreeViewModel MainTree
         {
-            get => mainTree;
+            get => _mainTree;
             set
             {
-                mainTree = value;
+                _mainTree = value;
                 OnPropertyUpdate(nameof(MainTree));
             }
         }
 
-        private Canvas mainCanvas;
+        private Canvas _mainCanvas;
         public Canvas MainCanvas
         {
-            get => mainCanvas;
+            get => _mainCanvas;
             set
             {
-                mainCanvas = value;
+                _mainCanvas = value;
                 OnPropertyUpdate(nameof(MainCanvas));
             }
         }
