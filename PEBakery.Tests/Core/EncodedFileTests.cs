@@ -34,9 +34,14 @@ using System.IO;
 using System.Linq;
 using PEBakery.Helper;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using PEBakery.Exceptions;
 using System.Text;
+using Joveler.ZLibWrapper;
 using PEBakery.IniLib;
+using PEBakery.LZ4Lib;
+using PEBakery.XZLib;
 
 namespace PEBakery.Tests.Core
 {
@@ -104,7 +109,7 @@ namespace PEBakery.Tests.Core
                 }
 
                 byte[] originDigest;
-                using (FileStream fs = new FileStream(originFile, FileMode.Open))
+                using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
                 }
@@ -247,7 +252,7 @@ namespace PEBakery.Tests.Core
             string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
             originFile = StringEscaper.Preprocess(s, originFile);
             byte[] originDigest;
-            using (FileStream fs = new FileStream(originFile, FileMode.Open))
+            using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
             }
@@ -284,7 +289,7 @@ namespace PEBakery.Tests.Core
             string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
             originFile = StringEscaper.Preprocess(s, originFile);
             byte[] originDigest;
-            using (FileStream fs = new FileStream(originFile, FileMode.Open))
+            using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
             }
@@ -356,7 +361,7 @@ namespace PEBakery.Tests.Core
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "Logo.jpg");
             originFile = StringEscaper.Preprocess(s, originFile);
             byte[] originDigest;
-            using (FileStream fs = new FileStream(originFile, FileMode.Open))
+            using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
             }
@@ -390,7 +395,7 @@ namespace PEBakery.Tests.Core
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "PEBakeryAlphaMemory.jpg");
             originFile = StringEscaper.Preprocess(s, originFile);
             byte[] originDigest;
-            using (FileStream fs = new FileStream(originFile, FileMode.Open))
+            using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
             }
@@ -432,7 +437,7 @@ namespace PEBakery.Tests.Core
                 if (inMem)
                 {
                     byte[] buffer;
-                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         buffer = new byte[fs.Length];
                         fs.Read(buffer, 0, buffer.Length);
@@ -444,7 +449,7 @@ namespace PEBakery.Tests.Core
                 else
                 {
                     List<IniKey> keys;
-                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         (keys, _) = SplitBase64.Encode(fs, string.Empty);
                     }
@@ -476,7 +481,7 @@ namespace PEBakery.Tests.Core
 
                 byte[] binDigest;
                 byte[] encDigest;
-                using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     binDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
                 }
@@ -531,6 +536,242 @@ namespace PEBakery.Tests.Core
             Template("Type3.pdf", "Type3Enc4090.txt", false);
             Template("Type3.pdf", "Type3Enc1024.txt", true);
             Template("Type3.pdf", "Type3Enc1024.txt", false);
+        }
+        #endregion
+
+        #region Benchmark
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        public void EncodedFile_Benchmark()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void Template(string fileName)
+            {
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                Directory.CreateDirectory(destDir);
+                try
+                {
+                    string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
+                    string rawFile = Path.Combine(workDir, fileName);
+
+                    byte[] rawFileData;
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        using (FileStream fs = new FileStream(rawFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            fs.CopyTo(ms);
+                        }
+
+                        rawFileData = ms.ToArray();
+                    }
+
+                    // Compression
+                    {
+                        // RawFile
+                        long rawFileLen = new FileInfo(rawFile).Length;
+
+                        // zlib
+                        (long, TimeSpan) ZLibBenchmarkCompress(CompressionLevel compLevel)
+                        {
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(rawFileData))
+                                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Compress, compLevel, true))
+                                {
+                                    rms.CopyTo(zs);
+                                }
+
+                                ms.Flush();
+                                return (ms.Position, watch.Elapsed);
+                            }
+                        }
+                        (long zlibFastestLen, TimeSpan zlibFastestTime) = ZLibBenchmarkCompress(CompressionLevel.Fastest);
+                        (long zlibDefaultLen, TimeSpan zlibDefaultTime) = ZLibBenchmarkCompress(CompressionLevel.Default);
+                        (long zlibBestLen, TimeSpan zlibBestTime) = ZLibBenchmarkCompress(CompressionLevel.Best);
+
+                        // xz
+                        (long, TimeSpan) XZBenchmarkCompress(uint preset)
+                        {
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(rawFileData))
+                                using (XZStream xzs = new XZStream(ms, LzmaMode.Compress, preset, true))
+                                {
+                                    rms.CopyTo(xzs);
+                                }
+
+                                ms.Flush();
+                                return (ms.Position, watch.Elapsed);
+                            }
+                        }
+                        (long xzFastestLen, TimeSpan xzFastestTime) = XZBenchmarkCompress(XZStream.MinimumPreset);
+                        (long xzDefaultLen, TimeSpan xzDefaultTime) = XZBenchmarkCompress(XZStream.DefaultPreset);
+                        (long xzBestLen, TimeSpan xzBestTime) = XZBenchmarkCompress(XZStream.MaximumPreset);
+
+                        // lz4
+                        (long, TimeSpan) LZ4BenchmarkCompress(LZ4CompLevel compLevel)
+                        {
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(rawFileData))
+                                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, compLevel, true))
+                                {
+                                    rms.CopyTo(lzs);
+                                }
+
+                                ms.Flush();
+                                return (ms.Position, watch.Elapsed);
+                            }
+                        }
+                        (long lz4FastestLen, TimeSpan lz4FastestTime) = LZ4BenchmarkCompress(LZ4CompLevel.Fast);
+                        (long lz4DefaultLen, TimeSpan lz4DefaultTime) = LZ4BenchmarkCompress(LZ4CompLevel.High);
+                        (long lz4BestLen, TimeSpan lz4BestTime) = LZ4BenchmarkCompress(LZ4CompLevel.VeryHigh); // Toggle lz4-hc mode
+
+                        StringBuilder b = new StringBuilder();
+                        b.AppendLine($"[{fileName} - Compress]");
+                        b.AppendLine($"raw            : 100%, {rawFileLen}");
+                        b.AppendLine($"zlib (Fastest) : {Math.Round(zlibFastestLen * 100.0 / rawFileLen, 0):##0}%, {zlibFastestTime.TotalMilliseconds}ms ({zlibFastestLen}B)");
+                        b.AppendLine($"zlib (Default) : {Math.Round(zlibDefaultLen * 100.0 / rawFileLen, 0):##0}%, {zlibDefaultTime.TotalMilliseconds}ms ({zlibDefaultLen}B)");
+                        b.AppendLine($"zlib (Best)    : {Math.Round(zlibBestLen * 100.0 / rawFileLen, 0):##0}%, {zlibBestTime.TotalMilliseconds}ms ({zlibBestLen}B)");
+                        b.AppendLine($"xz   (Fastest) : {Math.Round(xzFastestLen * 100.0 / rawFileLen, 0):##0}%, {xzFastestTime.TotalMilliseconds}ms ({xzFastestLen}B)");
+                        b.AppendLine($"xz   (Default) : {Math.Round(xzDefaultLen * 100.0 / rawFileLen, 0):##0}%, {xzDefaultTime.TotalMilliseconds}ms ({xzDefaultLen}B)");
+                        b.AppendLine($"xz   (Best)    : {Math.Round(xzBestLen * 100.0 / rawFileLen, 0):##0}%, {xzBestTime.TotalMilliseconds}ms ({xzBestLen}B)");
+                        b.AppendLine($"lz4  (Fastest) : {Math.Round(lz4FastestLen * 100.0 / rawFileLen, 0):##0}%, {lz4FastestTime.TotalMilliseconds}ms ({lz4FastestLen}B)");
+                        b.AppendLine($"lz4  (Default) : {Math.Round(lz4DefaultLen * 100.0 / rawFileLen, 0):##0}%, {lz4DefaultTime.TotalMilliseconds}ms ({lz4DefaultLen}B)");
+                        b.AppendLine($"lz4  (Best)    : {Math.Round(lz4BestLen * 100.0 / rawFileLen, 0):##0}%, {lz4BestTime.TotalMilliseconds}ms ({lz4BestLen}B)");
+                        Console.WriteLine(b.ToString());
+                    }
+
+                    // Decompression
+                    {
+                        // zlib
+                        TimeSpan ZLibBenchmarkDecompress(string dirName)
+                        {
+                            string zlibFile = Path.Combine(workDir, "Benchmark", dirName, fileName + ".zz");
+                            byte[] zlibData;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                using (FileStream fs = new FileStream(zlibFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                                {
+                                    fs.CopyTo(ms);
+                                }
+
+                                zlibData = ms.ToArray();
+                            }
+
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(zlibData))
+                                using (ZLibStream zs = new ZLibStream(rms, CompressionMode.Decompress))
+                                {
+                                    zs.CopyTo(ms);
+                                }
+
+                                ms.Flush();
+                                return watch.Elapsed;
+                            }
+                        }
+                        TimeSpan zlibFastestTime = ZLibBenchmarkDecompress("Fastest");
+                        TimeSpan zlibDefaultTime = ZLibBenchmarkDecompress("Default");
+                        TimeSpan zlibBestTime = ZLibBenchmarkDecompress("Best");
+
+                        // xz
+                        TimeSpan XZBenchmarkDecompress(string dirName)
+                        {
+                            string xzFile = Path.Combine(workDir, "Benchmark", dirName, fileName + ".xz");
+                            byte[] xzData;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                using (FileStream fs = new FileStream(xzFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                                {
+                                    fs.CopyTo(ms);
+                                }
+
+                                xzData = ms.ToArray();
+                            }
+
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(xzData))
+                                using (XZStream xzs = new XZStream(rms, LzmaMode.Decompress))
+                                {
+                                    xzs.CopyTo(ms);
+                                }
+
+                                ms.Flush();
+                                return watch.Elapsed;
+                            }
+                        }
+                        TimeSpan xzFastestTime = XZBenchmarkDecompress("Fastest");
+                        TimeSpan xzDefaultTime = XZBenchmarkDecompress("Default");
+                        TimeSpan xzBestTime = XZBenchmarkDecompress("Best");
+
+                        // lz4
+                        TimeSpan LZ4BenchmarkDecompress(string dirName)
+                        {
+                            string lz4File = Path.Combine(workDir, "Benchmark", dirName, fileName + ".lz4");
+                            byte[] lz4Data;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                using (FileStream fs = new FileStream(lz4File, FileMode.Open, FileAccess.Read, FileShare.Read))
+                                {
+                                    fs.CopyTo(ms);
+                                }
+
+                                lz4Data = ms.ToArray();
+                            }
+
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                Stopwatch watch = Stopwatch.StartNew();
+                                using (MemoryStream rms = new MemoryStream(lz4Data))
+                                using (LZ4FrameStream lzs = new LZ4FrameStream(rms, LZ4Mode.Decompress))
+                                {
+                                    lzs.CopyTo(ms);
+                                }
+
+                                ms.Flush();
+                                return watch.Elapsed;
+                            }
+                        }
+                        TimeSpan lz4FastestTime = LZ4BenchmarkDecompress("Fastest");
+                        TimeSpan lz4DefaultTime = LZ4BenchmarkDecompress("Default");
+                        TimeSpan lz4BestTime = LZ4BenchmarkDecompress("Best"); // Toggle lz4-hc mode
+
+                        StringBuilder b = new StringBuilder();
+                        b.AppendLine($"[{fileName} - Decompress]");
+                        b.AppendLine($"zlib (Fastest) : {zlibFastestTime.TotalMilliseconds}ms");
+                        b.AppendLine($"zlib (Default) : {zlibDefaultTime.TotalMilliseconds}ms");
+                        b.AppendLine($"zlib (Best)    : {zlibBestTime.TotalMilliseconds}ms");
+                        b.AppendLine($"xz   (Fastest) : {xzFastestTime.TotalMilliseconds}ms");
+                        b.AppendLine($"xz   (Default) : {xzDefaultTime.TotalMilliseconds}ms");
+                        b.AppendLine($"xz   (Best)    : {xzBestTime.TotalMilliseconds}m");
+                        b.AppendLine($"lz4  (Fastest) : {lz4FastestTime.TotalMilliseconds}ms");
+                        b.AppendLine($"lz4  (Default) : {lz4DefaultTime.TotalMilliseconds}ms");
+                        b.AppendLine($"lz4  (Best)    : {lz4BestTime.TotalMilliseconds}ms");
+                        Console.WriteLine(b.ToString());
+                    }
+
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+
+                
+            }
+
+            Template("Type4.txt");
+            Template("Banner.svg");
+            Template("Banner.bmp");            
         }
         #endregion
     }

@@ -86,9 +86,11 @@ namespace PEBakery.Tests.Core
             string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             string wimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
             string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
+            string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.1.dll");
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(zLibDllPath);
             ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
             PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
+            PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);
         }
 
         [AssemblyCleanup]
@@ -99,6 +101,7 @@ namespace PEBakery.Tests.Core
             Joveler.ZLibWrapper.ZLibNative.AssemblyCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
             PEBakery.XZLib.XZStream.GlobalCleanup();
+            PEBakery.LZ4Lib.LZ4FrameStream.GlobalCleanup();
         }
         #endregion
 

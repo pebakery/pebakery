@@ -41,12 +41,12 @@ namespace PEBakery.LZ4Lib.Tests
         [TestCategory("LZ4Lib")]
         public void LZ4Lib_Compress()
         {
-            Compress_Template("A.pdf", CompressionLevel.Fast);
-            Compress_Template("B.txt", CompressionLevel.High);
-            Compress_Template("C.bin", CompressionLevel.VeryHigh);
+            Compress_Template("A.pdf", LZ4CompLevel.Fast);
+            Compress_Template("B.txt", LZ4CompLevel.High);
+            Compress_Template("C.bin", LZ4CompLevel.VeryHigh);
         }
 
-        public void Compress_Template(string sampleFileName, CompressionLevel compLevel)
+        public void Compress_Template(string sampleFileName, LZ4CompLevel compLevel)
         {
             if (sampleFileName == null)
                 throw new ArgumentNullException(nameof(sampleFileName));

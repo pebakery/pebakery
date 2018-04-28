@@ -60,7 +60,9 @@ namespace PEBakery.XZLib
         public long TotalIn { get; private set; } = 0;
         public long TotalOut { get; private set; } = 0;
         // Const
+        public const uint MinimumPreset = 0;
         public const uint DefaultPreset = 6;
+        public const uint MaximumPreset = 9;
         public const uint ExtremeFlag = 1u << 31;
         #endregion
 

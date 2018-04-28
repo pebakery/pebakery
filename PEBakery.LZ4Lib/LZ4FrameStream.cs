@@ -50,6 +50,8 @@ namespace PEBakery.LZ4Lib
         private IntPtr _cctx = IntPtr.Zero;
         private IntPtr _dctx = IntPtr.Zero;
 
+        private readonly byte[] _workBuf;
+
         // Compression
         private const int SrcBufSizeMax = 4 * 1024 * 1024; // 4MB
         private readonly uint _destBufSize; // 4MB
@@ -57,7 +59,6 @@ namespace PEBakery.LZ4Lib
         // Decompression
         private const int DecompDone = -1;
         private bool _firstRead = true;
-        private readonly byte[] _decompSrcBuf = new byte[SrcBufSizeMax];
         private int _decompSrcIdx = 0;
         private int _decompSrcCount = 0;
 
@@ -77,13 +78,13 @@ namespace PEBakery.LZ4Lib
         public LZ4FrameStream(Stream stream, LZ4Mode mode)
             : this(stream, mode, 0, false) { }
 
-        public LZ4FrameStream(Stream stream, LZ4Mode mode, CompressionLevel compressionLevel)
+        public LZ4FrameStream(Stream stream, LZ4Mode mode, LZ4CompLevel compressionLevel)
             : this(stream, mode, compressionLevel, false) { }
 
         public LZ4FrameStream(Stream stream, LZ4Mode mode, bool leaveOpen)
             : this(stream, mode, 0, leaveOpen) { }
 
-        public LZ4FrameStream(Stream stream, LZ4Mode mode, CompressionLevel compressionLevel, bool leaveOpen)
+        public LZ4FrameStream(Stream stream, LZ4Mode mode, LZ4CompLevel compressionLevel, bool leaveOpen)
         {
             if (!NativeMethods.Loaded)
                 throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
@@ -124,8 +125,8 @@ namespace PEBakery.LZ4Lib
                     if (SrcBufSizeMax < frameSize)
                         _destBufSize = frameSize;
 
-                    byte[] destBuf = new byte[_destBufSize];
-                    using (PinnedArray dstBufPin = new PinnedArray(destBuf))
+                    _workBuf = new byte[_destBufSize];
+                    using (PinnedArray dstBufPin = new PinnedArray(_workBuf))
                     {
                         UIntPtr headerSizeVal = NativeMethods.FrameCompressionBegin(_cctx, dstBufPin, (UIntPtr)SrcBufSizeMax, prefs);
                         LZ4FrameException.CheckLZ4Error(headerSizeVal);
@@ -133,7 +134,7 @@ namespace PEBakery.LZ4Lib
                         Debug.Assert(headerSizeVal.ToUInt64() < int.MaxValue);
 
                         int headerSize = (int)headerSizeVal.ToUInt32();
-                        _baseStream.Write(destBuf, 0, headerSize);
+                        _baseStream.Write(_workBuf, 0, headerSize);
                         TotalOut += headerSize;
                     }
                     break;
@@ -149,6 +150,8 @@ namespace PEBakery.LZ4Lib
 
                     if (readHeaderSize != 4 || !headerBuf.SequenceEqual(FrameMagicNumber))
                     throw new InvalidDataException("BaseStream is not a valid LZ4 Frame Format");
+
+                    _workBuf = new byte[SrcBufSizeMax];
 
                     break;
                 }    
@@ -312,7 +315,7 @@ namespace PEBakery.LZ4Lib
             int destCount = count;
             int destEndIdx = offset + count;
 
-            using (PinnedArray pinSrc = new PinnedArray(_decompSrcBuf))
+            using (PinnedArray pinSrc = new PinnedArray(_workBuf))
             using (PinnedArray pinDest = new PinnedArray(buffer))
             {
                 if (_firstRead)
@@ -345,7 +348,7 @@ namespace PEBakery.LZ4Lib
                     {
                         // Read from _baseStream
                         _decompSrcIdx = 0;
-                        _decompSrcCount = _baseStream.Read(_decompSrcBuf, 0, _decompSrcBuf.Length);
+                        _decompSrcCount = _baseStream.Read(_workBuf, 0, _workBuf.Length);
                         TotalIn += _decompSrcCount;
 
                         // _baseStream reached its end
@@ -397,10 +400,9 @@ namespace PEBakery.LZ4Lib
                 return;
 
             TotalIn += count;
-            byte[] destBuf = new byte[_destBufSize];
 
             using (PinnedArray pinSrc = new PinnedArray(buffer))
-            using (PinnedArray pinDest = new PinnedArray(destBuf))
+            using (PinnedArray pinDest = new PinnedArray(_workBuf))
             {
                 while (0 < count)
                 {
@@ -412,7 +414,7 @@ namespace PEBakery.LZ4Lib
                     Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
                     int outSize = (int) outSizeVal.ToUInt64();
 
-                    _baseStream.Write(destBuf, 0, outSize);
+                    _baseStream.Write(_workBuf, 0, outSize);
                     TotalOut += outSize;
 
                     offset += srcWorkSize;
@@ -426,8 +428,7 @@ namespace PEBakery.LZ4Lib
         {
             Debug.Assert(_mode == LZ4Mode.Compress, "FinishWrite() must not be called in decompression");
 
-            byte[] destBuf = new byte[SrcBufSizeMax];
-            using (PinnedArray pinDest = new PinnedArray(destBuf))
+            using (PinnedArray pinDest = new PinnedArray(_workBuf))
             {
                 UIntPtr outSizeVal = NativeMethods.FrameCompressionEnd(_cctx, pinDest, (UIntPtr)_destBufSize, null);
                 LZ4FrameException.CheckLZ4Error(outSizeVal);
@@ -435,7 +436,7 @@ namespace PEBakery.LZ4Lib
                 Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
                 int outSize = (int)outSizeVal.ToUInt64();
 
-                _baseStream.Write(destBuf, 0, outSize);
+                _baseStream.Write(_workBuf, 0, outSize);
                 TotalOut += outSize;
             }
         }

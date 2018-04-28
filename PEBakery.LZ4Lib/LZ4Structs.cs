@@ -194,9 +194,9 @@ namespace PEBakery.LZ4Lib
     }
     #endregion
 
-    #region CompressLevel
+    #region Enum LZ4CompLevel
 
-    public enum CompressionLevel : int
+    public enum LZ4CompLevel : int
     {
         /// <summary>
         /// Fast compression, 0 through 2 is identical (default)
