@@ -778,17 +778,17 @@ namespace PEBakery.IniLib
             rwLock.EnterWriteLock();
             try
             {
-                if (File.Exists(file) == false)
+                if (!File.Exists(file))
                     return processed; // All False
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = IniHelper.DetectTextEncoding(file);
-                using (StreamReader reader = new StreamReader(file, encoding, true))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
-                    if (reader.Peek() == -1)
+                    if (r.Peek() == -1)
                     {
-                        reader.Close();
+                        r.Close();
                         return processed; // All False
                     }
 
@@ -796,7 +796,7 @@ namespace PEBakery.IniLib
                     bool inTargetSection = false;
                     string currentSection = null;
 
-                    while ((rawLine = reader.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by linev
                         bool thisLineProcessed = false;
                         string line = rawLine.Trim();
@@ -807,7 +807,7 @@ namespace PEBakery.IniLib
                             || line.StartsWith(";", StringComparison.Ordinal)
                             || line.StartsWith("//", StringComparison.Ordinal))
                         {
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                             continue;
                         }
 
@@ -832,7 +832,7 @@ namespace PEBakery.IniLib
                                 }
                             }
                             thisLineProcessed = true;
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                         }
 
                         // key=value
@@ -857,11 +857,9 @@ namespace PEBakery.IniLib
                             }
                         }
 
-                        if (thisLineProcessed == false)
-                            writer.WriteLine(rawLine);
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
                     }
-                    reader.Close();
-                    writer.Close();
                 }
 
                 if (0 < processed.Count(x => x))

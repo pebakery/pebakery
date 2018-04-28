@@ -79,7 +79,7 @@ namespace PEBakery.WPF
             */
 
             // General
-            if (EncodedFile.LogoExists(_sc))
+            if (EncodedFile.ConatinsLogo(_sc))
             {
                 m.ScriptLogoImage = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
                 m.ScriptLogoInfo = EncodedFile.GetLogoInfo(_sc, true);
@@ -230,7 +230,7 @@ namespace PEBakery.WPF
 
         private void ScriptLogoExtractButton_Click(object sender, RoutedEventArgs e)
         {
-            if (EncodedFile.LogoExists(_sc))
+            if (EncodedFile.ConatinsLogo(_sc))
             {
                 using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
                 {
@@ -271,7 +271,7 @@ namespace PEBakery.WPF
 
         private void ScriptLogoDeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (EncodedFile.LogoExists(_sc))
+            if (EncodedFile.ConatinsLogo(_sc))
             {
                 _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
                 if (errorMsg == null)

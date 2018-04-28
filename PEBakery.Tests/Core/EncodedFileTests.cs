@@ -52,7 +52,7 @@ namespace PEBakery.Tests.Core
         private const string EncodedFolders = "EncodedFolders";
         private const string AuthorEncoded = "AuthorEncoded";
         private const string InterfaceEncoded = "InterfaceEncoded";
-        private static string GetSectionName(string dirName, string fileName) => $"EncodedFile-{dirName}-{fileName}";
+        private static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
         #endregion
 
         #region AttachFile
@@ -134,14 +134,10 @@ namespace PEBakery.Tests.Core
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
-                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destScript = Path.Combine(destDir, "AddFolderTest.script");
 
-                string destDir = StringEscaper.Preprocess(s, pbDestDir);
-                string destScript = StringEscaper.Preprocess(s, pbDestScript);
-
-                if (!Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
+                Directory.CreateDirectory(destDir);
                 try
                 {
                     File.Copy(originScript, destScript, true);
@@ -405,8 +401,487 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
-        #region SplitBase64
+        #region ContainsLogo
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ContainsLogo()
+        {
+            void Template(string fileName, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
+                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+                Assert.AreEqual(EncodedFile.ConatinsLogo(sc), result);
+            }
+
+            Template("Blank.script", true);
+            Template("CompleteBlank.script", false);
+        }
+        #endregion
+
+        #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_GetFileInfo()
+        {
+            // ReSharper disable once InconsistentNaming
+            const string FolderExample = "FolderExample";
+            const string folderExample = "folderExample";
+
+            EngineState s = EngineTests.CreateEngineState();
+            string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string fileName, bool detail, EncodedFileInfo comp)
+            {
+                EncodedFileInfo info = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                Assert.IsTrue(comp.Equals(info));
+            }
+
+            Template("Type1.jpg", true, new EncodedFileInfo
+            {
+                DirName = FolderExample,
+                FileName = "Type1.jpg",
+                RawSize = 7683,
+                EncodedSize = 10244,
+                EncodeMode = EncodedFile.EncodeMode.ZLib
+            });
+            Template("type1.jpg", false, new EncodedFileInfo
+            {
+                DirName = folderExample,
+                FileName = "Type1.jpg",
+                RawSize = 7683,
+                EncodedSize = 10244,
+                EncodeMode = null
+            });
+
+            Template("Type2.7z", true, new EncodedFileInfo
+            {
+                DirName = FolderExample,
+                FileName = "Type2.7z",
+                RawSize = 1631,
+                EncodedSize = 2175,
+                EncodeMode = EncodedFile.EncodeMode.Raw
+            });
+            Template("Type2.7z", false, new EncodedFileInfo
+            {
+                DirName = FolderExample,
+                FileName = "type2.7z",
+                RawSize = 1631,
+                EncodedSize = 2175,
+                EncodeMode = null
+            });
+
+            Template("Type3.pdf", true, new EncodedFileInfo
+            {
+                DirName = FolderExample,
+                FileName = "Type3.pdf",
+                RawSize = 88692,
+                EncodedSize = 102908,
+                EncodeMode = EncodedFile.EncodeMode.XZ
+            });
+            Template("Type3.pdf", false, new EncodedFileInfo
+            {
+                DirName = folderExample,
+                FileName = "type3.pdf",
+                RawSize = 88692,
+                EncodedSize = 102908,
+                EncodeMode = null
+            });
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_GetLogoInfo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
+
+            string logoScriptFile = Path.Combine(scriptDir, "Blank.script");
+            Script logoScript = s.Project.LoadScriptMonkeyPatch(logoScriptFile);
+
+            string noLogoScriptFile = Path.Combine(scriptDir, "CompleteBlank.script");
+            Script noLogoScript = s.Project.LoadScriptMonkeyPatch(noLogoScriptFile);
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(Script testScript, bool detail, EncodedFileInfo comp)
+            {
+                try
+                {
+                    EncodedFileInfo info = EncodedFile.GetLogoInfo(testScript, detail);
+                    Assert.IsTrue(info.Equals(comp));
+                }
+                catch (InvalidOperationException)
+                {
+                    Assert.IsTrue(comp == null);
+                }
+            }
+
+            Template(logoScript, true, new EncodedFileInfo
+            {
+                DirName = "AuthorEncoded",
+                FileName = "logo.jpg",
+                RawSize = 973,
+                EncodedSize = 1298,
+                EncodeMode = EncodedFile.EncodeMode.ZLib
+            });
+            Template(logoScript, false, new EncodedFileInfo
+            {
+                DirName = "authorEncoded",
+                FileName = "Logo.jpg",
+                RawSize = 973,
+                EncodedSize = 1298,
+                EncodeMode = null
+            });
+
+            Template(noLogoScript, true, null);
+            Template(noLogoScript, false, null);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_GetFolderInfo()
+        {
+            // ReSharper disable once InconsistentNaming
+            const string FolderExample = "FolderExample";
+
+            EngineState s = EngineTests.CreateEngineState();
+            string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(bool detail, List<EncodedFileInfo> comps)
+            {
+                List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                Assert.AreEqual(comps.Count, infos.Count);
+                for (int i = 0; i < comps.Count; i++)
+                    Assert.IsTrue(comps[i].Equals(infos[i]));
+            }
+
+            List<EncodedFileInfo> compDetailList = new List<EncodedFileInfo>
+            {
+                new EncodedFileInfo
+                {
+                    DirName = FolderExample,
+                    FileName = "Type1.jpg",
+                    RawSize = 7683,
+                    EncodedSize = 10244,
+                    EncodeMode = EncodedFile.EncodeMode.ZLib
+                },
+                new EncodedFileInfo
+                {
+                    DirName = FolderExample,
+                    FileName = "Type2.7z",
+                    RawSize = 1631,
+                    EncodedSize = 2175,
+                    EncodeMode = EncodedFile.EncodeMode.Raw
+                },
+                new EncodedFileInfo
+                {
+                    DirName = FolderExample,
+                    FileName = "Type3.pdf",
+                    RawSize = 88692,
+                    EncodedSize = 102908,
+                    EncodeMode = EncodedFile.EncodeMode.XZ
+                }
+            };
+
+            List<EncodedFileInfo> compNoDetailList = new List<EncodedFileInfo>();
+            foreach (EncodedFileInfo info in compDetailList)
+            {
+                EncodedFileInfo clone = info.Clone() as EncodedFileInfo;
+                Assert.IsTrue(clone != null);
+                clone.EncodeMode = null;
+                compNoDetailList.Add(clone);
+            }
+            
+            Template(true, compDetailList);
+            Template(false, compNoDetailList);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_GetAllFilesInfo()
+        {
+            // ReSharper disable once InconsistentNaming
+            const string FolderExample = "FolderExample";
+
+            EngineState s = EngineTests.CreateEngineState();
+            string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(bool detail, Dictionary<string, List<EncodedFileInfo>> compDict)
+            {
+                Dictionary<string, List<EncodedFileInfo>> infoDict = EncodedFile.GetAllFilesInfo(sc, detail);
+                Assert.AreEqual(compDict.Count, infoDict.Count);
+                foreach (var kv in compDict)
+                {
+                    Assert.IsTrue(infoDict.ContainsKey(kv.Key));
+                    Assert.AreEqual(kv.Value.Count, infoDict[kv.Key].Count);
+                    for (int i = 0; i < kv.Value.Count; i++)
+                        Assert.IsTrue(kv.Value[i].Equals(infoDict[kv.Key][i]));
+                } 
+            }
+
+            Dictionary<string, List<EncodedFileInfo>> compDetailDict = new Dictionary<string, List<EncodedFileInfo>>
+            {
+                ["FolderExample"] = new List<EncodedFileInfo>
+                {
+                    new EncodedFileInfo
+                    {
+                        DirName = FolderExample,
+                        FileName = "Type1.jpg",
+                        RawSize = 7683,
+                        EncodedSize = 10244,
+                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                    },
+                    new EncodedFileInfo
+                    {
+                        DirName = FolderExample,
+                        FileName = "Type2.7z",
+                        RawSize = 1631,
+                        EncodedSize = 2175,
+                        EncodeMode = EncodedFile.EncodeMode.Raw
+                    },
+                    new EncodedFileInfo
+                    {
+                        DirName = FolderExample,
+                        FileName = "Type3.pdf",
+                        RawSize = 88692,
+                        EncodedSize = 102908,
+                        EncodeMode = EncodedFile.EncodeMode.XZ
+                    }
+                },
+                ["BannerImage"] = new List<EncodedFileInfo>
+                {
+                    new EncodedFileInfo
+                    {
+                        DirName = "BannerImage",
+                        FileName = "Banner.bmp",
+                        RawSize = 17626,
+                        EncodedSize = 23502,
+                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                    },
+                    new EncodedFileInfo
+                    {
+                        DirName = "BannerImage",
+                        FileName = "Banner.svg",
+                        RawSize = 4715,
+                        EncodedSize = 6287,
+                        EncodeMode = EncodedFile.EncodeMode.ZLib
+                    },
+                },
+            };
+
+            Dictionary<string, List<EncodedFileInfo>> compNoDetailDict = new Dictionary<string, List<EncodedFileInfo>>();
+            foreach (var kv in compDetailDict)
+            {
+                compNoDetailDict[kv.Key] = new List<EncodedFileInfo>();
+                foreach (EncodedFileInfo info in kv.Value)
+                {
+                    EncodedFileInfo clone = info.Clone() as EncodedFileInfo;
+                    Assert.IsTrue(clone != null);
+
+                    clone.EncodeMode = null;
+
+                    compNoDetailDict[kv.Key].Add(clone);
+                }
+            }
+
+            Template(true, compDetailDict);
+            Template(false, compNoDetailDict);
+        }
+        #endregion
+
+        #region DeleteFile, DeleteFolder, DeleteLogo
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_DeleteFile()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string originScriptPath = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile", "ExtractFileTests.script");
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string folderName, string fileName, bool result)
+            {
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destScript = Path.Combine(destDir, "DeleteFileTest.script");
+
+                Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScriptPath, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+
+                    sc = EncodedFile.DeleteFile(sc, folderName, fileName, out string errMsg);
+                    if (errMsg != null)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+
+                    Assert.IsTrue(result);
+                    
+                    Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
+
+                    Dictionary<string, string> fileDict;
+                    switch (sc.Sections[folderName].DataType)
+                    {
+                        case SectionDataType.IniDict:
+                            fileDict = sc.Sections[folderName].GetIniDict();
+                            break;
+                        case SectionDataType.Lines:
+                            fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
+                            break;
+                        default:
+                            throw new InternalException("Internal Logic Error at EncodedFile.ExtractFolder");
+                    }
+
+                    Assert.IsFalse(fileDict.ContainsKey(fileName));
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("FolderExample", "Type1.jpg", true);
+            Template("FolderExample", "Type2.7z", true);
+            Template("FolderExample", "Type3.pdf", true);
+            Template(AuthorEncoded, "Logo.jpg", true);
+            Template(InterfaceEncoded, "PEBakeryAlphaMemory.jpg", true);
+
+            Template("BannerImage", "Should.fail", false);
+            Template("ShouldFail", "Should.fail", false);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_DeleteFolder()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string originScriptPath = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile", "ExtractFileTests.script");
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string folderName, bool result)
+            {
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destScript = Path.Combine(destDir, "DeleteFolderTest.script");
+
+                Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScriptPath, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+
+                    Dictionary<string, string> fileDict = null;
+                    if (result)
+                    {
+                        switch (sc.Sections[folderName].DataType)
+                        {
+                            case SectionDataType.IniDict:
+                                fileDict = sc.Sections[folderName].GetIniDict();
+                                break;
+                            case SectionDataType.Lines:
+                                fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at EncodedFile.ExtractFolder");
+                        }
+                    }
+
+                    sc = EncodedFile.DeleteFolder(sc, folderName, out string errMsg);
+
+                    if (errMsg != null)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+                    Assert.IsTrue(result);
+
+                    Assert.IsFalse(sc.Sections.ContainsKey(folderName));
+                    Assert.IsFalse(Ini.ContainsSection(destScript, folderName));
+
+                    List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
+                    Assert.IsFalse(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase));
+
+                    foreach (string fileName in fileDict.Keys)
+                    {
+                        Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("FolderExample", true);
+            Template("BannerImage", true);
+            Template(AuthorEncoded, true);
+            Template(InterfaceEncoded, true);
+            Template("ShouldFail", false);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_DeleteLogo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
+            string logoScriptPath = Path.Combine(scriptDir, "Blank.script");
+            string noLogoScriptPath = Path.Combine(scriptDir, "CompleteBlank.script");
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string testScriptPath, bool result)
+            {
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destScript = Path.Combine(destDir, "DeleteLogoTest.script");
+
+                Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(testScriptPath, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    sc = EncodedFile.DeleteLogo(sc, out string errMsg);
+
+                    if (errMsg != null)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+                    Assert.IsTrue(result);
+
+                    Assert.IsFalse(EncodedFile.ConatinsLogo(sc));
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template(logoScriptPath, true);
+            Template(noLogoScriptPath, false);
+        }
+        #endregion
+
+        #region SplitBase64
         [TestMethod]
         [TestCategory("EncodedFile")]
         public void SplitBase64_Encode()
@@ -540,6 +1015,9 @@ namespace PEBakery.Tests.Core
         #endregion
 
         #region Benchmark
+        /// <summary>
+        /// Benchmark compression ratio and speed of compression libraries
+        /// </summary>
         [TestMethod]
         [TestCategory("EncodedFile")]
         [SuppressMessage("ReSharper", "InconsistentNaming")]

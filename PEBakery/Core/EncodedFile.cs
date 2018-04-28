@@ -64,6 +64,9 @@ namespace PEBakery.Core
     WB082-generated zlib magic number always starts with 0x78.
     CodecWBZip is a combination of Type 1 and 2, choosing algorithm based on file extension.
 
+    See here for possible zlib stream magic numbers.
+    https://groups.google.com/forum/#!msg/comp.compression/_y2Wwn_Vq_E/EymIVcQ52cEJ
+
     [Type 1]
     Zlib Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
     - Used in most file.
@@ -74,6 +77,7 @@ namespace PEBakery.Core
 
     [Type 3] (PEBakery Only!)
     XZ Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
+    - Use this for ultimate compress ratio.
 
     [Type 4] (PEBakery Only!)
     LZ4 Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
@@ -110,13 +114,9 @@ namespace PEBakery.Core
     0x1C : When changed, WB082 thinks the encoded file is corrupted
     
     [Improvement Points]
-    - Use LZMA instead of zlib, for ultimate compression rate - DONE
-    - Zopfli support in place of zlib, for better compression rate with compability with WB082
+    - Zopfli support in place of zlib, for better compression rate while keeping compability with WB082
     - Design more robust script format. 
     */
-
-    // Possible zlib stream header
-    // https://groups.google.com/forum/#!msg/comp.compression/_y2Wwn_Vq_E/EymIVcQ52cEJ
 
     #region EncodedFile
     public class EncodedFile
@@ -158,7 +158,7 @@ namespace PEBakery.Core
         private const string AuthorEncoded = "AuthorEncoded";
         private const string InterfaceEncoded = "InterfaceEncoded";
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string GetSectionName(string dirName, string fileName) => $"EncodedFile-{dirName}-{fileName}";
+        private static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
         #endregion
 
         #region Dict ImageEncodeDict
@@ -301,7 +301,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ExtractFile, ExtractFolder
+        #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterfaceEncoded
         public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream)
         {
             if (sc == null)
@@ -426,8 +426,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region LogoExists
-        public static bool LogoExists(Script sc)
+        #region ContainsLogo
+        public static bool ConatinsLogo(Script sc)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -444,7 +444,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetFileInfo, GetFolderInfo, GetAllFilesInfo
+        #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
         public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
         {
             if (sc == null)
@@ -664,13 +664,13 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region DeleteFile
-        public static Script DeleteFile(Script sc, string dirName, string fileName, out string errorMsg)
+        #region DeleteFile, DeleteFolder, DeleteLogo
+        public static Script DeleteFile(Script sc, string folderName, string fileName, out string errorMsg)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
-            if (dirName == null)
-                throw new ArgumentNullException(nameof(dirName));
+            if (folderName == null)
+                throw new ArgumentNullException(nameof(folderName));
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
             errorMsg = null;
@@ -680,21 +680,39 @@ namespace PEBakery.Core
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
-                // Delete encoded file index
-                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, dirName);
-                if (dict == null)
+                if (!sc.Sections.ContainsKey(folderName))
                 {
-                    errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
-                }
-                else
-                {
-                    if (!Ini.DeleteKey(sc.RealPath, dirName, fileName))
-                        errorMsg = $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]";
+                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
+                    return sc;
                 }
 
+                // Get encoded file index
+                Dictionary<string, string> fileDict;
+                switch (sc.Sections[folderName].DataType)
+                {
+                    case SectionDataType.IniDict:
+                        fileDict = sc.Sections[folderName].GetIniDict();
+                        break;
+                    case SectionDataType.Lines:
+                        fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at EncodedFile.DeleteFile");
+                }
+
+                if (!fileDict.ContainsKey(fileName))
+                {
+                    errorMsg = $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]";
+                    return sc;
+                }
+
+                // Delete encoded file index
+                if (!Ini.DeleteKey(sc.RealPath, folderName, fileName))
+                    errorMsg = $"Unable to delete index of encoded file [{fileName}] from [{sc.RealPath}]";
+
                 // Delete encoded file section
-                if (!Ini.DeleteSection(sc.RealPath, GetSectionName(dirName, fileName)))
-                    errorMsg = $"Encoded file [{fileName}] not found in [{sc.RealPath}]";
+                if (!Ini.DeleteSection(sc.RealPath, GetSectionName(folderName, fileName)))
+                    errorMsg = $"Unable to delete encoded file [{fileName}] from [{sc.RealPath}]";
             }
             catch
             { // Error -> Rollback!
@@ -711,12 +729,12 @@ namespace PEBakery.Core
             return sc.Project.RefreshScript(sc);
         }
 
-        public static Script DeleteFolder(Script sc, string dirName, out string errorMsg)
+        public static Script DeleteFolder(Script sc, string folderName, out string errorMsg)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
-            if (dirName == null)
-                throw new ArgumentNullException(nameof(dirName));
+            if (folderName == null)
+                throw new ArgumentNullException(nameof(folderName));
             errorMsg = null;
 
             // Backup
@@ -724,40 +742,77 @@ namespace PEBakery.Core
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
-                List<string> folders = Ini.ParseIniSection(sc.RealPath, EncodedFolders);
-
-                // Delete index of encoded folder
-                if (folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)) == 0)
-                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
-                if (!Ini.DeleteSection(sc.RealPath, EncodedFolders))
-                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
-                foreach (string folder in folders.Where(x => !x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
-                    Ini.WriteRawLine(sc.RealPath, EncodedFolders, folder);
-
-                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, dirName);
-                if (dict == null)
+                if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                    !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 {
-                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                    if (!sc.Sections.ContainsKey(EncodedFolders))
+                    {
+                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
+                        return sc;
+                    }
+
+                    List<string> folders = Ini.FilterLines(sc.Sections[EncodedFolders].GetLines());
+                    int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
+                    if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
+                        return sc;
+                    }
+
+                    // Delete index of encoded folder
+                    folders.RemoveAt(idx);
+                    // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
+                    if (!Ini.DeleteSection(sc.RealPath, EncodedFolders))
+                    {
+                        errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
+                        return sc;
+                    }
+                    foreach (IniKey key in folders.Select(x => new IniKey(EncodedFolders, x)))
+                    {
+                        if (!Ini.WriteRawLine(sc.RealPath, key))
+                        {
+                            errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
+                            return sc;
+                        }
+                    }
+                }
+
+                if (!sc.Sections.ContainsKey(folderName))
+                {
+                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
                 }
                 else
                 {
-                    // Get index of files
-                    if (dirName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                    Dictionary<string, string> fileDict;
+                    switch (sc.Sections[folderName].DataType)
                     {
-                        if (dict.ContainsKey("Logo"))
-                            dict.Remove("Logo");
+                        case SectionDataType.IniDict:
+                            fileDict = sc.Sections[folderName].GetIniDict();
+                            break;
+                        case SectionDataType.Lines:
+                            fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
+                            break;
+                        default:
+                            throw new InternalException("Internal Logic Error at EncodedFile.DeleteFolder");
                     }
-                    var files = dict.Keys;
+
+                    // Get index of files
+                    if (folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (fileDict.ContainsKey("Logo"))
+                            fileDict.Remove("Logo");
+                    }
+                    var files = fileDict.Keys;
 
                     // Delete section [dirName]
-                    if (!Ini.DeleteSection(sc.RealPath, dirName))
-                        errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                    if (!Ini.DeleteSection(sc.RealPath, folderName))
+                        errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
 
                     // Delete encoded file section
                     foreach (string file in files)
                     {
-                        if (!Ini.DeleteSection(sc.RealPath, GetSectionName(dirName, file)))
-                            errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                        if (!Ini.DeleteSection(sc.RealPath, GetSectionName(folderName, file)))
+                            errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
                     }
                 }
             }
@@ -788,22 +843,33 @@ namespace PEBakery.Core
             {
                 errorMsg = null;
 
-                // Get filename of logo
-                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, AuthorEncoded);
-                if (dict == null)
+                // Get encoded file index
+                if (!sc.Sections.ContainsKey(AuthorEncoded))
                 {
                     errorMsg = $"Logo not found in [{sc.RealPath}]";
                     return sc;
+                }
+                Dictionary<string, string> fileDict;
+                switch (sc.Sections[AuthorEncoded].DataType)
+                {
+                    case SectionDataType.IniDict:
+                        fileDict = sc.Sections[AuthorEncoded].GetIniDict();
+                        break;
+                    case SectionDataType.Lines:
+                        fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[AuthorEncoded].GetLines());
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at EncodedFile.DeleteLogo");
                 }
 
-                if (!dict.ContainsKey("Logo"))
+                // Get filename of logo
+                if (!fileDict.ContainsKey("Logo"))
                 {
                     errorMsg = $"Logo not found in [{sc.RealPath}]";
                     return sc;
-                }
-                    
-                string logoFile = dict["Logo"];
-                if (!dict.ContainsKey(logoFile))
+                } 
+                string logoFile = fileDict["Logo"];
+                if (!fileDict.ContainsKey(logoFile))
                 {
                     errorMsg = $"Logo not found in [{sc.RealPath}]";
                     return sc;
@@ -1967,13 +2033,37 @@ namespace PEBakery.Core
     #endregion
 
     #region EncodedFileInfo
-    public class EncodedFileInfo
+    public class EncodedFileInfo : IEquatable<EncodedFileInfo>, ICloneable
     {
         public string DirName;
         public string FileName;
         public int RawSize;
         public int EncodedSize;
         public EncodedFile.EncodeMode? EncodeMode;
+
+        public bool Equals(EncodedFileInfo x)
+        {
+            if (x == null)
+                return false;
+
+            return DirName.Equals(x.DirName, StringComparison.OrdinalIgnoreCase) &&
+                   FileName.Equals(x.FileName, StringComparison.OrdinalIgnoreCase) &&
+                   RawSize == x.RawSize &&
+                   EncodedSize == x.EncodedSize &&
+                   EncodeMode == x.EncodeMode;
+        }
+
+        public object Clone()
+        {
+            return new EncodedFileInfo
+            {
+                DirName = DirName,
+                FileName = FileName,
+                RawSize = RawSize,
+                EncodedSize = EncodedSize,
+                EncodeMode = EncodeMode,
+            };
+        }
     }
     #endregion
 }

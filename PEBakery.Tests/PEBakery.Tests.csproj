@@ -95,6 +95,7 @@
     <Compile Include="Core\StringEscaperTests.cs" />
     <Compile Include="HelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestSetup.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ManagedWimLib\ManagedWimLib.csproj">
