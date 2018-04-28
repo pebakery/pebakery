@@ -1,0 +1,520 @@
+﻿/*
+    Derived from liblzma header files (Public Domain)
+
+    C# Wrapper written by Hajin Jang
+    Copyright (C) 2018 Hajin Jang
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace PEBakery.LZ4Lib
+{
+    // ReSharper disable once InconsistentNaming
+    public class LZ4FrameStream : Stream
+    {
+        #region Fields and Properties
+        // Field
+        private Stream _baseStream;
+        private readonly LZ4Mode _mode;
+        private readonly bool _leaveOpen;
+        private bool _disposed = false;
+
+        private IntPtr _cctx = IntPtr.Zero;
+        private IntPtr _dctx = IntPtr.Zero;
+
+        // Compression
+        private const int SrcBufSizeMax = 4 * 1024 * 1024; // 4MB
+        // private const int SrcBufSizeMax = 4096; // 4MB
+        // private const int SrcBufSizeMax = 1024 * 1024; // 4MB
+        private readonly uint _destBufSize; // 4MB
+
+
+        // Decompression
+        private const int DecompDone = -1;
+        private bool _firstRead = true;
+        private readonly byte[] _decompSrcBuf = new byte[SrcBufSizeMax];
+        private int _decompSrcIdx = 0;
+        private int _decompSrcCount = 0;
+
+        // Property
+        public Stream BaseStream => _baseStream;
+
+        public long TotalIn { get; private set; } = 0;
+        public long TotalOut { get; private set; } = 0;
+
+        // Const
+        // https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md
+        private static uint FrameVersion;
+        private readonly byte[] FrameMagicNumber = new byte[4] { 0x04, 0x22, 0x4D, 0x18 }; // 0x184D2204 (LE)
+        #endregion
+
+        #region Constructor
+        public LZ4FrameStream(Stream stream, LZ4Mode mode)
+            : this(stream, mode, 0, false) { }
+
+        public LZ4FrameStream(Stream stream, LZ4Mode mode, CompressionLevel compressionLevel)
+            : this(stream, mode, compressionLevel, false) { }
+
+        public LZ4FrameStream(Stream stream, LZ4Mode mode, bool leaveOpen)
+            : this(stream, mode, 0, leaveOpen) { }
+
+        public LZ4FrameStream(Stream stream, LZ4Mode mode, CompressionLevel compressionLevel, bool leaveOpen)
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
+
+            _baseStream = stream ?? throw new ArgumentNullException(nameof(stream));
+            _mode = mode;
+            _leaveOpen = leaveOpen;
+            _disposed = false;
+            
+            switch (mode)
+            {
+                case LZ4Mode.Compress:
+                {
+                    UIntPtr ret = NativeMethods.CreateFrameCompressionContext(ref _cctx, FrameVersion);
+                    LZ4FrameException.CheckLZ4Error(ret);
+
+                    FramePreferences prefs = new FramePreferences
+                    {
+                        // Use default value of lz4 cli
+                        FrameInfo = new FrameInfo
+                        {
+                            BlockSizeId = FrameBlockSizeId.Max4MB,
+                            BlockMode = FrameBlockMode.BlockLinked,
+                            ContentChecksumFlag = FrameContentChecksum.ContentChecksumEnabled,
+                            FrameType = FrameType.Frame,
+                            ContentSize = 0,
+                            DictId = 0,
+                            BlockChecksumFlag = FrameBlockChecksum.NoBlockChecksum,
+                        },
+                        CompressionLevel = (int)compressionLevel,
+                        AutoFlush = 1,
+                    };
+
+                    UIntPtr frameSizeVal = NativeMethods.FrameCompressionBound((UIntPtr) SrcBufSizeMax, prefs);
+                    Debug.Assert(frameSizeVal.ToUInt64() <= int.MaxValue);
+
+                    uint frameSize = frameSizeVal.ToUInt32();
+                    if (SrcBufSizeMax < frameSize)
+                        _destBufSize = frameSize;
+
+                    byte[] destBuf = new byte[_destBufSize];
+                    using (PinnedArray dstBufPin = new PinnedArray(destBuf))
+                    {
+                        UIntPtr headerSizeVal = NativeMethods.FrameCompressionBegin(_cctx, dstBufPin, (UIntPtr)SrcBufSizeMax, prefs);
+                        LZ4FrameException.CheckLZ4Error(headerSizeVal);
+
+                        Debug.Assert(headerSizeVal.ToUInt64() < int.MaxValue);
+
+                        int headerSize = (int)headerSizeVal.ToUInt32();
+                        _baseStream.Write(destBuf, 0, headerSize);
+                        TotalOut += headerSize;
+                    }
+                    break;
+                }
+                case LZ4Mode.Decompress:
+                {
+                    UIntPtr ret = NativeMethods.CreateFrameDecompressionContext(ref _dctx, FrameVersion);
+                    LZ4FrameException.CheckLZ4Error(ret);
+                   
+                    byte[] headerBuf = new byte[4];
+                    int readHeaderSize = _baseStream.Read(headerBuf, 0, 4);
+                    TotalIn += 4;
+
+                    if (readHeaderSize != 4 || !headerBuf.SequenceEqual(FrameMagicNumber))
+                    throw new InvalidDataException("BaseStream is not a valid LZ4 Frame Format");
+
+                    /*
+                    using (PinnedArray pinSrc = new PinnedArray(headerBuf))
+                    using (PinnedArray pinDest = new PinnedArray(destBuf))
+                    {
+                        UIntPtr nextToRunVal = NativeMethods.FrameDecompress(_dctx, pinDest, ref destBufSizePtr, pinSrc, ref headerBufSize, null);
+                        LZ4FrameException.CheckLZ4Error(nextToRunVal);
+
+                        Debug.Assert(destBufSizePtr.ToUInt64() <= int.MaxValue);
+                        int destBufSize = (int)destBufSizePtr.ToUInt32();
+
+                        _baseStream.Write(destBuf, 0, destBufSize);
+                        TotalOut += destBufSize;
+                    }
+                    */
+                    break;
+                }    
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode));
+            }
+        }
+        #endregion
+
+        #region Disposable Pattern
+        ~LZ4FrameStream()
+        {
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_disposed)
+            {
+                if (_cctx != IntPtr.Zero)
+                { // Compress
+                    FinishWrite();
+
+                    UIntPtr ret = NativeMethods.FreeFrameCompressionContext(_cctx);
+                    LZ4FrameException.CheckLZ4Error(ret);
+
+                    _cctx = IntPtr.Zero;
+                }
+
+                if (_dctx != IntPtr.Zero)
+                {
+                    UIntPtr ret = NativeMethods.FreeFrameDecompressionContext(_dctx);
+                    LZ4FrameException.CheckLZ4Error(ret);
+
+                    _dctx = IntPtr.Zero;
+                    
+                }
+
+                if (_baseStream != null)
+                {
+                    Flush();
+                    if (!_leaveOpen)
+                        _baseStream.Dispose();
+                    _baseStream = null;
+                }
+                
+                _disposed = true;
+            }
+        }
+
+        public override void Close()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+
+        #region Global - (Static) GlobalInit, GlobalCleanup
+        public static void GlobalInit(string dllPath)
+        {
+            if (NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.MsgAlreadyInited);
+
+            if (dllPath == null)
+                throw new ArgumentNullException(nameof(dllPath));
+            if (!File.Exists(dllPath))
+                throw new FileNotFoundException("Specified dll does not exist");
+
+            NativeMethods.hModule = NativeMethods.LoadLibrary(dllPath);
+            if (NativeMethods.hModule.IsInvalid)
+                throw new ArgumentException($"Unable to load [{dllPath}]", new Win32Exception());
+
+            // Check if dll is valid (liblz4.so.1.8.1.dll)
+            if (NativeMethods.GetProcAddress(NativeMethods.hModule, "LZ4F_getVersion") == IntPtr.Zero)
+            {
+                GlobalCleanup();
+                throw new ArgumentException($"[{dllPath}] is not a valid LZ4 library");
+            }
+
+            try
+            {
+                NativeMethods.LoadFuntions();
+
+                FrameVersion = NativeMethods.GetFrameVersion();
+            }
+            catch (Exception)
+            {
+                GlobalCleanup();
+                throw;
+            }
+        }
+
+        public static void GlobalCleanup()
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
+
+            NativeMethods.ResetFuntions();
+
+            NativeMethods.hModule.Close();
+            NativeMethods.hModule = null;
+        }
+        #endregion
+
+        #region Version - (Static)
+        public static Version LibraryVersion()
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
+
+            /*
+                Definition from "lz4.h"
+
+                #define LZ4_VERSION_MAJOR    1 
+                #define LZ4_VERSION_MINOR    8 
+                #define LZ4_VERSION_RELEASE  1 
+
+                #define LZ4_VERSION_NUMBER (LZ4_VERSION_MAJOR *100*100 + LZ4_VERSION_MINOR *100 + LZ4_VERSION_RELEASE)
+
+                #define LZ4_LIB_VERSION LZ4_VERSION_MAJOR.LZ4_VERSION_MINOR.LZ4_VERSION_RELEASE
+            */
+
+            int verInt = (int)NativeMethods.VersionNumber();
+            int major = verInt / 10000;
+            int minor = verInt % 10000 / 100;
+            int revision = verInt % 100;
+
+            return new Version(major, minor, revision);
+        }
+
+        public static string LibraryVersionString()
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
+
+            return NativeMethods.VersionString();
+        }
+        #endregion
+
+        #region Stream Methods
+        /// <summary>
+        /// For Decompress
+        /// </summary>
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_mode != LZ4Mode.Decompress)
+                throw new NotSupportedException("Read() not supported on compression");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (count < 0 || buffer.Length < offset + count)
+                throw new ArgumentOutOfRangeException(nameof(count));
+            if (count == 0)
+                return 0;
+
+            /*
+             *  The number of bytes consumed from srcBuffer will be written into *srcSizePtr (necessarily <= original value).
+             *  The number of bytes decompressed into dstBuffer will be written into *dstSizePtr (necessarily <= original value).
+             *
+             *  The function does not necessarily read all input bytes, so always check value in *srcSizePtr.
+             *  Unconsumed source data must be presented again in subsequent invocations.
+             *
+             * `dstBuffer` can freely change between each consecutive function invocation.
+             * `dstBuffer` content will be overwritten.
+             */
+
+            int readSize = 0;
+
+            int destIdx = offset;
+            int destCount = count;
+            int destEndIdx = offset + count;
+
+            using (PinnedArray pinSrc = new PinnedArray(_decompSrcBuf))
+            using (PinnedArray pinDest = new PinnedArray(buffer))
+            {
+                if (_firstRead)
+                {
+                    using (PinnedArray pinHeader = new PinnedArray(FrameMagicNumber))
+                    { // Write FrameMagicNumber into LZ4F_decompress
+                        UIntPtr headerSizeVal = (UIntPtr)4;
+                        UIntPtr destCountVal = (UIntPtr)destCount;
+
+                        UIntPtr ret = NativeMethods.FrameDecompress(_dctx, pinDest[destIdx], ref destCountVal, pinHeader, ref headerSizeVal, null);
+                        LZ4FrameException.CheckLZ4Error(ret);
+
+                        Debug.Assert(headerSizeVal.ToUInt64() <= int.MaxValue);
+                        Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
+
+                        if (headerSizeVal.ToUInt32() != 4u)
+                            throw new InvalidOperationException("Not enough dest buffer");
+                        int destWritten = (int)destCountVal.ToUInt32();
+
+                        destIdx += destWritten;
+                        TotalOut += destWritten;
+                    }
+
+                    _firstRead = false;
+                }
+
+                while (destIdx < destEndIdx)
+                {
+                    if (_decompSrcIdx == _decompSrcCount)
+                    {
+                        // Read from _baseStream
+                        _decompSrcIdx = 0;
+                        _decompSrcCount = _baseStream.Read(_decompSrcBuf, 0, _decompSrcBuf.Length);
+                        TotalIn += _decompSrcCount;
+
+                        // _baseStream reached its end
+                        if (_decompSrcCount == 0)
+                        {
+                            _decompSrcIdx = DecompDone;
+                            break;
+                        }
+                    }
+
+                    UIntPtr srcCountVal = (UIntPtr)(_decompSrcCount - _decompSrcIdx);
+                    UIntPtr destCountVal = (UIntPtr)destCount;
+
+                    UIntPtr ret = NativeMethods.FrameDecompress(_dctx, pinDest[destIdx], ref destCountVal, pinSrc[_decompSrcIdx], ref srcCountVal, null);
+                    LZ4FrameException.CheckLZ4Error(ret);
+
+                    // The number of bytes consumed from srcBuffer will be written into *srcSizePtr (necessarily <= original value).
+                    Debug.Assert(srcCountVal.ToUInt64() <= int.MaxValue);
+                    int srcConsumed = (int)srcCountVal.ToUInt32();
+                    _decompSrcIdx += srcConsumed;
+                    Debug.Assert(_decompSrcIdx <= _decompSrcCount);
+
+                    // The number of bytes decompressed into dstBuffer will be written into *dstSizePtr (necessarily <= original value).
+                    Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
+                    int destWritten = (int)destCountVal.ToUInt32();
+                    destIdx += destWritten;
+                    TotalOut += destWritten;
+                    readSize += destWritten;
+                }
+            }
+
+            return readSize;
+        }
+
+        /// <summary>
+        /// For Compress
+        /// </summary>
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (_mode != LZ4Mode.Compress)
+                throw new NotSupportedException("Write() not supported on decompression");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (count < 0 || buffer.Length < offset + count)
+                throw new ArgumentOutOfRangeException(nameof(count));
+            if (count == 0)
+                return;
+
+            byte[] destBuf = new byte[_destBufSize];
+
+            using (PinnedArray pinSrc = new PinnedArray(buffer))
+            using (PinnedArray pinDest = new PinnedArray(destBuf))
+            {
+                while (0 < count)
+                {
+                    int srcWorkSize = SrcBufSizeMax < count ? SrcBufSizeMax : count;
+
+                    UIntPtr outSizeVal = NativeMethods.FrameCompressionUpdate(_cctx, pinDest, (UIntPtr)_destBufSize, pinSrc[offset], (UIntPtr)srcWorkSize, null);
+                    LZ4FrameException.CheckLZ4Error(outSizeVal);
+
+                    Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
+                    int outSize = (int) outSizeVal.ToUInt64();
+
+                    _baseStream.Write(destBuf, 0, outSize);
+                    TotalOut += outSize;
+
+                    offset += srcWorkSize;
+                    count -= srcWorkSize;
+                    Debug.Assert(0 <= count, $"0 <= {count}");
+                }
+            }
+
+            TotalIn += count;
+        }
+
+        private void FinishWrite()
+        {
+            Debug.Assert(_mode == LZ4Mode.Compress, "FinishWrite() must not be called in decompression");
+
+            byte[] destBuf = new byte[SrcBufSizeMax];
+            using (PinnedArray pinDest = new PinnedArray(destBuf))
+            {
+                UIntPtr outSizeVal = NativeMethods.FrameCompressionEnd(_cctx, pinDest, (UIntPtr)_destBufSize, null);
+                LZ4FrameException.CheckLZ4Error(outSizeVal);
+
+                Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
+                int outSize = (int)outSizeVal.ToUInt64();
+
+                _baseStream.Write(destBuf, 0, outSize);
+                TotalOut += outSize;
+            }
+        }
+
+        public override void Flush()
+        {
+            _baseStream.Flush();
+        }
+
+        public override bool CanRead => _mode == LZ4Mode.Decompress && _baseStream.CanRead;
+        public override bool CanWrite => _mode == LZ4Mode.Compress && _baseStream.CanWrite;
+        public override bool CanSeek => false;
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException("Seek() not supported");
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException("SetLength not supported");
+        }
+
+        public override long Length => throw new NotSupportedException("Length not supported");
+
+        public override long Position
+        {
+            get => throw new NotSupportedException("Position not supported");
+            set => throw new NotSupportedException("Position not supported");
+        }
+
+        public double CompressionRatio
+        {
+            get
+            {
+                switch (_mode)
+                {
+                    case LZ4Mode.Compress:
+                        if (TotalIn == 0)
+                            return 0;
+                        return 100 - TotalOut * 100.0 / TotalIn;
+                    case LZ4Mode.Decompress:
+                        if (TotalOut == 0)
+                            return 0;
+                        return 100 - TotalIn * 100.0 / TotalOut;
+                    default:
+                        throw new InvalidOperationException("Internal Logic Error at LZ4Stream.CompressionRatio()");
+                }
+            }
+        }
+        #endregion
+    }
+}

@@ -33,6 +33,8 @@ bld/
 !/ManagedWimLib/Precompiled/x64/
 !/PEBakery.XZLib/Precompiled/x86/
 !/PEBakery.XZLib/Precompiled/x64/
+!/PEBakery.LZ4Lib/Precompiled/x86/
+!/PEBakery.LZ4Lib/Precompiled/x64/
 
 # Visual Studio 2015 cache/options directory
 .vs/
