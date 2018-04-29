@@ -123,6 +123,50 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
+        #region ContainsFile
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ContainsFile()
+        {
+            void Template(string scriptPath, string folderName, string fileName, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", scriptPath);
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+                Assert.AreEqual(EncodedFile.ContainsFile(sc, folderName, fileName), result);
+            }
+
+            Template("ExtractFileTests.script", "FolderExample", "Type1.jpg", true);
+            Template("ExtractFileTests.script", "FolderExample", "ShouldFail", false);
+            Template("ExtractFileTests.script", "ShouldFail", "Type2.7z", false);
+            Template("CompleteBlank.script", "ShouldFail", "ShouldFail", false);
+        }
+        #endregion
+
+        #region ContainsLogo
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ContainsLogo()
+        {
+            void Template(string fileName, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+                Assert.AreEqual(EncodedFile.ContainsLogo(sc), result);
+            }
+
+            Template("Blank.script", true);
+            Template("CompleteBlank.script", false);
+        }
+        #endregion
+
         #region AddFolder
         [TestMethod]
         [TestCategory("EncodedFile")]
@@ -414,26 +458,7 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
-        #region ContainsLogo
-        [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void EncodedFile_ContainsLogo()
-        {
-            void Template(string fileName, bool result)
-            {
-                EngineState s = EngineTests.CreateEngineState();
-                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
-                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
-
-                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
-
-                Assert.AreEqual(EncodedFile.ConatinsLogo(sc), result);
-            }
-
-            Template("Blank.script", true);
-            Template("CompleteBlank.script", false);
-        }
-        #endregion
+        
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
         [TestMethod]
@@ -880,7 +905,7 @@ namespace PEBakery.Tests.Core
                     }
                     Assert.IsTrue(result);
 
-                    Assert.IsFalse(EncodedFile.ConatinsLogo(sc));
+                    Assert.IsFalse(EncodedFile.ContainsLogo(sc));
                 }
                 finally
                 {

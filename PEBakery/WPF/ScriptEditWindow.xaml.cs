@@ -58,7 +58,9 @@ namespace PEBakery.WPF
             catch (Exception e)
             { // Rollback Count to 0
                 Interlocked.Decrement(ref Count);
+
                 App.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
+                MessageBox.Show($"[Error Message]\r\n{e.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -79,7 +81,7 @@ namespace PEBakery.WPF
             */
 
             // General
-            if (EncodedFile.ConatinsLogo(_sc))
+            if (EncodedFile.ContainsLogo(_sc))
             {
                 m.ScriptLogoImage = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
                 m.ScriptLogoInfo = EncodedFile.GetLogoInfo(_sc, true);
@@ -229,7 +231,7 @@ namespace PEBakery.WPF
 
         private void ScriptLogoExtractButton_Click(object sender, RoutedEventArgs e)
         {
-            if (EncodedFile.ConatinsLogo(_sc))
+            if (EncodedFile.ContainsLogo(_sc))
             {
                 using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
                 {
@@ -270,7 +272,7 @@ namespace PEBakery.WPF
 
         private void ScriptLogoDeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (EncodedFile.ConatinsLogo(_sc))
+            if (EncodedFile.ContainsLogo(_sc))
             {
                 _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
                 if (errorMsg == null)
@@ -453,6 +455,14 @@ namespace PEBakery.WPF
 
             Debug.Assert(item.Detail == null);
 
+            MessageBoxResult result = MessageBox.Show(
+                $"Are you sure to delete [{item.Name}]?",
+                "Delete Confirm",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Error);
+            if (result == MessageBoxResult.No)
+                return;
+
             _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
             if (errMsg == null)
             {
@@ -467,8 +477,8 @@ namespace PEBakery.WPF
                 MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        
-        private void AttachFileButton_Click(object sender, RoutedEventArgs e)
+
+        private void AttachNewFileChooseButto_Click(object sender, RoutedEventArgs e)
         {
             AttachedFileItem item = m.AttachSelected;
             if (item == null)
@@ -483,22 +493,76 @@ namespace PEBakery.WPF
 
             if (dialog.ShowDialog() == true)
             {
-                string srcFile = dialog.FileName;
-                try
-                {
-                    string srcFileName = System.IO.Path.GetFileName(srcFile);
-                    _sc = EncodedFile.AttachFile(_sc, item.Name, srcFileName, srcFile);
-                    MessageBox.Show("File successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                m.AttachNewFilePath = dialog.FileName;
+                m.AttachNewFileName = System.IO.Path.GetFileName(dialog.FileName);
+            }
+        }
 
-                    ReadScriptAttachment();
-                    m.AttachSelected = null;
-                    m.UpdateAttachFileDetail();
-                }
-                catch (Exception ex)
+        private void AttachFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
+                return;
+
+            Debug.Assert(item.Detail == null);
+
+            string srcFile = m.AttachNewFilePath;
+            if (!File.Exists(srcFile))
+            {
+                MessageBox.Show($"Unable to find file [{srcFile}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(m.AttachNewFileName))
+            {
+                MessageBox.Show("File name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            EncodedFile.EncodeMode mode;
+            switch (m.AttachNewCompressionIndex)
+            {
+                case 0:
+                    mode = EncodedFile.EncodeMode.Raw;
+                    break;
+                case 1:
+                    mode = EncodedFile.EncodeMode.ZLib;
+                    break;
+                case 2:
+                    mode = EncodedFile.EncodeMode.XZ;
+                    break;
+                default:
+                    MessageBox.Show("Internal Logic Error at ScriptEditWindow.AttachFileButton_Click", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+            }
+                
+            try
+            {
+                if (EncodedFile.ContainsFile(_sc, item.Name, m.AttachNewFileName))
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show("Attach failed.\r\nSee system log for details.", "Attach Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBoxResult result = MessageBox.Show(
+                        $"Attached file [{m.AttachNewFileName}] will be overwritten.\r\nContinue?",
+                        "Confirm", 
+                        MessageBoxButton.YesNo, 
+                        MessageBoxImage.Error);
+                    if (result == MessageBoxResult.No)
+                        return;
                 }
+
+                _sc = EncodedFile.AttachFile(_sc, item.Name, m.AttachNewFileName, srcFile, mode);
+                MessageBox.Show("File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                m.AttachNewFilePath = string.Empty;
+                m.AttachNewFileName = string.Empty;
+
+                ReadScriptAttachment();
+                m.AttachSelected = null;
+                m.UpdateAttachFileDetail();
+            }
+            catch (Exception ex)
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -551,29 +615,24 @@ namespace PEBakery.WPF
             EncodedFileInfo info = item.Detail;
 
             MessageBoxResult result = MessageBox.Show(
-                $"Are you sure to delete [{info.DirName}\\{info.FileName}]?",
+                $"Are you sure to delete [{info.FileName}]?",
                 "Delete Confirm",
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
+                return;
 
-            if (result == MessageBoxResult.Yes)
+            _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
+            if (errMsg == null)
             {
-                _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
-                if (errMsg == null)
-                {
-                    ReadScriptAttachment();
+                ReadScriptAttachment();
 
-                    m.AttachSelected = null;
-                    m.UpdateAttachFileDetail();
-                }
-                else // Failure
-                {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                m.AttachSelected = null;
+                m.UpdateAttachFileDetail();
             }
-            else if (result != MessageBoxResult.No)
+            else // Failure
             {
-                throw new InternalException("Internal Logic Error at ScriptEditWindow.DeleteFileButton_Click");
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -599,9 +658,8 @@ namespace PEBakery.WPF
             // Only in Tab [General]
             e.CanExecute = m.TabIndex == 0;
         }
-        #endregion
 
-        
+        #endregion
     }
     #endregion
 
@@ -624,6 +682,7 @@ namespace PEBakery.WPF
             Panel.SetZIndex(canvas, -1);
 
             InterfaceCanvas = canvas;
+
         }
         #endregion
 
@@ -849,7 +908,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Empty value
 
-                return ScriptLogoInfo.EncodeMode == null ? string.Empty : ScriptLogoInfo.EncodeMode.ToString();
+                return ScriptLogoInfo.EncodeMode == null ? string.Empty : EncodedFile.EncodeModeStr(ScriptLogoInfo.EncodeMode, false);
             }
         }
         #endregion
@@ -977,7 +1036,40 @@ namespace PEBakery.WPF
                     return string.Empty; // Empty value
                 Debug.Assert(AttachSelected.Detail != null);
 
-                return AttachSelected.Detail.EncodeMode == null ? "-" : AttachSelected.Detail.EncodeMode.ToString();
+                return AttachSelected.Detail.EncodeMode == null ? "-" : EncodedFile.EncodeModeStr(AttachSelected.Detail.EncodeMode, false);
+            }
+        }
+
+        private string _attachNewFilePath = string.Empty;
+        public string AttachNewFilePath
+        {
+            get => _attachNewFilePath;
+            set
+            {
+                _attachNewFilePath = value;
+                OnPropertyUpdate(nameof(AttachNewFilePath));
+            }
+        }
+
+        private string _attachNewFileName = string.Empty;
+        public string AttachNewFileName
+        {
+            get => _attachNewFileName;
+            set
+            {
+                _attachNewFileName = value;
+                OnPropertyUpdate(nameof(AttachNewFileName));
+            }
+        }
+
+        private int _attachNewCompressionIndex = 1;
+        public int AttachNewCompressionIndex
+        {
+            get => _attachNewCompressionIndex;
+            set
+            {
+                _attachNewCompressionIndex = value;
+                OnPropertyUpdate(nameof(AttachNewCompressionIndex));
             }
         }
         #endregion

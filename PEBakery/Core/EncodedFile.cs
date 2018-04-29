@@ -133,14 +133,14 @@ namespace PEBakery.Core
 #endif
         }
 
-        public EncodeMode ParseEncodeMode(string str)
+        public static EncodeMode ParseEncodeMode(string str)
         {
             EncodeMode mode;
-            if (str.Equals("ZLib", StringComparison.OrdinalIgnoreCase))
+            if (str.Equals("ZLib", StringComparison.OrdinalIgnoreCase) || str.Equals("Deflate", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.ZLib;
             else if (str.Equals("Raw", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.Raw;
-            else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase))
+            else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase) || str.Equals("LZMA2", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.XZ;
 #if ENABLE_LZ4
             else if (str.Equals("LZ4", StringComparison.OrdinalIgnoreCase))
@@ -150,6 +150,33 @@ namespace PEBakery.Core
                 throw new ArgumentException($"Wrong EncodeMode [{str}]");
 
             return mode;
+        }
+
+        public static string EncodeModeStr(EncodeMode? mode, bool containerName)
+        {
+            return mode == null ? "Unknown" : EncodeModeStr((EncodeMode) mode, containerName);
+        }
+
+        public static string EncodeModeStr(EncodeMode mode, bool containerName)
+        {
+            if (containerName)
+                return mode.ToString();
+
+            switch (mode)
+            {
+                case EncodeMode.ZLib:
+                    return "Deflate";
+                case EncodeMode.Raw:
+                    return "Raw";
+                case EncodeMode.XZ:
+                    return "LZMA2";
+#if ENABLE_LZ4
+                case EncodeMode.LZ4:
+                    return "LZ4";
+#endif
+                default:
+                    throw new ArgumentException($"Wrong EncodeMode [{mode}]");
+            }
         }
         #endregion
 
@@ -177,7 +204,7 @@ namespace PEBakery.Core
             });
         #endregion
 
-        #region AttachFile
+        #region AttachFile, ContainsFile
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
@@ -204,9 +231,34 @@ namespace PEBakery.Core
 
             return Encode(sc, dirName, fileName, srcBuffer, type, false);
         }
+
+        public static bool ContainsFile(Script sc, string folderName, string fileName)
+        {
+            if (!sc.Sections.ContainsKey(folderName))
+                return false;
+
+            // Get encoded file index
+            Dictionary<string, string> fileDict;
+            switch (sc.Sections[folderName].DataType)
+            {
+                case SectionDataType.IniDict:
+                    fileDict = sc.Sections[folderName].GetIniDict();
+                    break;
+                case SectionDataType.Lines:
+                    fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
+                    break;
+                default:
+                    throw new InternalException("Internal Logic Error at EncodedFile.DeleteFile");
+            }
+
+            if (!fileDict.ContainsKey(fileName))
+                return false;
+
+            return sc.Sections.ContainsKey(GetSectionName(folderName, fileName));
+        }
         #endregion
 
-        #region AttachLogo
+        #region AttachLogo, ContainsLogo
         public static Script AttachLogo(Script sc, string fileName, string srcFilePath)
         {
             if (sc == null)
@@ -237,6 +289,22 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(sc));
 
             return Encode(sc, dirName, fileName, srcBuffer, type, true);
+        }
+
+        public static bool ContainsLogo(Script sc)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            if (!sc.Sections.ContainsKey(AuthorEncoded))
+                return false;
+
+            Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].GetIniDict();
+            if (!fileDict.ContainsKey("Logo"))
+                return false;
+
+            string logoName = fileDict["Logo"];
+            return sc.Sections.ContainsKey(GetSectionName(AuthorEncoded, logoName));
         }
         #endregion
 
@@ -423,24 +491,6 @@ namespace PEBakery.Core
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return DecodeInMemory(encoded);
-        }
-        #endregion
-
-        #region ContainsLogo
-        public static bool ConatinsLogo(Script sc)
-        {
-            if (sc == null)
-                throw new ArgumentNullException(nameof(sc));
-
-            if (!sc.Sections.ContainsKey(AuthorEncoded))
-                return false;
-
-            Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].GetIniDict();
-            if (!fileDict.ContainsKey("Logo"))
-                return false;
-
-            string logoName = fileDict["Logo"];
-            return sc.Sections.ContainsKey(GetSectionName(AuthorEncoded, logoName));
         }
         #endregion
 

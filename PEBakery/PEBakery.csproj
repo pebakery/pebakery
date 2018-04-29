@@ -193,6 +193,7 @@
     <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Core\Logger.cs" />
+    <Compile Include="WPF\Controls\DragCanvas.cs" />
     <Compile Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml.cs">
       <DependentUpon>FreeNumberBox.xaml</DependentUpon>
     </Compile>

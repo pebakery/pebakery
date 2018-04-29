@@ -567,82 +567,172 @@
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
+                            <!-- AddFolderButton -->
+                            <GroupBox Header="Add Folder"
+                                      Margin="5, 5, 0, 0"
+                                      BorderBrush="Gray"
+                                      Visibility="{Binding AttachAddFolderVisiblity}">
+                                <Grid Margin="3, 0, 3, 2" Height="25">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="120"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Margin="0, 0, 10, 0"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontWeight="Bold"
+                                               Text="Folder Name"/>
+                                    <TextBox Grid.Column="1"
+                                             Margin="0, 0, 5, 0"
+                                             x:Name="AddFolderTextBox"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding AddFolderName}"/>
+                                    <Button Grid.Column="2"
+                                            x:Name="AddFolderButton"
+                                            VerticalAlignment="Top"
+                                            HorizontalAlignment="Left"
+                                            Width="120" Height="25"
+                                            Click="AddFolderButton_Click"
+                                            Visibility="{Binding AttachAddFolderVisiblity}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FolderPlus"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Add Folder"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </GroupBox>
                             <!-- Detail of Attached Folder -->
-                            <StackPanel Margin="5, 5, 0, 0"
-                                        Orientation="Horizontal"
+                            <StackPanel Margin="5, 0, 0, 0"
+                                        Orientation="Vertical"
                                         Visibility="{Binding AttachDetailFolderVisiblity}">
-                                <Button x:Name="AttachFileButton"
-                                        Margin="0, 0, 5, 0"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Top"
-                                        Width="120" Height="25"
-                                        Click="AttachFileButton_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="FilePlus"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Attach File"
-                                                   VerticalAlignment="Center"/>
+                                <GroupBox Header="Attach File"
+                                          Margin="0, 0, 0, 5"
+                                          BorderBrush="Gray">
+                                    <StackPanel Margin="3, 0, 3, 2"
+                                                Orientation="Vertical">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="120"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="30"/>
+                                                <RowDefinition Height="30"/>
+                                                <RowDefinition Height="25"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                                       Margin="0, 0, 10, 5"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="Path"/>
+                                            <TextBox Grid.Row="0" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     Margin="0, 0, 5, 5"
+                                                     Text="{Binding AttachNewFilePath}"/>
+                                            <Button Grid.Row="0" Grid.Column="2"
+                                                    Margin="0, 0, 0, 5"
+                                                    x:Name="AttachNewFileChooseButton"
+                                                    Click="AttachNewFileChooseButto_Click"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Width="120" >
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="FolderOpen"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="0, 5, 5, 5"/>
+                                                    <TextBlock Text="Choose"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                                       Margin="0, 0, 10, 5"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="File Name"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     Margin="0, 0, 5, 5"
+                                                     Text="{Binding AttachNewFileName}"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                                       Margin="0, 0, 10, 0"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="Compression"/>
+                                            <ComboBox Grid.Row="2" Grid.Column="1"
+                                                      Margin="0, 0, 5, 0"
+                                                      VerticalContentAlignment="Center"
+                                                      SelectedIndex="{Binding AttachNewCompressionIndex}">
+                                                <ComboBoxItem Content="Raw"/>
+                                                <ComboBoxItem Content="Deflate"/>
+                                                <ComboBoxItem Content="LZMA2"/>
+                                            </ComboBox>
+                                            <Button Grid.Row="2" Grid.Column="2"
+                                                    x:Name="AttachFileButton"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Width="120" Height="25"
+                                                    Click="AttachFileButton_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="FilePlus"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="0, 5, 5, 5"/>
+                                                    <TextBlock Text="Attach File"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
                                     </StackPanel>
-                                </Button>
-                                <Button Margin="0, 0, 5, 0"
+                                </GroupBox>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Margin="0, 0, 5, 0"
                                         x:Name="ExtractFolderButton"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Width="120" Height="25"
                                         Click="ExtractFolderButton_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Export"
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Export"
                                                                     Width="Auto"
                                                                     Height="Auto"
                                                                     Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Extract Folder"
+                                            <TextBlock Text="Extract Folder"
                                                    VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="RemoveFolderButton"
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="RemoveFolderButton"
                                         Margin="0, 0, 5, 0"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Width="120" Height="25"
                                         Click="DeleteFolderButton_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="FolderRemove"
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Delete Folder"
+                                            <TextBlock Text="Delete Folder"
                                            VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </StackPanel>
-                            <!-- AddFolderButton -->
-                            <StackPanel Margin="5, 5, 0, 0"
-                                        Orientation="Horizontal"
-                                        Visibility="{Binding AttachAddFolderVisiblity}">
-                                <TextBox Margin="0, 0, 5, 0"
-                                         x:Name="AddFolderTextBox"
-                                         Width="245" Height="25"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding AddFolderName}"/>
-                                <Button Margin="0, 0, 5, 0"
-                                        x:Name="AddFolderButton"
-                                        VerticalAlignment="Top"
-                                        HorizontalAlignment="Left"
-                                        Width="120" Height="25"
-                                        Click="AddFolderButton_Click"
-                                        Visibility="{Binding AttachAddFolderVisiblity}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="FolderPlus"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Add Folder"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            
                         </StackPanel>
                     </Border>
                 </Grid>
