@@ -228,7 +228,7 @@ namespace PEBakery.Core.Commands
                     mode = EncodedFile.EncodeMode.Raw;
                 else if (encodeModeStr.Equals("Deflate", StringComparison.OrdinalIgnoreCase))
                     mode = EncodedFile.EncodeMode.ZLib;
-                else if (encodeModeStr.Equals("LZMA", StringComparison.OrdinalIgnoreCase))
+                else if (encodeModeStr.Equals("LZMA2", StringComparison.OrdinalIgnoreCase))
                     mode = EncodedFile.EncodeMode.XZ;
                 else
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");

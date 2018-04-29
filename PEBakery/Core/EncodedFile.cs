@@ -138,7 +138,7 @@ namespace PEBakery.Core
             EncodeMode mode;
             if (str.Equals("ZLib", StringComparison.OrdinalIgnoreCase) || str.Equals("Deflate", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.ZLib;
-            else if (str.Equals("Raw", StringComparison.OrdinalIgnoreCase))
+            else if (str.Equals("Raw", StringComparison.OrdinalIgnoreCase) || str.Equals("None", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.Raw;
             else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase) || str.Equals("LZMA2", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.XZ;
@@ -167,7 +167,7 @@ namespace PEBakery.Core
                 case EncodeMode.ZLib:
                     return "Deflate";
                 case EncodeMode.Raw:
-                    return "Raw";
+                    return "None";
                 case EncodeMode.XZ:
                     return "LZMA2";
 #if ENABLE_LZ4
