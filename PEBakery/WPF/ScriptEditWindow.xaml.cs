@@ -4,20 +4,13 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
@@ -51,6 +44,7 @@ namespace PEBakery.WPF
 
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
+                m.InterfaceCanvas.UIElementDragEvent += InterfaceCanvas_UIElementDragEvent;
 
                 ReadScriptGeneral();
                 ReadScriptAttachment();
@@ -189,6 +183,8 @@ namespace PEBakery.WPF
             DialogResult = m.ScriptHeaderUpdated;
 
             Tag = _sc;
+
+            m.InterfaceCanvas.UIElementDragEvent -= InterfaceCanvas_UIElementDragEvent;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -325,6 +321,15 @@ namespace PEBakery.WPF
         private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void InterfaceCanvas_UIElementDragEvent(object sender, EditCanvas.UIElementDragEventArgs e)
+        {
+            UIElement element = e.Element;
+            double x = Canvas.GetLeft(element);
+            double y = Canvas.GetTop(element);
+
+            App.Logger.SystemWrite(new LogInfo(LogState.Info, $"[Debug] Element moved to {x}, {y}"));
         }
         #endregion
 
@@ -494,7 +499,7 @@ namespace PEBakery.WPF
             if (dialog.ShowDialog() == true)
             {
                 m.AttachNewFilePath = dialog.FileName;
-                m.AttachNewFileName = System.IO.Path.GetFileName(dialog.FileName);
+                m.AttachNewFileName = Path.GetFileName(dialog.FileName);
             }
         }
 
@@ -671,7 +676,7 @@ namespace PEBakery.WPF
         {
             ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
 
-            Canvas canvas = new Canvas
+            EditCanvas canvas = new EditCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -682,7 +687,6 @@ namespace PEBakery.WPF
             Panel.SetZIndex(canvas, -1);
 
             InterfaceCanvas = canvas;
-
         }
         #endregion
 
@@ -915,8 +919,8 @@ namespace PEBakery.WPF
 
         #region Property - Interface
 
-        private Canvas _interfaceCanvas;
-        public Canvas InterfaceCanvas
+        private EditCanvas _interfaceCanvas;
+        public EditCanvas InterfaceCanvas
         {
             get => _interfaceCanvas;
             set

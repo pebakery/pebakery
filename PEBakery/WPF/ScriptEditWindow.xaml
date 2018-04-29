@@ -333,61 +333,69 @@
                     </GroupBox>
                     <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="55"/>
+                            <RowDefinition Height="50"/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <GroupBox Grid.Row="0"
-                                  Header="Scale Factor"
-                                  BorderBrush="Gray">
-                            <Grid Margin="0, 0, 5, 0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="25"/>
-                                    <ColumnDefinition Width="15"/>
-                                    <ColumnDefinition Width="110"/>
-                                    <ColumnDefinition Width="110"/>
-                                </Grid.ColumnDefinitions>
+                        <Grid Grid.Row="0" Margin="0, 0, 5, 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
 
-                                <Slider Grid.Column="0"
-                                        Margin="3, 3, 3, 3"
-                                        Minimum="100"
-                                        Maximum="200"
-                                        TickPlacement="BottomRight"
-                                        TickFrequency="10"
-                                        IsSnapToTickEnabled="True"
-                                        x:Name="ScaleFactorSlider"
-                                        ValueChanged="ScaleFactorSlider_ValueChanged"
-                                        Value="{Binding InterfaceScaleFactor}" />
-                                <TextBlock Grid.Column="1"
-                                           Margin="0, 2, 0, 0"
-                                           Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
-                                           TextAlignment="Right"
-                                           VerticalAlignment="Top"/>
-                                <TextBlock Grid.Column="2"
-                                           Margin="0, 2, 0, 0"
-                                           TextAlignment="Left"
-                                           VerticalAlignment="Top"
-                                           Text="%" />
-                                <Button Grid.Column="3"
-                                        Margin="0, 2, 0, 3"
-                                        Width="100"
-                                        Content="Load"
-                                        x:Name="InterfaceLoadButton"
-                                        Click="InterfaceLoadButton_Click"
-                                        HorizontalAlignment="Right">
-                                </Button>
-                                <Button Grid.Column="4"
-                                        Margin="0, 2, 0, 3"
-                                        Width="100"
-                                        Content="Save"
-                                        x:Name="InterfaceSaveButton"
-                                        Click="InterfaceSaveButton_Click"
-                                        HorizontalAlignment="Right">
-                                </Button>
-                            </Grid>
-                        </GroupBox>
+                            <GroupBox Grid.Column="0"
+                                      Header="Scale Factor"
+                                      BorderBrush="Gray">
+                                <Grid Margin="3, 3, 3, 3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="15"/>
+                                    </Grid.ColumnDefinitions>
 
+                                    <Slider Grid.Column="0"
+                                            Minimum="100"
+                                            Maximum="200"
+                                            TickPlacement="BottomRight"
+                                            TickFrequency="10"
+                                            IsSnapToTickEnabled="True"
+                                            x:Name="ScaleFactorSlider"
+                                            ValueChanged="ScaleFactorSlider_ValueChanged"
+                                            Value="{Binding InterfaceScaleFactor}" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="0, 2, 0, 0"
+                                               Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Top"/>
+                                    <TextBlock Grid.Column="2"
+                                               Margin="0, 2, 0, 0"
+                                               TextAlignment="Left"
+                                               VerticalAlignment="Top"
+                                               Text="%" />
+                                </Grid>
+                            </GroupBox>
+
+                            <Button Grid.Column="1"
+                                    Margin="0, 0, 0, 3"
+                                    Width="100" Height="25"
+                                    Content="Load"
+                                    x:Name="InterfaceLoadButton"
+                                    Click="InterfaceLoadButton_Click"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom">
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Margin="0, 0, 0, 3"
+                                    Width="100"  Height="25"
+                                    Content="Save"
+                                    x:Name="InterfaceSaveButton"
+                                    Click="InterfaceSaveButton_Click"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom">
+                            </Button>
+                        </Grid>
+                            
                         <Border Grid.Row="1"
                                 Margin="0, 10, 0, 0"
                                 BorderBrush="Gray"

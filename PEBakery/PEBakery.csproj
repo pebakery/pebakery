@@ -182,6 +182,7 @@
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView\AutoSizedGridView.cs" />
+    <Compile Include="WPF\Controls\CustomCanvas\EditCanvas.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBox.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
@@ -193,7 +194,7 @@
     <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Core\Logger.cs" />
-    <Compile Include="WPF\Controls\DragCanvas.cs" />
+    <Compile Include="WPF\Controls\CustomCanvas\DragCanvas.cs" />
     <Compile Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml.cs">
       <DependentUpon>FreeNumberBox.xaml</DependentUpon>
     </Compile>
