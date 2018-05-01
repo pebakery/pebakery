@@ -64,55 +64,85 @@ namespace PEBakery.WPF
         public static bool IgnoreWidthOfWebLabel = false;
         public static bool DisableBevelCaption = false;
 
-        private readonly RenderInfo _renderInfo;
-        private readonly List<UIControl> _uiCtrls;
+        private RenderInfo _renderInfo;
         private readonly Variables _variables;
-        private readonly Logger _logger;
+
+        public List<UIControl> UICtrls { get; }
+
+        public double Scale
+        {
+            get => _renderInfo.Scale;
+            set => _renderInfo.Scale = value;
+        }
         #endregion
 
         #region Constructor
         public UIRenderer(Canvas canvas, Window window, Script script, double scale, bool viewMode)
         {
-            _logger = App.Logger;
             _variables = script.Project.Variables;
+            _renderInfo = new RenderInfo(canvas, window, script, scale, viewMode);
 
+            (UICtrls, _) = LoadInterfaces(script);
+        }
+
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scale, bool viewMode)
+        {
+            _variables = script.Project.Variables;
+            _renderInfo = new RenderInfo(canvas, window, script, scale, viewMode);
+
+            try
+            {
+                UICtrls = uiCtrls;
+                if (viewMode)
+                    UICtrls = UICtrls.Where(x => x.Visibility).ToList();
+            }
+            catch
+            {
+                UICtrls = null;
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+            }
+        }
+        #endregion
+
+        #region Load Utility
+
+        public static (List<UIControl>, string) LoadInterfaces(Script script)
+        {
             // Check if script has custom interface section
             string interfaceSectionName = "Interface";
-            if (script.MainInfo.ContainsKey("Interface")) 
+            if (script.MainInfo.ContainsKey("Interface"))
                 interfaceSectionName = script.MainInfo["Interface"];
-
-            _renderInfo = new RenderInfo(canvas, window, _logger, script, interfaceSectionName, scale, viewMode);
 
             if (script.Sections.ContainsKey(interfaceSectionName))
             {
                 try
                 {
-                    _uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true).Where(x => x.Visibility).ToList();
-                    _logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
+                    List<UIControl> uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true);
+                    App.Logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
+
+                    return (uiCtrls, interfaceSectionName);
                 }
                 catch
                 {
-                    _uiCtrls = null;
-                    _logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                    return (null, interfaceSectionName);
                 }
             }
-            else
-            {
-                _uiCtrls = null;
-                _logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
-            }
+
+            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+            return (null, interfaceSectionName);
         }
         #endregion
 
         #region Render All
         public void Render()
         {
-            if (_uiCtrls == null) // This script does not have 'Interface' section
+            if (UICtrls == null) // This script does not have 'Interface' section
                 return;
 
             InitCanvas(_renderInfo.Canvas);
-            UIControl[] radioButtons = _uiCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
-            foreach (UIControl uiCmd in _uiCtrls)
+            UIControl[] radioButtons = UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+            foreach (UIControl uiCmd in UICtrls)
             {
                 try
                 {
@@ -140,7 +170,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderTextFile(_renderInfo, uiCmd);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(_renderInfo, uiCmd, _logger);
+                            UIRenderer.RenderButton(_renderInfo, uiCmd);
                             break;
                         case UIControlType.WebLabel:
                             UIRenderer.RenderWebLabel(_renderInfo, uiCmd);
@@ -158,13 +188,13 @@ namespace PEBakery.WPF
                             UIRenderer.RenderRadioGroup(_renderInfo, uiCmd);
                             break;
                         default:
-                            _logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
+                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
                             break;
                     }
                 }
                 catch (Exception e)
                 { // Log failure
-                    _logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
                 }
             }
         }
@@ -201,8 +231,9 @@ namespace PEBakery.WPF
                     uiCtrl.Update();
                 };
             }
-            
+
             SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(r, box, uiCtrl);
             DrawToCanvas(r, box, uiCtrl.Rect);
 
             if (0 < uiCtrl.Text.Length)
@@ -258,6 +289,7 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(block, info.ToolTip);
+            SetEditModeProperties(r, block, uiCtrl);
             DrawToCanvas(r, block, uiCtrl.Rect);
         }
 
@@ -293,6 +325,7 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(r, box, uiCtrl);
             DrawToCanvas(r, box, uiCtrl.Rect);
         }
 
@@ -326,7 +359,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
@@ -346,6 +379,7 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(checkBox, info.ToolTip);
+            SetEditModeProperties(r, checkBox, uiCtrl);
             DrawToCanvas(r, checkBox, uiCtrl.Rect);
         }
 
@@ -395,12 +429,13 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
 
             SetToolTip(comboBox, info.ToolTip);
+            SetEditModeProperties(r, comboBox, uiCtrl);
             DrawToCanvas(r, comboBox, uiCtrl.Rect);
         }
 
@@ -420,14 +455,14 @@ namespace PEBakery.WPF
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
-                    r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                     return;
                 }
 
                 if (type == ImageHelper.ImageType.Svg)
                 {
-                    double width = uiCtrl.Rect.Width * r.MasterScale;
-                    double height = uiCtrl.Rect.Height * r.MasterScale;
+                    double width = uiCtrl.Rect.Width * r.Scale;
+                    double height = uiCtrl.Rect.Height * r.Scale;
                     bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
                 }
                 else
@@ -435,7 +470,6 @@ namespace PEBakery.WPF
                     bitmap = ImageHelper.ImageToBitmapImage(ms);
                 }
             }
-
 
             if (r.ViewMode)
             {
@@ -470,7 +504,7 @@ namespace PEBakery.WPF
                     {
                         if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
                         {
-                            r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                             return;
                         }
 
@@ -497,7 +531,6 @@ namespace PEBakery.WPF
             }
             else
             {
-                
                 Image image = new Image
                 {
                     StretchDirection = StretchDirection.DownOnly,
@@ -508,6 +541,7 @@ namespace PEBakery.WPF
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
                 SetToolTip(image, info.ToolTip);
+                SetEditModeProperties(r, image, uiCtrl);
                 DrawToCanvas(r, image, uiCtrl.Rect);
             }
         }
@@ -542,6 +576,7 @@ namespace PEBakery.WPF
             ScrollViewer.SetCanContentScroll(textBox, true);
 
             SetToolTip(textBox, info.ToolTip);
+            SetEditModeProperties(r, textBox, uiCtrl);
             DrawToCanvas(r, textBox, uiCtrl.Rect);
         }
 
@@ -550,7 +585,7 @@ namespace PEBakery.WPF
         /// Return true if failed.
         /// </summary>
         /// <returns>Success = false, Failure = true</returns>
-        public static void RenderButton(RenderInfo r, UIControl uiCtrl, Logger logger)
+        public static void RenderButton(RenderInfo r, UIControl uiCtrl)
         {
             Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
             UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
@@ -573,11 +608,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                        });
+                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
@@ -637,6 +668,7 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(button, info.ToolTip);
+            SetEditModeProperties(r, button, uiCtrl);
             DrawToCanvas(r, button, uiCtrl.Rect);
         }
 
@@ -673,6 +705,7 @@ namespace PEBakery.WPF
 
             string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
             SetToolTip(block, toolTip);
+            SetEditModeProperties(r, block, uiCtrl);
 
             if (IgnoreWidthOfWebLabel)
             {
@@ -703,8 +736,9 @@ namespace PEBakery.WPF
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(1),
                 BorderBrush = Brushes.Gray,
-                ToolTip = info.ToolTip,
             };
+            SetToolTip(bevel, info.ToolTip);
+            SetEditModeProperties(r, bevel, uiCtrl);
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
             if (!DisableBevelCaption &&
@@ -738,6 +772,7 @@ namespace PEBakery.WPF
                     Width = double.NaN,
                     Height = double.NaN,
                 };
+
                 DrawToCanvas(r, textBorder, blockRect);
             }
         }
@@ -808,6 +843,7 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(radio, info.ToolTip);
+            SetEditModeProperties(r, radio, uiCtrl);
             DrawToCanvas(r, radio, uiCtrl.Rect);
         }
 
@@ -843,6 +879,7 @@ namespace PEBakery.WPF
             }
                 
             SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(r, box, uiCtrl);
 
             Button button = new Button
             {
@@ -850,6 +887,7 @@ namespace PEBakery.WPF
                 Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen, 0),
             };
             SetToolTip(button, info.ToolTip);
+            SetEditModeProperties(r, button, uiCtrl);
 
             if (r.ViewMode)
             {
@@ -924,6 +962,7 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.LightGray,
             };
             SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(r, box, uiCtrl);
 
             Grid grid = new Grid();
             box.Content = grid;
@@ -984,9 +1023,10 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Utility
-        private static void InitCanvas(FrameworkElement canvas)
+        #region Render Utility
+        private static void InitCanvas(Canvas canvas)
         {
+            canvas.Children.Clear();
             canvas.Width = double.NaN;
             canvas.Height = double.NaN;
         }
@@ -1011,6 +1051,17 @@ namespace PEBakery.WPF
                 element.ToolTip = toolTip;
         }
 
+        private static void SetEditModeProperties(RenderInfo r, FrameworkElement element, UIControl uiCtrl)
+        {
+            if (r.ViewMode)
+                return;
+
+            // Only for EditMode
+            element.Tag = uiCtrl;
+            if (!uiCtrl.Visibility)
+                element.Opacity = 0.5;
+        }
+
         private static double CalcFontPointScale(double fontPoint = DefaultFontPoint) 
         {
             return fontPoint * PointToDeviceIndependentPixel;
@@ -1019,19 +1070,14 @@ namespace PEBakery.WPF
         private static string AppendUrlToToolTip(string toolTip, string url)
         {
             if (url == null)
-            {
                 return toolTip;
-            }
-            else
-            {
-                if (MaxUrlDisplayLen < url.Length)
-                    url = url.Substring(0, MaxUrlDisplayLen) + "...";
 
-                if (toolTip == null)
-                    return url;
-                else
-                    return toolTip + Environment.NewLine + Environment.NewLine + url;
-            }
+            if (MaxUrlDisplayLen < url.Length)
+                url = url.Substring(0, MaxUrlDisplayLen) + "...";
+
+            if (toolTip == null)
+                return url;
+            return toolTip + Environment.NewLine + Environment.NewLine + url;
         }
 
         private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)
@@ -1105,25 +1151,21 @@ namespace PEBakery.WPF
     #region RenderInfo
     public struct RenderInfo
     {
-        public readonly double MasterScale;
+        public double Scale;
         public readonly Canvas Canvas;
         public readonly Window Window;
         public readonly Script Script;
-        public readonly string InterfaceSectionName;
         /// <summary>
         /// true in MainWindow, false in ScriptEditWindow
         /// </summary>
         public readonly bool ViewMode;
-        public readonly Logger Logger;
 
-        public RenderInfo(Canvas canvas, Window window, Logger logger, Script script, string interfaceSectionName, double masterScale, bool allowModify)
+        public RenderInfo(Canvas canvas, Window window, Script script, double scale, bool allowModify)
         {
-            MasterScale = masterScale;
+            Scale = scale;
             Canvas = canvas;
             Window = window;
-            Logger = logger;
             Script = script;
-            InterfaceSectionName = interfaceSectionName;
             ViewMode = allowModify;
         }
     }

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -19,6 +20,7 @@ using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF
 {
@@ -30,6 +32,7 @@ namespace PEBakery.WPF
         public static int Count = 0;
 
         private Script _sc;
+        private UIRenderer _render = null;
         private readonly ScriptEditViewModel m;
         #endregion
 
@@ -44,10 +47,13 @@ namespace PEBakery.WPF
 
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
-                m.InterfaceCanvas.UIElementDragEvent += InterfaceCanvas_UIElementDragEvent;
+                m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
+                m.UIControlModified += ViewModel_UIControlModified;
 
                 ReadScriptGeneral();
                 ReadScriptAttachment();
+
+                m.InterfaceNotSaved = false;
             }
             catch (Exception e)
             { // Rollback Count to 0
@@ -184,7 +190,8 @@ namespace PEBakery.WPF
 
             Tag = _sc;
 
-            m.InterfaceCanvas.UIElementDragEvent -= InterfaceCanvas_UIElementDragEvent;
+            m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
+            m.UIControlModified -= ViewModel_UIControlModified;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -296,16 +303,13 @@ namespace PEBakery.WPF
             if (m == null)
                 return;
 
-            m.InterfaceCanvas.Children.Clear();
-
             double scaleFactor = m.InterfaceScaleFactor / 100;
-            UIRenderer render = new UIRenderer(m.InterfaceCanvas, this, _sc, scaleFactor, false);
             if (scaleFactor - 1 < double.Epsilon)
-                m.InterfaceCanvas.LayoutTransform = new ScaleTransform(1, 1);
-            else
-                m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
-            
-            render.Render();
+                scaleFactor = 1;
+            m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
+
+            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, scaleFactor, false);
+            _render.Render();
         }
 
         private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -320,16 +324,28 @@ namespace PEBakery.WPF
 
         private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_render == null)
+                return;
 
+            UIControl.Update(_render.UICtrls);
         }
 
-        private void InterfaceCanvas_UIElementDragEvent(object sender, EditCanvas.UIElementDragEventArgs e)
+        private void InterfaceCanvas_UIControlSelected(object sender, EditCanvas.UIControlSelectedEventArgs e)
         {
-            UIElement element = e.Element;
-            double x = Canvas.GetLeft(element);
-            double y = Canvas.GetTop(element);
+            if (e.UIControl == null)
+                return;
 
-            App.Logger.SystemWrite(new LogInfo(LogState.Info, $"[Debug] Element moved to {x}, {y}"));
+            // FrameworkElement element = e.Element;
+            m.UICtrl = e.UIControl;
+        }
+
+        private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
+        {
+            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
+
+            _render.UICtrls[idx] = e.UIControl;
+            _render.Render();
         }
         #endregion
 
@@ -690,6 +706,19 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Events
+        public class UIControlModifiedEventArgs : EventArgs
+        {
+            public UIControl UIControl { get; set; }
+            public UIControlModifiedEventArgs(UIControl uiCtrl)
+            {
+                UIControl = uiCtrl;
+            }
+        }
+        public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
+        public event UIControlModifiedHandler UIControlModified;
+        #endregion
+
         #region Property - Tab Index
         private int _tabIndex = 0;
         public int TabIndex
@@ -918,7 +947,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Interface
-
+        public bool InterfaceNotSaved { get; set; } = false;
         private EditCanvas _interfaceCanvas;
         public EditCanvas InterfaceCanvas
         {
@@ -938,6 +967,109 @@ namespace PEBakery.WPF
             {
                 _interfaceScaleFactor = value;
                 OnPropertyUpdate(nameof(InterfaceScaleFactor));
+            }
+        }
+
+        private UIControl _uiCtrl;
+        public UIControl UICtrl
+        {
+            get => _uiCtrl;
+            set
+            {
+                _uiCtrl = value;
+                OnPropertyUpdate(nameof(UICtrlSelected));
+                OnPropertyUpdate(nameof(UICtrlText));
+                OnPropertyUpdate(nameof(UICtrlVisible));
+                OnPropertyUpdate(nameof(UICtrlX));
+                OnPropertyUpdate(nameof(UICtrlY));
+                OnPropertyUpdate(nameof(UICtrlWidth));
+                OnPropertyUpdate(nameof(UICtrlHeight));
+                OnPropertyUpdate(nameof(UICtrlToolTip));
+            }
+        }
+        public bool UICtrlSelected => _uiCtrl != null;
+        public string UICtrlText
+        {
+            get => _uiCtrl != null ? _uiCtrl.Text : string.Empty;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Text = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public bool UICtrlVisible
+        {
+            get => _uiCtrl != null && _uiCtrl.Visibility;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Visibility = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public int UICtrlX
+        {
+            get => _uiCtrl != null ? (int) _uiCtrl.Rect.X : 0;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Rect.X = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public int UICtrlY
+        {
+            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Y : 0;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Rect.Y = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public int UICtrlWidth
+        {
+            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Width : 0;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Rect.Width = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public int UICtrlHeight
+        {
+            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Height : 0;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Rect.Height = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+            }
+        }
+        public string UICtrlToolTip
+        {
+            get => _uiCtrl != null ? _uiCtrl.Info.ToolTip : string.Empty;
+            set
+            {
+                if (_uiCtrl == null)
+                    return;
+
+                _uiCtrl.Info.ToolTip = value;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
             }
         }
         #endregion

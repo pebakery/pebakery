@@ -1,4 +1,28 @@
-﻿using System;
+﻿/*
+    MIT License (MIT)
+
+    Copyright (c) 2018 Hajin Jang
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -39,6 +63,19 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
+        #region Events
+        public class UIElementDragEventArgs : EventArgs
+        {
+            public UIElement Element { get; set; }
+            public UIElementDragEventArgs(UIElement element)
+            {
+                Element = element;
+            }
+        }
+        public delegate void UIElementDragEventHandler(object sender, UIElementDragEventArgs e);
+        public event UIElementDragEventHandler UIElementDragEvent;
+        #endregion
+
         #region Event Handler
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
@@ -52,10 +89,10 @@ namespace PEBakery.WPF.Controls
                     return;
             }
 
-            double leftPos = Canvas.GetLeft(_selectedElement);
-            double topPos = Canvas.GetTop(_selectedElement);
+            double x = Canvas.GetLeft(_selectedElement);
+            double y = Canvas.GetTop(_selectedElement);
             _dragStartCursorPos = e.GetPosition(this);
-            _dragStartElementPos = new Point(leftPos, topPos);
+            _dragStartElementPos = new Point(x, y);
 
             Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
             _isBeingDragged = true;
@@ -73,10 +110,18 @@ namespace PEBakery.WPF.Controls
             {
                 double x = cursorNow.X - cursorStart.X + elementStart.X;
                 double y = cursorNow.Y - cursorStart.Y + elementStart.Y;
+
+                // Do not check ActualWidth and ActualHeight here, or canvas cannot be expanded
+                if (x < 0)
+                    x = 0;
+                if (y < 0)
+                    y = 0;
+
                 return new Point(x, y);
             }
 
             Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
+
             Canvas.SetLeft(_selectedElement, newElementPos.X);
             Canvas.SetTop(_selectedElement, newElementPos.Y);
         }

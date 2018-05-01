@@ -330,6 +330,73 @@
                               Margin="0, 0, 5, 0"
                               Header="Controls"
                               BorderBrush="Gray">
+                        <Grid Height="120">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="Visible" />
+                            <CheckBox Grid.Row="0" Grid.Column="1"
+                                      VerticalContentAlignment="Center"
+                                      IsEnabled="{Binding UICtrlSelected}"
+                                      IsChecked="{Binding UICtrlVisible}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="X" />
+                            <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                                  Minimum="0"
+                                                  IsEnabled="{Binding UICtrlSelected}"
+                                                  Value="{Binding UICtrlX, Mode=TwoWay}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="Y"/>
+                            <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                  Minimum="0"
+                                                  IsEnabled="{Binding UICtrlSelected}"
+                                                  Value="{Binding UICtrlY, Mode=TwoWay}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="Width"/>
+                            <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                                  Minimum="0"
+                                                  IsEnabled="{Binding UICtrlSelected}"
+                                                  Value="{Binding UICtrlWidth, Mode=TwoWay}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="Height" />
+                            <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
+                                                  Minimum="0"
+                                                  IsEnabled="{Binding UICtrlSelected}"
+                                                  Value="{Binding UICtrlHeight, Mode=TwoWay}"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0"
+                                       HorizontalAlignment="Right"
+                                       Margin="0, 0, 5, 0"
+                                       FontWeight="Bold"
+                                       Text="ToolTip" />
+                            <TextBox Grid.Row="5" Grid.Column="1"
+                                     IsEnabled="{Binding UICtrlSelected}"
+                                     Text="{Binding UICtrlToolTip}"/>
+                        </Grid>
                     </GroupBox>
                     <Grid Grid.Column="1">
                         <Grid.RowDefinitions>

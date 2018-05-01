@@ -400,6 +400,7 @@
                           FontSize="12"
                           DataContext="{Binding MainTree}"
                           ItemsSource="{Binding Children}"
+                          BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           VirtualizingStackPanel.IsVirtualizing="True"

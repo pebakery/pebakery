@@ -576,7 +576,6 @@ namespace PEBakery.WPF
 
             Model.ScriptCheckResult = null;
 
-            MainCanvas.Children.Clear();
             if (sc.Type == ScriptType.Directory)
             {
                 Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
@@ -730,37 +729,37 @@ namespace PEBakery.WPF
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy == false)
-            {
-                (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
+            if (loadWorker.IsBusy)
+                return;
 
-                StartLoadWorker();
-            }
+            (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
+
+            StartLoadWorker();
         }
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy == false)
+            if (loadWorker.IsBusy)
+                return;
+
+            double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
+            bool old_Script_EnableCache = Setting.Script_EnableCache;
+
+            SettingWindow dialog = new SettingWindow(Setting);
+            bool? result = dialog.ShowDialog();
+            if (result == true)
             {
-                double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
-                bool old_Script_EnableCache = Setting.Script_EnableCache;
+                // Scale Factor
+                double newScaleFactor = Setting.Interface_ScaleFactor;
+                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                    DrawScript(CurMainTree.Script);
 
-                SettingWindow dialog = new SettingWindow(Setting);
-                bool? result = dialog.ShowDialog();
-                if (result == true)
-                {
-                    // Scale Factor
-                    double newScaleFactor = Setting.Interface_ScaleFactor;
-                    if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                        DrawScript(CurMainTree.Script);
+                // Script
+                if (old_Script_EnableCache == false && Setting.Script_EnableCache)
+                    StartCacheWorker();
 
-                    // Script
-                    if (old_Script_EnableCache == false && Setting.Script_EnableCache)
-                        StartCacheWorker();
-
-                    // Apply
-                    Setting.ApplySetting();
-                }
+                // Apply
+                Setting.ApplySetting();
             }
         }
 

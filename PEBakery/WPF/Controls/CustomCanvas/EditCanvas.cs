@@ -1,4 +1,28 @@
-﻿using System;
+﻿/*
+    MIT License (MIT)
+
+    Copyright (c) 2018 Hajin Jang
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,16 +32,15 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using PEBakery.Core;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF.Controls
 {
     public class EditCanvas : Canvas
     {
         #region Fields
-        private bool _isBeingDragged;
-        private UIElement _selectedElement;
-        private Point _dragStartCursorPos;
-        private Point _dragStartElementPos;
+        private FrameworkElement _selectedElement;
 
         private Brush _borderBrushBackup;
         private Thickness _borderThicknessBackup;
@@ -42,35 +65,29 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region Events
-        public class UIElementDragEventArgs : EventArgs
+        public class UIControlSelectedEventArgs : EventArgs
         {
-            public UIElement Element { get; set; }
-            public UIElementDragEventArgs(UIElement element)
+            public FrameworkElement Element { get; set; }
+            public UIControl UIControl { get; set; }
+            public UIControlSelectedEventArgs(FrameworkElement element, UIControl uiCtrl)
             {
                 Element = element;
+                UIControl = uiCtrl;
             }
         }
-        public delegate void UIElementDragEventHandler(object sender, UIElementDragEventArgs e);
-        public event UIElementDragEventHandler UIElementDragEvent;
+        public delegate void UIControlSelectedEventHandler(object sender, UIControlSelectedEventArgs e);
+        public event UIControlSelectedEventHandler UIControlSelected;
         #endregion
 
         #region Event Handler
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (_isBeingDragged)
-                return;
-
             if (e.Source is DependencyObject dObj)
             {
-                _selectedElement = FindTargetUIElement(dObj);
+                _selectedElement = FindTopParentFrameworkElement(dObj);
                 if (_selectedElement == null)
                     return;
             }
-
-            double x = Canvas.GetLeft(_selectedElement);
-            double y = Canvas.GetTop(_selectedElement);
-            _dragStartCursorPos = e.GetPosition(this);
-            _dragStartElementPos = new Point(x, y);
 
             // Set Z Index to top
             Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
@@ -85,52 +102,41 @@ namespace PEBakery.WPF.Controls
                 control.BorderThickness = new Thickness(2);
             }
 
-            _isBeingDragged = true;
+            UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, _selectedElement.Tag as UIControl));
+
             e.Handled = true;
         }
 
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
-            if (!_isBeingDragged || _selectedElement == null)
-                return;
-
-            Point nowCursorPoint = e.GetPosition(this);
-
-            Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
-            {
-                double x = cursorNow.X - cursorStart.X + elementStart.X;
-                double y = cursorNow.Y - cursorStart.Y + elementStart.Y;
-                return new Point(x, y);
-            }
-
-            Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
-            Canvas.SetLeft(_selectedElement, newElementPos.X);
-            Canvas.SetTop(_selectedElement, newElementPos.Y);
+            base.OnPreviewMouseMove(e);
         }
 
         protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
         {
-            if (_isBeingDragged || _selectedElement != null)
-            { // Finish dragging
-                // Remove red borderline
-                if (_selectedElement is Control control)
-                {
-                    control.BorderBrush = _borderBrushBackup;
-                    control.BorderThickness = _borderThicknessBackup;
-                }
-
-                UIElementDragEvent?.Invoke(this, new UIElementDragEventArgs(_selectedElement));
-
-                _isBeingDragged = false;
-                _selectedElement = null;
-            }
+            base.OnPreviewMouseUp(e);
         }
 
-        public UIElement FindTargetUIElement(DependencyObject dObj)
+        public UIElement FindTopParentUIElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
                 if (dObj is UIElement element && Children.Contains(element))
+                    return element;
+
+                if (dObj is Visual || dObj is Visual3D)
+                    dObj = VisualTreeHelper.GetParent(dObj);
+                else
+                    dObj = LogicalTreeHelper.GetParent(dObj);
+            }
+            return null;
+        }
+
+        public FrameworkElement FindTopParentFrameworkElement(DependencyObject dObj)
+        {
+            while (dObj != null)
+            {
+                if (dObj is FrameworkElement element && Children.Contains(element))
                     return element;
 
                 if (dObj is Visual || dObj is Visual3D)
