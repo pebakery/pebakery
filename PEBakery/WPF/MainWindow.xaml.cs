@@ -578,6 +578,8 @@ namespace PEBakery.WPF
 
             if (sc.Type == ScriptType.Directory)
             {
+                MainCanvas.Children.Clear();
+
                 Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 Model.ScriptDescriptionText = string.Empty;
                 Model.ScriptVersionText = string.Empty;
@@ -765,14 +767,14 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy == false)
-            {
-                if (UtilityWindow.Count == 0)
-                {
-                    UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont);
-                    UtilityDialog.Show();
-                }
-            }
+            if (loadWorker.IsBusy)
+                return;
+
+            if (0 < UtilityWindow.Count)
+                return;
+
+            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont);
+            UtilityDialog.Show();
         }
 
         private void LogButton_Click(object sender, RoutedEventArgs e)

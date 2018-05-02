@@ -84,6 +84,9 @@ namespace PEBakery.WPF
             RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
+            if (uiCtrls == null)
+                uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
+
             UICtrls = uiCtrls;
             if (viewMode)
                 UICtrls = UICtrls.Where(x => x.Visibility).ToList();
@@ -95,6 +98,9 @@ namespace PEBakery.WPF
         {
             _variables = script.Project.Variables;
             RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
+
+            if (uiCtrls == null)
+                uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
 
             UICtrls = uiCtrls;
             if (viewMode)
@@ -461,6 +467,16 @@ namespace PEBakery.WPF
             Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
             Debug.Assert(info != null, "Invalid UIInfo");
+
+            if (uiCtrl.Text.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
+                noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
+                SetToolTip(noImage, info.ToolTip);
+                SetEditModeProperties(r, noImage, uiCtrl);
+                DrawToCanvas(r, noImage, uiCtrl.Rect);
+                return;
+            }
 
             BitmapImage bitmap;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))

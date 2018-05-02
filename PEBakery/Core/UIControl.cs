@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -139,7 +140,6 @@ namespace PEBakery.Core
             Visibility = false;
             Type = UIControlType.None;
             Rect = new Rect(0, 0, 0, 0);
-
         }
 
         public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
@@ -443,6 +443,61 @@ namespace PEBakery.Core
             return success;
         }
         #endregion
+
+        #region UIControl Dictionary 
+        public static ReadOnlyDictionary<int, UIControlType> UIControlZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
+            new Dictionary<int, UIControlType>
+            {
+                [0] = UIControlType.TextBox,
+                [1] = UIControlType.TextLabel,
+                [2] = UIControlType.NumberBox,
+                [3] = UIControlType.CheckBox,
+                [4] = UIControlType.ComboBox,
+                [5] = UIControlType.Image,
+                [6] = UIControlType.TextFile,
+                [7] = UIControlType.Button,
+                [8] = UIControlType.WebLabel,
+                [9] = UIControlType.RadioButton,
+                [10] = UIControlType.Bevel,
+                [11] = UIControlType.FileBox,
+                [12] = UIControlType.RadioGroup,
+            });
+
+        public static string GetUIControlTemplate(UIControlType type, string key)
+        {
+            switch (type)
+            {
+                case UIControlType.TextBox:
+                    return UIInfo_TextBox.Template(key);
+                case UIControlType.TextLabel:
+                    return UIInfo_TextLabel.Template(key);
+                case UIControlType.NumberBox:
+                    return UIInfo_NumberBox.Template(key);
+                case UIControlType.CheckBox:
+                    return UIInfo_CheckBox.Template(key);
+                case UIControlType.ComboBox:
+                    return UIInfo_ComboBox.Template(key);
+                case UIControlType.Image:
+                    return UIInfo_Image.Template(key);
+                case UIControlType.TextFile:
+                    return UIInfo_TextFile.Template(key);
+                case UIControlType.Button:
+                    return UIInfo_Button.Template(key);
+                case UIControlType.WebLabel:
+                    return UIInfo_WebLabel.Template(key);
+                case UIControlType.RadioButton:
+                    return UIInfo_RadioButton.Template(key);
+                case UIControlType.Bevel:
+                    return UIInfo_Bevel.Template(key);
+                case UIControlType.FileBox:
+                    return UIInfo_FileBox.Template(key);
+                case UIControlType.RadioGroup:
+                    return UIInfo_RadioGroup.Template(key);
+                default:
+                    throw new InvalidOperationException("Internal Logic Error at UIControl.GetUIControlTemplate");
+            }
+        }
+        #endregion
     }
     #endregion
 
@@ -457,6 +512,7 @@ namespace PEBakery.Core
             ToolTip = tooltip;
         }
 
+        #region ForgeRawLine, ToString
         /// <summary>
         /// This function should only be called from child Class
         /// Note : this function includes first ','
@@ -469,10 +525,12 @@ namespace PEBakery.Core
             return string.Empty;
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+        #endregion
+
+        #region Template
+        public static string Template(string key) => string.Empty;
+        #endregion
     }
 
     [Serializable]
@@ -495,10 +553,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
     }
 
     public enum UIInfo_TextLabel_Style
@@ -530,10 +587,9 @@ namespace PEBakery.Core
             return b.ToString(); 
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=Caption,1,1,10,10,200,16,8,Normal";
     }
 
     [Serializable]
@@ -544,7 +600,7 @@ namespace PEBakery.Core
         public int Max;
         public int Interval;
 
-        public UIInfo_NumberBox(string tooltip,  int value, int min, int max, int interval)
+        public UIInfo_NumberBox(string tooltip, int value, int min, int max, int interval)
             : base(tooltip)
         {
             Value = value;
@@ -568,10 +624,9 @@ namespace PEBakery.Core
             return builder.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,2,10,10,40,22,1,1,100,1";
     }
 
     [Serializable]
@@ -592,28 +647,21 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (Value)
-                b.Append(",True");
-            else
-                b.Append(",False");
+            b.Append(Value ? ",True" : ",False");
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,3,10,10,200,18,True";
     }
 
     [Serializable]
@@ -648,19 +696,15 @@ namespace PEBakery.Core
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C,D";
     }
 
     [Serializable]
@@ -683,10 +727,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
     }
 
     [Serializable]
@@ -698,17 +741,9 @@ namespace PEBakery.Core
 
         }
 
-        /*
-        public override string ForgeRawLine()
-        {
-            return base.ForgeRawLine();
-        }
-        */
+        public override string ToString() => ForgeRawLine();
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public new static string Template(string key) => $"{key}={key},1,6,10,10,200,86";
     }
 
     [Serializable]
@@ -739,32 +774,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
-    }
+        public override string ToString() => ForgeRawLine();
 
-    [Serializable]
-    public class UIInfo_CheckList : UIInfo
-    {
-        public UIInfo_CheckList(string tooltip)
-            : base(tooltip)
-        {
-
-        }
-
-        /*
-        public override string ForgeRawLine()
-        {
-            return base.ForgeRawLine();
-        }
-        */
-
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionToRun,0,True";
     }
 
     [Serializable]
@@ -787,10 +799,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=Content,1,10,10,10,80,200,18,https://github.com/pebakery/pebakery";
     }
 
     [Serializable]
@@ -818,20 +829,15 @@ namespace PEBakery.Core
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
 
+        public new static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
     }
 
     public enum UIInfo_BevelCaption_Style
@@ -869,10 +875,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,12,10,10,160,60";
     }
 
     [Serializable]
@@ -889,18 +894,14 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (IsFile)
-                b.Append(",file");
-            else
-                b.Append(",dir");
+            b.Append(IsFile ? ",file" : ",dir");
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file";
     }
 
     [Serializable]
@@ -941,10 +942,9 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,14,10,10,150,60,A,B,C,1";
     }
 
     #endregion

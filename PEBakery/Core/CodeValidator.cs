@@ -222,7 +222,7 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid interface section") };
             }
             SectionAddress addr = new SectionAddress(sc, section);
-            List<UIControl> uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
+            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logs);
 
             foreach (UIControl uiCmd in uiCtrls)
             {

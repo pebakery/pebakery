@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -40,7 +39,38 @@ namespace PEBakery.Core
 {
     public static class UIParser
     {
-        public static List<UIControl> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
+        public static UIControl ParseStatement(string line, SectionAddress addr, out List<LogInfo> errorLogs)
+        {
+            int idx = 0;
+
+            errorLogs = new List<LogInfo>();
+            try
+            {
+                UIControl uiCtrl = ParseUIControl(new List<string> { line }, addr, ref idx);
+                if (uiCtrl.Type == UIControlType.None)
+                {
+                    errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine})"));
+                    return null;
+                }
+                return uiCtrl;
+            }
+            catch (InvalidUIControlException e)
+            {
+                errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine})"));
+            }
+            catch (InvalidCommandException e)
+            {
+                errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine})"));
+            }
+            catch (Exception e)
+            {
+                errorLogs.Add(new LogInfo(LogState.Error, e));
+            }
+
+            return null;
+        }
+
+        public static List<UIControl> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
             errorLogs = new List<LogInfo>();
@@ -50,15 +80,21 @@ namespace PEBakery.Core
                 try
                 {
                     UIControl uiCtrl = ParseUIControl(lines, addr, ref i);
-                    
-                    if (uiCtrl != null)
+                    if (uiCtrl == null)
+                        continue;
+
+                    // Check uICtrl.Type
+                    if (uiCtrl.Type == UIControlType.None)
                     {
-                        // Check if interface control's key is duplicated
-                        if (uiCtrls.Count(x => x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)) == 0)
-                            uiCtrls.Add(ParseUIControl(lines, addr, ref i));
-                        else
-                            errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})"));
+                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine})"));
+                        continue;
                     }
+
+                    // Check if interface control's key is duplicated
+                    if (uiCtrls.Select(x => x.Key).Contains(uiCtrl.Key, StringComparer.OrdinalIgnoreCase))
+                        errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})")); 
+                    else
+                        uiCtrls.Add(uiCtrl);
                 }
                 catch (InvalidUIControlException e)
                 {
@@ -74,7 +110,8 @@ namespace PEBakery.Core
                 }
             }
 
-            return uiCtrls.Where(x => x.Type != UIControlType.None).ToList();
+            // return uiCtrls.Where(x => x.Type != UIControlType.None).ToList();
+            return uiCtrls;
         }
 
         public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
@@ -140,7 +177,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Interface control [{rawValue}] must have at least 7 arguments", rawLine);
 
             // Parse opcode
-            try { type = UIParser.ParseControlType(args[2]); }
+            try { type = UIParser.ParseControlTypeVal(args[2]); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Remove UIControlType from operands
@@ -175,7 +212,7 @@ namespace PEBakery.Core
             return new UIControl(rawLine, addr, key, text, visibility, type, rect, info);
         }
 
-        public static UIControlType ParseControlType(string typeStr)
+        public static UIControlType ParseControlTypeVal(string typeStr)
         {
             // typeStr must be number
             if (!StringHelper.IsInteger(typeStr))
@@ -544,8 +581,7 @@ namespace PEBakery.Core
         {
             if (idx < op.Count && op[idx].StartsWith("__", StringComparison.Ordinal)) // Has tooltip
                 return op[idx].Substring(2);
-            else
-                return null;
+            return null;
         }
     }
 }

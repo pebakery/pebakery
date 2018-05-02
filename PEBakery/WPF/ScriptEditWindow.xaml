@@ -326,86 +326,156 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
-                    <GroupBox Grid.Column="0"
-                              Margin="0, 0, 5, 0"
-                              Header="UIControls"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 3"
-                                    Orientation="Vertical">
-                            <TextBlock Text="Select"/>
-                            <ComboBox IsEnabled="{Binding InterfaceLoaded}"
-                                      SelectedIndex="{Binding InterfaceUICtrlIndex}"
-                                      ItemsSource="{Binding InterfaceUICtrls}"
-                                      SelectionChanged="Interface_SelectionChanged"/>
-                            <Grid Margin="0, 10, 0, 0" Height="120">
+                    <Grid Grid.Column="0"
+                          Margin="0, 0, 10, 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="105"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0"
+                                  Header="Add"
+                                  BorderBrush="Gray">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="30"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="60" />
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="20" />
-                                    <RowDefinition Height="20" />
-                                    <RowDefinition Height="20" />
-                                    <RowDefinition Height="20" />
-                                    <RowDefinition Height="20" />
-                                    <RowDefinition Height="20" />
-                                </Grid.RowDefinitions>
+
                                 <TextBlock Grid.Row="0" Grid.Column="0"
-                                       HorizontalAlignment="Right"
-                                       Margin="0, 0, 5, 0"
-                                       FontWeight="Bold"
-                                       Text="Visible" />
-                                <CheckBox Grid.Row="0" Grid.Column="1"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Margin="0, 0, 5, 0"
+                                           FontWeight="Bold"
+                                           Text="Type" />
+                                <ComboBox Grid.Row="0" Grid.Column="1"
+                                          VerticalContentAlignment="Center"
+                                          x:Name="UICtrlAddType"
+                                          SelectionChanged="UICtrlAddType_SelectionChanged"
+                                          SelectedIndex="{Binding UICtrlAddTypeIndex}">
+                                    <ComboBoxItem Content="TextBox"/>
+                                    <ComboBoxItem Content="TextBlock"/>
+                                    <ComboBoxItem Content="NumberBox"/>
+                                    <ComboBoxItem Content="CheckBox"/>
+                                    <ComboBoxItem Content="ComboBox"/>
+                                    <ComboBoxItem Content="Image"/>
+                                    <ComboBoxItem Content="TextFile"/>
+                                    <ComboBoxItem Content="Button"/>
+                                    <ComboBoxItem Content="WebLabel"/>
+                                    <ComboBoxItem Content="RadioButton"/>
+                                    <ComboBoxItem Content="Bevel"/>
+                                    <ComboBoxItem Content="FileBox"/>
+                                    <ComboBoxItem Content="RadioGroup"/>
+                                </ComboBox>
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Margin="0, 0, 5, 0"
+                                           FontWeight="Bold"
+                                           Text="Name" />
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         VerticalContentAlignment="Center"
+                                         Text="{Binding UICtrlAddName}"/>
+                                <Button Grid.Row="2" Grid.Column="1"
+                                        Margin="0, 5, 0, 0"
+                                        x:Name="UICtrlAddButton"
+                                        Click="UICtrlAddButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Plus"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Add" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </GroupBox>
+                        <GroupBox Grid.Row="1"
+                                  Margin="0, 0, 0, 5"
+                                  Header="Edit"
+                                  BorderBrush="Gray">
+                            <StackPanel Margin="5, 5, 5, 5"
+                                    Orientation="Vertical">
+                                <TextBlock Text="Select"/>
+                                <ComboBox IsEnabled="{Binding InterfaceLoaded}"
+                                      SelectedIndex="{Binding InterfaceUICtrlIndex}"
+                                      ItemsSource="{Binding InterfaceUICtrls}"
+                                      SelectionChanged="Interface_SelectionChanged"/>
+                                <Grid Margin="0, 10, 0, 0" Height="120">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="20" />
+                                        <RowDefinition Height="20" />
+                                        <RowDefinition Height="20" />
+                                        <RowDefinition Height="20" />
+                                        <RowDefinition Height="20" />
+                                        <RowDefinition Height="20" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               HorizontalAlignment="Right"
+                                               Margin="0, 0, 5, 0"
+                                               FontWeight="Bold"
+                                               Text="Visible" />
+                                    <CheckBox Grid.Row="0" Grid.Column="1"
                                       VerticalContentAlignment="Center"
                                       IsEnabled="{Binding UICtrlEditEnabled}"
                                       IsChecked="{Binding UICtrlVisible}"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
                                        HorizontalAlignment="Right"
                                        Margin="0, 0, 5, 0"
                                        FontWeight="Bold"
                                        Text="X" />
-                                <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                    <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
                                                   Minimum="0"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   Value="{Binding UICtrlX, Mode=TwoWay}"/>
-                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                    <TextBlock Grid.Row="2" Grid.Column="0"
                                        HorizontalAlignment="Right"
                                        Margin="0, 0, 5, 0"
                                        FontWeight="Bold"
                                        Text="Y"/>
-                                <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                    <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
                                                   Minimum="0"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   Value="{Binding UICtrlY, Mode=TwoWay}"/>
-                                <TextBlock Grid.Row="3" Grid.Column="0"
+                                    <TextBlock Grid.Row="3" Grid.Column="0"
                                        HorizontalAlignment="Right"
                                        Margin="0, 0, 5, 0"
                                        FontWeight="Bold"
                                        Text="Width"/>
-                                <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                    <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
                                                   Minimum="0"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   Value="{Binding UICtrlWidth, Mode=TwoWay}"/>
-                                <TextBlock Grid.Row="4" Grid.Column="0"
+                                    <TextBlock Grid.Row="4" Grid.Column="0"
                                        HorizontalAlignment="Right"
                                        Margin="0, 0, 5, 0"
                                        FontWeight="Bold"
                                        Text="Height" />
-                                <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
+                                    <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
                                                   Minimum="0"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   Value="{Binding UICtrlHeight, Mode=TwoWay}"/>
-                                <TextBlock Grid.Row="5" Grid.Column="0"
+                                    <TextBlock Grid.Row="5" Grid.Column="0"
                                        HorizontalAlignment="Right"
                                        Margin="0, 0, 5, 0"
                                        FontWeight="Bold"
                                        Text="ToolTip" />
-                                <TextBox Grid.Row="5" Grid.Column="1"
+                                    <TextBox Grid.Row="5" Grid.Column="1"
                                      IsEnabled="{Binding UICtrlEditEnabled}"
                                      Text="{Binding UICtrlToolTip}"/>
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
+                                </Grid>
+                            </StackPanel>
+                        </GroupBox>
+                    </Grid>
                     <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>

@@ -34,6 +34,7 @@ namespace PEBakery.WPF
         private Script _sc;
         private UIRenderer _render;
         private readonly ScriptEditViewModel m;
+        private string _ifaceSectionName;
         #endregion
 
         #region Constructor
@@ -160,6 +161,7 @@ namespace PEBakery.WPF
 
         private void ReadScriptInterface()
         {
+            _ifaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
             _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls, 1, false);
 
@@ -387,16 +389,6 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
-        private void InterfaceLoadButton_Click(object sender, RoutedEventArgs e)
-        {
-            DrawScript();
-        }
-
-        private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            WriteScriptInterface();
-        }
-
         private void InterfaceCanvas_UIControlSelected(object sender, EditCanvas.UIControlSelectedEventArgs e)
         {
             if (e.UIControl == null)
@@ -418,6 +410,69 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.ResetSelectedBorder();
             _render.Render();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+        }
+
+        private void InterfaceLoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            DrawScript();
+        }
+
+        private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            WriteScriptInterface();
+        }
+
+        private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
+            int idx = 0;
+            string key;
+            bool duplicate;
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{type}{idx:D2}";
+
+                if (_render.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+            m.UICtrlAddName = key;
+        }
+
+        private void UICtrlAddButton_Click(object sender, RoutedEventArgs e)
+        {
+            // _render.UICtrls.Add
+            // m.UICtrlAddTypeIndex;
+            UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
+            if (string.IsNullOrWhiteSpace(m.UICtrlAddName))
+            {
+                MessageBox.Show("New UIControl name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            string key = m.UICtrlAddName.Trim();
+            if (_render.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                MessageBox.Show($"Interface key [{key}] is duplicated", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            SectionAddress addr = new SectionAddress(_sc, _sc.Sections[_ifaceSectionName]);
+            string line = UIControl.GetUIControlTemplate(type, key);
+
+            UIControl uiCtrl = UIParser.ParseStatement(line, addr, out List<LogInfo> errorLogs);
+            Debug.Assert(uiCtrl != null, "Internal Logic Error at UICtrlAddButton_Click");
+            Debug.Assert(errorLogs.Count == 0, "Internal Logic Error at UICtrlAddButton_Click");
+
+            _render.UICtrls.Add(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(_render.UICtrls.Select(x => x.Key));
+            m.InterfaceUICtrlIndex = 0;
+
+            m.InterfaceCanvas.ResetSelectedBorder();
+            _render.Render();
+            m.SelectedUICtrl = uiCtrl;
+            m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
         }
         #endregion
 
@@ -762,7 +817,7 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel()
         {
-            ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
+            ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
 
             EditCanvas canvas = new EditCanvas
             {
@@ -1022,6 +1077,7 @@ namespace PEBakery.WPF
         public bool InterfaceNotSaved { get; set; } = false;
         public bool InterfaceUpdated { get; set; } = false;
 
+        // Canvas
         private EditCanvas _interfaceCanvas;
         public EditCanvas InterfaceCanvas
         {
@@ -1032,7 +1088,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceCanvas));
             }
         }
-
         private double _interfaceScaleFactor = 100;
         public double InterfaceScaleFactor
         {
@@ -1044,6 +1099,29 @@ namespace PEBakery.WPF
             }
         }
 
+        // Add
+        private int _uiCtrlAddTypeIndex;
+        public int UICtrlAddTypeIndex
+        {
+            get => _uiCtrlAddTypeIndex;
+            set
+            {
+                _uiCtrlAddTypeIndex = value;
+                OnPropertyUpdate(nameof(UICtrlAddTypeIndex));
+            }
+        }
+        private string _uiCtrlAddName;
+        public string UICtrlAddName
+        {
+            get => _uiCtrlAddName;
+            set
+            {
+                _uiCtrlAddName = value;
+                OnPropertyUpdate(nameof(UICtrlAddName));
+            }
+        }
+
+        // Editor
         private bool _interfaceLoaded = false;
         public bool InterfaceLoaded
         {

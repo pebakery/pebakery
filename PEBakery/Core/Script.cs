@@ -909,7 +909,7 @@ namespace PEBakery.Core
                         case SectionDataConverted.Interfaces:
                         {
                             SectionAddress addr = new SectionAddress(Script, this);
-                            _uiCtrls = UIParser.ParseRawLines(_lines, addr, out List<LogInfo> logList);
+                            _uiCtrls = UIParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
                             _logInfos.AddRange(logList);
                             break;
                         }
@@ -971,7 +971,7 @@ namespace PEBakery.Core
                 DataType == SectionDataType.Lines)
             {
                 SectionAddress addr = new SectionAddress(Script, this);
-                _uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
+                _uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logList);
                 _logInfos.AddRange(logList);
 
                 _convDataType = SectionDataConverted.Interfaces;
