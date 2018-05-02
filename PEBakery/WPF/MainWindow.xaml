@@ -114,7 +114,9 @@
         </Style>
     </Window.Resources>
     <DockPanel>
-        <Grid DockPanel.Dock="Top" Height="80" Background="LightBlue"
+        <Grid DockPanel.Dock="Top"
+              Height="80"
+              Background="LightBlue"
               Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="60" />
@@ -451,6 +453,7 @@
                 <TreeView Background="PaleGreen"
                           DataContext="{Binding BuildTree}"
                           ItemsSource="{Binding Children}"
+                          BorderThickness="0"
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>

@@ -78,7 +78,7 @@ namespace PEBakery.Core
                         var logs = _db.Table<DB_SystemLog>().OrderBy(x => x.Time);
                         foreach (DB_SystemLog log in logs)
                         {
-                            m.SysLogs.Add(new SystemLogHtmlModel()
+                            m.SysLogs.Add(new SystemLogHtmlModel
                             {
                                 TimeStr = log.TimeStr,
                                 State = log.State,
@@ -328,7 +328,7 @@ namespace PEBakery.Core
                             int idx = 1;
                             foreach (DB_Script scLog in scripts)
                             {
-                                m.Scripts.Add(new ScriptHtmlModel()
+                                m.Scripts.Add(new ScriptHtmlModel
                                 {
                                     Index = idx,
                                     Name = scLog.Name,
@@ -349,7 +349,7 @@ namespace PEBakery.Core
                                         .ThenBy(x => x.Key);
                             foreach (DB_Variable vLog in vars)
                             {
-                                m.Vars.Add(new VarHtmlModel()
+                                m.Vars.Add(new VarHtmlModel
                                 {
                                     Type = vLog.Type,
                                     Key = vLog.Key,
@@ -374,7 +374,7 @@ namespace PEBakery.Core
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id)
                                     .OrderBy(x => x.Id).ToArray();
 
-                                ScriptHtmlModel pModel = new ScriptHtmlModel()
+                                ScriptHtmlModel pModel = new ScriptHtmlModel
                                 {
                                     Index = pIdx,
                                     Name = scLog.Name,

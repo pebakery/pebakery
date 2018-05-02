@@ -73,7 +73,9 @@ namespace PEBakery.WPF.Controls
             }
         }
         public delegate void UIElementDragEventHandler(object sender, UIElementDragEventArgs e);
+#pragma warning disable 67
         public event UIElementDragEventHandler UIElementDragEvent;
+#pragma warning restore 67
         #endregion
 
         #region Event Handler

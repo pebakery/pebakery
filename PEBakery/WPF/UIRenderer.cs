@@ -44,6 +44,7 @@ using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
 using Ookii.Dialogs.Wpf;
 
@@ -59,78 +60,88 @@ namespace PEBakery.WPF
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
         public const int MaxUrlDisplayLen = 47;
+        public const string Interface = "Interface";
+
+        private readonly Variables _variables;
+
+        public RenderInfo RenderInfo;
+        public List<UIControl> UICtrls { get; }
+        public double ScaleFactor
+        {
+            get => RenderInfo.ScaleFactor;
+            set => RenderInfo.ScaleFactor = value;
+        }
 
         // Compatibility Option
         public static bool IgnoreWidthOfWebLabel = false;
         public static bool DisableBevelCaption = false;
-
-        private RenderInfo _renderInfo;
-        private readonly Variables _variables;
-
-        public List<UIControl> UICtrls { get; }
-
-        public double Scale
-        {
-            get => _renderInfo.Scale;
-            set => _renderInfo.Scale = value;
-        }
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, double scale, bool viewMode)
+        public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode)
         {
             _variables = script.Project.Variables;
-            _renderInfo = new RenderInfo(canvas, window, script, scale, viewMode);
+            RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
-            (UICtrls, _) = LoadInterfaces(script);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
+            UICtrls = uiCtrls;
+            if (viewMode)
+                UICtrls = UICtrls.Where(x => x.Visibility).ToList();
+
+            App.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scale, bool viewMode)
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode)
         {
             _variables = script.Project.Variables;
-            _renderInfo = new RenderInfo(canvas, window, script, scale, viewMode);
+            RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
-            try
-            {
-                UICtrls = uiCtrls;
-                if (viewMode)
-                    UICtrls = UICtrls.Where(x => x.Visibility).ToList();
-            }
-            catch
-            {
-                UICtrls = null;
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
-            }
+            UICtrls = uiCtrls;
+            if (viewMode)
+                UICtrls = UICtrls.Where(x => x.Visibility).ToList();
         }
         #endregion
 
         #region Load Utility
 
-        public static (List<UIControl>, string) LoadInterfaces(Script script)
+        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc)
         {
             // Check if script has custom interface section
-            string interfaceSectionName = "Interface";
-            if (script.MainInfo.ContainsKey("Interface"))
-                interfaceSectionName = script.MainInfo["Interface"];
+            string ifaceSectionName = GetInterfaceSectionName(sc);
 
-            if (script.Sections.ContainsKey(interfaceSectionName))
+            List<LogInfo> logInfos;
+            if (sc.Sections.ContainsKey(ifaceSectionName))
             {
                 try
                 {
-                    List<UIControl> uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true);
-                    App.Logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
-
-                    return (uiCtrls, interfaceSectionName);
+                    List<UIControl> uiCtrls = sc.Sections[ifaceSectionName].GetUICtrls(true);
+                    logInfos = sc.Sections[ifaceSectionName].LogInfos;
+                    return (uiCtrls, logInfos);
                 }
-                catch
+                catch (Exception e)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
-                    return (null, interfaceSectionName);
+                    logInfos = new List<LogInfo>
+                    {
+                        new LogInfo(LogState.Error, $"Cannot read interface controls from [{sc.TreePath}]\r\n{Logger.LogExceptionMessage(e)}"),
+                    };
+
+                    return (null, logInfos);
                 }
             }
 
-            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
-            return (null, interfaceSectionName);
+            logInfos = new List<LogInfo>
+            {
+                new LogInfo(LogState.Error, $"Cannot read interface controls from [{sc.TreePath}]"),
+            };
+            return (null, logInfos);
+        }
+
+        public static string GetInterfaceSectionName(Script sc)
+        {
+            // Check if script has custom interface section
+            if (sc.MainInfo.ContainsKey(Interface))
+                return sc.MainInfo[Interface];
+            return Interface;
         }
         #endregion
 
@@ -140,7 +151,7 @@ namespace PEBakery.WPF
             if (UICtrls == null) // This script does not have 'Interface' section
                 return;
 
-            InitCanvas(_renderInfo.Canvas);
+            InitCanvas(RenderInfo.Canvas);
             UIControl[] radioButtons = UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
             foreach (UIControl uiCmd in UICtrls)
             {
@@ -149,43 +160,43 @@ namespace PEBakery.WPF
                     switch (uiCmd.Type)
                     {
                         case UIControlType.TextBox:
-                            UIRenderer.RenderTextBox(_renderInfo, uiCmd);
+                            UIRenderer.RenderTextBox(RenderInfo, uiCmd);
                             break;
                         case UIControlType.TextLabel:
-                            UIRenderer.RenderTextLabel(_renderInfo, uiCmd);
+                            UIRenderer.RenderTextLabel(RenderInfo, uiCmd);
                             break;
                         case UIControlType.NumberBox:
-                            UIRenderer.RenderNumberBox(_renderInfo, uiCmd);
+                            UIRenderer.RenderNumberBox(RenderInfo, uiCmd);
                             break;
                         case UIControlType.CheckBox:
-                            UIRenderer.RenderCheckBox(_renderInfo, uiCmd);
+                            UIRenderer.RenderCheckBox(RenderInfo, uiCmd);
                             break;
                         case UIControlType.ComboBox:
-                            UIRenderer.RenderComboBox(_renderInfo, uiCmd);
+                            UIRenderer.RenderComboBox(RenderInfo, uiCmd);
                             break;
                         case UIControlType.Image:
-                            UIRenderer.RenderImage(_renderInfo, uiCmd);
+                            UIRenderer.RenderImage(RenderInfo, uiCmd);
                             break;
                         case UIControlType.TextFile:
-                            UIRenderer.RenderTextFile(_renderInfo, uiCmd);
+                            UIRenderer.RenderTextFile(RenderInfo, uiCmd);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(_renderInfo, uiCmd);
+                            UIRenderer.RenderButton(RenderInfo, uiCmd);
                             break;
                         case UIControlType.WebLabel:
-                            UIRenderer.RenderWebLabel(_renderInfo, uiCmd);
+                            UIRenderer.RenderWebLabel(RenderInfo, uiCmd);
                             break;
                         case UIControlType.RadioButton:
-                            UIRenderer.RenderRadioButton(_renderInfo, uiCmd, radioButtons);
+                            UIRenderer.RenderRadioButton(RenderInfo, uiCmd, radioButtons);
                             break;
                         case UIControlType.Bevel:
-                            UIRenderer.RenderBevel(_renderInfo, uiCmd);
+                            UIRenderer.RenderBevel(RenderInfo, uiCmd);
                             break;
                         case UIControlType.FileBox:
-                            UIRenderer.RenderFileBox(_renderInfo, uiCmd, _variables);
+                            UIRenderer.RenderFileBox(RenderInfo, uiCmd, _variables);
                             break;
                         case UIControlType.RadioGroup:
-                            UIRenderer.RenderRadioGroup(_renderInfo, uiCmd);
+                            UIRenderer.RenderRadioGroup(RenderInfo, uiCmd);
                             break;
                         default:
                             App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
@@ -193,7 +204,8 @@ namespace PEBakery.WPF
                     }
                 }
                 catch (Exception e)
-                { // Log failure
+                {
+                    // Log failure
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
                 }
             }
@@ -461,8 +473,8 @@ namespace PEBakery.WPF
 
                 if (type == ImageHelper.ImageType.Svg)
                 {
-                    double width = uiCtrl.Rect.Width * r.Scale;
-                    double height = uiCtrl.Rect.Height * r.Scale;
+                    double width = uiCtrl.Rect.Width * r.ScaleFactor;
+                    double height = uiCtrl.Rect.Height * r.ScaleFactor;
                     bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
                 }
                 else
@@ -1023,6 +1035,29 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Update
+
+        public void Update(UIControl uiCtrl)
+        {
+            /*
+            FrameworkElement element = null;
+            foreach (FrameworkElement child in RenderInfo.Canvas.Children)
+            {
+                if (child.Tag is UIControl ctrl)
+                {
+                    if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    {
+                        element = child;
+                        break;
+                    }
+                }
+            }
+
+            UIRenderer.RemoveFromCanvas(RenderInfo.Canvas, element);
+            */
+        }
+        #endregion
+
         #region Render Utility
         private static void InitCanvas(Canvas canvas)
         {
@@ -1031,18 +1066,29 @@ namespace PEBakery.WPF
             canvas.Height = double.NaN;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord)
+        {
+            DrawToCanvas(r.Canvas, element, coord);
+        }
+
+        public static void DrawToCanvas(Canvas canvas, FrameworkElement element, Rect coord)
         {
             Canvas.SetLeft(element, coord.Left);
             Canvas.SetTop(element, coord.Top);
             element.Width = coord.Width;
             element.Height = coord.Height;
-            
-            r.Canvas.Children.Add(element);
-            if (double.IsNaN(r.Canvas.Width) || r.Canvas.Width < coord.Left + coord.Width)
-                r.Canvas.Width = coord.Left + coord.Width;
-            if (double.IsNaN(r.Canvas.Height) || r.Canvas.Height < coord.Top + coord.Height)
-                r.Canvas.Height = coord.Top + coord.Height;
+
+            canvas.Children.Add(element);
+            if (double.IsNaN(canvas.Width) || canvas.Width < coord.Left + coord.Width)
+                canvas.Width = coord.Left + coord.Width;
+            if (double.IsNaN(canvas.Height) || canvas.Height < coord.Top + coord.Height)
+                canvas.Height = coord.Top + coord.Height;
+        }
+
+        public static void RemoveFromCanvas(Canvas canvas, FrameworkElement element)
+        {
+            canvas.Children.Remove(element);
         }
 
         private static void SetToolTip(FrameworkElement element, string toolTip)
@@ -1078,6 +1124,18 @@ namespace PEBakery.WPF
             if (toolTip == null)
                 return url;
             return toolTip + Environment.NewLine + Environment.NewLine + url;
+        }
+
+        public static int GetMaxZIndex(Canvas canvas)
+        {
+            int max = Canvas.GetZIndex(canvas);
+            foreach (UIElement element in canvas.Children)
+            {
+                int z = Canvas.GetZIndex(element);
+                if (max < z)
+                    max = z;
+            }
+            return max;
         }
 
         private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)
@@ -1151,7 +1209,7 @@ namespace PEBakery.WPF
     #region RenderInfo
     public struct RenderInfo
     {
-        public double Scale;
+        public double ScaleFactor;
         public readonly Canvas Canvas;
         public readonly Window Window;
         public readonly Script Script;
@@ -1162,7 +1220,7 @@ namespace PEBakery.WPF
 
         public RenderInfo(Canvas canvas, Window window, Script script, double scale, bool allowModify)
         {
-            Scale = scale;
+            ScaleFactor = scale;
             Canvas = canvas;
             Window = window;
             Script = script;

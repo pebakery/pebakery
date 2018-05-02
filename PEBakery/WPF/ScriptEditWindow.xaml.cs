@@ -32,7 +32,7 @@ namespace PEBakery.WPF
         public static int Count = 0;
 
         private Script _sc;
-        private UIRenderer _render = null;
+        private UIRenderer _render;
         private readonly ScriptEditViewModel m;
         #endregion
 
@@ -51,9 +51,8 @@ namespace PEBakery.WPF
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 ReadScriptGeneral();
+                ReadScriptInterface();
                 ReadScriptAttachment();
-
-                m.InterfaceNotSaved = false;
             }
             catch (Exception e)
             { // Rollback Count to 0
@@ -62,6 +61,61 @@ namespace PEBakery.WPF
                 App.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
                 MessageBox.Show($"[Error Message]\r\n{e.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        #endregion
+
+        #region Window Event
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (m.ScriptHeaderNotSaved)
+            {
+                switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                {
+                    case MessageBoxResult.Yes:
+                        if (!WriteScriptGeneral())
+                        {
+                            e.Cancel = true; // Error while saving, do not close ScriptEditWindow
+                            return;
+                        }
+                        break;
+                    case MessageBoxResult.No:
+                        break;
+                    default:
+                        throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
+                }
+            }
+
+            if (m.InterfaceNotSaved)
+            {
+                switch (MessageBox.Show("Script interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                {
+                    case MessageBoxResult.Yes:
+                        WriteScriptInterface();
+                        break;
+                    case MessageBoxResult.No:
+                        break;
+                    default:
+                        throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
+                }
+            }
+
+            // If script was updated, force MainWindow to refresh script
+            DialogResult = m.ScriptHeaderUpdated || m.InterfaceUpdated;
+
+            Tag = _sc;
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
+            m.UIControlModified -= ViewModel_UIControlModified;
+
+            Interlocked.Decrement(ref Count);
+        }
+
+        private void MainSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            WriteScriptGeneral();
         }
         #endregion
 
@@ -104,6 +158,29 @@ namespace PEBakery.WPF
             m.ScriptHeaderUpdated = false;
         }
 
+        private void ReadScriptInterface()
+        {
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
+            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls, 1, false);
+
+            m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
+            m.InterfaceUICtrlIndex = 0;
+
+            m.InterfaceNotSaved = false;
+            m.InterfaceUpdated = false;
+
+            if (0 < errLogs.Count)
+            {
+                App.Logger.SystemWrite(errLogs);
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Error Messages]");
+                foreach (LogInfo log in errLogs)
+                    b.AppendLine(log.Message);
+                MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void ReadScriptAttachment()
         {
             // Attachment
@@ -126,8 +203,11 @@ namespace PEBakery.WPF
         #endregion
 
         #region WriteScript
-        private bool WriteScript()
+        private bool WriteScriptGeneral()
         {
+            if (_sc == null)
+                return false;
+
             // Check m.ScriptVersion
             string verStr = StringEscaper.ProcessVersionString(m.ScriptVersion);
             if (verStr == null)
@@ -162,46 +242,28 @@ namespace PEBakery.WPF
             m.ScriptHeaderNotSaved = false;
             return true;
         }
-        #endregion
 
-        #region Window Event
-        private void Window_Closing(object sender, CancelEventArgs e)
+        private void WriteScriptInterface()
         {
-            if (m.ScriptHeaderNotSaved)
+            if (_render == null)
+                return;
+
+            try
             {
-                switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                UIControl.Update(_render.UICtrls);
+
+                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
                 {
-                    case MessageBoxResult.Yes:
-                        if (!WriteScript())
-                        {
-                            e.Cancel = true; // Error while saving, do not close ScriptEditWindow
-                            return;
-                        }
-                        break;
-                    case MessageBoxResult.No:
-                        break;
-                    default:
-                        throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
-                }
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    w?.DrawScript(_sc);
+                }));
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Save of interface failed.\r\n\r\n[Message]\r\n{e.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            // If script was updated, force MainWindow to refresh script
-            DialogResult = m.ScriptHeaderUpdated;
-
-            Tag = _sc;
-
-            m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
-            m.UIControlModified -= ViewModel_UIControlModified;
-        }
-
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            Interlocked.Decrement(ref Count);
-        }
-
-        private void MainSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            WriteScript();
+            m.InterfaceNotSaved = false;
         }
         #endregion
 
@@ -306,15 +368,23 @@ namespace PEBakery.WPF
             double scaleFactor = m.InterfaceScaleFactor / 100;
             if (scaleFactor - 1 < double.Epsilon)
                 scaleFactor = 1;
+            _render.ScaleFactor = scaleFactor;
             m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
 
-            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, scaleFactor, false);
             _render.Render();
+            m.InterfaceLoaded = true;
         }
 
         private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             DrawScript();
+        }
+
+        private void Interface_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            m.SelectedUICtrl = _render.UICtrls[m.InterfaceUICtrlIndex];
+            m.InterfaceCanvas.ResetSelectedBorder();
+            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
         private void InterfaceLoadButton_Click(object sender, RoutedEventArgs e)
@@ -324,10 +394,7 @@ namespace PEBakery.WPF
 
         private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_render == null)
-                return;
-
-            UIControl.Update(_render.UICtrls);
+            WriteScriptInterface();
         }
 
         private void InterfaceCanvas_UIControlSelected(object sender, EditCanvas.UIControlSelectedEventArgs e)
@@ -335,17 +402,22 @@ namespace PEBakery.WPF
             if (e.UIControl == null)
                 return;
 
-            // FrameworkElement element = e.Element;
-            m.UICtrl = e.UIControl;
+            m.SelectedUICtrl = e.UIControl;
+
+            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
+            m.InterfaceUICtrlIndex = idx;
         }
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
         {
             int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-
             _render.UICtrls[idx] = e.UIControl;
+
+            m.InterfaceCanvas.ResetSelectedBorder();
             _render.Render();
+            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
         #endregion
 
@@ -669,7 +741,7 @@ namespace PEBakery.WPF
                     // Changing focus is required to make sure changes in UI updated to ViewModel
                     MainSaveButton.Focus();
 
-                    WriteScript();
+                    WriteScriptGeneral();
                 }
             }
         }
@@ -948,6 +1020,8 @@ namespace PEBakery.WPF
 
         #region Property - Interface
         public bool InterfaceNotSaved { get; set; } = false;
+        public bool InterfaceUpdated { get; set; } = false;
+
         private EditCanvas _interfaceCanvas;
         public EditCanvas InterfaceCanvas
         {
@@ -970,14 +1044,45 @@ namespace PEBakery.WPF
             }
         }
 
-        private UIControl _uiCtrl;
-        public UIControl UICtrl
+        private bool _interfaceLoaded = false;
+        public bool InterfaceLoaded
         {
-            get => _uiCtrl;
+            get => _interfaceLoaded;
             set
             {
-                _uiCtrl = value;
-                OnPropertyUpdate(nameof(UICtrlSelected));
+                _interfaceLoaded = value;
+                OnPropertyUpdate(nameof(InterfaceLoaded));
+            }
+        }
+        private ObservableCollection<string> _interfaceUICtrls = new ObservableCollection<string>();
+        public ObservableCollection<string> InterfaceUICtrls
+        {
+            get => _interfaceUICtrls;
+            set
+            {
+                _interfaceUICtrls = value;
+                OnPropertyUpdate(nameof(InterfaceUICtrls));
+            }
+        }
+        private int _interfaceUICtrlIndex = 0;
+        public int InterfaceUICtrlIndex
+        {
+            get => _interfaceUICtrlIndex;
+            set
+            {
+                _interfaceUICtrlIndex = value;
+                OnPropertyUpdate(nameof(InterfaceUICtrlIndex));
+            }
+        }
+
+        private UIControl _selectedUICtrl;
+        public UIControl SelectedUICtrl
+        {
+            get => _selectedUICtrl;
+            set
+            {
+                _selectedUICtrl = value;
+                OnPropertyUpdate(nameof(UICtrlEditEnabled));
                 OnPropertyUpdate(nameof(UICtrlText));
                 OnPropertyUpdate(nameof(UICtrlVisible));
                 OnPropertyUpdate(nameof(UICtrlX));
@@ -987,89 +1092,103 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(UICtrlToolTip));
             }
         }
-        public bool UICtrlSelected => _uiCtrl != null;
+        public bool UICtrlEditEnabled => _selectedUICtrl != null;
         public string UICtrlText
         {
-            get => _uiCtrl != null ? _uiCtrl.Text : string.Empty;
+            get => _selectedUICtrl != null ? _selectedUICtrl.Text : string.Empty;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Text = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Text = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public bool UICtrlVisible
         {
-            get => _uiCtrl != null && _uiCtrl.Visibility;
+            get => _selectedUICtrl != null && _selectedUICtrl.Visibility;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Visibility = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Visibility = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public int UICtrlX
         {
-            get => _uiCtrl != null ? (int) _uiCtrl.Rect.X : 0;
+            get => _selectedUICtrl != null ? (int) _selectedUICtrl.Rect.X : 0;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Rect.X = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Rect.X = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public int UICtrlY
         {
-            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Y : 0;
+            get => _selectedUICtrl != null ? (int)_selectedUICtrl.Rect.Y : 0;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Rect.Y = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Rect.Y = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public int UICtrlWidth
         {
-            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Width : 0;
+            get => _selectedUICtrl != null ? (int)_selectedUICtrl.Rect.Width : 0;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Rect.Width = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Rect.Width = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public int UICtrlHeight
         {
-            get => _uiCtrl != null ? (int)_uiCtrl.Rect.Height : 0;
+            get => _selectedUICtrl != null ? (int)_selectedUICtrl.Rect.Height : 0;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Rect.Height = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Rect.Height = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         public string UICtrlToolTip
         {
-            get => _uiCtrl != null ? _uiCtrl.Info.ToolTip : string.Empty;
+            get => _selectedUICtrl != null ? _selectedUICtrl.Info.ToolTip : string.Empty;
             set
             {
-                if (_uiCtrl == null)
+                if (_selectedUICtrl == null)
                     return;
 
-                _uiCtrl.Info.ToolTip = value;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_uiCtrl));
+                _selectedUICtrl.Info.ToolTip = value;
+                InterfaceNotSaved = true;
+                InterfaceUpdated = true;
+                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
             }
         }
         #endregion

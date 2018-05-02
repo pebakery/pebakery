@@ -41,13 +41,10 @@ namespace PEBakery.WPF.Controls
     {
         #region Fields
         private FrameworkElement _selectedElement;
-
-        private Brush _borderBrushBackup;
-        private Thickness _borderThicknessBackup;
+        private Border _selectedBorder;
         #endregion
 
         #region Properties
-
         private int MaxZIndex
         {
             get
@@ -82,57 +79,74 @@ namespace PEBakery.WPF.Controls
         #region Event Handler
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
+            ResetSelectedBorder();
+
+            FrameworkElement element = null;
             if (e.Source is DependencyObject dObj)
             {
-                _selectedElement = FindTopParentFrameworkElement(dObj);
-                if (_selectedElement == null)
-                    return;
+                element = FindRootFrameworkElement(dObj);
             }
 
-            // Set Z Index to top
-            Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
+            if (element == null)
+                return;
 
-            // Draw red borderline
-            if (_selectedElement is Control control)
-            {
-                _borderBrushBackup = control.BorderBrush;
-                _borderThicknessBackup = control.BorderThickness;
-
-                control.BorderBrush = Brushes.Red;
-                control.BorderThickness = new Thickness(2);
-            }
-
-            UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, _selectedElement.Tag as UIControl));
+            DrawSelectedBorder(element);
 
             e.Handled = true;
         }
 
-        protected override void OnPreviewMouseMove(MouseEventArgs e)
+        public void ResetSelectedBorder()
         {
-            base.OnPreviewMouseMove(e);
-        }
-
-        protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
-        {
-            base.OnPreviewMouseUp(e);
-        }
-
-        public UIElement FindTopParentUIElement(DependencyObject dObj)
-        {
-            while (dObj != null)
+            if (_selectedBorder != null)
             {
-                if (dObj is UIElement element && Children.Contains(element))
-                    return element;
-
-                if (dObj is Visual || dObj is Visual3D)
-                    dObj = VisualTreeHelper.GetParent(dObj);
-                else
-                    dObj = LogicalTreeHelper.GetParent(dObj);
+                UIRenderer.RemoveFromCanvas(this, _selectedBorder);
+                _selectedBorder = null;
             }
-            return null;
         }
 
-        public FrameworkElement FindTopParentFrameworkElement(DependencyObject dObj)
+        public void DrawSelectedBorder(UIControl uiCtrl)
+        {
+            FrameworkElement element = null;
+            foreach (FrameworkElement child in Children)
+            {
+                if (child.Tag is UIControl ctrl)
+                {
+                    if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    {
+                        element = child;
+                        break;
+                    }
+                }
+            }
+
+            DrawSelectedBorder(element);
+        }
+
+        public void DrawSelectedBorder(FrameworkElement element)
+        {
+            if (element == null)
+                return;
+
+            _selectedElement = element;
+            if (_selectedElement.Tag is UIControl uiCtrl)
+            {
+                // Set Z Index to top
+                Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
+
+                _selectedBorder = new Border
+                {
+                    Opacity = 0.75,
+                    BorderBrush = Brushes.Red,
+                    BorderThickness = new Thickness(2),
+                };
+                Canvas.SetZIndex(_selectedBorder, MaxZIndex + 1);
+                UIRenderer.DrawToCanvas(this, _selectedBorder, uiCtrl.Rect);
+
+                UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
+            }
+        }
+
+        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
