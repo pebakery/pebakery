@@ -189,26 +189,50 @@ namespace PEBakery.Core
         #endregion
 
         #region Update
-        public void Update()
+        public bool Update()
         {
-            Ini.WriteKey(Addr.Script.RealPath, new IniKey(Addr.Section.Name, Key, ForgeRawLine(false)));
+            return Ini.WriteKey(Addr.Script.RealPath, Addr.Section.Name, Key, ForgeRawLine(false));
         }
         
-        public static void Update(List<UIControl> uiCmdList)
+        public static bool Update(List<UIControl> uiCtrls)
         {
-            if (0 < uiCmdList.Count)
+            if (uiCtrls.Count == 0)
+                return true;
+
+            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
+            foreach (UIControl uiCtrl in uiCtrls)
             {
-                string fullPath = uiCmdList[0].Addr.Script.RealPath;
-                List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
-                foreach (UIControl uiCmd in uiCmdList)
-                {
-                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
-                    keys.Add(new IniKey(uiCmd.Addr.Section.Name, uiCmd.Key, uiCmd.ForgeRawLine(false)));
-                }
+                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
+            }
 
-                Ini.WriteKeys(fullPath, keys);
-            }           
+            return Ini.WriteKeys(fullPath, keys);
+        }
+        #endregion
+
+        #region Delete
+        public bool Delete()
+        {
+            return Ini.DeleteKey(Addr.Script.RealPath, Addr.Section.Name, Key);
+        }
+
+        public static bool Delete(List<UIControl> uiCtrls)
+        {
+            if (uiCtrls.Count == 0)
+                return true;
+
+            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
+
+                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key));
+            }
+
+            return Ini.DeleteKeys(fullPath, keys).Any(x => x);
         }
         #endregion
 
@@ -558,18 +582,18 @@ namespace PEBakery.Core
         public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
     }
 
-    public enum UIInfo_TextLabel_Style
+    public enum UITextStyle
     {
-        Normal, Bold, Italic, Underline, Strike
+        Normal = 0, Bold, Italic, Underline, Strike
     }
 
     [Serializable]
     public class UIInfo_TextLabel : UIInfo
     {
         public int FontSize;
-        public UIInfo_TextLabel_Style Style;
+        public UITextStyle Style;
 
-        public UIInfo_TextLabel(string tooltip, int fontSize, UIInfo_TextLabel_Style style)
+        public UIInfo_TextLabel(string tooltip, int fontSize, UITextStyle style)
             : base(tooltip)
         {
             FontSize = fontSize;
@@ -840,18 +864,18 @@ namespace PEBakery.Core
         public new static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
     }
 
-    public enum UIInfo_BevelCaption_Style
+    public enum UIBevelCaptionStyle
     {
-        Normal, Bold
+        Normal = 0, Bold
     }
 
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
         public int? FontSize;
-        public UIInfo_BevelCaption_Style? Style;
+        public UIBevelCaptionStyle? Style;
 
-        public UIInfo_Bevel(string tooltip, int? fontSize, UIInfo_BevelCaption_Style? style)
+        public UIInfo_Bevel(string tooltip, int? fontSize, UIBevelCaptionStyle? style)
             : base(tooltip)
         {
             FontSize = fontSize;

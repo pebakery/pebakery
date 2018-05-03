@@ -49,9 +49,6 @@ namespace PEBakery.WPF.Controls
         public FreeNumberBox()
         {
             InitializeComponent();
-
-            // DataContext = this;
-            // LayoutGrid.DataContext = this;
         }
         #endregion
 
@@ -109,11 +106,11 @@ namespace PEBakery.WPF.Controls
 
         #region Callbacks
         private static object CoerceValue(DependencyObject element, object value)
-        { // Check if (MinValue <= Value <= MaxValue)
+        {
+            // Check if (MinValue <= Value <= MaxValue)
             if (element is FreeNumberBox control)
                 return LimitDecimalValue(control, (decimal)value);
-            else
-                return value;
+            return value;
         }
 
         private static void OnValueChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)

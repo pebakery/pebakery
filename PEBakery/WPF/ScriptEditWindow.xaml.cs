@@ -35,6 +35,7 @@ namespace PEBakery.WPF
         private UIRenderer _render;
         private readonly ScriptEditViewModel m;
         private string _ifaceSectionName;
+        private bool _first = true;
         #endregion
 
         #region Constructor
@@ -60,7 +61,7 @@ namespace PEBakery.WPF
                 Interlocked.Decrement(ref Count);
 
                 App.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
-                MessageBox.Show($"[Error Message]\r\n{e.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"[Error Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -68,12 +69,15 @@ namespace PEBakery.WPF
         #region Window Event
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            bool scriptSaved = false;
             if (m.ScriptHeaderNotSaved)
             {
                 switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
-                        if (!WriteScriptGeneral())
+                        if (WriteScriptGeneral(false))
+                            scriptSaved = true;
+                        else
                         {
                             e.Cancel = true; // Error while saving, do not close ScriptEditWindow
                             return;
@@ -91,7 +95,9 @@ namespace PEBakery.WPF
                 switch (MessageBox.Show("Script interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
-                        WriteScriptInterface();
+                        // Do not use e.Cancel here, when script file is moved the method will always fail
+                        if (WriteScriptInterface(false))
+                            scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
                         break;
@@ -99,6 +105,9 @@ namespace PEBakery.WPF
                         throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
                 }
             }
+
+            if (scriptSaved)
+                RefreshMainWindow();
 
             // If script was updated, force MainWindow to refresh script
             DialogResult = m.ScriptHeaderUpdated || m.InterfaceUpdated;
@@ -162,8 +171,10 @@ namespace PEBakery.WPF
         private void ReadScriptInterface()
         {
             _ifaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
+
+            // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
-            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls, 1, false);
+            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = 0;
@@ -181,6 +192,9 @@ namespace PEBakery.WPF
                     b.AppendLine(log.Message);
                 MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            DrawScript();
+            ResetSelectedUICtrl();
         }
 
         private void ReadScriptAttachment()
@@ -202,10 +216,39 @@ namespace PEBakery.WPF
                 m.AttachedFiles.Add(item);
             }
         }
+
+        private void ReadUIControlInfo(UIControl uiCtrl)
+        {
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.TextBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
+                    UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m._uiCtrlTextBoxValue = info.Value;
+                    m.OnPropertyUpdate(nameof(m.UICtrlTextBoxValue));
+                    break;
+                }
+                case UIControlType.TextLabel:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                    UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m._uiCtrlTextLabelFontSize = info.FontSize;
+                    m._uiCtrlTextLabelStyleIndex = (int)info.Style;
+                    m.OnPropertyUpdate(nameof(m.UICtrlTextLabelFontSize));
+                    m.OnPropertyUpdate(nameof(m.UICtrlTextLabelStyleIndex));
+                    break;
+                }
+            }
+        }
         #endregion
 
         #region WriteScript
-        private bool WriteScriptGeneral()
+        private bool WriteScriptGeneral(bool refresh = true)
         {
             if (_sc == null)
                 return false;
@@ -235,37 +278,77 @@ namespace PEBakery.WPF
             Ini.WriteKeys(_sc.RealPath, keys);
             _sc = _sc.Project.RefreshScript(_sc);
 
-            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.DrawScript(_sc);
-            }));
+            if (refresh)
+                RefreshMainWindow();
 
             m.ScriptHeaderNotSaved = false;
             return true;
         }
 
-        private void WriteScriptInterface()
+        private bool WriteScriptInterface(bool refresh = true)
         {
             if (_render == null)
-                return;
+                return false;
 
             try
             {
-                UIControl.Update(_render.UICtrls);
+                if (m.SelectedUICtrl != null)
+                    WriteUIControlInfo(m.SelectedUICtrl);
 
-                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-                {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    w?.DrawScript(_sc);
-                }));
+                UIControl.Update(_render.UICtrls);
+                UIControl.Delete(m.UICtrlToBeDeleted);
+                m.UICtrlToBeDeleted.Clear();
+
+                if (refresh)
+                    RefreshMainWindow();
+
+                _sc = _sc.Project.RefreshScript(_sc);
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Save of interface failed.\r\n\r\n[Message]\r\n{e.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Interface save failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
 
             m.InterfaceNotSaved = false;
+            return true;
+        }
+
+        private void RefreshMainWindow()
+        {
+            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w?.DrawScript(_sc);
+            }));
+        }
+
+        private void WriteUIControlInfo(UIControl uiCtrl)
+        {
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.TextBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
+                    UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    info.Value = m.UICtrlTextBoxValue;
+                    break;
+                }
+                case UIControlType.TextLabel:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                    UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    Debug.Assert(0 <= m.UICtrlTextLabelStyleIndex && m.UICtrlTextLabelStyleIndex < 5, "Internal Logic Error at ViewModel_UIControlModified");
+
+                    info.FontSize = m.UICtrlTextLabelFontSize;
+                    info.Style = (UITextStyle)m.UICtrlTextLabelStyleIndex;
+                    break;
+                }
+            }
         }
         #endregion
 
@@ -291,7 +374,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -326,7 +409,7 @@ namespace PEBakery.WPF
                         catch (Exception ex)
                         {
                             App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
                 }
@@ -361,7 +444,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event Handler - Interface
-
         private void DrawScript()
         {
             if (m == null)
@@ -377,13 +459,28 @@ namespace PEBakery.WPF
             m.InterfaceLoaded = true;
         }
 
+        private void ResetSelectedUICtrl()
+        {
+            m.SelectedUICtrl = null;
+            m.InterfaceCanvas.ResetSelectedBorder();
+        }
+
         private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             DrawScript();
         }
 
-        private void Interface_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (m.InterfaceUICtrlIndex < 0 || _render.UICtrls.Count <= m.InterfaceUICtrlIndex)
+                return;
+
+            if (_first)
+            {
+                _first = false;
+                return;
+            }
+
             m.SelectedUICtrl = _render.UICtrls[m.InterfaceUICtrlIndex];
             m.InterfaceCanvas.ResetSelectedBorder();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
@@ -396,6 +493,9 @@ namespace PEBakery.WPF
 
             m.SelectedUICtrl = e.UIControl;
 
+            if (m.SelectedUICtrl != null)
+                ReadUIControlInfo(m.SelectedUICtrl);
+
             int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
             m.InterfaceUICtrlIndex = idx;
@@ -403,18 +503,23 @@ namespace PEBakery.WPF
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
         {
-            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+            UIControl uiCtrl = e.UIControl;
+
+            if (!e.Direct)
+                WriteUIControlInfo(uiCtrl);
+
+            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-            _render.UICtrls[idx] = e.UIControl;
+            _render.UICtrls[idx] = uiCtrl;
 
             m.InterfaceCanvas.ResetSelectedBorder();
             _render.Render();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
-        private void InterfaceLoadButton_Click(object sender, RoutedEventArgs e)
+        private void InterfaceReloadButton_Click(object sender, RoutedEventArgs e)
         {
-            DrawScript();
+            ReadScriptInterface();
         }
 
         private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
@@ -443,8 +548,6 @@ namespace PEBakery.WPF
 
         private void UICtrlAddButton_Click(object sender, RoutedEventArgs e)
         {
-            // _render.UICtrls.Add
-            // m.UICtrlAddTypeIndex;
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
             if (string.IsNullOrWhiteSpace(m.UICtrlAddName))
             {
@@ -473,6 +576,25 @@ namespace PEBakery.WPF
             _render.Render();
             m.SelectedUICtrl = uiCtrl;
             m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
+        }
+
+        private void UICtrlDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (m.SelectedUICtrl == null)
+                return;
+
+            m.InterfaceNotSaved = true;
+            m.InterfaceUpdated = true;
+
+            UIControl uiCtrl = m.SelectedUICtrl;
+            m.UICtrlToBeDeleted.Add(uiCtrl);
+
+            _render.UICtrls.Remove(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(_render.UICtrls.Select(x => x.Key));
+            m.InterfaceUICtrlIndex = 0;
+
+            _render.Render();
+            m.SelectedUICtrl = null;
         }
         #endregion
 
@@ -837,9 +959,12 @@ namespace PEBakery.WPF
         public class UIControlModifiedEventArgs : EventArgs
         {
             public UIControl UIControl { get; set; }
-            public UIControlModifiedEventArgs(UIControl uiCtrl)
+            public bool Direct { get; set; }
+
+            public UIControlModifiedEventArgs(UIControl uiCtrl, bool direct)
             {
                 UIControl = uiCtrl;
+                Direct = direct;
             }
         }
         public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
@@ -1121,6 +1246,9 @@ namespace PEBakery.WPF
             }
         }
 
+        // Delete
+        public List<UIControl> UICtrlToBeDeleted = new List<UIControl>();
+
         // Editor
         private bool _interfaceLoaded = false;
         public bool InterfaceLoaded
@@ -1153,13 +1281,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private UIControl _selectedUICtrl;
+        private UIControl _selectedUICtrl = null;
         public UIControl SelectedUICtrl
         {
             get => _selectedUICtrl;
             set
             {
                 _selectedUICtrl = value;
+                
+                // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
                 OnPropertyUpdate(nameof(UICtrlText));
                 OnPropertyUpdate(nameof(UICtrlVisible));
@@ -1168,6 +1298,35 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(UICtrlWidth));
                 OnPropertyUpdate(nameof(UICtrlHeight));
                 OnPropertyUpdate(nameof(UICtrlToolTip));
+                
+                // UIControl Visibility
+                OnPropertyUpdate(nameof(IsUICtrlTextBox));
+                OnPropertyUpdate(nameof(IsUICtrlTextLabel));
+                OnPropertyUpdate(nameof(IsUICtrlNumberBox));
+                OnPropertyUpdate(nameof(IsUICtrlComboBox));
+                OnPropertyUpdate(nameof(IsUICtrlImage));
+                OnPropertyUpdate(nameof(IsUICtrlTextFile));
+                OnPropertyUpdate(nameof(IsUICtrlButton));
+                OnPropertyUpdate(nameof(IsUICtrlWebLabel));
+                OnPropertyUpdate(nameof(IsUICtrlRadioButton));
+                OnPropertyUpdate(nameof(IsUICtrlBevel));
+                OnPropertyUpdate(nameof(IsUICtrlFileBox));
+                OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
+
+                // UIControl Optional Argument
+                if (value != null)
+                {
+                    switch (value.Type)
+                    {
+                        case UIControlType.TextBox:
+                            OnPropertyUpdate(nameof(UICtrlTextBoxValue));
+                            break;
+                        case UIControlType.TextLabel:
+                            OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
+                            OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                            break;
+                    }
+                }
             }
         }
         public bool UICtrlEditEnabled => _selectedUICtrl != null;
@@ -1180,9 +1339,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Text = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public bool UICtrlVisible
@@ -1194,9 +1351,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Visibility = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public int UICtrlX
@@ -1208,9 +1363,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Rect.X = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public int UICtrlY
@@ -1222,9 +1375,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Rect.Y = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public int UICtrlWidth
@@ -1236,9 +1387,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Rect.Width = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public int UICtrlHeight
@@ -1250,9 +1399,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Rect.Height = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
         public string UICtrlToolTip
@@ -1264,11 +1411,64 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Info.ToolTip = value;
-                InterfaceNotSaved = true;
-                InterfaceUpdated = true;
-                UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl));
+                InvokeUIControlEvent(true);
             }
         }
+
+        #region IsUICtrl Visibility Series
+        public Visibility IsUICtrlTextBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.TextBox ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlTextLabel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.TextLabel ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlNumberBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.NumberBox ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlCheckBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.CheckBox ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlComboBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.ComboBox ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlImage => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Image ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlTextFile => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.TextFile ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlButton => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Button ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlWebLabel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.WebLabel ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlRadioButton => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioButton ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
+        #endregion
+
+        #region Per-TextBox
+        public string _uiCtrlTextBoxValue;
+        public string UICtrlTextBoxValue
+        {
+            get => _uiCtrlTextBoxValue;
+            set
+            {
+                _uiCtrlTextBoxValue = value;
+                OnPropertyUpdate(nameof(UICtrlTextBoxValue));
+                InvokeUIControlEvent(false);
+            }
+        }
+        #endregion
+        #region Per-TextLabel
+        public int _uiCtrlTextLabelFontSize;
+        public int UICtrlTextLabelFontSize
+        {
+            get => _uiCtrlTextLabelFontSize;
+            set
+            {
+                _uiCtrlTextLabelFontSize = value;
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
+                InvokeUIControlEvent(false);
+            }
+        }
+        public int _uiCtrlTextLabelStyleIndex;
+        public int UICtrlTextLabelStyleIndex
+        {
+            get => _uiCtrlTextLabelStyleIndex;
+            set
+            {
+                _uiCtrlTextLabelStyleIndex = value;
+                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                InvokeUIControlEvent(false);
+            }
+        }
+        #endregion
+
         #endregion
 
         #region Property - Attachment
@@ -1418,6 +1618,15 @@ namespace PEBakery.WPF
             OnPropertyUpdate(nameof(AttachDetailFileVisiblity));
             OnPropertyUpdate(nameof(AttachDetailFolderVisiblity));
             OnPropertyUpdate(nameof(AttachAddFolderVisiblity));
+        }
+        #endregion
+
+        #region InvokeUIControlEvent
+        private void InvokeUIControlEvent(bool direct)
+        {
+            InterfaceNotSaved = true;
+            InterfaceUpdated = true;
+            UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, direct));
         }
         #endregion
 

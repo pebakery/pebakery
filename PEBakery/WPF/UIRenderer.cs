@@ -88,8 +88,6 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
 
             UICtrls = uiCtrls;
-            if (viewMode)
-                UICtrls = UICtrls.Where(x => x.Visibility).ToList();
 
             App.Logger.SystemWrite(errLogs);
         }
@@ -103,8 +101,6 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
 
             UICtrls = uiCtrls;
-            if (viewMode)
-                UICtrls = UICtrls.Where(x => x.Visibility).ToList();
         }
         #endregion
 
@@ -157,9 +153,11 @@ namespace PEBakery.WPF
             if (UICtrls == null) // This script does not have 'Interface' section
                 return;
 
+            UIControl[] uiCtrlArr = RenderInfo.ViewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
+
             InitCanvas(RenderInfo.Canvas);
-            UIControl[] radioButtons = UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
-            foreach (UIControl uiCmd in UICtrls)
+            UIControl[] radioButtons = uiCtrlArr.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+            foreach (UIControl uiCmd in uiCtrlArr)
             {
                 try
                 {
@@ -264,6 +262,7 @@ namespace PEBakery.WPF
                     FontSize = CalcFontPointScale(),
                 };
                 SetToolTip(block, info.ToolTip);
+                SetEditModeProperties(r, block, uiCtrl);
                 const double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.2;
                 Rect blockRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - margin, uiCtrl.Rect.Width, uiCtrl.Rect.Height);
                 DrawToCanvas(r, block, blockRect);
@@ -292,16 +291,16 @@ namespace PEBakery.WPF
 
             switch (info.Style)
             {
-                case UIInfo_TextLabel_Style.Bold:
+                case UITextStyle.Bold:
                     block.FontWeight = FontWeights.Bold;
                     break;
-                case UIInfo_TextLabel_Style.Italic:
+                case UITextStyle.Italic:
                     block.FontStyle = FontStyles.Italic;
                     break;
-                case UIInfo_TextLabel_Style.Underline:
+                case UITextStyle.Underline:
                     block.TextDecorations = TextDecorations.Underline;
                     break;
-                case UIInfo_TextLabel_Style.Strike:
+                case UITextStyle.Strike:
                     block.TextDecorations = TextDecorations.Strikethrough;
                     break;
             }
@@ -790,7 +789,7 @@ namespace PEBakery.WPF
                     Background = Brushes.White,
                 };
                 textBorder.Child = textBlock;
-                if (info.Style == UIInfo_BevelCaption_Style.Bold)
+                if (info.Style == UIBevelCaptionStyle.Bold)
                     textBlock.FontWeight = FontWeights.Bold;
 
                 Rect blockRect = new Rect

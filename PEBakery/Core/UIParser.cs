@@ -253,15 +253,15 @@ namespace PEBakery.Core
                         if (!NumberHelper.ParseInt32(args[0], out int fontSize))
                             throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
 
-                        UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
+                        UITextStyle style = UITextStyle.Normal;
                         if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                            style = UIInfo_TextLabel_Style.Bold;
+                            style = UITextStyle.Bold;
                         else if (args[1].Equals("Italic", StringComparison.OrdinalIgnoreCase))
-                            style = UIInfo_TextLabel_Style.Italic;
+                            style = UITextStyle.Italic;
                         else if (args[1].Equals("Underline", StringComparison.OrdinalIgnoreCase))
-                            style = UIInfo_TextLabel_Style.Underline;
+                            style = UITextStyle.Underline;
                         else if (args[1].Equals("Strike", StringComparison.OrdinalIgnoreCase))
-                            style = UIInfo_TextLabel_Style.Strike;
+                            style = UITextStyle.Strike;
 
                         return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
@@ -486,7 +486,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         int? fontSize = null;
-                        UIInfo_BevelCaption_Style? style = null;
+                        UIBevelCaptionStyle? style = null;
 
                         if (1 <= args.Count)
                         {
@@ -498,9 +498,9 @@ namespace PEBakery.Core
                         if (2 <= args.Count)
                         {
                             if (args[1].Equals("Normal", StringComparison.OrdinalIgnoreCase))
-                                style = UIInfo_BevelCaption_Style.Normal;
+                                style = UIBevelCaptionStyle.Normal;
                             else if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                                style = UIInfo_BevelCaption_Style.Bold;
+                                style = UIBevelCaptionStyle.Bold;
                         }
 
                         return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);

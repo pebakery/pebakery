@@ -46,25 +46,22 @@
             <ColumnDefinition Width="15"/>
         </Grid.ColumnDefinitions>
 
-        <TextBox
-            Grid.Row="0" Grid.RowSpan="2"
-            Grid.Column="0"
-            TextAlignment="Right"
-            VerticalContentAlignment="Center"
-            PreviewTextInput="TextBox_PreviewTextInput"
-            Text="{Binding Path=Value, ElementName=NumberBox, Mode=TwoWay}"/>
+        <TextBox Grid.Row="0" Grid.RowSpan="2"
+                 Grid.Column="0"
+                 TextAlignment="Right"
+                 VerticalContentAlignment="Center"
+                 PreviewTextInput="TextBox_PreviewTextInput"
+                 Text="{Binding Path=Value, ElementName=NumberBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-        <RepeatButton
-            Grid.Row="0" Grid.Column="1"
-            Click="UpButton_Click">
+        <RepeatButton Grid.Row="0" Grid.Column="1"
+                      Click="UpButton_Click">
             <RepeatButton.Content>
                 <iconPacks:PackIconMaterial Kind="MenuUp" Width="Auto" Height="Auto"/>
             </RepeatButton.Content>
         </RepeatButton>
 
-        <RepeatButton
-            Grid.Row="1" Grid.Column="1"
-            Click="DownButton_Click">
+        <RepeatButton Grid.Row="1" Grid.Column="1"
+                      Click="DownButton_Click">
             <RepeatButton.Content>
                 <iconPacks:PackIconMaterial Kind="MenuDown" Width="Auto" Height="Auto" />
             </RepeatButton.Content>
