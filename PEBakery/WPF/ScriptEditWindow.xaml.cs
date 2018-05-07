@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -227,8 +228,7 @@ namespace PEBakery.WPF
                     UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
                     Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m._uiCtrlTextBoxValue = info.Value;
-                    m.OnPropertyUpdate(nameof(m.UICtrlTextBoxValue));
+                    m.UICtrlTextBoxInfo = info;
                     break;
                 }
                 case UIControlType.TextLabel:
@@ -237,10 +237,36 @@ namespace PEBakery.WPF
                     UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
                     Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m._uiCtrlTextLabelFontSize = info.FontSize;
-                    m._uiCtrlTextLabelStyleIndex = (int)info.Style;
-                    m.OnPropertyUpdate(nameof(m.UICtrlTextLabelFontSize));
-                    m.OnPropertyUpdate(nameof(m.UICtrlTextLabelStyleIndex));
+                    m.UICtrlTextLabelInfo = info;
+                    break;
+                }
+                case UIControlType.NumberBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
+                    UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlNumberBoxInfo = info;
+                    break;
+                }
+                case UIControlType.CheckBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlCheckBoxInfo = info;
+                    m._uiCtrlSectionToRun = info.SectionName;
+                    m._uiCtrlHideProgress = info.HideProgress;
+                    break;
+                }
+                case UIControlType.ComboBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlComboBoxInfo = info;
                     break;
                 }
             }
@@ -298,6 +324,8 @@ namespace PEBakery.WPF
                 UIControl.Update(_render.UICtrls);
                 UIControl.Delete(m.UICtrlToBeDeleted);
                 m.UICtrlToBeDeleted.Clear();
+                Ini.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
+                m.UICtrlKeyChanged.Clear();
 
                 if (refresh)
                     RefreshMainWindow();
@@ -327,25 +355,23 @@ namespace PEBakery.WPF
         {
             switch (uiCtrl.Type)
             {
-                case UIControlType.TextBox:
+                case UIControlType.CheckBox:
                 {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                    UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
                     Debug.Assert(info != null, "Invalid UIInfo");
 
-                    info.Value = m.UICtrlTextBoxValue;
+                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                    info.HideProgress = m.UICtrlHideProgress;
                     break;
                 }
-                case UIControlType.TextLabel:
+                case UIControlType.ComboBox:
                 {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                    UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
                     Debug.Assert(info != null, "Invalid UIInfo");
 
-                    Debug.Assert(0 <= m.UICtrlTextLabelStyleIndex && m.UICtrlTextLabelStyleIndex < 5, "Internal Logic Error at ViewModel_UIControlModified");
-
-                    info.FontSize = m.UICtrlTextLabelFontSize;
-                    info.Style = (UITextStyle)m.UICtrlTextLabelStyleIndex;
+                    uiCtrl.Text = info.Items[info.Index];
                     break;
                 }
             }
@@ -596,6 +622,111 @@ namespace PEBakery.WPF
             _render.Render();
             m.SelectedUICtrl = null;
         }
+
+        #region For ComboBox
+        private void UICtrlComboBoxItemUp_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
+            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
+            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
+
+            int idx = m.UICtrlComboBoxSelectedIndex;
+            if (0 < idx)
+            {
+                UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
+                string item = info.Items[idx];
+                info.Items.RemoveAt(idx);
+                info.Items.Insert(idx - 1, item);
+
+                var editItem = m.UICtrlComboBoxItems[idx];
+                m.UICtrlComboBoxItems.RemoveAt(idx);
+                m.UICtrlComboBoxItems.Insert(idx - 1, editItem);
+
+                if (info.Index == idx)
+                    info.Index = idx - 1;
+
+                m.UICtrlComboBoxSelectedIndex = idx - 1;
+                m.InvokeUIControlEvent(false);
+            }
+        }
+
+        private void UICtrlComboBoxItemDown_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
+            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
+            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
+
+            int idx = m.UICtrlComboBoxSelectedIndex;
+            if (idx + 1 < m.UICtrlComboBoxInfo.Items.Count)
+            {
+                UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
+                string item = info.Items[idx];
+                info.Items.RemoveAt(idx);
+                info.Items.Insert(idx + 1, item);
+
+                var editItem = m.UICtrlComboBoxItems[idx];
+                m.UICtrlComboBoxItems.RemoveAt(idx);
+                m.UICtrlComboBoxItems.Insert(idx + 1, editItem);
+
+                if (info.Index == idx)
+                    info.Index = idx + 1;
+
+                m.UICtrlComboBoxSelectedIndex = idx + 1;
+                m.InvokeUIControlEvent(false);
+            }
+        }
+
+        private void UICtrlComboBoxItemSelect_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
+            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
+            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
+
+            m.UICtrlComboBoxInfo.Index = m.UICtrlComboBoxSelectedIndex;
+
+            m.InvokeUIControlEvent(false);
+        }
+
+        private void UICtrlComboBoxItemDelete_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
+            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
+            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
+
+            int idx = m.UICtrlComboBoxSelectedIndex;
+            UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
+
+            info.Items.RemoveAt(idx);
+            m.UICtrlComboBoxItems.RemoveAt(idx);
+
+            if (info.Index == idx)
+            {
+                info.Index = 0;
+                m.UICtrlComboBoxSelectedIndex = 0;
+            }
+
+            m.InvokeUIControlEvent(false);
+        }
+
+        private void UICtrlComboBoxItemAdd_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
+            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
+            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
+
+            string newItem = m.UICtrlComboBoxNewItem;
+
+            m.UICtrlComboBoxInfo.Items.Add(newItem);
+            m.UICtrlComboBoxItems.Add(newItem);
+
+            m.InvokeUIControlEvent(false);
+        }
+        #endregion
         #endregion
 
         #region Event Handler - Attachment
@@ -930,6 +1061,8 @@ namespace PEBakery.WPF
         }
 
         #endregion
+
+        
     }
     #endregion
 
@@ -1198,7 +1331,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Property - Interface
+        #region Property - Interface - Panels
         public bool InterfaceNotSaved { get; set; } = false;
         public bool InterfaceUpdated { get; set; } = false;
 
@@ -1248,7 +1381,10 @@ namespace PEBakery.WPF
 
         // Delete
         public List<UIControl> UICtrlToBeDeleted = new List<UIControl>();
+        public List<string> UICtrlKeyChanged = new List<string>();
+        #endregion
 
+        #region Property - Interface - Editor
         // Editor
         private bool _interfaceLoaded = false;
         public bool InterfaceLoaded
@@ -1291,6 +1427,7 @@ namespace PEBakery.WPF
                 
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
+                OnPropertyUpdate(nameof(UICtrlKey));
                 OnPropertyUpdate(nameof(UICtrlText));
                 OnPropertyUpdate(nameof(UICtrlVisible));
                 OnPropertyUpdate(nameof(UICtrlX));
@@ -1303,6 +1440,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlTextBox));
                 OnPropertyUpdate(nameof(IsUICtrlTextLabel));
                 OnPropertyUpdate(nameof(IsUICtrlNumberBox));
+                OnPropertyUpdate(nameof(IsUICtrlCheckBox));
                 OnPropertyUpdate(nameof(IsUICtrlComboBox));
                 OnPropertyUpdate(nameof(IsUICtrlImage));
                 OnPropertyUpdate(nameof(IsUICtrlTextFile));
@@ -1312,6 +1450,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlBevel));
                 OnPropertyUpdate(nameof(IsUICtrlFileBox));
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
+                OnPropertyUpdate(nameof(IsUICtrlRunOptional));
 
                 // UIControl Optional Argument
                 if (value != null)
@@ -1325,11 +1464,47 @@ namespace PEBakery.WPF
                             OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
                             OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
                             break;
+                        case UIControlType.NumberBox:
+                            OnPropertyUpdate(nameof(UICtrlNumberBoxValue));
+                            OnPropertyUpdate(nameof(UICtrlNumberBoxMin));
+                            OnPropertyUpdate(nameof(UICtrlNumberBoxMax));
+                            OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
+                            break;
+                        case UIControlType.CheckBox:
+                            OnPropertyUpdate(nameof(UICtrlCheckBoxValue));
+                            OnPropertyUpdate(nameof(UICtrlSectionToRun));
+                            OnPropertyUpdate(nameof(UICtrlHideProgress));
+                            break;
+                        case UIControlType.ComboBox:
+                            OnPropertyUpdate(nameof(UICtrlComboBoxItems));
+                            OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
+                            break;
                     }
                 }
             }
         }
+
+        #region Shared Arguments
         public bool UICtrlEditEnabled => _selectedUICtrl != null;
+        public string UICtrlKey
+        {
+            get => _selectedUICtrl != null ? _selectedUICtrl.Key : string.Empty;
+            set
+            {
+                if (_selectedUICtrl == null)
+                    return;
+
+                // Prevent other key being overwritten
+                if (_interfaceUICtrls.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    return; // Ignore
+
+                // Remove this key later
+                UICtrlKeyChanged.Add(_selectedUICtrl.Key);
+
+                _selectedUICtrl.Key = value;
+                InvokeUIControlEvent(true);
+            }
+        }
         public string UICtrlText
         {
             get => _selectedUICtrl != null ? _selectedUICtrl.Text : string.Empty;
@@ -1414,6 +1589,7 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(true);
             }
         }
+        #endregion
 
         #region IsUICtrl Visibility Series
         public Visibility IsUICtrlTextBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.TextBox ? Visibility.Visible : Visibility.Collapsed;
@@ -1429,41 +1605,272 @@ namespace PEBakery.WPF
         public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility IsUICtrlRunOptional
+        {
+            get
+            {
+                if (_selectedUICtrl == null)
+                    return Visibility.Collapsed;
+
+                switch (_selectedUICtrl.Type)
+                {
+                    case UIControlType.CheckBox:
+                    case UIControlType.Button:
+                    case UIControlType.RadioButton:
+                    case UIControlType.RadioGroup:
+                        return Visibility.Visible;
+                    default:
+                        return Visibility.Collapsed;
+                }
+            }
+        }
         #endregion
 
-        #region Per-TextBox
-        public string _uiCtrlTextBoxValue;
-        public string UICtrlTextBoxValue
+        #region For TextBox
+        private UIInfo_TextBox _uiCtrlTextBoxInfo;
+        public UIInfo_TextBox UICtrlTextBoxInfo
         {
-            get => _uiCtrlTextBoxValue;
+            get => _uiCtrlTextBoxInfo;
             set
             {
-                _uiCtrlTextBoxValue = value;
+                _uiCtrlTextBoxInfo = value;
+                if (value == null)
+                    return;
+
                 OnPropertyUpdate(nameof(UICtrlTextBoxValue));
-                InvokeUIControlEvent(false);
+            }
+        }
+        public string UICtrlTextBoxValue
+        {
+            get => _uiCtrlTextBoxInfo?.Value ?? string.Empty;
+            set
+            {
+                if (_uiCtrlTextBoxInfo == null)
+                    return;
+
+                _uiCtrlTextBoxInfo.Value = value;
+                OnPropertyUpdate(nameof(UICtrlTextBoxValue));
+                InvokeUIControlEvent(true);
             }
         }
         #endregion
-        #region Per-TextLabel
-        public int _uiCtrlTextLabelFontSize;
-        public int UICtrlTextLabelFontSize
+        #region For TextLabel
+        private UIInfo_TextLabel _uiCtrlTextLabelInfo;
+        public UIInfo_TextLabel UICtrlTextLabelInfo
         {
-            get => _uiCtrlTextLabelFontSize;
+            get => _uiCtrlTextLabelInfo;
             set
             {
-                _uiCtrlTextLabelFontSize = value;
+                _uiCtrlTextLabelInfo = value;
+                if (value == null)
+                    return;
+
                 OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
+                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+            }
+        }
+        public int UICtrlTextLabelFontSize
+        {
+            get => _uiCtrlTextLabelInfo?.FontSize ?? 8;
+            set
+            {
+                if (_uiCtrlTextLabelInfo == null)
+                    return;
+
+                _uiCtrlTextLabelInfo.FontSize = value;
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlTextLabelStyleIndex
+        {
+            get => (int)(_uiCtrlTextLabelInfo?.Style ?? UITextStyle.Normal);
+            set
+            {
+                if (_uiCtrlTextLabelInfo == null)
+                    return;
+
+                _uiCtrlTextLabelInfo.Style = (UITextStyle)value;
+                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For NumberBox
+        private UIInfo_NumberBox _uiCtrlNumberBoxInfo;
+        public UIInfo_NumberBox UICtrlNumberBoxInfo
+        {
+            get => _uiCtrlNumberBoxInfo;
+            set
+            {
+                _uiCtrlNumberBoxInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlNumberBoxValue));
+                OnPropertyUpdate(nameof(UICtrlNumberBoxMin));
+                OnPropertyUpdate(nameof(UICtrlNumberBoxMax));
+                OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
+            }
+        }
+        public int UICtrlNumberBoxValue
+        {
+            get => _uiCtrlNumberBoxInfo?.Value ?? 0;
+            set
+            {
+                if (_uiCtrlNumberBoxInfo == null)
+                    return;
+
+                _uiCtrlNumberBoxInfo.Value = value;
+                OnPropertyUpdate(nameof(UICtrlNumberBoxValue));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlNumberBoxMin
+        {
+            get => _uiCtrlNumberBoxInfo?.Min ?? 0;
+            set
+            {
+                if (_uiCtrlNumberBoxInfo == null)
+                    return;
+
+                _uiCtrlNumberBoxInfo.Min = value;
+                OnPropertyUpdate(nameof(UICtrlNumberBoxMin));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlNumberBoxMax
+        {
+            get => _uiCtrlNumberBoxInfo?.Max ?? 100;
+            set
+            {
+                if (_uiCtrlNumberBoxInfo == null)
+                    return;
+
+                _uiCtrlNumberBoxInfo.Max = value;
+                OnPropertyUpdate(nameof(UICtrlNumberBoxMax));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlNumberBoxTick
+        {
+            get => _uiCtrlNumberBoxInfo?.Interval ?? 1;
+            set
+            {
+                if (_uiCtrlNumberBoxInfo == null)
+                    return;
+
+                _uiCtrlNumberBoxInfo.Interval = value;
+                OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For CheckBox
+        private UIInfo_CheckBox _uiCtrlCheckBoxInfo;
+        public UIInfo_CheckBox UICtrlCheckBoxInfo
+        {
+            get => _uiCtrlCheckBoxInfo;
+            set
+            {
+                _uiCtrlCheckBoxInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlCheckBoxValue));
+            }
+        }
+        public bool UICtrlCheckBoxValue
+        {
+            get => _uiCtrlCheckBoxInfo?.Value ?? false;
+            set
+            {
+                if (_uiCtrlCheckBoxInfo == null)
+                    return;
+
+                _uiCtrlCheckBoxInfo.Value = value;
+                OnPropertyUpdate(nameof(UICtrlCheckBoxValue));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For ComboBox
+        private UIInfo_ComboBox _uiCtrlComboBoxInfo;
+        public UIInfo_ComboBox UICtrlComboBoxInfo
+        {
+            get => _uiCtrlComboBoxInfo;
+            set
+            {
+                _uiCtrlComboBoxInfo = value;
+                if (value == null)
+                    return;
+
+                _uiCtrlComboBoxItems = new ObservableCollection<string>(_uiCtrlComboBoxInfo.Items);
+            }
+        }
+        public ObservableCollection<string> _uiCtrlComboBoxItems;
+        public ObservableCollection<string> UICtrlComboBoxItems
+        {
+            get => _uiCtrlComboBoxItems;
+            set
+            {
+                _uiCtrlComboBoxItems = value;
+                OnPropertyUpdate(nameof(UICtrlComboBoxItems));
+                InvokeUIControlEvent(true);
+            }
+        }
+        private int _uiCtrlComboBoxSelectedIndex;
+        public int UICtrlComboBoxSelectedIndex
+        {
+            get => _uiCtrlComboBoxSelectedIndex;
+            set
+            {
+                _uiCtrlComboBoxSelectedIndex = value;
+                OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
+            }
+        }
+        private string _uiCtrlComboBoxNewItem;
+        public string UICtrlComboBoxNewItem
+        {
+            get => _uiCtrlComboBoxNewItem;
+            set
+            {
+                _uiCtrlComboBoxNewItem = value;
+                OnPropertyUpdate(nameof(UICtrlComboBoxNewItem));
+            }
+        }
+        #endregion
+        #region For RunOptional
+        public bool _uiCtrlRunOptionalEnabled;
+        public bool UICtrlRunOptionalEnabled
+        {
+            get => _uiCtrlRunOptionalEnabled;
+            set
+            {
+                _uiCtrlRunOptionalEnabled = value;
+                OnPropertyUpdate(nameof(UICtrlRunOptionalEnabled));
                 InvokeUIControlEvent(false);
             }
         }
-        public int _uiCtrlTextLabelStyleIndex;
-        public int UICtrlTextLabelStyleIndex
+        public string _uiCtrlSectionToRun;
+        public string UICtrlSectionToRun
         {
-            get => _uiCtrlTextLabelStyleIndex;
+            get => _uiCtrlSectionToRun;
             set
             {
-                _uiCtrlTextLabelStyleIndex = value;
-                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                _uiCtrlSectionToRun = value;
+                OnPropertyUpdate(nameof(UICtrlSectionToRun));
+                InvokeUIControlEvent(false);
+            }
+        }
+        public bool _uiCtrlHideProgress;
+        public bool UICtrlHideProgress
+        {
+            get => _uiCtrlHideProgress;
+            set
+            {
+                _uiCtrlHideProgress = value;
+                OnPropertyUpdate(nameof(UICtrlHideProgress));
                 InvokeUIControlEvent(false);
             }
         }
@@ -1622,7 +2029,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region InvokeUIControlEvent
-        private void InvokeUIControlEvent(bool direct)
+        public void InvokeUIControlEvent(bool direct)
         {
             InterfaceNotSaved = true;
             InterfaceUpdated = true;

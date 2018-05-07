@@ -51,6 +51,7 @@
                  TextAlignment="Right"
                  VerticalContentAlignment="Center"
                  PreviewTextInput="TextBox_PreviewTextInput"
+                 PreviewKeyDown="TextBox_PreviewKeyDown"
                  Text="{Binding Path=Value, ElementName=NumberBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
         <RepeatButton Grid.Row="0" Grid.Column="1"

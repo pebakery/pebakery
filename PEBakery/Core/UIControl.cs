@@ -73,7 +73,7 @@ namespace PEBakery.Core
     NumberBox   = <ControlName> 
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
-    Image       = <FileName> 
+    Image       = <FileName> // "none" if no image is set
     TextFile    = <FileName> 
     Button      = Caption 
     WebLabel    = Caption 
@@ -88,14 +88,14 @@ namespace PEBakery.Core
                   <Style> : Normal, Bold (in WB082)
                             Italic, Underline, Strike (Added in PEBakery)
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
-    CheckBox    = <BooleanValue>,[SectionToRun]  +[RunOptional]
+    CheckBox    = <BooleanValue>  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
     Image       = <StringValue> // URL
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
-                  [Picture] - 0 if no picture. or its value is Embedded File name.
+                  [Picture] - 0 if no picture, or encoded file's name.
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    FileBox     = [FILE|DIR]
+    FileBox     = [file|dir]
     Bevel       = <FontSize>,<Style> (Added in PEBakery)
                   <Style> : Normal, Bold
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
@@ -692,11 +692,11 @@ namespace PEBakery.Core
     public class UIInfo_ComboBox : UIInfo
     {
         public List<string> Items;
-        public int Index;
+        public int Index; // Zero based index
         public string SectionName; // Optional
         public bool HideProgress; // Optional
 
-        public UIInfo_ComboBox(string tooltip,  List<string> items, int index, string sectionName = null, bool hideProgress = false)
+        public UIInfo_ComboBox(string tooltip, List<string> items, int index, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;

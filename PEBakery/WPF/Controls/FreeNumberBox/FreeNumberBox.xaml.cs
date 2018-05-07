@@ -162,6 +162,20 @@ namespace PEBakery.WPF.Controls
 
             OnPreviewTextInput(e);
         }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Add event for Up and Down
+            switch (e.Key)
+            {
+                case Key.Up:
+                    Value = LimitDecimalValue(this, Value + IncrementUnit);
+                    break;
+                case Key.Down:
+                    Value = LimitDecimalValue(this, Value - IncrementUnit);
+                    break;
+            }
+        }
         #endregion
 
         #region Button Events
