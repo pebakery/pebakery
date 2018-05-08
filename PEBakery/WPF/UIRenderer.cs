@@ -467,13 +467,25 @@ namespace PEBakery.WPF
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
             Debug.Assert(info != null, "Invalid UIInfo");
 
-            if (uiCtrl.Text.Equals("none", StringComparison.OrdinalIgnoreCase))
-            {
+            if (uiCtrl.Text.Equals(UIInfo_Image.ImageNone, StringComparison.OrdinalIgnoreCase))
+            { // Empty image
                 PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
                 noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
                 SetToolTip(noImage, info.ToolTip);
                 SetEditModeProperties(r, noImage, uiCtrl);
                 DrawToCanvas(r, noImage, uiCtrl.Rect);
+                return;
+            }
+
+            if (!EncodedFile.ContainsFile(uiCtrl.Addr.Script, EncodedFile.InterfaceEncoded, uiCtrl.Text))
+            { // Wrong encoded image
+                PackIconMaterial alertImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Alert);
+                alertImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
+                SetToolTip(alertImage, info.ToolTip);
+                SetEditModeProperties(r, alertImage, uiCtrl);
+                DrawToCanvas(r, alertImage, uiCtrl.Rect);
+
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
                 return;
             }
 
@@ -560,8 +572,8 @@ namespace PEBakery.WPF
             {
                 Image image = new Image
                 {
-                    StretchDirection = StretchDirection.DownOnly,
-                    Stretch = Stretch.Uniform,
+                    StretchDirection = StretchDirection.Both,
+                    Stretch = Stretch.Fill,
                     UseLayoutRounding = true,
                     Source = bitmap,
                 };

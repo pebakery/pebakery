@@ -63,7 +63,7 @@ namespace PEBakery.Core
 
     #region Interface Representation Format
     /*
-    <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[Tooltip]
+    <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[ToolTip]
     Visibility : 1 or 0
     Type : UIControlType 0 ~ 14
 
@@ -85,12 +85,12 @@ namespace PEBakery.Core
     <OptionalValues>
     TextBox     = <StringValue>
     TextLabel   = <FontSize>,<Style>
-                  <Style> : Normal, Bold (in WB082)
+                  <Style> : Normal, Bold (Compatible with WB082)
                             Italic, Underline, Strike (Added in PEBakery)
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
     CheckBox    = <BooleanValue>  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
-    Image       = <StringValue> // URL
+    Image       = [Url]
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture, or encoded file's name.
     WebLabel    = <StringValue> // URL
@@ -108,8 +108,8 @@ namespace PEBakery.Core
     SectionToRun : (String) SectionName with _ at start and end
     HideProgress : (Bool)   
 
-    [Tooltip]
-    <StringValue> : Tooltip to show when mousehover event, always start with __
+    [ToolTip]
+    <StringValue> : ToolTip to show when mousehover event, always start with __
     */
     #endregion
 
@@ -468,6 +468,23 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ReplaceScript
+        public bool ReplaceScript(Script sc)
+        {
+            if (!sc.Sections.ContainsKey(Addr.Section.Name))
+                return false;
+
+            ScriptSection newSection = sc.Sections[Addr.Section.Name];
+            Addr = new SectionAddress(sc, newSection);
+            return true;
+        }
+
+        public static bool ReplaceAddress(IEnumerable<UIControl> uiCtrls, Script sc)
+        {
+            return uiCtrls.All(x => x.ReplaceScript(sc));
+        }
+        #endregion
+
         #region UIControl Dictionary 
         public static ReadOnlyDictionary<int, UIControlType> UIControlZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
             new Dictionary<int, UIControlType>
@@ -754,6 +771,8 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
+
+        public const string ImageNone = "none";
     }
 
     [Serializable]

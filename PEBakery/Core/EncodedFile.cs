@@ -183,7 +183,7 @@ namespace PEBakery.Core
         #region Const Strings, String Factory
         private const string EncodedFolders = "EncodedFolders";
         private const string AuthorEncoded = "AuthorEncoded";
-        private const string InterfaceEncoded = "InterfaceEncoded";
+        internal const string InterfaceEncoded = "InterfaceEncoded";
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
         #endregion
@@ -205,31 +205,46 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachFile, ContainsFile
-        public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
+
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{folderName}] contains invalid character");
+            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{fileName}] contains invalid character");
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Encode(sc, dirName, fileName, fs, type, false);
+                return Encode(sc, folderName, fileName, fs, type, false);
             }
         }
 
-        public static Script AttachFile(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcStream, type, false);
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{folderName}] contains invalid character");
+            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{fileName}] contains invalid character");
+
+            return Encode(sc, folderName, fileName, srcStream, type, false);
         }
 
-        public static Script AttachFile(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcBuffer, type, false);
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{folderName}] contains invalid character");
+            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{fileName}] contains invalid character");
+
+            return Encode(sc, folderName, fileName, srcBuffer, type, false);
         }
 
         public static bool ContainsFile(Script sc, string folderName, string fileName)
@@ -265,6 +280,9 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(sc));
             if (srcFilePath == null)
                 throw new ArgumentNullException(nameof(srcFilePath));
+
+            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{fileName}] contains invalid character");
 
             if (!ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
                 throw new ArgumentException($"Image [{Path.GetExtension(srcFilePath)}] is not supported");
@@ -958,19 +976,19 @@ namespace PEBakery.Core
             }
         }
 
-        private static Script Encode(Script sc, string dirName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo)
+        private static Script Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo)
         {
             byte[] fileNameUtf8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUtf8.Length == 0 || 512 <= fileNameUtf8.Length)
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
-            string section = $"EncodedFile-{dirName}-{fileName}";
+            string section = $"EncodedFile-{folderName}-{fileName}";
 
             // Check Overwrite
             bool fileOverwrite = false;
-            if (sc.Sections.ContainsKey(dirName))
+            if (sc.Sections.ContainsKey(folderName))
             {
                 // Check if [{dirName}] section and [EncodedFile-{dirName}-{fileName}] section exists
-                ScriptSection scSect = sc.Sections[dirName];
+                ScriptSection scSect = sc.Sections[folderName];
                 switch (scSect.DataType)
                 {
                     case SectionDataType.IniDict:
@@ -1156,21 +1174,23 @@ namespace PEBakery.Core
                 if (!encodeLogo)
                 { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
                     bool writeFolderSection = true;
-                    if (sc.Sections.ContainsKey("EncodedFolders"))
+                    if (sc.Sections.ContainsKey(EncodedFolders))
                     {
-                        List<string> folders = sc.Sections["EncodedFolders"].GetLines();
-                        if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
+                        List<string> folders = sc.Sections[EncodedFolders].GetLines();
+                        if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
                             writeFolderSection = false;
                     }
 
-                    if (writeFolderSection)
-                        Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
+                    if (writeFolderSection && 
+                        !folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                        !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                        Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
                 }
 
-                // Write file info into [{dirName}]
-                Ini.WriteKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+                // Write file info into [{folderName}]
+                Ini.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
 
-                // Write encoded file into [EncodedFile-{dirName}-{fileName}]
+                // Write encoded file into [EncodedFile-{folderName}-{fileName}]
                 if (fileOverwrite)
                     Ini.DeleteSection(sc.RealPath, section); // Delete existing encoded file
                 Ini.WriteKeys(sc.RealPath, keys);
@@ -1178,13 +1198,13 @@ namespace PEBakery.Core
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = Ini.ReadKey(sc.RealPath, "AuthorEncoded", "Logo");
-                    Ini.WriteKey(sc.RealPath, "AuthorEncoded", "Logo", fileName);
+                    string lastLogo = Ini.ReadKey(sc.RealPath, AuthorEncoded, "Logo");
+                    Ini.WriteKey(sc.RealPath, AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)
                     {
-                        Ini.DeleteKey(sc.RealPath, "AuthorEncoded", lastLogo);
-                        Ini.DeleteSection(sc.RealPath, $"EncodedFile-AuthorEncoded-{lastLogo}");
+                        Ini.DeleteKey(sc.RealPath, AuthorEncoded, lastLogo);
+                        Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, lastLogo));
                     }
                 }    
             }

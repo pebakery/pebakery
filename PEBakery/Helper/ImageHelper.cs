@@ -121,6 +121,12 @@ namespace PEBakery.Helper
             return bitmap;
         }
 
+        public static (int, int ) GetImageSize(Stream stream)
+        {
+            BitmapImage bitmap = ImageToBitmapImage(stream);
+            return (bitmap.PixelWidth, bitmap.PixelHeight);
+        }
+
         public static ImageBrush ImageToImageBrush(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);

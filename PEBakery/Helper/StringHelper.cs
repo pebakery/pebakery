@@ -204,6 +204,26 @@ namespace PEBakery.Helper
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
             return str.Substring(0, index) + newValue + str.Substring(index + length);
         }
+
+        public static string GetUniqueKey(string srcKey, IEnumerable<string> keys)
+        {
+            int idx = 0;
+            string key;
+            bool duplicate;
+            string[] keyArr = keys.ToArray();
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{srcKey}{idx:D2}";
+
+                if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+
+            return key;
+        }
     }
     #endregion
 }
