@@ -189,8 +189,8 @@ namespace PEBakery.Core.Commands
 
                     TimeSpan t = watch.Elapsed;
                     double totalSec = t.TotalSeconds;
-                    string downloaded = NumberHelper.ByteSizeToHumanReadableString(e.BytesReceived, 1);
-                    string total = NumberHelper.ByteSizeToHumanReadableString(e.TotalBytesToReceive, 1);
+                    string downloaded = NumberHelper.ByteSizeToSIUnit(e.BytesReceived, 1);
+                    string total = NumberHelper.ByteSizeToSIUnit(e.TotalBytesToReceive, 1);
                     if (Math.Abs(totalSec) < double.Epsilon)
                     {
                         s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
@@ -198,7 +198,7 @@ namespace PEBakery.Core.Commands
                     else
                     {
                         long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
-                        string speedStr = NumberHelper.ByteSizeToHumanReadableString((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
+                        string speedStr = NumberHelper.ByteSizeToSIUnit((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
 
                         // ReSharper disable once PossibleLossOfFraction
                         TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);

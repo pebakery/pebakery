@@ -440,7 +440,7 @@ namespace PEBakery.Tests.Core
             Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(sc, "PEBakeryAlphaMemory.jpg"))
+            using (MemoryStream ms = EncodedFile.ExtractInterface(sc, "PEBakeryAlphaMemory.jpg"))
             {
                 extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
             }

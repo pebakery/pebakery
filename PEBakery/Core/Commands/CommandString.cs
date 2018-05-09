@@ -72,7 +72,7 @@ namespace PEBakery.Core.Commands
                         if (byteSize < 0)
                             return LogInfo.LogErrorMessage(logs, $"[{byteSize}] must be a positive integer");
 
-                        string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
+                        string destStr = NumberHelper.ByteSizeToSIUnit(byteSize);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);

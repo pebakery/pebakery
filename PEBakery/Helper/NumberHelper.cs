@@ -606,7 +606,7 @@ namespace PEBakery.Helper
         const long MB = 1024L * 1024L;
         const long KB = 1024L;
 
-        public static string ByteSizeToHumanReadableString(long byteSize, int decPoint = 3)
+        public static string ByteSizeToSIUnit(long byteSize, int decPoint = 3)
         {
             if (decPoint < 0) throw new ArgumentOutOfRangeException(nameof(decPoint));
 

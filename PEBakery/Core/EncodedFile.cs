@@ -185,7 +185,9 @@ namespace PEBakery.Core
         private const string AuthorEncoded = "AuthorEncoded";
         internal const string InterfaceEncoded = "InterfaceEncoded";
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
+        public static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
+
+        public const long InterfaceSizeLimit = 4 * 1024 * 1024;
         #endregion
 
         #region Dict ImageEncodeDict
@@ -409,7 +411,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterfaceEncoded
+        #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
         public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream)
         {
             if (sc == null)
@@ -523,11 +525,11 @@ namespace PEBakery.Core
             };
         }
         
-        public static MemoryStream ExtractInterfaceEncoded(Script sc, string fileName)
+        public static MemoryStream ExtractInterface(Script sc, string fileName)
         {
-            string section = $"EncodedFile-InterfaceEncoded-{fileName}";
-            if (sc.Sections.ContainsKey(section) == false)
-                throw new InvalidOperationException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
+            string section = GetSectionName(InterfaceEncoded, fileName);
+            if (!sc.Sections.ContainsKey(section))
+                throw new InvalidOperationException($"[{fileName}] does not exist in interface of [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return DecodeInMemory(encoded);

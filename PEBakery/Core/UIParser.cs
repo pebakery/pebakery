@@ -407,7 +407,7 @@ namespace PEBakery.Core
                         string picture = null;
                         if (2 <= cnt)
                         {
-                            if (args[1].Equals("0", StringComparison.OrdinalIgnoreCase) == false)
+                            if (!args[1].Equals("0", StringComparison.OrdinalIgnoreCase))
                                 picture = args[1];
                         }
 
@@ -416,12 +416,12 @@ namespace PEBakery.Core
                         {
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
-                            else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                            else if (!args[2].Equals("False", StringComparison.OrdinalIgnoreCase))
                             {
                                 // WB082 Compability Shim
                                 if (args[2].Equals("1", StringComparison.Ordinal))
                                     hideProgress = true;
-                                else if (args[2].Equals("0", StringComparison.Ordinal) == false)
+                                else if (!args[2].Equals("0", StringComparison.Ordinal))
                                     throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
                             }
                         }

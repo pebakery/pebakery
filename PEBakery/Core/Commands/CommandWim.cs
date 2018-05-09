@@ -1747,8 +1747,8 @@ namespace PEBakery.Core.Commands
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
                         long after = new FileInfo(wimFile).Length;
 
-                        string beforeStr = NumberHelper.ByteSizeToHumanReadableString(before);
-                        string afterStr = NumberHelper.ByteSizeToHumanReadableString(after);
+                        string beforeStr = NumberHelper.ByteSizeToSIUnit(before);
+                        string afterStr = NumberHelper.ByteSizeToSIUnit(after);
                         logs.Add(new LogInfo(LogState.Success, $"Optimized [{wimFile}] from [{beforeStr}] to [{afterStr}]"));
                     }
                     finally

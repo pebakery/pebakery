@@ -219,6 +219,8 @@ namespace PEBakery.WPF
 
         private void ReadUIControlInfo(UIControl uiCtrl)
         {
+            m.UIControlModifiedEventToggle = true;
+
             switch (uiCtrl.Type)
             {
                 case UIControlType.TextBox:
@@ -285,7 +287,21 @@ namespace PEBakery.WPF
                     m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
                     break;
                 }
+                case UIControlType.Button:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlButtonInfo = info;
+                    m.UICtrlSectionToRun = info.SectionName;
+                    m.UICtrlHideProgress = info.HideProgress;
+                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                    break;
+                }
             }
+
+            m.UIControlModifiedEventToggle = false;
         }
         #endregion
 
@@ -402,6 +418,17 @@ namespace PEBakery.WPF
                     Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
                     m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                    break;
+                }
+                case UIControlType.Button:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                    info.HideProgress = m.UICtrlHideProgress;
                     break;
                 }
             }
@@ -588,7 +615,7 @@ namespace PEBakery.WPF
         private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
-            m.UICtrlAddName = StringHelper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
+            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
         }
 
         private void UICtrlAddButton_Click(object sender, RoutedEventArgs e)
@@ -747,150 +774,6 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For Image
-        private void UICtrlImageAttachButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlImageAttachButton_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            OpenFileDialog dialog = new OpenFileDialog
-            {
-                Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string srcFile = dialog.FileName;
-            string srcFileName = System.IO.Path.GetFileName(srcFile);
-            if (EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, srcFileName))
-            {
-                List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
-                srcFileName = StringHelper.GetUniqueKey(srcFileName, infos.Select(x => x.FileName));
-            }
-
-            try
-            {
-                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFile);
-                MessageBox.Show("Image successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                UIControl.ReplaceAddress(_render.UICtrls, _sc);
-
-                m.SelectedUICtrl.Text = srcFileName;
-                m.UICtrlImageSet = true;
-                m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
-            }
-            catch (Exception ex)
-            {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        private void UICtrlImageExtractButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlImageExtractButton_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-            string ext = Path.GetExtension(uiCtrl.Text);
-
-            Debug.Assert(fileName != null, internalErrorMsg);
-            Debug.Assert(ext != null, internalErrorMsg);
-
-            if (!EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, fileName))
-            {
-                MessageBox.Show($"Unable to find image [{uiCtrl.Text}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            SaveFileDialog dialog = new SaveFileDialog
-            {
-                OverwritePrompt = true,
-                Filter = $"Image ({ext.Substring(1).ToLower()})|*{ext}",
-                DefaultExt = ext,
-                AddExtension = true,
-            };
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string destPath = dialog.FileName;
-            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-            {
-                try
-                {
-                    EncodedFile.ExtractFile(_sc, EncodedFile.InterfaceEncoded, fileName, fs);
-
-                    MessageBox.Show($"Image [{fileName}] successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-        private void UICtrlImageResetButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlImageResetButton_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-
-            Debug.Assert(fileName != null, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            if (!EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, fileName))
-            { // Unable to find encoded image, so just remove image entry from uiCtrl
-                uiCtrl.Text = UIInfo.None;
-                m.UICtrlImageSet = false;
-                m.InvokeUIControlEvent(false);
-
-                MessageBox.Show("Incorrrect image entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            _sc = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName, out string errorMsg);
-            if (errorMsg == null)
-            {
-                uiCtrl.Text = UIInfo.None;
-                UIControl.ReplaceAddress(_render.UICtrls, _sc);
-                m.UICtrlImageSet = false;
-                m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
-
-                MessageBox.Show($"Image [{fileName}] successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);                
-            }
-            else
-            {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                MessageBox.Show($"There was an issue while deleting image [{fileName}].\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
         private void UICtrlImageAutoResizeButton_Click(object sender, RoutedEventArgs e)
         {
             const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
@@ -934,17 +817,46 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        #region For TextFile
-        private void UICtrlTextFileAttachButton_Click(object sender, RoutedEventArgs e)
+        #region For InterfaceEncoded (Common)
+        private void UICtrlInterfaceAttachButton_Click(object sender, RoutedEventArgs e)
         {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlTextFileAttachButton_Click";
+            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceAttachButton_Click";
+
+            Button button = sender as Button;
+            Debug.Assert(button != null, internalErrorMsg);
+
+            UIControlType selectedType;
+            string saveConfirmMsg;
+            string extFilter;
+            if (button.Equals(UICtrlImageAttachButton))
+            {
+                selectedType = UIControlType.Image;
+                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+            }
+            else if (button.Equals(UICtrlTextFileAttachButton))
+            {
+                selectedType = UIControlType.TextFile;
+                saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
+                extFilter = "Text File|*.txt";
+            }
+            else if (button.Equals(UICtrlButtonPictureAttachButton))
+            {
+                selectedType = UIControlType.Button;
+                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+            }
+            else
+            {
+                throw new InvalidOperationException(internalErrorMsg);
+            }
 
             Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.TextFile, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
 
             if (m.InterfaceNotSaved)
             {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing TextFile.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                     WriteScriptInterface(false);
                 else
@@ -953,29 +865,53 @@ namespace PEBakery.WPF
 
             OpenFileDialog dialog = new OpenFileDialog
             {
-                Filter = "Text File|*.txt",
+                Filter = extFilter,
             };
 
             if (dialog.ShowDialog() != true)
                 return;
 
-            string srcFile = dialog.FileName;
-            string srcFileName = System.IO.Path.GetFileName(srcFile);
-            if (EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, srcFileName))
+            string srcFilePath = dialog.FileName;
+            string srcFileName = System.IO.Path.GetFileName(srcFilePath);
+            if (EncodedFile.ContainsInterface(_sc, srcFileName))
             {
                 List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
-                srcFileName = StringHelper.GetUniqueKey(srcFileName, infos.Select(x => x.FileName));
+                srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
+            }
+
+            // Pratically PEBakery is capable of handling large files.
+            // -> But large file in interface requires lots of memory to decompress and make unreponsive time longer.
+            // -> Threshold is fully debatable.
+            long fileLen = new FileInfo(srcFilePath).Length;
+            if (EncodedFile.InterfaceSizeLimit < fileLen) // 4MB limit
+            {
+                MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsive!\r\nContinue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.No)
+                    return;
             }
 
             try
             {
-                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFile);
-                MessageBox.Show("Text file successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath);
 
                 UIControl.ReplaceAddress(_render.UICtrls, _sc);
 
-                m.SelectedUICtrl.Text = srcFileName;
-                m.UICtrlTextFileSet = true;
+                switch (selectedType)
+                {
+                    case UIControlType.Image:
+                        m.SelectedUICtrl.Text = srcFileName;
+                        m.UICtrlImageSet = true;
+                        break;
+                    case UIControlType.TextFile:
+                        m.SelectedUICtrl.Text = srcFileName;
+                        m.UICtrlTextFileSet = true;
+                        break;
+                    case UIControlType.Button:
+                        m.UICtrlButtonInfo.Picture = srcFileName;
+                        m.UICtrlButtonPictureSet = true;
+                        break;
+                }
+                
                 m.InvokeUIControlEvent(false);
                 WriteScriptInterface(false);
             }
@@ -985,30 +921,66 @@ namespace PEBakery.WPF
                 MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private void UICtrlTextFileExtractButton_Click(object sender, RoutedEventArgs e)
+        private void UICtrlInterfaceExtractButton_Click(object sender, RoutedEventArgs e)
         {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlTextFileExtractButton_Click";
+            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractButton_Click";
+
+            Button button = sender as Button;
+            Debug.Assert(button != null, internalErrorMsg);
+
+            UIControlType selectedType;
+            string cannotFindFile;
+            if (button.Equals(UICtrlImageExtractButton))
+            {
+                selectedType = UIControlType.Image;
+                cannotFindFile = "Unable to find image";
+            }
+            else if (button.Equals(UICtrlTextFileExtractButton))
+            {
+                selectedType = UIControlType.TextFile;
+                cannotFindFile = "Unable to find text";
+            }
+            else if (button.Equals(UICtrlButtonPictureExtractButton))
+            {
+                selectedType = UIControlType.Button;
+                cannotFindFile = "Unable to find image";
+            }
+            else
+            {
+                throw new InvalidOperationException(internalErrorMsg);
+            }
 
             Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.TextFile, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
 
             UIControl uiCtrl = m.SelectedUICtrl;
             string fileName = uiCtrl.Text;
-            string ext = Path.GetExtension(uiCtrl.Text);
+            if (selectedType == UIControlType.Button)
+            {
+                Debug.Assert(m.UICtrlButtonInfo != null, internalErrorMsg);
+                fileName = m.UICtrlButtonInfo.Picture;
+            }
+            string ext = Path.GetExtension(fileName);
 
             Debug.Assert(fileName != null, internalErrorMsg);
             Debug.Assert(ext != null, internalErrorMsg);
 
-            if (!EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, fileName))
+            string extFilter;
+            if (selectedType == UIControlType.TextFile)
+                extFilter = $"Text File|*{ext}";
+            else
+                extFilter = $"Image|*{ext}";
+
+            if (!EncodedFile.ContainsInterface(_sc, fileName))
             {
-                MessageBox.Show($"Unable to find text [{uiCtrl.Text}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             SaveFileDialog dialog = new SaveFileDialog
             {
                 OverwritePrompt = true,
-                Filter = $"Text File|*{ext}",
+                Filter = extFilter,
                 DefaultExt = ext,
                 AddExtension = true,
             };
@@ -1021,8 +993,6 @@ namespace PEBakery.WPF
                 try
                 {
                     EncodedFile.ExtractFile(_sc, EncodedFile.InterfaceEncoded, fileName, fs);
-
-                    MessageBox.Show($"Text file [{fileName}] successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
@@ -1031,53 +1001,118 @@ namespace PEBakery.WPF
                 }
             }
         }
-        private void UICtrlTextFileResetButton_Click(object sender, RoutedEventArgs e)
+        private void UICtrlInterfaceResetButton_Click(object sender, RoutedEventArgs e)
         {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlTextFileResetButton_Click";
+            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceResetButton_Click";
+
+            Button button = sender as Button;
+            Debug.Assert(button != null, internalErrorMsg);
+
+            UIControlType selectedType;
+            string saveConfirmMsg;
+            if (button.Equals(UICtrlImageResetButton))
+            {
+                selectedType = UIControlType.Image;
+                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+            }
+            else if (button.Equals(UICtrlTextFileResetButton))
+            {
+                selectedType = UIControlType.TextFile;
+                saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
+            }
+            else if (button.Equals(UICtrlButtonPictureResetButton))
+            {
+                selectedType = UIControlType.Button;
+                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+            }
+            else
+            {
+                throw new InvalidOperationException(internalErrorMsg);
+            }
 
             Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.TextFile, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
 
             UIControl uiCtrl = m.SelectedUICtrl;
             string fileName = uiCtrl.Text;
-
+            if (selectedType == UIControlType.Button)
+            {
+                Debug.Assert(m.UICtrlButtonInfo != null, internalErrorMsg);
+                fileName = m.UICtrlButtonInfo.Picture;
+            }
             Debug.Assert(fileName != null, internalErrorMsg);
 
             if (m.InterfaceNotSaved)
             {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                     WriteScriptInterface(false);
                 else
                     return;
             }
 
-            if (!EncodedFile.ContainsFile(_sc, EncodedFile.InterfaceEncoded, fileName))
+            if (!EncodedFile.ContainsInterface(_sc, fileName))
             { // Unable to find encoded image, so just remove image entry from uiCtrl
-                uiCtrl.Text = UIInfo.None;
-                m.UICtrlTextFileSet = false;
+                switch (selectedType)
+                {
+                    case UIControlType.Image:
+                        m.SelectedUICtrl.Text = UIInfo_Image.NoImage;
+                        m.UICtrlImageSet = false;
+                        break;
+                    case UIControlType.TextFile:
+                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoImage;
+                        m.UICtrlTextFileSet = false;
+                        break;
+                    case UIControlType.Button:
+                        m.UICtrlButtonInfo.Picture = null;
+                        m.UICtrlButtonPictureSet = false;
+                        break;
+                }
                 m.InvokeUIControlEvent(false);
 
-                MessageBox.Show("Incorrrect image entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Incorrrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             _sc = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName, out string errorMsg);
             if (errorMsg == null)
             {
-                uiCtrl.Text = UIInfo.None;
                 UIControl.ReplaceAddress(_render.UICtrls, _sc);
-                m.UICtrlTextFileSet = false;
+
+                switch (selectedType)
+                {
+                    case UIControlType.Image:
+                        m.SelectedUICtrl.Text = UIInfo_Image.NoImage;
+                        m.UICtrlImageSet = false;
+                        break;
+                    case UIControlType.TextFile:
+                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoImage;
+                        m.UICtrlTextFileSet = false;
+                        break;
+                    case UIControlType.Button:
+                        m.UICtrlButtonInfo.Picture = null;
+                        m.UICtrlButtonPictureSet = false;
+                        break;
+                }
+
                 m.InvokeUIControlEvent(false);
                 WriteScriptInterface(false);
-
-                MessageBox.Show($"Text [{fileName}] successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                MessageBox.Show($"There was an issue while deleting text [{fileName}].\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        #endregion
+        #region For RunOptional
+        private void SectionToRun_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            // Prohibit invalid path characters
+            if (!StringEscaper.IsFileNameValid(e.Text, new char[] { '[', ']', '\t' }))
+                e.Handled = true;
+
+            OnPreviewTextInput(e);
         }
         #endregion
         #endregion
@@ -1415,6 +1450,8 @@ namespace PEBakery.WPF
 
 
         #endregion
+
+        
     }
     #endregion
 
@@ -1654,7 +1691,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.RawSize, 1);
+                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.RawSize, 1);
                 return $"{str} ({ScriptLogoInfo.RawSize})";
             }
         }
@@ -1666,7 +1703,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.EncodedSize, 1);
+                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.EncodedSize, 1);
                 return $"{str} ({ScriptLogoInfo.EncodedSize})";
             }
         }
@@ -1830,6 +1867,10 @@ namespace PEBakery.WPF
                         case UIControlType.ComboBox:
                             OnPropertyUpdate(nameof(UICtrlComboBoxItems));
                             OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
+                            break;
+                        case UIControlType.Button:
+                            // OnPropertyUpdate(nameof(UICtrlSectionToRun));
+                            // OnPropertyUpdate(nameof(UICtrlHideProgress));
                             break;
                     }
                 }
@@ -2248,6 +2289,22 @@ namespace PEBakery.WPF
         public Visibility UICtrlTextFileLoaded => _uiCtrlTextFileSet ? Visibility.Visible : Visibility.Collapsed;
         public Visibility UICtrlTextFileUnloaded => !_uiCtrlTextFileSet ? Visibility.Visible : Visibility.Collapsed;
         #endregion
+        #region For Button
+        public UIInfo_Button UICtrlButtonInfo { get; set; }
+        private bool _uiCtrlButtonPictureSet = false;
+        public bool UICtrlButtonPictureSet
+        {
+            get => _uiCtrlButtonPictureSet;
+            set
+            {
+                _uiCtrlButtonPictureSet = value;
+                OnPropertyUpdate(nameof(UICtrlButtonPictureLoaded));
+                OnPropertyUpdate(nameof(UICtrlButtonPictureUnloaded));
+            }
+        }
+        public Visibility UICtrlButtonPictureLoaded => _uiCtrlButtonPictureSet ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility UICtrlButtonPictureUnloaded => !_uiCtrlButtonPictureSet ? Visibility.Visible : Visibility.Collapsed;
+        #endregion
         #region For RunOptional
         public bool _uiCtrlRunOptionalEnabled;
         public bool UICtrlRunOptionalEnabled
@@ -2358,7 +2415,7 @@ namespace PEBakery.WPF
                     return string.Empty; // Invalid value
                 Debug.Assert(AttachSelected.Detail != null);
 
-                string str = NumberHelper.ByteSizeToHumanReadableString(AttachSelected.Detail.RawSize, 1);
+                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.RawSize, 1);
                 return $"{str} ({AttachSelected.Detail.RawSize})";
             }
         }
@@ -2371,7 +2428,7 @@ namespace PEBakery.WPF
                     return string.Empty; // Invalid value
                 Debug.Assert(AttachSelected.Detail != null);
 
-                string str = NumberHelper.ByteSizeToHumanReadableString(AttachSelected.Detail.EncodedSize, 1);
+                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.EncodedSize, 1);
                 return $"{str} ({AttachSelected.Detail.EncodedSize})";
             }
         }
@@ -2437,8 +2494,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region InvokeUIControlEvent
+        public bool UIControlModifiedEventToggle = false;
         public void InvokeUIControlEvent(bool direct)
         {
+            if (UIControlModifiedEventToggle)
+                return;
+
             InterfaceNotSaved = true;
             InterfaceUpdated = true;
             UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, direct));

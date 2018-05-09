@@ -467,7 +467,7 @@ namespace PEBakery.WPF
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
             Debug.Assert(info != null, "Invalid UIInfo");
 
-            if (uiCtrl.Text.Equals(UIInfo.None, StringComparison.OrdinalIgnoreCase))
+            if (uiCtrl.Text.Equals(UIInfo_Image.NoImage, StringComparison.OrdinalIgnoreCase))
             { // Empty image
                 PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
                 noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
@@ -490,7 +490,7 @@ namespace PEBakery.WPF
             }
 
             BitmapImage bitmap;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
+            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
@@ -549,7 +549,7 @@ namespace PEBakery.WPF
 
                         string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
 
-                        using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
+                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
                         using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
                         {
                             ms.Position = 0;
@@ -604,7 +604,7 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
             };
 
-            if (!uiCtrl.Text.Equals(UIInfo.None, StringComparison.OrdinalIgnoreCase))
+            if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoImage, StringComparison.OrdinalIgnoreCase))
             {
                 if (!EncodedFile.ContainsFile(uiCtrl.Addr.Script, EncodedFile.InterfaceEncoded, uiCtrl.Text))
                 { // Wrong encoded text
@@ -614,7 +614,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
                     using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
                     {
                         textBox.Text = sr.ReadToEnd();
@@ -655,7 +655,7 @@ namespace PEBakery.WPF
                     if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
                         SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.ShowProgress);
+                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -664,7 +664,7 @@ namespace PEBakery.WPF
                 };
             }
                 
-            if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
+            if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey(EncodedFile.GetSectionName(EncodedFile.InterfaceEncoded, info.Picture)))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
@@ -677,7 +677,7 @@ namespace PEBakery.WPF
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
-                using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, info.Picture))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, info.Picture))
                 {
                     if (type == ImageHelper.ImageType.Svg)
                         image.Source = ImageHelper.SvgToBitmapImage(ms);

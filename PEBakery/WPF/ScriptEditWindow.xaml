@@ -401,6 +401,7 @@
                                       SelectedIndex="{Binding InterfaceUICtrlIndex}"
                                       ItemsSource="{Binding InterfaceUICtrls}"
                                       SelectionChanged="UIControlComboBox_SelectionChanged"/>
+                                <!-- Common -->
                                 <Grid Margin="0, 10, 0, 0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="60" />
@@ -669,17 +670,18 @@
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                Margin="0, 0, 5, 0"
-                                               Text="Action" />
+                                               Text="Image" />
                                     <Button Grid.Row="0" Grid.Column="1"
                                             Visibility="{Binding UICtrlImageUnloaded}"
-                                            Width="Auto" Height="20"
+                                            Width="Auto" Height="25"
                                             x:Name="UICtrlImageAttachButton"
-                                            Click="UICtrlImageAttachButton_Click"
+                                            Click="UICtrlInterfaceAttachButton_Click"
                                             ToolTip="Import image">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                         Width="Auto"
-                                                                        Height="Auto"/>
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
                                             <TextBlock Text="Import"
                                                        Margin="5, 0, 0, 0"
                                                        VerticalAlignment="Center"/>
@@ -688,40 +690,43 @@
                                     <StackPanel Grid.Row="0" Grid.Column="1"
                                                 Visibility="{Binding UICtrlImageLoaded}"
                                                 Orientation="Vertical">
-                                        <Button Width="Auto" Height="20"
+                                        <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlImageExtractButton"
-                                                Click="UICtrlImageExtractButton_Click"
+                                                Click="UICtrlInterfaceExtractButton_Click"
                                                 ToolTip="Export image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
-                                                                            Height="Auto"/>
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
                                                 <TextBlock Text="Extract"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                        <Button Width="Auto" Height="20"
+                                        <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlImageResetButton"
-                                                Click="UICtrlImageResetButton_Click"
+                                                Click="UICtrlInterfaceResetButton_Click"
                                                 ToolTip="Reset image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="BorderNone"
-                                                                    Width="Auto"
-                                                                    Height="Auto"/>
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
                                                 <TextBlock Text="Reset"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                        <Button Width="Auto" Height="20"
+                                        <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlImageAutoResizeButton"
                                                 Click="UICtrlImageAutoResizeButton_Click"
                                                 ToolTip="Auto Resize">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
                                                                             Width="Auto"
-                                                                            Height="Auto"/>
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
                                                 <TextBlock Text="Auto Resize"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
@@ -744,17 +749,18 @@
                                     
                                     <TextBlock Grid.Column="0"
                                                Margin="0, 0, 5, 0"
-                                               Text="Action" />
+                                               Text="Text" />
                                     <Button Grid.Column="1"
                                             Visibility="{Binding UICtrlTextFileUnloaded}"
-                                            Width="Auto" Height="20"
+                                            Width="Auto" Height="25"
                                             x:Name="UICtrlTextFileAttachButton"
-                                            Click="UICtrlTextFileAttachButton_Click"
+                                            Click="UICtrlInterfaceAttachButton_Click"
                                             ToolTip="Import image">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                         Width="Auto"
-                                                                        Height="Auto"/>
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
                                             <TextBlock Text="Import"
                                                        Margin="5, 0, 0, 0"
                                                        VerticalAlignment="Center"/>
@@ -763,27 +769,87 @@
                                     <StackPanel Grid.Column="1"
                                                 Visibility="{Binding UICtrlTextFileLoaded}"
                                                 Orientation="Vertical">
-                                        <Button Width="Auto" Height="20"
+                                        <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlTextFileExtractButton"
-                                                Click="UICtrlTextFileExtractButton_Click"
+                                                Click="UICtrlInterfaceExtractButton_Click"
                                                 ToolTip="Export image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
-                                                                            Height="Auto"/>
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
                                                 <TextBlock Text="Extract"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                        <Button Width="Auto" Height="20"
+                                        <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlTextFileResetButton"
-                                                Click="UICtrlTextFileResetButton_Click"
+                                                Click="UICtrlInterfaceResetButton_Click"
                                                 ToolTip="Reset image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="BorderNone"
-                                                                    Width="Auto"
-                                                                    Height="Auto"/>
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Reset"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <!-- Button -->
+                                <Grid Visibility="{Binding IsUICtrlButton}" Margin="0, 10, 0, 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Margin="0, 0, 5, 0"
+                                               Text="Image" />
+                                    <Button Grid.Row="0" Grid.Column="1"
+                                            Visibility="{Binding UICtrlButtonPictureUnloaded}"
+                                            Width="Auto" Height="25"
+                                            x:Name="UICtrlButtonPictureAttachButton"
+                                            Click="UICtrlInterfaceAttachButton_Click"
+                                            ToolTip="Import image">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                            <TextBlock Text="Import"
+                                                       Margin="5, 0, 0, 0"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <StackPanel Grid.Row="0" Grid.Column="1"
+                                                Visibility="{Binding UICtrlButtonPictureLoaded}"
+                                                Orientation="Vertical">
+                                        <Button Width="Auto" Height="25"
+                                                x:Name="UICtrlButtonPictureExtractButton"
+                                                Click="UICtrlInterfaceExtractButton_Click"
+                                                ToolTip="Export image">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Extract"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Width="Auto" Height="25"
+                                                x:Name="UICtrlButtonPictureResetButton"
+                                                Click="UICtrlInterfaceResetButton_Click"
+                                                ToolTip="Reset image">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
                                                 <TextBlock Text="Reset"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
@@ -802,13 +868,14 @@
                                         <TextBlock Text="Section to Run" />
                                         <TextBox Margin="0, 0, 0, 5"
                                                  VerticalContentAlignment="Center"
-                                                 Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=PropertyChanged}"
+                                                 PreviewTextInput="SectionToRun_PreviewTextInput"
+                                                 Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
                                                  ToolTip="Keep here blank to disable optional engine run."/>
                                         <CheckBox Content="Hide Progress"
                                                   IsChecked="{Binding UICtrlHideProgress}"/>
                                     </StackPanel>
                                 </Border>
-                                
+                                <!-- Delete -->
                                 <Button Width="100" Height="25"
                                         Margin="0, 10, 0, 0"
                                         HorizontalAlignment="Right"

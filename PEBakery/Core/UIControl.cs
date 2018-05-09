@@ -65,7 +65,7 @@ namespace PEBakery.Core
     /*
     <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[ToolTip]
     Visibility : 1 or 0
-    Type : UIControlType 0 ~ 14
+    Type : UIControlType 0 ~ 14 (Except 7, 9)
 
     <Text>
     TextBox     = Caption
@@ -572,10 +572,6 @@ namespace PEBakery.Core
         #region Template
         public static string Template(string key) => string.Empty;
         #endregion
-
-        #region Const None
-        public const string None = "none";
-        #endregion
     }
 
     [Serializable]
@@ -775,6 +771,10 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
+
+        #region Const None
+        public const string NoImage = "none";
+        #endregion
     }
 
     [Serializable]
@@ -789,22 +789,25 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
+
+        #region Const None
+        public const string NoImage = "none";
+        #endregion
     }
 
     [Serializable]
     public class UIInfo_Button : UIInfo
     {
-        // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
-        public bool ShowProgress; // Optional
+        public bool HideProgress; // Optional
 
         public UIInfo_Button(string tooltip, string sectionName, string picture, bool hideProgress)
             : base(tooltip)
         {
             SectionName = sectionName;
             Picture = picture;
-            ShowProgress = hideProgress;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
@@ -814,7 +817,7 @@ namespace PEBakery.Core
             b.Append(SectionName);
             b.Append(",");
             b.Append(Picture ?? "0");
-            b.Append(ShowProgress ? ",True" : ",False");
+            b.Append(HideProgress ? ",True" : ",False");
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }

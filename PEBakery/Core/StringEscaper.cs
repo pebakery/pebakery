@@ -516,6 +516,51 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region GetUniqueKey, GetUniqueFileName
+        public static string GetUniqueKey(string srcKey, IEnumerable<string> keys)
+        {
+            int idx = 0;
+            string key;
+            bool duplicate;
+            string[] keyArr = keys.ToArray();
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{srcKey}{idx:D2}";
+
+                if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+
+            return key;
+        }
+
+        public static string GetUniqueFileName(string srcKey, IEnumerable<string> keys)
+        {
+            string fileName = Path.GetFileNameWithoutExtension(srcKey);
+            string ext = Path.GetExtension(srcKey);
+
+            int idx = 0;
+            string key;
+            bool duplicate;
+            string[] keyArr = keys.ToArray();
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{fileName}{idx:D2}{ext}";
+
+                if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+
+            return key;
+        }
+        #endregion
+
         #region Registry
         public static string PackRegBinary(byte[] bin, bool escape = false)
         { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
