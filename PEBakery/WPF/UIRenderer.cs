@@ -467,7 +467,7 @@ namespace PEBakery.WPF
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
             Debug.Assert(info != null, "Invalid UIInfo");
 
-            if (uiCtrl.Text.Equals(UIInfo_Image.ImageNone, StringComparison.OrdinalIgnoreCase))
+            if (uiCtrl.Text.Equals(UIInfo.None, StringComparison.OrdinalIgnoreCase))
             { // Empty image
                 PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
                 noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
@@ -596,18 +596,30 @@ namespace PEBakery.WPF
             UIInfo_TextFile info = uiCtrl.Info as UIInfo_TextFile;
             Debug.Assert(info != null, "Invalid UIInfo");
 
-            TextBox textBox;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
-            using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
+            TextBox textBox = new TextBox
             {
-                textBox = new TextBox
+                TextWrapping = TextWrapping.Wrap,
+                AcceptsReturn = true,
+                IsReadOnly = true,
+                FontSize = CalcFontPointScale(),
+            };
+
+            if (!uiCtrl.Text.Equals(UIInfo.None, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!EncodedFile.ContainsFile(uiCtrl.Addr.Script, EncodedFile.InterfaceEncoded, uiCtrl.Text))
+                { // Wrong encoded text
+                    string errMsg = $"Unable to find encoded text [{uiCtrl.Text}]";
+                    textBox.Text = errMsg;
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
+                }
+                else
                 {
-                    TextWrapping = TextWrapping.Wrap,
-                    AcceptsReturn = true,
-                    IsReadOnly = true,
-                    Text = sr.ReadToEnd(),
-                    FontSize = CalcFontPointScale(),
-                };
+                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
+                    using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
+                    {
+                        textBox.Text = sr.ReadToEnd();
+                    }
+                }
             }
             
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);

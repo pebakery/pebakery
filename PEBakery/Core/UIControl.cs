@@ -74,7 +74,7 @@ namespace PEBakery.Core
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
     Image       = <FileName> // "none" if no image is set
-    TextFile    = <FileName> 
+    TextFile    = <FileName> // "none" if no text file is set
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
@@ -572,6 +572,10 @@ namespace PEBakery.Core
         #region Template
         public static string Template(string key) => string.Empty;
         #endregion
+
+        #region Const None
+        public const string None = "none";
+        #endregion
     }
 
     [Serializable]
@@ -771,8 +775,6 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
-
-        public const string ImageNone = "none";
     }
 
     [Serializable]
@@ -786,7 +788,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,6,10,10,200,86";
+        public new static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
     }
 
     [Serializable]

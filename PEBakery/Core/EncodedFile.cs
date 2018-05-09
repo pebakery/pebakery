@@ -273,6 +273,28 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region AttachInterface, ContainsInterface
+        public static Script AttachInterface(Script sc, string fileName, string srcFilePath)
+        {
+            if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{fileName}] contains invalid character");
+
+            EncodeMode type = EncodeMode.ZLib;
+            if (ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
+            {
+                if (ImageEncodeDict.ContainsKey(imageType))
+                    type = ImageEncodeDict[imageType];
+            }
+
+            return AttachFile(sc, InterfaceEncoded, fileName, srcFilePath, type);
+        }
+        
+        public static bool ContainsInterface(Script sc, string fileName)
+        {
+            return ContainsFile(sc, InterfaceEncoded, fileName);
+        }
+        #endregion
+
         #region AttachLogo, ContainsLogo
         public static Script AttachLogo(Script sc, string fileName, string srcFilePath)
         {

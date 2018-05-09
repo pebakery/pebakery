@@ -1373,7 +1373,7 @@ namespace PEBakery.WPF
                     case false:
                         return PackIconMaterialKind.Close;
                     default: // null
-                        return PackIconMaterialKind.Help;
+                        return PackIconMaterialKind.Magnify;
                 }
             }
         }
