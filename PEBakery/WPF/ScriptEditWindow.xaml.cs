@@ -299,6 +299,27 @@ namespace PEBakery.WPF
                     m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
                     break;
                 }
+                case UIControlType.WebLabel:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
+                    UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlWebLabelInfo = info;
+                    break;
+                }
+                case UIControlType.RadioButton:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
+                    m.UICtrlRadioButtonInfo = info;
+                    m.UICtrlSectionToRun = info.SectionName;
+                    m.UICtrlHideProgress = info.HideProgress;
+                    break;
+                }
             }
 
             m.UIControlModifiedEventToggle = false;
@@ -427,6 +448,16 @@ namespace PEBakery.WPF
                     Debug.Assert(info != null, "Invalid UIInfo");
 
                     m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                    info.HideProgress = m.UICtrlHideProgress;
+                    break;
+                }
+                case UIControlType.RadioButton:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
                     info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
                     info.HideProgress = m.UICtrlHideProgress;
                     break;
@@ -817,6 +848,31 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+        #region RadioButton
+        private void UICtrlRadioButtonSelect_Click(object sender, RoutedEventArgs e)
+        {
+            const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelect_Click";
+
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonInfo != null, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonInfo.Selected == false, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonList != null, internalErrorMsg);
+
+            foreach (UIControl uncheck in m.UICtrlRadioButtonList.Where(x => !x.Key.Equals(m.SelectedUICtrl.Key)))
+            {
+                Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                UIInfo_RadioButton subInfo = uncheck.Info as UIInfo_RadioButton;
+                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                subInfo.Selected = false;
+            }
+            m.UICtrlRadioButtonInfo.Selected = true;
+
+            m.OnPropertyUpdate(nameof(m.UICtrlRadioButtonSelectEnable));
+            m.InvokeUIControlEvent(true);
+        }
+        #endregion
         #region For InterfaceEncoded (Common)
         private void UICtrlInterfaceAttachButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1106,7 +1162,7 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For RunOptional
-        private void SectionToRun_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void SectionName_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             // Prohibit invalid path characters
             if (!StringEscaper.IsFileNameValid(e.Text, new char[] { '[', ']', '\t' }))
@@ -1449,9 +1505,8 @@ namespace PEBakery.WPF
         }
 
 
-        #endregion
 
-        
+        #endregion
     }
     #endregion
 
@@ -1868,9 +1923,17 @@ namespace PEBakery.WPF
                             OnPropertyUpdate(nameof(UICtrlComboBoxItems));
                             OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
                             break;
+                        case UIControlType.Image:
+                            break;
                         case UIControlType.Button:
                             // OnPropertyUpdate(nameof(UICtrlSectionToRun));
                             // OnPropertyUpdate(nameof(UICtrlHideProgress));
+                            break;
+                        case UIControlType.WebLabel:
+                            break;
+                        case UIControlType.RadioButton:
+                            OnPropertyUpdate(nameof(UICtrlSectionToRun));
+                            OnPropertyUpdate(nameof(UICtrlHideProgress));
                             break;
                     }
                 }
@@ -2304,6 +2367,51 @@ namespace PEBakery.WPF
         }
         public Visibility UICtrlButtonPictureLoaded => _uiCtrlButtonPictureSet ? Visibility.Visible : Visibility.Collapsed;
         public Visibility UICtrlButtonPictureUnloaded => !_uiCtrlButtonPictureSet ? Visibility.Visible : Visibility.Collapsed;
+        #endregion
+        #region For WebLabel
+        private UIInfo_WebLabel _uiCtrlWebLabelInfo;
+        public UIInfo_WebLabel UICtrlWebLabelInfo
+        {
+            get => _uiCtrlWebLabelInfo;
+            set
+            {
+                _uiCtrlWebLabelInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlWebLabelUrl));
+            }
+        }
+        public string UICtrlWebLabelUrl
+        {
+            get => _uiCtrlWebLabelInfo?.URL ?? string.Empty;
+            set
+            {
+                if (_uiCtrlWebLabelInfo == null)
+                    return;
+
+                _uiCtrlWebLabelInfo.URL = string.IsNullOrWhiteSpace(value) ? null : value;
+                OnPropertyUpdate(nameof(UICtrlWebLabelInfo.URL));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For RadioButton
+        public List<UIControl> UICtrlRadioButtonList { get; set; }
+        private UIInfo_RadioButton _uiCtrlRadioButtonInfo;
+        public UIInfo_RadioButton UICtrlRadioButtonInfo
+        {
+            get => _uiCtrlRadioButtonInfo;
+            set
+            {
+                _uiCtrlRadioButtonInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlRadioButtonSelectEnable));
+            }
+        }
+        public bool UICtrlRadioButtonSelectEnable => !_uiCtrlRadioButtonInfo?.Selected ?? false;
         #endregion
         #region For RunOptional
         public bool _uiCtrlRunOptionalEnabled;

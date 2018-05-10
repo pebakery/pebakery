@@ -96,7 +96,7 @@ namespace PEBakery.Core
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
     FileBox     = [file|dir]
-    Bevel       = <FontSize>,<Style> (Added in PEBakery)
+    Bevel       = [<FontSize>,<Style>] (Added in PEBakery)
                   <Style> : Normal, Bold
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
