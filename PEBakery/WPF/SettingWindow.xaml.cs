@@ -60,8 +60,8 @@ namespace PEBakery.WPF
 
         public SettingWindow(SettingViewModel model)
         {
-            this.Model = model;
-            this.DataContext = Model;
+            Model = model;
+            DataContext = Model;
             InitializeComponent();
         }
         #endregion
@@ -112,7 +112,7 @@ namespace PEBakery.WPF
             {
                 const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                Model.General_EnableLongFilePath = (res != MessageBoxResult.Yes);
+                Model.General_EnableLongFilePath = res != MessageBoxResult.Yes;
             }
         }
 
@@ -219,7 +219,7 @@ namespace PEBakery.WPF
 
         public SettingViewModel(string settingFile)
         {
-            this._settingFile = settingFile;
+            _settingFile = settingFile;
             ReadFromFile();
 
             ApplySetting();
@@ -788,17 +788,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool compat_DisableBevelCaption;
-        public bool Compat_DisableBevelCaption
-        {
-            get => compat_DisableBevelCaption;
-            set
-            {
-                compat_DisableBevelCaption = value;
-                OnPropertyUpdate(nameof(Compat_DisableBevelCaption));
-            }
-        }
-
         private bool compat_OverridableFixedVariables;
         public bool Compat_OverridableFixedVariables
         {
@@ -833,7 +822,6 @@ namespace PEBakery.WPF
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
-            UIRenderer.DisableBevelCaption = Compat_DisableBevelCaption;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
             ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
@@ -895,7 +883,6 @@ namespace PEBakery.WPF
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
             Compat_IgnoreWidthOfWebLabel = false;
-            Compat_DisableBevelCaption = true;
             Compat_OverridableFixedVariables = false;
             Compat_EnableEnvironmentVariables = false;
         }
@@ -947,7 +934,6 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_DisableBevelCaption), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             };
@@ -1056,7 +1042,6 @@ namespace PEBakery.WPF
             Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
             Compat_RegWriteLegacy = ParseBoolean(nameof(Compat_RegWriteLegacy), Compat_RegWriteLegacy);
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
-            Compat_DisableBevelCaption = ParseBoolean(nameof(Compat_DisableBevelCaption), Compat_DisableBevelCaption);
             Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
             Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
         }
@@ -1099,7 +1084,6 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr), Compat_RegWriteLegacy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_DisableBevelCaption), compatStr), Compat_DisableBevelCaption.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
             };
@@ -1155,26 +1139,28 @@ namespace PEBakery.WPF
 
         public void UpdateProjectList()
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                Projects = w.Projects;
-
-                bool foundDefault = false;
-                List<string> projNameList = Projects.ProjectNames;
-                Project_List = new ObservableCollection<string>();
-                for (int i = 0; i < projNameList.Count; i++)
+                if (Application.Current.MainWindow is MainWindow w)
                 {
-                    Project_List.Add(projNameList[i]);
-                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
-                    {
-                        foundDefault = true;
-                        Project_SelectedIndex = Project_DefaultIndex = i;
-                    }
-                }
+                    Projects = w.Projects;
 
-                if (foundDefault == false)
-                    Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
+                    bool foundDefault = false;
+                    List<string> projNameList = Projects.ProjectNames;
+                    Project_List = new ObservableCollection<string>();
+                    for (int i = 0; i < projNameList.Count; i++)
+                    {
+                        Project_List.Add(projNameList[i]);
+                        if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
+                        {
+                            foundDefault = true;
+                            Project_SelectedIndex = Project_DefaultIndex = i;
+                        }
+                    }
+
+                    if (foundDefault == false)
+                        Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
+                }
             });
         }
         #endregion

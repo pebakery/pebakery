@@ -35,7 +35,6 @@ namespace PEBakery.WPF
         private UIRenderer _render;
         private readonly ScriptEditViewModel m;
         private string _ifaceSectionName;
-        private bool _first = true;
         #endregion
 
         #region Constructor
@@ -177,7 +176,8 @@ namespace PEBakery.WPF
             _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
-            m.InterfaceUICtrlIndex = 0;
+            // m.InterfaceUICtrls.Insert(0, "None");
+            m.InterfaceUICtrlIndex = -1;
 
             m.InterfaceNotSaved = false;
             m.InterfaceUpdated = false;
@@ -318,6 +318,15 @@ namespace PEBakery.WPF
                     m.UICtrlRadioButtonInfo = info;
                     m.UICtrlSectionToRun = info.SectionName;
                     m.UICtrlHideProgress = info.HideProgress;
+                    break;
+                }
+                case UIControlType.Bevel:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                        UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlBevelInfo = info;
                     break;
                 }
                 case UIControlType.FileBox:
@@ -621,12 +630,6 @@ namespace PEBakery.WPF
             if (m.InterfaceUICtrlIndex < 0 || _render.UICtrls.Count <= m.InterfaceUICtrlIndex)
                 return;
 
-            if (_first)
-            {
-                _first = false;
-                return;
-            }
-
             m.SelectedUICtrl = _render.UICtrls[m.InterfaceUICtrlIndex];
             m.InterfaceCanvas.ResetSelectedBorder();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
@@ -730,7 +733,76 @@ namespace PEBakery.WPF
             m.SelectedUICtrl = null;
         }
         #endregion
-        #region For ComboBox
+        #region For Image
+        private void UICtrlImageAutoResizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
+
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
+
+            UIControl uiCtrl = m.SelectedUICtrl;
+            string fileName = uiCtrl.Text;
+            string ext = Path.GetExtension(uiCtrl.Text);
+
+            Debug.Assert(fileName != null, internalErrorMsg);
+            Debug.Assert(ext != null, internalErrorMsg);
+
+            if (m.InterfaceNotSaved)
+            {
+                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                    WriteScriptInterface(false);
+                else
+                    return;
+            }
+
+            if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
+            {
+                MessageBox.Show($"Unsupported image [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            using (MemoryStream ms = EncodedFile.ExtractFileInMem(_sc, EncodedFile.InterfaceEncoded, fileName))
+            {
+                int width, height;
+                if (type == ImageHelper.ImageType.Svg)
+                    (width, height) = ImageHelper.GetSvgSize(ms);
+                else
+                    (width, height) = ImageHelper.GetImageSize(ms);
+
+                uiCtrl.Rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, width, height);
+                m.InvokeUIControlEvent(false);
+                WriteScriptInterface(false);
+            }
+        }
+        #endregion
+        #region For RadioButton
+        private void UICtrlRadioButtonSelect_Click(object sender, RoutedEventArgs e)
+        {
+            const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelect_Click";
+
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonInfo != null, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonInfo.Selected == false, internalErrorMsg);
+            Debug.Assert(m.UICtrlRadioButtonList != null, internalErrorMsg);
+
+            foreach (UIControl uncheck in m.UICtrlRadioButtonList.Where(x => !x.Key.Equals(m.SelectedUICtrl.Key)))
+            {
+                Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                UIInfo_RadioButton subInfo = uncheck.Info as UIInfo_RadioButton;
+                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                subInfo.Selected = false;
+            }
+            m.UICtrlRadioButtonInfo.Selected = true;
+
+            m.OnPropertyUpdate(nameof(m.UICtrlRadioButtonSelectEnable));
+            m.InvokeUIControlEvent(true);
+        }
+        #endregion
+        #region For (Common) ListItemBox
         private void UICtrlListItemBoxUp_Click(object sender, RoutedEventArgs e)
         {
             const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
@@ -925,86 +997,6 @@ namespace PEBakery.WPF
             m.UICtrlListItemBoxItems.Add(newItem);
 
             m.InvokeUIControlEvent(false);
-        }
-        #endregion
-        #region For Image
-        private void UICtrlImageAutoResizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-            string ext = Path.GetExtension(uiCtrl.Text);
-
-            Debug.Assert(fileName != null, internalErrorMsg);
-            Debug.Assert(ext != null, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
-            {
-                MessageBox.Show($"Unsupported image [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            using (MemoryStream ms = EncodedFile.ExtractFileInMem(_sc, EncodedFile.InterfaceEncoded, fileName))
-            {
-                int width, height;
-                if (type == ImageHelper.ImageType.Svg)
-                    (width, height) = ImageHelper.GetSvgSize(ms);
-                else
-                    (width, height) = ImageHelper.GetImageSize(ms);
-
-                uiCtrl.Rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, width, height);
-                m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
-            }
-        }
-        #endregion
-        #region For RadioButton
-        private void UICtrlRadioButtonSelect_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelect_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonInfo != null, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonInfo.Selected == false, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonList != null, internalErrorMsg);
-
-            foreach (UIControl uncheck in m.UICtrlRadioButtonList.Where(x => !x.Key.Equals(m.SelectedUICtrl.Key)))
-            {
-                Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                UIInfo_RadioButton subInfo = uncheck.Info as UIInfo_RadioButton;
-                Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                subInfo.Selected = false;
-            }
-            m.UICtrlRadioButtonInfo.Selected = true;
-
-            m.OnPropertyUpdate(nameof(m.UICtrlRadioButtonSelectEnable));
-            m.InvokeUIControlEvent(true);
-        }
-        #endregion
-        #region For Bevel
-        private void BevelCaption_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            // TODO: Rework here after discussion about caption display policy!
-            // Prohibit invalid path characters
-            //if (e.Text.Equals(m.SelectedUICtrl.Key, StringComparison.Ordinal))
-            //    e.Handled = true;
-
-            OnPreviewTextInput(e);
         }
         #endregion
         #region For InterfaceEncoded (Common)
@@ -1984,7 +1976,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceUICtrls));
             }
         }
-        private int _interfaceUICtrlIndex = 0;
+        private int _interfaceUICtrlIndex;
         public int InterfaceUICtrlIndex
         {
             get => _interfaceUICtrlIndex;
@@ -2029,48 +2021,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
                 OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
                 OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
-
-                // UIControl Optional Argument
-                if (value != null)
-                {
-                    switch (value.Type)
-                    {
-                        case UIControlType.TextBox:
-                            OnPropertyUpdate(nameof(UICtrlTextBoxValue));
-                            break;
-                        case UIControlType.TextLabel:
-                            OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
-                            OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
-                            break;
-                        case UIControlType.NumberBox:
-                            OnPropertyUpdate(nameof(UICtrlNumberBoxValue));
-                            OnPropertyUpdate(nameof(UICtrlNumberBoxMin));
-                            OnPropertyUpdate(nameof(UICtrlNumberBoxMax));
-                            OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
-                            break;
-                        case UIControlType.CheckBox:
-                            OnPropertyUpdate(nameof(UICtrlCheckBoxValue));
-                            OnPropertyUpdate(nameof(UICtrlSectionToRun));
-                            OnPropertyUpdate(nameof(UICtrlHideProgress));
-                            break;
-                        case UIControlType.ComboBox:
-                            // OnPropertyUpdate(nameof(UICtrlListItemBoxItems));
-                            // OnPropertyUpdate(nameof(UICtrlListItemBoxSelectedIndex));
-                            break;
-                        case UIControlType.Image:
-                            break;
-                        case UIControlType.Button:
-                            // OnPropertyUpdate(nameof(UICtrlSectionToRun));
-                            // OnPropertyUpdate(nameof(UICtrlHideProgress));
-                            break;
-                        case UIControlType.WebLabel:
-                            break;
-                        case UIControlType.RadioButton:
-                            // OnPropertyUpdate(nameof(UICtrlSectionToRun));
-                            // OnPropertyUpdate(nameof(UICtrlHideProgress));
-                            break;
-                    }
-                }
             }
         }
 
@@ -2530,19 +2480,25 @@ namespace PEBakery.WPF
                 if (value == null)
                     return;
 
+                OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
                 OnPropertyUpdate(nameof(UICtrlBevelFontSize));
                 OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));
             }
         }
-        // TODO: Rework here after discussion about caption display policy!
-        private bool _uiCtrlBevelCaptionInvalid;
-        public bool UICtrlBevelCaptionInvalid
+        public bool UICtrlBevelCaptionEnabled
         {
-            get => _uiCtrlBevelCaptionInvalid;
+            get
+            {
+                if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
+                    return false;
+
+                return UICtrlBevelInfo.CaptionEnabled;
+            }
             set
             {
-                _uiCtrlBevelCaptionInvalid = value;
-                OnPropertyUpdate(nameof(UICtrlBevelCaptionInvalid));
+                UICtrlBevelInfo.CaptionEnabled = value;
+                OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
+                InvokeUIControlEvent(true);
             }
         }
         public string UICtrlBevelCaption
@@ -2552,10 +2508,7 @@ namespace PEBakery.WPF
                 if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
                     return string.Empty;
 
-                // For compatibility with WB082, if the caption is same with key then it is not shown
-                if (_selectedUICtrl.Text.Equals(_selectedUICtrl.Key, StringComparison.Ordinal))
-                    return string.Empty;
-                return _selectedUICtrl.Text;
+                return UICtrlBevelInfo.CaptionEnabled ? _selectedUICtrl.Text : string.Empty;
             }
             set
             {
@@ -2569,11 +2522,13 @@ namespace PEBakery.WPF
         }
         public int UICtrlBevelFontSize
         {
-            get => _uiCtrlBevelInfo?.FontSize ?? 8;
+            get => _uiCtrlBevelInfo?.FontSize ?? UIControl.DefaultFontPoint;
             set
             {
                 if (_uiCtrlBevelInfo == null)
                     return;
+
+                UICtrlBevelInfo.CaptionEnabled = true;
 
                 _uiCtrlBevelInfo.FontSize = value;
                 OnPropertyUpdate(nameof(UICtrlBevelFontSize));
@@ -2582,11 +2537,13 @@ namespace PEBakery.WPF
         }
         public int UICtrlBevelStyleIndex
         {
-            get => (int?)_uiCtrlBevelInfo?.Style ?? -1;
+            get => (int?)_uiCtrlBevelInfo?.Style ?? 0;
             set
             {
                 if (_uiCtrlBevelInfo == null)
                     return;
+
+                UICtrlBevelInfo.CaptionEnabled = true;
 
                 _uiCtrlBevelInfo.Style = (UIBevelCaptionStyle)value;
                 OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));

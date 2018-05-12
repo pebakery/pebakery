@@ -539,6 +539,11 @@ namespace PEBakery.Core
             }
         }
         #endregion
+
+        #region Const
+        public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
+        public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
+        #endregion
     }
     #endregion
 
@@ -849,7 +854,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=Content,1,10,10,10,80,200,18,https://github.com/pebakery/pebakery";
+        public new static string Template(string key) => $"{key}=Caption,1,10,10,10,200,18,https://github.com/pebakery/pebakery";
     }
 
     [Serializable]
@@ -926,6 +931,26 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}={key},1,12,10,10,160,60";
+
+        public bool CaptionEnabled
+        {
+            get => FontSize != null;
+            set
+            {
+                if (value)
+                {
+                    if (FontSize == null)
+                        FontSize = UIControl.DefaultFontPoint;
+                    if (Style == null)
+                        Style = UIBevelCaptionStyle.Normal;
+                }
+                else
+                {
+                    FontSize = null;
+                    Style = null;
+                }
+            }
+        }
     }
 
     [Serializable]

@@ -846,22 +846,23 @@
                                             <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition />
+                                            <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Grid.ColumnSpan="2"
-                                                   Margin="0, 0, 0, 10"
-                                                   TextWrapping="Wrap"
-                                                   Text="Note)&#x0a;Caption is visible only if bevel caption is enabled in setting"/>
+                                        <CheckBox Grid.Row="0" Grid.Column="0"
+                                                  Grid.ColumnSpan="2"
+                                                  VerticalAlignment="Center"
+                                                  VerticalContentAlignment="Center"
+                                                  IsChecked="{Binding UICtrlBevelCaptionEnabled}"
+                                                  Content="Enable Caption"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Caption" />
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
-                                                 PreviewTextInput="BevelCaption_PreviewTextInput"
+                                                 IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
                                                  Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
@@ -869,6 +870,7 @@
                                         <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
                                                               Minimum="8"
                                                               IncrementUnit="1"
+                                                              IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
                                                               Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
@@ -876,6 +878,7 @@
                                         <ComboBox Grid.Row="3" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
                                                   SelectedIndex="{Binding UICtrlBevelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
                                             <ComboBoxItem Content="Normal"/>
                                             <ComboBoxItem Content="Bold"/>

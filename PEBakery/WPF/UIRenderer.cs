@@ -56,8 +56,6 @@ namespace PEBakery.WPF
     public class UIRenderer
     {
         #region Fields
-        public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
-        public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
         public const int MaxUrlDisplayLen = 47;
         public const string Interface = "Interface";
@@ -74,7 +72,6 @@ namespace PEBakery.WPF
 
         // Compatibility Option
         public static bool IgnoreWidthOfWebLabel = false;
-        public static bool DisableBevelCaption = false;
         #endregion
 
         #region Constructor
@@ -263,7 +260,7 @@ namespace PEBakery.WPF
                 };
                 SetToolTip(block, info.ToolTip);
                 SetEditModeProperties(r, block, uiCtrl);
-                const double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.2;
+                const double margin = UIControl.PointToDeviceIndependentPixel * UIControl.DefaultFontPoint * 1.2;
                 Rect blockRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - margin, uiCtrl.Rect.Width, uiCtrl.Rect.Height);
                 DrawToCanvas(r, block, blockRect);
             }
@@ -862,12 +859,9 @@ namespace PEBakery.WPF
             SetEditModeProperties(r, bevel, uiCtrl);
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
-            if (!DisableBevelCaption &&
-                !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
+            if (info.FontSize != null)
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
-                int fontSize = DefaultFontPoint;
-                if (info.FontSize != null)
-                    fontSize = (int)info.FontSize;
+                int fontSize = info.FontSize ?? UIControl.DefaultFontPoint;
 
                 Border textBorder = new Border
                 {
@@ -894,6 +888,7 @@ namespace PEBakery.WPF
                     Height = double.NaN,
                 };
 
+                SetEditModeProperties(r, textBorder, uiCtrl);
                 DrawToCanvas(r, textBorder, blockRect);
             }
         }
@@ -1146,9 +1141,9 @@ namespace PEBakery.WPF
                 element.Opacity = 0.5;
         }
 
-        private static double CalcFontPointScale(double fontPoint = DefaultFontPoint) 
+        private static double CalcFontPointScale(double fontPoint = UIControl.DefaultFontPoint) 
         {
-            return fontPoint * PointToDeviceIndependentPixel;
+            return fontPoint * UIControl.PointToDeviceIndependentPixel;
         }
 
         private static string AppendUrlToToolTip(string toolTip, string url)
