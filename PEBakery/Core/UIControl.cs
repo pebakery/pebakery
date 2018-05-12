@@ -73,8 +73,8 @@ namespace PEBakery.Core
     NumberBox   = <ControlName> 
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
-    Image       = <FileName> // "none" if no image is set
-    TextFile    = <FileName> // "none" if no text file is set
+    Image       = <FileName> // "none" if image is not set
+    TextFile    = <FileName> // "none" if text file is not set
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
@@ -95,9 +95,9 @@ namespace PEBakery.Core
                   [Picture] - 0 if no picture, or encoded file's name.
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    FileBox     = [file|dir]
     Bevel       = [<FontSize>,<Style>] (Added in PEBakery)
                   <Style> : Normal, Bold
+    FileBox     = [file|dir]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
 
@@ -574,6 +574,11 @@ namespace PEBakery.Core
         #endregion
     }
 
+    public enum UITextStyle
+    {
+        Normal = 0, Bold, Italic, Underline, Strike
+    }
+
     [Serializable]
     public class UIInfo_TextBox : UIInfo
     {
@@ -597,12 +602,7 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
-    }
-
-    public enum UITextStyle
-    {
-        Normal = 0, Bold, Italic, Underline, Strike
-    }
+    } 
 
     [Serializable]
     public class UIInfo_TextLabel : UIInfo

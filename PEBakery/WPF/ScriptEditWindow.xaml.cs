@@ -257,8 +257,8 @@ namespace PEBakery.WPF
                     Debug.Assert(info != null, "Invalid UIInfo");
 
                     m.UICtrlCheckBoxInfo = info;
-                    m._uiCtrlSectionToRun = info.SectionName;
-                    m._uiCtrlHideProgress = info.HideProgress;
+                    m.UICtrlSectionToRun = info.SectionName;
+                    m.UICtrlHideProgress = info.HideProgress;
                     break;
                 }
                 case UIControlType.ComboBox:
@@ -316,6 +316,26 @@ namespace PEBakery.WPF
 
                     m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
                     m.UICtrlRadioButtonInfo = info;
+                    m.UICtrlSectionToRun = info.SectionName;
+                    m.UICtrlHideProgress = info.HideProgress;
+                    break;
+                }
+                case UIControlType.FileBox:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
+                    UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlFileBoxInfo = info;
+                    break;
+                }
+                case UIControlType.RadioGroup:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    m.UICtrlRadioGroupInfo = info;
                     m.UICtrlSectionToRun = info.SectionName;
                     m.UICtrlHideProgress = info.HideProgress;
                     break;
@@ -456,6 +476,16 @@ namespace PEBakery.WPF
                 {
                     Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
                     UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+                    Debug.Assert(info != null, "Invalid UIInfo");
+
+                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                    info.HideProgress = m.UICtrlHideProgress;
+                    break;
+                }
+                case UIControlType.RadioGroup:
+                {
+                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
                     Debug.Assert(info != null, "Invalid UIInfo");
 
                     info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
@@ -701,105 +731,198 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For ComboBox
-        private void UICtrlComboBoxItemUp_Click(object sender, RoutedEventArgs e)
+        private void UICtrlListItemBoxUp_Click(object sender, RoutedEventArgs e)
         {
-            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
-            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
-            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemUp_Click");
+            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
 
-            int idx = m.UICtrlComboBoxSelectedIndex;
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            List<string> items;
+            switch (m.SelectedUICtrl.Type)
+            {
+                case UIControlType.ComboBox:
+                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
+                    items = m.UICtrlComboBoxInfo.Items;
+                    break;
+                case UIControlType.RadioGroup:
+                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
+                    items = m.UICtrlRadioGroupInfo.Items;
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
+            }
+            Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+
+            int idx = m.UICtrlListItemBoxSelectedIndex;
             if (0 < idx)
             {
-                UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
-                string item = info.Items[idx];
-                info.Items.RemoveAt(idx);
-                info.Items.Insert(idx - 1, item);
+                string item = items[idx];
+                items.RemoveAt(idx);
+                items.Insert(idx - 1, item);
 
-                var editItem = m.UICtrlComboBoxItems[idx];
-                m.UICtrlComboBoxItems.RemoveAt(idx);
-                m.UICtrlComboBoxItems.Insert(idx - 1, editItem);
+                var editItem = m.UICtrlListItemBoxItems[idx];
+                m.UICtrlListItemBoxItems.RemoveAt(idx);
+                m.UICtrlListItemBoxItems.Insert(idx - 1, editItem);
 
-                if (info.Index == idx)
-                    info.Index = idx - 1;
+                switch (m.SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        if (m.UICtrlComboBoxInfo.Index == idx)
+                            m.UICtrlComboBoxInfo.Index = idx - 1;
+                        break;
+                    case UIControlType.RadioGroup:
+                        if (m.UICtrlRadioGroupInfo.Selected == idx)
+                            m.UICtrlRadioGroupInfo.Selected = idx - 1;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
 
-                m.UICtrlComboBoxSelectedIndex = idx - 1;
+                m.UICtrlListItemBoxSelectedIndex = idx - 1;
                 m.InvokeUIControlEvent(false);
             }
         }
 
-        private void UICtrlComboBoxItemDown_Click(object sender, RoutedEventArgs e)
+        private void UICtrlListItemBoxDown_Click(object sender, RoutedEventArgs e)
         {
-            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
-            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
-            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemDown_Click");
+            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDown_Click";
 
-            int idx = m.UICtrlComboBoxSelectedIndex;
-            if (idx + 1 < m.UICtrlComboBoxInfo.Items.Count)
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            List<string> items;
+            switch (m.SelectedUICtrl.Type)
             {
-                UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
-                string item = info.Items[idx];
-                info.Items.RemoveAt(idx);
-                info.Items.Insert(idx + 1, item);
+                case UIControlType.ComboBox:
+                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
+                    items = m.UICtrlComboBoxInfo.Items;
+                    Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+                    break;
+                case UIControlType.RadioGroup:
+                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
+                    items = m.UICtrlRadioGroupInfo.Items;
+                    Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
+            }
 
-                var editItem = m.UICtrlComboBoxItems[idx];
-                m.UICtrlComboBoxItems.RemoveAt(idx);
-                m.UICtrlComboBoxItems.Insert(idx + 1, editItem);
+            int idx = m.UICtrlListItemBoxSelectedIndex;
+            if (idx + 1 < items.Count)
+            {
+                string item = items[idx];
+                items.RemoveAt(idx);
+                items.Insert(idx + 1, item);
 
-                if (info.Index == idx)
-                    info.Index = idx + 1;
+                string editItem = m.UICtrlListItemBoxItems[idx];
+                m.UICtrlListItemBoxItems.RemoveAt(idx);
+                m.UICtrlListItemBoxItems.Insert(idx + 1, editItem);
 
-                m.UICtrlComboBoxSelectedIndex = idx + 1;
+                switch (m.SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        if (m.UICtrlComboBoxInfo.Index == idx)
+                            m.UICtrlComboBoxInfo.Index = idx + 1;
+                        break;
+                    case UIControlType.RadioGroup:
+                        if (m.UICtrlRadioGroupInfo.Selected == idx)
+                            m.UICtrlRadioGroupInfo.Selected = idx + 1;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                m.UICtrlListItemBoxSelectedIndex = idx + 1;
                 m.InvokeUIControlEvent(false);
             }
         }
 
-        private void UICtrlComboBoxItemSelect_Click(object sender, RoutedEventArgs e)
+        private void UICtrlListItemBoxSelect_Click(object sender, RoutedEventArgs e)
         {
-            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
-            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
-            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemSelect_Click");
+            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelect_Click";
 
-            m.UICtrlComboBoxInfo.Index = m.UICtrlComboBoxSelectedIndex;
-
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            switch (m.SelectedUICtrl.Type)
+            {
+                case UIControlType.ComboBox:
+                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
+                    Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+                    m.UICtrlComboBoxInfo.Index = m.UICtrlListItemBoxSelectedIndex;
+                    break;
+                case UIControlType.RadioGroup:
+                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
+                    Debug.Assert(m.UICtrlRadioGroupInfo.Items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+                    m.UICtrlRadioGroupInfo.Selected = m.UICtrlListItemBoxSelectedIndex;
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
+            }
+            
             m.InvokeUIControlEvent(false);
         }
 
-        private void UICtrlComboBoxItemDelete_Click(object sender, RoutedEventArgs e)
+        private void UICtrlListItemBoxDelete_Click(object sender, RoutedEventArgs e)
         {
-            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
-            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
-            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemDelete_Click");
+            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDelete_Click";
 
-            int idx = m.UICtrlComboBoxSelectedIndex;
-            UIInfo_ComboBox info = m.UICtrlComboBoxInfo;
-
-            info.Items.RemoveAt(idx);
-            m.UICtrlComboBoxItems.RemoveAt(idx);
-
-            if (info.Index == idx)
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
+            List<string> items;
+            switch (m.SelectedUICtrl.Type)
             {
-                info.Index = 0;
-                m.UICtrlComboBoxSelectedIndex = 0;
+                case UIControlType.ComboBox:
+                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
+                    items = m.UICtrlComboBoxInfo.Items;
+                    break;
+                case UIControlType.RadioGroup:
+                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
+                    items = m.UICtrlRadioGroupInfo.Items;
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
+            }
+            Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
+
+            int idx = m.UICtrlListItemBoxSelectedIndex;
+
+            items.RemoveAt(idx);
+            m.UICtrlListItemBoxItems.RemoveAt(idx);
+
+            switch (m.SelectedUICtrl.Type)
+            {
+                case UIControlType.ComboBox:
+                    if (m.UICtrlComboBoxInfo.Index == idx)
+                        m.UICtrlComboBoxInfo.Index = 0;
+                    break;
+                case UIControlType.RadioGroup:
+                    if (m.UICtrlRadioGroupInfo.Selected == idx)
+                        m.UICtrlRadioGroupInfo.Selected = 0;
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
             }
 
+            m.UICtrlListItemBoxSelectedIndex = 0;
             m.InvokeUIControlEvent(false);
         }
 
-        private void UICtrlComboBoxItemAdd_Click(object sender, RoutedEventArgs e)
+        private void UICtrlListItemBoxAdd_Click(object sender, RoutedEventArgs e)
         {
-            Debug.Assert(m.UICtrlComboBoxInfo != null, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
-            Debug.Assert(m.SelectedUICtrl != null, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.ComboBox, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
-            Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlComboBoxItems.Count, "Internal Logic Error at UICtrlComboBoxItemAdd_Click");
+            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAdd_Click";
 
-            string newItem = m.UICtrlComboBoxNewItem;
+            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
 
-            m.UICtrlComboBoxInfo.Items.Add(newItem);
-            m.UICtrlComboBoxItems.Add(newItem);
+            string newItem = m.UICtrlListItemBoxNewItem;
+            switch (m.SelectedUICtrl.Type)
+            {
+                case UIControlType.ComboBox:
+                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
+                    m.UICtrlComboBoxInfo.Items.Add(newItem);
+                    break;
+                case UIControlType.RadioGroup:
+                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
+                    m.UICtrlRadioGroupInfo.Items.Add(newItem);
+                    break;
+                default:
+                    throw new InvalidOperationException(internalErrorMsg);
+            }
+            m.UICtrlListItemBoxItems.Add(newItem);
 
             m.InvokeUIControlEvent(false);
         }
@@ -848,7 +971,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        #region RadioButton
+        #region For RadioButton
         private void UICtrlRadioButtonSelect_Click(object sender, RoutedEventArgs e)
         {
             const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelect_Click";
@@ -871,6 +994,17 @@ namespace PEBakery.WPF
 
             m.OnPropertyUpdate(nameof(m.UICtrlRadioButtonSelectEnable));
             m.InvokeUIControlEvent(true);
+        }
+        #endregion
+        #region For Bevel
+        private void BevelCaption_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            // TODO: Rework here after discussion about caption display policy!
+            // Prohibit invalid path characters
+            //if (e.Text.Equals(m.SelectedUICtrl.Key, StringComparison.Ordinal))
+            //    e.Handled = true;
+
+            OnPreviewTextInput(e);
         }
         #endregion
         #region For InterfaceEncoded (Common)
@@ -1860,7 +1994,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceUICtrlIndex));
             }
         }
-
         private UIControl _selectedUICtrl = null;
         public UIControl SelectedUICtrl
         {
@@ -1894,7 +2027,8 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlBevel));
                 OnPropertyUpdate(nameof(IsUICtrlFileBox));
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
-                OnPropertyUpdate(nameof(IsUICtrlRunOptional));
+                OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
+                OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
 
                 // UIControl Optional Argument
                 if (value != null)
@@ -1920,8 +2054,8 @@ namespace PEBakery.WPF
                             OnPropertyUpdate(nameof(UICtrlHideProgress));
                             break;
                         case UIControlType.ComboBox:
-                            OnPropertyUpdate(nameof(UICtrlComboBoxItems));
-                            OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
+                            // OnPropertyUpdate(nameof(UICtrlListItemBoxItems));
+                            // OnPropertyUpdate(nameof(UICtrlListItemBoxSelectedIndex));
                             break;
                         case UIControlType.Image:
                             break;
@@ -1932,8 +2066,8 @@ namespace PEBakery.WPF
                         case UIControlType.WebLabel:
                             break;
                         case UIControlType.RadioButton:
-                            OnPropertyUpdate(nameof(UICtrlSectionToRun));
-                            OnPropertyUpdate(nameof(UICtrlHideProgress));
+                            // OnPropertyUpdate(nameof(UICtrlSectionToRun));
+                            // OnPropertyUpdate(nameof(UICtrlHideProgress));
                             break;
                     }
                 }
@@ -2061,7 +2195,8 @@ namespace PEBakery.WPF
         public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility IsUICtrlRunOptional
+        public Visibility ShowUICtrlListItemBox => IsUICtrlComboBox == Visibility.Visible || IsUICtrlRadioGroup == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility ShowUICtrlRunOptional
         {
             get
             {
@@ -2261,38 +2396,9 @@ namespace PEBakery.WPF
                 if (value == null)
                     return;
 
-                _uiCtrlComboBoxItems = new ObservableCollection<string>(_uiCtrlComboBoxInfo.Items);
-            }
-        }
-        public ObservableCollection<string> _uiCtrlComboBoxItems;
-        public ObservableCollection<string> UICtrlComboBoxItems
-        {
-            get => _uiCtrlComboBoxItems;
-            set
-            {
-                _uiCtrlComboBoxItems = value;
-                OnPropertyUpdate(nameof(UICtrlComboBoxItems));
-                InvokeUIControlEvent(true);
-            }
-        }
-        private int _uiCtrlComboBoxSelectedIndex;
-        public int UICtrlComboBoxSelectedIndex
-        {
-            get => _uiCtrlComboBoxSelectedIndex;
-            set
-            {
-                _uiCtrlComboBoxSelectedIndex = value;
-                OnPropertyUpdate(nameof(UICtrlComboBoxSelectedIndex));
-            }
-        }
-        private string _uiCtrlComboBoxNewItem;
-        public string UICtrlComboBoxNewItem
-        {
-            get => _uiCtrlComboBoxNewItem;
-            set
-            {
-                _uiCtrlComboBoxNewItem = value;
-                OnPropertyUpdate(nameof(UICtrlComboBoxNewItem));
+                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlComboBoxInfo.Items);
+                UICtrlListItemBoxSelectedIndex = _uiCtrlComboBoxInfo.Index;
+                UICtrlListItemBoxNewItem = string.Empty;
             }
         }
         #endregion
@@ -2413,8 +2519,177 @@ namespace PEBakery.WPF
         }
         public bool UICtrlRadioButtonSelectEnable => !_uiCtrlRadioButtonInfo?.Selected ?? false;
         #endregion
-        #region For RunOptional
-        public bool _uiCtrlRunOptionalEnabled;
+        #region For Bevel
+        private UIInfo_Bevel _uiCtrlBevelInfo;
+        public UIInfo_Bevel UICtrlBevelInfo
+        {
+            get => _uiCtrlBevelInfo;
+            set
+            {
+                _uiCtrlBevelInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlBevelFontSize));
+                OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));
+            }
+        }
+        // TODO: Rework here after discussion about caption display policy!
+        private bool _uiCtrlBevelCaptionInvalid;
+        public bool UICtrlBevelCaptionInvalid
+        {
+            get => _uiCtrlBevelCaptionInvalid;
+            set
+            {
+                _uiCtrlBevelCaptionInvalid = value;
+                OnPropertyUpdate(nameof(UICtrlBevelCaptionInvalid));
+            }
+        }
+        public string UICtrlBevelCaption
+        {
+            get
+            {
+                if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
+                    return string.Empty;
+
+                // For compatibility with WB082, if the caption is same with key then it is not shown
+                if (_selectedUICtrl.Text.Equals(_selectedUICtrl.Key, StringComparison.Ordinal))
+                    return string.Empty;
+                return _selectedUICtrl.Text;
+            }
+            set
+            {
+                if (_selectedUICtrl == null || _selectedUICtrl.Type != UIControlType.Bevel)
+                    return;
+
+                _selectedUICtrl.Text = value;
+                OnPropertyUpdate(nameof(UICtrlBevelFontSize));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlBevelFontSize
+        {
+            get => _uiCtrlBevelInfo?.FontSize ?? 8;
+            set
+            {
+                if (_uiCtrlBevelInfo == null)
+                    return;
+
+                _uiCtrlBevelInfo.FontSize = value;
+                OnPropertyUpdate(nameof(UICtrlBevelFontSize));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlBevelStyleIndex
+        {
+            get => (int?)_uiCtrlBevelInfo?.Style ?? -1;
+            set
+            {
+                if (_uiCtrlBevelInfo == null)
+                    return;
+
+                _uiCtrlBevelInfo.Style = (UIBevelCaptionStyle)value;
+                OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For FileBox
+        private UIInfo_FileBox _uiCtrlFileBoxInfo;
+        public UIInfo_FileBox UICtrlFileBoxInfo
+        {
+            get => _uiCtrlFileBoxInfo;
+            set
+            {
+                _uiCtrlFileBoxInfo = value;
+                if (value == null)
+                    return;
+
+                OnPropertyUpdate(nameof(UICtrlFileBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlFileBoxDirChecked));
+            }
+        }
+        public bool UICtrlFileBoxFileChecked
+        {
+            get => _uiCtrlFileBoxInfo?.IsFile ?? false;
+            set
+            {
+                if (_uiCtrlFileBoxInfo == null)
+                    return;
+
+                _uiCtrlFileBoxInfo.IsFile = value;
+                OnPropertyUpdate(nameof(UICtrlFileBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlFileBoxDirChecked));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public bool UICtrlFileBoxDirChecked
+        {
+            get => !_uiCtrlFileBoxInfo?.IsFile ?? false;
+            set
+            {
+                if (_uiCtrlFileBoxInfo == null)
+                    return;
+
+                _uiCtrlFileBoxInfo.IsFile = !value;
+                OnPropertyUpdate(nameof(UICtrlFileBoxFileChecked));
+                OnPropertyUpdate(nameof(UICtrlFileBoxDirChecked));
+                InvokeUIControlEvent(true);
+            }
+        }
+        #endregion
+        #region For RadioGroup
+        private UIInfo_RadioGroup _uiCtrlRadioGroupInfo;
+        public UIInfo_RadioGroup UICtrlRadioGroupInfo
+        {
+            get => _uiCtrlRadioGroupInfo;
+            set
+            {
+                _uiCtrlRadioGroupInfo = value;
+                if (value == null)
+                    return;
+
+                UICtrlListItemBoxItems = new ObservableCollection<string>(_uiCtrlRadioGroupInfo.Items);
+                UICtrlListItemBoxSelectedIndex = _uiCtrlRadioGroupInfo.Selected;
+                UICtrlListItemBoxNewItem = string.Empty;
+            }
+        }
+        #endregion
+        #region For (Common) ListItemBox
+        public ObservableCollection<string> _uiCtrlListItemBoxItems;
+        public ObservableCollection<string> UICtrlListItemBoxItems
+        {
+            get => _uiCtrlListItemBoxItems;
+            set
+            {
+                _uiCtrlListItemBoxItems = value;
+                OnPropertyUpdate(nameof(UICtrlListItemBoxItems));
+                InvokeUIControlEvent(true);
+            }
+        }
+        private int _uiCtrlListItemBoxSelectedIndex;
+        public int UICtrlListItemBoxSelectedIndex
+        {
+            get => _uiCtrlListItemBoxSelectedIndex;
+            set
+            {
+                _uiCtrlListItemBoxSelectedIndex = value;
+                OnPropertyUpdate(nameof(UICtrlListItemBoxSelectedIndex));
+            }
+        }
+        private string _uiCtrlListItemBoxNewItem;
+        public string UICtrlListItemBoxNewItem
+        {
+            get => _uiCtrlListItemBoxNewItem;
+            set
+            {
+                _uiCtrlListItemBoxNewItem = value;
+                OnPropertyUpdate(nameof(UICtrlListItemBoxNewItem));
+            }
+        }
+        #endregion
+        #region For (Common) RunOptional
+        private bool _uiCtrlRunOptionalEnabled;
         public bool UICtrlRunOptionalEnabled
         {
             get => _uiCtrlRunOptionalEnabled;
@@ -2425,7 +2700,7 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(false);
             }
         }
-        public string _uiCtrlSectionToRun;
+        private string _uiCtrlSectionToRun;
         public string UICtrlSectionToRun
         {
             get => _uiCtrlSectionToRun;
@@ -2436,7 +2711,7 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(false);
             }
         }
-        public bool _uiCtrlHideProgress;
+        private bool _uiCtrlHideProgress;
         public bool UICtrlHideProgress
         {
             get => _uiCtrlHideProgress;
@@ -2448,7 +2723,6 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-
         #endregion
 
         #region Property - Attachment

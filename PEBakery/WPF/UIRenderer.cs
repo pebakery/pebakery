@@ -771,64 +771,6 @@ namespace PEBakery.WPF
         }
 
         /// <summary>
-        /// Render Bevel control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
-        {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-            UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
-            Debug.Assert(info != null, "Invalid UIInfo");
-
-            Border bevel = new Border
-            {
-                IsHitTestVisible = false,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(1),
-                BorderBrush = Brushes.Gray,
-            };
-            SetToolTip(bevel, info.ToolTip);
-            SetEditModeProperties(r, bevel, uiCtrl);
-            DrawToCanvas(r, bevel, uiCtrl.Rect);
-
-            if (!DisableBevelCaption &&
-                !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
-            { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
-                int fontSize = DefaultFontPoint;
-                if (info.FontSize != null)
-                    fontSize = (int) info.FontSize;
-
-                Border textBorder = new Border
-                {
-                    // Don't use info.FontSize for border thickness. It throws off X Pos.
-                    BorderThickness = new Thickness(CalcFontPointScale() / 3), 
-                    BorderBrush = Brushes.Transparent,
-                };
-                TextBlock textBlock = new TextBlock
-                {
-                    Text = uiCtrl.Text,
-                    FontSize = CalcFontPointScale(fontSize),
-                    Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
-                    Background = Brushes.White,
-                };
-                textBorder.Child = textBlock;
-                if (info.Style == UIBevelCaptionStyle.Bold)
-                    textBlock.FontWeight = FontWeights.Bold;
-
-                Rect blockRect = new Rect
-                {
-                    X = uiCtrl.Rect.X + CalcFontPointScale(fontSize) / 3,
-                    Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
-                    Width = double.NaN,
-                    Height = double.NaN,
-                };
-
-                DrawToCanvas(r, textBorder, blockRect);
-            }
-        }
-
-        /// <summary>
         /// Render RadioGroup control.
         /// Return true if failed.
         /// </summary>
@@ -899,13 +841,70 @@ namespace PEBakery.WPF
         }
 
         /// <summary>
+        /// Render Bevel control.
+        /// Return true if failed.
+        /// </summary>
+        /// <returns>Success = false, Failure = true</returns>
+        public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
+        {
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+            UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
+            Debug.Assert(info != null, "Invalid UIInfo");
+
+            Border bevel = new Border
+            {
+                IsHitTestVisible = false,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(1),
+                BorderBrush = Brushes.Gray,
+            };
+            SetToolTip(bevel, info.ToolTip);
+            SetEditModeProperties(r, bevel, uiCtrl);
+            DrawToCanvas(r, bevel, uiCtrl.Rect);
+
+            if (!DisableBevelCaption &&
+                !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
+            { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
+                int fontSize = DefaultFontPoint;
+                if (info.FontSize != null)
+                    fontSize = (int)info.FontSize;
+
+                Border textBorder = new Border
+                {
+                    // Don't use info.FontSize for border thickness. It throws off X Pos.
+                    BorderThickness = new Thickness(CalcFontPointScale() / 3),
+                    BorderBrush = Brushes.Transparent,
+                };
+                TextBlock textBlock = new TextBlock
+                {
+                    Text = uiCtrl.Text,
+                    FontSize = CalcFontPointScale(fontSize),
+                    Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
+                    Background = Brushes.White,
+                };
+                textBorder.Child = textBlock;
+                if (info.Style == UIBevelCaptionStyle.Bold)
+                    textBlock.FontWeight = FontWeights.Bold;
+
+                Rect blockRect = new Rect
+                {
+                    X = uiCtrl.Rect.X + CalcFontPointScale(fontSize) / 3,
+                    Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
+                    Width = double.NaN,
+                    Height = double.NaN,
+                };
+
+                DrawToCanvas(r, textBorder, blockRect);
+            }
+        }
+
+        /// <summary>
         /// Render FileBox control.
         /// Return true if failed.
         /// </summary>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderFileBox(RenderInfo r, UIControl uiCtrl, Variables variables)
         {
-            // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
             Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
             UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
             Debug.Assert(info != null, "Invalid UIInfo");

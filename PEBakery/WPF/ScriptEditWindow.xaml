@@ -395,552 +395,636 @@
                         <GroupBox Grid.Row="1"
                                   Header="Edit"
                                   BorderBrush="Gray">
-                            <StackPanel Margin="5, 5, 5, 5"
-                                    Orientation="Vertical">
-                                <ComboBox IsEnabled="{Binding InterfaceLoaded}"
-                                      SelectedIndex="{Binding InterfaceUICtrlIndex}"
-                                      ItemsSource="{Binding InterfaceUICtrls}"
-                                      SelectionChanged="UIControlComboBox_SelectionChanged"/>
-                                <!-- Common -->
-                                <Grid Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <!-- <RowDefinition Height="20" /> -->
-                                        <RowDefinition Height="0" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="5, 5, 5, 5" Orientation="Vertical">
+                                    <ComboBox IsEnabled="{Binding InterfaceLoaded}"
+                                              SelectedIndex="{Binding InterfaceUICtrlIndex}"
+                                              ItemsSource="{Binding InterfaceUICtrls}"
+                                              SelectionChanged="UIControlComboBox_SelectionChanged"/>
+                                    <!-- Common -->
+                                    <Grid Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <!-- <RowDefinition Height="20" /> -->
+                                            <RowDefinition Height="0" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
 
-                                    <!--
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               FontWeight="Bold"
-                                               Text="Key" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             IsEnabled="{Binding UICtrlEditEnabled}"
-                                             Text="{Binding UICtrlKey}"/>
-                                    -->
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Visible" />
-                                    <CheckBox Grid.Row="1" Grid.Column="1"
-                                              VerticalContentAlignment="Center"
-                                              IsEnabled="{Binding UICtrlEditEnabled}"
-                                              IsChecked="{Binding UICtrlVisible}"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="X" />
-                                    <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                        <!--
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   FontWeight="Bold"
+                                                   Text="Key" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 IsEnabled="{Binding UICtrlEditEnabled}"
+                                                 Text="{Binding UICtrlKey}"/>
+                                        -->
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Visible" />
+                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlEditEnabled}"
+                                                  IsChecked="{Binding UICtrlVisible}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="X" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Y"/>
-                                    <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
-                                                          Minimum="0"
-                                                          IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Width"/>
-                                    <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
-                                                          Minimum="0"
-                                                          IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Height" />
-                                    <custom:FreeNumberBox Grid.Row="5" Grid.Column="1"
-                                                          Minimum="0"
-                                                          IsEnabled="{Binding UICtrlEditEnabled}"
-                                                          Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="ToolTip" />
-                                    <TextBox Grid.Row="6" Grid.Column="1"
-                                             IsEnabled="{Binding UICtrlEditEnabled}"
-                                             Text="{Binding UICtrlToolTip, UpdateSourceTrigger=PropertyChanged}"/>
-                                </Grid>
-                                <!-- TextBox -->
-                                <Grid Visibility="{Binding IsUICtrlTextBox}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Caption" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Value" />
-                                    <TextBox Grid.Row="1" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlTextBoxValue, UpdateSourceTrigger=PropertyChanged}"/>
-                                </Grid>
-                                <!-- TextLabel -->
-                                <Grid Visibility="{Binding IsUICtrlTextLabel}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Caption" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="FontSize" />
-                                    <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
-                                                          Minimum="8"
-                                                          IncrementUnit="1"
-                                                          Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Style" />
-                                    <ComboBox Grid.Row="2" Grid.Column="1"
-                                              Padding="3, 0, 3, 0"
-                                              VerticalContentAlignment="Center"
-                                              SelectedIndex="{Binding UICtrlTextLabelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
-                                        <ComboBoxItem Content="Normal"/>
-                                        <ComboBoxItem Content="Bold"/>
-                                        <ComboBoxItem Content="Italic"/>
-                                        <ComboBoxItem Content="Underline"/>
-                                        <ComboBoxItem Content="Strike"/>
-                                    </ComboBox>
-                                </Grid>
-                                <!-- NumberBox -->
-                                <Grid Visibility="{Binding IsUICtrlNumberBox}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Value" />
-                                    <custom:FreeNumberBox Grid.Row="0" Grid.Column="1"
-                                                          Minimum="0"
-                                                          Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Min" />
-                                    <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
-                                                          Minimum="0"
-                                                          Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Max" />
-                                    <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
-                                                          Minimum="0"
-                                                          Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Tick" />
-                                    <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
-                                                          Minimum="1"
-                                                          Value="{Binding UICtrlNumberBoxTick, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                </Grid>
-                                <!-- CheckBox -->
-                                <Grid Visibility="{Binding IsUICtrlCheckBox}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Caption" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Value" />
-                                    <CheckBox Grid.Row="1" Grid.Column="1"
-                                              VerticalContentAlignment="Center"
-                                              IsChecked="{Binding UICtrlCheckBoxValue}"/>
-                                </Grid>
-                                <!-- ComboBox -->
-                                <Grid Visibility="{Binding IsUICtrlComboBox}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition />
-                                        <ColumnDefinition Width="25" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="25" />
-                                        <RowDefinition Height="25" />
-                                        <RowDefinition Height="25" />
-                                        <RowDefinition Height="25" />
-                                        <RowDefinition Height="25" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                                Grid.ColumnSpan="2"
-                                                Text="Items"/>
-                                    <ListBox Grid.Row="1" Grid.Column="0"
-                                             Grid.RowSpan="4"
-                                             SelectedIndex="{Binding UICtrlComboBoxSelectedIndex}"
-                                             ItemsSource="{Binding UICtrlComboBoxItems}"/>
-                                    <TextBox Grid.Row="5" Grid.Column="0"
-                                             PreviewTextInput="SectionName_PreviewTextInput"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlComboBoxNewItem}"/>
-                                    <Button Grid.Row="1" Grid.Column="1"
-                                            x:Name="UICtrlComboBoxItemUp"
-                                            Click="UICtrlComboBoxItemUp_Click"
-                                            ToolTip="Up">
-                                        <iconPacks:PackIconMaterial Kind="ChevronUp"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="3"/>
-                                    </Button>
-                                    <Button Grid.Row="2" Grid.Column="1"
-                                            x:Name="UICtrlComboBoxItemDown"
-                                            Click="UICtrlComboBoxItemDown_Click"
-                                            ToolTip="Down">
-                                        <iconPacks:PackIconMaterial Kind="ChevronDown"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="3"/>
-                                    </Button>
-                                    <Button Grid.Row="3" Grid.Column="1"
-                                            x:Name="UICtrlComboBoxItemSelect"
-                                            Click="UICtrlComboBoxItemSelect_Click"
-                                            ToolTip="Select" >
-                                        <TextBlock Text="S" FontWeight="Bold"/>
-                                    </Button>
-                                    <Button Grid.Row="4" Grid.Column="1"
-                                            x:Name="UICtrlComboBoxItemDelete"
-                                            Click="UICtrlComboBoxItemDelete_Click"
-                                            ToolTip="Delete">
-                                        <iconPacks:PackIconMaterial Kind="Minus" 
-                                                                Width="Auto"
-                                                                Height="Auto"
-                                                                Margin="3"/>
-                                    </Button>
-                                    <Button Grid.Row="5" Grid.Column="1"
-                                            x:Name="UICtrlComboBoxItemAdd"
-                                            Click="UICtrlComboBoxItemAdd_Click"
-                                            ToolTip="Add">
-                                        <iconPacks:PackIconMaterial Kind="Plus" 
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="3"/>
-                                    </Button>
-                                </Grid>
-                                <!-- Image -->
-                                <Grid Visibility="{Binding IsUICtrlImage}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Image" />
-                                    <Button Grid.Row="0" Grid.Column="1"
-                                            Visibility="{Binding UICtrlImageUnloaded}"
-                                            Width="Auto" Height="25"
-                                            x:Name="UICtrlImageAttachButton"
-                                            Click="UICtrlInterfaceAttachButton_Click"
-                                            ToolTip="Import image">
-                                        <StackPanel Orientation="Horizontal">
-                                            <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                            <TextBlock Text="Import"
-                                                       Margin="5, 0, 0, 0"
-                                                       VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Y"/>
+                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Width"/>
+                                        <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Height" />
+                                        <custom:FreeNumberBox Grid.Row="5" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="ToolTip" />
+                                        <TextBox Grid.Row="6" Grid.Column="1"
+                                                 IsEnabled="{Binding UICtrlEditEnabled}"
+                                                 Text="{Binding UICtrlToolTip, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextBox -->
+                                    <Grid Visibility="{Binding IsUICtrlTextBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlTextBoxValue, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextLabel -->
+                                    <Grid Visibility="{Binding IsUICtrlTextLabel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="FontSize" />
+                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                                              Minimum="8"
+                                                              IncrementUnit="1"
+                                                              Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="2" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding UICtrlTextLabelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="Normal"/>
+                                            <ComboBoxItem Content="Bold"/>
+                                            <ComboBoxItem Content="Italic"/>
+                                            <ComboBoxItem Content="Underline"/>
+                                            <ComboBoxItem Content="Strike"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <!-- NumberBox -->
+                                    <Grid Visibility="{Binding IsUICtrlNumberBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <custom:FreeNumberBox Grid.Row="0" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Min" />
+                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Max" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Tick" />
+                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                                              Minimum="1"
+                                                              Value="{Binding UICtrlNumberBoxTick, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- CheckBox -->
+                                    <Grid Visibility="{Binding IsUICtrlCheckBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                                  VerticalContentAlignment="Center"
+                                                  IsChecked="{Binding UICtrlCheckBoxValue}"/>
+                                    </Grid>
+                                    <!-- ComboBox -> See ListItemBox -->
+                                    <!-- Image -->
+                                    <Grid Visibility="{Binding IsUICtrlImage}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Image" />
+                                        <Button Grid.Row="0" Grid.Column="1"
+                                                Visibility="{Binding UICtrlImageUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlImageAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Import"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                                    Visibility="{Binding UICtrlImageLoaded}"
+                                                    Orientation="Vertical">
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageExtractButton"
+                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    ToolTip="Export image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Extract"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageResetButton"
+                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    ToolTip="Reset image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Reset"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageAutoResizeButton"
+                                                    Click="UICtrlImageAutoResizeButton_Click"
+                                                    ToolTip="Auto Resize">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Auto Resize"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
-                                    </Button>
-                                    <StackPanel Grid.Row="0" Grid.Column="1"
-                                                Visibility="{Binding UICtrlImageLoaded}"
-                                                Orientation="Vertical">
-                                        <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlImageExtractButton"
-                                                Click="UICtrlInterfaceExtractButton_Click"
-                                                ToolTip="Export image">
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="URL" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlImageUrl, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextFile -->
+                                    <Grid Visibility="{Binding IsUICtrlTextFile}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Text" />
+                                        <Button Grid.Column="1"
+                                                Visibility="{Binding UICtrlTextFileUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlTextFileAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                             Width="Auto"
                                                                             Height="Auto"
                                                                             Margin="3"/>
-                                                <TextBlock Text="Extract"
+                                                <TextBlock Text="Import"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                        <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlImageResetButton"
-                                                Click="UICtrlInterfaceResetButton_Click"
-                                                ToolTip="Reset image">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="BorderNone"
-                                                                            Width="Auto"
-                                                                            Height="Auto"
-                                                                            Margin="3"/>
-                                                <TextBlock Text="Reset"
-                                                           Margin="5, 0, 0, 0"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlImageAutoResizeButton"
-                                                Click="UICtrlImageAutoResizeButton_Click"
-                                                ToolTip="Auto Resize">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
-                                                                            Width="Auto"
-                                                                            Height="Auto"
-                                                                            Margin="3"/>
-                                                <TextBlock Text="Auto Resize"
-                                                           Margin="5, 0, 0, 0"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="URL" />
-                                    <TextBox Grid.Row="1" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlImageUrl, UpdateSourceTrigger=PropertyChanged}"/>
-                                </Grid>
-                                <!-- TextFile -->
-                                <Grid Visibility="{Binding IsUICtrlTextFile}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Text" />
-                                    <Button Grid.Column="1"
-                                            Visibility="{Binding UICtrlTextFileUnloaded}"
-                                            Width="Auto" Height="25"
-                                            x:Name="UICtrlTextFileAttachButton"
-                                            Click="UICtrlInterfaceAttachButton_Click"
-                                            ToolTip="Import image">
-                                        <StackPanel Orientation="Horizontal">
-                                            <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
-                                                                        Width="Auto"
-                                                                        Height="Auto"
-                                                                        Margin="3"/>
-                                            <TextBlock Text="Import"
-                                                       Margin="5, 0, 0, 0"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <StackPanel Grid.Column="1"
+                                        <StackPanel Grid.Column="1"
                                                 Visibility="{Binding UICtrlTextFileLoaded}"
                                                 Orientation="Vertical">
-                                        <Button Width="Auto" Height="25"
+                                            <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlTextFileExtractButton"
                                                 Click="UICtrlInterfaceExtractButton_Click"
                                                 ToolTip="Export image">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
                                                                             Height="Auto"
                                                                             Margin="3"/>
-                                                <TextBlock Text="Extract"
+                                                    <TextBlock Text="Extract"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Width="Auto" Height="25"
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
                                                 x:Name="UICtrlTextFileResetButton"
                                                 Click="UICtrlInterfaceResetButton_Click"
                                                 ToolTip="Reset image">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
                                                                             Width="Auto"
                                                                             Height="Auto"
                                                                             Margin="3"/>
-                                                <TextBlock Text="Reset"
+                                                    <TextBlock Text="Reset"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                    <!-- Button -->
+                                    <Grid Visibility="{Binding IsUICtrlButton}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Image" />
+                                        <Button Grid.Row="0" Grid.Column="1"
+                                                Visibility="{Binding UICtrlButtonPictureUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlButtonPictureAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
+                                                <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Import"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                    </StackPanel>
-                                </Grid>
-                                <!-- Button -->
-                                <Grid Visibility="{Binding IsUICtrlButton}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Image" />
-                                    <Button Grid.Row="0" Grid.Column="1"
-                                            Visibility="{Binding UICtrlButtonPictureUnloaded}"
-                                            Width="Auto" Height="25"
-                                            x:Name="UICtrlButtonPictureAttachButton"
-                                            Click="UICtrlInterfaceAttachButton_Click"
-                                            ToolTip="Import image">
-                                        <StackPanel Orientation="Horizontal">
-                                            <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                                    Visibility="{Binding UICtrlButtonPictureLoaded}"
+                                                    Orientation="Vertical">
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlButtonPictureExtractButton"
+                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    ToolTip="Export image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                    <TextBlock Text="Extract"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlButtonPictureResetButton"
+                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    ToolTip="Reset image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Reset"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                    <!-- WebLabel -->
+                                    <Grid Visibility="{Binding IsUICtrlWebLabel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="URL" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlWebLabelUrl}"/>
+                                    </Grid>
+                                    <!-- RadioButton -->
+                                    <Grid Visibility="{Binding IsUICtrlRadioButton}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Select" />
+                                        <Button Grid.Row="1" Grid.Column="1"
+                                                x:Name="UICtrlRadioButtonSelect"
+                                                Click="UICtrlRadioButtonSelect_Click"
+                                                IsEnabled="{Binding UICtrlRadioButtonSelectEnable}"
+                                                Content="Select"/>
+                                    </Grid>
+                                    <!-- Bevel -->
+                                    <Grid Visibility="{Binding IsUICtrlBevel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Grid.ColumnSpan="2"
+                                                   Margin="0, 0, 0, 10"
+                                                   TextWrapping="Wrap"
+                                                   Text="Note)&#x0a;Caption is visible only if bevel caption is enabled in setting"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 PreviewTextInput="BevelCaption_PreviewTextInput"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="FontSize" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                              Minimum="8"
+                                                              IncrementUnit="1"
+                                                              Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="3" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding UICtrlBevelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="Normal"/>
+                                            <ComboBoxItem Content="Bold"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <!-- FileBox -->
+                                    <Grid Visibility="{Binding IsUICtrlFileBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Type" />
+                                        <RadioButton Grid.Row="0" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     GroupName="UICtrlFileBoxChecked"
+                                                     IsChecked="{Binding UICtrlFileBoxFileChecked, UpdateSourceTrigger=PropertyChanged}"
+                                                     Content="File"/>
+                                        <RadioButton Grid.Row="1" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     GroupName="UICtrlFileBoxChecked"
+                                                     IsChecked="{Binding UICtrlFileBoxDirChecked, UpdateSourceTrigger=PropertyChanged}"
+                                                     Content="Directory"/>
+                                    </Grid>
+                                    <!-- RadioGroup -->
+                                    <Grid Visibility="{Binding IsUICtrlRadioGroup}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- Common - ListItemBox -->
+                                    <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition Width="25" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Grid.ColumnSpan="2"
+                                                   Text="Items"/>
+                                        <ListBox Grid.Row="1" Grid.Column="0"
+                                                 Grid.RowSpan="4"
+                                                 SelectedIndex="{Binding UICtrlListItemBoxSelectedIndex}"
+                                                 ItemsSource="{Binding UICtrlListItemBoxItems}"/>
+                                        <TextBox Grid.Row="5" Grid.Column="0"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlListItemBoxNewItem}"/>
+                                        <Button Grid.Row="1" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxUp"
+                                                Click="UICtrlListItemBoxUp_Click"
+                                              ToolTip="Up">
+                                            <iconPacks:PackIconMaterial Kind="ChevronUp"
                                                                         Width="Auto"
                                                                         Height="Auto"
                                                                         Margin="3"/>
-                                            <TextBlock Text="Import"
-                                                       Margin="5, 0, 0, 0"
+                                        </Button>
+                                        <Button Grid.Row="2" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxDown"
+                                                Click="UICtrlListItemBoxDown_Click"
+                                                ToolTip="Down">
+                                            <iconPacks:PackIconMaterial Kind="ChevronDown"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                        <Button Grid.Row="3" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxSelect"
+                                                Click="UICtrlListItemBoxSelect_Click"
+                                                ToolTip="Select" >
+                                            <TextBlock Text="S" FontWeight="Bold"/>
+                                        </Button>
+                                        <Button Grid.Row="4" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxDelete"
+                                                Click="UICtrlListItemBoxDelete_Click"
+                                                ToolTip="Delete">
+                                            <iconPacks:PackIconMaterial Kind="Minus" 
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                        <Button Grid.Row="5" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxAdd"
+                                                Click="UICtrlListItemBoxAdd_Click"
+                                                ToolTip="Add">
+                                            <iconPacks:PackIconMaterial Kind="Plus" 
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                    </Grid>
+                                    <!-- Common - RunOptional-->
+                                    <TextBlock Text="Optional Engine Run"
+                                               Visibility="{Binding ShowUICtrlRunOptional}"
+                                               Margin="0, 10, 0, 5"/>
+                                    <Border BorderBrush="Gray"
+                                            BorderThickness="1"
+                                            Visibility="{Binding ShowUICtrlRunOptional}">
+                                        <StackPanel Margin="5" Orientation="Vertical">
+                                            <TextBlock Text="Section to Run" />
+                                            <TextBox Margin="0, 0, 0, 5"
+                                                     VerticalContentAlignment="Center"
+                                                     PreviewTextInput="SectionName_PreviewTextInput"
+                                                     Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
+                                                     ToolTip="Keep here blank to disable optional engine run."/>
+                                            <CheckBox Content="Hide Progress"
+                                                      IsChecked="{Binding UICtrlHideProgress}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- Delete -->
+                                    <Button Width="100" Height="25"
+                                            Margin="0, 10, 0, 0"
+                                            HorizontalAlignment="Right"
+                                            x:Name="UICtrlDeleteButton"
+                                            Click="UICtrlDeleteButton_Click"
+                                            IsEnabled="{Binding UICtrlEditEnabled}"
+                                            ToolTip="Delete UIControl">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Close"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Delete"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
-                                    <StackPanel Grid.Row="0" Grid.Column="1"
-                                                Visibility="{Binding UICtrlButtonPictureLoaded}"
-                                                Orientation="Vertical">
-                                        <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlButtonPictureExtractButton"
-                                                Click="UICtrlInterfaceExtractButton_Click"
-                                                ToolTip="Export image">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
-                                                                            Width="Auto"
-                                                                            Height="Auto"
-                                                                            Margin="3"/>
-                                                <TextBlock Text="Extract"
-                                                           Margin="5, 0, 0, 0"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlButtonPictureResetButton"
-                                                Click="UICtrlInterfaceResetButton_Click"
-                                                ToolTip="Reset image">
-                                            <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="BorderNone"
-                                                                            Width="Auto"
-                                                                            Height="Auto"
-                                                                            Margin="3"/>
-                                                <TextBlock Text="Reset"
-                                                           Margin="5, 0, 0, 0"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                </Grid>
-                                <!-- WebLabel -->
-                                <Grid Visibility="{Binding IsUICtrlWebLabel}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Caption" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="URL" />
-                                    <TextBox Grid.Row="1" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlWebLabelUrl}"/>
-                                </Grid>
-                                <!-- RadioButton -->
-                                <Grid Visibility="{Binding IsUICtrlRadioButton}" Margin="0, 10, 0, 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60" />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="20" />
-                                        <RowDefinition Height="20" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Caption" />
-                                    <TextBox Grid.Row="0" Grid.Column="1"
-                                             VerticalContentAlignment="Center"
-                                             Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0"
-                                               Margin="0, 0, 5, 0"
-                                               Text="Select" />
-                                    <Button Grid.Row="1" Grid.Column="1"
-                                            x:Name="UICtrlRadioButtonSelect"
-                                            Click="UICtrlRadioButtonSelect_Click"
-                                            IsEnabled="{Binding UICtrlRadioButtonSelectEnable}"
-                                            Content="Select"/>
-                                </Grid>
-                                <!-- RunOptional-->
-                                <TextBlock Text="Optional Engine Run"
-                                           Visibility="{Binding IsUICtrlRunOptional}"
-                                           Margin="0, 10, 0, 5"/>
-                                <Border BorderBrush="Gray"
-                                        BorderThickness="1"
-                                        Visibility="{Binding IsUICtrlRunOptional}">
-                                    <StackPanel Margin="5" Orientation="Vertical">
-                                        <TextBlock Text="Section to Run" />
-                                        <TextBox Margin="0, 0, 0, 5"
-                                                 VerticalContentAlignment="Center"
-                                                 PreviewTextInput="SectionName_PreviewTextInput"
-                                                 Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
-                                                 ToolTip="Keep here blank to disable optional engine run."/>
-                                        <CheckBox Content="Hide Progress"
-                                                  IsChecked="{Binding UICtrlHideProgress}"/>
-                                    </StackPanel>
-                                </Border>
-                                <!-- Delete -->
-                                <Button Width="100" Height="25"
-                                        Margin="0, 10, 0, 0"
-                                        HorizontalAlignment="Right"
-                                        x:Name="UICtrlDeleteButton"
-                                        Click="UICtrlDeleteButton_Click"
-                                        IsEnabled="{Binding UICtrlEditEnabled}"
-                                        ToolTip="Delete UIControl">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Close"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Delete"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
                         </GroupBox>
                     </Grid>
                     <Grid Grid.Column="1">
@@ -1007,7 +1091,7 @@
                                     VerticalAlignment="Bottom">
                             </Button>
                         </Grid>
-                            
+
                         <Border Grid.Row="1"
                                 Margin="0, 10, 0, 0"
                                 BorderBrush="Gray"
@@ -1020,7 +1104,6 @@
                             </ScrollViewer>
                         </Border>
                     </Grid>
-                    
                 </Grid>
             </TabItem>
             <TabItem Header="Attachment">
