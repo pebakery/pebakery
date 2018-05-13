@@ -89,7 +89,7 @@ namespace PEBakery.Core
                             Italic, Underline, Strike (Added in PEBakery)
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
     CheckBox    = <BooleanValue>  +[RunOptional]
-    ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
+    ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
     Image       = [Url]
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture, or encoded file's name.
@@ -102,7 +102,7 @@ namespace PEBakery.Core
                   // IntegerIndex : selected index, starting from 0
 
     [RunOptional]
-    For CheckBox, Button, RadioButton, RadioGroup
+    For CheckBox, ComboBox, Button, RadioButton, RadioGroup
     <SectionToRun>,<HideProgress>
     
     SectionToRun : (String) SectionName with _ at start and end

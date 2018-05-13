@@ -739,10 +739,20 @@
                                             <ColumnDefinition Width="60" />
                                             <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition />
+                                        </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
                                                    Text="Image" />
-                                        <Button Grid.Row="0" Grid.Column="1"
+                                        <Button Grid.Row="1" Grid.Column="1"
                                                 Visibility="{Binding UICtrlButtonPictureUnloaded}"
                                                 Width="Auto" Height="25"
                                                 x:Name="UICtrlButtonPictureAttachButton"
@@ -758,7 +768,7 @@
                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                        <StackPanel Grid.Row="1" Grid.Column="1"
                                                     Visibility="{Binding UICtrlButtonPictureLoaded}"
                                                     Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
@@ -893,16 +903,23 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
+                                                   Text="Path" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
                                                    Text="Type" />
-                                        <RadioButton Grid.Row="0" Grid.Column="1"
+                                        <RadioButton Grid.Row="1" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
                                                      GroupName="UICtrlFileBoxChecked"
                                                      IsChecked="{Binding UICtrlFileBoxFileChecked, UpdateSourceTrigger=PropertyChanged}"
                                                      Content="File"/>
-                                        <RadioButton Grid.Row="1" Grid.Column="1"
+                                        <RadioButton Grid.Row="2" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
                                                      GroupName="UICtrlFileBoxChecked"
                                                      IsChecked="{Binding UICtrlFileBoxDirChecked, UpdateSourceTrigger=PropertyChanged}"
@@ -992,12 +1009,12 @@
                                         </Button>
                                     </Grid>
                                     <!-- Common - RunOptional-->
-                                    <TextBlock Text="Optional Engine Run"
-                                               Visibility="{Binding ShowUICtrlRunOptional}"
+                                    <TextBlock Visibility="{Binding ShowUICtrlRunOptional}"
+                                               Text="Optional Engine Run"
                                                Margin="0, 10, 0, 5"/>
-                                    <Border BorderBrush="Gray"
-                                            BorderThickness="1"
-                                            Visibility="{Binding ShowUICtrlRunOptional}">
+                                    <Border Visibility="{Binding ShowUICtrlRunOptional}"
+                                            BorderBrush="Gray"
+                                            BorderThickness="1">
                                         <StackPanel Margin="5" Orientation="Vertical">
                                             <TextBlock Text="Section to Run" />
                                             <TextBox Margin="0, 0, 0, 5"

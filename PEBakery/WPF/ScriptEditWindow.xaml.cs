@@ -268,6 +268,8 @@ namespace PEBakery.WPF
                     Debug.Assert(info != null, "Invalid UIInfo");
 
                     m.UICtrlComboBoxInfo = info;
+                    m.UICtrlSectionToRun = info.SectionName;
+                    m.UICtrlHideProgress = info.HideProgress;
                     break;
                 }
                 case UIControlType.Image:
@@ -454,6 +456,8 @@ namespace PEBakery.WPF
                     Debug.Assert(info != null, "Invalid UIInfo");
 
                     uiCtrl.Text = info.Items[info.Index];
+                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                    info.HideProgress = m.UICtrlHideProgress;
                     break;
                 }
                 case UIControlType.Image:
@@ -1629,9 +1633,6 @@ namespace PEBakery.WPF
             // Only in Tab [General]
             e.CanExecute = m.TabIndex == 0;
         }
-
-
-
         #endregion
     }
     #endregion
@@ -2145,7 +2146,23 @@ namespace PEBakery.WPF
         public Visibility IsUICtrlBevel => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.Bevel ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlFileBox => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.FileBox ? Visibility.Visible : Visibility.Collapsed;
         public Visibility IsUICtrlRadioGroup => _selectedUICtrl != null && _selectedUICtrl.Type == UIControlType.RadioGroup ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility ShowUICtrlListItemBox => IsUICtrlComboBox == Visibility.Visible || IsUICtrlRadioGroup == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility ShowUICtrlListItemBox
+        {
+            get
+            {
+                if (_selectedUICtrl == null)
+                    return Visibility.Collapsed;
+
+                switch (_selectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                    case UIControlType.RadioGroup:
+                        return Visibility.Visible;
+                    default:
+                        return Visibility.Collapsed;
+                }
+            }
+        }
         public Visibility ShowUICtrlRunOptional
         {
             get
@@ -2156,6 +2173,7 @@ namespace PEBakery.WPF
                 switch (_selectedUICtrl.Type)
                 {
                     case UIControlType.CheckBox:
+                    case UIControlType.ComboBox:
                     case UIControlType.Button:
                     case UIControlType.RadioButton:
                     case UIControlType.RadioGroup:
