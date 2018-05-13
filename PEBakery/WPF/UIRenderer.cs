@@ -108,31 +108,23 @@ namespace PEBakery.WPF
             // Check if script has custom interface section
             string ifaceSectionName = GetInterfaceSectionName(sc);
 
-            List<LogInfo> logInfos;
             if (sc.Sections.ContainsKey(ifaceSectionName))
             {
                 try
                 {
                     List<UIControl> uiCtrls = sc.Sections[ifaceSectionName].GetUICtrls(true);
-                    logInfos = sc.Sections[ifaceSectionName].LogInfos;
+                    List<LogInfo> logInfos = sc.Sections[ifaceSectionName].LogInfos;
                     return (uiCtrls, logInfos);
                 }
                 catch (Exception e)
                 {
-                    logInfos = new List<LogInfo>
+                    return (null, new List<LogInfo>
                     {
                         new LogInfo(LogState.Error, $"Cannot read interface controls from [{sc.TreePath}]\r\n{Logger.LogExceptionMessage(e)}"),
-                    };
-
-                    return (null, logInfos);
+                    });
                 }
             }
-
-            logInfos = new List<LogInfo>
-            {
-                new LogInfo(LogState.Error, $"Cannot read interface controls from [{sc.TreePath}]"),
-            };
-            return (null, logInfos);
+            return (new List<UIControl>(), new List<LogInfo>());
         }
 
         public static string GetInterfaceSectionName(Script sc)

@@ -630,9 +630,9 @@ namespace PEBakery.WPF
             if (sc.Type == ScriptType.Directory)
             {
                 if (sc.IsDirLink)
-                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
+                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 10);
                 else
-                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 10);
             }
             else
             {
@@ -650,13 +650,13 @@ namespace PEBakery.WPF
                     if (sc.Type == ScriptType.Script)
                     {
                         if (sc.IsDirLink)
-                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 10);
                         else
-                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 10);
                     }
                     else if (sc.Type == ScriptType.Link)
                     {
-                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 10);
                     }
                 }
             }

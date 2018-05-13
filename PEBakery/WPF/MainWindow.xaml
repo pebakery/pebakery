@@ -522,7 +522,7 @@
 
                     <ContentPresenter Name="ScriptLogo"
                                       Grid.Row="0" Grid.Column="0"
-                                      Margin="14"
+                                      Margin="10"
                                       VerticalAlignment="Center"
                                       HorizontalAlignment="Center"
                                       UseLayoutRounding="True"/>

@@ -173,25 +173,29 @@ namespace PEBakery.WPF
 
             // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
+            if (uiCtrls == null) // No Interface -> empty list
+            {
+                if (0 < errLogs.Count)
+                {
+                    App.Logger.SystemWrite(errLogs);
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Error Messages]");
+                    foreach (LogInfo log in errLogs)
+                        b.AppendLine(log.Message);
+                    MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                uiCtrls = new List<UIControl>();
+            }
+
             _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
-            // m.InterfaceUICtrls.Insert(0, "None");
             m.InterfaceUICtrlIndex = -1;
 
             m.InterfaceNotSaved = false;
             m.InterfaceUpdated = false;
-
-            if (0 < errLogs.Count)
-            {
-                App.Logger.SystemWrite(errLogs);
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine("[Error Messages]");
-                foreach (LogInfo log in errLogs)
-                    b.AppendLine(log.Message);
-                MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
 
             DrawScript();
             ResetSelectedUICtrl();
@@ -1834,7 +1838,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General - Script Logo
-        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
+        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone, 10);
         private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
         public FrameworkElement ScriptLogoImage
         {
@@ -1929,7 +1933,7 @@ namespace PEBakery.WPF
         }
 
         // Add
-        private int _uiCtrlAddTypeIndex;
+        private int _uiCtrlAddTypeIndex = -1;
         public int UICtrlAddTypeIndex
         {
             get => _uiCtrlAddTypeIndex;
