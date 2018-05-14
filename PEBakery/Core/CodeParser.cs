@@ -1220,6 +1220,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
+
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
                         string destVar = args[4];

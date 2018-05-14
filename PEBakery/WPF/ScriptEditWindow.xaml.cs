@@ -2317,13 +2317,13 @@ namespace PEBakery.WPF
         }
         public int UICtrlNumberBoxTick
         {
-            get => _uiCtrlNumberBoxInfo?.Interval ?? 1;
+            get => _uiCtrlNumberBoxInfo?.Tick ?? 1;
             set
             {
                 if (_uiCtrlNumberBoxInfo == null)
                     return;
 
-                _uiCtrlNumberBoxInfo.Interval = value;
+                _uiCtrlNumberBoxInfo.Tick = value;
                 OnPropertyUpdate(nameof(UICtrlNumberBoxTick));
                 InvokeUIControlEvent(true);
             }
@@ -2403,14 +2403,14 @@ namespace PEBakery.WPF
         public Visibility UICtrlImageUnloaded => !_uiCtrlImageSet ? Visibility.Visible : Visibility.Collapsed;
         public string UICtrlImageUrl
         {
-            get => _uiCtrlImageInfo?.URL ?? string.Empty;
+            get => _uiCtrlImageInfo?.Url ?? string.Empty;
             set
             {
                 if (_uiCtrlImageInfo == null)
                     return;
 
-                _uiCtrlImageInfo.URL = string.IsNullOrWhiteSpace(value) ? null : value;
-                OnPropertyUpdate(nameof(UICtrlImageInfo.URL));
+                _uiCtrlImageInfo.Url = string.IsNullOrWhiteSpace(value) ? null : value;
+                OnPropertyUpdate(nameof(UICtrlImageInfo.Url));
                 InvokeUIControlEvent(true);
             }
         }
@@ -2462,14 +2462,14 @@ namespace PEBakery.WPF
         }
         public string UICtrlWebLabelUrl
         {
-            get => _uiCtrlWebLabelInfo?.URL ?? string.Empty;
+            get => _uiCtrlWebLabelInfo?.Url ?? string.Empty;
             set
             {
                 if (_uiCtrlWebLabelInfo == null)
                     return;
 
-                _uiCtrlWebLabelInfo.URL = string.IsNullOrWhiteSpace(value) ? null : value;
-                OnPropertyUpdate(nameof(UICtrlWebLabelInfo.URL));
+                _uiCtrlWebLabelInfo.Url = string.IsNullOrWhiteSpace(value) ? null : value;
+                OnPropertyUpdate(nameof(UICtrlWebLabelInfo.Url));
                 InvokeUIControlEvent(true);
             }
         }

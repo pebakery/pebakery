@@ -310,17 +310,16 @@ namespace PEBakery.Core
             string value = uiCmd.GetValue();
             if (value != null)
                 return SetValue(VarsType.Local, destVar, value);
-            else
-                return null;
+            return null;
         }
 
         public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string prefix = null)
         {
             List<LogInfo> logs = new List<LogInfo>(uiCtrls.Count);
 
-            foreach (UIControl uiCmd in uiCtrls)
+            foreach (UIControl uiCtrl in uiCtrls)
             {
-                LogInfo? log = UIControlToVariable(uiCmd, prefix);
+                LogInfo? log = UIControlToVariable(uiCtrl, prefix);
                 if (log != null)
                     logs.Add((LogInfo)log);
             }

@@ -39,6 +39,7 @@ namespace PEBakery.Core
 {
     public static class UIParser
     {
+        #region ParseStatement, ParseStatements
         public static UIControl ParseStatement(string line, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             int idx = 0;
@@ -110,10 +111,11 @@ namespace PEBakery.Core
                 }
             }
 
-            // return uiCtrls.Where(x => x.Type != UIControlType.None).ToList();
             return uiCtrls;
         }
+        #endregion
 
+        #region ParseUIControl
         public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
         {
             UIControlType type;
@@ -223,7 +225,9 @@ namespace PEBakery.Core
 
             return type;
         }
+        #endregion
 
+        #region ParseUIControlInfo
         private static UIInfo ParseUIControlInfo(UIControlType type, List<string> fullArgs)
         {
             // Only use fields starting from 8th operand
@@ -251,17 +255,12 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         if (!NumberHelper.ParseInt32(args[0], out int fontSize))
-                            throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
+                            throw new InvalidCommandException($"FontSize [{args[0]}] is not a valid integer");
 
-                        UITextStyle style = UITextStyle.Normal;
-                        if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                            style = UITextStyle.Bold;
-                        else if (args[1].Equals("Italic", StringComparison.OrdinalIgnoreCase))
-                            style = UITextStyle.Italic;
-                        else if (args[1].Equals("Underline", StringComparison.OrdinalIgnoreCase))
-                            style = UITextStyle.Underline;
-                        else if (args[1].Equals("Strike", StringComparison.OrdinalIgnoreCase))
-                            style = UITextStyle.Strike;
+                        UITextStyle? styleVal = ParseUITextStyle(args[1]);
+                        if (styleVal == null)
+                            throw new InvalidCommandException($"Invalid style [{args[1]}]");
+                        UITextStyle style = (UITextStyle)styleVal;
 
                         return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
@@ -497,10 +496,7 @@ namespace PEBakery.Core
                             
                         if (2 <= args.Count)
                         {
-                            if (args[1].Equals("Normal", StringComparison.OrdinalIgnoreCase))
-                                style = UIBevelCaptionStyle.Normal;
-                            else if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                                style = UIBevelCaptionStyle.Bold;
+                            style = ParseUIBevelCaptionStyle(args[1]);
                         }
 
                         return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);
@@ -570,7 +566,36 @@ namespace PEBakery.Core
 
             throw new InvalidCommandException($"Invalid interface control type [{type}]");
         }
+        #endregion
 
+        #region ParseUITextStyle, ParseUIBevelCaptionStyle
+
+        public static UITextStyle? ParseUITextStyle(string str)
+        {
+            UITextStyle? style = null;
+            if (str.Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                style = UITextStyle.Bold;
+            else if (str.Equals("Italic", StringComparison.OrdinalIgnoreCase))
+                style = UITextStyle.Italic;
+            else if (str.Equals("Underline", StringComparison.OrdinalIgnoreCase))
+                style = UITextStyle.Underline;
+            else if (str.Equals("Strike", StringComparison.OrdinalIgnoreCase))
+                style = UITextStyle.Strike;
+            return style;
+        }
+
+        public static UIBevelCaptionStyle? ParseUIBevelCaptionStyle(string str)
+        {
+            UIBevelCaptionStyle? style = null;
+            if (str.Equals("Normal", StringComparison.OrdinalIgnoreCase))
+                style = UIBevelCaptionStyle.Normal;
+            else if (str.Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                style = UIBevelCaptionStyle.Bold;
+            return style;
+        }
+        #endregion
+
+        #region GetInfoToolTip
         /// <summary>
         /// Extract tooltip from operand
         /// </summary>
@@ -583,5 +608,6 @@ namespace PEBakery.Core
                 return op[idx].Substring(2);
             return null;
         }
+        #endregion
     }
 }

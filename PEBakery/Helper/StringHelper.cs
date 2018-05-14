@@ -204,6 +204,19 @@ namespace PEBakery.Helper
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
             return str.Substring(0, index) + newValue + str.Substring(index + length);
         }
+
+        public static string ConcatStrings(IEnumerable<string> strs, string seperator)
+        {
+            string[] strArr = strs.ToArray();
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < strArr.Length - 1; i++)
+            {
+                b.Append(strArr[i]);
+                b.Append(seperator);
+            }
+            b.Append(strArr.Last());
+            return b.ToString();
+        }
     }
     #endregion
 }

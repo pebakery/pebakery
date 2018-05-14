@@ -1669,7 +1669,18 @@ namespace PEBakery.Core
     [Serializable]
     public enum InterfaceElement
     {
-        Text, Visible, PosX, PosY, Width, Height, Value, ToolTip, 
+        // General
+        Text, Visible, PosX, PosY, Width, Height, Value, ToolTip,
+        // TextLabel, Bevel 
+        FontSize, FontWeight, FontStyle, // FontWeight and FontStyle is interchangable.
+        // NumberBox
+        NumberMin, NumberMax, NumberTick,
+        // Image, WebLabel
+        Url,
+        // Items - ComboBox, RadioGroup
+        Items,
+        // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
+        SectionName, HideProgress
     }
 
     [Serializable]

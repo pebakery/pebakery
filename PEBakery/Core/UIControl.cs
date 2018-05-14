@@ -84,26 +84,29 @@ namespace PEBakery.Core
 
     <OptionalValues>
     TextBox     = <StringValue>
-    TextLabel   = <FontSize>,<Style>
-                  <Style> : Normal, Bold (Compatible with WB082)
-                            Italic, Underline, Strike (Added in PEBakery)
-    NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
+    TextLabel   = <FontSize>,<FontWeight>
+                  <FontSize> : Default 8
+                  <FontWeight> : Normal, Bold (Compatible with WB082)
+                                 Italic, Underline, Strike (Added in PEBakery) 
+    NumberBox   = <IntegerValue>,<Min>,<Max>,<Tick>
     CheckBox    = <BooleanValue>  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
     Image       = [Url]
-    Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
+    Button      = <SectionName>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture, or encoded file's name.
+                  [RunOptional] - ignored
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    Bevel       = [<FontSize>,<Style>] (Added in PEBakery)
-                  <Style> : Normal, Bold
+    Bevel       = [<FontSize>,<FontWeight>] (Added in PEBakery)
+                  <FontSize> : Default 8
+                  <FontWeight> : Normal, Bold
     FileBox     = [file|dir]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
 
     [RunOptional]
-    For CheckBox, ComboBox, Button, RadioButton, RadioGroup
-    <SectionToRun>,<HideProgress>
+    For CheckBox, ComboBox, RadioButton, RadioGroup
+    <SectionName>,<HideProgress>
     
     SectionToRun : (String) SectionName with _ at start and end
     HideProgress : (Bool)   
@@ -270,9 +273,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.ComboBox:
-                    {
-                        value = Text;
-                    }
+                    value = Text;
                     break;
                 case UIControlType.RadioButton:
                     {
@@ -284,9 +285,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.FileBox:
-                    {
-                        value = Text;
-                    }
+                    value = Text;
                     break;
                 case UIControlType.RadioGroup:
                     {
@@ -543,6 +542,8 @@ namespace PEBakery.Core
         #region Const
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
+        public const string ItemSeperatorStr = "|";
+        public const char ItemSeperatorChar = '|';
         #endregion
     }
     #endregion
@@ -644,15 +645,15 @@ namespace PEBakery.Core
         public int Value;
         public int Min;
         public int Max;
-        public int Interval;
+        public int Tick;
 
-        public UIInfo_NumberBox(string tooltip, int value, int min, int max, int interval)
+        public UIInfo_NumberBox(string tooltip, int value, int min, int max, int tick)
             : base(tooltip)
         {
             Value = value;
             Min = min;
             Max = max;
-            Interval = interval;
+            Tick = tick;
         }
 
         public override string ForgeRawLine()
@@ -665,7 +666,7 @@ namespace PEBakery.Core
             builder.Append(",");
             builder.Append(Max);
             builder.Append(",");
-            builder.Append(Interval);
+            builder.Append(Tick);
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
@@ -756,19 +757,19 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Image : UIInfo
     {
-        public string URL; // optional
+        public string Url; // optional
 
         public UIInfo_Image(string toolTip, string url)
             : base(toolTip)
         {
-            URL = url;
+            Url = url;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(URL);
+            b.Append(Url);
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
@@ -835,19 +836,19 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_WebLabel : UIInfo
     {
-        public string URL;
+        public string Url;
 
         public UIInfo_WebLabel(string tooltip,  string url) 
             : base(tooltip)
         {
-            URL = url;
+            Url = url;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(StringEscaper.Escape(URL));
+            b.Append(StringEscaper.Escape(Url));
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }

@@ -317,7 +317,7 @@ namespace PEBakery.WPF
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
-                IncrementUnit = info.Interval,
+                IncrementUnit = info.Tick,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
@@ -508,12 +508,12 @@ namespace PEBakery.WPF
                 };
 
                 bool hasUrl = false;
-                if (!string.IsNullOrEmpty(info.URL))
+                if (!string.IsNullOrEmpty(info.Url))
                 {
-                    if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri _)) // Success
+                    if (Uri.TryCreate(info.Url, UriKind.Absolute, out Uri _)) // Success
                         hasUrl = true;
                     else // Failure
-                        throw new InvalidUIControlException($"Invalid URL [{info.URL}]", uiCtrl);
+                        throw new InvalidUIControlException($"Invalid URL [{info.Url}]", uiCtrl);
                 }
 
                 string toolTip = info.ToolTip;
@@ -521,10 +521,10 @@ namespace PEBakery.WPF
                 { // Open URL
                     button.Click += (object sender, RoutedEventArgs e) =>
                     {
-                        Process.Start(info.URL);
+                        Process.Start(info.Url);
                     };
 
-                    toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
+                    toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.Url);
                 }
                 else
                 { // Open picture with external viewer
@@ -731,7 +731,7 @@ namespace PEBakery.WPF
 
             Hyperlink hyperLink = new Hyperlink
             {
-                NavigateUri = new Uri(info.URL),
+                NavigateUri = new Uri(info.Url),
             };
             hyperLink.Inlines.Add(uiCtrl.Text);
             if (r.ViewMode)
@@ -743,7 +743,7 @@ namespace PEBakery.WPF
             }
             block.Inlines.Add(hyperLink);
 
-            string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
+            string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.Url);
             SetToolTip(block, toolTip);
             SetEditModeProperties(r, block, uiCtrl);
 
