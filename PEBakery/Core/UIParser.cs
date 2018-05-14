@@ -258,9 +258,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"FontSize [{args[0]}] is not a valid integer");
 
                         UITextStyle? styleVal = ParseUITextStyle(args[1]);
-                        if (styleVal == null)
-                            throw new InvalidCommandException($"Invalid style [{args[1]}]");
-                        UITextStyle style = (UITextStyle)styleVal;
+                        UITextStyle style = styleVal ?? UITextStyle.Normal;
 
                         return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }

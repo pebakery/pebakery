@@ -1346,7 +1346,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open Editor" : "Open Folder";
+        public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open External Editor" : "Open Folder";
         public PackIconMaterialKind OpenExternalButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
 
         private bool? _scriptCheckResult = null;
