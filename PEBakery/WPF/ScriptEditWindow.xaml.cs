@@ -811,6 +811,15 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) ListItemBox
+        private void ListNewItem_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            // Prohibit '|'
+            if (e.Text.Contains('|'))
+                e.Handled = true;
+
+            OnPreviewTextInput(e);
+        }
+
         private void UICtrlListItemBoxUp_Click(object sender, RoutedEventArgs e)
         {
             const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
@@ -1007,7 +1016,7 @@ namespace PEBakery.WPF
             m.InvokeUIControlEvent(false);
         }
         #endregion
-        #region For InterfaceEncoded (Common)
+        #region For (Common) InterfaceEncoded 
         private void UICtrlInterfaceAttachButton_Click(object sender, RoutedEventArgs e)
         {
             const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceAttachButton_Click";
@@ -1295,7 +1304,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        #region For RunOptional
+        #region For (Common) RunOptional
         private void SectionName_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             // Prohibit invalid path characters

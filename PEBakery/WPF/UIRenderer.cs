@@ -40,7 +40,6 @@ using System.Windows.Navigation;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using MahApps.Metro.IconPacks;
-using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
@@ -1153,10 +1152,10 @@ namespace PEBakery.WPF
 
         public static int GetMaxZIndex(Canvas canvas)
         {
-            int max = Canvas.GetZIndex(canvas);
+            int max = Panel.GetZIndex(canvas);
             foreach (UIElement element in canvas.Children)
             {
-                int z = Canvas.GetZIndex(element);
+                int z = Panel.GetZIndex(element);
                 if (max < z)
                     max = z;
             }

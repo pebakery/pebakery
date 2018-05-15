@@ -538,7 +538,7 @@ namespace PEBakery.Core
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 showProgress = true;
-                            else if (args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                            else if (!args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase))
                                 throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be [True] or [False]");
 
                             sectionName = args[cnt - 1].Substring(1, args[cnt - 1].Length - 2);
@@ -549,7 +549,7 @@ namespace PEBakery.Core
                         for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
                         
-                        if (NumberHelper.ParseInt32(args[cnt], out int idx) == false)
+                        if (!NumberHelper.ParseInt32(args[cnt], out int idx))
                             throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be an integer");
 
                         return new UIInfo_RadioGroup(GetInfoTooltip(args, args.Count), items, idx, sectionName, showProgress);

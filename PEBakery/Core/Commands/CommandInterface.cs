@@ -664,6 +664,8 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(subInfo != null, "Invalid UIInfo");
 
                         subInfo.Min = min;
+                        if (subInfo.Value < min)
+                            subInfo.Value = min;
                         break;
                     }
                 case InterfaceElement.NumberMax:
@@ -679,6 +681,8 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(subInfo != null, "Invalid UIInfo");
 
                         subInfo.Max = max;
+                        if (max < subInfo.Value)
+                            subInfo.Value = max;
                         break;
                     }
                 case InterfaceElement.NumberTick:
@@ -733,6 +737,7 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.Items:
                 {
                     string[] newItems = finalValue.Split(UIControl.ItemSeperatorChar);
+
                     switch (uiCtrl.Type)
                     {
                         case UIControlType.ComboBox:
@@ -742,6 +747,10 @@ namespace PEBakery.Core.Commands
                                 Debug.Assert(subInfo != null, "Invalid UIInfo");
 
                                 subInfo.Items = newItems.ToList();
+                                if (newItems.Length == 0)
+                                    uiCtrl.Text = string.Empty;
+                                else if (!newItems.Contains(uiCtrl.Text, StringComparer.OrdinalIgnoreCase))
+                                    uiCtrl.Text = subInfo.Items[0];
                                 break;
                             }
                         case UIControlType.RadioGroup:
@@ -751,6 +760,10 @@ namespace PEBakery.Core.Commands
                                 Debug.Assert(subInfo != null, "Invalid UIInfo");
 
                                 subInfo.Items = newItems.ToList();
+                                if (newItems.Length == 0 || newItems.Length <= subInfo.Selected)
+                                    subInfo.Selected = 0;
+                                else if (!newItems.Contains(newItems[subInfo.Selected], StringComparer.OrdinalIgnoreCase))
+                                    subInfo.Selected = 0;
                                 break;
                             }
                         default:
@@ -847,8 +860,10 @@ namespace PEBakery.Core.Commands
 
                             if (newValue == null)
                                 subInfo.SectionName = null;
-                            else
+                            else if(subInfo.SectionName != null)
                                 subInfo.HideProgress = (bool)newValue;
+                            else
+                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
                             break;
                         }
                         case UIControlType.ComboBox:
@@ -859,8 +874,10 @@ namespace PEBakery.Core.Commands
 
                             if (newValue == null)
                                 subInfo.SectionName = null;
-                            else
+                            else if (subInfo.SectionName != null)
                                 subInfo.HideProgress = (bool)newValue;
+                            else
+                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
                             break;
                         }
                         case UIControlType.Button:
@@ -883,8 +900,10 @@ namespace PEBakery.Core.Commands
 
                             if (newValue == null)
                                 subInfo.SectionName = null;
-                            else
+                            else if (subInfo.SectionName != null)
                                 subInfo.HideProgress = (bool)newValue;
+                            else
+                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
                             break;
                         }
                         case UIControlType.RadioGroup:
@@ -895,8 +914,10 @@ namespace PEBakery.Core.Commands
 
                             if (newValue == null)
                                 subInfo.SectionName = null;
-                            else
+                            else if (subInfo.SectionName != null)
                                 subInfo.HideProgress = (bool)newValue;
+                            else
+                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
                             break;
                         }
                         default:

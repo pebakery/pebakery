@@ -965,6 +965,7 @@
                                                  ItemsSource="{Binding UICtrlListItemBoxItems}"/>
                                         <TextBox Grid.Row="5" Grid.Column="0"
                                                  VerticalContentAlignment="Center"
+                                                 PreviewTextInput="ListNewItem_PreviewTextInput"
                                                  Text="{Binding UICtrlListItemBoxNewItem}"/>
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxUp"

@@ -751,7 +751,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C,D";
+        public new static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C";
     }
 
     [Serializable]
@@ -830,7 +830,7 @@ namespace PEBakery.Core
 
         public override string ToString() => ForgeRawLine();
 
-        public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionToRun,0,True";
+        public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
     }
 
     [Serializable]
