@@ -750,8 +750,8 @@ namespace PEBakery.WPF
             SetToolTip(block, toolTip);
             SetEditModeProperties(r, block, uiCtrl);
 
-            if (IgnoreWidthOfWebLabel)
-            {
+            if (IgnoreWidthOfWebLabel && r.ViewMode)
+            { // Disable this in edit mode to encourage script developer to fix
                 Rect rect = uiCtrl.Rect;
                 rect.Width = block.Width;
                 DrawToCanvas(r, block, rect);

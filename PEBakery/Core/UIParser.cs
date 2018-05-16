@@ -254,6 +254,14 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
+                        int cnt = args.Count;
+                        string tooltip = null;
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
+
                         if (!NumberHelper.ParseInt32(args[0], out int fontSize))
                             throw new InvalidCommandException($"FontSize [{args[0]}] is not a valid integer");
 
@@ -262,14 +270,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"FontWeight [{args[1]}] is invalid");
 
                         UIFontStyle? style = null;
-                        if (3 <= args.Count)
+                        if (3 <= cnt)
                         {
                             style = ParseUIFontStyle(args[2]);
                             if (style == null)
                                 throw new InvalidCommandException($"FontStyle [{args[2]}] is invalid");
                         }
 
-                        return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, (UIFontWeight)weight, style);
+                        return new UIInfo_TextLabel(tooltip, fontSize, (UIFontWeight)weight, style);
                     }
                 #endregion
                 #region NumberBox
@@ -303,7 +311,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
                         string tooltip = null;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             tooltip = GetInfoTooltip(args, args.Count - 1);
 
                         string sectionName = null;
@@ -331,7 +339,7 @@ namespace PEBakery.Core
 
                         int cnt = args.Count;
                         string toolTip = null;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             toolTip = GetInfoTooltip(args, args.Count - 1);
                             cnt -= 1;
@@ -404,7 +412,7 @@ namespace PEBakery.Core
 
                         int cnt = args.Count;
                         string tooltip = null;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
                             tooltip = GetInfoTooltip(args, cnt - 1);
                             cnt -= 1;
@@ -462,7 +470,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
                         string tooltip = null;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             tooltip = GetInfoTooltip(args, args.Count - 1);
 
                         string sectionName = null;
@@ -487,36 +495,44 @@ namespace PEBakery.Core
                 case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 2;
+                        const int maxOpCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
+
+                        int cnt = args.Count;
+                        string tooltip = null;
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
 
                         int? fontSize = null;
                         UIFontWeight? weight = null;
                         UIFontStyle? style = null;
 
-                        if (1 <= args.Count)
+                        if (1 <= cnt)
                         {
                             if (!NumberHelper.ParseInt32(args[0], out int fontSizeVal))
                                 throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
                             fontSize = fontSizeVal;
                         }
                             
-                        if (2 <= args.Count)
+                        if (2 <= cnt)
                         {
                             weight = ParseUIFontWeight(args[1]);
                             if (weight == null)
                                 throw new InvalidCommandException($"FontWeight [{args[1]}] is invalid");
                         }
 
-                        if (3 <= args.Count)
+                        if (3 <= cnt)
                         {
                             style = ParseUIFontStyle(args[2]);
                             if (style == null)
                                 throw new InvalidCommandException($"FontStyle [{args[2]}] is invalid");
                         }
 
-                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, weight, style);
+                        return new UIInfo_Bevel(tooltip, fontSize, weight, style);
                     }
                 #endregion
                 #region FileBox
@@ -548,7 +564,7 @@ namespace PEBakery.Core
                         bool showProgress = false;
 
                         int cnt = args.Count - 1;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             cnt -= 1;
 
                         if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) && 
