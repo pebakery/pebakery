@@ -277,18 +277,22 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(info.FontSize),
             };
 
-            switch (info.Style)
+            switch (info.FontWeight)
             {
-                case UITextStyle.Bold:
+                case UIFontWeight.Bold:
                     block.FontWeight = FontWeights.Bold;
                     break;
-                case UITextStyle.Italic:
+            }
+
+            switch (info.FontStyle)
+            {
+                case UIFontStyle.Italic:
                     block.FontStyle = FontStyles.Italic;
                     break;
-                case UITextStyle.Underline:
+                case UIFontStyle.Underline:
                     block.TextDecorations = TextDecorations.Underline;
                     break;
-                case UITextStyle.Strike:
+                case UIFontStyle.Strike:
                     block.TextDecorations = TextDecorations.Strikethrough;
                     break;
             }
@@ -843,7 +847,7 @@ namespace PEBakery.WPF
             {
                 IsHitTestVisible = false,
                 Background = Brushes.Transparent,
-                BorderThickness = new Thickness(1),
+                BorderThickness = new Thickness(0.7),
                 BorderBrush = Brushes.Gray,
             };
             SetToolTip(bevel, info.ToolTip);
@@ -868,8 +872,25 @@ namespace PEBakery.WPF
                     Background = Brushes.White,
                 };
                 textBorder.Child = textBlock;
-                if (info.Style == UIBevelCaptionStyle.Bold)
-                    textBlock.FontWeight = FontWeights.Bold;
+                switch (info.FontWeight)
+                {
+                    case UIFontWeight.Bold:
+                        textBlock.FontWeight = FontWeights.Bold;
+                        break;
+                }
+
+                switch (info.FontStyle)
+                {
+                    case UIFontStyle.Italic:
+                        textBlock.FontStyle = FontStyles.Italic;
+                        break;
+                    case UIFontStyle.Underline:
+                        textBlock.TextDecorations = TextDecorations.Underline;
+                        break;
+                    case UIFontStyle.Strike:
+                        textBlock.TextDecorations = TextDecorations.Strikethrough;
+                        break;
+                }
 
                 Rect blockRect = new Rect
                 {

@@ -580,9 +580,14 @@ namespace PEBakery.Core
         #endregion
     }
 
-    public enum UITextStyle
+    public enum UIFontWeight
     {
-        Normal = 0, Bold, Italic, Underline, Strike
+        Normal = 0, Bold,
+    }
+
+    public enum UIFontStyle
+    {
+        Italic, Underline, Strike
     }
 
     [Serializable]
@@ -614,13 +619,15 @@ namespace PEBakery.Core
     public class UIInfo_TextLabel : UIInfo
     {
         public int FontSize;
-        public UITextStyle Style;
+        public UIFontWeight FontWeight;
+        public UIFontStyle? FontStyle;
 
-        public UIInfo_TextLabel(string tooltip, int fontSize, UITextStyle style)
+        public UIInfo_TextLabel(string tooltip, int fontSize, UIFontWeight fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
             FontSize = fontSize;
-            Style = style;
+            FontWeight = fontWeight;
+            FontStyle = fontStyle;
         }
 
         public override string ForgeRawLine()
@@ -629,7 +636,12 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(FontSize);
             b.Append(",");
-            b.Append(Style);
+            b.Append(FontWeight);
+            if (FontStyle != null)
+            {
+                b.Append(",");
+                b.Append(FontStyle);
+            }
             b.Append(base.ForgeRawLine());
             return b.ToString(); 
         }
@@ -894,22 +906,19 @@ namespace PEBakery.Core
         public new static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
     }
 
-    public enum UIBevelCaptionStyle
-    {
-        Normal = 0, Bold
-    }
-
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
         public int? FontSize;
-        public UIBevelCaptionStyle? Style;
+        public UIFontWeight? FontWeight;
+        public UIFontStyle? FontStyle;
 
-        public UIInfo_Bevel(string tooltip, int? fontSize, UIBevelCaptionStyle? style)
+        public UIInfo_Bevel(string tooltip, int? fontSize, UIFontWeight? fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
             FontSize = fontSize;
-            Style = style;
+            FontWeight = fontWeight;
+            FontStyle = fontStyle;
         }
 
         public override string ForgeRawLine()
@@ -919,10 +928,15 @@ namespace PEBakery.Core
             {
                 b.Append(",");
                 b.Append(FontSize);
-                if (Style != null)
+                if (FontWeight != null)
                 {
                     b.Append(",");
-                    b.Append(Style);
+                    b.Append(FontWeight);
+                    if (FontStyle != null)
+                    {
+                        b.Append(",");
+                        b.Append(FontStyle);
+                    }
                 }
             }
             b.Append(base.ForgeRawLine());
@@ -942,13 +956,14 @@ namespace PEBakery.Core
                 {
                     if (FontSize == null)
                         FontSize = UIControl.DefaultFontPoint;
-                    if (Style == null)
-                        Style = UIBevelCaptionStyle.Normal;
+                    if (FontWeight == null)
+                        FontWeight = UIFontWeight.Normal;
                 }
                 else
                 {
                     FontSize = null;
-                    Style = null;
+                    FontWeight = null;
+                    FontStyle = null;
                 }
             }
         }

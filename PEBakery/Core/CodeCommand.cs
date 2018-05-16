@@ -1672,7 +1672,7 @@ namespace PEBakery.Core
         // General
         Text, Visible, PosX, PosY, Width, Height, Value, ToolTip,
         // TextLabel, Bevel 
-        FontSize, FontWeight, FontStyle, // FontWeight and FontStyle is interchangable.
+        FontSize, FontWeight, FontStyle,
         // NumberBox
         NumberMin, NumberMax, NumberTick,
         // Image, WebLabel

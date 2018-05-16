@@ -177,7 +177,7 @@ namespace PEBakery.Core.Commands
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist");
 
-            string destStr = null;
+            string destStr;
             switch (info.Element)
             {
                 #region General
@@ -210,266 +210,292 @@ namespace PEBakery.Core.Commands
                 #endregion
                 #region TextLabel, Bevel
                 case InterfaceElement.FontSize:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.TextLabel:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                            UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.TextLabel:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                                    UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.FontSize.ToString();
-                            break;
-                        }
-                        case UIControlType.Bevel:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-                            UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.FontSize.ToString();
+                                    break;
+                                }
+                            case UIControlType.Bevel:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                                    UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.FontSize.ToString();
-                            break;
+                                    destStr = subInfo.FontSize.ToString();
+                                    break;
+                                }
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 case InterfaceElement.FontWeight:
-                case InterfaceElement.FontStyle:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.TextLabel:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                            UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.TextLabel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                                UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.Style.ToString();
-                            break;
-                        }
-                        case UIControlType.Bevel:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-                            UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                destStr = subInfo.FontWeight.ToString();
+                                break;
+                            }
+                            case UIControlType.Bevel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                                UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.Style.ToString();
-                            break;
+                                destStr = subInfo.FontWeight == null ? "None" : subInfo.FontWeight.ToString();
+                                break;
+                            }
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
+                case InterfaceElement.FontStyle:
+                    {
+                        switch (uiCtrl.Type)
+                        {
+                            case UIControlType.TextLabel:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                                    UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    destStr = subInfo.FontStyle == null ? "None" : subInfo.FontStyle.ToString();
+                                    break;
+                                }
+                            case UIControlType.Bevel:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                                    UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    destStr = subInfo.FontStyle == null ? "None" : subInfo.FontStyle.ToString();
+                                    break;
+                                }
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
+                        }
+                        break;
+                    }
                 #endregion
                 #region NumberBox
                 case InterfaceElement.NumberMin:
-                {
-                    if (uiCtrl.Type != UIControlType.NumberBox)
-                        return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
+                    {
+                        if (uiCtrl.Type != UIControlType.NumberBox)
+                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
 
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                    UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
-                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
+                        UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
+                        Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                    destStr = subInfo.Min.ToString();
+                        destStr = subInfo.Min.ToString();
+                    }
                     break;
-                }
                 case InterfaceElement.NumberMax:
-                {
-                    if (uiCtrl.Type != UIControlType.NumberBox)
-                        return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
+                    {
+                        if (uiCtrl.Type != UIControlType.NumberBox)
+                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                    UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
-                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
+                        UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
+                        Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                    destStr = subInfo.Max.ToString();
+                        destStr = subInfo.Max.ToString();
+                    }
                     break;
-                }
                 case InterfaceElement.NumberTick:
-                {
-                    if (uiCtrl.Type != UIControlType.NumberBox)
-                        return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
+                    {
+                        if (uiCtrl.Type != UIControlType.NumberBox)
+                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                    UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
-                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
+                        UIInfo_NumberBox subInfo = uiCtrl.Info as UIInfo_NumberBox;
+                        Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                    destStr = subInfo.Tick.ToString();
+                        destStr = subInfo.Tick.ToString();
+                    }
                     break;
-                }
                 #endregion
                 #region Url - Image, WebLabel
                 case InterfaceElement.Url:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.Image:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-                            UIInfo_Image subInfo = uiCtrl.Info as UIInfo_Image;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.Image:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+                                    UIInfo_Image subInfo = uiCtrl.Info as UIInfo_Image;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.Url ?? string.Empty;
-                            break;
-                        }
-                        case UIControlType.WebLabel:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
-                            UIInfo_WebLabel subInfo = uiCtrl.Info as UIInfo_WebLabel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.Url ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.WebLabel:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
+                                    UIInfo_WebLabel subInfo = uiCtrl.Info as UIInfo_WebLabel;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.Url;
-                            break;
+                                    destStr = subInfo.Url;
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 #endregion
                 #region Items - ComboBox, RadioGroup
                 case InterfaceElement.Items:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.ComboBox:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                            UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
-                            break;
-                        }
-                        case UIControlType.RadioGroup:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                            UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                }
+                                break;
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
-                            break;
+                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 #endregion
                 #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
                 case InterfaceElement.SectionName:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.CheckBox:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                            UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.CheckBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName ?? string.Empty;
-                            break;
-                        }
-                        case UIControlType.ComboBox:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                            UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName ?? string.Empty;
-                            break;
-                        }
-                        case UIControlType.Button:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                            UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.Button:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName ?? string.Empty;
-                            break;
-                        }
-                        case UIControlType.RadioButton:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                            UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.RadioButton:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                                    UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName ?? string.Empty;
-                            break;
-                        }
-                        case UIControlType.RadioGroup:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                            UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName ?? string.Empty;
-                            break;
+                                    destStr = subInfo.SectionName ?? string.Empty;
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 case InterfaceElement.HideProgress:
-                {
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.CheckBox:
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                            UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.CheckBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
-                            break;
-                        }
-                        case UIControlType.ComboBox:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                            UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
-                            break;
-                        }
-                        case UIControlType.Button:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                            UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.Button:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
-                            break;
-                        }
-                        case UIControlType.RadioButton:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                            UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.RadioButton:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                                    UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
-                            break;
-                        }
-                        case UIControlType.RadioGroup:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                            UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
-                            break;
+                                    destStr = subInfo.SectionName == null ? "None" : subInfo.HideProgress.ToString();
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                         }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Reading [{info.Element}] from [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 #endregion
                 #region Error
                 default:
@@ -586,38 +612,10 @@ namespace PEBakery.Core.Commands
                 #endregion
                 #region TextLabel, Bevel
                 case InterfaceElement.FontSize:
-                {
-                    if (!NumberHelper.ParseInt32(finalValue, out int fontSize) || fontSize < 0)
-                        return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid positive integer");
-
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.TextLabel:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                            UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        if (!NumberHelper.ParseInt32(finalValue, out int fontSize) || fontSize < 0)
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid positive integer");
 
-                            subInfo.FontSize = fontSize;
-                            break;
-                        }
-                        case UIControlType.Bevel:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-                            UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            subInfo.FontSize = fontSize;
-                            break;
-                        }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
-                    }
-                    break;
-                }
-                case InterfaceElement.FontWeight:
-                case InterfaceElement.FontStyle:
-                    {
                         switch (uiCtrl.Type)
                         {
                             case UIControlType.TextLabel:
@@ -626,29 +624,79 @@ namespace PEBakery.Core.Commands
                                     UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
                                     Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                                    UITextStyle? styleVal = UIParser.ParseUITextStyle(finalValue);
-                                    if (styleVal == null)
-                                        throw new InvalidCommandException($"Invalid style [{finalValue}]");
-                                    subInfo.Style = (UITextStyle)styleVal;
-                                    break;
+                                    subInfo.FontSize = fontSize;
                                 }
+                                break;
                             case UIControlType.Bevel:
                                 {
                                     Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
                                     UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
                                     Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                                    UIBevelCaptionStyle? styleVal = UIParser.ParseUIBevelCaptionStyle(finalValue);
-                                    if (styleVal == null)
-                                        throw new InvalidCommandException($"Invalid style [{finalValue}]");
-                                    subInfo.Style = (UIBevelCaptionStyle)styleVal;
-                                    break;
+                                    subInfo.FontSize = fontSize;
                                 }
+                                break;
                             default:
                                 return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                         }
-                        break;
                     }
+                    break;
+                case InterfaceElement.FontWeight:
+                    switch (uiCtrl.Type)
+                    {
+                        case UIControlType.TextLabel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                                UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
+                                if (weight == null)
+                                    throw new InvalidCommandException($"Invalid FontWeight [{finalValue}]");
+                                subInfo.FontWeight = (UIFontWeight)weight;
+                            }
+                            break;
+                        case UIControlType.Bevel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                                UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                UIFontWeight? weight = UIParser.ParseUIFontWeight(finalValue);
+                                subInfo.FontWeight = weight ?? throw new InvalidCommandException($"Invalid FontWeight [{finalValue}]");
+                            }
+                            break;
+                        default:
+                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
+                    }
+                    break;
+                case InterfaceElement.FontStyle:
+                    switch (uiCtrl.Type)
+                    {
+                        case UIControlType.TextLabel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                                UIInfo_TextLabel subInfo = uiCtrl.Info as UIInfo_TextLabel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
+                                subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
+                            }
+                            break;
+                        case UIControlType.Bevel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                                UIInfo_Bevel subInfo = uiCtrl.Info as UIInfo_Bevel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                UIFontStyle? style = UIParser.ParseUIFontStyle(finalValue);
+                                subInfo.FontStyle = style ?? throw new InvalidCommandException($"Invalid FontStyle [{finalValue}]");
+                            }
+                            break;
+                        default:
+                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
+                    }
+                    break;
                 #endregion
                 #region NumberBox
                 case InterfaceElement.NumberMin:
@@ -666,8 +714,8 @@ namespace PEBakery.Core.Commands
                         subInfo.Min = min;
                         if (subInfo.Value < min)
                             subInfo.Value = min;
-                        break;
                     }
+                    break;
                 case InterfaceElement.NumberMax:
                     {
                         if (uiCtrl.Type != UIControlType.NumberBox)
@@ -683,8 +731,8 @@ namespace PEBakery.Core.Commands
                         subInfo.Max = max;
                         if (max < subInfo.Value)
                             subInfo.Value = max;
-                        break;
                     }
+                    break;
                 case InterfaceElement.NumberTick:
                     {
                         if (uiCtrl.Type != UIControlType.NumberBox)
@@ -698,233 +746,231 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(subInfo != null, "Invalid UIInfo");
 
                         subInfo.Tick = tick;
-                        break;
                     }
+                    break;
                 #endregion
                 #region Url - Image, WebLabel
                 case InterfaceElement.Url:
+                    switch (uiCtrl.Type)
                     {
-                        switch (uiCtrl.Type)
-                        {
-                            case UIControlType.Image:
-                                {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-                                    UIInfo_Image subInfo = uiCtrl.Info as UIInfo_Image;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        case UIControlType.Image:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+                                UIInfo_Image subInfo = uiCtrl.Info as UIInfo_Image;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                                    if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
-                                        subInfo.Url = null;
-                                    else
-                                        subInfo.Url = finalValue;
-                                    break;
-                                }
-                            case UIControlType.WebLabel:
-                                {
-                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
-                                    UIInfo_WebLabel subInfo = uiCtrl.Info as UIInfo_WebLabel;
-                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
-
+                                if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                                    subInfo.Url = null;
+                                else
                                     subInfo.Url = finalValue;
-                                    break;
-                                }
-                            default:
-                                return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
-                        }
-                        break;
+                            }
+                            break;
+                        case UIControlType.WebLabel:
+                            {
+                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
+                                UIInfo_WebLabel subInfo = uiCtrl.Info as UIInfo_WebLabel;
+                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                subInfo.Url = finalValue;
+                            }
+                            break;
+                        default:
+                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                     }
+                    break;
                 #endregion
                 #region Items - ComboBox, RadioGroup
                 case InterfaceElement.Items:
-                {
-                    string[] newItems = finalValue.Split(UIControl.ItemSeperatorChar);
-
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.ComboBox:
-                            {
-                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                                UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        string[] newItems = finalValue.Split(UIControl.ItemSeperatorChar);
 
-                                subInfo.Items = newItems.ToList();
-                                if (newItems.Length == 0)
-                                    uiCtrl.Text = string.Empty;
-                                else if (!newItems.Contains(uiCtrl.Text, StringComparer.OrdinalIgnoreCase))
-                                    uiCtrl.Text = subInfo.Items[0];
-                                break;
-                            }
-                        case UIControlType.RadioGroup:
-                            {
-                                Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                                UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                                Debug.Assert(subInfo != null, "Invalid UIInfo");
+                        switch (uiCtrl.Type)
+                        {
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                                subInfo.Items = newItems.ToList();
-                                if (newItems.Length == 0 || newItems.Length <= subInfo.Selected)
-                                    subInfo.Selected = 0;
-                                else if (!newItems.Contains(newItems[subInfo.Selected], StringComparer.OrdinalIgnoreCase))
-                                    subInfo.Selected = 0;
+                                    subInfo.Items = newItems.ToList();
+                                    if (newItems.Length == 0)
+                                        uiCtrl.Text = string.Empty;
+                                    else if (!newItems.Contains(uiCtrl.Text, StringComparer.OrdinalIgnoreCase))
+                                        uiCtrl.Text = subInfo.Items[0];
+                                }
                                 break;
-                            }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    subInfo.Items = newItems.ToList();
+                                    if (newItems.Length == 0 || newItems.Length <= subInfo.Selected)
+                                        subInfo.Selected = 0;
+                                    else if (!newItems.Contains(newItems[subInfo.Selected], StringComparer.OrdinalIgnoreCase))
+                                        subInfo.Selected = 0;
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
+                        }
                     }
                     break;
-                }
                 #endregion
                 #region Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
                 case InterfaceElement.SectionName:
-                {
-                    string sectionName;
-                    if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
-                        sectionName = null;
-                    else
-                        sectionName = finalValue;
-
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.CheckBox:
+                        string sectionName;
+                        if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                            sectionName = null;
+                        else
+                            sectionName = finalValue;
+
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                            UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.CheckBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            subInfo.SectionName = sectionName;
-                            break;
+                                    subInfo.SectionName = sectionName;
+                                }   
+                                break;
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            case UIControlType.Button:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    if (sectionName == null)
+                                        return LogInfo.LogErrorMessage(logs, "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            case UIControlType.RadioButton:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                                    UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    subInfo.SectionName = sectionName;
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                         }
-                        case UIControlType.ComboBox:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                            UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            subInfo.SectionName = sectionName;
-                            break;
-                        }
-                        case UIControlType.Button:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                            UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            if (sectionName == null)
-                                return LogInfo.LogErrorMessage(logs, "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
-
-                            subInfo.SectionName = sectionName;
-                            break;
-                        }
-                        case UIControlType.RadioButton:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                            UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            subInfo.SectionName = sectionName;
-                            break;
-                        }
-                        case UIControlType.RadioGroup:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                            UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            subInfo.SectionName = sectionName;
-                            break;
-                        }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 case InterfaceElement.HideProgress:
-                {
-                    bool? newValue;
-                    if (finalValue.Length == 0 ||
-                        finalValue.Equals("None", StringComparison.OrdinalIgnoreCase) ||
-                        finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
-                        newValue = null;
-                    else if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
-                        newValue = true;
-                    else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
-                        newValue = false;
-                    else
-                        return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid boolean value");
-
-                    switch (uiCtrl.Type)
                     {
-                        case UIControlType.CheckBox:
+                        bool? newValue;
+                        if (finalValue.Length == 0 ||
+                            finalValue.Equals("None", StringComparison.OrdinalIgnoreCase) ||
+                            finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                            newValue = null;
+                        else if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            newValue = true;
+                        else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            newValue = false;
+                        else
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid boolean value");
+
+                        switch (uiCtrl.Type)
                         {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                            UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
+                            case UIControlType.CheckBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                                    UIInfo_CheckBox subInfo = uiCtrl.Info as UIInfo_CheckBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
 
-                            if (newValue == null)
-                                subInfo.SectionName = null;
-                            else if(subInfo.SectionName != null)
-                                subInfo.HideProgress = (bool)newValue;
-                            else
-                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
-                            break;
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if(subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            case UIControlType.ComboBox:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                                    UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if (subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            case UIControlType.Button:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                                    UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    if (newValue == null)
+                                        return LogInfo.LogErrorMessage(logs, "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
+
+                                    subInfo.HideProgress = (bool)newValue;
+                                }
+                                break;
+                            case UIControlType.RadioButton:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                                    UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if (subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            case UIControlType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                                    UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
+                                    Debug.Assert(subInfo != null, "Invalid UIInfo");
+
+                                    if (newValue == null)
+                                        subInfo.SectionName = null;
+                                    else if (subInfo.SectionName != null)
+                                        subInfo.HideProgress = (bool)newValue;
+                                    else
+                                        return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
+                                }
+                                break;
+                            default:
+                                return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                         }
-                        case UIControlType.ComboBox:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                            UIInfo_ComboBox subInfo = uiCtrl.Info as UIInfo_ComboBox;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            if (newValue == null)
-                                subInfo.SectionName = null;
-                            else if (subInfo.SectionName != null)
-                                subInfo.HideProgress = (bool)newValue;
-                            else
-                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
-                            break;
-                        }
-                        case UIControlType.Button:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                            UIInfo_Button subInfo = uiCtrl.Info as UIInfo_Button;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            if (newValue == null)
-                                return LogInfo.LogErrorMessage(logs, "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
-
-                            subInfo.HideProgress = (bool)newValue;
-                            break;
-                        }
-                        case UIControlType.RadioButton:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                            UIInfo_RadioButton subInfo = uiCtrl.Info as UIInfo_RadioButton;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            if (newValue == null)
-                                subInfo.SectionName = null;
-                            else if (subInfo.SectionName != null)
-                                subInfo.HideProgress = (bool)newValue;
-                            else
-                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
-                            break;
-                        }
-                        case UIControlType.RadioGroup:
-                        {
-                            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                            UIInfo_RadioGroup subInfo = uiCtrl.Info as UIInfo_RadioGroup;
-                            Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                            if (newValue == null)
-                                subInfo.SectionName = null;
-                            else if (subInfo.SectionName != null)
-                                subInfo.HideProgress = (bool)newValue;
-                            else
-                                return LogInfo.LogErrorMessage(logs, "Please set [SectionName] first before setting [HideProgress]");
-                            break;
-                        }
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Writing [{info.Element}] to [{uiCtrl.Type}] is not supported");
                     }
                     break;
-                }
                 #endregion
                 #region Error
                 default:

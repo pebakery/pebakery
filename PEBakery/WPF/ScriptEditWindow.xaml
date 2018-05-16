@@ -504,6 +504,7 @@
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
@@ -515,18 +516,27 @@
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
                                         <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
-                                                              Minimum="8"
+                                                              Minimum="0"
                                                               IncrementUnit="1"
                                                               Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Style" />
+                                                   Text="Weight" />
                                         <ComboBox Grid.Row="2" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
-                                                  SelectedIndex="{Binding UICtrlTextLabelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
                                             <ComboBoxItem Content="Normal"/>
                                             <ComboBoxItem Content="Bold"/>
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="3" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="None"/>
                                             <ComboBoxItem Content="Italic"/>
                                             <ComboBoxItem Content="Underline"/>
                                             <ComboBoxItem Content="Strike"/>
@@ -861,6 +871,7 @@
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
                                         <CheckBox Grid.Row="0" Grid.Column="0"
                                                   Grid.ColumnSpan="2"
@@ -879,20 +890,33 @@
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
                                         <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
-                                                              Minimum="8"
+                                                              Minimum="0"
                                                               IncrementUnit="1"
                                                               IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
                                                               Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   Text="Style" />
+                                                   Text="Weight" />
                                         <ComboBox Grid.Row="3" Grid.Column="1"
                                                   Padding="3, 0, 3, 0"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                  SelectedIndex="{Binding UICtrlBevelStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                                  SelectedIndex="{Binding UICtrlBevelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
                                             <ComboBoxItem Content="Normal"/>
                                             <ComboBoxItem Content="Bold"/>
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="4" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                  SelectedIndex="{Binding UICtrlBevelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="None"/>
+                                            <ComboBoxItem Content="Italic"/>
+                                            <ComboBoxItem Content="Underline"/>
+                                            <ComboBoxItem Content="Strike"/>
                                         </ComboBox>
                                     </Grid>
                                     <!-- FileBox -->

@@ -298,6 +298,8 @@ namespace PEBakery.Tests.Core.Command
                 null, ErrorCheck.Error);
             WriteInterface_Template(s, $@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,World", @"pButton1",
                 @"ShowProgress,1,8,240,115,80,25,World,0,False");
+            WriteInterface_Template(s, $@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,""""", @"pButton1",
+                null, ErrorCheck.Error);
             WriteInterface_Template(s, $@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,None", @"pButton1",
                 null, ErrorCheck.Error);
             WriteInterface_Template(s, $@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,True", @"pButton1",

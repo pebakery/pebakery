@@ -249,18 +249,27 @@ namespace PEBakery.Core
                 #region TextLabel
                 case UIControlType.TextLabel:
                     {
-                        const int minOpCount = 1;
-                        const int maxOpCount = 2;
+                        const int minOpCount = 2;
+                        const int maxOpCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         if (!NumberHelper.ParseInt32(args[0], out int fontSize))
                             throw new InvalidCommandException($"FontSize [{args[0]}] is not a valid integer");
 
-                        UITextStyle? styleVal = ParseUITextStyle(args[1]);
-                        UITextStyle style = styleVal ?? UITextStyle.Normal;
+                        UIFontWeight? weight = ParseUIFontWeight(args[1]);
+                        if (weight == null)
+                            throw new InvalidCommandException($"FontWeight [{args[1]}] is invalid");
 
-                        return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, style);
+                        UIFontStyle? style = null;
+                        if (3 <= args.Count)
+                        {
+                            style = ParseUIFontStyle(args[2]);
+                            if (style == null)
+                                throw new InvalidCommandException($"FontStyle [{args[2]}] is invalid");
+                        }
+
+                        return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, (UIFontWeight)weight, style);
                     }
                 #endregion
                 #region NumberBox
@@ -483,7 +492,8 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         int? fontSize = null;
-                        UIBevelCaptionStyle? style = null;
+                        UIFontWeight? weight = null;
+                        UIFontStyle? style = null;
 
                         if (1 <= args.Count)
                         {
@@ -494,10 +504,19 @@ namespace PEBakery.Core
                             
                         if (2 <= args.Count)
                         {
-                            style = ParseUIBevelCaptionStyle(args[1]);
+                            weight = ParseUIFontWeight(args[1]);
+                            if (weight == null)
+                                throw new InvalidCommandException($"FontWeight [{args[1]}] is invalid");
                         }
 
-                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);
+                        if (3 <= args.Count)
+                        {
+                            style = ParseUIFontStyle(args[2]);
+                            if (style == null)
+                                throw new InvalidCommandException($"FontStyle [{args[2]}] is invalid");
+                        }
+
+                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, weight, style);
                     }
                 #endregion
                 #region FileBox
@@ -568,27 +587,25 @@ namespace PEBakery.Core
 
         #region ParseUITextStyle, ParseUIBevelCaptionStyle
 
-        public static UITextStyle? ParseUITextStyle(string str)
+        public static UIFontWeight? ParseUIFontWeight(string str)
         {
-            UITextStyle? style = null;
-            if (str.Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                style = UITextStyle.Bold;
-            else if (str.Equals("Italic", StringComparison.OrdinalIgnoreCase))
-                style = UITextStyle.Italic;
-            else if (str.Equals("Underline", StringComparison.OrdinalIgnoreCase))
-                style = UITextStyle.Underline;
-            else if (str.Equals("Strike", StringComparison.OrdinalIgnoreCase))
-                style = UITextStyle.Strike;
-            return style;
+            UIFontWeight? weight = null;
+            if (str.Equals("Normal", StringComparison.OrdinalIgnoreCase))
+                weight = UIFontWeight.Normal;
+            else if (str.Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                weight = UIFontWeight.Bold;
+            return weight;
         }
 
-        public static UIBevelCaptionStyle? ParseUIBevelCaptionStyle(string str)
+        public static UIFontStyle? ParseUIFontStyle(string str)
         {
-            UIBevelCaptionStyle? style = null;
-            if (str.Equals("Normal", StringComparison.OrdinalIgnoreCase))
-                style = UIBevelCaptionStyle.Normal;
-            else if (str.Equals("Bold", StringComparison.OrdinalIgnoreCase))
-                style = UIBevelCaptionStyle.Bold;
+            UIFontStyle? style = null;
+            if (str.Equals("Italic", StringComparison.OrdinalIgnoreCase))
+                style = UIFontStyle.Italic;
+            else if (str.Equals("Underline", StringComparison.OrdinalIgnoreCase))
+                style = UIFontStyle.Underline;
+            else if (str.Equals("Strike", StringComparison.OrdinalIgnoreCase))
+                style = UIFontStyle.Strike;
             return style;
         }
         #endregion

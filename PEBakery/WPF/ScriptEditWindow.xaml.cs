@@ -2238,7 +2238,8 @@ namespace PEBakery.WPF
                     return;
 
                 OnPropertyUpdate(nameof(UICtrlTextLabelFontSize));
-                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontWeightIndex));
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontStyleIndex));
             }
         }
         public int UICtrlTextLabelFontSize
@@ -2254,16 +2255,37 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(true);
             }
         }
-        public int UICtrlTextLabelStyleIndex
+        public int UICtrlTextLabelFontWeightIndex
         {
-            get => (int)(_uiCtrlTextLabelInfo?.Style ?? UITextStyle.Normal);
+            get => (int)(_uiCtrlTextLabelInfo?.FontWeight ?? UIFontWeight.Normal);
             set
             {
                 if (_uiCtrlTextLabelInfo == null)
                     return;
 
-                _uiCtrlTextLabelInfo.Style = (UITextStyle)value;
-                OnPropertyUpdate(nameof(UICtrlTextLabelStyleIndex));
+                _uiCtrlTextLabelInfo.FontWeight = (UIFontWeight)value;
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontWeightIndex));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlTextLabelFontStyleIndex
+        {
+            get
+            {
+                if (_uiCtrlTextLabelInfo?.FontStyle == null)
+                    return 0;
+                return (int) _uiCtrlTextLabelInfo.FontStyle + 1;
+            }
+            set
+            {
+                if (_uiCtrlTextLabelInfo == null)
+                    return;
+
+                if (value == 0)
+                    _uiCtrlTextLabelInfo.FontStyle = null;
+                else
+                    _uiCtrlTextLabelInfo.FontStyle = (UIFontStyle)(value - 1);
+                OnPropertyUpdate(nameof(UICtrlTextLabelFontStyleIndex));
                 InvokeUIControlEvent(true);
             }
         }
@@ -2513,7 +2535,8 @@ namespace PEBakery.WPF
 
                 OnPropertyUpdate(nameof(UICtrlBevelCaptionEnabled));
                 OnPropertyUpdate(nameof(UICtrlBevelFontSize));
-                OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));
+                OnPropertyUpdate(nameof(UICtrlBevelFontWeightIndex));
+                OnPropertyUpdate(nameof(UICtrlBevelFontStyleIndex));
             }
         }
         public bool UICtrlBevelCaptionEnabled
@@ -2566,9 +2589,9 @@ namespace PEBakery.WPF
                 InvokeUIControlEvent(true);
             }
         }
-        public int UICtrlBevelStyleIndex
+        public int UICtrlBevelFontWeightIndex
         {
-            get => (int?)_uiCtrlBevelInfo?.Style ?? 0;
+            get => (int?)_uiCtrlBevelInfo?.FontWeight ?? 0;
             set
             {
                 if (_uiCtrlBevelInfo == null)
@@ -2576,8 +2599,32 @@ namespace PEBakery.WPF
 
                 UICtrlBevelInfo.CaptionEnabled = true;
 
-                _uiCtrlBevelInfo.Style = (UIBevelCaptionStyle)value;
-                OnPropertyUpdate(nameof(UICtrlBevelStyleIndex));
+                _uiCtrlBevelInfo.FontWeight = (UIFontWeight)value;
+                OnPropertyUpdate(nameof(UICtrlBevelFontWeightIndex));
+                InvokeUIControlEvent(true);
+            }
+        }
+        public int UICtrlBevelFontStyleIndex
+        {
+            get
+            {
+                if (_uiCtrlBevelInfo?.FontStyle == null)
+                    return 0;
+                return (int)_uiCtrlBevelInfo.FontStyle + 1;
+            }
+            set
+            {
+                if (_uiCtrlBevelInfo == null)
+                    return;
+
+                UICtrlBevelInfo.CaptionEnabled = true;
+
+                if (value == 0)
+                    _uiCtrlBevelInfo.FontStyle = null;
+                else
+                    _uiCtrlBevelInfo.FontStyle = (UIFontStyle)(value - 1);
+
+                OnPropertyUpdate(nameof(UICtrlBevelFontStyleIndex));
                 InvokeUIControlEvent(true);
             }
         }
