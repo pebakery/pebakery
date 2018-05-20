@@ -217,6 +217,22 @@ namespace PEBakery.Helper
             b.Append(strArr.Last());
             return b.ToString();
         }
+
+        public static string GetUrlProtocol(string str)
+        {
+            int idx = str.IndexOf(@"://", StringComparison.Ordinal);
+            return str.Substring(0, idx);
+        }
+
+        public static (string, string) FormatOpenCommand(string str, string openFile)
+        {
+            string formated = StringHelper.ReplaceEx(str, "%1", openFile, StringComparison.Ordinal);
+            int exeEndIdx = formated.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
+            string exe = formated.Substring(0, exeEndIdx).Trim().Trim('\"').Trim();
+            string arguments = formated.Substring(exeEndIdx).Trim().Trim('\"').Trim();
+
+            return (exe, arguments);
+        }
     }
     #endregion
 }

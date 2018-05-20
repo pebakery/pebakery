@@ -218,7 +218,52 @@ namespace PEBakery.Helper
             return hKey;
         }
 
+        public static string GetDefaultWebBrowserPath(string protocol, bool onlyExePath)
+        {
+            const string progIdKey = "ProgId";
+            const string httpsDefaultKey = @"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice";
+            const string exePathKeyTemplate = @"{0}\shell\open\command";
 
+            RegistryKey httpsSubKey = null;
+            RegistryKey exePathSubKey = null;
+            try
+            {
+                httpsSubKey = Registry.CurrentUser.OpenSubKey(httpsDefaultKey, false);
+                if (httpsSubKey == null)
+                {
+                    httpsSubKey = Registry.LocalMachine.OpenSubKey(httpsDefaultKey, false);
+                    if (httpsSubKey == null)
+                        return null;
+                }
+
+                if (!(httpsSubKey.GetValue(progIdKey, null) is string progId))
+                    return null;
+
+                string exePathKey = string.Format(exePathKeyTemplate, progId);
+                exePathSubKey = Registry.ClassesRoot.OpenSubKey(exePathKey, false);
+                if (exePathSubKey == null)
+                    return null;
+
+                if (!(exePathSubKey.GetValue(null, null) is string browserPath))
+                    return null;
+
+                if (onlyExePath)
+                {
+                    int idx = browserPath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
+                    return browserPath.Substring(0, idx).Trim().Trim('\"').Trim();
+                }
+                else
+                {
+                    return browserPath;
+                }
+                    
+            }
+            finally
+            {
+                httpsSubKey?.Close();
+                exePathSubKey?.Close();
+            }
+        }
     }
     #endregion
 }

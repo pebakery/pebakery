@@ -1153,15 +1153,13 @@ namespace PEBakery.WPF
         #region OpenTextFile
         public void OpenTextFile(string textFile, bool deleteTextFile = false)
         {
-            Process proc = new Process();
-
             if (!(File.Exists(textFile) || Directory.Exists(textFile)))
             {
                 MessageBox.Show($"Path [{textFile}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            bool startInfoValid = false;
+            Process proc = new Process();
             if (Setting.Interface_UseCustomEditor)
             {
                 string ext = Path.GetExtension(Setting.Interface_CustomEditorPath);
@@ -1182,15 +1180,10 @@ namespace PEBakery.WPF
                     UseShellExecute = true,
                     Arguments = textFile,
                 };
-                startInfoValid = true;
             }
-            
-            if (startInfoValid == false)
+            else
             {
-                proc.StartInfo = new ProcessStartInfo(textFile)
-                {
-                    UseShellExecute = true,
-                };
+                proc.StartInfo = new ProcessStartInfo(textFile);
             }
 
             if (deleteTextFile)

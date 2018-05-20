@@ -741,7 +741,24 @@ namespace PEBakery.WPF
             {
                 hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
                 {
-                    Process.Start(e.Uri.ToString());
+                    string uri = e.Uri.ToString();
+                    try
+                    {
+                        string protocol = StringHelper.GetUrlProtocol(uri);
+                        string exe = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
+                        // string openCommand = RegistryHelper.GetDefaultWebBrowserPath(protocol, false);
+                        // (string exe, string arguments) = StringHelper.FormatOpenCommand(openCommand, uri);
+                        UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                        {
+                            FileName = exe,
+                            Arguments = StringEscaper.Doublequote(uri),
+                        });
+                    }
+                    catch
+                    {
+                        Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
+                        proc.Start();
+                    }
                 };
             }
             block.Inlines.Add(hyperLink);
@@ -751,7 +768,7 @@ namespace PEBakery.WPF
             SetEditModeProperties(r, block, uiCtrl);
 
             if (IgnoreWidthOfWebLabel && r.ViewMode)
-            { // Disable this in edit mode to encourage script developer to fix
+            { // Disable this in edit mode to encourage script developer address this issue
                 Rect rect = uiCtrl.Rect;
                 rect.Width = block.Width;
                 DrawToCanvas(r, block, rect);

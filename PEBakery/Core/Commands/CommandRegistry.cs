@@ -42,7 +42,7 @@ namespace PEBakery.Core.Commands
     public static class CommandRegistry
     {
         #region Static Field
-        private static bool privilegesEnabled = false;
+        private static bool _privilegesEnabled = false;
         #endregion
 
         public static List<LogInfo> RegHiveLoad(EngineState s, CodeCommand cmd)
@@ -59,10 +59,10 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(hiveFile))
                 return LogInfo.LogErrorMessage(logs, $"Hive file [{hiveFile}] does not exist");
 
-            if (!privilegesEnabled)
+            if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
-                privilegesEnabled = true;
+                _privilegesEnabled = true;
             }
 
             int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
@@ -84,10 +84,10 @@ namespace PEBakery.Core.Commands
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
-            if (!privilegesEnabled)
+            if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
-                privilegesEnabled = true;
+                _privilegesEnabled = true;
             }
 
             int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
