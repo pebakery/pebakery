@@ -741,24 +741,7 @@ namespace PEBakery.WPF
             {
                 hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
                 {
-                    string uri = e.Uri.ToString();
-                    try
-                    {
-                        string protocol = StringHelper.GetUrlProtocol(uri);
-                        string exe = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
-                        // string openCommand = RegistryHelper.GetDefaultWebBrowserPath(protocol, false);
-                        // (string exe, string arguments) = StringHelper.FormatOpenCommand(openCommand, uri);
-                        UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
-                        {
-                            FileName = exe,
-                            Arguments = StringEscaper.Doublequote(uri),
-                        });
-                    }
-                    catch
-                    {
-                        Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
-                        proc.Start();
-                    }
+                    FileHelper.OpenUri(e.Uri.AbsoluteUri);
                 };
             }
             block.Inlines.Add(hyperLink);

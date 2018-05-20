@@ -62,8 +62,7 @@ namespace PEBakery.WPF
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
-            Process.Start(e.Uri.AbsoluteUri);
-            e.Handled = true;
+            FileHelper.OpenUri(e.Uri.AbsoluteUri);
         }
     }
 

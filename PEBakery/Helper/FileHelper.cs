@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -32,6 +33,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using PEBakery.Core;
 
 namespace PEBakery.Helper
 {
@@ -484,6 +486,25 @@ namespace PEBakery.Helper
                 }
             }
             root.Delete(true);
+        }
+
+        public static void OpenUri(string uri)
+        {
+            try
+            {
+                string protocol = StringHelper.GetUrlProtocol(uri);
+                string exe = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
+                UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                {
+                    FileName = exe,
+                    Arguments = StringEscaper.Doublequote(uri),
+                });
+            }
+            catch
+            {
+                Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
+                proc.Start();
+            }
         }
 
         private const int MAX_LONG_PATH = 32767;
