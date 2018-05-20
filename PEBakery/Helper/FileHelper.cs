@@ -492,12 +492,14 @@ namespace PEBakery.Helper
         {
             try
             {
-                string protocol = StringHelper.GetUrlProtocol(uri);
-                string exe = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
+                string protocol = StringHelper.GetUriProtocol(uri);
+                string exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
+                string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
+
                 UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
-                    FileName = exe,
-                    Arguments = StringEscaper.Doublequote(uri),
+                    FileName = exePath,
+                    Arguments = quoteUri,
                 });
             }
             catch

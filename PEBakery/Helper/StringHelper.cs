@@ -218,10 +218,13 @@ namespace PEBakery.Helper
             return b.ToString();
         }
 
-        public static string GetUrlProtocol(string str)
+        public static string GetUriProtocol(string str)
         {
             int idx = str.IndexOf(@"://", StringComparison.Ordinal);
-            return str.Substring(0, idx);
+            if (0 <= idx && idx < str.Length)
+                return str.Substring(0, idx);
+            else
+                return null;
         }
 
         public static (string, string) FormatOpenCommand(string str, string openFile)
