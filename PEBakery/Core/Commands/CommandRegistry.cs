@@ -551,7 +551,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegImport(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport), "Invalid CodeInfo");
             CodeInfo_RegImport info = cmd.Info as CodeInfo_RegImport;
@@ -564,7 +564,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.FileName = "REG.exe";
                 proc.StartInfo.Arguments = $"IMPORT \"{regFile}\"";
                 proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
@@ -582,7 +581,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegExport(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport), "Invalid CodeInfo");
             CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
@@ -593,7 +592,7 @@ namespace PEBakery.Core.Commands
 
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+                throw new InternalException("Internal Logic Error at RegExport");
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             if (File.Exists(regFile))
@@ -604,7 +603,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.FileName = "REG.exe";
                 proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /Y";
                 proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
@@ -622,7 +620,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegCopy(EngineState s, CodeCommand cmd)
         { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegCopy), "Invalid CodeInfo");
             CodeInfo_RegCopy info = cmd.Info as CodeInfo_RegCopy;
@@ -634,7 +632,7 @@ namespace PEBakery.Core.Commands
             string hSrcKeyStr = RegistryHelper.RegKeyToString(info.HSrcKey);
             string hDestKeyStr = RegistryHelper.RegKeyToString(info.HDestKey);
             if (hSrcKeyStr == null || hDestKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+                throw new InternalException("Internal Logic Error at RegCopy");
             string fullSrcKeyPath = $"{hSrcKeyStr}\\{srcKeyPath}";
             string fullDestKeyPath = $"{hDestKeyStr}\\{destKeyPath}";
 
@@ -643,7 +641,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.FileName = "REG.exe";
                 proc.StartInfo.Arguments = $"COPY \"{fullSrcKeyPath}\" \"{fullDestKeyPath}\" /S /F"; // Forces copy of all subkeys and values without prompting
                 proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
