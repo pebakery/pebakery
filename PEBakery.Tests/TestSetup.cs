@@ -44,7 +44,7 @@ namespace PEBakery.Tests
             string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.1.dll");
 
-            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(zLibDllPath);
+            Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath);
             ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
             PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
             PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);
@@ -55,7 +55,7 @@ namespace PEBakery.Tests
         {
             EngineTests.Logger.DB.Close();
 
-            Joveler.ZLibWrapper.ZLibNative.AssemblyCleanup();
+            Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
             PEBakery.XZLib.XZStream.GlobalCleanup();
             PEBakery.LZ4Lib.LZ4FrameStream.GlobalCleanup();

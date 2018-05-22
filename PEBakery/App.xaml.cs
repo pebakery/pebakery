@@ -43,7 +43,7 @@ namespace PEBakery
             string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.1.dll");
 
-            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(zLibDllPath);
+            Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath);
             ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
             PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
             PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);

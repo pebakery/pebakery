@@ -26,14 +26,11 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.XZLib
 {
@@ -180,7 +177,9 @@ namespace PEBakery.XZLib
                         FinishWrite();
                     }
                     else
+                    {
                         _internalBufPos = ReadDone;
+                    }
 
                     NativeMethods.LzmaEnd(_lzmaStream);
                     _lzmaStreamPin.Free();
@@ -385,7 +384,6 @@ namespace PEBakery.XZLib
                 // Return condition : _lzmaStream.AvailIn == 0
                 while (_lzmaStream.AvailIn != 0)
                 {
-                    // ulong bakAvailOut = _lzmaStream.AvailOut;
                     LzmaRet ret = NativeMethods.LzmaCode(_lzmaStream, LzmaAction.RUN);
                     _internalBufPos = (int)((ulong)_internalBuf.Length - _lzmaStream.AvailOut);
 

@@ -48,7 +48,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using PEBakery.LZ4Lib;
 using PEBakery.XZLib;
-using CompressionLevel = Joveler.ZLibWrapper.CompressionLevel;
 
 namespace PEBakery.Core
 {
@@ -1036,7 +1035,7 @@ namespace PEBakery.Core
             List<IniKey> keys;
             try
             {
-                using (FileStream encodeStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                using (FileStream encodeStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Compress file with zlib
                     int readByte;
@@ -1045,7 +1044,7 @@ namespace PEBakery.Core
                     switch (mode)
                     {
                         case EncodeMode.ZLib:
-                            using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Level6, true))
+                            using (ZLibStream zs = new ZLibStream(encodeStream, ZLibMode.Compress, ZLibCompLevel.Level6, true))
                             {
                                 while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
@@ -1126,7 +1125,7 @@ namespace PEBakery.Core
                         switch (mode)
                         {
                             case EncodeMode.ZLib: // Type 1
-                                rawFooter[0x225] = (byte)CompressionLevel.Level6;
+                                rawFooter[0x225] = (byte)ZLibCompLevel.Level6;
                                 break;
                             case EncodeMode.Raw: // Type 2
                                 rawFooter[0x225] = 0;
@@ -1146,7 +1145,7 @@ namespace PEBakery.Core
 
                     // [Stage 3] Compress first footer and concat to body
                     long compressedFooterLen = encodeStream.Position;
-                    using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Default, true))
+                    using (ZLibStream zs = new ZLibStream(encodeStream, ZLibMode.Compress, ZLibCompLevel.Level6, true))
                     {
                         zs.Write(rawFooter, 0, rawFooter.Length);
                     }
@@ -1255,7 +1254,7 @@ namespace PEBakery.Core
             string tempComp = Path.GetTempFileName();
             try
             {
-                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen = SplitBase64.Decode(encodedList, decodeStream);
@@ -1294,7 +1293,7 @@ namespace PEBakery.Core
 
                         compressedFooter.Flush();
                         compressedFooter.Position = 0;
-                        using (ZLibStream zs = new ZLibStream(compressedFooter, CompressionMode.Decompress, CompressionLevel.Default))
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, ZLibMode.Decompress))
                         {
                             readByte = zs.Read(firstFooter, 0, firstFooter.Length);
                             Debug.Assert(readByte == firstFooter.Length);
@@ -1360,20 +1359,6 @@ namespace PEBakery.Core
                         case EncodeMode.ZLib: // Type 1, zlib
                             using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
                             {
-                                /*
-                                decodeStream.Position = 0;
-                                int offset = 0;
-                                while (offset < compressedBodyLen)
-                                {
-                                    if (offset + buffer.Length < compressedBodyLen)
-                                        readByte = decodeStream.Read(buffer, 0, buffer.Length);
-                                    else
-                                        readByte = decodeStream.Read(buffer, 0, compressedBodyLen - offset);
-                                    compStream.Write(buffer, 0, readByte);
-
-                                    offset += readByte;
-                                }
-                                */
                                 StreamSubCopy(decodeStream, compStream, 0, compressedBodyLen);
 
 #if DEBUG_MIDDLE_FILE
@@ -1390,7 +1375,7 @@ namespace PEBakery.Core
 
                                 compStream.Flush();
                                 compStream.Position = 0;
-                                using (ZLibStream zs = new ZLibStream(compStream, CompressionMode.Decompress, true))
+                                using (ZLibStream zs = new ZLibStream(compStream, ZLibMode.Decompress, true))
                                 {
                                     while ((readByte = zs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -1438,20 +1423,6 @@ namespace PEBakery.Core
                         case EncodeMode.XZ: // Type 3, LZMA
                             using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
                             {
-                                /*
-                                decodeStream.Position = 0;
-                                int offset = 0;
-                                while (offset < compressedBodyLen)
-                                {
-                                    if (offset + buffer.Length < compressedBodyLen)
-                                        readByte = decodeStream.Read(buffer, 0, buffer.Length);
-                                    else
-                                        readByte = decodeStream.Read(buffer, 0, compressedBodyLen - offset);
-                                    compStream.Write(buffer, 0, readByte);
-
-                                    offset += readByte;
-                                }
-                                */
                                 StreamSubCopy(decodeStream, compStream, 0, compressedBodyLen);
 
 #if DEBUG_MIDDLE_FILE
@@ -1561,7 +1532,7 @@ namespace PEBakery.Core
             using (MemoryStream rawFooterStream = new MemoryStream())
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
                 {
                     zs.CopyTo(rawFooterStream);
                 }
@@ -1636,7 +1607,7 @@ namespace PEBakery.Core
 #endif
 
                     using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress))
+                    using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
                     {
                         zs.CopyTo(rawBodyStream);
                     }
@@ -1719,7 +1690,7 @@ namespace PEBakery.Core
             string tempDecode = Path.GetTempFileName();
             try
             {
-                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen = SplitBase64.Decode(encodedList, decodeStream);
@@ -1758,7 +1729,7 @@ namespace PEBakery.Core
 
                         compressedFooter.Flush();
                         compressedFooter.Position = 0;
-                        using (ZLibStream zs = new ZLibStream(compressedFooter, CompressionMode.Decompress, CompressionLevel.Default))
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, ZLibMode.Decompress))
                         {
                             readByte = zs.Read(firstFooter, 0, firstFooter.Length);
                             Debug.Assert(readByte == firstFooter.Length);
@@ -1836,7 +1807,7 @@ namespace PEBakery.Core
             using (MemoryStream rawFooterStream = new MemoryStream())
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
                 {
                     zs.CopyTo(rawFooterStream);
                 }

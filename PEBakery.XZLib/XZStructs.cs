@@ -26,11 +26,7 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 /*
  * This file includes definition from external C library.
@@ -129,6 +125,7 @@ namespace PEBakery.XZLib
         /// </summary>
         public ulong TotalOut = 0;
 
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         /// <summary>
         /// Custom memory allocation functions
         /// </summary>
@@ -157,6 +154,7 @@ namespace PEBakery.XZLib
         private UIntPtr ReservedInt4 = UIntPtr.Zero;
         private uint ReservedEnum1 = 0;
         private uint ReservedEnum2 = 0;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
     }
     #endregion
 
@@ -185,7 +183,9 @@ namespace PEBakery.XZLib
         /// is supported by the application. Otherwise it is possible that
         /// the application will decode the Stream incorrectly.
         /// </remarks>
+#pragma warning disable IDE0044
         private uint Version = 0;
+#pragma warning restore IDE0044
         /// <summary>
         /// Backward Size
         /// </summary>
@@ -210,6 +210,7 @@ namespace PEBakery.XZLib
         /// </summary>
         public LzmaCheck Check;
 
+#pragma warning disable IDE0044
         private uint ReservedEnum1;
         private uint ReservedEnum2;
         private uint ReservedEnum3;
@@ -224,6 +225,7 @@ namespace PEBakery.XZLib
         private byte ReservedBool8;
         private uint ReservedInt1;
         private uint ReservedInt2;
+#pragma warning restore IDE0044
     }
     #endregion
 
@@ -323,6 +325,7 @@ namespace PEBakery.XZLib
         /// </remarks>
         public LzmaCheck Check;
 
+#pragma warning disable IDE0044
         private uint ReservedEnum1;
         private uint ReservedEnum2;
         private uint ReservedEnum3;
@@ -338,6 +341,7 @@ namespace PEBakery.XZLib
         private IntPtr ReservedPtr2;
         private IntPtr ReservedPtr3;
         private IntPtr ReservedPtr4;
+#pragma warning restore IDE0044
     }
     #endregion
 

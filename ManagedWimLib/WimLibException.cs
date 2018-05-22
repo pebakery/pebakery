@@ -37,7 +37,7 @@ namespace ManagedWimLib
         public WimLibException(ErrorCode errorCode)
             : base(ForgeErrorMessages(errorCode, true))
         {
-            this.ErrorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
         internal static string ForgeErrorMessages(ErrorCode errorCode, bool full)

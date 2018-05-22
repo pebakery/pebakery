@@ -35,7 +35,6 @@ using Microsoft.Win32;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using System.IO;
-using System.Globalization;
 
 namespace PEBakery.Core.Commands
 {

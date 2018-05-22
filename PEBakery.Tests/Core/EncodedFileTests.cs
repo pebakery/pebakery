@@ -1089,13 +1089,13 @@ namespace PEBakery.Tests.Core
                         long rawFileLen = new FileInfo(rawFile).Length;
 
                         // zlib
-                        (long, TimeSpan) ZLibBenchmarkCompress(CompressionLevel compLevel)
+                        (long, TimeSpan) ZLibBenchmarkCompress(ZLibCompLevel compLevel)
                         {
                             using (MemoryStream ms = new MemoryStream())
                             {
                                 Stopwatch watch = Stopwatch.StartNew();
                                 using (MemoryStream rms = new MemoryStream(rawFileData))
-                                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Compress, compLevel, true))
+                                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, compLevel, true))
                                 {
                                     rms.CopyTo(zs);
                                 }
@@ -1104,9 +1104,9 @@ namespace PEBakery.Tests.Core
                                 return (ms.Position, watch.Elapsed);
                             }
                         }
-                        (long zlibFastestLen, TimeSpan zlibFastestTime) = ZLibBenchmarkCompress(CompressionLevel.Fastest);
-                        (long zlibDefaultLen, TimeSpan zlibDefaultTime) = ZLibBenchmarkCompress(CompressionLevel.Default);
-                        (long zlibBestLen, TimeSpan zlibBestTime) = ZLibBenchmarkCompress(CompressionLevel.Best);
+                        (long zlibFastestLen, TimeSpan zlibFastestTime) = ZLibBenchmarkCompress(ZLibCompLevel.BestSpeed);
+                        (long zlibDefaultLen, TimeSpan zlibDefaultTime) = ZLibBenchmarkCompress(ZLibCompLevel.Default);
+                        (long zlibBestLen, TimeSpan zlibBestTime) = ZLibBenchmarkCompress(ZLibCompLevel.BestCompression);
 
                         // xz
                         (long, TimeSpan) XZBenchmarkCompress(uint preset)
@@ -1184,7 +1184,7 @@ namespace PEBakery.Tests.Core
                             {
                                 Stopwatch watch = Stopwatch.StartNew();
                                 using (MemoryStream rms = new MemoryStream(zlibData))
-                                using (ZLibStream zs = new ZLibStream(rms, CompressionMode.Decompress))
+                                using (ZLibStream zs = new ZLibStream(rms, ZLibMode.Decompress))
                                 {
                                     zs.CopyTo(ms);
                                 }

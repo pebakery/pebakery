@@ -23,16 +23,16 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
+// ReSharper disable InconsistentNaming
+// ReSharper disable EnumUnderlyingTypeIsInt
 
 namespace ManagedWimLib
 {
@@ -47,7 +47,7 @@ namespace ManagedWimLib
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected override bool ReleaseHandle()
         {
-            return FreeLibrary(this.handle);
+            return FreeLibrary(handle);
         }
         #endregion
 
@@ -62,14 +62,12 @@ namespace ManagedWimLib
     #region PinnedObject, PinnedArray
     internal class PinnedObject : IDisposable
     {
-        private GCHandle hObject;
-        private object _object;
-        public IntPtr Ptr => hObject.AddrOfPinnedObject();
+        private GCHandle _hObject;
+        public IntPtr Ptr => _hObject.AddrOfPinnedObject();
 
         public PinnedObject(object _object)
         {
-            this._object = _object;
-            hObject = GCHandle.Alloc(_object, GCHandleType.Pinned);
+            _hObject = GCHandle.Alloc(_object, GCHandleType.Pinned);
         }
 
         ~PinnedObject()
@@ -87,25 +85,25 @@ namespace ManagedWimLib
         {
             if (disposing)
             {
-                if (hObject.IsAllocated)
-                    hObject.Free();
+                if (_hObject.IsAllocated)
+                    _hObject.Free();
             }
         }
     }
 
     internal class PinnedArray : IDisposable
     {
-        private GCHandle hArray;
+        private GCHandle _hArray;
         public Array Array;
-        public IntPtr Ptr => hArray.AddrOfPinnedObject();
+        public IntPtr Ptr => _hArray.AddrOfPinnedObject();
 
         public IntPtr this[int idx] => Marshal.UnsafeAddrOfPinnedArrayElement(Array, idx);
         public static implicit operator IntPtr(PinnedArray fixedArray) => fixedArray[0];
 
         public PinnedArray(Array array)
         {
-            this.Array = array;
-            hArray = GCHandle.Alloc(array, GCHandleType.Pinned);
+            Array = array;
+            _hArray = GCHandle.Alloc(array, GCHandleType.Pinned);
         }
 
         ~PinnedArray()
@@ -123,8 +121,8 @@ namespace ManagedWimLib
         {
             if (disposing)
             {
-                if (hArray.IsAllocated)
-                    hArray.Free();
+                if (_hArray.IsAllocated)
+                    _hArray.Free();
             }
         }
     }
@@ -142,7 +140,7 @@ namespace ManagedWimLib
 
         #region Fields
         public static SafeLibraryHandle hModule = null;
-        public static bool Loaded => (hModule != null);
+        public static bool Loaded => hModule != null;
         public static string ErrorFile = null;
         public static bool PrintErrorsEnabled = false;
         #endregion
@@ -2090,6 +2088,8 @@ namespace ManagedWimLib
     /// An array of these structures is passed to Wim.AddImageMultiSource() to specify the sources from which to create a WIM image. 
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public struct CaptureSource
     {
         /// <summary>
@@ -2104,7 +2104,9 @@ namespace ManagedWimLib
         [MarshalAs(UnmanagedType.LPWStr)]
         public string WimTargetPath;
 #pragma warning disable 0414
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private uint reserved;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
 
         public CaptureSource(string fsSourcePath, string wimTargetPath)
         {
@@ -2117,6 +2119,8 @@ namespace ManagedWimLib
 
     #region Struct WimInfo
     [StructLayout(LayoutKind.Sequential)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public struct WimInfo
     {
         /// <summary>
@@ -2249,7 +2253,9 @@ namespace ManagedWimLib
             set => NativeMethods.SetBitField(ref bitFlag, 9, value);
         }
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private uint[] reserved;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
     }
     #endregion
 
@@ -2518,27 +2524,27 @@ namespace ManagedWimLib
             switch (Op)
             {
                 case UpdateOp.ADD:
-                    return new UpdateCommand32()
+                    return new UpdateCommand32
                     {
                         Op = UpdateOp.ADD,
-                        AddFsSourcePath = this.AddFsSourcePath,
-                        AddWimTargetPath = this.AddWimTargetPath,
-                        AddConfigFile = this.AddConfigFile,
-                        AddFlags = this.AddFlags,
+                        AddFsSourcePath = AddFsSourcePath,
+                        AddWimTargetPath = AddWimTargetPath,
+                        AddConfigFile = AddConfigFile,
+                        AddFlags = AddFlags,
                     };
                 case UpdateOp.DELETE:
-                    return new UpdateCommand32()
+                    return new UpdateCommand32
                     {
                         Op = UpdateOp.DELETE,
-                        DelWimPath = this.DelWimPath,
-                        DeleteFlags = this.DeleteFlags,
+                        DelWimPath = DelWimPath,
+                        DeleteFlags = DeleteFlags,
                     };
                 case UpdateOp.RENAME:
-                    return new UpdateCommand32()
+                    return new UpdateCommand32
                     {
                         Op = UpdateOp.RENAME,
-                        RenWimSourcePath = this.RenWimSourcePath,
-                        RenWimTargetPath = this.RenWimTargetPath,
+                        RenWimSourcePath = RenWimSourcePath,
+                        RenWimTargetPath = RenWimTargetPath,
                     };
                 default:
                     throw new InvalidOperationException("Internal Logic Error at UpdateCommand.ToNativeStruct32()");
@@ -2550,27 +2556,27 @@ namespace ManagedWimLib
             switch (Op)
             {
                 case UpdateOp.ADD:
-                    return new UpdateCommand64()
+                    return new UpdateCommand64
                     {
                         Op = UpdateOp.ADD,
-                        AddFsSourcePath = this.AddFsSourcePath,
-                        AddWimTargetPath = this.AddWimTargetPath,
-                        AddConfigFile = this.AddConfigFile,
-                        AddFlags = this.AddFlags,
+                        AddFsSourcePath = AddFsSourcePath,
+                        AddWimTargetPath = AddWimTargetPath,
+                        AddConfigFile = AddConfigFile,
+                        AddFlags = AddFlags,
                     };
                 case UpdateOp.DELETE:
-                    return new UpdateCommand64()
+                    return new UpdateCommand64
                     {
                         Op = UpdateOp.DELETE,
-                        DelWimPath = this.DelWimPath,
-                        DeleteFlags = this.DeleteFlags,
+                        DelWimPath = DelWimPath,
+                        DeleteFlags = DeleteFlags,
                     };
                 case UpdateOp.RENAME:
-                    return new UpdateCommand64()
+                    return new UpdateCommand64
                     {
                         Op = UpdateOp.RENAME,
-                        RenWimSourcePath = this.RenWimSourcePath,
-                        RenWimTargetPath = this.RenWimTargetPath,
+                        RenWimSourcePath = RenWimSourcePath,
+                        RenWimTargetPath = RenWimTargetPath,
                     };
                 default:
                     throw new InvalidOperationException("Internal Logic Error at UpdateCommand.ToNativeStruct64()");
@@ -2582,6 +2588,8 @@ namespace ManagedWimLib
 
     #region UpdateCommand32
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public struct UpdateCommand32
     {
         [FieldOffset(0)]
@@ -2668,7 +2676,9 @@ namespace ManagedWimLib
         /// Reserved; set to 0. 
         /// </summary>
         [FieldOffset(12)]
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private int RenameFlags;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
         #endregion
 
         #region Free
@@ -2717,6 +2727,8 @@ namespace ManagedWimLib
 
     #region UpdateCommand64
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public struct UpdateCommand64
     {
         [FieldOffset(0)]
@@ -2803,7 +2815,9 @@ namespace ManagedWimLib
         /// Reserved; set to 0. 
         /// </summary>
         [FieldOffset(24)]
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private int RenameFlags;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
         #endregion
 
         #region Free
@@ -2858,6 +2872,8 @@ namespace ManagedWimLib
     /// The HardLinkGroupId field can be used to distinguish actual file inodes.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     internal struct DirEntryBase
     {
         /// <summary>
@@ -2986,12 +3002,15 @@ namespace ManagedWimLib
         /// Only valid if WimObjectId.ObjectId is not all zeroes.
         /// </summary>
         public WimObjectId ObjectId;
+
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private int CreationTimeHigh;
         private int LastWriteTimeHigh;
         private int LastAccessTimeHigh;
         private int Reserved2;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         private ulong[] Reserved;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
     }
 
     /// <summary>
@@ -3171,14 +3190,14 @@ namespace ManagedWimLib
         {
             // C# DateTime has a resolution of 100ns
             DateTime genesis = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            genesis.AddSeconds(this.UnixEpoch);
-            genesis.AddTicks(this.NanoSeconds / 100);
+            genesis = genesis.AddSeconds(UnixEpoch);
+            genesis = genesis.AddTicks(NanoSeconds / 100);
 
             // wimlib provide high 32bit seperately if timespec.tv_sec is only 32bit
             if (IntPtr.Size == 4)
             {
                 long high64 = (long)high << 32;
-                genesis.AddSeconds(high64);
+                genesis = genesis.AddSeconds(high64);
             }
 
             return genesis;
@@ -3212,6 +3231,8 @@ namespace ManagedWimLib
     /// Blobs are deduplicated within a WIM file.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class ResourceEntry
     {
         /// <summary>
@@ -3241,11 +3262,16 @@ namespace ManagedWimLib
         /// This number is not guaranteed to be correct.
         /// </summary>
         public uint ReferenceCount;
+
         /// <summary>
         /// Bit 0 - 6 : Bool Flags
         /// Bit 7 - 31 : Reserved
         /// </summary>
+#pragma warning disable 649
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private uint bitFlag;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
+#pragma warning restore 649
         /// <summary>
         /// 1 iff this blob is located in a non-solid compressed WIM resource.
         /// </summary>
@@ -3278,7 +3304,11 @@ namespace ManagedWimLib
         /// </summary>
         public ulong RawResourceUncompressedSize;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+#pragma warning disable 169
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private ulong[] reserved;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
+#pragma warning restore 169
     }
     #endregion
 
@@ -3294,6 +3324,8 @@ namespace ManagedWimLib
     /// However, this isn't yet exposed by Wim.IterateDirTree().
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public struct StreamEntry
     {
         /// <summary>
@@ -3305,8 +3337,9 @@ namespace ManagedWimLib
         /// </summary>
         public ResourceEntry Resource;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+#pragma warning disable IDE0044 // 읽기 전용 한정자 추가
         private ulong[] Reserved;
+#pragma warning restore IDE0044 // 읽기 전용 한정자 추가
     }
     #endregion
 }
-
