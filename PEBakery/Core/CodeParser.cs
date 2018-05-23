@@ -328,7 +328,7 @@ namespace PEBakery.Core
                 case CodeType.FileCopy:
                     { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
                         const int minArgCount = 2;
-                        const int maxArgCount = 6;
+                        const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -342,13 +342,27 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 preserve = true;
+                            }
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
+                            }
                             else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
+                            {
+                                if (noRec)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noRec = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                            {
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                            }
                         }
 
                         return new CodeInfo_FileCopy(srcFile, destPath, preserve, noWarn, noRec);
@@ -368,11 +382,21 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
+                            }
                             else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
+                            {
+                                if (noRec)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noRec = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                            {
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                            }
                         }
 
                         return new CodeInfo_FileDelete(filePath, noWarn, noRec);
@@ -402,9 +426,17 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 preserve = true;
+                            }
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
+                            }
                             else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
@@ -436,7 +468,7 @@ namespace PEBakery.Core
                                 encoding = Encoding.ASCII;
                             }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
@@ -3246,9 +3278,9 @@ namespace PEBakery.Core
                         info = new SystemInfo();
                     }
                     break;
-                case SystemType.LoadAll:
+                case SystemType.RefreshAllScripts:
                 case SystemType.RescanScripts:
-                    { // System,LoadAll
+                    { // System,RefreshAllScripts
                         const int argCount = 0;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
@@ -3256,6 +3288,69 @@ namespace PEBakery.Core
                         info = new SystemInfo();
                     }
                     break;
+                case SystemType.LoadNewScript:
+                    { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool preserve = false;
+                        bool noWarn = false;
+                        bool noRec = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                preserve = true;
+                            }
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noWarn = true;
+                            }
+                            else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noRec)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noRec = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                        }
+
+                        info = new SystemInfo_LoadNewScript(args[0], args[1], preserve, noWarn, noRec);
+                    }
+                    break;
+                case SystemType.RefreshScript:
+                    { // System,RefreshScript,<FilePath>,[NOREC]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool noRec = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noRec)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noRec = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                        }
+                        
+                        info = new SystemInfo_RefreshScript(args[0], noRec);
+                    }
+                    break;
+                    /*
                 case SystemType.Load:
                     { // System,Load,<FilePath>,[NOREC]
                         const int minArgCount = 1;
@@ -3274,6 +3369,7 @@ namespace PEBakery.Core
                         info = new SystemInfo_Load(args[0], noRec);
                     }
                     break;
+                    */
                 case SystemType.SaveLog:
                     { // System,SaveLog,<DestPath>,[LogFormat]
                         const int minArgCount = 1;

@@ -976,10 +976,12 @@ namespace PEBakery.WPF
                         Script dirScript;
 
                         if (assertDirExist)
-                            Debug.Assert(ts != null);
+                            Debug.Assert(ts != null, "Internal Logic Error at ScriptListToTreeViewModel");
 
                         if (ts != null)
+                        {
                             dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, project, project.ProjectRoot, sc.Level, false, false, ts.IsDirLink);
+                        }
                         else
                         {
                             string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
@@ -1037,12 +1039,12 @@ namespace PEBakery.WPF
             return final;
         }
 
-        public void UpdateScriptTree(Project project, bool redrawScript)
+        public void UpdateScriptTree(Project project, bool redrawScript, bool assertDirExist = true)
         {
             TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
             projectRoot?.Children.Clear();
 
-            ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree, projectRoot);
+            ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, Model.MainTree, projectRoot);
 
             if (redrawScript && projectRoot != null)
             {

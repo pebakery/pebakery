@@ -242,7 +242,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.RescanScripts:
-                case SystemType.LoadAll:
+                case SystemType.RefreshAllScripts:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
@@ -258,6 +258,184 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
                     }
                     break;
+                case SystemType.LoadNewScript:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadNewScript), "Invalid SystemInfo");
+                        SystemInfo_LoadNewScript subInfo = info.SubInfo as SystemInfo_LoadNewScript;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+
+                        string srcFilePath = StringEscaper.Preprocess(s, subInfo.SrcFilePath);
+                        string destTreeDir = StringEscaper.Preprocess(s, subInfo.DestTreeDir);
+                        SearchOption searchOption = SearchOption.AllDirectories;
+                        if (subInfo.NoRecFlag)
+                            searchOption = SearchOption.TopDirectoryOnly;
+
+                        // Check wildcard
+                        string wildcard = Path.GetFileName(srcFilePath);
+                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
+
+                        string[] files;
+                        if (containsWildcard)
+                        { // With wildcard
+                            files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(srcFilePath), wildcard, searchOption);
+                            if (files.Length == 0)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
+                                return logs;
+                            }
+                        }
+                        else
+                        { // No wildcard
+                            if (!File.Exists(srcFilePath))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
+                                return logs;
+                            }
+
+                            files = new string[] { srcFilePath };
+                        }
+                        List<Script> newScripts = new List<Script>(files.Length);
+
+                        int successCount = 0;
+                        foreach (string f in files)
+                        {
+                            // Add scripts into Project.AllScripts
+                            string scRealPath = Path.GetFullPath(f);
+
+                            string destTreePath = Path.Combine(destTreeDir, Path.GetFileName(f));
+                            if (s.Project.ContainsScriptByTreePath(destTreePath))
+                            {
+                                if (subInfo.PreserveFlag)
+                                {
+                                    logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Warning, $"Script [{destTreeDir}] already exists in project tree", cmd));
+                                    continue;
+                                }
+                                else
+                                {
+                                    logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
+                                }
+                            }
+
+                            Script sc = s.Project.LoadScriptMonkeyPatch(scRealPath, destTreePath, false, true, true);
+                            if (sc == null)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));
+                                continue;
+                            }
+
+                            newScripts.Add(sc);
+                            logs.Add(new LogInfo(LogState.Success, $"Loaded script [{scRealPath}] into project tree [{destTreeDir}]"));
+                            successCount += 1;
+                        }
+
+                        s.Project.SortAllScripts();
+
+                        // Update MainWindow.MainTree and redraw Script
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+
+                            w.UpdateScriptTree(s.Project, false, false);
+                            foreach (Script sc in newScripts)
+                            {
+                                if (sc.Equals(w.CurMainTree.Script))
+                                {
+                                    w.CurMainTree.Script = sc;
+                                    w.DrawScript(w.CurMainTree.Script);
+                                }
+                            }
+                        });
+
+                        if (1 < files.Length)
+                            logs.Add(new LogInfo(LogState.Success, $"Loaded [{successCount}] new scripts"));
+                    }
+                    break;
+                case SystemType.RefreshScript:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshScript), "Invalid SystemInfo");
+                        SystemInfo_RefreshScript subInfo = info.SubInfo as SystemInfo_RefreshScript;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+
+                        string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
+                        SearchOption searchOption = SearchOption.AllDirectories;
+                        if (subInfo.NoRecFlag)
+                            searchOption = SearchOption.TopDirectoryOnly;
+
+                        // Check wildcard
+                        string wildcard = Path.GetFileName(filePath);
+                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
+
+                        string[] files;
+                        if (containsWildcard)
+                        { // With wildcard
+                            files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(filePath), wildcard, searchOption);
+                            if (files.Length == 0)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
+                                return logs;
+                            }
+                        }
+                        else
+                        { // No wildcard
+                            if (!File.Exists(filePath))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
+                                return logs;
+                            }
+
+                            files = new string[] { filePath };
+                        }
+                        List<Script> newScripts = new List<Script>(files.Length);
+
+                        int successCount = 0;
+                        foreach (string f in files)
+                        {
+                            string scRealPath = Path.GetFullPath(f);
+
+                            if (!s.Project.ContainsScriptByRealPath(scRealPath))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Unable to find script [{scRealPath}]"));
+                                continue;
+                            }
+
+                            // RefreshScript -> Update Project.AllScripts
+                            // TODO: Update EngineState.Scripts?
+                            Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
+                            sc = s.Project.RefreshScript(sc);
+                            if (sc == null)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
+                                continue;
+                            }
+
+                            newScripts.Add(sc);
+                            logs.Add(new LogInfo(LogState.Success, $"Refreshed script [{scRealPath}]"));
+                            successCount += 1;
+                        }
+
+                        // Update MainWindow and redraw Script
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+
+                            w.UpdateScriptTree(s.Project, false);
+                            foreach (Script sc in newScripts)
+                            {
+                                if (sc.Equals(w.CurMainTree.Script))
+                                {
+                                    w.CurMainTree.Script = sc;
+                                    w.DrawScript(w.CurMainTree.Script);
+                                }
+                            }
+                        });
+
+                        if (1 < files.Length)
+                            logs.Add(new LogInfo(LogState.Success, $"Refresh [{successCount}] scripts"));
+                    }
+                    break;
+                    /*
                 case SystemType.Load:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load), "Invalid SystemInfo");
@@ -332,7 +510,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             { // Add scripts into Project.AllScripts
-                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(scRealPath, true, false);
+                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(scRealPath, false, true);
                                 if (sc == null)
                                 {
                                     logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));
@@ -362,6 +540,7 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] scripts"));
                     }
                     break;
+                    */
                 case SystemType.SaveLog:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog), "Invalid SystemInfo");

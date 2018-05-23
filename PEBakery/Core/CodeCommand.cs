@@ -4114,8 +4114,10 @@ namespace PEBakery.Core
         OnBuildExit,
         OnScriptExit,
         RefreshInterface,
-        LoadAll, RescanScripts,
-        Load,
+        RefreshAllScripts, RescanScripts,
+        LoadNewScript,
+        RefreshScript,
+        // Load,
         SaveLog,
         SetLocal, EndLocal,
         // Deprecated, WB082 Compability Shim
@@ -4277,6 +4279,65 @@ namespace PEBakery.Core
     }
     
     [Serializable]
+    public class SystemInfo_LoadNewScript : SystemInfo
+    { // System,LoadNew,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
+        public string SrcFilePath;
+        public string DestTreeDir;
+        public bool PreserveFlag;
+        public bool NoWarnFlag;
+        public bool NoRecFlag;
+
+        public SystemInfo_LoadNewScript(string srcFilePath, string destTreeDir, bool preserve, bool noWarn, bool noRec)
+        {
+            SrcFilePath = srcFilePath;
+            DestTreeDir = destTreeDir;
+            PreserveFlag = preserve;
+            NoWarnFlag = noWarn;
+            NoRecFlag = noRec;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder(8);
+            b.Append("LoadNewScript,");
+            b.Append(SrcFilePath);
+            b.Append(",");
+            b.Append(DestTreeDir);
+            if (PreserveFlag)
+                b.Append(",PRESERVE");
+            if (NoWarnFlag)
+                b.Append(",NOWARN");
+            if (NoRecFlag)
+                b.Append(",NOREC");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_RefreshScript : SystemInfo
+    { // System,RefreshScript,<FilePath>,[NOREC]
+        public string FilePath;
+        public bool NoRecFlag;
+
+        public SystemInfo_RefreshScript(string filePath, bool noRec)
+        {
+            FilePath = filePath;
+            NoRecFlag = noRec;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder(8);
+            b.Append("RefreshScript,");
+            b.Append(FilePath);
+            if (NoRecFlag)
+                b.Append(",NOREC");
+            return b.ToString();
+        }
+    }
+
+    /*
+    [Serializable]
     public class SystemInfo_Load : SystemInfo
     { // System,Load,<FilePath>,[NOREC]
         public string FilePath;
@@ -4302,6 +4363,7 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
+    */
 
     [Serializable]
     public class SystemInfo_SaveLog : SystemInfo
