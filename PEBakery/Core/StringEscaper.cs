@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ namespace PEBakery.Core
     public static class StringEscaper
     {
         #region Static Variables and Constructor
-        private static readonly List<string> forbiddenPaths = new List<string>
+        private static readonly List<string> ForbiddenPaths = new List<string>
         {
             Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
@@ -54,7 +54,6 @@ namespace PEBakery.Core
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="path"></param>
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
@@ -66,13 +65,15 @@ namespace PEBakery.Core
                     containsInvalidChars = true;
             }
 
+            // PathSecurityCheck should be able to process paths like [*.exe]
+            // So remove filename if necessary.
             string fullPath;
             if (containsInvalidChars)
                 fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
             else
                 fullPath = Path.GetFullPath(path);
 
-            foreach (string f in forbiddenPaths)
+            foreach (string f in ForbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
                 {
@@ -85,7 +86,78 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region IsPathValid
+        public static bool IsPathValid(string path, IEnumerable<char> more = null)
+        {
+            // Windows Reserved Characters
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+            // Exclude backslash, because this function will receive 
+            char[] invalidChars = Path.GetInvalidFileNameChars().Where(x => x != '\\').ToArray();
+
+            // Ex) "C:\Program Files"
+            Match m = Regex.Match(path, "^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (m.Success) 
+            {
+                for (int i = 0; i < path.Length; i++)
+                {
+                    char ch = path[i];
+                    if (invalidChars.Contains(ch))
+                    {
+                        if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
+                            return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (char ch in path)
+                {
+                    if (invalidChars.Contains(ch))
+                        return false;
+                }
+            }
+
+            if (more != null)
+            {
+                foreach (char ch in path)
+                {
+                    if (more.Contains(ch))
+                        return false;
+                }
+            }
+            
+            return true;
+        }
+
+        public static bool IsFileNameValid(string path, IEnumerable<char> more = null)
+        {
+            // Windows Reserved Characters
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+            // Exclude backslash, because this function will receive 
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+
+            foreach (char ch in path)
+            {
+                if (invalidChars.Contains(ch))
+                    return false;
+            }
+
+            if (more != null)
+            {
+                foreach (char ch in path)
+                {
+                    if (more.Contains(ch))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
+
         #region EscapeString
+        /*
         private static readonly Dictionary<string, string> unescapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @"#$c", @"," },
@@ -95,7 +167,7 @@ namespace PEBakery.Core
             { @"#$t", "\t"},
             { @"#$x", Environment.NewLine},
         };
-
+        */
         public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
@@ -188,10 +260,7 @@ namespace PEBakery.Core
 
         public static List<string> Unescape(IEnumerable<string> strs, bool escapePercent = false)
         {
-            List<string> unescaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                unescaped.Add(Unescape(str, escapePercent));
-            return unescaped;
+            return strs.Select(str => Unescape(str, escapePercent)).ToList();
         }
 
         public static string QuoteUnescape(string str, bool escapePercent = false)
@@ -279,10 +348,7 @@ namespace PEBakery.Core
 
         public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(Escape(str, fullEscape, escapePercent));
-            return escaped;
+            return strs.Select(str => Escape(str, fullEscape, escapePercent)).ToList();
         }
 
         public static string EscapePercent(string str)
@@ -292,27 +358,20 @@ namespace PEBakery.Core
 
         public static List<string> EscapePercent(IEnumerable<string> strs)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(EscapePercent(str));
-            return escaped;
+            return strs.Select(EscapePercent).ToList();
         }
 
         public static string Doublequote(string str)
         {
             if (str.Contains(' '))
                 return "\"" + str + "\"";
-            else
-                return str;
+            return str;
         }
 
         public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
         {
-            bool needQuote = false;
-
             // Check if str need doublequote escaping
-            if (str.Contains(' ') || str.Contains(','))
-                needQuote = true;
+            bool needQuote = str.Contains(' ') || str.Contains(',');
 
             // Escape characters
             str = Escape(str, fullEscape, escapePercent); // WB082 escape sequence
@@ -323,10 +382,7 @@ namespace PEBakery.Core
 
         public static List<string> QuoteEscape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(QuoteEscape(str, fullEscape, escapePercent));
-            return escaped;
+            return strs.Select(str => QuoteEscape(str, fullEscape, escapePercent)).ToList();
         }
         #endregion
 
@@ -344,10 +400,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(s.Variables.Expand(ExpandSectionParams(s, str)));
-            return list;
+            return strs.Select(str => s.Variables.Expand(ExpandSectionParams(s, str))).ToList();
         }
 
         public static string ExpandVariables(Variables vars, string str)
@@ -357,17 +410,12 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(Variables vars, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(vars.Expand(str));
-            return list;
+            return strs.Select(vars.Expand).ToList();
         }
 
         /// <summary>
         /// Expand #1, #2, #3, etc...
         /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
@@ -442,10 +490,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandSectionParams(EngineState s, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(ExpandSectionParams(s, str));
-            return list;
+            return strs.Select(str => ExpandSectionParams(s, str)).ToList();
         }
         #endregion
 
@@ -468,6 +513,51 @@ namespace PEBakery.Core
         public static List<string> Preprocess(Variables vars, IEnumerable<string> strs, bool escapePercent = true)
         {
             return Unescape(ExpandVariables(vars, strs), escapePercent);
+        }
+        #endregion
+
+        #region GetUniqueKey, GetUniqueFileName
+        public static string GetUniqueKey(string srcKey, IEnumerable<string> keys)
+        {
+            int idx = 0;
+            string key;
+            bool duplicate;
+            string[] keyArr = keys.ToArray();
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{srcKey}{idx:D2}";
+
+                if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+
+            return key;
+        }
+
+        public static string GetUniqueFileName(string srcKey, IEnumerable<string> keys)
+        {
+            string fileName = Path.GetFileNameWithoutExtension(srcKey);
+            string ext = Path.GetExtension(srcKey);
+
+            int idx = 0;
+            string key;
+            bool duplicate;
+            string[] keyArr = keys.ToArray();
+            do
+            {
+                idx++;
+                duplicate = false;
+
+                key = $"{fileName}{idx:D2}{ext}";
+
+                if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    duplicate = true;
+            } while (duplicate);
+
+            return key;
         }
         #endregion
 
@@ -593,6 +683,20 @@ namespace PEBakery.Core
             }
 
             return list;
+        }
+        #endregion
+
+        #region VersionString
+        public static string ProcessVersionString(string str)
+        {
+            // Integer - Ex) 001 -> 1
+            if (NumberHelper.ParseInt32(str, out int intVal))
+                return intVal.ToString();
+
+            // Semantic Versioning - Ex) 5.1.2600 
+            // If does not conform to Semantic Versioning, return null
+            NumberHelper.VersionEx semVer = NumberHelper.VersionEx.Parse(str);
+            return semVer?.ToString();
         }
         #endregion
     }

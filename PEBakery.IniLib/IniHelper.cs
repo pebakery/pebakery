@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under MIT License.
  
     MIT License
@@ -50,9 +50,9 @@ namespace PEBakery.IniLib
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
-            else if (bom[0] == 0xFF && bom[1] == 0xFE)
+            if (bom[0] == 0xFF && bom[1] == 0xFE)
                 return Encoding.Unicode;
-            else if (bom[0] == 0xFE && bom[1] == 0xFF)
+            if (bom[0] == 0xFE && bom[1] == 0xFF)
                 return Encoding.BigEndianUnicode;
             return Encoding.Default;
         }
@@ -82,29 +82,26 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Write Unicode BOM into text file stream
         /// </summary>
-        /// <param name="fs"></param>
-        /// <param name="encoding"></param>
-        /// <returns></returns>
         internal static void WriteTextBOM(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
             {
-                if (encoding == Encoding.UTF8)
+                if (encoding.Equals(Encoding.UTF8))
                 {
-                    byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+                    byte[] bom = { 0xEF, 0xBB, 0xBF };
                     fs.Write(bom, 0, bom.Length);
                 }
-                else if (encoding == Encoding.Unicode)
+                else if (encoding.Equals(Encoding.Unicode))
                 {
-                    byte[] bom = new byte[] { 0xFF, 0xFE };
+                    byte[] bom = { 0xFF, 0xFE };
                     fs.Write(bom, 0, bom.Length);
                 }
-                else if (encoding == Encoding.BigEndianUnicode)
+                else if (encoding.Equals(Encoding.BigEndianUnicode))
                 {
-                    byte[] bom = new byte[] { 0xFE, 0xFF };
+                    byte[] bom = { 0xFE, 0xFF };
                     fs.Write(bom, 0, bom.Length);
                 }
-                else if (encoding != Encoding.Default)
+                else if (!encoding.Equals(Encoding.Default))
                 { // Unsupported Encoding
                     throw new ArgumentException($"[{encoding}] is not supported");
                 }
@@ -119,22 +116,22 @@ namespace PEBakery.IniLib
         /// <returns></returns>
         internal static FileStream WriteTextBOM(FileStream fs, Encoding encoding)
         {
-            if (encoding == Encoding.UTF8)
+            if (encoding.Equals(Encoding.UTF8))
             {
-                byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+                byte[] bom = { 0xEF, 0xBB, 0xBF };
                 fs.Write(bom, 0, bom.Length);
             }
-            else if (encoding == Encoding.Unicode)
+            else if (encoding.Equals(Encoding.Unicode))
             {
-                byte[] bom = new byte[] { 0xFF, 0xFE };
+                byte[] bom = { 0xFF, 0xFE };
                 fs.Write(bom, 0, bom.Length);
             }
-            else if (encoding == Encoding.BigEndianUnicode)
+            else if (encoding.Equals(Encoding.BigEndianUnicode))
             {
-                byte[] bom = new byte[] { 0xFE, 0xFF };
+                byte[] bom = { 0xFE, 0xFF };
                 fs.Write(bom, 0, bom.Length);
             }
-            else if (encoding != Encoding.Default)
+            else if (!encoding.Equals(Encoding.Default))
             { // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
             }

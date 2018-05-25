@@ -1,0 +1,1502 @@
+﻿<!--
+    Copyright (C) 2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+-->
+
+<Window x:Class="PEBakery.WPF.ScriptEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        mc:Ignorable="d"
+        Title="Edit Script"
+        FontFamily="Segoe UI"
+        FontSize="13"
+        Closing="Window_Closing"
+        Closed="Window_Closed"
+        Width="900" Height="720"
+        MinWidth="640" MinHeight="480"
+        d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Save"
+                        Executed="ScriptMain_Executed"
+                        CanExecute="ScriptMain_CanExecute"/>
+    </Window.CommandBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
+        </Grid.RowDefinitions>
+        <TabControl Grid.Row="0"
+                    SelectedIndex="{Binding TabIndex}">
+            <TabItem Header="General">
+                <StackPanel Margin="10, 0, 10, 10">
+                    <GroupBox Header="Header"
+                              BorderBrush="Gray">
+                        <Grid Margin="5, 5, 5, 5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="130"/>
+                                <RowDefinition Height="25"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Main Description -->
+                            <Grid Grid.Row="0"
+                                  Margin="5, 0, 5, 5">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Title -->
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Title"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="0" Grid.Column="1"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptTitle}"/>
+
+                                <!-- Author -->
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Author"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptAuthor}"/>
+
+                                <!-- Description -->
+                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Text="Description"/>
+                                <TextBox Grid.Row="2" Grid.Column="1"
+                                         Grid.RowSpan="3"
+                                         Height="70"
+                                         Text="{Binding ScriptDescription, Mode=TwoWay}"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         VerticalAlignment="Center"/>
+
+                                <!-- Version -->
+                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Version"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="0" Grid.Column="3"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptVersion}"/>
+
+                                <!-- Date -->
+                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Date"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="1" Grid.Column="3"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptDate}"/>
+
+                                <!-- Level -->
+                                <TextBlock Grid.Row="2" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Text="Level"/>
+                                <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
+                                                      x:Name="ScriptLevel"
+                                                      VerticalAlignment="Center"
+                                                      Minimum="-256"
+                                                      Maximum="255"
+                                                      IncrementUnit="1"
+                                                      Value="{Binding ScriptLevel, Mode=TwoWay}"/>
+
+                                <!-- Selected -->
+                                <TextBlock Grid.Row="3" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Selected"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <CheckBox Grid.Row="3" Grid.Column="3"
+                                          IsThreeState="True"
+                                          IsChecked="{Binding ScriptSelected}"
+                                          VerticalAlignment="Center"/>
+                                <!-- Mandatory -->
+                                <TextBlock Grid.Row="4" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Mandatory"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <CheckBox Grid.Row="4" Grid.Column="3" 
+                                          IsChecked="{Binding ScriptMandatory}"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                            <Button Grid.Row="1"
+                                    Width="100"
+                                    Content="Save"
+                                    x:Name="MainSaveButton"
+                                    Click="MainSaveButton_Click"
+                                    HorizontalAlignment="Right">
+                                <Button.InputBindings>
+                                    <KeyBinding Key="S"
+                                                Modifiers="Ctrl" 
+                                                Command="ApplicationCommands.Save" />
+                                </Button.InputBindings>
+                            </Button>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox Header="Logo"
+                              BorderBrush="Gray">
+                    
+                        <!-- Script Logo -->
+                        <Grid Height="100"
+                              Margin="3, 0, 5, 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ContentPresenter x:Name="ScriptLogo"
+                                              Grid.Row="0" Grid.Column="0"
+                                              Margin="10"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              Content="{Binding ScriptLogoImage}"
+                                              ToolTip="Recommended image size : 80x80"/>
+                            <Grid Grid.Row="0" Grid.Column="1"
+                                  Height="80"
+                                  Visibility="{Binding ScriptLogoInfoVisibility}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Name -->
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Margin="0, 0, 10, 0"
+                                           Text="Name"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding ScriptLogoName}"/>
+
+                                <!-- Raw Size -->
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                           Margin="0, 0, 10, 0"
+                                           Text="Raw Size"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding ScriptLogoRawSize}"/>
+
+                                <!-- Encoded Size -->
+                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                           Margin="0, 0, 10, 0"
+                                           Text="Encoded Size"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding ScriptLogoEncodedSize}"/>
+
+                                <!-- Compression -->
+                                <TextBlock Grid.Row="3" Grid.Column="0"
+                                           Margin="0, 0, 10, 0"
+                                           Text="Compression"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding ScriptLogoCompression}"/>
+                            </Grid>
+                            <StackPanel Grid.Row="0" Grid.Column="2"
+                                        Orientation="Vertical"
+                                        VerticalAlignment="Center">
+                                <Button Width="100" Height="25"
+                                        Margin="0, 0, 0, 5"
+                                        x:Name="ScriptLogoAttachButton"
+                                        Click="ScriptLogoAttachButton_Click"
+                                        ToolTip="Import logo from image">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Import"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Width="100" Height="25"
+                                        Margin="0, 0, 0, 5"
+                                        x:Name="ScriptLogoExtractButton"
+                                        Click="ScriptLogoExtractButton_Click"
+                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        ToolTip="Export logo to image">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Extract"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Width="100" Height="25"
+                                        x:Name="ScriptLogoDeleteButton"
+                                        Click="ScriptLogoDeleteButton_Click"
+                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        ToolTip="Delete logo">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Delete"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Interface">
+                <Grid Margin="10, 10, 10, 10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0"
+                          Margin="0, 0, 10, 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="100"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0"
+                                  Header="Add"
+                                  BorderBrush="Gray">
+                            <Grid Margin="3, 0, 3, 0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="20"/>
+                                    <RowDefinition Height="30"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Type" />
+                                <ComboBox Grid.Row="0" Grid.Column="1"
+                                          VerticalContentAlignment="Center"
+                                          Padding="3, 1, 3, 1"
+                                          x:Name="UICtrlAddType"
+                                          SelectionChanged="UICtrlAddType_SelectionChanged"
+                                          SelectedIndex="{Binding UICtrlAddTypeIndex}">
+                                    <ComboBoxItem Content="TextBox"/>
+                                    <ComboBoxItem Content="TextBlock"/>
+                                    <ComboBoxItem Content="NumberBox"/>
+                                    <ComboBoxItem Content="CheckBox"/>
+                                    <ComboBoxItem Content="ComboBox"/>
+                                    <ComboBoxItem Content="Image"/>
+                                    <ComboBoxItem Content="TextFile"/>
+                                    <ComboBoxItem Content="Button"/>
+                                    <ComboBoxItem Content="WebLabel"/>
+                                    <ComboBoxItem Content="RadioButton"/>
+                                    <ComboBoxItem Content="Bevel"/>
+                                    <ComboBoxItem Content="FileBox"/>
+                                    <ComboBoxItem Content="RadioGroup"/>
+                                </ComboBox>
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Name" />
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         VerticalContentAlignment="Center"
+                                         Text="{Binding UICtrlAddName}"/>
+                                <Button Grid.Row="2" Grid.Column="1"
+                                        Margin="0, 5, 0, 0"
+                                        x:Name="UICtrlAddButton"
+                                        Click="UICtrlAddButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Plus"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Add" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </GroupBox>
+                        <GroupBox Grid.Row="1"
+                                  Header="Edit"
+                                  BorderBrush="Gray">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="5, 5, 5, 5" Orientation="Vertical">
+                                    <ComboBox IsEnabled="{Binding InterfaceLoaded}"
+                                              SelectedIndex="{Binding InterfaceUICtrlIndex}"
+                                              ItemsSource="{Binding InterfaceUICtrls}"
+                                              SelectionChanged="UIControlComboBox_SelectionChanged"/>
+                                    <!-- Common -->
+                                    <Grid Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <!-- <RowDefinition Height="20" /> -->
+                                            <RowDefinition Height="0" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+
+                                        <!--
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   FontWeight="Bold"
+                                                   Text="Key" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 IsEnabled="{Binding UICtrlEditEnabled}"
+                                                 Text="{Binding UICtrlKey}"/>
+                                        -->
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Visible" />
+                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlEditEnabled}"
+                                                  IsChecked="{Binding UICtrlVisible}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="X" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                          Minimum="0"
+                                                          IsEnabled="{Binding UICtrlEditEnabled}"
+                                                          Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Y"/>
+                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Width"/>
+                                        <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Height" />
+                                        <custom:FreeNumberBox Grid.Row="5" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IsEnabled="{Binding UICtrlEditEnabled}"
+                                                              Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="ToolTip" />
+                                        <TextBox Grid.Row="6" Grid.Column="1"
+                                                 IsEnabled="{Binding UICtrlEditEnabled}"
+                                                 Text="{Binding UICtrlToolTip, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextBox -->
+                                    <Grid Visibility="{Binding IsUICtrlTextBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlTextBoxValue, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextLabel -->
+                                    <Grid Visibility="{Binding IsUICtrlTextLabel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="FontSize" />
+                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IncrementUnit="1"
+                                                              Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Weight" />
+                                        <ComboBox Grid.Row="2" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="Normal"/>
+                                            <ComboBoxItem Content="Bold"/>
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="3" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding UICtrlTextLabelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="None"/>
+                                            <ComboBoxItem Content="Italic"/>
+                                            <ComboBoxItem Content="Underline"/>
+                                            <ComboBoxItem Content="Strike"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <!-- NumberBox -->
+                                    <Grid Visibility="{Binding IsUICtrlNumberBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <custom:FreeNumberBox Grid.Row="0" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Min" />
+                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Max" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                              Minimum="0"
+                                                              Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Tick" />
+                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
+                                                              Minimum="1"
+                                                              Value="{Binding UICtrlNumberBoxTick, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- CheckBox -->
+                                    <Grid Visibility="{Binding IsUICtrlCheckBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Value" />
+                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                                  VerticalContentAlignment="Center"
+                                                  IsChecked="{Binding UICtrlCheckBoxValue}"/>
+                                    </Grid>
+                                    <!-- ComboBox -> See ListItemBox -->
+                                    <!-- Image -->
+                                    <Grid Visibility="{Binding IsUICtrlImage}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Image" />
+                                        <Button Grid.Row="0" Grid.Column="1"
+                                                Visibility="{Binding UICtrlImageUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlImageAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Import"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                                    Visibility="{Binding UICtrlImageLoaded}"
+                                                    Orientation="Vertical">
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageExtractButton"
+                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    ToolTip="Export image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Extract"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageResetButton"
+                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    ToolTip="Reset image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Reset"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlImageAutoResizeButton"
+                                                    Click="UICtrlImageAutoResizeButton_Click"
+                                                    ToolTip="Auto Resize">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Auto Resize"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="URL" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlImageUrl, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- TextFile -->
+                                    <Grid Visibility="{Binding IsUICtrlTextFile}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Text" />
+                                        <Button Grid.Column="1"
+                                                Visibility="{Binding UICtrlTextFileUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlTextFileAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Import"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Grid.Column="1"
+                                                Visibility="{Binding UICtrlTextFileLoaded}"
+                                                Orientation="Vertical">
+                                            <Button Width="Auto" Height="25"
+                                                x:Name="UICtrlTextFileExtractButton"
+                                                Click="UICtrlInterfaceExtractButton_Click"
+                                                ToolTip="Export image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                    <TextBlock Text="Extract"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                x:Name="UICtrlTextFileResetButton"
+                                                Click="UICtrlInterfaceResetButton_Click"
+                                                ToolTip="Reset image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                    <TextBlock Text="Reset"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                    <!-- Button -->
+                                    <Grid Visibility="{Binding IsUICtrlButton}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Image" />
+                                        <Button Grid.Row="1" Grid.Column="1"
+                                                Visibility="{Binding UICtrlButtonPictureUnloaded}"
+                                                Width="Auto" Height="25"
+                                                x:Name="UICtrlButtonPictureAttachButton"
+                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                ToolTip="Import image">
+                                                <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                <TextBlock Text="Import"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Grid.Row="1" Grid.Column="1"
+                                                    Visibility="{Binding UICtrlButtonPictureLoaded}"
+                                                    Orientation="Vertical">
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlButtonPictureExtractButton"
+                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    ToolTip="Export image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="3"/>
+                                                    <TextBlock Text="Extract"
+                                                           Margin="5, 0, 0, 0"
+                                                           VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Width="Auto" Height="25"
+                                                    x:Name="UICtrlButtonPictureResetButton"
+                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    ToolTip="Reset image">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="3"/>
+                                                    <TextBlock Text="Reset"
+                                                               Margin="5, 0, 0, 0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                    <!-- WebLabel -->
+                                    <Grid Visibility="{Binding IsUICtrlWebLabel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="URL" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlWebLabelUrl}"/>
+                                    </Grid>
+                                    <!-- RadioButton -->
+                                    <Grid Visibility="{Binding IsUICtrlRadioButton}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Select" />
+                                        <Button Grid.Row="1" Grid.Column="1"
+                                                x:Name="UICtrlRadioButtonSelect"
+                                                Click="UICtrlRadioButtonSelect_Click"
+                                                IsEnabled="{Binding UICtrlRadioButtonSelectEnable}"
+                                                Content="Select"/>
+                                    </Grid>
+                                    <!-- Bevel -->
+                                    <Grid Visibility="{Binding IsUICtrlBevel}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <CheckBox Grid.Row="0" Grid.Column="0"
+                                                  Grid.ColumnSpan="2"
+                                                  VerticalAlignment="Center"
+                                                  VerticalContentAlignment="Center"
+                                                  IsChecked="{Binding UICtrlBevelCaptionEnabled}"
+                                                  Content="Enable Caption"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="FontSize" />
+                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                                              Minimum="0"
+                                                              IncrementUnit="1"
+                                                              IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                              Value="{Binding UICtrlBevelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Weight" />
+                                        <ComboBox Grid.Row="3" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                  SelectedIndex="{Binding UICtrlBevelFontWeightIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="Normal"/>
+                                            <ComboBoxItem Content="Bold"/>
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Style" />
+                                        <ComboBox Grid.Row="4" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
+                                                  SelectedIndex="{Binding UICtrlBevelFontStyleIndex, UpdateSourceTrigger=PropertyChanged}">
+                                            <ComboBoxItem Content="None"/>
+                                            <ComboBoxItem Content="Italic"/>
+                                            <ComboBoxItem Content="Underline"/>
+                                            <ComboBoxItem Content="Strike"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <!-- FileBox -->
+                                    <Grid Visibility="{Binding IsUICtrlFileBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Path" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Type" />
+                                        <RadioButton Grid.Row="1" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     GroupName="UICtrlFileBoxChecked"
+                                                     IsChecked="{Binding UICtrlFileBoxFileChecked, UpdateSourceTrigger=PropertyChanged}"
+                                                     Content="File"/>
+                                        <RadioButton Grid.Row="2" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     GroupName="UICtrlFileBoxChecked"
+                                                     IsChecked="{Binding UICtrlFileBoxDirChecked, UpdateSourceTrigger=PropertyChanged}"
+                                                     Content="Directory"/>
+                                    </Grid>
+                                    <!-- RadioGroup -->
+                                    <Grid Visibility="{Binding IsUICtrlRadioGroup}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Caption" />
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                    <!-- Common - ListItemBox -->
+                                    <Grid Visibility="{Binding ShowUICtrlListItemBox}" Margin="0, 10, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition Width="25" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                            <RowDefinition Height="25" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Grid.ColumnSpan="2"
+                                                   Text="Items"/>
+                                        <ListBox Grid.Row="1" Grid.Column="0"
+                                                 Grid.RowSpan="4"
+                                                 SelectedIndex="{Binding UICtrlListItemBoxSelectedIndex}"
+                                                 ItemsSource="{Binding UICtrlListItemBoxItems}"/>
+                                        <TextBox Grid.Row="5" Grid.Column="0"
+                                                 VerticalContentAlignment="Center"
+                                                 PreviewTextInput="ListNewItem_PreviewTextInput"
+                                                 Text="{Binding UICtrlListItemBoxNewItem}"/>
+                                        <Button Grid.Row="1" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxUp"
+                                                Click="UICtrlListItemBoxUp_Click"
+                                              ToolTip="Up">
+                                            <iconPacks:PackIconMaterial Kind="ChevronUp"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                        <Button Grid.Row="2" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxDown"
+                                                Click="UICtrlListItemBoxDown_Click"
+                                                ToolTip="Down">
+                                            <iconPacks:PackIconMaterial Kind="ChevronDown"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                        <Button Grid.Row="3" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxSelect"
+                                                Click="UICtrlListItemBoxSelect_Click"
+                                                ToolTip="Select" >
+                                            <TextBlock Text="S" FontWeight="Bold"/>
+                                        </Button>
+                                        <Button Grid.Row="4" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxDelete"
+                                                Click="UICtrlListItemBoxDelete_Click"
+                                                ToolTip="Delete">
+                                            <iconPacks:PackIconMaterial Kind="Minus" 
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                        <Button Grid.Row="5" Grid.Column="1"
+                                                x:Name="UICtrlListItemBoxAdd"
+                                                Click="UICtrlListItemBoxAdd_Click"
+                                                ToolTip="Add">
+                                            <iconPacks:PackIconMaterial Kind="Plus" 
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="3"/>
+                                        </Button>
+                                    </Grid>
+                                    <!-- Common - RunOptional-->
+                                    <TextBlock Visibility="{Binding ShowUICtrlRunOptional}"
+                                               Text="Optional Engine Run"
+                                               Margin="0, 10, 0, 5"/>
+                                    <Border Visibility="{Binding ShowUICtrlRunOptional}"
+                                            BorderBrush="Gray"
+                                            BorderThickness="1">
+                                        <StackPanel Margin="5" Orientation="Vertical">
+                                            <TextBlock Text="Section to Run" />
+                                            <TextBox Margin="0, 0, 0, 5"
+                                                     VerticalContentAlignment="Center"
+                                                     PreviewTextInput="SectionName_PreviewTextInput"
+                                                     Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
+                                                     ToolTip="Keep here blank to disable optional engine run."/>
+                                            <CheckBox Content="Hide Progress"
+                                                      IsChecked="{Binding UICtrlHideProgress}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- Delete -->
+                                    <Button Width="100" Height="25"
+                                            Margin="0, 10, 0, 0"
+                                            HorizontalAlignment="Right"
+                                            x:Name="UICtrlDeleteButton"
+                                            Click="UICtrlDeleteButton_Click"
+                                            IsEnabled="{Binding UICtrlEditEnabled}"
+                                            ToolTip="Delete UIControl">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Close"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Delete"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </GroupBox>
+                    </Grid>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="55"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0, 0, 5, 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+
+                            <GroupBox Grid.Column="0"
+                                      Header="Scale Factor"
+                                      BorderBrush="Gray">
+                                <Grid Margin="3, 3, 3, 3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="15"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Slider Grid.Column="0"
+                                            Minimum="100"
+                                            Maximum="200"
+                                            TickPlacement="BottomRight"
+                                            TickFrequency="10"
+                                            IsSnapToTickEnabled="True"
+                                            x:Name="ScaleFactorSlider"
+                                            ValueChanged="ScaleFactorSlider_ValueChanged"
+                                            Value="{Binding InterfaceScaleFactor}" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="0, 2, 0, 0"
+                                               Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Top"/>
+                                    <TextBlock Grid.Column="2"
+                                               Margin="0, 2, 0, 0"
+                                               TextAlignment="Left"
+                                               VerticalAlignment="Top"
+                                               Text="%" />
+                                </Grid>
+                            </GroupBox>
+
+                            <Button Grid.Column="1"
+                                    Margin="0, 0, 0, 3"
+                                    Width="100" Height="25"
+                                    Content="Reload"
+                                    x:Name="InterfaceReloadButton"
+                                    Click="InterfaceReloadButton_Click"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom">
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Margin="0, 0, 0, 3"
+                                    Width="100"  Height="25"
+                                    Content="Save"
+                                    x:Name="InterfaceSaveButton"
+                                    Click="InterfaceSaveButton_Click"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom">
+                            </Button>
+                        </Grid>
+
+                        <Border Grid.Row="1"
+                                Margin="0, 10, 0, 0"
+                                BorderBrush="Gray"
+                                BorderThickness="1">
+                            <ScrollViewer HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Content="{Binding InterfaceCanvas}">
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Attachment">
+                <Grid Margin="10, 10, 10, 10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"
+                                          MinWidth="100"
+                                          MaxWidth="400"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+
+                    <TreeView x:Name="ScriptAttachTreeView"
+                              Grid.Row="0" Grid.Column="0"
+                              FontSize="12"
+                              Margin="0, 0, 8, 0"
+                              BorderThickness="1, 1, 0, 1"
+                              ItemsSource="{Binding AttachedFiles}"
+                              SelectedItemChanged="ScriptAttachTreeView_SelectedItemChanged"
+                              VirtualizingStackPanel.IsVirtualizing="True"
+                              VirtualizingStackPanel.VirtualizationMode="Recycling">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate DataType="{x:Type local:AttachedFileItem}"
+                                                      ItemsSource="{Binding Children}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="20"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <ContentPresenter Content="{Binding Icon}"
+                                                      Grid.Row="0" Grid.Column="0"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"
+                                                      Margin="3,2,3,2"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Name}"/>
+                                </Grid>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+
+                    <GridSplitter Grid.Row="0" Grid.Column="0"
+                                  Width="8"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Stretch"
+                                  ResizeBehavior="CurrentAndNext">
+                        <GridSplitter.Template>
+                            <ControlTemplate TargetType="{x:Type GridSplitter}">
+                                <Grid>
+                                    <Button Content="⁞" />
+                                    <Rectangle Fill="#00FFFFFF" />
+                                </Grid>
+                            </ControlTemplate>
+                        </GridSplitter.Template>
+                    </GridSplitter>
+
+                    <Border Grid.Row="0" Grid.Column="1"
+                            BorderBrush="Black"
+                            BorderThickness="0, 0.7, 0.7, 0.7">
+                        <StackPanel Orientation="Vertical">
+                            <!-- Detail of Attached File -->
+                            <StackPanel Margin="5, 5, 5, 0"
+                                        Orientation="Vertical"
+                                        Visibility="{Binding AttachDetailFileVisiblity}">
+                                <GroupBox Header="Detail"
+                                          BorderBrush="Gray">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Name -->
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Name"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                               Margin="5, 0, 0, 0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding AttachFileName}"/>
+
+                                        <!-- Raw Size -->
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Raw Size"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Margin="5, 0, 0, 0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding AttachFileRawSize}"/>
+
+                                        <!-- Encoded Size -->
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Encoded Size"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                               Margin="5, 0, 0, 0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding AttachFileEncodedSize}"/>
+
+                                        <!-- Compression -->
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Compression"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1"
+                                               Margin="5, 0, 0, 0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding AttachFileCompression}"/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <StackPanel Margin="0, 5, 0, 0"
+                                            Orientation="Horizontal"
+                                            Visibility="{Binding AttachDetailFileVisiblity}">
+                                    <Button x:Name="ExtractFileButton"
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Left"
+                                            Width="120" Height="25"
+                                            Click="ExtractFileButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Export"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Extract File"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="DeleteFileButton"
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Left"
+                                            Width="120" Height="25"
+                                            Click="DeleteFileButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FolderRemove"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Delete File"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                            <!-- AddFolderButton -->
+                            <GroupBox Header="Add Folder"
+                                      Margin="5, 5, 0, 0"
+                                      BorderBrush="Gray"
+                                      Visibility="{Binding AttachAddFolderVisiblity}">
+                                <Grid Margin="3, 0, 3, 2" Height="25">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="120"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Margin="0, 0, 10, 0"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontWeight="Bold"
+                                               Text="Folder Name"/>
+                                    <TextBox Grid.Column="1"
+                                             Margin="0, 0, 5, 0"
+                                             x:Name="AddFolderTextBox"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding AddFolderName}"/>
+                                    <Button Grid.Column="2"
+                                            x:Name="AddFolderButton"
+                                            VerticalAlignment="Top"
+                                            HorizontalAlignment="Left"
+                                            Width="120" Height="25"
+                                            Click="AddFolderButton_Click"
+                                            Visibility="{Binding AttachAddFolderVisiblity}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FolderPlus"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Add Folder"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </GroupBox>
+                            <!-- Detail of Attached Folder -->
+                            <StackPanel Margin="5, 0, 0, 0"
+                                        Orientation="Vertical"
+                                        Visibility="{Binding AttachDetailFolderVisiblity}">
+                                <GroupBox Header="Attach File"
+                                          Margin="0, 0, 0, 5"
+                                          BorderBrush="Gray">
+                                    <StackPanel Margin="3, 0, 3, 2"
+                                                Orientation="Vertical">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="120"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="30"/>
+                                                <RowDefinition Height="30"/>
+                                                <RowDefinition Height="25"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                                       Margin="0, 0, 10, 5"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="Path"/>
+                                            <TextBox Grid.Row="0" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     Margin="0, 0, 5, 5"
+                                                     Text="{Binding AttachNewFilePath}"/>
+                                            <Button Grid.Row="0" Grid.Column="2"
+                                                    Margin="0, 0, 0, 5"
+                                                    x:Name="AttachNewFileChooseButton"
+                                                    Click="AttachNewFileChooseButto_Click"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Width="120" >
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="FolderOpen"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="0, 5, 5, 5"/>
+                                                    <TextBlock Text="Choose"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                                       Margin="0, 0, 10, 5"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="File Name"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1"
+                                                     VerticalContentAlignment="Center"
+                                                     Margin="0, 0, 5, 5"
+                                                     Text="{Binding AttachNewFileName}"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                                       Margin="0, 0, 10, 0"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="Bold"
+                                                       Text="Compression"/>
+                                            <ComboBox Grid.Row="2" Grid.Column="1"
+                                                      Margin="0, 0, 5, 0"
+                                                      VerticalContentAlignment="Center"
+                                                      SelectedIndex="{Binding AttachNewCompressionIndex}">
+                                                <ComboBoxItem Content="None"/>
+                                                <ComboBoxItem Content="Deflate"/>
+                                                <ComboBoxItem Content="LZMA2"/>
+                                            </ComboBox>
+                                            <Button Grid.Row="2" Grid.Column="2"
+                                                    x:Name="AttachFileButton"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Width="120" Height="25"
+                                                    Click="AttachFileButton_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="FilePlus"
+                                                                                Width="Auto"
+                                                                                Height="Auto"
+                                                                                Margin="0, 5, 5, 5"/>
+                                                    <TextBlock Text="Attach File"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+                                </GroupBox>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Margin="0, 0, 5, 0"
+                                        x:Name="ExtractFolderButton"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Width="120" Height="25"
+                                        Click="ExtractFolderButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Export"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Extract Folder"
+                                                   VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="RemoveFolderButton"
+                                        Margin="0, 0, 5, 0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Width="120" Height="25"
+                                        Click="DeleteFolderButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FolderRemove"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Delete Folder"
+                                           VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                            
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Grid Grid.Row="1" Margin="15, 15, 15, 15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="110"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Row="0" Grid.Column="1"
+                    Margin="10, 0, 0, 0"
+                    IsCancel="True"
+                    Content="Close"/>
+        </Grid>
+    </Grid>
+</Window>

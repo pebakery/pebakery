@@ -1,0 +1,108 @@
+<!--
+ *
+ * WARNING: This MSBuild file requires MSBuild 4.0 features.
+ * 
+ * Based on System.Data.SQLite.Core.targets, written by Joe Mistachkin and David Archer.
+ * Released to the public domain, use at your own risk!
+ *
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+  ******************************************************************************
+  **                          Load Per-User Settings                          **
+  ******************************************************************************
+  -->
+  
+  <!--
+    Create "ManagedWimLib.Precompiled.Exclude" file in project directory 
+    to disable copying precompiled wimlib binaries.
+  -->
+  <PropertyGroup>
+    <PEBakeryLZ4LibExcludePrecompiled Condition="Exists('$(MSBuildProjectDirectory)\PEBakery.LZ4Lib.Precompiled.Exclude')">true</PEBakeryLZ4LibExcludePrecompiled>
+  </PropertyGroup>
+
+ <!--
+  ******************************************************************************
+  **                     ZLib Interop Library Build Items                     **
+  ******************************************************************************
+  -->
+
+  <ItemGroup>
+    <PEBakeryLZ4LibExcludePrecompiled Condition="'$(PEBakeryLZ4LibExcludePrecompiled)' != 'true' And 
+                                  '$(MSBuildThisFileDirectory)' != '' And
+                                   HasTrailingSlash('$(MSBuildThisFileDirectory)')"
+                        Include="$(MSBuildThisFileDirectory)Precompiled\**\liblz4.so.1.8.1.dll" />
+  </ItemGroup>
+
+  <!--
+  ******************************************************************************
+  **                    ZLib Interop Library Content Items                    **
+  ******************************************************************************
+  -->
+
+  <ItemGroup Condition="'$(PEBakeryLZ4LibExcludePrecompiled)' != 'true' And 
+                        '@(PEBakeryLZ4LibExcludePrecompiled)' != ''">
+    <None Include="@(PEBakeryLZ4LibExcludePrecompiled)">
+      <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+  ******************************************************************************
+  **                    ZLib Interop Library Build Targets                    **
+  ******************************************************************************
+  -->
+
+  <Target Name="CopyPEBakeryLZ4LibExcludePrecompiled"
+          Condition="'$(CopyPEBakeryLZ4LibExcludePrecompiled)' != 'false' And
+                     '$(OutDir)' != '' And
+                     HasTrailingSlash('$(OutDir)') And
+                     Exists('$(OutDir)')"
+          Inputs="@(PEBakeryLZ4LibExcludePrecompiled)"
+          Outputs="@(PEBakeryLZ4LibExcludePrecompiled -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')">
+    <!--
+        NOTE: Copy "libwim-15.dll" and all related files, for every
+              architecture that we support, to the build output directory.
+    -->
+    <Copy SourceFiles="@(PEBakeryLZ4LibExcludePrecompiled)"
+          DestinationFiles="@(PEBakeryLZ4LibExcludePrecompiled -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!--
+  ******************************************************************************
+  -->
+
+  <Target Name="CleanPEBakeryLZ4LibExcludePrecompiled"
+          Condition="'$(CleanPEBakeryLZ4LibExcludePrecompiled)' != 'false' And
+                     '$(OutDir)' != '' And
+                     HasTrailingSlash('$(OutDir)') And
+                     Exists('$(OutDir)')">
+    <!--
+        NOTE: Delete "libwim-15.dll" and all related files, for every
+              architecture that we support, from the build output directory.
+    -->
+    <Delete Files="@(PEBakeryLZ4LibExcludePrecompiled -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!--
+  ******************************************************************************
+  **                  ZLib Interop Library Build Properties                   **
+  ******************************************************************************
+  -->
+
+  <PropertyGroup>
+    <PostBuildEventDependsOn>
+      $(PostBuildEventDependsOn);
+      CopyPEBakeryLZ4LibExcludePrecompiled;
+    </PostBuildEventDependsOn>
+    <BuildDependsOn>
+      $(BuildDependsOn);
+      CopyPEBakeryLZ4LibExcludePrecompiled;
+    </BuildDependsOn>
+    <CleanDependsOn>
+      $(CleanDependsOn);
+      CleanPEBakeryLZ4LibExcludePrecompiled;
+    </CleanDependsOn>
+  </PropertyGroup>
+</Project>

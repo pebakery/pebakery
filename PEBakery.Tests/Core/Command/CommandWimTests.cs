@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,7 +24,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string pbSrcDir = Path.Combine("%TestBench%", "CommandWim");
-            string srcDir = StringEscaper.Preprocess(s, pbSrcDir);
 
             // Global Information
             Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,0,ImageCount,%Dest%", "1");
@@ -33,6 +34,8 @@ namespace PEBakery.Tests.Core.Command
 
             // Per-Image Information
             Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Name,%Dest%", "Sample");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%", null, ErrorCheck.Error);
+            InfoNoErr_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%,NOERR");
         }
 
         public void Info_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
@@ -44,6 +47,11 @@ namespace PEBakery.Tests.Core.Command
                 string dest = s.Variables["Dest"];
                 Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
             }
+        }
+
+        public void InfoNoErr_Template(EngineState s, string rawCode, ErrorCheck check = ErrorCheck.Success)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.WimInfo, check);
         }
         #endregion
 
@@ -132,15 +140,16 @@ namespace PEBakery.Tests.Core.Command
                 "A.txt",
             });
 
-            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", destDir, new string[0]);
-
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\Split.swm,1,\나,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
             { // Unicode test with Korean letter
                 "나",
             });
 
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", destDir, new string[0]);
+
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\ACDE.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\Z.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
         }
 
         public void Extract_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -183,7 +192,10 @@ namespace PEBakery.Tests.Core.Command
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[] { "ACDE.txt" });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                "ACDE.txt"
+            });
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
             {
                 Path.Combine("ABCD", "Z", "X.txt"),
@@ -216,6 +228,20 @@ namespace PEBakery.Tests.Core.Command
 
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,2,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\Split.swm,1,{pbDestDir}\ListFile.txt,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
+            { // Unicode test with Korean letter
+                "나", "다"
+            }, ErrorCheck.Error);
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                Path.Combine("Z.txt"),
+            }, ErrorCheck.Error);
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},NOERR", destDir, new string[]
+            {
+                Path.Combine("Z.txt"),
+            }, ErrorCheck.Warning);
         }
 
         public void ExtractBulk_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -228,14 +254,16 @@ namespace PEBakery.Tests.Core.Command
                 {
                     using (StreamWriter w = new StreamWriter(listFile, false, Encoding.Unicode))
                     {
-                        for (int i = 0; i < compFiles.Length; i++)
-                            w.WriteLine(@"\" + compFiles[i]);
+                        foreach (string f in compFiles)
+                            w.WriteLine(@"\" + f);
                     }
                 }
 
                 EngineTests.Eval(s, rawCode, CodeType.WimExtractBulk, check);
                 if (check == ErrorCheck.Success)
                 {
+                    Debug.Assert(compFiles != null);
+
                     if (compFiles.Length == 0)
                     {
                         DirectoryInfo di = new DirectoryInfo(destDir);
@@ -397,7 +425,7 @@ namespace PEBakery.Tests.Core.Command
                     using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
                     {
                         WimInfo wi = wim.GetWimInfo();
-                        Assert.IsTrue(wi.ImageCount == (srcImageCount + 1));
+                        Assert.IsTrue(wi.ImageCount == srcImageCount + 1);
 
                         wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.DEFAULT);
                     }
@@ -457,7 +485,7 @@ namespace PEBakery.Tests.Core.Command
                     using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
                     {
                         WimInfo wi = wim.GetWimInfo();
-                        Assert.IsTrue(wi.ImageCount == (srcImageCount - 1));
+                        Assert.IsTrue(wi.ImageCount == srcImageCount - 1);
                     }
                 }
             }
@@ -791,6 +819,7 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region Helper
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public enum SampleSet
         {
             // TestSet Src01 is created for basic test and compresstion type test
@@ -857,7 +886,7 @@ namespace PEBakery.Tests.Core.Command
                     case SampleSet.Src03:
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
 
             }
@@ -937,7 +966,7 @@ namespace PEBakery.Tests.Core.Command
                         Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
             }
 
@@ -1006,7 +1035,7 @@ namespace PEBakery.Tests.Core.Command
                     };
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
 
                 foreach (var tup in checkList)
@@ -1055,6 +1084,11 @@ namespace PEBakery.Tests.Core.Command
             {
                 public bool Equals(Tuple<string, bool> x, Tuple<string, bool> y)
                 {
+                    if (x == null)
+                        throw new ArgumentNullException(nameof(x));
+                    if (y == null)
+                        throw new ArgumentNullException(nameof(y));
+
                     bool path = x.Item1.Equals(y.Item1, StringComparison.Ordinal);
                     bool isDir = x.Item2 == y.Item2;
                     return path && isDir;

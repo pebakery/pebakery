@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,15 +25,17 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
+using PEBakery.Helper;
+using PEBakery.IniLib;
+
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
 {
@@ -61,9 +63,9 @@ namespace PEBakery.Core
 
     #region Interface Representation Format
     /*
-    <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[Tooltip]
+    <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[ToolTip]
     Visibility : 1 or 0
-    Type : UIControlType 0 ~ 14
+    Type : UIControlType 0 ~ 14 (Except 7, 9)
 
     <Text>
     TextBox     = Caption
@@ -71,8 +73,8 @@ namespace PEBakery.Core
     NumberBox   = <ControlName> 
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
-    Image       = <FileName> 
-    TextFile    = <FileName> 
+    Image       = <FileName> // "none" if image is not set
+    TextFile    = <FileName> // "none" if text file is not set
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
@@ -82,32 +84,35 @@ namespace PEBakery.Core
 
     <OptionalValues>
     TextBox     = <StringValue>
-    TextLabel   = <FontSize>,<Style>
-                  <Style> : Normal, Bold (in WB082)
-                            Italic, Underline, Strike (Added in PEBakery)
-    NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
-    CheckBox    = <BooleanValue>,[SectionToRun]  +[RunOptional]
-    ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
-    Image       = <StringValue> // URL
-    Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
-                  [Picture] - 0 if no picture. or its value is Embedded File name.
+    TextLabel   = <FontSize>,<FontWeight>
+                  <FontSize> : Default 8
+                  <FontWeight> : Normal, Bold (Compatible with WB082)
+                                 Italic, Underline, Strike (Added in PEBakery) 
+    NumberBox   = <IntegerValue>,<Min>,<Max>,<Tick>
+    CheckBox    = <BooleanValue>  +[RunOptional]
+    ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
+    Image       = [Url]
+    Button      = <SectionName>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
+                  [Picture] - 0 if no picture, or encoded file's name.
+                  [RunOptional] - ignored
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    FileBox     = [FILE|DIR]
-    Bevel       = <FontSize>,<Style> (Added in PEBakery)
-                  <Style> : Normal, Bold
+    Bevel       = [<FontSize>,<FontWeight>] (Added in PEBakery)
+                  <FontSize> : Default 8
+                  <FontWeight> : Normal, Bold
+    FileBox     = [file|dir]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
 
     [RunOptional]
-    For CheckBox, Button, RadioButton, RadioGroup
-    <SectionToRun>,<HideProgress>
+    For CheckBox, ComboBox, RadioButton, RadioGroup
+    <SectionName>,<HideProgress>
     
     SectionToRun : (String) SectionName with _ at start and end
     HideProgress : (Bool)   
 
-    [Tooltip]
-    <StringValue> : Tooltip to show when mousehover event, always start with __
+    [ToolTip]
+    <StringValue> : ToolTip to show when mousehover event, always start with __
     */
     #endregion
 
@@ -130,28 +135,27 @@ namespace PEBakery.Core
         #region Constructors
         public UIControl(string rawLine, SectionAddress addr, string key)
         {
-            this.RawLine = rawLine;
-            this.Addr = addr;
+            RawLine = rawLine;
+            Addr = addr;
 
-            this.Key = key;
-            this.Text = string.Empty;
-            this.Visibility = false;
-            this.Type = UIControlType.None;
-            this.Rect = new Rect(0, 0, 0, 0);
-
+            Key = key;
+            Text = string.Empty;
+            Visibility = false;
+            Type = UIControlType.None;
+            Rect = new Rect(0, 0, 0, 0);
         }
 
         public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
         {
-            this.RawLine = rawLine;
-            this.Addr = addr;
+            RawLine = rawLine;
+            Addr = addr;
 
-            this.Key = key;
-            this.Text = text;
-            this.Visibility = visibility;
-            this.Type = type;
-            this.Rect = rect;
-            this.Info = info;
+            Key = key;
+            Text = text;
+            Visibility = visibility;
+            Type = type;
+            Rect = rect;
+            Info = info;
         }
         #endregion
 
@@ -172,10 +176,7 @@ namespace PEBakery.Core
 
             b.Append(StringEscaper.QuoteEscape(Text));
             b.Append(",");
-            if (Visibility)
-                b.Append("1,");
-            else
-                b.Append("0,");
+            b.Append(Visibility ? "1," : "0,");
             b.Append((int) Type);
             b.Append(",");
             b.Append(Rect.Left);
@@ -185,43 +186,56 @@ namespace PEBakery.Core
             b.Append(Rect.Width);
             b.Append(",");
             b.Append(Rect.Height);
-
             b.Append(Info.ForgeRawLine());
-            /*
-            string optionalArgs = Info.ForgeRawLine();
-            if (0 < optionalArgs.Length) // Only if optionalArgs is not empty
-            {
-                b.Append(",");
-                b.Append(optionalArgs);
-            }
-            */
-
             return b.ToString();
         }
         #endregion
 
         #region Update
-        public void Update()
+        public bool Update()
         {
-            Ini.SetKey(Addr.Script.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
+            return Ini.WriteKey(Addr.Script.RealPath, Addr.Section.Name, Key, ForgeRawLine(false));
         }
         
-        public static void Update(List<UIControl> uiCmdList)
+        public static bool Update(List<UIControl> uiCtrls)
         {
-            if (0 < uiCmdList.Count)
+            if (uiCtrls.Count == 0)
+                return true;
+
+            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
+            foreach (UIControl uiCtrl in uiCtrls)
             {
-                string fullPath = uiCmdList[0].Addr.Script.FullPath;
-                List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
-                for (int i = 0; i < uiCmdList.Count; i++)
-                {
-                    UIControl uiCmd = uiCmdList[i];
-                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.FullPath, StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
-                    keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
-                }
+                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
+            }
 
-                Ini.SetKeys(fullPath, keys);
-            }           
+            return Ini.WriteKeys(fullPath, keys);
+        }
+        #endregion
+
+        #region Delete
+        public bool Delete()
+        {
+            return Ini.DeleteKey(Addr.Script.RealPath, Addr.Section.Name, Key);
+        }
+
+        public static bool Delete(List<UIControl> uiCtrls)
+        {
+            if (uiCtrls.Count == 0)
+                return true;
+
+            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
+
+                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key));
+            }
+
+            return Ini.DeleteKeys(fullPath, keys).Any(x => x);
         }
         #endregion
 
@@ -233,50 +247,51 @@ namespace PEBakery.Core
             {
                 case UIControlType.TextBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
                         UIInfo_TextBox info = Info as UIInfo_TextBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
                         value = info.Value;
                     }
                     break;
                 case UIControlType.NumberBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
                         UIInfo_NumberBox info = Info as UIInfo_NumberBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
                         value = info.Value.ToString();
                     }
                     break;
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
                         UIInfo_CheckBox info = Info as UIInfo_CheckBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
                         value = info.Value ? "True" : "False";
                     }
                     break;
                 case UIControlType.ComboBox:
-                    {
-                        value = Text;
-                    }
+                    value = Text;
                     break;
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
                         UIInfo_RadioButton info = Info as UIInfo_RadioButton;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
                         value = info.Selected ? "True" : "False";
                     }
                     break;
                 case UIControlType.FileBox:
-                    {
-                        value = Text;
-                    }
+                    value = Text;
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
                         UIInfo_RadioGroup info = Info as UIInfo_RadioGroup;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
                         value = info.Selected.ToString();
                     }
@@ -294,8 +309,9 @@ namespace PEBakery.Core
             {
                 case UIControlType.TextBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
                         UIInfo_TextBox uiInfo = Info as UIInfo_TextBox;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         uiInfo.Value = newValue;
 
@@ -305,8 +321,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.NumberBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
                         UIInfo_NumberBox uiInfo = Info as UIInfo_NumberBox;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         // WB082 just write string value in case of error, but PEBakery will throw error
                         if (!NumberHelper.ParseInt32(newValue, out int intVal))
@@ -331,8 +348,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
                         UIInfo_CheckBox uiInfo = Info as UIInfo_CheckBox;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -357,8 +375,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.ComboBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_ComboBox));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
                         UIInfo_ComboBox uiInfo = Info as UIInfo_ComboBox;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         int idx = uiInfo.Items.FindIndex(x => x.Equals(newValue, StringComparison.OrdinalIgnoreCase));
                         if (idx == -1)
@@ -376,8 +395,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
                         UIInfo_RadioButton uiInfo = Info as UIInfo_RadioButton;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -402,8 +422,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.FileBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_FileBox));
-                        UIInfo_FileBox uiInfo = Info as UIInfo_FileBox;
+                        // Debug.Assert(Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
+                        // UIInfo_FileBox uiInfo = Info as UIInfo_FileBox;
+                        // Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         Text = newValue;
 
@@ -413,8 +434,9 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
                         UIInfo_RadioGroup uiInfo = Info as UIInfo_RadioGroup;
+                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
 
                         if (!NumberHelper.ParseInt32(newValue, out int idx))
                         {
@@ -444,6 +466,85 @@ namespace PEBakery.Core
             return success;
         }
         #endregion
+
+        #region ReplaceScript
+        public bool ReplaceScript(Script sc)
+        {
+            if (!sc.Sections.ContainsKey(Addr.Section.Name))
+                return false;
+
+            ScriptSection newSection = sc.Sections[Addr.Section.Name];
+            Addr = new SectionAddress(sc, newSection);
+            return true;
+        }
+
+        public static bool ReplaceAddress(IEnumerable<UIControl> uiCtrls, Script sc)
+        {
+            return uiCtrls.All(x => x.ReplaceScript(sc));
+        }
+        #endregion
+
+        #region UIControl Dictionary 
+        public static ReadOnlyDictionary<int, UIControlType> UIControlZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
+            new Dictionary<int, UIControlType>
+            {
+                [0] = UIControlType.TextBox,
+                [1] = UIControlType.TextLabel,
+                [2] = UIControlType.NumberBox,
+                [3] = UIControlType.CheckBox,
+                [4] = UIControlType.ComboBox,
+                [5] = UIControlType.Image,
+                [6] = UIControlType.TextFile,
+                [7] = UIControlType.Button,
+                [8] = UIControlType.WebLabel,
+                [9] = UIControlType.RadioButton,
+                [10] = UIControlType.Bevel,
+                [11] = UIControlType.FileBox,
+                [12] = UIControlType.RadioGroup,
+            });
+
+        public static string GetUIControlTemplate(UIControlType type, string key)
+        {
+            switch (type)
+            {
+                case UIControlType.TextBox:
+                    return UIInfo_TextBox.Template(key);
+                case UIControlType.TextLabel:
+                    return UIInfo_TextLabel.Template(key);
+                case UIControlType.NumberBox:
+                    return UIInfo_NumberBox.Template(key);
+                case UIControlType.CheckBox:
+                    return UIInfo_CheckBox.Template(key);
+                case UIControlType.ComboBox:
+                    return UIInfo_ComboBox.Template(key);
+                case UIControlType.Image:
+                    return UIInfo_Image.Template(key);
+                case UIControlType.TextFile:
+                    return UIInfo_TextFile.Template(key);
+                case UIControlType.Button:
+                    return UIInfo_Button.Template(key);
+                case UIControlType.WebLabel:
+                    return UIInfo_WebLabel.Template(key);
+                case UIControlType.RadioButton:
+                    return UIInfo_RadioButton.Template(key);
+                case UIControlType.Bevel:
+                    return UIInfo_Bevel.Template(key);
+                case UIControlType.FileBox:
+                    return UIInfo_FileBox.Template(key);
+                case UIControlType.RadioGroup:
+                    return UIInfo_RadioGroup.Template(key);
+                default:
+                    throw new InvalidOperationException("Internal Logic Error at UIControl.GetUIControlTemplate");
+            }
+        }
+        #endregion
+
+        #region Const
+        public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
+        public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
+        public const string ItemSeperatorStr = "|";
+        public const char ItemSeperatorChar = '|';
+        #endregion
     }
     #endregion
 
@@ -455,9 +556,10 @@ namespace PEBakery.Core
 
         public UIInfo(string tooltip)
         {
-            this.ToolTip = tooltip;
+            ToolTip = tooltip;
         }
 
+        #region ForgeRawLine, ToString
         /// <summary>
         /// This function should only be called from child Class
         /// Note : this function includes first ','
@@ -467,14 +569,25 @@ namespace PEBakery.Core
         {
             if (ToolTip != null)
                 return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
-            else
-                return string.Empty;
+            return string.Empty;
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+        #endregion
+
+        #region Template
+        public static string Template(string key) => string.Empty;
+        #endregion
+    }
+
+    public enum UIFontWeight
+    {
+        Normal = 0, Bold,
+    }
+
+    public enum UIFontStyle
+    {
+        Italic, Underline, Strike
     }
 
     [Serializable]
@@ -485,7 +598,7 @@ namespace PEBakery.Core
         public UIInfo_TextBox(string tooltip,  string str)
             : base(tooltip)
         {
-            this.Value = str;
+            Value = str;
         }
 
         public override string ForgeRawLine()
@@ -497,28 +610,24 @@ namespace PEBakery.Core
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
-    }
+        public override string ToString() => ForgeRawLine();
 
-    public enum UIInfo_TextLabel_Style
-    {
-        Normal, Bold, Italic, Underline, Strike
-    }
+        public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
+    } 
 
     [Serializable]
     public class UIInfo_TextLabel : UIInfo
     {
         public int FontSize;
-        public UIInfo_TextLabel_Style Style;
+        public UIFontWeight FontWeight;
+        public UIFontStyle? FontStyle;
 
-        public UIInfo_TextLabel(string tooltip, int fontSize, UIInfo_TextLabel_Style style)
+        public UIInfo_TextLabel(string tooltip, int fontSize, UIFontWeight fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
-            this.FontSize = fontSize;
-            this.Style = style;
+            FontSize = fontSize;
+            FontWeight = fontWeight;
+            FontStyle = fontStyle;
         }
 
         public override string ForgeRawLine()
@@ -527,15 +636,19 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(FontSize);
             b.Append(",");
-            b.Append(Style.ToString());
+            b.Append(FontWeight);
+            if (FontStyle != null)
+            {
+                b.Append(",");
+                b.Append(FontStyle);
+            }
             b.Append(base.ForgeRawLine());
             return b.ToString(); 
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=Caption,1,1,10,10,200,16,8,Normal";
     }
 
     [Serializable]
@@ -544,15 +657,15 @@ namespace PEBakery.Core
         public int Value;
         public int Min;
         public int Max;
-        public int Interval;
+        public int Tick;
 
-        public UIInfo_NumberBox(string tooltip,  int value, int min, int max, int interval)
+        public UIInfo_NumberBox(string tooltip, int value, int min, int max, int tick)
             : base(tooltip)
         {
-            this.Value = value;
-            this.Min = min;
-            this.Max = max;
-            this.Interval = interval;
+            Value = value;
+            Min = min;
+            Max = max;
+            Tick = tick;
         }
 
         public override string ForgeRawLine()
@@ -565,15 +678,14 @@ namespace PEBakery.Core
             builder.Append(",");
             builder.Append(Max);
             builder.Append(",");
-            builder.Append(Interval);
+            builder.Append(Tick);
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,2,10,10,40,22,1,1,100,1";
     }
 
     [Serializable]
@@ -586,47 +698,40 @@ namespace PEBakery.Core
         public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
-            this.Value = value;
-            this.SectionName = sectionName;
-            this.HideProgress = hideProgress;
+            Value = value;
+            SectionName = sectionName;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (Value)
-                b.Append(",True");
-            else
-                b.Append(",False");
+            b.Append(Value ? ",True" : ",False");
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,3,10,10,200,18,True";
     }
 
     [Serializable]
     public class UIInfo_ComboBox : UIInfo
     {
         public List<string> Items;
-        public int Index;
+        public int Index; // Zero based index
         public string SectionName; // Optional
         public bool HideProgress; // Optional
 
-        public UIInfo_ComboBox(string tooltip,  List<string> items, int index, string sectionName = null, bool hideProgress = false)
+        public UIInfo_ComboBox(string tooltip, List<string> items, int index, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;
@@ -650,45 +755,44 @@ namespace PEBakery.Core
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=A,1,4,10,10,150,21,A,B,C";
     }
 
     [Serializable]
     public class UIInfo_Image : UIInfo
     {
-        public string URL; // optional
+        public string Url; // optional
 
         public UIInfo_Image(string toolTip, string url)
             : base(toolTip)
         {
-            URL = url;
+            Url = url;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(URL);
+            b.Append(Url);
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
+
+        #region Const None
+        public const string NoImage = "none";
+        #endregion
     }
 
     [Serializable]
@@ -700,31 +804,28 @@ namespace PEBakery.Core
 
         }
 
-        public override string ForgeRawLine()
-        {
-            return base.ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public new static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
+
+        #region Const None
+        public const string NoImage = "none";
+        #endregion
     }
 
     [Serializable]
     public class UIInfo_Button : UIInfo
     {
-        // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
-        public bool ShowProgress; // Optional
+        public bool HideProgress; // Optional
 
         public UIInfo_Button(string tooltip, string sectionName, string picture, bool hideProgress)
             : base(tooltip)
         {
-            this.SectionName = sectionName;
-            this.Picture = picture;
-            this.ShowProgress = hideProgress;
+            SectionName = sectionName;
+            Picture = picture;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
@@ -733,92 +834,40 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(SectionName);
             b.Append(",");
-            if (Picture != null)
-                b.Append(Picture);
-            else
-                b.Append("0");
-            if (ShowProgress)
-                b.Append(",True");
-            else
-                b.Append(",False");
+            b.Append(Picture ?? "0");
+            b.Append(HideProgress ? ",True" : ",False");
             b.Append(base.ForgeRawLine());
             return b.ToString();
-
-            /*
-            StringBuilder builder = new StringBuilder();
-            builder.Append(SectionName);
-            builder.Append(",");
-            if (Picture != null)
-                builder.Append(Picture);
-            else
-                builder.Append("0");
-            builder.Append(",");
-            if (ShowProgress)
-                builder.Append("True");
-            else
-                builder.Append("False");
-            builder.Append(",");
-            builder.Append(SectionName);
-            builder.Append(",");
-            if (ShowProgress)
-                builder.Append("True");
-            else
-                builder.Append("False");
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
-            */
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
-    }
+        public override string ToString() => ForgeRawLine();
 
-    [Serializable]
-    public class UIInfo_CheckList : UIInfo
-    {
-        public UIInfo_CheckList(string tooltip)
-            : base(tooltip)
-        {
-
-        }
-
-        public override string ForgeRawLine()
-        {
-            return base.ForgeRawLine();
-        }
-
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
     }
 
     [Serializable]
     public class UIInfo_WebLabel : UIInfo
     {
-        public string URL;
+        public string Url;
 
         public UIInfo_WebLabel(string tooltip,  string url) 
             : base(tooltip)
         {
-            this.URL = url;
+            Url = url;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
             b.Append(",");
-            b.Append(StringEscaper.Escape(URL));
+            b.Append(StringEscaper.Escape(Url));
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}=Caption,1,10,10,10,200,18,https://github.com/pebakery/pebakery";
     }
 
     [Serializable]
@@ -831,9 +880,9 @@ namespace PEBakery.Core
         public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false) 
             : base(tooltip)
         {
-            this.Selected = selected;
-            this.SectionName = sectionName;
-            this.HideProgress = hideProgress;
+            Selected = selected;
+            SectionName = sectionName;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
@@ -846,38 +895,30 @@ namespace PEBakery.Core
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
 
-    }
-
-    public enum UIInfo_BevelCaption_Style
-    {
-        Normal, Bold
+        public new static string Template(string key) => $"{key}={key},1,11,10,10,120,20,False";
     }
 
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
         public int? FontSize;
-        public UIInfo_BevelCaption_Style? Style;
+        public UIFontWeight? FontWeight;
+        public UIFontStyle? FontStyle;
 
-        public UIInfo_Bevel(string tooltip, int? fontSize, UIInfo_BevelCaption_Style? style)
+        public UIInfo_Bevel(string tooltip, int? fontSize, UIFontWeight? fontWeight, UIFontStyle? fontStyle)
             : base(tooltip)
         {
-            this.FontSize = fontSize;
-            this.Style = style;
+            FontSize = fontSize;
+            FontWeight = fontWeight;
+            FontStyle = fontStyle;
         }
 
         public override string ForgeRawLine()
@@ -887,19 +928,44 @@ namespace PEBakery.Core
             {
                 b.Append(",");
                 b.Append(FontSize);
-                if (Style != null)
+                if (FontWeight != null)
                 {
                     b.Append(",");
-                    b.Append(Style.ToString());
+                    b.Append(FontWeight);
+                    if (FontStyle != null)
+                    {
+                        b.Append(",");
+                        b.Append(FontStyle);
+                    }
                 }
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,12,10,10,160,60";
+
+        public bool CaptionEnabled
         {
-            return ForgeRawLine();
+            get => FontSize != null;
+            set
+            {
+                if (value)
+                {
+                    if (FontSize == null)
+                        FontSize = UIControl.DefaultFontPoint;
+                    if (FontWeight == null)
+                        FontWeight = UIFontWeight.Normal;
+                }
+                else
+                {
+                    FontSize = null;
+                    FontWeight = null;
+                    FontStyle = null;
+                }
+            }
         }
     }
 
@@ -911,24 +977,20 @@ namespace PEBakery.Core
         public UIInfo_FileBox(string tooltip, bool isFile)
             : base(tooltip)
         {
-            this.IsFile = isFile;
+            IsFile = isFile;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (IsFile)
-                b.Append(",file");
-            else
-                b.Append(",dir");
+            b.Append(IsFile ? ",file" : ",dir");
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,13,10,10,200,20,file";
     }
 
     [Serializable]
@@ -942,19 +1004,19 @@ namespace PEBakery.Core
         public UIInfo_RadioGroup(string tooltip,  List<string> items, int selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
-            this.Items = items;
-            this.Selected = selected;
-            this.SectionName = sectionName;
-            this.HideProgress = hideProgress;
+            Items = items;
+            Selected = selected;
+            SectionName = sectionName;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < Items.Count; i++)
+            foreach (string item in Items)
             {
                 b.Append(",");
-                b.Append(StringEscaper.QuoteEscape(Items[i]));
+                b.Append(StringEscaper.QuoteEscape(item));
             }
             b.Append(",");
             b.Append(Selected);
@@ -963,19 +1025,15 @@ namespace PEBakery.Core
                 b.Append(",_");
                 b.Append(SectionName);
                 b.Append("_");
-                if (HideProgress)
-                    b.Append(",True");
-                else
-                    b.Append(",False");
+                b.Append(HideProgress ? ",True" : ",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
 
-        public override string ToString()
-        {
-            return ForgeRawLine();
-        }
+        public override string ToString() => ForgeRawLine();
+
+        public new static string Template(string key) => $"{key}={key},1,14,10,10,150,60,A,B,C,1";
     }
 
     #endregion

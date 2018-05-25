@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -111,6 +111,14 @@ namespace PEBakery.Exceptions
         public ScriptParseException(string message) : base(message) { }
         public ScriptParseException(string message, Exception inner) : base(message, inner) { }
     }
+
+    [Serializable]
+    public class ScriptSectionException : Exception
+    {
+        public ScriptSectionException() { }
+        public ScriptSectionException(string message) : base(message) { }
+        public ScriptSectionException(string message, Exception inner) : base(message, inner) { }
+    }
     #endregion
 
     #region Engine / EngineState
@@ -133,32 +141,6 @@ namespace PEBakery.Exceptions
         public InternalException() { }
         public InternalException(string message) : base(message) { }
         public InternalException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
-    #region EncodedFile
-    [Serializable]
-    public class FileEncodeFailException : Exception
-    {
-        public FileEncodeFailException() { }
-        public FileEncodeFailException(string message) : base(message) { }
-        public FileEncodeFailException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [Serializable]
-    public class FileDecodeFailException : Exception
-    {
-        public FileDecodeFailException() { }
-        public FileDecodeFailException(string message) : base(message) { }
-        public FileDecodeFailException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [Serializable]
-    public class ExtractFileNotFoundException : Exception
-    {
-        public ExtractFileNotFoundException() { }
-        public ExtractFileNotFoundException(string message) : base(message) { }
-        public ExtractFileNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 

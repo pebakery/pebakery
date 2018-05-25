@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -27,182 +27,174 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Collections;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System.Diagnostics;
-using PEBakery.Core.Commands;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PEBakery.Core
 {
     #region Script
     [Serializable]
-    public class Script
+    public class Script : IEquatable<Script>
     {
-        #region Fields, Properties
-        private string fullPath;
-        private string shortPath;
-        private bool fullyParsed;
-        private bool isMainScript;
+        #region Fields
+        private readonly string _realPath;
+        private readonly string _treePath;
+        private bool _fullyParsed;
+        private readonly bool _isMainScript;
+        private readonly Dictionary<string, ScriptSection> _sections;
+        private readonly ScriptType _type;
+        [NonSerialized]
+        private Project _project;
+        [NonSerialized]
+        private Script _link;
+        [NonSerialized]
+        private bool _linkLoaded;
+        [NonSerialized]
+        private bool _isDirLink;
+        private readonly string _title = string.Empty;
+        private readonly string _author = string.Empty;
+        private readonly string _description = string.Empty;
+        private readonly string _version = "0";
+        private readonly int _level;
+        private SelectedState _selected = SelectedState.None;
+        private readonly bool _mandatory = false;
+        private readonly List<string> _interfaceList = new List<string>();
+        #endregion
 
-        private Dictionary<string, ScriptSection> sections;
-        private ScriptType type;
-        [NonSerialized]
-        private Project project;
-        [NonSerialized]
-        private Script link;
-        [NonSerialized]
-        private bool linkLoaded;
-        private bool isDirLink = false;
-        private string title = string.Empty;
-        private string author = string.Empty;
-        private string description = string.Empty;
-        private int version;
-        private int level;
-        private SelectedState selected = SelectedState.None;
-        private bool mandatory = false;
-        private List<string> interfaceList = new List<string>();
-
-        // Properties
-        public string FullPath
+        #region Properties
+        public string RealPath
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.FullPath;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.RealPath;
                 else
-                    return fullPath;
+                    return _realPath;
             }
         }
-        public string DirectFullPath => fullPath;
-        public string ShortPath => shortPath;
+        public string DirectRealPath => _realPath;
+        public string TreePath => _treePath;
         public Dictionary<string, ScriptSection> Sections
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Sections;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Sections;
                 else
-                    return sections;
+                    return _sections;
             }
         }
         public Dictionary<string, string> MainInfo
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.MainInfo;
-                else
-                {
-                    if (sections.ContainsKey("Main"))
-                        return sections["Main"].GetIniDict();
-                    else // Just return empty dictionary
-                        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                }
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.MainInfo;
+
+                if (_sections.ContainsKey("Main"))
+                    return _sections["Main"].GetIniDict();
+                else // Just return empty dictionary
+                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
-        public bool IsMainScript => isMainScript;
-
-        public ScriptType Type => type;
-        public Script Link { get => link; set => link = value; }
-        public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
-        public bool IsDirLink { get => isDirLink; set => isDirLink = value; }
+        public bool IsMainScript => _isMainScript;
+        public ScriptType Type => _type;
+        public Script Link { get => _link; set => _link = value; }
+        public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
+        public bool IsDirLink { get => _isDirLink; set => _isDirLink = value; }
         public Project Project
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Project;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Project;
                 else
-                    return project;
+                    return _project;
             }
-            set
-            {
-                project = value;
-            }
+            set => _project = value;
         }
         public string Title
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Title;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Title;
                 else
-                    return title;
+                    return _title;
             }
         }
         public string Author
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Author;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Author;
                 else
-                    return author;
+                    return _author;
             }
         }
         public string Description
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Description;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Description;
                 else
-                    return description;
+                    return _description;
             }
         }
-        public int Version
+        public string Version
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Version;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Version;
                 else
-                    return version;
+                    return _version;
             }
         }
         public int Level
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Level;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Level;
                 else
-                    return level;
+                    return _level;
             }
         }
         public bool Mandatory
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Mandatory;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Mandatory;
                 else
-                    return mandatory;
+                    return _mandatory;
             }
         }
         public SelectedState Selected
         {
-            get => selected;
+            get => _selected;
             set
             {
-                if (selected != value)
+                if (_selected != value)
                 {
-                    selected = value;
+                    _selected = value;
                     string valStr = value.ToString();
-                    if (type != ScriptType.Directory)
+                    if (_type != ScriptType.Directory)
                     {
-                        if (sections.ContainsKey("Main"))
+                        if (_sections.ContainsKey("Main"))
                         {
-                            sections["Main"].IniDict["Selected"] = valStr;
-                            Ini.SetKey(fullPath, new IniKey("Main", "Selected", valStr));
+                            _sections["Main"].IniDict["Selected"] = valStr;
+                            Ini.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
                         }
                     }
                 }
@@ -211,23 +203,29 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public Script(ScriptType type, string fullPath, Project project, string projectRoot, int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
+        public Script(
+            ScriptType type,
+            string realPath, string treePath, 
+            Project project, string projectRoot,
+            int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
-            this.fullPath = fullPath ?? throw new ArgumentNullException("fullPath");
+            if (projectRoot == null)
+                throw new ArgumentNullException(nameof(projectRoot));
 
-            if (projectRoot == null) throw new ArgumentNullException("projectRoot");
-            if (fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
-                this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
+            _realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
+            if (treePath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+                _treePath = treePath.Remove(0, projectRoot.Length + 1);
             else
-                this.shortPath = fullPath;
-           
-            this.type = type;
-            this.project = project ?? throw new ArgumentNullException("project");
-            this.isMainScript = isMainScript;
-            this.linkLoaded = false;
-            this.isDirLink = isDirLink;
+                _treePath = treePath;
+            Debug.Assert(_treePath != null);
 
-            Debug.Assert(isDirLink ? type != ScriptType.Link : true);
+            _type = type;
+            _project = project ?? throw new ArgumentNullException(nameof(project));
+            _isMainScript = isMainScript;
+            _linkLoaded = false;
+            _isDirLink = isDirLink;
+            
+            Debug.Assert(!_isDirLink || type != ScriptType.Link);
 
             switch (type)
             {
@@ -235,101 +233,100 @@ namespace PEBakery.Core
                     {
                         if (level == null)
                             level = 0;
-                        List<string> dirInfo = new List<string>();
-                        sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
+                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
                         {
-                            ["Main"] = CreateScriptSectionInstance(fullPath, "Main", SectionType.Main, new List<string>(), 1)
+                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, new List<string>(), 1)
                         };
 
                         // Mandatory Entries
-                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(fullPath);
-                        sections["Main"].IniDict["Description"] = this.description = $"Directory {this.title}";
-                        this.level = (int)level;
-                        sections["Main"].IniDict["Level"] = this.level.ToString();
+                        _sections["Main"].IniDict["Title"] = _title = Path.GetFileName(treePath);
+                        _sections["Main"].IniDict["Description"] = _description = $"Directory {_title}";
+                        _level = (int)level;
+                        _sections["Main"].IniDict["Level"] = _level.ToString();
 
                         // Optional Entries
-                        this.author = string.Empty;
-                        this.version = 0;
-                        this.selected = SelectedState.None; // This Value should be adjusted later!
-                        this.mandatory = false;
-                        this.link = null;
+                        _author = string.Empty;
+                        _version = "0";
+                        _selected = SelectedState.None; // This Value should be adjusted later!
+                        _mandatory = false;
+                        _link = null;
                     }
                     break;
                 case ScriptType.Link:
                     { // Parse only [Main] Section
-                        sections = ParseScript();
+                        _sections = ParseScript();
                         CheckMainSection(ScriptType.Link);
-                        ScriptSection mainSection = sections["Main"];
+                        ScriptSection mainSection = _sections["Main"];
 
                         if (mainSection.IniDict.ContainsKey("Link") == false)
                         {
-                            throw new ScriptParseException($"Invalid link path in script {fullPath}");
+                            throw new ScriptParseException($"Invalid link path in script {realPath}");
                         }
 
                         if (mainSection.IniDict.ContainsKey("Selected"))
                         {
                             string _value = mainSection.IniDict["Selected"];
                             if (_value.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.True;
+                                _selected = SelectedState.True;
                             else if (_value.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.False;
+                                _selected = SelectedState.False;
                             else
-                                this.selected = SelectedState.None;
+                                _selected = SelectedState.None;
                         }
                     }
                     break;
                 case ScriptType.Script:
                     {
-                        sections = ParseScript();
+                        _sections = ParseScript();
                         InspectTypeOfUninspectedCodeSection();
                         if (!ignoreMain)
                         {
                             CheckMainSection(ScriptType.Script);
-                            ScriptSection mainSection = sections["Main"];
+                            ScriptSection mainSection = _sections["Main"];
 
                             // Mandatory Entry
-                            this.title = mainSection.IniDict["Title"];
+                            _title = mainSection.IniDict["Title"];
                             if (mainSection.IniDict.ContainsKey("Description"))
-                                this.description = mainSection.IniDict["Description"];
+                                _description = mainSection.IniDict["Description"];
                             else
-                                this.description = string.Empty;
+                                _description = string.Empty;
                             if (level == null)
                             {
                                 if (mainSection.IniDict.ContainsKey("Level"))
                                 {
-                                    if (!int.TryParse(mainSection.IniDict["Level"], out this.level))
-                                        this.level = 0;
+                                    if (!int.TryParse(mainSection.IniDict["Level"], out _level))
+                                        _level = 0;
                                 }
                                 else
                                 {
-                                    this.level = 0;
+                                    _level = 0;
                                 }
                             }
                             else
                             {
-                                this.level = (int)level;
+                                _level = (int)level;
                             }
 
                             if (mainSection.IniDict.ContainsKey("Author"))
-                                this.author = mainSection.IniDict["Author"];
+                                _author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
-                                this.version = int.Parse(mainSection.IniDict["Version"]);
+                                _version = mainSection.IniDict["Version"];
                             if (mainSection.IniDict.ContainsKey("Selected"))
                             {
                                 string src = mainSection.IniDict["Selected"];
                                 if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    this.selected = SelectedState.True;
+                                    _selected = SelectedState.True;
                                 else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    this.selected = SelectedState.False;
+                                    _selected = SelectedState.False;
                                 else
-                                    this.selected = SelectedState.None;
+                                    _selected = SelectedState.None;
                             }
                             if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {
                                 if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    this.mandatory = true;
+                                    _mandatory = true;
                                 else
-                                    this.mandatory = false;
+                                    _mandatory = false;
                             }
                             if (mainSection.IniDict.ContainsKey("InterfaceList"))
                             {
@@ -342,20 +339,20 @@ namespace PEBakery.Core
                                         while (remainder != null)
                                         {
                                             Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
-                                            this.interfaceList.Add(tuple.Item1);
+                                            _interfaceList.Add(tuple.Item1);
                                             remainder = tuple.Item2;
                                         }
                                     }
                                     catch (InvalidCommandException) { } // Just Ignore
                                 }
                             } // InterfaceList
-                            this.link = null;
+                            _link = null;
                         }
                         else
                         {
-                            this.title = Path.GetFileName(fullPath);
-                            this.description = string.Empty;
-                            this.level = 0;
+                            _title = Path.GetFileName(realPath);
+                            _description = string.Empty;
+                            _level = 0;
                         }
                     }
                     break;
@@ -366,13 +363,13 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Methods
+        #region ParseScript
         public Dictionary<string, ScriptSection> ParseScript()
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fullPath);
-            using (StreamReader reader = new StreamReader(fullPath, encoding))
+            Encoding encoding = FileHelper.DetectTextEncoding(_realPath);
+            using (StreamReader reader = new StreamReader(_realPath, encoding))
             {
                 int idx = 0;
                 int sectionIdx = 0;
@@ -391,7 +388,7 @@ namespace PEBakery.Core
                     { // Start of section
                         if (inSection)
                         { // End of section
-                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
 
@@ -411,36 +408,35 @@ namespace PEBakery.Core
                     { // End of .script
                         if (inSection)
                         {
-                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
                     }
                 }
             }
 
-            fullyParsed = true;
+            _fullyParsed = true;
 
             return dict;
         }
+        #endregion
 
+        #region Detect Section Type
         private bool IsSectionEncodedFolders(string sectionName)
         {
             List<string> encodedFolders;
-            try
+            if (_fullyParsed)
             {
-                if (fullyParsed)
-                {
-                    if (sections.ContainsKey("EncodedFolders"))
-                        encodedFolders = sections["EncodedFolders"].GetLines();
-                    else
-                        return false;
-                }
+                if (_sections.ContainsKey("EncodedFolders"))
+                    encodedFolders = _sections["EncodedFolders"].GetLines();
                 else
-                    encodedFolders = Ini.ParseIniSection(fullPath, "EncodedFolders");
+                    return false;
             }
-            catch (SectionNotFoundException) // No EncodedFolders section, exit
+            else
             {
-                return false;
+                encodedFolders = Ini.ParseIniSection(_realPath, "EncodedFolders");
+                if (encodedFolders == null)  // No EncodedFolders section, exit
+                    return false;
             }
 
             foreach (string folder in encodedFolders)
@@ -469,22 +465,17 @@ namespace PEBakery.Core
             else if (string.Compare(sectionName, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0) // lazy loading
                 type = SectionType.AttachEncode;
             else
-            {
-                if (inspectCode)
-                    type = DetectTypeOfUninspectedSection(sectionName);
-                else
-                    type = SectionType.Uninspected;
-            }
+                type = inspectCode ? DetectTypeOfUninspectedSection(sectionName) : SectionType.Uninspected;
             return type;
         }
 
         private void InspectTypeOfUninspectedCodeSection()
         {
             // Dictionary<string, ScriptSection>
-            foreach (var key in sections.Keys)
+            foreach (var key in _sections.Keys)
             {
-                if (sections[key].Type == SectionType.Uninspected)
-                    sections[key].Type = DetectTypeOfUninspectedSection(sections[key].SectionName);
+                if (_sections[key].Type == SectionType.Uninspected)
+                    _sections[key].Type = DetectTypeOfUninspectedSection(_sections[key].Name);
             }
         }
 
@@ -493,7 +484,7 @@ namespace PEBakery.Core
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
                 type = SectionType.AttachFileList;
-            else if (interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
+            else if (_interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
                 type = SectionType.Interface;
             else // Load it!
                 type = SectionType.Code;
@@ -515,16 +506,17 @@ namespace PEBakery.Core
                     return false;
             }
         }
+        #endregion
 
-        private ScriptSection CreateScriptSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines, int lineIdx)
+        #region ScriptSection
+        private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
-            Dictionary<string, string> sectionKeys;
             switch (type)
             {
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                    sectionKeys = Ini.ParseIniLinesIniStyle(lines);
+                    Dictionary<string, string> sectionKeys = Ini.ParseIniLinesIniStyle(lines);
                     return new ScriptSection(this, sectionName, type, sectionKeys, lineIdx); // SectionDataType.IniDict
                 case SectionType.Variables:
                 case SectionType.Code:
@@ -539,44 +531,73 @@ namespace PEBakery.Core
             }
         }
 
+        public ScriptSection RefreshSection(string sectionName)
+        {
+            ScriptSection section;
+            if (Sections.ContainsKey(sectionName))
+            { // Force refresh by invalidating section
+                section = Sections[sectionName];
+                section.Unload();
+                section.Load();
+            }
+            else
+            {
+                List<string> lines = Ini.ParseRawSection(_realPath, sectionName);
+                if (lines == null)
+                    return null;
+
+                SectionType type = DetectTypeOfSection(sectionName, true);
+                // lineIdx information is not provided, use with caution!
+                section = CreateScriptSectionInstance(sectionName, type, lines, 0);
+                Sections[sectionName] = section;
+            }
+
+            return section;
+        }
+        #endregion
+
+        #region CheckMainSection
         private void CheckMainSection(ScriptType type)
         {
-            if (sections.ContainsKey("Main") == false)
-                throw new ScriptParseException($"[{fullPath}] is invalid, please Add [Main] Section");
+            if (!_sections.ContainsKey("Main"))
+                throw new ScriptParseException($"[{_realPath}] is invalid, please Add [Main] Section");
 
             bool fail = true;
-            if (sections["Main"].DataType == SectionDataType.IniDict)
+            if (_sections["Main"].DataType == SectionDataType.IniDict)
             {
-                if (type == ScriptType.Script)
+                switch (type)
                 {
-                    if (sections["Main"].IniDict.ContainsKey("Title"))
-                        fail = false;
-                }
-                else if (type == ScriptType.Link)
-                {
-                    if (sections["Main"].IniDict.ContainsKey("Link"))
-                        fail = false;
+                    case ScriptType.Script:
+                        if (_sections["Main"].IniDict.ContainsKey("Title"))
+                            fail = false;
+                        break;
+                    case ScriptType.Link:
+                        if (_sections["Main"].IniDict.ContainsKey("Link"))
+                            fail = false;
+                        break;
                 }
             }
 
             if (fail)
-                throw new ScriptParseException($"[{fullPath}] is invalid, check [Main] Section");
+                throw new ScriptParseException($"[{_realPath}] is invalid, check [Main] Section");
         }
+        #endregion
 
-        public static string[] GetDisableScriptPaths(Script p, out List<LogInfo> errorLogs)
+        #region GetDisableScriptPaths
+        public static string[] GetDisableScriptPaths(Script sc, out List<LogInfo> errorLogs)
         {
             errorLogs = new List<LogInfo>();
 
-            if (p.Type == ScriptType.Directory || p.isMainScript)
+            if (sc.Type == ScriptType.Directory || sc._isMainScript)
                 return null;
 
-            if (p.MainInfo.ContainsKey("Disable") == false)
+            if (sc.MainInfo.ContainsKey("Disable") == false)
                 return null;
 
-            p.Project.Variables.ResetVariables(VarsType.Local);
-            p.Project.Variables.LoadDefaultScriptVariables(p);
+            sc.Project.Variables.ResetVariables(VarsType.Local);
+            sc.Project.Variables.LoadDefaultScriptVariables(sc);
 
-            string rawLine = p.MainInfo["Disable"];
+            string rawLine = sc.MainInfo["Disable"];
 
             // Check if rawCode is Empty
             if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
@@ -606,56 +627,53 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    string pPath = p.Project.Variables.Expand(path);
-                    if (pPath.Equals(p.DirectFullPath, StringComparison.OrdinalIgnoreCase) == false)
-                        filteredPaths.Add(p.Project.Variables.Expand(path));
+                    string pPath = sc.Project.Variables.Expand(path);
+                    if (pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) == false)
+                        filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
                 catch (Exception e) { errorLogs.Add(new LogInfo(LogState.Success, Logger.LogExceptionMessage(e))); }
             }
 
             return filteredPaths.ToArray();
         }
+        #endregion
 
+        #region GetInterface
         public ScriptSection GetInterface(out string sectionName)
         {
             sectionName = "Interface";
             if (MainInfo.ContainsKey("Interface"))
                 sectionName = MainInfo["Interface"];
 
-            if (Sections.ContainsKey(sectionName))
-                return Sections[sectionName];
-            else
-                return null;
+            return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
         }
         #endregion
 
-        #region Virtual Methods
+        #region Virtual, Interface Methods
         public override string ToString()
         {
-            if (type == ScriptType.Link)
-                return sections["Main"].IniDict["Link"];
-            else
-                return this.title;
+            return _type == ScriptType.Link ? _sections["Main"].IniDict["Link"] : _title;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is Script p)
-            {
-                if (this.FullPath.Equals(p.FullPath, StringComparison.OrdinalIgnoreCase))
-                    return true;
-                else
-                    return false;
-            }
-            else
-            {
+            if (obj is Script sc)
+                return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
+                       TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase);
+            return false;
+        }
+
+        public bool Equals(Script sc)
+        {
+            if (sc == null)
                 return false;
-            }
+            return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
+                   TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()
         {
-            return fullPath.GetHashCode() ^ shortPath.GetHashCode();
+            return _realPath.GetHashCode() ^ _treePath.GetHashCode();
         }
         #endregion
     }
@@ -707,86 +725,80 @@ namespace PEBakery.Core
 
     #region ScriptSection
     [Serializable]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class ScriptSection
     {
         #region Fields and Properties
-        // Common Fields
-        private Script script;
-        private string sectionName;
-        private SectionType type;
-        private SectionDataType dataType;
         [NonSerialized]
-        private SectionDataConverted convDataType = SectionDataConverted.None;
-        private bool loaded;
-        private int lineIdx;
+        private SectionDataConverted _convDataType = SectionDataConverted.None;
 
-        public Script Script => script;
-        public string SectionName => sectionName;
-        public SectionType Type { get => type; set => type = value; }
-        public SectionDataType DataType { get => dataType; set => dataType = value; }
-        public SectionDataConverted ConvertedType => convDataType; 
-        public bool Loaded => loaded;
-        public int LineIdx => lineIdx;
+        public Script Script { get; }
+        public string Name { get; }
+        public SectionType Type { get; set; }
+        public SectionDataType DataType { get; set; }
+        public SectionDataConverted ConvertedType => _convDataType; 
+        public bool Loaded { get; private set; }
+        public int LineIdx { get; }
 
         // Logs
-        private List<LogInfo> logInfos = new List<LogInfo>();
+        private readonly List<LogInfo> _logInfos = new List<LogInfo>();
         public List<LogInfo> LogInfos
         {
             get
             { // Call .ToList to get logInfo's copy 
-                List<LogInfo> list = logInfos.ToList();
-                logInfos.Clear();
+                List<LogInfo> list = _logInfos.ToList();
+                _logInfos.Clear();
                 return list;
             }
         }
 
         // Ini-Type Section
-        private Dictionary<string, string> iniDict;
+        private Dictionary<string, string> _iniDict;
         public Dictionary<string, string> IniDict
         {
             get
             {
-                if (!loaded)
+                if (!Loaded)
                     Load();
-                return iniDict;
+                return _iniDict;
             }
         }
 
         // RawLine-Type Section
-        private List<string> lines;
+        private List<string> _lines;
         public List<string> Lines
         {
             get
             {
-                if (!loaded)
+                if (!Loaded)
                     Load();
-                return lines;
+                return _lines;
             }
         }
 
         // Code-Type Section
         [NonSerialized]
-        private List<CodeCommand> codes;
+        private List<CodeCommand> _codes;
         public List<CodeCommand> Codes
         {
             get
             {
-                if (!loaded)
+                if (!Loaded)
                     Load();
-                return codes;
+                return _codes;
             }
         }
 
         // Interface-Type Section
         [NonSerialized]
-        private List<UIControl> uiCtrls;
+        private List<UIControl> _uiCtrls;
         public List<UIControl> UICtrls
         {
             get
             {
-                if (!loaded)
+                if (!Loaded)
                     Load();
-                return uiCtrls;
+                return _uiCtrls;
             }
         }
         #endregion
@@ -794,80 +806,57 @@ namespace PEBakery.Core
         #region Constructor
         public ScriptSection(Script script, string sectionName, SectionType type)
         {
-            this.script = script;
-            this.sectionName = sectionName;
-            this.type = type;
-            this.dataType = SelectDataType(type);
-            this.loaded = false;
+            Script = script;
+            Name = sectionName;
+            Type = type;
+            DataType = SelectDataType(type);
+            Loaded = false;
         }
 
         public ScriptSection(Script script, string sectionName, SectionType type, bool load, int lineIdx)
         {
-            this.script = script;
-            this.sectionName = sectionName;
-            this.type = type;
-            this.dataType = SelectDataType(type);
-            this.loaded = false;
-            this.lineIdx = lineIdx;
+            Script = script;
+            Name = sectionName;
+            Type = type;
+            DataType = SelectDataType(type);
+            Loaded = false;
+            LineIdx = lineIdx;
             if (load)
                 Load();
         }
 
         public ScriptSection(Script script, string sectionName, SectionType type, SectionDataType dataType, bool load, int lineIdx)
         {
-            this.script = script;
-            this.sectionName = sectionName;
-            this.type = type;
-            this.dataType = dataType;
-            this.loaded = false;
-            this.lineIdx = lineIdx;
+            Script = script;
+            Name = sectionName;
+            Type = type;
+            DataType = dataType;
+            Loaded = false;
+            LineIdx = lineIdx;
             if (load)
                 Load();
         }
 
         public ScriptSection(Script script, string sectionName, SectionType type, Dictionary<string, string> iniDict, int lineIdx)
         {
-            this.script = script;
-            this.sectionName = sectionName;
-            this.type = type;
-            this.dataType = SectionDataType.IniDict;
-            this.loaded = true;
-            this.iniDict = iniDict;
-            this.lineIdx = lineIdx;
+            Script = script;
+            Name = sectionName;
+            Type = type;
+            DataType = SectionDataType.IniDict;
+            Loaded = true;
+            _iniDict = iniDict;
+            LineIdx = lineIdx;
         }
 
         public ScriptSection(Script script, string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
-            this.script = script;
-            this.sectionName = sectionName;
-            this.type = type;
-            this.dataType = SectionDataType.Lines;
-            this.loaded = true;
-            this.lines = lines;
-            this.lineIdx = lineIdx;
-        }
-        #endregion
-
-        #region Equals, GetHashCode
-        public override bool Equals(object obj)
-        {
-            ScriptSection section = obj as ScriptSection;
-            return this.Equals(section);
-        }
-
-        public bool Equals(ScriptSection section)
-        {
-            if (section == null) throw new ArgumentNullException("section");
-
-            if (script.Equals(section.Script) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
-                return true;
-            else
-                return false;
-        }
-
-        public override int GetHashCode()
-        {
-            return script.GetHashCode() ^ sectionName.GetHashCode();
+            Script = script;
+            Name = sectionName;
+            Type = type;
+            DataType = SectionDataType.Lines;
+            Loaded = true;
+            _lines = lines;
+            LineIdx = lineIdx;
         }
         #endregion
 
@@ -895,135 +884,145 @@ namespace PEBakery.Core
 
         public void Load()
         {
-            if (loaded == false)
+            if (Loaded)
+                return;
+
+            switch (DataType)
             {
-                switch (dataType)
-                {
-                    case SectionDataType.IniDict:
-                        iniDict = Ini.ParseIniSectionToDict(script.FullPath, SectionName);
-                        break;
-                    case SectionDataType.Lines:
+                case SectionDataType.IniDict:
+                    var dict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
+                    _iniDict = dict ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
+                    break;
+                case SectionDataType.Lines:
+                    var lines = Ini.ParseIniSection(Script.RealPath, Name);
+                    _lines = lines ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
+
+                    switch (_convDataType)
+                    {
+                        case SectionDataConverted.Codes:
                         {
-                            lines = Ini.ParseIniSection(script.FullPath, sectionName);
-                            if (convDataType == SectionDataConverted.Codes)
-                            {
-                                SectionAddress addr = new SectionAddress(script, this);
-                                codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
-                                logInfos.AddRange(logList);
-                            }
-                            else if (convDataType == SectionDataConverted.Interfaces)
-                            {
-                                SectionAddress addr = new SectionAddress(script, this);
-                                uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
-                                logInfos.AddRange(logList);
-                            }
+                            SectionAddress addr = new SectionAddress(Script, this);
+                            _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                            _logInfos.AddRange(logList);
+                            break;
                         }
-                        break;
-                    default:
-                        throw new InternalException($"Invalid SectionType {type}");
-                }
-                loaded = true;
+                        case SectionDataConverted.Interfaces:
+                        {
+                            SectionAddress addr = new SectionAddress(Script, this);
+                            _uiCtrls = UIParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                            _logInfos.AddRange(logList);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Invalid SectionType {Type}");
             }
+            Loaded = true;
         }
 
         public void Unload()
         {
-            if (loaded)
+            if (!Loaded)
+                return;
+
+            switch (DataType)
             {
-                switch (dataType)
-                {
-                    case SectionDataType.IniDict:
-                        iniDict = null;
-                        break;
-                    case SectionDataType.Lines:
-                        lines = null;
-                        if (convDataType == SectionDataConverted.Codes)
-                            codes = null;
-                        else if (convDataType == SectionDataConverted.Interfaces)
-                            uiCtrls = null;
-                        break;
-                    default:
-                        throw new InternalException($"Invalid SectionType {type}");
-                }
-                loaded = false;
+                case SectionDataType.IniDict:
+                    _iniDict = null;
+                    break;
+                case SectionDataType.Lines:
+                    _lines = null;
+                    switch (_convDataType)
+                    {
+                        case SectionDataConverted.Codes:
+                            _codes = null;
+                            break;
+                        case SectionDataConverted.Interfaces:
+                            _uiCtrls = null;
+                            break;
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Invalid SectionType {Type}");
             }
+            Loaded = false;
         }
 
         public void ConvertLineToCodeSection(List<string> lines)
         {
-            if (type == SectionType.Code && dataType == SectionDataType.Lines)
+            if (Type == SectionType.Code && DataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(script, this);
-                codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
-                logInfos.AddRange(logList);
+                SectionAddress addr = new SectionAddress(Script, this);
+                _codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
+                _logInfos.AddRange(logList);
 
-                convDataType = SectionDataConverted.Codes;
+                _convDataType = SectionDataConverted.Codes;
             }
             else
             {
-                throw new InternalException($"Section [{sectionName}] is not a Line section");
+                throw new InternalException($"Section [{Name}] is not a Line section");
             }
         }
 
         public void ConvertLineToUICtrlSection(List<string> lines)
         {
-            if ((type == SectionType.Interface || type == SectionType.Code) &&
-                dataType == SectionDataType.Lines)
+            if ((Type == SectionType.Interface || Type == SectionType.Code) &&
+                DataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(script, this);
-                uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
-                logInfos.AddRange(logList);
+                SectionAddress addr = new SectionAddress(Script, this);
+                _uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logList);
+                _logInfos.AddRange(logList);
 
-                convDataType = SectionDataConverted.Interfaces;
+                _convDataType = SectionDataConverted.Interfaces;
             }
             else
             {
-                throw new InternalException($"Section [{sectionName}] is not a Line section");
+                throw new InternalException($"Section [{Name}] is not a Line section");
             }
         }
  
         public Dictionary<string, string> GetIniDict()
         {
-            if (dataType == SectionDataType.IniDict)
-                return IniDict; // this.IniDict for Load()
-            else
-                throw new InternalException("GetIniDict must be used with [SectionDataType.IniDict]");
+            if (DataType == SectionDataType.IniDict)
+                return IniDict; // IniDict for Load()
+            throw new InternalException("GetIniDict must be used with [SectionDataType.IniDict]");
         }
 
         public List<string> GetLines()
         {
-            if (dataType == SectionDataType.Lines)
-                return Lines; // this.Lines for Load()
-            else
-                throw new InternalException("GetLines must be used with [SectionDataType.Lines]");
+            if (DataType == SectionDataType.Lines)
+                return Lines; // Lines for Load()
+            throw new InternalException("GetLines must be used with [SectionDataType.Lines]");
         }
 
         /// <summary>
-        /// Get Lines without permanently loaded, saving memory
+        /// Get Lines without permanent loading
         /// </summary>
         /// <returns></returns>
         public List<string> GetLinesOnce()
         {
-            if (dataType == SectionDataType.Lines)
-            {
-                if (loaded)
-                    return lines;
-                else
-                    return Ini.ParseIniSection(script.FullPath, sectionName);
-            }
-            else
-            {
+            if (DataType != SectionDataType.Lines)
                 throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
-            }
+
+            if (Loaded)
+                return _lines;
+
+            List<string> lines = Ini.ParseIniSection(Script.RealPath, Name);
+            if (lines == null)
+                throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
+            else
+                _lines = lines;
+            return _lines;
         }
 
         public List<CodeCommand> GetCodes()
         {
-            if (dataType == SectionDataType.Lines &&
-                convDataType == SectionDataConverted.Codes)
-                return Codes; // this.Codes for Load()
-            else
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
+            if (DataType == SectionDataType.Lines &&
+                _convDataType == SectionDataConverted.Codes)
+                return Codes; // Codes for Load()
+            
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         /// <summary>
@@ -1033,51 +1032,43 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<CodeCommand> GetCodes(bool convert)
         {
-            if (dataType == SectionDataType.Lines &&
-                convDataType == SectionDataConverted.Codes)
+            if (DataType == SectionDataType.Lines &&
+                _convDataType == SectionDataConverted.Codes)
             {
-                return Codes; // this.Codes for Load()
+                return Codes; // Codes for Load()
             }
-            else if (convert && dataType == SectionDataType.Lines)
+
+            if (convert && DataType == SectionDataType.Lines)
             {
-                ConvertLineToCodeSection(Lines); // this.Lines for Load()
-                return codes;
+                ConvertLineToCodeSection(Lines); // Lines for Load()
+                return _codes;
             }
-            else
-            {
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-            }
+
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<CodeCommand> GetCodesForce(bool convert)
         {
-            if (dataType == SectionDataType.Lines &&
-                convDataType == SectionDataConverted.Codes)
+            if (DataType == SectionDataType.Lines &&
+                _convDataType == SectionDataConverted.Codes)
+                return Codes; // Codes for Load()
+
+            if (convert && DataType == SectionDataType.Lines)
             {
-                return Codes; // this.Codes for Load()
+                ConvertLineToCodeSection(Lines); // Lines for Load()
+                return _codes;
             }
-            else if (dataType == SectionDataType.Lines)
-            {
-                ConvertLineToCodeSection(Lines); // this.Lines for Load()
-                return codes;
-            }
-            else
-            {
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-            }
+
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<UIControl> GetUICtrls()
         {
-            if (dataType == SectionDataType.Lines &&
-                convDataType == SectionDataConverted.Interfaces)
-            {
-                return UICtrls; // this.UICtrls for Load()
-            }
-            else
-            {
-                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
-            }
+            if (DataType == SectionDataType.Lines &&
+                _convDataType == SectionDataConverted.Interfaces)
+                return UICtrls; // UICtrls for Load()
+
+            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
         }
 
         /// <summary>
@@ -1087,20 +1078,44 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<UIControl> GetUICtrls(bool convert)
         {
-            if (dataType == SectionDataType.Lines &&
-                convDataType == SectionDataConverted.Interfaces)
-            {
-                return UICtrls; // this.UICtrls for Load()
-            }
-            else if (convert && dataType == SectionDataType.Lines)
+            if (DataType == SectionDataType.Lines &&
+                _convDataType == SectionDataConverted.Interfaces)
+                return UICtrls; // UICtrls for Load()
+
+            if (convert && DataType == SectionDataType.Lines)
             { // SectionDataType.Codes for custom interface section
-                ConvertLineToUICtrlSection(Lines); // this.Lines for Load()
-                return uiCtrls;
+                ConvertLineToUICtrlSection(Lines); // Lines for Load()
+                return _uiCtrls;
             }
-            else
-            {
-                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
-            }
+
+            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
+        }
+        #endregion
+
+        #region Equals, GetHashCode
+        public override bool Equals(object obj)
+        {
+            ScriptSection section = obj as ScriptSection;
+            return Equals(section);
+        }
+
+        public bool Equals(ScriptSection section)
+        {
+            if (section == null) throw new ArgumentNullException(nameof(section));
+
+            return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override int GetHashCode()
+        {
+            return Script.GetHashCode() ^ Name.GetHashCode();
+        }
+        #endregion
+
+        #region Override Methods
+        public override string ToString()
+        {
+            return Name;
         }
         #endregion
     }

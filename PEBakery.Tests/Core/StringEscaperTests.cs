@@ -583,21 +583,21 @@ namespace PEBakery.Tests.Core
         public void PathSecurityCheck_1()
         {
             string path = Path.Combine(Path.GetTempPath(), "notepad.exe");
-            Assert.IsTrue(StringEscaper.PathSecurityCheck(path, out string errorMsg));
+            Assert.IsTrue(StringEscaper.PathSecurityCheck(path, out _));
         }
 
         public void PathSecurityCheck_2()
         {
             string windir = Environment.GetEnvironmentVariable("windir");
             string path = Path.Combine(windir, "System32", "notepad.exe");
-            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out string errorMsg));
+            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
         }
 
         public void PathSecurityCheck_3()
         {
             string windir = Environment.GetEnvironmentVariable("ProgramFiles");
             string path = Path.Combine(windir, "System32", "notepad.exe");
-            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out string errorMsg));
+            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
         }
 
         public void PathSecurityCheck_4()
@@ -606,8 +606,64 @@ namespace PEBakery.Tests.Core
             { // Only in 64bit process
                 string windir = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
                 string path = Path.Combine(windir, "System32", "notepad.exe");
-                Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out string errorMsg));
+                Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
             }
+        }
+        #endregion
+
+        #region IsPathValid
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void StringEscaper_IsPathValid()
+        {
+            void Template(string path, bool result, IEnumerable<char> more = null)
+            {
+                Assert.IsTrue(StringEscaper.IsPathValid(path, more) == result);
+            }
+
+            Template(@"notepad.exe", true);
+            Template(@"\notepad.exe", true);
+            Template(@"C:\notepad.exe", true);
+
+            Template(@"AB?C", false);
+            Template(@"\AB?C", false);
+            Template(@"Z:\AB?C", false);
+
+            Template(@"A[BC", true);
+            Template(@"\A[BC", true);
+            Template(@"E:\A[BC", true);
+
+            Template(@"A[BC", false, new char[] { '[' });
+            Template(@"\A[BC", false, new char[] { '[' });
+            Template(@"A:\A[BC", false, new char[] { '[' });
+        }
+        #endregion
+
+        #region IsFileNameValid
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void StringEscaper_IsFileNameValid()
+        {
+            void Template(string path, bool result, IEnumerable<char> more = null)
+            {
+                Assert.IsTrue(StringEscaper.IsFileNameValid(path, more) == result);
+            }
+
+            Template(@"notepad.exe", true);
+            Template(@"\notepad.exe", false);
+            Template(@"C:\notepad.exe", false);
+
+            Template(@"AB?C", false);
+            Template(@"\AB?C", false);
+            Template(@"Z:\AB?C", false);
+
+            Template(@"A[BC", true);
+            Template(@"\A[BC", false);
+            Template(@"E:\A[BC", false);
+
+            Template(@"A[BC", false, new char[] { '[' });
+            Template(@"\A[BC", false, new char[] { '[' });
+            Template(@"A:\A[BC", false, new char[] { '[' });
         }
         #endregion
 

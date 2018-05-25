@@ -5,7 +5,7 @@
     Original work by singhal
 
     Copyright (c) 2014 singhal
-    Copyright (c) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -191,7 +191,6 @@ namespace PEBakery.CabLib
         /// <summary>
         /// Constructor recieves cab file's binary data as stream
         /// </summary>
-        /// <param name="inputData"></param>
         public CabExtract(Stream stream, bool leaveOpen = false)
         {
             _fileReadDelegate = FileRead;

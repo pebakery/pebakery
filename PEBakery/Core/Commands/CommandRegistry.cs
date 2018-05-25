@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -35,31 +35,33 @@ using Microsoft.Win32;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using System.IO;
-using System.Globalization;
 
 namespace PEBakery.Core.Commands
 {
     public static class CommandRegistry
     {
-        private static bool privilegesEnabled = false;
+        #region Static Field
+        private static bool _privilegesEnabled = false;
+        #endregion
 
         public static List<LogInfo> RegHiveLoad(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveLoad));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveLoad), "Invalid CodeInfo");
             CodeInfo_RegHiveLoad info = cmd.Info as CodeInfo_RegHiveLoad;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
 
             if (!File.Exists(hiveFile))
-                throw new ExecuteException($"Hive file [{hiveFile}] does not exist");
+                return LogInfo.LogErrorMessage(logs, $"Hive file [{hiveFile}] does not exist");
 
-            if (!privilegesEnabled)
+            if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
-                privilegesEnabled = true;
+                _privilegesEnabled = true;
             }
 
             int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
@@ -75,15 +77,16 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveUnload));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveUnload), "Invalid CodeInfo");
             CodeInfo_RegHiveUnload info = cmd.Info as CodeInfo_RegHiveUnload;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
-            if (!privilegesEnabled)
+            if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
-                privilegesEnabled = true;
+                _privilegesEnabled = true;
             }
 
             int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
@@ -99,8 +102,9 @@ namespace PEBakery.Core.Commands
         { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegRead));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegRead), "Invalid CodeInfo");
             CodeInfo_RegRead info = cmd.Info as CodeInfo_RegRead;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -113,18 +117,18 @@ namespace PEBakery.Core.Commands
             string valueDataStr;
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, false))
             {
+                if (subKey == null)
+                    return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
+
                 object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                 if (valueData == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot read registry key [{fullKeyPath}]"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 switch (kind)
                 { 
                     case RegistryValueKind.None:
-                        throw new ExecuteException($"Cannot read empty value [{fullKeyPath}\\{valueName}]");
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read empty value [{fullKeyPath}\\{valueName}]");
                     case RegistryValueKind.String:
                     case RegistryValueKind.ExpandString:
                         valueDataStr = (string)valueData;
@@ -142,8 +146,7 @@ namespace PEBakery.Core.Commands
                         valueDataStr = ((ulong)(long)valueData).ToString();
                         break;
                     default:
-                        logs.Add(new LogInfo(LogState.Error, $"Unsupported registry value type [0x{((int) kind).ToString("0:X")}]"));
-                        return logs;
+                        return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
                 }
             }
 
@@ -158,8 +161,9 @@ namespace PEBakery.Core.Commands
         { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>,[OptionalData]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWrite));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWrite), "Invalid CodeInfo");
             CodeInfo_RegWrite info = cmd.Info as CodeInfo_RegWrite;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = null;
@@ -222,7 +226,7 @@ namespace PEBakery.Core.Commands
                                 string[] binStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
                                 string valueData = StringEscaper.PackRegBinary(binStrs);
                                 if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
-                                    throw new ExecuteException($"[{valueData}] is not valid binary data");
+                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
                                 subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
                                 logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                             }
@@ -230,7 +234,7 @@ namespace PEBakery.Core.Commands
                             { // Use info.ValueData
                                 string valueData = StringEscaper.Preprocess(s, info.ValueData);
                                 if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
-                                    throw new ExecuteException($"[{valueData}] is not valid binary data");
+                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
                                 subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
                                 logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                             }
@@ -248,7 +252,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt32(valueData, out uint valUInt32))
                                 subKey.SetValue(valueName, (int)valUInt32, RegistryValueKind.DWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not a valid DWORD");
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not a valid DWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_DWORD [{valueData}]"));
                         }
                         break;
@@ -260,7 +264,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt64(valueData, out ulong valUInt64))
                                 subKey.SetValue(valueName, (long)valUInt64, RegistryValueKind.QWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not a valid QWORD");
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not a valid QWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_QWORD [{valueData}]"));
                         }
                         break;
@@ -276,13 +280,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWriteLegacy));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWriteLegacy), "Invalid CodeInfo");
             CodeInfo_RegWriteLegacy info = cmd.Info as CodeInfo_RegWriteLegacy;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
             RegistryKey hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
             if (hKey == null)
-                throw new ExecuteException($"Invalid HKey [{hKeyStr}]");
+                return LogInfo.LogErrorMessage(logs, $"Invalid HKey [{hKeyStr}]");
 
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
@@ -301,8 +306,9 @@ namespace PEBakery.Core.Commands
         { // RegDelete,<HKey>,<KeyPath>,[ValueName]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegDelete));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegDelete), "Invalid CodeInfo");
             CodeInfo_RegDelete info = cmd.Info as CodeInfo_RegDelete;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
@@ -355,8 +361,9 @@ namespace PEBakery.Core.Commands
         { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Action>,<Arg1>,[Arg2]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegMulti));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegMulti), "Invalid CodeInfo");
             CodeInfo_RegMulti info = cmd.Info as CodeInfo_RegMulti;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -373,24 +380,15 @@ namespace PEBakery.Core.Commands
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, true))
             {
                 if (subKey == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] does not exist"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
                 object regRead = subKey.GetValue(valueName, null);
                 if (regRead == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry value [{fullKeyPath}\\{valueName}] does not exist");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 if (kind != RegistryValueKind.MultiString)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry value [{fullKeyPath}\\{valueName}] is not REG_MULTI_SZ"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry value [{fullKeyPath}\\{valueName}] is not REG_MULTI_SZ");
 
                 List<string> multiStrs = ((string[])regRead).ToList();
                 switch (info.ActionType)
@@ -432,7 +430,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -459,7 +457,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -478,13 +476,13 @@ namespace PEBakery.Core.Commands
                     case RegMultiType.Place:
                         {
                             if (!NumberHelper.ParseInt32(arg1, out int idx))
-                                throw new ExecuteException($"[{arg1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{arg1}] is not a valid integer");
                             if (idx < 1)
-                                throw new ExecuteException($"Index [{arg1}] must be positive integer");
+                                return LogInfo.LogErrorMessage(logs, $"Index [{arg1}] must be positive integer");
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -525,16 +523,15 @@ namespace PEBakery.Core.Commands
                         {
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
                             if (Variables.DetermineType(info.Arg2) == Variables.VarKeyType.None)
-                                throw new ExecuteException($"[{info.Arg2}] is not a valid variable name");
+                                return LogInfo.LogErrorMessage(logs, $"[{info.Arg2}] is not a valid variable name");
 
-                            string idxStr;
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
-                            idxStr = (idx + 1).ToString();
+                            string idxStr = (idx + 1).ToString();
 
                             if (idx == -1) // Not Found -> Write 0 into DestVar
                                 logs.Add(new LogInfo(LogState.Success, $"[{arg1}] does not exist in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
@@ -553,10 +550,11 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegImport(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport), "Invalid CodeInfo");
             CodeInfo_RegImport info = cmd.Info as CodeInfo_RegImport;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
@@ -565,7 +563,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.FileName = "REG.exe";
                 proc.StartInfo.Arguments = $"IMPORT \"{regFile}\"";
                 proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
@@ -583,17 +580,18 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> RegExport(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport), "Invalid CodeInfo");
             CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
+                throw new InternalException("Internal Logic Error at RegExport");
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             if (File.Exists(regFile))
@@ -604,7 +602,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.FileName = "REG.exe";
                 proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /Y";
                 proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
@@ -615,6 +612,62 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] exported to [{regFile}]"));
                 else // Failure
                     logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] could not be exported"));
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> RegCopy(EngineState s, CodeCommand cmd)
+        { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegCopy), "Invalid CodeInfo");
+            CodeInfo_RegCopy info = cmd.Info as CodeInfo_RegCopy;
+            Debug.Assert(info != null, "Invalid CodeInfo");
+
+            string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
+            string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);
+
+            Debug.Assert(srcKeyPath != null, "Internal Logic Error at RegCopy");
+            Debug.Assert(destKeyPath != null, "Internal Logic Error at RegCopy");
+
+            string hSrcKeyStr = RegistryHelper.RegKeyToString(info.HSrcKey);
+            string hDestKeyStr = RegistryHelper.RegKeyToString(info.HDestKey);
+            if (hSrcKeyStr == null || hDestKeyStr == null)
+                throw new InternalException("Internal Logic Error at RegCopy");
+            string fullSrcKeyPath = $"{hSrcKeyStr}\\{srcKeyPath}";
+            string fullDestKeyPath = $"{hDestKeyStr}\\{destKeyPath}";
+
+            if (info.WildcardFlag)
+            {
+                string wildcard = Path.GetFileName(srcKeyPath);
+                if (wildcard.IndexOfAny(new[] { '*', '?' }) == -1)
+                    return LogInfo.LogErrorMessage(logs, $"SrcKeyPath [{srcKeyPath}] does not contain wildcard");
+
+                string srcKeyParentPath = Path.GetDirectoryName(srcKeyPath);
+                if (srcKeyParentPath == null)
+                    return LogInfo.LogErrorMessage(logs, $"Invalid SrcKeyPath [{srcKeyPath}]");
+
+                using (RegistryKey parentSubKey = info.HSrcKey.OpenSubKey(srcKeyParentPath, false))
+                {
+                    if (parentSubKey == null)
+                        return LogInfo.LogErrorMessage(logs, $"Registry key [{srcKeyPath}] does not exist");
+
+                    foreach (string targetSubKey in StringHelper.MatchGlob(wildcard, parentSubKey.GetSubKeyNames(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        string copySrcSubKeyPath = Path.Combine(srcKeyParentPath, targetSubKey);
+                        string copyDestSubKeyPath = Path.Combine(destKeyPath, targetSubKey);
+                        RegistryHelper.CopySubKey(info.HSrcKey, copySrcSubKeyPath, info.HDestKey, copyDestSubKeyPath);
+                    }
+                }
+
+                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
+            }
+            else
+            { // No Wildcard
+                RegistryHelper.CopySubKey(info.HSrcKey, srcKeyPath, info.HDestKey, destKeyPath);
+
+                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
             }
 
             return logs;

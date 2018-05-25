@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -65,7 +65,7 @@
             </Setter>
         </Style>
         <Style x:Key="BackgroundButton" TargetType="Button">
-            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="OverridesDefaultStyle" Value="False" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -78,13 +78,6 @@
                             </Button.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Button>
-                        <!-- <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="1" />
-                                <Setter Property="BorderBrush" Value="Black" />
-                                <Setter Property="Foreground" Value="Gray" />
-                            </Trigger>
-                        </ControlTemplate.Triggers> -->
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -121,9 +114,10 @@
         </Style>
     </Window.Resources>
     <DockPanel>
-        <Grid
-            DockPanel.Dock="Top" Height="80" Background="LightBlue"
-            Visibility="{Binding NormalInterfaceVisibility}">
+        <Grid DockPanel.Dock="Top"
+              Height="80"
+              Background="LightBlue"
+              Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="60" />
                 <RowDefinition Height="20" />
@@ -140,113 +134,155 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
             
-            <StackPanel
-                Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                Orientation="Horizontal">
-                <Image
-                    Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                    Margin="15, 15, 5, 15"
-                    Source="{StaticResource DonutSvgImage}">
+            <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                        Grid.Column="0"
+                        Orientation="Horizontal">
+                <Image Margin="15, 15, 5, 15"
+                       Source="{StaticResource DonutSvgImage}">
                 </Image>
-                <TextBlock
-                    Text="PEBakery"
-                    Margin="0, 0, 15, 0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    FontSize="40" 
-                    FontWeight="SemiBold"
-                    FontStretch="Condensed" FontStyle="Italic">
+                <TextBlock Text="PEBakery"
+                           Margin="0, 0, 15, 0"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           FontSize="40" 
+                           FontWeight="SemiBold"
+                           FontStretch="Condensed"
+                           FontStyle="Italic">
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing
-                Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                Margin="10"
-                HorizontalAlignment="Left"
-                IsActive="{Binding WorkInProgress}">
+            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+                                 Grid.Column="1"
+                                 Margin="10"
+                                 HorizontalAlignment="Left"
+                                 IsActive="{Binding WorkInProgress}">
             </custom:ProgressRing>
-            <Button 
-                Grid.Row="0" Grid.Column="2" 
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="BuildButton_Click"
-                ToolTip="Build Project">
+            <Button Grid.Row="0" Grid.Column="2" 
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="BuildButton_Click"
+                    ToolTip="Build Project">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Play"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button 
-                Grid.Row="0" Grid.Column="3"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="RefreshButton_Click"
-                ToolTip="Refresh Project">
+            <Button Grid.Row="0" Grid.Column="3"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="RefreshButton_Click"
+                    ToolTip="Refresh Project">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Refresh"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button
-                Grid.Row="0" Grid.Column="4"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="SettingButton_Click"
-                ToolTip="Setting">
+            <Button Grid.Row="0" Grid.Column="4"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="SettingButton_Click"
+                    ToolTip="Setting">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Settings" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Settings"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button
-                Grid.Row="0" Grid.Column="5"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="LogButton_Click"
-                ToolTip="View Logs">
+            <Button Grid.Row="0" Grid.Column="5"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="LogButton_Click"
+                    ToolTip="View Logs">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="CommentCheck"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button
-                Grid.Row="0" Grid.Column="6"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="UtilityButton_Click"
-                ToolTip="Utility">
+            <Button Grid.Row="0" Grid.Column="6"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="UtilityButton_Click"
+                    ToolTip="Utility">
                 <Button.Content>
-                    <iconPacks:PackIconModern Kind="BoxLayered" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconModern Kind="BoxLayered"
+                                              Width="Auto" 
+                                              Height="Auto" 
+                                              Margin="4" />
                 </Button.Content>
             </Button>
-            <Button
-                Grid.Row="0" Grid.Column="7"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="UpdateButton_Click"
-                ToolTip="Update Project">
+            <Button Grid.Row="0" Grid.Column="7"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="UpdateButton_Click"
+                    ToolTip="Update Project">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Download"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button
-                Grid.Row="0" Grid.Column="8"
-                Margin="4"
-                Style="{StaticResource BackgroundButton}"
-                Click="AboutButton_Click"
-                ToolTip="About PEBakery">
+            <Button Grid.Row="0" Grid.Column="8"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="AboutButton_Click"
+                    ToolTip="About PEBakery">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Help"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
 
-            <TextBlock Text="Build" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Refresh" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Setting" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Log" Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Utility" Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Update" Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="About" Grid.Row="1" Grid.Column="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="Build"
+                       Grid.Row="1" Grid.Column="2"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="Refresh"
+                       Grid.Row="1"
+                       Grid.Column="3"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="Setting"
+                       Grid.Row="1" Grid.Column="4"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="Log"
+                       Grid.Row="1" Grid.Column="5"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="Utility"
+                       Grid.Row="1" Grid.Column="6"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="Update"
+                       Grid.Row="1" Grid.Column="7"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
+            <TextBlock Text="About"
+                       Grid.Row="1" Grid.Column="8"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="5,0" />
         </Grid>
-        <Grid
-            DockPanel.Dock="Top" Height="80" Background="LightBlue"
-            Visibility="{Binding BuildInterfaceVisibility}">
+        <Grid DockPanel.Dock="Top"
+              Height="80"
+              Background="LightBlue"
+              Visibility="{Binding BuildInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="60" />
                 <RowDefinition Height="20" />
@@ -259,86 +295,121 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
             
-            <StackPanel
-                Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                Orientation="Horizontal">
-                <Image
-                    Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                    Margin="15, 15, 5, 15"
-                    Source="{StaticResource DonutSvgImage}">
+            <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                        Grid.Column="0"
+                        Orientation="Horizontal">
+                <Image Margin="15, 15, 5, 15"
+                       Source="{StaticResource DonutSvgImage}">
                 </Image>
-                <TextBlock
-                    Text="PEBakery"
-                    Margin="0, 0, 15, 0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    FontSize="40" 
-                    FontWeight="SemiBold"
-                    FontStretch="Condensed" FontStyle="Italic">
+                <TextBlock Text="PEBakery"
+                           Margin="0, 0, 15, 0"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           FontSize="40" 
+                           FontWeight="SemiBold"
+                           FontStretch="Condensed"
+                           FontStyle="Italic">
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing
-                Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                Margin="10"
-                HorizontalAlignment="Left"
-                IsActive="{Binding ProgressRingActive}">
+            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+                                 Grid.Column="1"
+                                 Margin="10"
+                                 HorizontalAlignment="Left"
+                                 IsActive="{Binding WorkInProgress}">
             </custom:ProgressRing>
 
-            <Button Grid.Row="0" Grid.Column="2" Margin="4" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+            <Button Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="BuildButton_Click">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="StopCircle" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="StopCircle"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Grid.Row="0" Grid.Column="3" Margin="4" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+            <Button Grid.Row="0"
+                    Grid.Column="3"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="LogButton_Click">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="CommentCheck"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Grid.Row="0" Grid.Column="4" Margin="4" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+            <Button Grid.Row="0"
+                    Grid.Column="4"
+                    Margin="4"
+                    Style="{StaticResource BackgroundButton}"
+                    Click="AboutButton_Click">
                 <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="4" />
+                    <iconPacks:PackIconMaterial Kind="Help"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                Margin="4" />
                 </Button.Content>
             </Button>
 
-            <TextBlock Text="Stop" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Log" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="About" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="Stop"
+                       Grid.Row="1"
+                       Grid.Column="2"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="Log"
+                       Grid.Row="1"
+                       Grid.Column="3"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="About"
+                       Grid.Row="1"
+                       Grid.Column="4"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" Margin="5,0" />
         </Grid>
-        <Grid DockPanel.Dock="Bottom" Height="20" x:Name="bottomDock" Panel.ZIndex="100">
-            <ProgressBar
-                IsIndeterminate="False"
-                Minimum="{Binding BottomProgressBarMinimum}"
-                Maximum="{Binding BottomProgressBarMaximum}"
-                Value="{Binding BottomProgressBarValue}"
-                Visibility="{Binding BottomProgressBarVisibility}">
+        <Grid DockPanel.Dock="Bottom"
+              Height="20"
+              x:Name="bottomDock"
+              Panel.ZIndex="100">
+            <ProgressBar IsIndeterminate="False"
+                         Minimum="{Binding BottomProgressBarMinimum}"
+                         Maximum="{Binding BottomProgressBarMaximum}"
+                         Value="{Binding BottomProgressBarValue}"
+                         Visibility="{Binding BottomProgressBarVisibility}">
             </ProgressBar>
-            <TextBlock
-                Background="#dfdfdf" 
-                Text="{Binding StatusBarText}"
-                Visibility="{Binding BottomStatusBarVisibility}">
+            <TextBlock Background="#dfdfdf" 
+                       Text="{Binding StatusBarText}"
+                       Visibility="{Binding BottomStatusBarVisibility}">
             </TextBlock>
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200"
+                                  MinWidth="100"
+                                  MaxWidth="400"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Grid
-                Grid.Column="0"
-                Visibility="{Binding NormalInterfaceVisibility}">
-                <TreeView
-                    x:Name="MainTreeView"
-                    Background="PaleGreen"
-                    FontSize="12"
-                    DataContext="{Binding MainTree}"
-                    ItemsSource="{Binding Children}"
-                    Loaded="MainTreeView_Loaded"
-                    SelectedItemChanged="MainTreeView_SelectedItemChanged"
-                    VirtualizingStackPanel.IsVirtualizing="True"
-                    VirtualizingStackPanel.VirtualizationMode="Recycling">
+            <Grid Grid.Column="0"
+                  Margin="0, 0, 8, 0"
+                  Visibility="{Binding NormalInterfaceVisibility}">
+                <TreeView x:Name="MainTreeView"
+                          Background="PaleGreen"
+                          FontSize="12"
+                          DataContext="{Binding MainTree}"
+                          ItemsSource="{Binding Children}"
+                          BorderThickness="0"
+                          Loaded="MainTreeView_Loaded"
+                          SelectedItemChanged="MainTreeView_SelectedItemChanged"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Children}">
+                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
+                                                  ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="20"/>
@@ -349,41 +420,45 @@
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
 
-                                <CheckBox
-                                    Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
-                                    Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False">
+                                <CheckBox Grid.Row="0" Grid.Column="0"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding CheckBoxVisible}"
+                                          IsChecked="{Binding Checked, Mode=TwoWay}"
+                                          Focusable="False">
                                 </CheckBox>
-                                <ContentPresenter
-                                    Content="{Binding Icon}"
-                                    Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
+                                <ContentPresenter Content="{Binding Icon}"
+                                                  Grid.Row="0" Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"
+                                                  Margin="3,2,3,2">
                                 </ContentPresenter>
-                                <TextBlock
-                                    Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
-                                    Text="{Binding Text}">
+                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Text}">
                                 </TextBlock>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
-                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                            <Setter Property="IsExpanded"
+                                    Value="{Binding IsExpanded}" />
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
             </Grid>
-            <Grid
-                Grid.Column="0"
-                Visibility="{Binding BuildInterfaceVisibility}">
-                <TreeView
-                    Background="PaleGreen"
-                    DataContext="{Binding BuildTree}"
-                    ItemsSource="{Binding Children}"
-                    VirtualizingStackPanel.IsVirtualizing="True"
-                    VirtualizingStackPanel.VirtualizationMode="Recycling">
+            <Grid Grid.Column="0"
+                  Margin="0, 0, 8, 0"
+                  Visibility="{Binding BuildInterfaceVisibility}">
+                <TreeView Background="PaleGreen"
+                          DataContext="{Binding BuildTree}"
+                          ItemsSource="{Binding Children}"
+                          BorderThickness="0"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate
-                            DataType="{x:Type local:TreeViewModel}"
-                            ItemsSource="{Binding Children}">
+                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
+                                                  ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="20"/>
@@ -393,15 +468,17 @@
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
 
-                                <ContentPresenter
-                                    Content="{Binding Icon}"
-                                    Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
+                                <ContentPresenter Content="{Binding Icon}"
+                                                  Grid.Row="0" Grid.Column="0"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"
+                                                  Margin="3,2,3,2">
                                 </ContentPresenter>
-                                <TextBlock
-                                    Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
-                                    Text="{Binding Text}"
-                                    FontWeight="{Binding BuildFontWeight}"
-                                    Foreground="{Binding BuildBrush}">
+                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Text}"
+                                           FontWeight="{Binding BuildFontWeight}"
+                                           Foreground="{Binding BuildBrush}">
                                 </TextBlock>
                             </Grid>
                         </HierarchicalDataTemplate>
@@ -414,126 +491,155 @@
                     </TreeView.ItemContainerStyle>
                 </TreeView>
             </Grid>
-            <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
-            <Grid Grid.Column="1" Background="White">
+            <GridSplitter Grid.Row="0" Grid.Column="0"
+                          Width="8"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Stretch"
+                          ResizeBehavior="CurrentAndNext">
+                <GridSplitter.Template>
+                    <ControlTemplate TargetType="{x:Type GridSplitter}">
+                        <Grid>
+                            <Button Content="⁞" />
+                            <Rectangle Fill="#00FFFFFF" />
+                        </Grid>
+                    </ControlTemplate>
+                </GridSplitter.Template>
+            </GridSplitter>
+            <Grid Grid.Column="1"
+                  Background="White">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="100"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Background="LightYellow">
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
+                <Grid Grid.Row="0"
+                      Background="LightYellow">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ContentPresenter
-                        Name="ScriptLogo"
-                        Grid.Row="0" Grid.Column="0"
-                        Margin="10"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        UseLayoutRounding="True">
-                    </ContentPresenter>
-                    <Grid
-                        Grid.Row="0" Grid.Column="1"
-                        Margin="0, 0, 6, 0">
+                    <ContentPresenter Name="ScriptLogo"
+                                      Grid.Row="0" Grid.Column="0"
+                                      Margin="10"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      UseLayoutRounding="True"/>
+                    <Grid Grid.Row="0" Grid.Column="1"
+                          Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30" />
                             <RowDefinition Height="70" />
                         </Grid.RowDefinitions>
 
-                        <DockPanel Grid.Row="0">
-                            <TextBlock
-                                DockPanel.Dock="Right"
-                                Name="ScriptVersion"
-                                Text="{Binding ScriptVersionText}"
-                                FontWeight="Bold" FontSize="14" 
-                                VerticalAlignment="Center"/>
-                            <TextBlock
-                                DockPanel.Dock="Right"
-                                Name="ScriptAuthor"
-                                Text="{Binding ScriptAuthorText}" 
-                                Margin="0, 0, 5, 6"
-                                FontSize="12"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Right"
-                                FontStretch="Condensed"
-                                TextWrapping="Wrap" />
-                            <TextBlock
-                                DockPanel.Dock="Left"
-                                Name="ScriptTitle"
-                                FontStretch="SemiCondensed"
-                                Text="{Binding ScriptTitleText}" 
-                                FontWeight="Bold" FontSize="16"
-                                VerticalAlignment="Center"
-                                TextWrapping="Wrap"/>
+                        <DockPanel Grid.Row="0"
+                                   VerticalAlignment="Center">
+                            <TextBlock DockPanel.Dock="Right"
+                                       Margin="0, 0, 0, 2"
+                                       Name="ScriptVersion"
+                                       Text="{Binding ScriptVersionText}"
+                                       FontWeight="Bold"
+                                       FontSize="14" 
+                                       VerticalAlignment="Bottom"/>
+                            <TextBlock DockPanel.Dock="Right"
+                                       Name="ScriptAuthor"
+                                       Text="{Binding ScriptAuthorText}" 
+                                       Margin="0, 0, 5, 2"
+                                       FontSize="12"
+                                       VerticalAlignment="Bottom"
+                                       HorizontalAlignment="Right"
+                                       FontStretch="Condensed"
+                                       TextWrapping="Wrap" />
+                            <TextBlock DockPanel.Dock="Left"
+                                       Name="ScriptTitle"
+                                       FontStretch="SemiCondensed"
+                                       Text="{Binding ScriptTitleText}" 
+                                       FontWeight="Bold" FontSize="16"
+                                       VerticalAlignment="Bottom"
+                                       TextWrapping="Wrap"/>
+                            <Button DockPanel.Dock="Left"
+                                    Margin="4, 0, 0, 2"
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
+                                    Click="ScriptCheckButton_Click"
+                                    IsEnabled="{Binding IsTreeEntryFile}"
+                                    Visibility="{Binding ScriptCheckVisiblility}"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Foreground="{Binding ScriptCheckColor}"
+                                    ToolTip="Syntax Check">
+                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"
+                                                            Width="Auto"
+                                                            Height="Auto"/>
+                            </Button>
                         </DockPanel>
-                        <TextBlock
-                            Grid.Row="1" Grid.Column="0"
-                            FontWeight="Medium"
-                            Name="ScriptDescription"
-                            Text="{Binding ScriptDescriptionText}"
-                            FontStretch="SemiCondensed"
-                            VerticalAlignment="Center"
-                            TextWrapping="Wrap">
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   FontWeight="Medium"
+                                   Name="ScriptDescription"
+                                   Text="{Binding ScriptDescriptionText}"
+                                   FontStretch="SemiCondensed"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap">
                         </TextBlock>
                     </Grid>
-                    <Grid
-                        Grid.Row="0"
-                        Grid.RowSpan="2" Grid.Column="3"
-                        Width="25"
-                        Visibility="{Binding NormalInterfaceVisibility}">
+                    <Grid Grid.Row="0"
+                          Grid.Column="2"
+                          Width="25"
+                          Visibility="{Binding NormalInterfaceVisibility}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="25" />
                             <RowDefinition Height="25" />
                             <RowDefinition Height="25" />
                             <RowDefinition Height="25" />
                         </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
 
-                        <Button
-                            Grid.Row="0" Grid.Column="0"
-                            Click="ScriptRunButton_Click"
-                            ToolTip="Run Script">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="5"/>
-                            </Button.Content>
+                        <Button Grid.Row="0"
+                                Grid.Column="0"
+                                Click="ScriptRunButton_Click"
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="Run Script">
+                            <iconPacks:PackIconMaterial Kind="Play"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="4"/>
                         </Button>
-                        <Button
-                            Grid.Row="1" Grid.Column="0"
-                            Click="ScriptRefreshButton_Click"
-                            ToolTip="Refresh Script">
-                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
+                        <Button Grid.Row="1"
+                                Grid.Column="0"
+                                Click="ScriptRefreshButton_Click"
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="Refresh Script">
+                            <iconPacks:PackIconMaterial Kind="Refresh"
+                                                        Width="Auto"
+                                                        Height="Auto"
+                                                        Margin="4"/>
                         </Button>
-                        <Button
-                            Grid.Row="2" Grid.Column="0"
-                            Click="ScriptEditButton_Click"
-                            ToolTip="Edit Script">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="5"/>
-                            </Button.Content>
+                        <Button Grid.Row="2"
+                                Grid.Column="0"
+                                Click="ScriptEditButton_Click"
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="Edit Script">
+                            <iconPacks:PackIconMaterial Kind="Pencil"
+                                                        Width="Auto"
+                                                        Height="Auto" Margin="4"/>
                         </Button>
-                        <Button
-                            Grid.Row="3" Grid.Column="0"
-                            Click="ScriptCheckButton_Click"
-                            Background="{Binding ScriptCheckButtonColor}"
-                            ToolTip="Syntax Check">
-                            <iconPacks:PackIconMaterial Kind="Check" Width="Auto" Height="Auto" Margin="5"/>
+                        <Button Grid.Row="3"
+                                Grid.Column="0"
+                                Click="ScriptOpenExternalButton_Click"
+                                ToolTip="{Binding OpenExternalButtonToopTip}">
+                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="4"/>
                         </Button>
                     </Grid>
                 </Grid>
 
-                <Grid
-                    Grid.Row="1"
-                    HorizontalAlignment="Stretch"
-                    Visibility="{Binding BuildInterfaceVisibility}">
+                <Grid Grid.Row="1"
+                      HorizontalAlignment="Stretch"
+                      Visibility="{Binding BuildInterfaceVisibility}">
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
@@ -544,112 +650,98 @@
                         <RowDefinition Height="10" />
                     </Grid.RowDefinitions>
 
-                    <Border
-                        Grid.Row="0"
-                        BorderBrush="Gray"
-                        BorderThickness="1"
-                        Margin="20, 20, 20, 20">
+                    <Border Grid.Row="0"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            Margin="20, 20, 20, 20">
                         <DockPanel>
-                            <TextBlock
-                                DockPanel.Dock="Top"
-                                TextAlignment="Left"
-                                Margin="10, 10, 10, 0"
-                                TextWrapping="Wrap"
-                                FontWeight="SemiBold"
-                                Text="Message"/>
-                            <TextBlock
-                                DockPanel.Dock="Top"
-                                VerticalAlignment="Top"
-                                TextAlignment="Left"
-                                Margin="10, 10, 10, 0"
-                                TextWrapping="Wrap"
-                                Text="{Binding BuildEchoMessage}"/>
+                            <TextBlock DockPanel.Dock="Top"
+                                       TextAlignment="Left"
+                                       Margin="10, 10, 10, 0"
+                                       TextWrapping="Wrap"
+                                       FontWeight="SemiBold"
+                                       Text="Message"/>
+                            <TextBlock DockPanel.Dock="Top"
+                                       VerticalAlignment="Top"
+                                       TextAlignment="Left"
+                                       Margin="10, 10, 10, 0"
+                                       TextWrapping="Wrap"
+                                       Text="{Binding BuildEchoMessage}"/>
                             <!-- ShellExecute Console Output -->
-                            <TextBlock
-                                DockPanel.Dock="Top"
-                                TextAlignment="Left"
-                                Margin="10, 20, 10, 0"
-                                TextWrapping="Wrap"
-                                FontWeight="SemiBold"
-                                Visibility="{Binding BuildConOutRedirectVisibility}"
-                                Text="ShellExecute Console Output"/>
-                            <TextBox
-                                DockPanel.Dock="Top"
-                                Margin="10, 10, 10, 10"
-                                Visibility="{Binding BuildConOutRedirectVisibility}"
-                                TextAlignment="Left"
-                                VerticalAlignment="Top"
-                                TextWrapping="Wrap"
-                                AcceptsReturn="True"
-                                VerticalContentAlignment="Stretch"
-                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                ScrollViewer.CanContentScroll="True"
-                                IsReadOnly="True"
-                                TextChanged="BuildConOutRedirectTextBox_TextChanged"
-                                Text="{Binding BuildConOutRedirect}"/>
+                            <TextBlock DockPanel.Dock="Top"
+                                       TextAlignment="Left"
+                                       Margin="10, 20, 10, 0"
+                                       TextWrapping="Wrap"
+                                       FontWeight="SemiBold"
+                                       Visibility="{Binding BuildConOutRedirectVisibility}"
+                                       Text="ShellExecute Console Output"/>
+                            <TextBox DockPanel.Dock="Top"
+                                     Margin="10, 10, 10, 10"
+                                     Visibility="{Binding BuildConOutRedirectVisibility}"
+                                     TextAlignment="Left"
+                                     VerticalAlignment="Top"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalContentAlignment="Stretch"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     ScrollViewer.CanContentScroll="True"
+                                     IsReadOnly="True"
+                                     TextChanged="BuildConOutRedirectTextBox_TextChanged"
+                                     Text="{Binding BuildConOutRedirect}"/>
                             <!-- ProgressBar -->
-                            <TextBlock
-                                DockPanel.Dock="Top"
-                                TextAlignment="Left"
-                                Margin="10, 20, 10, 0"
-                                TextWrapping="Wrap"
-                                FontWeight="SemiBold"
-                                Visibility="{Binding BuildCommandProgressVisibility}"
-                                Text="{Binding BuildCommandProgressTitle}"/>
-                            <ProgressBar
-                                DockPanel.Dock="Top"
-                                Margin="10, 7, 10, 0"
-                                Height="20"
-                                Visibility="{Binding BuildCommandProgressVisibility}"
-                                Minimum="0"
-                                Maximum="{Binding BuildCommandProgressMax}"
-                                Value="{Binding BuildCommandProgressValue}" />
-                            <TextBlock
-                                DockPanel.Dock="Top"
-                                TextAlignment="Left"
-                                Margin="10, 3, 10, 0"
-                                TextWrapping="Wrap"
-                                Visibility="{Binding BuildCommandProgressVisibility}"
-                                Text="{Binding BuildCommandProgressText}"/>
+                            <TextBlock DockPanel.Dock="Top"
+                                       TextAlignment="Left"
+                                       Margin="10, 20, 10, 0"
+                                       TextWrapping="Wrap"
+                                       FontWeight="SemiBold"
+                                       Visibility="{Binding BuildCommandProgressVisibility}"
+                                       Text="{Binding BuildCommandProgressTitle}"/>
+                            <ProgressBar DockPanel.Dock="Top"
+                                         Margin="10, 7, 10, 0"
+                                         Height="20"
+                                         Visibility="{Binding BuildCommandProgressVisibility}"
+                                         Minimum="0"
+                                         Maximum="{Binding BuildCommandProgressMax}"
+                                         Value="{Binding BuildCommandProgressValue}" />
+                            <TextBlock DockPanel.Dock="Top"
+                                       TextAlignment="Left"
+                                       Margin="10, 3, 10, 0"
+                                       TextWrapping="Wrap"
+                                       Visibility="{Binding BuildCommandProgressVisibility}"
+                                       Text="{Binding BuildCommandProgressText}"/>
                         </DockPanel>
                     </Border>
 
-                    <TextBlock
-                        Grid.Row="1"
-                        Margin="20, 0, 20, 5"
-                        TextAlignment="Left"
-                        FontWeight="SemiBold"
-                        Text="Script Progress" />
-                    <ProgressBar
-                        Grid.Row="2"
-                        Margin="20, 0, 20, 10"
-                        Minimum="0"
-                        Maximum="{Binding BuildScriptProgressBarMax}"
-                        Value="{Binding BuildScriptProgressBarValue}" />
-                    <TextBlock
-                        Grid.Row="3"
-                        Margin="20, 0, 20, 5"
-                        TextAlignment="Left"
-                        FontWeight="SemiBold"
-                        Text="Full Progress" />
-                    <ProgressBar
-                        Grid.Row="4"
-                        Margin="20, 0, 20, 10"
-                        Minimum="0"
-                        Maximum="{Binding BuildFullProgressBarMax}"
-                        Value="{Binding BuildFullProgressBarValue}" />
+                    <TextBlock Grid.Row="1"
+                               Margin="20, 0, 20, 5"
+                               TextAlignment="Left"
+                               FontWeight="SemiBold"
+                               Text="Script Progress" />
+                    <ProgressBar Grid.Row="2"
+                                 Margin="20, 0, 20, 10"
+                                 Minimum="0"
+                                 Maximum="{Binding BuildScriptProgressBarMax}"
+                                 Value="{Binding BuildScriptProgressBarValue}" />
+                    <TextBlock Grid.Row="3"
+                               Margin="20, 0, 20, 5"
+                               TextAlignment="Left"
+                               FontWeight="SemiBold"
+                               Text="Full Progress" />
+                    <ProgressBar Grid.Row="4"
+                                 Margin="20, 0, 20, 10"
+                                 Minimum="0"
+                                 Maximum="{Binding BuildFullProgressBarMax}"
+                                 Value="{Binding BuildFullProgressBarValue}" />
                 </Grid>
 
-                <ScrollViewer
-                    Grid.Row="1"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Auto"
-                    Visibility="{Binding NormalInterfaceVisibility}"
-                    Content="{Binding MainCanvas}">
-                </ScrollViewer>
+                <ScrollViewer Grid.Row="1"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              Visibility="{Binding NormalInterfaceVisibility}"
+                              Content="{Binding MainCanvas}"/>
             </Grid>
         </Grid>
     </DockPanel>

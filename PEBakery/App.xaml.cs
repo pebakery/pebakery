@@ -16,6 +16,7 @@ namespace PEBakery
         public static string[] Args;
         public static int Version = 0;
         public static Logger Logger;
+        public static string BaseDir;
 
         void App_Startup(object sender, StartupEventArgs e)
         {
@@ -32,19 +33,20 @@ namespace PEBakery
             // Version = Properties.Resources.EngineVersion;
         }
 
-        void NativeAssemblyInit()
+        private void NativeAssemblyInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string arch;
-            if (IntPtr.Size == 8)
-                arch = "x64";
-            else
-                arch = "x86";
+            string arch = IntPtr.Size == 8 ? "x64" : "x86";
 
-            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
-            ManagedWimLib.Wim.GlobalInit(WimLibDllPath);
+            string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            string wimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
+            string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.1.dll");
+
+            Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath);
+            ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
+            PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
+            PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);
         }
 
     }

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -57,11 +57,11 @@ namespace PEBakery.WPF
         #region Field and Constructor
         public static int Count = 0;
 
-        UtilityViewModel m;
+        private readonly UtilityViewModel m;
 
         public UtilityWindow(FontHelper.WPFFont monoFont)
         {
-            Interlocked.Increment(ref UtilityWindow.Count);
+            Interlocked.Increment(ref Count);
 
             m = new UtilityViewModel(monoFont);
 
@@ -70,7 +70,9 @@ namespace PEBakery.WPF
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                Debug.Assert(w != null, "MainWindow != null");
+
                 List<Project> projList = w.Projects.Projects;
                 for (int i = 0; i < projList.Count; i++)
                 {
@@ -88,7 +90,7 @@ namespace PEBakery.WPF
         #region Window Event
         private void Window_Closed(object sender, EventArgs e)
         {
-            Interlocked.Decrement(ref UtilityWindow.Count);
+            Interlocked.Decrement(ref Count);
         }
         #endregion
 
@@ -147,14 +149,16 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref Engine.WorkingLock);
 
                 Project project = m.CodeBox_CurrentProject;
-                Script p = project.LoadScriptMonkeyPatch(m.CodeFile);
+                Script sc = project.LoadScriptMonkeyPatch(m.CodeFile);
 
                 Logger logger = null;
                 SettingViewModel setting = null;
                 MainViewModel mainModel = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    Debug.Assert(w != null, "MainWindow != null");
+
                     logger = w.Logger;
                     setting = w.Setting;
                     mainModel = w.Model;
@@ -163,7 +167,7 @@ namespace PEBakery.WPF
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(p.Project, logger, mainModel, EngineMode.RunMainAndOne, p);
+                EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
                 s.SetOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
@@ -176,6 +180,7 @@ namespace PEBakery.WPF
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
+                    Debug.Assert(w != null, "MainWindow != null");
 
                     w.DrawScript(w.CurMainTree.Script);
 
@@ -205,19 +210,19 @@ namespace PEBakery.WPF
 
             Project project = m.CodeBox_CurrentProject;
 
-            Script p = project.MainScript;
+            Script sc = project.MainScript;
             ScriptSection section;
             if (project.MainScript.Sections.ContainsKey("Process"))
-                section = p.Sections["Process"];
+                section = sc.Sections["Process"];
             else
-                section = new ScriptSection(p, "Process", SectionType.Code, new List<string>(), 1);
-            SectionAddress addr = new SectionAddress(p, section);
+                section = new ScriptSection(sc, "Process", SectionType.Code, new List<string>(), 1);
+            SectionAddress addr = new SectionAddress(sc, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
             List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);
 
             // Check Macros
-            Macro macro = new Macro(project, project.Variables, out List<LogInfo> macroLogs);
+            Macro macro = new Macro(project, project.Variables, out _);
 
             if (macro.MacroEnabled)
             {
@@ -225,8 +230,9 @@ namespace PEBakery.WPF
                 {
                     if (cmd.Type == CodeType.Macro)
                     {
-                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro));
+                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
                         CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+                        Debug.Assert(info != null, "Invalid CodeInfo");
 
                         if (!macro.MacroDict.ContainsKey(info.MacroType))
                             errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
@@ -250,24 +256,60 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
+        #region InputBinding Event
+        public static RoutedUICommand CodeBoxSaveCommand { get; } = new RoutedUICommand("Save", "Save", typeof(UtilityWindow));
+        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow), 
+            new InputGestureCollection { new KeyGesture(Key.F5, ModifierKeys.Control) });
+            
+        private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = m.TabIndex == 0;
+        }
+
+        private void CodeBoxSave_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CodeBoxSaveButton.Focus();
+            CodeBoxSaveButton_Click(sender, e);
+        }
+
+        private void CodeBoxRun_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CodeBoxRunButton.Focus();
+            CodeBoxRunButton_Click(sender, e);
+        }
+
+        #endregion
     }
 
-    #region UtiltiyViewModel
+    #region UtilityViewModel
     public class UtilityViewModel : INotifyPropertyChanged
     {
-        public FontHelper.WPFFont MonoFont { get; private set; }
-        public FontFamily MonoFontFamily { get => MonoFont.FontFamily; }
-        public FontWeight MonoFontWeight { get => MonoFont.FontWeight; }
-        public double MonoFontSize { get => MonoFont.FontSizeInDIP; }
+        public FontHelper.WPFFont MonoFont { get; }
+        public FontFamily MonoFontFamily => MonoFont.FontFamily;
+        public FontWeight MonoFontWeight => MonoFont.FontWeight;
+        public double MonoFontSize => MonoFont.FontSizeInDIP;
 
         public UtilityViewModel(FontHelper.WPFFont monoFont)
         {
             MonoFont = monoFont;
         }
 
+        #region Tab Index
+        private int _tabIndex = 0;
+        public int TabIndex
+        {
+            get => _tabIndex;
+            set
+            {
+                _tabIndex = value;
+                OnPropertyUpdate(nameof(TabIndex));
+            }
+        }
+        #endregion
+
         #region CodeBox
-        private string codeFile;
-        public string CodeFile { get => codeFile; }
+        public string CodeFile { get; private set; }
 
         private int codeBox_SelectedProjectIndex;
         public int CodeBox_SelectedProjectIndex
@@ -280,11 +322,11 @@ namespace PEBakery.WPF
                     codeBox_SelectedProjectIndex = value;
 
                     Project proj = codeBox_Projects[value].Item2;
-                    codeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
-                    if (File.Exists(codeFile))
+                    CodeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
+                    if (File.Exists(CodeFile))
                     {
-                        Encoding encoding = FileHelper.DetectTextEncoding(codeFile);
-                        using (StreamReader reader = new StreamReader(codeFile, encoding))
+                        Encoding encoding = FileHelper.DetectTextEncoding(CodeFile);
+                        using (StreamReader reader = new StreamReader(CodeFile, encoding))
                         {
                             CodeBox_Input = reader.ReadToEnd();
                             OnPropertyUpdate("CodeBox_Input");
@@ -410,6 +452,36 @@ Description=Test Commands
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
+    }
+    #endregion
+
+    #region WindowCommand
+    public class WindowCommand : ICommand
+    {
+        private readonly Action<object> _onExecute;
+        private readonly Predicate<object> _onCanExecute;
+
+        public WindowCommand(Action<object> onExecute, Predicate<object> onCanExecuteDelegate)
+        {
+            _onExecute = onExecute;
+            _onCanExecute = onCanExecuteDelegate;
+        }
+
+        public void Execute(object parameter) => _onExecute?.Invoke(parameter);
+
+        public bool CanExecute(object parameter) => _onCanExecute == null || _onCanExecute(parameter);
+
+        public event EventHandler CanExecuteChanged;
+        /*
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+        */
+
+        public void OnCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+
     }
     #endregion
 }

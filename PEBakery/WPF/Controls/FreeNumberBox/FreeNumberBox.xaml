@@ -21,7 +21,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 -->
-    
+
 <UserControl x:Class="PEBakery.WPF.Controls.FreeNumberBox"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -31,11 +31,12 @@
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              mc:Ignorable="d" 
              d:DesignHeight="20" d:DesignWidth="100"
+             x:Name="NumberBox"
              Focusable="True"
              IsTabStop="True">
-    <Grid 
-        Width="{Binding Width, ElementName=Root}"
-        Height="{Binding Height, ElementName=Root}">
+    <Grid x:Name="LayoutGrid"
+          Width="{Binding Width, ElementName=NumberBox}"
+          Height="{Binding Height, ElementName=NumberBox}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
@@ -45,28 +46,23 @@
             <ColumnDefinition Width="15"/>
         </Grid.ColumnDefinitions>
 
-        <TextBox
-            Grid.Row="0" Grid.RowSpan="2"
-            Grid.Column="0"
-            TextAlignment="Right"
-            VerticalContentAlignment="Center"
-            PreviewTextInput="TextBox_PreviewTextInput"
-            Text="{Binding RelativeSource={RelativeSource FindAncestor, 
-                               AncestorType={x:Type local:FreeNumberBox}}, 
-                               Path=Value}">
-        </TextBox>
+        <TextBox Grid.Row="0" Grid.RowSpan="2"
+                 Grid.Column="0"
+                 TextAlignment="Right"
+                 VerticalContentAlignment="Center"
+                 PreviewTextInput="TextBox_PreviewTextInput"
+                 PreviewKeyDown="TextBox_PreviewKeyDown"
+                 Text="{Binding Path=Value, ElementName=NumberBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-        <RepeatButton
-            Grid.Row="0" Grid.Column="1"
-            Click="UpButton_Click">
+        <RepeatButton Grid.Row="0" Grid.Column="1"
+                      Click="UpButton_Click">
             <RepeatButton.Content>
                 <iconPacks:PackIconMaterial Kind="MenuUp" Width="Auto" Height="Auto"/>
             </RepeatButton.Content>
         </RepeatButton>
 
-        <RepeatButton
-            Grid.Row="1" Grid.Column="1"
-            Click="DownButton_Click">
+        <RepeatButton Grid.Row="1" Grid.Column="1"
+                      Click="DownButton_Click">
             <RepeatButton.Content>
                 <iconPacks:PackIconMaterial Kind="MenuDown" Width="Auto" Height="Auto" />
             </RepeatButton.Content>

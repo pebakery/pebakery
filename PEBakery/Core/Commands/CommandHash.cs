@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -44,34 +43,24 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Hash));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Hash), "Invalid CodeInfo");
             CodeInfo_Hash info = cmd.Info as CodeInfo_Hash;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-
-            HashType hashType;
-            if (hashTypeStr.Equals("MD5", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.MD5;
-            else if (hashTypeStr.Equals("SHA1", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA1;
-            else if (hashTypeStr.Equals("SHA256", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA256;
-            else if (hashTypeStr.Equals("SHA384", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA384;
-            else if (hashTypeStr.Equals("SHA512", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA512;
-            else
-                throw new ExecuteException($"Invalid hash type [{hashTypeStr}]");
+            Debug.Assert(hashTypeStr != null, $"{nameof(hashTypeStr)} != null");
+            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             string digest;
+            HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 digest = HashHelper.CalcHashString(hashType, fs);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{digest}]"));
-            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest.ToString());
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest);
             logs.AddRange(varLogs);
 
             return logs;

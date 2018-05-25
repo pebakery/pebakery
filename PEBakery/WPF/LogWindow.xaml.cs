@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -345,9 +345,9 @@ namespace PEBakery.WPF
                     // Populate SelectScriptEntries
                     SelectScriptEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
                     var scripts = LogDB.Table<DB_Script>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
-                    foreach (DB_Script p in scripts)
+                    foreach (DB_Script sc in scripts)
                     {
-                        SelectScriptEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{scripts.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
+                        SelectScriptEntries.Add(new Tuple<string, long, long>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.Path})", sc.Id, (long)buildId));
                     }
 
                     if (showLastScript)

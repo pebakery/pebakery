@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -30,7 +30,6 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -50,17 +49,28 @@ namespace PEBakery.Core
     public class Variables : ICloneable
     {
         /*
-         * Variables search order
-         * 1. local variables
-         * 2. global variables
-         * 3. fixed variables
+         * Variables Search Order
+         * if (OverridableFixedVariables) // WinBuilder Compatible
+         *    1. Local Variables
+         *    2. Global Variables
+         *    3. Fixed Variables
+         * else // PEBakery standard
+         *    1. Fixed Variables
+         *    2. Local Variables
+         *    3. Global Variables
          */
+        
+        #region Static
+        public static bool OverridableFixedVariables = false;
+        public static bool EnableEnvironmentVariables = false;
+        public const string VarSectionName = "Variables";
+        #endregion
 
         #region Field and Property
-        private Project project;
-        private Dictionary<string, string> fixedVars;
-        private Dictionary<string, string> globalVars;
-        private Dictionary<string, string> localVars;
+        private readonly Project _project;
+        private Dictionary<string, string> _fixedVars;
+        private Dictionary<string, string> _globalVars;
+        private Dictionary<string, string> _localVars;
 
         public string this[string key]
         {
@@ -78,10 +88,10 @@ namespace PEBakery.Core
         #region Constructor
         public Variables(Project project)
         {
-            this.project = project;
-            this.localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _project = project;
+            _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             LoadDefaultFixedVariables();
             LoadDefaultGlobalVariables();
@@ -89,10 +99,10 @@ namespace PEBakery.Core
 
         public Variables(Project project, out List<LogInfo> logs)
         {
-            this.project = project;
-            this.localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _project = project;
+            _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             logs = LoadDefaultFixedVariables();
             logs.AddRange(LoadDefaultGlobalVariables());
@@ -104,43 +114,91 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
+            #region Project Title
+            // Read from MainScript
+            string fullPath = _project.MainScript.RealPath;
+            IniKey[] keys =
+            {
+                new IniKey("Main", "Title"),
+            };
+            keys = Ini.ReadKeys(fullPath, keys);
+            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
+
+            string projectTitle = dict["Title"];
+            if (string.IsNullOrWhiteSpace(projectTitle))
+                projectTitle = _project.ProjectName;  
+
+            // ProjectTitle
+            logs.Add(SetValue(VarsType.Fixed, "ProjectTitle", projectTitle));
+            #endregion
+
             #region Builder Variables
             // PEBakery
             logs.Add(SetValue(VarsType.Fixed, "PEBakery", "True"));
             // BaseDir
-            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir.TrimEnd(new char[] { '\\' } )));
+            logs.Add(SetValue(VarsType.Fixed, "BaseDir", _project.BaseDir.TrimEnd('\\')));
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString("000")));
             logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
-            #region Project Variables
-            // Read from MainScript
-            string fullPath = project.MainScript.FullPath;
-            IniKey[] keys = new IniKey[]
+            #region Envrionment Variables
+            if (EnableEnvironmentVariables)
             {
-                new IniKey("Main", "Title"),
+                List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
+                { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
+                    new Tuple<string, string>("TEMP", "TempDir"),
+                    new Tuple<string, string>("USERNAME", "UserName"),
+                    new Tuple<string, string>("USERPROFILE", "UserProfile"),
+                    new Tuple<string, string>("WINDIR", "WindowsDir"),
+                    new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
+                };
+
+                if (Environment.Is64BitProcess)
+                    envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
+
+                foreach (var tuple in envVarNames)
+                {
+                    string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
+                    if (envValue == null)
+                        logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
+                    else
+                        logs.Add(SetValue(VarsType.Fixed, tuple.Item2, envValue));
+                }
+
+                // WindowsVersion
+                OperatingSystem sysVer = Environment.OSVersion;
+                logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
+            }
+            #endregion
+
+            return logs;
+        }
+
+        public List<LogInfo> LoadDefaultGlobalVariables()
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            #region SourceDir, TargetDir, ISOFile
+            // Read from MainScript
+            string fullPath = _project.MainScript.RealPath;
+            IniKey[] keys =
+            {
                 new IniKey("Main", "PathSetting"),
                 new IniKey("Main", "SourceDir"),
                 new IniKey("Main", "TargetDir"),
                 new IniKey("Main", "ISOFile"),
             };
-            keys = Ini.GetKeys(fullPath, keys);
+            keys = Ini.ReadKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
-            string projectTitle = dict["Title"];
-            if (projectTitle == null || projectTitle.Equals(string.Empty, StringComparison.Ordinal))
-                projectTitle = project.ProjectName;
-
-            // If PathSetting is set to False, ignore SourceDir, TargetDir and ISOFile
+            // If PathSetting is set to False, do not set SourceDir, TargetDir and ISOFile
             bool pathEnabled = true;
             string pathEnabledStr = dict["PathSetting"];
             if (pathEnabledStr != null && pathEnabledStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                 pathEnabled = false;
 
-            string targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
-            string isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
             if (pathEnabled)
             {
                 // Get SourceDir
@@ -152,7 +210,7 @@ namespace PEBakery.Core
                     foreach (string rawDir in rawDirList)
                     {
                         string dir = rawDir.Trim();
-                        if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                        if (0 < dir.Length)
                         {
                             sourceDir = dir;
                             break;
@@ -160,91 +218,54 @@ namespace PEBakery.Core
                     }
                 }
 
-                // Set SourceDir
-                logs.Add(SetValue(VarsType.Fixed, "SourceDir", sourceDir));
+                // SourceDir
+                logs.Add(SetValue(VarsType.Global, "SourceDir", sourceDir));
 
+                // TargetDir
                 string targetDirStr = dict["TargetDir"];
-                if (targetDirStr != null && 0 < targetDirStr.Length)
+                string targetDir = Path.Combine("%BaseDir%", "Target", _project.ProjectName);
+                if (!string.IsNullOrEmpty(targetDirStr))
                     targetDir = targetDirStr;
+                logs.Add(SetValue(VarsType.Global, "TargetDir", targetDir));
 
+                // ISOFile, ISODir
                 string isoFileStr = dict["ISOFile"];
-                if (isoFileStr != null && 0 < isoFileStr.Length)
+                string isoFile = Path.Combine("%BaseDir%", "ISO", _project.ProjectName + ".iso");
+                if (!string.IsNullOrEmpty(isoFileStr))
                     isoFile = isoFileStr;
-            }          
-
-            // ProjectTitle
-            logs.Add(SetValue(VarsType.Fixed, "ProjectTitle", projectTitle));
-            // ProjectDir
-            logs.Add(SetValue(VarsType.Fixed, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
-            // TargetDir
-            logs.Add(SetValue(VarsType.Fixed, "TargetDir", targetDir));
-            // ISOFile
-            logs.Add(SetValue(VarsType.Fixed, "ISOFile", isoFile));
-            // ISODir
-            logs.Add(SetValue(VarsType.Fixed, "ISODir", FileHelper.GetDirNameEx(isoFile)));
-            #endregion
-
-            #region Envrionment Variables
-            List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
-            { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
-                new Tuple<string, string>("TEMP", "TempDir"),
-                new Tuple<string, string>("USERNAME", "UserName"),
-                new Tuple<string, string>("USERPROFILE", "UserProfile"),
-                new Tuple<string, string>("WINDIR", "WindowsDir"),
-                new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
-            };
-
-            if (Environment.Is64BitProcess)
-                envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
-
-            foreach (var tuple in envVarNames)
-            {
-                string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
-                if (envValue == null)
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
-                else
-                    logs.Add(SetValue(VarsType.Fixed, tuple.Item2, envValue));
+                logs.Add(SetValue(VarsType.Global, "ISOFile", isoFile));
+                logs.Add(SetValue(VarsType.Global, "ISODir", FileHelper.GetDirNameEx(isoFile)));
             }
 
-            // WindowsVersion
-            OperatingSystem sysVer = Environment.OSVersion;
-            logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
+            // ProjectDir
+            logs.Add(SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", _project.ProjectName)));
             #endregion
 
-            return logs;
-        }
-
-        public List<LogInfo> LoadDefaultGlobalVariables()
-        {
-            List<LogInfo> logs = new List<LogInfo>();
-
+            #region Project Variables
             // [Variables]
-            if (project.MainScript.Sections.ContainsKey("Variables"))
+            if (_project.MainScript.Sections.ContainsKey("Variables"))
             {
-                logs = AddVariables(VarsType.Global, project.MainScript.Sections["Variables"]);
+                logs = AddVariables(VarsType.Global, _project.MainScript.Sections["Variables"]);
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeperator));
             }
+            #endregion
 
             return logs;
         }
 
-        public List<LogInfo> LoadDefaultScriptVariables(Script p)
+        public List<LogInfo> LoadDefaultScriptVariables(Script sc)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            // ScriptFile
-            SetValue(VarsType.Fixed, "ScriptFile", p.FullPath);
-
-            // ScriptDir
-            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.FullPath));
-
-            // ScriptTitle
-            SetValue(VarsType.Fixed, "ScriptTitle", p.Title);
+            // Per-Script Variables
+            SetValue(VarsType.Fixed, "ScriptFile", sc.RealPath);
+            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(sc.RealPath));
+            SetValue(VarsType.Fixed, "ScriptTitle", sc.Title);
 
             // [Variables]
-            if (p.Sections.ContainsKey("Variables"))
+            if (sc.Sections.ContainsKey("Variables"))
             {
-                List<LogInfo> subLogs = AddVariables(p.IsMainScript ? VarsType.Global : VarsType.Local, p.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections["Variables"]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
@@ -255,12 +276,12 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            ScriptSection iface = p.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface != null)
             {
                 List<UIControl> uiCtrls = null;
-                try { uiCtrls = p.Sections[ifaceSecName].GetUICtrls(true); }
-                catch { } // No [Interface] section, or unable to get List<UIControl>
+                try { uiCtrls = sc.Sections[ifaceSecName].GetUICtrls(true); }
+                catch { /* No [Interface] section, or unable to get List<UIControl */ }
 
                 if (uiCtrls != null)
                 {
@@ -289,17 +310,16 @@ namespace PEBakery.Core
             string value = uiCmd.GetValue();
             if (value != null)
                 return SetValue(VarsType.Local, destVar, value);
-            else
-                return null;
+            return null;
         }
 
         public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string prefix = null)
         {
             List<LogInfo> logs = new List<LogInfo>(uiCtrls.Count);
 
-            foreach (UIControl uiCmd in uiCtrls)
+            foreach (UIControl uiCtrl in uiCtrls)
             {
-                LogInfo? log = UIControlToVariable(uiCmd, prefix);
+                LogInfo? log = UIControlToVariable(uiCtrl, prefix);
                 if (log != null)
                     logs.Add((LogInfo)log);
             }
@@ -318,28 +338,15 @@ namespace PEBakery.Core
         public bool CheckCircularReference(string key, string value)
         {
             /*
-            if (rawValue.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) == -1)
-            { // Ex) %Joveler%=Variel\ied206.txt
-                return false;
-            }
-            else
-            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                // Try Expand 
-                // Set,%A%,%B% / Set,%B%,%C% / Set,%C%,%A% can also cause circular reference
-                return true;
-            }
-            */
-
-            /*
-             * Set,%Joveler%,Variel\ied206.txt -> OK
-             * Set,%Joveler%,Variel\%Joveler%\ied206.txt -> Wrong
+             * Set,%Joveler%,PEBakery\ied206.txt -> OK
+             * Set,%Joveler%,PEBakery\%Joveler%\ied206.txt -> Wrong
              * 
              * Set,%A%,%B%
              * Set,%B%,%C%
              * Set,%C%,%A% -> Wrong
              */
 
-            string str = value;
+                    string str = value;
             while (true)
             {
                 if (str.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) != -1) // Found circular reference
@@ -361,11 +368,11 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarsType.Local:
-                    return localVars;
+                    return _localVars;
                 case VarsType.Global:
-                    return globalVars;
+                    return _globalVars;
                 case VarsType.Fixed:
-                    return fixedVars;
+                    return _fixedVars;
                 default:
                     return null;
             }
@@ -381,13 +388,13 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarsType.Local:
-                    localVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _localVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
                     break;
                 case VarsType.Global:
-                    globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
                     break;
                 case VarsType.Fixed:
-                    fixedVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _fixedVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
                     break;
             }
         }
@@ -396,48 +403,12 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
-            /*
-            // Check circular reference
-            if (CheckCircularReference(key, _value))
-            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                // This code cannot handle this case : [Set,%ScriptPathShort%,\%ScriptPathShort%]
-                // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
-
-                // To Handle [Set,%ScriptPathShort%,\%ScriptPathShort%], if curcular reference detected, bake into final form
-                vars[key] = StringEscaper.UnescapePercent(Expand(_value));
-            }
-            else
-            { // Ex) %Joveler%=Variel\ied206.txt -> Success
-                vars[key] = _value;
-            }
-
-            return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
-            */
-
             if (expand)
                 vars[key] = Expand(_value);
             else
                 vars[key] = _value;
 
             return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
-
-            /*
-            // Check circular reference
-            if (CheckCircularReference(key, rawValue))
-            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                // This code cannot handle this case : [Set,%ScriptPathShort%,\%ScriptPathShort%]
-                // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
-
-                // To Handle [Set,%ScriptPathShort%,\%ScriptPathShort%], if curcular reference detected, bake into final form
-                vars[key] = Expand(rawValue);
-                return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
-            }
-            else
-            { // Ex) %Joveler%=Variel\ied206.txt - Success
-                vars[key] = rawValue;
-                return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]");
-            }
-            */
         }
 
         public string GetValue(string key)
@@ -475,7 +446,7 @@ namespace PEBakery.Core
 
         public bool ContainsKey(string key)
         {
-            return localVars.ContainsKey(key) || globalVars.ContainsKey(key) || fixedVars.ContainsKey(key); 
+            return _localVars.ContainsKey(key) || _globalVars.ContainsKey(key) || _fixedVars.ContainsKey(key); 
         }
 
         public bool ContainsKey(VarsType type, string key)
@@ -486,7 +457,7 @@ namespace PEBakery.Core
 
         public bool ContainsValue(string _val)
         {
-            return localVars.ContainsValue(_val) || globalVars.ContainsValue(_val) || fixedVars.ContainsValue(_val);
+            return _localVars.ContainsValue(_val) || _globalVars.ContainsValue(_val) || _fixedVars.ContainsValue(_val);
         }
 
         public bool ContainsValue(VarsType type, string _val)
@@ -499,30 +470,60 @@ namespace PEBakery.Core
         {
             StringBuilder str = new StringBuilder();
             str.AppendLine("[Local Variables]");
-            foreach (var local in localVars)
+            foreach (var local in _localVars)
                 str.AppendLine($"[{local.Key}, {local.Value}, {Expand(local.Value)}]");
             str.AppendLine("[Global Variables]");
-            foreach (var global in globalVars)
+            foreach (var global in _globalVars)
                 str.AppendLine($"[{global.Key}, {global.Value}, {Expand(global.Value)}]");
             return str.ToString();
         }
 
         public bool TryGetValue(string key, out string value)
         {
-            bool fixedResult = fixedVars.TryGetValue(key, out string fixedValue);
-            bool globalResult = globalVars.TryGetValue(key, out string globalValue);
-            bool localResult = localVars.TryGetValue(key, out string localValue);
+            bool fixedResult = _fixedVars.TryGetValue(key, out string fixedValue);
+            bool globalResult = _globalVars.TryGetValue(key, out string globalValue);
+            bool localResult = _localVars.TryGetValue(key, out string localValue);
 
-            if (localResult)
-                value = Expand(localValue);
-            else if(globalResult)
-                value = Expand(globalValue);
-            else if (fixedResult)
-                value = Expand(fixedValue);
+            if (OverridableFixedVariables)
+            { // WinBuilder compatible
+                if (localResult)
+                    value = Expand(localValue);
+                else if (globalResult)
+                    value = Expand(globalValue);
+                else if (fixedResult)
+                    value = Expand(fixedValue);
+                else
+                    value = string.Empty;
+            }
             else
-                value = string.Empty;
+            { // PEBakery standard
+                if (fixedResult)
+                    value = Expand(fixedValue);
+                else if (localResult)
+                    value = Expand(localValue);
+                else if (globalResult)
+                    value = Expand(globalValue);
+                else
+                    value = string.Empty;
+            }
 
             return fixedResult || localResult || globalResult;
+        }
+        #endregion
+
+        #region Exists
+        public bool Exists(string key)
+        {
+            bool fixedResult = _fixedVars.ContainsKey(key);
+            bool globalResult = _globalVars.ContainsKey(key);
+            bool localResult = _localVars.ContainsKey(key);
+            return fixedResult || localResult || globalResult;
+        }
+
+        public bool Exists(VarsType type, string key)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            return vars.ContainsKey(key);
         }
         #endregion
 
@@ -553,24 +554,49 @@ namespace PEBakery.Core
                         b.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (localVars.ContainsKey(varName))
-                    {
-                        string varValue = localVars[varName];
-                        b.Append(varValue);
+                    if (OverridableFixedVariables)
+                    { // WinBuilder compatible
+                        if (_localVars.ContainsKey(varName))
+                        {
+                            string varValue = _localVars[varName];
+                            b.Append(varValue);
+                        }
+                        else if (_globalVars.ContainsKey(varName))
+                        {
+                            string varValue = _globalVars[varName];
+                            b.Append(varValue);
+                        }
+                        else if (_fixedVars.ContainsKey(varName))
+                        {
+                            string varValue = _fixedVars[varName];
+                            b.Append(varValue);
+                        }
+                        else // variable not found
+                        {
+                            b.Append("#$p").Append(varName).Append("#$p");
+                        }
                     }
-                    else if (globalVars.ContainsKey(varName))
-                    {
-                        string varValue = globalVars[varName];
-                        b.Append(varValue);
-                    }
-                    else if (fixedVars.ContainsKey(varName))
-                    {
-                        string varValue = fixedVars[varName];
-                        b.Append(varValue);
-                    }
-                    else // variable not found
-                    {
-                        b.Append("#$p").Append(varName).Append("#$p");
+                    else
+                    { // PEBakery standard
+                        if (_fixedVars.ContainsKey(varName))
+                        {
+                            string varValue = _fixedVars[varName];
+                            b.Append(varValue);
+                        }
+                        else if (_localVars.ContainsKey(varName))
+                        {
+                            string varValue = _localVars[varName];
+                            b.Append(varValue);
+                        }
+                        else if (_globalVars.ContainsKey(varName))
+                        {
+                            string varValue = _globalVars[varName];
+                            b.Append(varValue);
+                        }
+                        else // variable not found
+                        {
+                            b.Append("#$p").Append(varName).Append("#$p");
+                        }
                     }
 
                     if (x + 1 == matches.Count) // Last iteration
@@ -593,24 +619,29 @@ namespace PEBakery.Core
         #region AddVariables
         public List<LogInfo> AddVariables(VarsType type, ScriptSection section)
         {
-            Dictionary<string, string> dict = null;
+            Dictionary<string, string> dict;
 
-            if (section.DataType == SectionDataType.IniDict)
-                dict = section.GetIniDict();
-            else if (section.DataType == SectionDataType.Lines)
-                dict = Ini.ParseIniLinesVarStyle(section.GetLines());
-            else
-                throw new ExecuteException($"Section [{section.SectionName}] is not IniDict or Lines");
+            switch (section.DataType)
+            {
+                case SectionDataType.IniDict:
+                    dict = section.GetIniDict();
+                    break;
+                case SectionDataType.Lines:
+                    dict = Ini.ParseIniLinesVarStyle(section.GetLines());
+                    break;
+                default:
+                    throw new ExecuteException($"Section [{section.Name}] is not IniDict or Lines");
+            }
 
-            if (dict.Keys.Count != 0)
+            if (0 < dict.Keys.Count)
                 return InternalAddDictionary(type, dict);
-            else // empty
-                return new List<LogInfo>();
+
+            // Empty
+            return new List<LogInfo>();
         }
 
         public List<LogInfo> AddVariables(VarsType type, string[] lines)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
             return InternalAddDictionary(type, dict);
         }
@@ -629,15 +660,9 @@ namespace PEBakery.Core
         /// <summary>
         /// Add local variables
         /// </summary>
-        /// <param name="vars"></param>
-        /// <param name="dict"></param>
-        /// <param name="sectionDepth"></param>
-        /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
         private List<LogInfo> InternalAddDictionary(VarsType type, Dictionary<string, string> dict)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-
             List<LogInfo> logs = new List<LogInfo>(64);
             foreach (var kv in dict)
             {
@@ -654,10 +679,10 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarsType.Local:
-                    localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     break;
                 case VarsType.Global:
-                    globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     break;
             }
         }
@@ -678,7 +703,6 @@ namespace PEBakery.Core
         /// Return % trimmed string, to use as variable key.
         /// Return null if this string cannot be used as variable key.
         /// </summary>
-        /// <param name="varName"></param>
         /// <returns></returns>
         public static string GetVariableName(EngineState s, string varName)
         {
@@ -689,15 +713,9 @@ namespace PEBakery.Core
                     string varKey = varName.Substring(1, varName.Length - 2);
                     return StringEscaper.ExpandSectionParams(s, varKey);
                 }
-                else
-                {
-                    return null;
-                }
-            }
-            else
-            {
                 return null;
             }
+            return null;
         }
 
         public static int GetSectionParamIndex(string secParam)
@@ -742,36 +760,36 @@ namespace PEBakery.Core
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
-                return new LogInfo(LogState.Error, $"Section parameter cannot have a circular reference");
+                return new LogInfo(LogState.Error, "Section parameter cannot have a circular reference");
                 
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }
 
-        public static List<LogInfo> SetVariable(EngineState s, string key, string _value, bool global = false, bool permanent = false, bool expand = true)
+        public static List<LogInfo> SetVariable(EngineState s, string varKey, string varValue, bool global = false, bool permanent = false, bool expand = true)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
             // WB082 Behavior : Final form (expanded string) is written to varaibles.
             //                  Note that $#p will not be unescaped to %.
-            // When preprocessed value is nil, it will be removed from dict.
+            // When preprocessed value is "NIL", it will be removed from dict.
 
             string finalValue;
             if (expand)
                 // finalValue = StringEscaper.Preprocess(s, _value, false);
-                finalValue = StringEscaper.ExpandVariables(s, _value);
+                finalValue = StringEscaper.ExpandVariables(s, varValue);
             else
-                finalValue = _value;
+                finalValue = varValue;
 
-            Variables.VarKeyType type = Variables.DetermineType(key);
+            Variables.VarKeyType type = Variables.DetermineType(varKey);
             if (finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
             { // Remove variable
                 // Determine varKey's type - %A% vs #1
                 if (type == Variables.VarKeyType.Variable) // %A%
                 {
-                    key = Variables.GetVariableName(s, key);
+                    string key = Variables.GetVariableName(s, varKey);
                     if (key == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{key}] must start and end with %"));
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{varKey}] must start and end with %"));
 
                     if (permanent)
                     {
@@ -779,7 +797,7 @@ namespace PEBakery.Core
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
-                            if (Ini.DeleteKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%")) // Delete var line
+                            if (Ini.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
                             {
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             }
@@ -812,16 +830,16 @@ namespace PEBakery.Core
                 }
                 else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    logs.Add(Variables.SetSectionParam(s, key, finalValue));
+                    logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
                 }
                 else if (type == Variables.VarKeyType.ReturnValue) // #r
                 { // s.SectionReturnValue's defalt value is string.Empty
                     s.SectionReturnValue = string.Empty;
-                    logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] deleted"));
+                    logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{key}]");
+                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
                 }
             }
             else
@@ -829,9 +847,19 @@ namespace PEBakery.Core
                 // Determine varKey's type - %A% vs #1
                 if (type == Variables.VarKeyType.Variable) // %A%
                 {
-                    key = Variables.GetVariableName(s, key);
+                    string key = Variables.GetVariableName(s, varKey);
                     if (key == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{key}], must start and end with %"));
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
+
+                    // Does this variable resides in fixedDict?
+                    if (!OverridableFixedVariables)
+                    {
+                        if (s.Variables.Exists(VarsType.Fixed, key))
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, $"Fixed variable [{varKey}] cannot be overriden"));
+                            return logs;
+                        }
+                    }
 
                     // Logs are written in variables.SetValue method
                     if (global)
@@ -849,7 +877,7 @@ namespace PEBakery.Core
 
                         if (log.State == LogState.Success)
                         { // SetValue success, write to IniFile
-                            if (Ini.SetKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                            if (Ini.WriteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));
@@ -869,7 +897,7 @@ namespace PEBakery.Core
                 }
                 else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
                 {
-                    logs.Add(Variables.SetSectionParam(s, key, finalValue));
+                    logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
                 }
                 else if (type == Variables.VarKeyType.ReturnValue) // #r
                 {
@@ -878,7 +906,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{key}]");
+                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
                 }
             }
 
@@ -889,11 +917,11 @@ namespace PEBakery.Core
         #region Clone
         public object Clone()
         {
-            Variables variables = new Variables(project)
+            Variables variables = new Variables(_project)
             {
-                fixedVars = new Dictionary<string, string>(this.fixedVars, StringComparer.OrdinalIgnoreCase),
-                globalVars = new Dictionary<string, string>(this.globalVars, StringComparer.OrdinalIgnoreCase),
-                localVars = new Dictionary<string, string>(this.localVars, StringComparer.OrdinalIgnoreCase),
+                _fixedVars = new Dictionary<string, string>(_fixedVars, StringComparer.OrdinalIgnoreCase),
+                _globalVars = new Dictionary<string, string>(_globalVars, StringComparer.OrdinalIgnoreCase),
+                _localVars = new Dictionary<string, string>(_localVars, StringComparer.OrdinalIgnoreCase),
             };
             return variables;
         }

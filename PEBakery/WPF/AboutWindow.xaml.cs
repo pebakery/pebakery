@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -62,12 +62,11 @@ namespace PEBakery.WPF
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
-            Process.Start(e.Uri.AbsoluteUri);
-            e.Handled = true;
+            FileHelper.OpenUri(e.Uri.AbsoluteUri);
         }
     }
 
-    #region UtiltiyViewModel
+    #region AboutViewModel
     public class AboutViewModel : INotifyPropertyChanged
     {
         #region Field, Property, Constructor
@@ -80,8 +79,7 @@ namespace PEBakery.WPF
         {
             MonoFont = monoFont;
 
-            // Info_PEBakeryVersion = typeof(App).Assembly.GetName().Version.ToString();
-            Info_PEBakeryVersion = Properties.Resources.StringVersion;
+            Info_PEBakeryVersion = Properties.Resources.StringVersionFull;
             Info_BuildDate = "Build " + Properties.Resources.BuildDate;
 
             License_Text = Properties.Resources.LicenseSimple;

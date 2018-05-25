@@ -4,6 +4,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,20 +13,13 @@ using System.Threading.Tasks;
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
+    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class CommandFileTests
     {
         #region Const String
         private const string SrcDir_File = "SrcFile";
         private const string SrcDir_Dir = "SrcDir";
-        private const string DestDir_FileCopy = "Dest_FileCopy";
-        private const string DestDir_FileDelete = "Dest_FileDelete";
-        private const string DestDir_FileRename = "Dest_FileRename";
-        private const string DestDir_FileCreateBlank = "Dest_FileCreateBlank";
-        private const string DestDir_DirCopy = "Dest_DirCopy";
-        private const string DestDir_DirDelete = "Dest_DirDelete";
-        private const string DestDir_DirMove = "Dest_DirMove";
-        private const string DestDir_DirMake = "Dest_DirMake";
-        private const string DestDir_PathMove = "Dest_PathMove";
         #endregion
 
         #region FileCopy
@@ -36,27 +30,28 @@ namespace PEBakery.Tests.Core.Command
         { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_File);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileCopy);
+            string pbDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string pbSrcDir = Path.Combine(pbDirPath, SrcDir_File);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\A.txt,{scriptDestDir}", "A.txt", null);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\A.txt,{scriptDestDir}\B.txt", "A.txt", "B.txt");
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\Z\Y.ini,{scriptDestDir}", Path.Combine("Z", "Y.ini"), "Y.ini");
-            FileCopy_MultiTemplate(s, $@"FileCopy,{scriptSrcDir}\*.txt,{scriptDestDir}", "*.txt", true);
-            FileCopy_MultiTemplate(s, $@"FileCopy,{scriptSrcDir}\*.ini,{scriptDestDir},NOREC", "*.ini", false);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\A.txt,{destDir}", "A.txt", destDir, null);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\A.txt,{destDir}\B.txt", "A.txt", destDir, "B.txt");
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\Z\Y.ini,{destDir}", Path.Combine("Z", "Y.ini"), destDir, "Y.ini");
+            FileCopy_MultiTemplate(s, $@"FileCopy,{pbSrcDir}\*.txt,{destDir}", "*.txt", destDir, true);
+            FileCopy_MultiTemplate(s, $@"FileCopy,{pbSrcDir}\*.ini,{destDir},NOREC", "*.ini", destDir, false);
 
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\P.txt,{scriptDestDir}", "P.txt", null, ErrorCheck.Error);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir}", "C.txt", null, ErrorCheck.Overwrite, true);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},NOWARN", "C.txt", null, ErrorCheck.Success, true);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},PRESERVE", "C.txt", null, ErrorCheck.Overwrite, true);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},PRESERVE,NOWARN", "C.txt", null, ErrorCheck.Success, true, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\P.txt,{destDir}", "P.txt", destDir, null, ErrorCheck.Error);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\C.txt,{destDir}", "C.txt", destDir, null, ErrorCheck.Overwrite, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\C.txt,{destDir},NOWARN", "C.txt", destDir, null, ErrorCheck.Success, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE", "C.txt", destDir, null, ErrorCheck.Overwrite, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{pbSrcDir}\C.txt,{destDir},PRESERVE,NOWARN", "C.txt", destDir, null, ErrorCheck.Success, true, true);
         }
 
         private void FileCopy_SingleTemplate(
             EngineState s, 
             string rawCode,
             string srcFileName, 
+            string destDir,
             string destFileName,
             ErrorCheck check = ErrorCheck.Success,
             bool preserve = false,
@@ -67,7 +62,6 @@ namespace PEBakery.Tests.Core.Command
 
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_FileCopy);
 
             string srcFullPath = Path.Combine(srcDir, srcFileName);
             string destFullPath = Path.Combine(destDir, destFileName);
@@ -89,23 +83,29 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
 
-        private void FileCopy_MultiTemplate(EngineState s, string rawCode, string srcFileWildCard, bool recursive, ErrorCheck check = ErrorCheck.Success)
+        private void FileCopy_MultiTemplate(
+            EngineState s,
+            string rawCode,
+            string srcFileWildCard,
+            string destDir,
+            bool recursive,
+            ErrorCheck check = ErrorCheck.Success)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_FileCopy);
 
             if (Directory.Exists(destDir))
                 Directory.Delete(destDir, true);
@@ -136,8 +136,8 @@ namespace PEBakery.Tests.Core.Command
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
@@ -145,7 +145,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -158,23 +159,20 @@ namespace PEBakery.Tests.Core.Command
         { // FileDelete,<FilePath>[,NOWARN][,NOREC]
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_File);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileDelete);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            FileDelete_SingleTemplate(s, $@"FileDelete,{scriptDestDir}\A.txt", "A.txt");
-            FileDelete_SingleTemplate(s, $@"FileDelete,{scriptDestDir}\H.txt", "H.txt", ErrorCheck.Warning);
-            FileDelete_SingleTemplate(s, $@"FileDelete,{scriptDestDir}\H.txt,NOWARN", "H.txt", ErrorCheck.Success);
-            FileDelete_MultiTemplate(s, $@"FileDelete,{scriptDestDir}\*.ini", "*.ini", ErrorCheck.Success);
-            FileDelete_MultiTemplate(s, $@"FileDelete,{scriptDestDir}\*.ini,NOREC", "*.ini", ErrorCheck.Success, false);
+            FileDelete_SingleTemplate(s, $@"FileDelete,{destDir}\A.txt", "A.txt", destDir);
+            FileDelete_SingleTemplate(s, $@"FileDelete,{destDir}\H.txt", "H.txt", destDir, ErrorCheck.Warning);
+            FileDelete_SingleTemplate(s, $@"FileDelete,{destDir}\H.txt,NOWARN", "H.txt", destDir, ErrorCheck.Success);
+            FileDelete_MultiTemplate(s, $@"FileDelete,{destDir}\*.ini", "*.ini", destDir, ErrorCheck.Success);
+            FileDelete_MultiTemplate(s, $@"FileDelete,{destDir}\*.ini,NOREC", "*.ini", destDir, ErrorCheck.Success, false);
         }
 
-        private void FileDelete_SingleTemplate(EngineState s, string rawCode, string fileName, ErrorCheck check = ErrorCheck.Success)
+        private void FileDelete_SingleTemplate(EngineState s, string rawCode, string fileName, string destDir, ErrorCheck check = ErrorCheck.Success)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
 
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_FileDelete);
 
             string destFullPath = Path.Combine(destDir, fileName);
 
@@ -192,16 +190,16 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
 
-        private void FileDelete_MultiTemplate(EngineState s, string rawCode, string wildCard, ErrorCheck check = ErrorCheck.Success, bool recursive = true)
+        private void FileDelete_MultiTemplate(EngineState s, string rawCode, string wildCard, string destDir, ErrorCheck check = ErrorCheck.Success, bool recursive = true)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
 
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_FileDelete);
 
             string destFullPath = Path.Combine(destDir, wildCard);
 
@@ -226,7 +224,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -239,22 +238,19 @@ namespace PEBakery.Tests.Core.Command
         { // FileRename,<SrcPath>,<DestPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_File);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileRename);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            FileRename_Template(s, $@"FileRename,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
-            FileRename_Template(s, $@"FileRename,{scriptDestDir}\A.txt,{scriptDestDir}\B.txt", "A.txt", "B.txt", ErrorCheck.Error);
-            FileRename_Template(s, $@"FileRename,{scriptDestDir}\R.txt,{scriptDestDir}\S.txt", "R.txt", "S.txt", ErrorCheck.Error);
-            FileRename_Template(s, $@"FileMove,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
+            FileRename_Template(s, $@"FileRename,{destDir}\A.txt,{destDir}\R.txt", "A.txt", destDir, "R.txt");
+            FileRename_Template(s, $@"FileRename,{destDir}\A.txt,{destDir}\B.txt", "A.txt", destDir, "B.txt", ErrorCheck.Error);
+            FileRename_Template(s, $@"FileRename,{destDir}\R.txt,{destDir}\S.txt", "R.txt", destDir, "S.txt", ErrorCheck.Error);
+            FileRename_Template(s, $@"FileMove,{destDir}\A.txt,{destDir}\R.txt", "A.txt", destDir, "R.txt");
         }
 
-        private void FileRename_Template(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        private void FileRename_Template(EngineState s, string rawCode, string srcFileName, string destDir, string destFileName, ErrorCheck check = ErrorCheck.Success)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
 
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_FileRename);
 
             string srcFullPath = Path.Combine(destDir, srcFileName);
             string destFullPath = Path.Combine(destDir, destFileName);
@@ -277,7 +273,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -290,28 +287,23 @@ namespace PEBakery.Tests.Core.Command
         { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8|UTF16|UTF16BE|ANSI]
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileCreateBlank);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, true);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, true);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt", destDir, "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,UTF8", destDir, "A.txt", Encoding.UTF8, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,UTF16", destDir, "A.txt", Encoding.Unicode, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,UTF16BE", destDir, "A.txt", Encoding.BigEndianUnicode, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt", destDir, "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,PRESERVE", destDir, "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,PRESERVE", destDir, "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,NOWARN", destDir, "A.txt", Encoding.Default, true);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,NOWARN", destDir, "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", destDir, "A.txt", Encoding.Default, true);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{destDir}\A.txt,PRESERVE,NOWARN", destDir, "A.txt", Encoding.Default, false);
         }
 
-        private void FileCreateBlank_Template(EngineState s, string rawCode, string fileName, Encoding encoding, bool createDummy,  ErrorCheck check = ErrorCheck.Success)
+        private void FileCreateBlank_Template(EngineState s, string rawCode, string destDir, string fileName, Encoding encoding, bool createDummy,  ErrorCheck check = ErrorCheck.Success)
         {
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
-
-            string destDir = Path.Combine(dirPath, DestDir_FileCreateBlank);
-
             string destFullPath = Path.Combine(destDir, fileName);
 
             if (Directory.Exists(destDir))
@@ -327,12 +319,13 @@ namespace PEBakery.Tests.Core.Command
                 if (check == ErrorCheck.Success)
                 {
                     Assert.IsTrue(File.Exists(destFullPath));
-                    Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath) == encoding);
+                    Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath).Equals(encoding));
                 }
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -402,36 +395,35 @@ namespace PEBakery.Tests.Core.Command
         {  // DirCopy,<SrcDir>,<DestPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirCopy);
+            string pbDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string pbSrcDir = Path.Combine(pbDirPath, SrcDir_Dir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            DirCopy_SingleTemplate(s, $@"DirCopy,{scriptSrcDir}\ABCD,{scriptDestDir}", "ABCD");
-            DirCopy_SingleTemplate(s, $@"DirCopy,{scriptSrcDir}\ABDE,{scriptDestDir}", "ABDE");
-            DirCopy_SingleTemplate(s, $@"DirCopy,{scriptSrcDir}\AB*,{scriptDestDir}", "AB*");
-            DirCopy_SingleTemplate(s, $@"DirCopy,{scriptSrcDir}\*,{scriptDestDir}", "*");
+            DirCopy_SingleTemplate(s, $@"DirCopy,{pbSrcDir}\ABCD,{destDir}", destDir, "ABCD");
+            DirCopy_SingleTemplate(s, $@"DirCopy,{pbSrcDir}\ABDE,{destDir}", destDir, "ABDE");
+            DirCopy_SingleTemplate(s, $@"DirCopy,{pbSrcDir}\AB*,{destDir}", destDir, "AB*");
+            DirCopy_SingleTemplate(s, $@"DirCopy,{pbSrcDir}\*,{destDir}", destDir, "*");
 
             s.CompatDirCopyBug = true;
-            DirCopy_SingleTemplate(s, $@"DirCopy,{scriptSrcDir}\*,{scriptDestDir}", "*", ErrorCheck.Success, true);
+            DirCopy_SingleTemplate(s, $@"DirCopy,{pbSrcDir}\*,{destDir}", destDir, "*", ErrorCheck.Success, true);
         }
 
         private void DirCopy_SingleTemplate(
             EngineState s,
             string rawCode,
+            string destDir,
             string dirName,
             ErrorCheck check = ErrorCheck.Success,
             bool wbBug = false)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
             string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_DirCopy);
 
             string srcFullPath = Path.Combine(srcDir, dirName);
             string destFullPath = Path.Combine(destDir, dirName);
 
             if (Directory.Exists(destDir))
                 Directory.Delete(destDir, true);
-
             try
             {
                 EngineTests.Eval(s, rawCode, CodeType.DirCopy, check);
@@ -477,9 +469,7 @@ namespace PEBakery.Tests.Core.Command
                             string[] srcDirs = Directory.GetFiles(firstSrcDirs[i], "*", SearchOption.AllDirectories);
                             string[] destDirs = Directory.GetFiles(firstDestDirs[i], "*", SearchOption.AllDirectories);
                             Assert.IsTrue(srcDirs.Length == destDirs.Length);
-
-                            for (int x = 0; x < srcDirs.Length; x++)
-                                Assert.IsTrue(srcDirs[i].Substring(srcDir.Length).Equals(destDirs[i].Substring(destDir.Length), StringComparison.Ordinal));
+                            Assert.IsTrue(srcDirs[i].Substring(srcDir.Length).Equals(destDirs[i].Substring(destDir.Length), StringComparison.Ordinal));
                         }
                     }
                 }
@@ -500,27 +490,33 @@ namespace PEBakery.Tests.Core.Command
         { // DirDelete,<DirPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirDelete);
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ABCD", "ABCD");
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ABDE", "ABDE");
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}", string.Empty);
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ACDE.txt", "ACDE.txt", ErrorCheck.Error, false);
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ABCD", tempDir, "ABCD");
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ABDE", tempDir, "ABDE");
+                DirDelete_Template(s, $@"DirDelete,{tempDir}", tempDir, string.Empty);
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ACDE.txt", tempDir, "ACDE.txt", ErrorCheck.Error, false);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
         }
 
-        private void DirDelete_Template(EngineState s, string rawCode, string dirName, ErrorCheck check = ErrorCheck.Success, bool copyDir = true)
+        private void DirDelete_Template(EngineState s, string rawCode, string destDir, string dirName, ErrorCheck check = ErrorCheck.Success, bool copyDir = true)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
             string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_DirDelete);
 
             string srcFullPath = Path.Combine(srcDir, dirName);
             string destFullPath = Path.Combine(destDir, dirName);
 
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
+            if (Directory.Exists(destFullPath))
+                Directory.Delete(destFullPath, true);
             try
             {
                 if (copyDir)
@@ -535,8 +531,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
+                if (Directory.Exists(destFullPath))
+                    Directory.Delete(destFullPath, true);
             }
         }
         #endregion
@@ -549,43 +545,39 @@ namespace PEBakery.Tests.Core.Command
         { // DirMove,<SrcDir>,<DestPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMove);
+            string varSrcDir = Path.Combine("%TestBench%", "CommandFile", SrcDir_Dir);
+            string srcDir = StringEscaper.Preprocess(s, varSrcDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ABCD,{scriptDestDir}\XYZ", "ABCD", "XYZ");
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ABDE,{scriptDestDir}\ABCD", "ABDE", Path.Combine("ABCD", "ABDE"));
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\XYZ,{scriptDestDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ACDE.txt,{scriptDestDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
-        }
-
-        private void DirMove_Template(EngineState s, string rawCode, string srcDirName, string destDirName, ErrorCheck check = ErrorCheck.Success)
-        {
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
-
-            string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_DirMove);
-
-            string srcFullPath = Path.Combine(destDir, srcDirName);
-            string destFullPath = Path.Combine(destDir, destDirName);
-
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
-            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
-            try
+            void Template(string rawCode, string srcDirName, string destDirName, ErrorCheck check = ErrorCheck.Success)
             {
-                EngineTests.Eval(s, rawCode, CodeType.DirMove, check);
+                string srcFullPath = Path.Combine(destDir, srcDirName);
+                string destFullPath = Path.Combine(destDir, destDirName);
 
-                if (check == ErrorCheck.Success)
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                try
                 {
-                    Assert.IsFalse(Directory.Exists(srcFullPath));
-                    Assert.IsTrue(Directory.Exists(destFullPath));
+                    EngineTests.Eval(s, rawCode, CodeType.DirMove, check);
+
+                    if (check == ErrorCheck.Success)
+                    {
+                        Assert.IsFalse(Directory.Exists(srcFullPath));
+                        Assert.IsTrue(Directory.Exists(destFullPath));
+                    }
+                }
+                finally
+                {
+                    Directory.Delete(destDir, true);
                 }
             }
-            finally
-            {
-                Directory.Delete(destDir, true);
-            }
+
+            // string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMove);
+            Template($@"DirMove,{destDir}\ABCD,{destDir}\XYZ", "ABCD", "XYZ");
+            Template($@"DirMove,{destDir}\ABDE,{destDir}\ABCD", "ABDE", Path.Combine("ABCD", "ABDE"));
+            Template($@"DirMove,{destDir}\XYZ,{destDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
+            Template($@"DirMove,{destDir}\ACDE.txt,{destDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
         }
         #endregion
 
@@ -596,23 +588,16 @@ namespace PEBakery.Tests.Core.Command
         public void File_DirMake()
         { // DirMake,<DestDir>
             EngineState s = EngineTests.CreateEngineState();
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMake);
-
-            DirMake_Template(s, $@"DirMake,{scriptDestDir}\A", "A");
-            DirMake_Template(s, $@"DirMake,{scriptDestDir}\A", "A", ErrorCheck.Success, true, false);
-            DirMake_Template(s, $@"DirMake,{scriptDestDir}\A", "A", ErrorCheck.Error, false, true);
+            DirMake_Template(s, $@"DirMake,{destDir}\A", destDir, "A");
+            DirMake_Template(s, $@"DirMake,{destDir}\A", destDir, "A", ErrorCheck.Success, true, false);
+            DirMake_Template(s, $@"DirMake,{destDir}\A", destDir, "A", ErrorCheck.Error, false, true);
         }
 
-        private void DirMake_Template(EngineState s, string rawCode, string dirName,
+        private void DirMake_Template(EngineState s, string rawCode, string destDir, string dirName,
             ErrorCheck check = ErrorCheck.Success, bool createDir = false, bool createFile = false)
         {
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
-
-            string destDir = Path.Combine(dirPath, DestDir_DirMake);
-
             string destFullPath = Path.Combine(destDir, dirName);
 
             if (Directory.Exists(destDir))
@@ -682,21 +667,17 @@ namespace PEBakery.Tests.Core.Command
         public void File_PathMove()
         { // PathMove,<SrcPath>,<DestPath>
             EngineState s = EngineTests.CreateEngineState();
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_PathMove);
-
-            PathMove_FileTemplate(s, $@"PathMove,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
-            PathMove_DirTemplate(s, $@"PathMove,{scriptDestDir}\ABCD,{scriptDestDir}\XYZ", "ABCD", "XYZ");
+            PathMove_FileTemplate(s, $@"PathMove,{destDir}\A.txt,{destDir}\R.txt", "A.txt", destDir, "R.txt");
+            PathMove_DirTemplate(s, $@"PathMove,{destDir}\ABCD,{destDir}\XYZ", "ABCD", destDir, "XYZ");
         }
 
-        private void PathMove_FileTemplate(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        private void PathMove_FileTemplate(EngineState s, string rawCode, string srcFileName, string destDir, string destFileName, ErrorCheck check = ErrorCheck.Success)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
 
             string srcDir = Path.Combine(dirPath, SrcDir_File);
-            string destDir = Path.Combine(dirPath, DestDir_PathMove);
-
             string srcFullPath = Path.Combine(destDir, srcFileName);
             string destFullPath = Path.Combine(destDir, destFileName);
 
@@ -715,17 +696,16 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
 
-        private void PathMove_DirTemplate(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        private void PathMove_DirTemplate(EngineState s, string rawCode, string srcFileName, string destDir, string destFileName, ErrorCheck check = ErrorCheck.Success)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
 
             string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_PathMove);
-
             string srcFullPath = Path.Combine(destDir, srcFileName);
             string destFullPath = Path.Combine(destDir, destFileName);
 
@@ -744,7 +724,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion

@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.WPF;
@@ -48,51 +49,11 @@ namespace PEBakery.Tests.Core
     [TestClass]
     public class EngineTests
     {
+        #region Static Fields
         public static Project Project;
         public static Logger Logger;
         public static string BaseDir;
-        
-        // [TestInitialize], [TestCleanup]
-        [AssemblyInitialize]
-        public static void PrepareTests(TestContext ctx)
-        {
-            BaseDir = @"..\..\Samples";
-            ProjectCollection projects = new ProjectCollection(BaseDir, null);
-            projects.PrepareLoad(out int nop);
-            projects.Load(null);
-
-            // Should be only one project named TestSuite
-            Project = projects.Projects[0];
-
-            // Init NativeAssembly
-            NativeAssemblyInit();
-
-            Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
-            Logger = new Logger(":memory:");
-            Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
-        }
-
-        private static void NativeAssemblyInit()
-        {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string arch;
-            if (IntPtr.Size == 8)
-                arch = "x64";
-            else
-                arch = "x86";
-
-            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
-
-            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            ManagedWimLib.Wim.GlobalInit(WimLibDllPath);
-        }
-
-        [AssemblyCleanup]
-        public static void FinalizeTests()
-        {
-            Logger.DB.Close();
-        }
+        #endregion
 
         #region Utility Methods
         public static EngineState CreateEngineState(bool doClone = true, Script p = null)
@@ -174,7 +135,7 @@ namespace PEBakery.Tests.Core
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
-            if (0 < errorLogs.Where(x => x.State == LogState.Error).Count())
+            if (errorLogs.Any(x => x.State == LogState.Error))
             { 
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;

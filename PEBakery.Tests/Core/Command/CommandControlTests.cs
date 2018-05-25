@@ -67,7 +67,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Set_3(EngineState s)
         {
-            string pPath = s.Project.MainScript.FullPath;
+            string pPath = s.Project.MainScript.RealPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
             string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
@@ -77,7 +77,7 @@ namespace PEBakery.Tests.Core.Command
             string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
-            string permanent = Ini.GetKey(pPath, "Variables", "%Set_3%");
+            string permanent = Ini.ReadKey(pPath, "Variables", "%Set_3%");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");

@@ -1,0 +1,27 @@
+[Main]
+Title=EncodeFileTests
+Author=ied206
+Description=Test Plugin for Unit Test of EncodedFile Class
+Credits=ied206
+Level=3
+
+[Interface]
+TextLabel1="Test Plugin for Unit Test of EncodedFile Class",1,1,13,14,146,18,8,Bold
+
+[Process]
+Echo,"Test Plugin for Unit Test of EncodedFile Class"
+
+[DummySection]
+
+[AuthorEncoded]
+Logo.jpg=973,1298
+Logo=Logo.jpg
+
+[EncodedFile-AuthorEncoded-Logo.jpg]
+lines=0
+0=eJz7f+P/AwYBLzdPNwZGRkaGBCBk+H+bwZmBiZERhKCAmZUZBNhYWJhZ2dnY2UGYg5Obk4ODi4OdnYuXi4ubBwjYOfn4eXn4QGyQISDtIF1AxMPBzsFDMvh/gEGQg0GZQZmZUYmBSZCRWZDx/xEGeQYGRlZGMGCAAkYmZhZWNqCTuLiBCrYKAJ3PzMwEdCwrCwtQthYoz8AiyCqkaOjIJhyYyK5UKGLUOHEhh7LTxoOiQRc/qBgnFTVxcomJS0hKqaqpa2hqmZiamVtYWjm7uLq5e3h6BYeEhoVHREYlp6SmpWdkZhWXlJaVV1RWNbe0trV3dHZNmjxl6rTpM2bOWrR4ydJly1esXLVp85at27bv2Lnr0OEjR48dP3Hy1KXLV65eu37j5q2Hjx4/efrs+YuXrz5++vzl67fvP37+AvmLkYGZEQaw+ksQ6C8mYBywsIP8xchUDlIgyMKqaMgm5BjInlgorGTUyCHiNHHhxoOcysZBH0STii5yiamYPFT9CPIa2GfEeayJLJ/BPYbw1y0GHmZGYOQxCzLYM/xcmMx8a8rcxV1Jq6WufFjetmaPu+jl+IrzB/+JZlf+mfHgWm7pz9Sdvh33ira2TS/n8NmsJuXws3dTY9nm+pBHhSUfPjxfXV2p9p9B5fzxlQFzPYsOf4mfOW/trmVetz+WH6oNPjDdzqzrP0PApZQdH/i739pI14p2THrEfbpzcoy+jTnv0/m60q5azM7TxSV/miVuKE/+z3A9sPXYxSNHz3Xvin8y/8nF0A2fl1yatfnf9Bfex7eKis90LZXkO6ddfEBO+dIf+aJbZ88YZVV9bXny4lf27WeHJEUDJ/16e7tzqsx8vavMnHIGaak9lcbFS0/aZh6KXby2MGnDaUH/m55bdt1e9fbFrxsvFwffPD1Xt6qycu7zw/Ml7/+Q/lb3o+Fa56L4syt+7D5k9l0o+5785T0O63jbu5dm2ux14nwkNL0nLWD2h3PmiTfkmA77xxr7Nd2yPar7OGLKztMCi5nVdz5a9u/qrm6fnRu8by6+nJ+va8o922Him3mPrmmfyH2iE16hKbewzGCNyM+dCUcD1uiXb99b9KCAqzVqq856zcy8kyrT781cpy74VpHjfuqPu5NyTEKLa2rrvbQvW3wRclealaJSuqiL7cSS4lld4ZavXUUE7jWbS2ksauL/fxMARkqsCnic4/DJT8/XyypIZxgFIxGYs0DoVmbs8q/TvlgxMAEAnJYGTQs6SWwBAAAAAgAAACQAAACFAwAAAAAAAAEAAAAAAAAAAAAAAA
+
+[EncodedFolders]
+Attach
+
+[Attach]

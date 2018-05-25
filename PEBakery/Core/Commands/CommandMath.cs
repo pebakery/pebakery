@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -45,8 +45,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Math));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Math), "Invalid CodeInfo");
             CodeInfo_Math info = cmd.Info as CodeInfo_Math;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             MathType type = info.Type;
             switch (type)
@@ -56,46 +57,56 @@ namespace PEBakery.Core.Commands
                 case MathType.Mul:
                 case MathType.Div:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Arithmetic));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Arithmetic), "Invalid MathInfo");
                         MathInfo_Arithmetic subInfo = info.SubInfo as MathInfo_Arithmetic;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
                         if (!NumberHelper.ParseDecimal(srcStr1, out decimal src1))
-                            throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseDecimal(srcStr2, out decimal src2))
-                            throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                         decimal destInt;
-                        if (type == MathType.Add)
-                            destInt = src1 + src2;
-                        else if (type == MathType.Sub)
-                            destInt = src1 - src2;
-                        else if (type == MathType.Mul)
-                            destInt = src1 * src2;
-                        else if (type == MathType.Div)
-                            destInt = src1 / src2;
-                        else
-                            throw new InternalException($"Internal Logic Error at Math,Arithmetic");
+                        switch (type)
+                        {
+                            case MathType.Add:
+                                destInt = src1 + src2;
+                                break;
+                            case MathType.Sub:
+                                destInt = src1 - src2;
+                                break;
+                            case MathType.Mul:
+                                destInt = src1 * src2;
+                                break;
+                            case MathType.Div:
+                                destInt = src1 / src2;
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at Math,Arithmetic");
+                        }
 
-                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString()));
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString(CultureInfo.InvariantCulture)));
                     }
                     break;
                 case MathType.IntDiv:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntDiv));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntDiv), "Invalid MathInfo");
                         MathInfo_IntDiv subInfo = info.SubInfo as MathInfo_IntDiv;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
                         
-                        if (srcStr1.StartsWith("-", StringComparison.Ordinal) || srcStr2.StartsWith("-", StringComparison.Ordinal))
+                        if (srcStr1.StartsWith("-", StringComparison.Ordinal) ||
+                            srcStr2.StartsWith("-", StringComparison.Ordinal))
                         { // Signed
                             if (!NumberHelper.ParseInt64(srcStr1, out long src1))
-                                throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                             if (!NumberHelper.ParseInt64(srcStr2, out long src2))
-                                throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                             long q = src1 / src2;
                             long r = src1 % src2;
@@ -106,9 +117,9 @@ namespace PEBakery.Core.Commands
                         else
                         { // Unsigned
                             if (!NumberHelper.ParseUInt64(srcStr1, out ulong src1))
-                                throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                             if (!NumberHelper.ParseUInt64(srcStr2, out ulong src2))
-                                throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                             ulong q = src1 / src2;
                             ulong r = src1 % src2;
@@ -120,15 +131,16 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Neg:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Neg));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Neg), "Invalid MathInfo");
                         MathInfo_Neg subInfo = info.SubInfo as MathInfo_Neg;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
-                        decimal destInt = (src * -1);
-                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString()));
+                        decimal destInt = src * -1;
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString(CultureInfo.InvariantCulture)));
                     }
                     break;
                 case MathType.ToSign:
@@ -137,8 +149,9 @@ namespace PEBakery.Core.Commands
                         // Math,IntSign,<DestVar>,<Src>,[8|16|32|64]
                         // Math,IntUnsign,<DestVar>,<Src>,[8|16|32|64]
 
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntegerSignedness));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntegerSignedness), "Invalid MathInfo");
                         MathInfo_IntegerSignedness subInfo = info.SubInfo as MathInfo_IntegerSignedness;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
 
@@ -150,7 +163,7 @@ namespace PEBakery.Core.Commands
                                 case 8:
                                     {
                                         if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((sbyte)src).ToString();
                                     }
@@ -158,7 +171,7 @@ namespace PEBakery.Core.Commands
                                 case 16:
                                     {
                                         if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((short)src).ToString();
                                     }
@@ -166,7 +179,7 @@ namespace PEBakery.Core.Commands
                                 case 32:
                                     {
                                         if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((int)src).ToString();
                                     }
@@ -174,13 +187,13 @@ namespace PEBakery.Core.Commands
                                 case 64:
                                     {
                                         if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((long)src).ToString();
                                     }
                                     break;
                                 default:
-                                    throw new InternalException($"Internal Logic Error at Math,ToSign");
+                                    throw new InternalException("Internal Logic Error at Math,ToSign");
                             }
                         }
                         else
@@ -190,7 +203,7 @@ namespace PEBakery.Core.Commands
                                 case 8:
                                     {
                                         if (!NumberHelper.ParseInt8(srcStr, out sbyte src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((byte)src).ToString();
                                     }
@@ -198,7 +211,7 @@ namespace PEBakery.Core.Commands
                                 case 16:
                                     {
                                         if (!NumberHelper.ParseInt16(srcStr, out short src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((ushort)src).ToString();
                                     }
@@ -206,7 +219,7 @@ namespace PEBakery.Core.Commands
                                 case 32:
                                     {
                                         if (!NumberHelper.ParseInt32(srcStr, out int src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((uint)src).ToString();
                                     }
@@ -214,13 +227,13 @@ namespace PEBakery.Core.Commands
                                 case 64:
                                     {
                                         if (!NumberHelper.ParseInt64(srcStr, out long src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((ulong)src).ToString();
                                     }
                                     break;
                                 default:
-                                    throw new InternalException($"Internal Logic Error at Math,ToUnsign");
+                                    throw new InternalException("Internal Logic Error at Math,ToUnsign");
                             }
                         }
 
@@ -231,8 +244,9 @@ namespace PEBakery.Core.Commands
                 case MathType.BoolOr:
                 case MathType.BoolXor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolLogicOper));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolLogicOper), "Invalid MathInfo");
                         MathInfo_BoolLogicOper subInfo = info.SubInfo as MathInfo_BoolLogicOper;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -241,38 +255,45 @@ namespace PEBakery.Core.Commands
                         if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src1 = true;
                         else if (!srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr1}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not valid boolean value");
 
                         bool src2 = false;
                         if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src2 = true;
                         else if (!srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr2}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not valid boolean value");
 
                         bool dest;
-                        if (type == MathType.BoolAnd)
-                            dest = src1 && src2;
-                        else if (type == MathType.BoolOr)
-                            dest = src1 || src2;
-                        else if (type == MathType.BoolXor)
-                            dest = src1 ^ src2;
-                        else
-                            throw new InternalException($"Internal Logic Error at Math,BoolLogicOper");
+                        switch (type)
+                        {
+                            case MathType.BoolAnd:
+                                dest = src1 && src2;
+                                break;
+                            case MathType.BoolOr:
+                                dest = src1 || src2;
+                                break;
+                            case MathType.BoolXor:
+                                dest = src1 ^ src2;
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at Math,BoolLogicOper");
+                        }
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
                     }
                     break;
                 case MathType.BoolNot:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolNot));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolNot), "Invalid MathInfo");
                         MathInfo_BoolNot subInfo = info.SubInfo as MathInfo_BoolNot;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         bool src = false;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src = true;
                         else if (!srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not valid boolean value");
 
                         bool dest = !src;
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
@@ -282,26 +303,33 @@ namespace PEBakery.Core.Commands
                 case MathType.BitOr:
                 case MathType.BitXor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitLogicOper));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitLogicOper), "Invalid MathInfo");
                         MathInfo_BitLogicOper subInfo = info.SubInfo as MathInfo_BitLogicOper;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
                         if (!NumberHelper.ParseUInt64(srcStr1, out ulong src1))
-                            throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseUInt64(srcStr2, out ulong src2))
-                            throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                         ulong dest;
-                        if (type == MathType.BitAnd)
-                            dest = src1 & src2;
-                        else if (type == MathType.BitOr)
-                            dest = src1 | src2;
-                        else if (type == MathType.BitXor)
-                            dest = src1 ^ src2;
-                        else
-                            throw new InternalException($"Internal Logic Error at Math,BitLogicOper");
+                        switch (type)
+                        {
+                            case MathType.BitAnd:
+                                dest = src1 & src2;
+                                break;
+                            case MathType.BitOr:
+                                dest = src1 | src2;
+                                break;
+                            case MathType.BitXor:
+                                dest = src1 ^ src2;
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at Math,BitLogicOper");
+                        }
 
                         string destStr = dest.ToString();
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -309,8 +337,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitNot:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitNot));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitNot), "Invalid MathInfo");
                         MathInfo_BitNot subInfo = info.SubInfo as MathInfo_BitNot;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string destStr;
@@ -320,37 +349,37 @@ namespace PEBakery.Core.Commands
                             case 8:
                                 {
                                     if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
-                                    destStr = ((byte)(~src)).ToString();
+                                    destStr = ((byte)~src).ToString();
                                 }
                                 break;
                             case 16:
                                 {
                                     if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
-                                    destStr = ((ushort)(~src)).ToString();
+                                    destStr = ((ushort)~src).ToString();
                                 }
                                 break;
                             case 32:
                                 {
                                     if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
-                                    destStr = ((uint)(~src)).ToString();
+                                    destStr = (~src).ToString();
                                 }
                                 break;
                             case 64:
                                 {
                                     if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
-                                    destStr = ((ulong)(~src)).ToString();
+                                    destStr = (~src).ToString();
                                 }
                                 break;
                             default:
-                                throw new InternalException($"Internal Logic Error at Math,BitNot");
+                                throw new InternalException("Internal Logic Error at Math,BitNot");
                         }
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -358,21 +387,22 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitShift:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitShift));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitShift), "Invalid MathInfo");
                         MathInfo_BitShift subInfo = info.SubInfo as MathInfo_BitShift;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
 
                         string shiftStr = StringEscaper.Preprocess(s, subInfo.Shift);
                         if (!NumberHelper.ParseInt32(shiftStr, out int shift))
-                            throw new ExecuteException($"[{shiftStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{shiftStr}] is not a valid integer");
 
                         string leftRightStr = StringEscaper.Preprocess(s, subInfo.LeftRight);
                         bool isLeft = false;
                         if (leftRightStr.Equals("Left", StringComparison.OrdinalIgnoreCase))
                             isLeft = true;
                         else if (!leftRightStr.Equals("Right", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{leftRightStr}] must be one of [Left, Right]");
+                            return LogInfo.LogErrorMessage(logs, $"[{leftRightStr}] must be one of [Left, Right]");
 
                         string destStr;
                         switch (subInfo.BitSize)
@@ -380,7 +410,7 @@ namespace PEBakery.Core.Commands
                             case 8:
                                 {
                                     if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     byte dest;
                                     if (isLeft)
@@ -393,7 +423,7 @@ namespace PEBakery.Core.Commands
                             case 16:
                                 {
                                     if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     ushort dest;
                                     if (isLeft)
@@ -406,31 +436,31 @@ namespace PEBakery.Core.Commands
                             case 32:
                                 {
                                     if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     uint dest;
                                     if (isLeft)
-                                        dest = (uint)(src << shift);
+                                        dest = src << shift;
                                     else
-                                        dest = (uint)(src >> shift);
+                                        dest = src >> shift;
                                     destStr = dest.ToString();
                                 }
                                 break;
                             case 64:
                                 {
                                     if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     ulong dest;
                                     if (isLeft)
-                                        dest = (ulong)(src << shift);
+                                        dest = src << shift;
                                     else
-                                        dest = (ulong)(src >> shift);
+                                        dest = src >> shift;
                                     destStr = dest.ToString();
                                 }
                                 break;
                             default:
-                                throw new InternalException($"Internal Logic Error at Math,BitShift");
+                                throw new InternalException("Internal Logic Error at Math,BitShift");
                         }
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -440,36 +470,39 @@ namespace PEBakery.Core.Commands
                 case MathType.Floor:
                 case MathType.Round:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_CeilFloorRound));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_CeilFloorRound), "Invalid MathInfo");
                         MathInfo_CeilFloorRound subInfo = info.SubInfo as MathInfo_CeilFloorRound;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseInt64(srcStr, out long srcInt))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                         string unitStr = StringEscaper.Preprocess(s, subInfo.Unit);
                         // Is roundToStr number?
                         if (!NumberHelper.ParseInt64(unitStr, out long unit))
-                            throw new ExecuteException($"[{unitStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{unitStr}] is not a valid integer");
                         if (unit < 0)
-                            throw new ExecuteException($"[{unit}] must be positive integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{unit}] must be positive integer");
 
                         long destInt;
                         long remainder = srcInt % unit;
-                        if (type == MathType.Ceil)
+                        switch (type)
                         {
-                            destInt = srcInt - remainder + unit;
-                        }
-                        else if (type == MathType.Floor)
-                        {
-                            destInt = srcInt - remainder;
-                        }
-                        else // if (type == StrFormatType.Round)
-                        {
-                            if ((unit - 1) / 2 < remainder)
+                            case MathType.Ceil:
                                 destInt = srcInt - remainder + unit;
-                            else
+                                break;
+                            case MathType.Floor:
                                 destInt = srcInt - remainder;
+                                break;
+                            case MathType.Round:
+                                if ((unit - 1) / 2 < remainder)
+                                    destInt = srcInt - remainder + unit;
+                                else
+                                    destInt = srcInt - remainder;
+                                break;
+                            default:
+                                throw new InternalException($"Internal Logic Error at Math,{info.Type}");
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destInt.ToString());
@@ -478,38 +511,41 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Abs:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Abs));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Abs), "Invalid MathInfo");
                         MathInfo_Abs subInfo = info.SubInfo as MathInfo_Abs;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                         decimal dest = System.Math.Abs(src);
-                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString(CultureInfo.InvariantCulture)));
                     }
                     break;
                 case MathType.Pow:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Pow));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Pow), "Invalid MathInfo");
                         MathInfo_Pow subInfo = info.SubInfo as MathInfo_Pow;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string baseStr = StringEscaper.Preprocess(s, subInfo.Base);
                         if (!NumberHelper.ParseDecimal(baseStr, out decimal _base))
-                            throw new ExecuteException($"[{baseStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{baseStr}] is not a valid integer");
 
                         string powerStr = StringEscaper.Preprocess(s, subInfo.Power);
                         if (!NumberHelper.ParseUInt32(powerStr, out uint power))
-                            throw new ExecuteException($"[{baseStr}] is not a postivie integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{baseStr}] is not a postivie integer");
 
                         decimal dest = NumberHelper.DecimalPower(_base, power);
-                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString(CultureInfo.InvariantCulture)));
                     }
                     break;
                 case MathType.Hex:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Hex));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Hex), "Invalid MathInfo");
                         MathInfo_Hex subInfo = info.SubInfo as MathInfo_Hex;
+                        Debug.Assert(subInfo != null, "Invalid MathInfo");
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         string dest;
@@ -517,26 +553,26 @@ namespace PEBakery.Core.Commands
                         {
                             case 8:
                                 if (!NumberHelper.ParseSignedUInt8(intStr, out byte u8))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 8bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 8bit integer");
                                 dest = u8.ToString("X2");
                                 break;
                             case 16:
                                 if (!NumberHelper.ParseSignedUInt16(intStr, out ushort u16))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 16bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 16bit integer");
                                 dest = u16.ToString("X4");
                                 break;
                             case 32:
                                 if (!NumberHelper.ParseSignedUInt32(intStr, out uint u32))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 32bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 32bit integer");
                                 dest = u32.ToString("X8");
                                 break;
                             case 64:
                                 if (!NumberHelper.ParseSignedUInt64(intStr, out ulong u64))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 64bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 64bit integer");
                                 dest = u64.ToString("X16");
                                 break;
                             default:
-                                throw new InternalException($"Internal Logic Error at Math,Hex");
+                                throw new InternalException("Internal Logic Error at Math,Hex");
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest);

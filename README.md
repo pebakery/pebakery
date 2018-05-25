@@ -20,6 +20,15 @@ PEBakery is compatible with WinBuilder 082.
 - I do not provide any warranty, use at your own risk.
 - Windows Preinstalled Environment is a registered trademark of Microsoft. 
 
+## Download
+
+Official release version is recommended for normal use.
+
+Nightly build is provided for testing purpose.
+
+- [Official Release](https://github.com/pebakery/pebakery/releases)
+- [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
+
 ## License
 
 PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
@@ -41,7 +50,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Documentation
 
-See [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
+Go to [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
 
 ## TODO
 

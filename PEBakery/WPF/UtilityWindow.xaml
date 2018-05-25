@@ -1,5 +1,5 @@
 ﻿<!--
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -38,84 +38,101 @@
         FontSize="13"
         Closed="Window_Closed"
         Width="800" Height="640"
-        MinWidth="640" MinHeight="480">
+        MinWidth="640" MinHeight="480"
+        d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Save"
+                        Executed="CodeBoxSave_Executed"
+                        CanExecute="CodeBox_CanExecute"/>
+        <CommandBinding Command="local:UtilityWindow.CodeBoxSaveCommand"
+                        Executed="CodeBoxRun_Executed"
+                        CanExecute="CodeBox_CanExecute"/>
+    </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0">
+        <TabControl Grid.Row="0"
+                    SelectedIndex="{Binding TabIndex}">
             <TabItem Header="CodeBox">
-                <Grid Grid.Row="0" Margin="10, 10, 10, 10">
+                <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="22"></RowDefinition>
-                        <RowDefinition Height="25"></RowDefinition>
-                        <RowDefinition Height="10"></RowDefinition>
-                        <RowDefinition Height="22"></RowDefinition>
-                        <RowDefinition></RowDefinition>
+                        <RowDefinition Height="22"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="22"/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock
-                        Grid.Row="0"
-                        VerticalAlignment="Center"
-                        FontWeight="Bold"
-                        Text="Environment">
+                    <TextBlock Grid.Row="0"
+                               VerticalAlignment="Center"
+                               FontWeight="Bold"
+                               Text="Environment">
                     </TextBlock>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition></ColumnDefinition>
-                            <ColumnDefinition Width="100"></ColumnDefinition>
-                            <ColumnDefinition Width="100"></ColumnDefinition>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox
-                            Grid.Column="0"
-                            SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
-                            ItemsSource="{Binding CodeBox_Projects}">
+                        <ComboBox Grid.Column="0"
+                                  SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
+                                  ItemsSource="{Binding CodeBox_Projects}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                    <TextBlock Text="{Binding Item1}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
 
-                        <Button
-                            Grid.Column="1"
-                            Name="CodeBpxSaveButton"
-                            Margin="10, 0, 0, 0"
-                            Content="Save"
-                            Click="CodeBoxSaveButton_Click">
+                        <Button Grid.Column="1"
+                                x:Name="CodeBoxSaveButton"
+                                Margin="10, 0, 0, 0"
+                                Content="Save"
+                                ToolTip="Ctrl + S"
+                                Click="CodeBoxSaveButton_Click">
                             <Button.InputBindings>
-                                <KeyBinding Key="S" Modifiers="Ctrl" />
+                                <KeyBinding Key="S"
+                                            Modifiers="Ctrl" 
+                                            Command="ApplicationCommands.Save" />
                             </Button.InputBindings>
                         </Button>
 
-                        <Button
-                            Grid.Column="2"
-                            Margin="10, 0, 0, 0"
-                            Content="Run"
-                            Click="CodeBoxRunButton_Click">
+                        <Button Grid.Column="2"
+                                x:Name="CodeBoxRunButton"
+                                Margin="10, 0, 0, 0"
+                                Content="Run"
+                                ToolTip="Ctrl + R"
+                                Click="CodeBoxRunButton_Click">
+                            <!-- "{x:Static local:UtilityWindow.CodeBoxSaveCommand}"> -->
+                            <!--
+                            <Button.InputBindings>
+                                <KeyBinding Key="R"
+                                            Modifiers="Ctrl" 
+                                            Command="local:UtilityWindow.CodeBoxSaveCommand" />
+                            </Button.InputBindings>
+                            -->
                         </Button>
                     </Grid>
 
-                    <TextBlock
-                        Grid.Row="3"
-                        VerticalAlignment="Center"
-                        FontWeight="Bold"
-                        Text="Script Code">
+                    <TextBlock Grid.Row="3"
+                               VerticalAlignment="Center"
+                               FontWeight="Bold"
+                               Text="Script Code">
                     </TextBlock>
-                    <TextBox 
-                        Grid.Row="4"
-                        FontFamily="{Binding MonoFontFamily}"
-                        FontWeight="{Binding MonoFontWeight}"
-                        FontSize="{Binding MonoFontSize}"
-                        TextWrapping="Wrap"
-                        AcceptsReturn="True"
-                        VerticalContentAlignment="Stretch"
-                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto"
-                        ScrollViewer.CanContentScroll="True"
-                        Text="{Binding CodeBox_Input}">
+                    <TextBox Grid.Row="4"
+                             FontFamily="{Binding MonoFontFamily}"
+                             FontWeight="{Binding MonoFontWeight}"
+                             FontSize="{Binding MonoFontSize}"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.CanContentScroll="True"
+                             Text="{Binding CodeBox_Input}">
                     </TextBox>
                 </Grid>
             </TabItem>
@@ -129,28 +146,26 @@
 
                     <Grid Grid.Row="0" Margin="10, 10, 10, 10">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="22"></RowDefinition>
-                            <RowDefinition></RowDefinition>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            VerticalAlignment="Center"
-                            FontWeight="Bold"
-                            Text="String to Convert">
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="String to Convert">
                         </TextBlock>
-                        <TextBox 
-                            Grid.Row="1"
-                            FontFamily="{Binding MonoFontFamily}"
-                            FontWeight="{Binding MonoFontWeight}"
-                            FontSize="{Binding MonoFontSize}"
-                            TextWrapping="Wrap"
-                            AcceptsReturn="True"
-                            VerticalContentAlignment="Stretch"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.CanContentScroll="True"
-                            Text="{Binding Escaper_StringToConvert}">
+                        <TextBox Grid.Row="1"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 Text="{Binding Escaper_StringToConvert}">
                         </TextBox>
                     </Grid>
 
@@ -162,57 +177,50 @@
                             <ColumnDefinition Width="200"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button
-                            Grid.Column="0"
-                            Margin="0, 0, 10, 0"
-                            Content="Escape"
-                            Click="EscapeButton_Click"/>
-                        <Button
-                            Grid.Column="1"
-                            Margin="0, 0, 10, 0"
-                            Content="Unescape"
-                            Click="UnescapeButton_Click"/>
-                        <StackPanel
-                            Grid.Column="2"
-                            Margin="0, 0, 10, 0"
-                            Orientation="Horizontal">
-                            <CheckBox
+                        <Button Grid.Column="0"
                                 Margin="0, 0, 10, 0"
-                                VerticalAlignment="Center"
-                                Content="Escape %"
-                                IsChecked="{Binding Escaper_EscapePercent}"/>
+                                Content="Escape"
+                                Click="EscapeButton_Click"/>
+                        <Button Grid.Column="1"
+                                Margin="0, 0, 10, 0"
+                                Content="Unescape"
+                                Click="UnescapeButton_Click"/>
+                        <StackPanel Grid.Column="2"
+                                    Margin="0, 0, 10, 0"
+                                    Orientation="Horizontal">
+                            <CheckBox Margin="0, 0, 10, 0"
+                                      VerticalAlignment="Center"
+                                      Content="Escape %"
+                                      IsChecked="{Binding Escaper_EscapePercent}"/>
                         </StackPanel>
-                        <Button
-                            Grid.Column="3"
-                            Content="Escape Sequence Legend"
-                            Click="EscapeSequenceLegend_Click"/>
+                        <Button Grid.Column="3"
+                                Content="Escape Sequence Legend"
+                                Click="EscapeSequenceLegend_Click"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="10, 10, 10, 10">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="22"></RowDefinition>
-                            <RowDefinition></RowDefinition>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            VerticalAlignment="Center"
-                            FontWeight="Bold"
-                            Text="Converted String">
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="Converted String">
                         </TextBlock>
-                        <TextBox 
-                            Grid.Row="1"
-                            FontFamily="{Binding MonoFontFamily}"
-                            FontWeight="{Binding MonoFontWeight}"
-                            FontSize="{Binding MonoFontSize}"
-                            TextWrapping="Wrap"
-                            AcceptsReturn="True"
-                            VerticalContentAlignment="Stretch"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.CanContentScroll="True"
-                            IsReadOnly="True"
-                            Text="{Binding Escaper_ConvertedString}">
+                        <TextBox Grid.Row="1"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 IsReadOnly="True"
+                                 Text="{Binding Escaper_ConvertedString}">
                         </TextBox>
                     </Grid>
                 </Grid>
@@ -220,114 +228,103 @@
             <TabItem Header="Syntax Checker">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="22"></RowDefinition>
-                        <RowDefinition Height="25"></RowDefinition>
-                        <RowDefinition Height="2*"></RowDefinition>
-                        <RowDefinition Height="1*"></RowDefinition>
+                        <RowDefinition Height="22"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock
-                        Grid.Row="0"
-                        VerticalAlignment="Center"
-                        FontWeight="Bold"
-                        Text="Environment">
+                    <TextBlock Grid.Row="0"
+                               VerticalAlignment="Center"
+                               FontWeight="Bold"
+                               Text="Environment">
                     </TextBlock>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition></ColumnDefinition>
-                            <ColumnDefinition Width="120"></ColumnDefinition>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="120"/>
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox
-                            Grid.Column="0"
-                            SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
-                            ItemsSource="{Binding CodeBox_Projects}">
+                        <ComboBox Grid.Column="0"
+                                  SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
+                                  ItemsSource="{Binding CodeBox_Projects}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                    <TextBlock Text="{Binding Item1}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                         
-                        <Button
-                            Grid.Column="1"
-                            Margin="10, 0, 0, 0"
-                            Content="Syntax Check"
-                            Click="SyntaxCheckButton_Click">
+                        <Button Grid.Column="1"
+                                Margin="10, 0, 0, 0"
+                                Content="Syntax Check"
+                                Click="SyntaxCheckButton_Click">
                         </Button>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="0, 10, 0, 0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="22"></RowDefinition>
-                            <RowDefinition></RowDefinition>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            VerticalAlignment="Center"
-                            FontWeight="Bold"
-                            Text="Input Code">
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="Input Code">
                         </TextBlock>
-                        <TextBox 
-                            Grid.Row="1"
-                            FontFamily="{Binding MonoFontFamily}"
-                            FontWeight="{Binding MonoFontWeight}"
-                            FontSize="{Binding MonoFontSize}"
-                            TextWrapping="Wrap"
-                            AcceptsReturn="True"
-                            VerticalContentAlignment="Stretch"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.CanContentScroll="True"
-                            Text="{Binding Syntax_InputCode}">
+                        <TextBox Grid.Row="1"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 Text="{Binding Syntax_InputCode}">
                         </TextBox>
                     </Grid>
 
                     <Grid Grid.Row="3" Margin="0, 10, 0, 0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="22"></RowDefinition>
-                            <RowDefinition></RowDefinition>
+                            <RowDefinition Height="22"/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            VerticalAlignment="Center"
-                            FontWeight="Bold"
-                            Text="Output">
+                        <TextBlock Grid.Row="0"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Text="Output">
                         </TextBlock>
-                        <TextBox 
-                            Grid.Row="1"
-                            FontFamily="{Binding MonoFontFamily}"
-                            FontWeight="{Binding MonoFontWeight}"
-                            FontSize="{Binding MonoFontSize}"
-                            TextWrapping="Wrap"
-                            AcceptsReturn="True"
-                            VerticalContentAlignment="Stretch"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.CanContentScroll="True"
-                            IsReadOnly="True"
-                            Text="{Binding Syntax_Output}">
+                        <TextBox Grid.Row="1"
+                                 FontFamily="{Binding MonoFontFamily}"
+                                 FontWeight="{Binding MonoFontWeight}"
+                                 FontSize="{Binding MonoFontSize}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True"
+                                 IsReadOnly="True"
+                                 Text="{Binding Syntax_Output}">
                         </TextBox>
                     </Grid>
                 </Grid>
             </TabItem>
         </TabControl>
         <Grid Grid.Row="1" Margin="15, 15, 15, 15">
-            <Grid.RowDefinitions>
-                <RowDefinition></RowDefinition>
-            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
-            <Button
-                Grid.Row="0" Grid.Column="1"
-                IsCancel="True"
-                Content="Close"
-                Click="CloseButton_Click">
+            <Button Grid.Row="0" Grid.Column="1"
+                    IsCancel="True"
+                    Content="Close"
+                    Click="CloseButton_Click">
             </Button>
         </Grid>
     </Grid>

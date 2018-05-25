@@ -45,9 +45,9 @@ namespace PEBakery.Tests.Core.Command
         { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string destRootDir = Path.Combine(dirPath, "Compress_Dest");
+            string destRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destFullPath = Path.Combine(destRootDir, destArc);
-            string compRootDir = Path.Combine(dirPath, "Compress_Comp");
+            string compRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string compDir = Path.Combine(compRootDir, destArc);
             string srcFullPath = Path.Combine(dirPath, srcDirPath);
 
@@ -56,13 +56,14 @@ namespace PEBakery.Tests.Core.Command
                 Directory.CreateDirectory(destRootDir);
                 Directory.CreateDirectory(compDir);
 
-                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcDirPath}\",\"%TestBench%\\CommandArchive\\Compress_Dest\\{destArc}\"";
+                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcDirPath}\",\"{destFullPath}\"";
                 if (encodingStr != null)
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
 
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
                 CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
+                Debug.Assert(info != null, "Invalid CodeInfo");
 
                 ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
 
@@ -75,16 +76,18 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
             }
             finally
             {
-                Directory.Delete(destRootDir, true);
-                Directory.Delete(compRootDir, true);
+                if (Directory.Exists(destRootDir))
+                    Directory.Delete(destRootDir, true);
+                if (Directory.Exists(compRootDir))
+                    Directory.Delete(compRootDir, true);
             }
         }
 
@@ -109,16 +112,17 @@ namespace PEBakery.Tests.Core.Command
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
 
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
                 CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
+                Debug.Assert(info != null, "Invalid CodeInfo");
 
                 ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
 
                 using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(Path.Combine(compDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -148,17 +152,21 @@ namespace PEBakery.Tests.Core.Command
 
         public void Decompress_FileTemplate(string archiveFile, string compFile, string encodingStr = null)
         {
+            Debug.Assert(archiveFile != null);
             string archiveType = Path.GetExtension(archiveFile).Substring(1);
             string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, archiveName, compFile);
-            string destPath = Path.Combine(dirPath, "Decompress", compFile);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destPath = Path.Combine(destDir, compFile);
             
             try
             {
-                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"%TestBench%\\CommandArchive\\Decompress\"";
+                Directory.CreateDirectory(destDir);
+
+                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
                 if (encodingStr != null)
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
@@ -166,8 +174,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
 
@@ -175,23 +183,25 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                File.Delete(destPath);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
 
         public void Decompress_DirTemplate(string archiveFile, string encodingStr = null)
         {
+            Debug.Assert(archiveFile != null);
             string archiveType = Path.GetExtension(archiveFile).Substring(1);
             string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcFullPath = Path.Combine(dirPath, archiveName);
-            string destRootDir = Path.Combine(dirPath, "Decompress");
+            string destRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
             try
             {
-                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"%TestBench%\\CommandArchive\\Decompress\"";
+                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destRootDir}\"";
                 if (encodingStr != null)
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
@@ -205,8 +215,8 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -214,7 +224,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(Path.Combine(destRootDir, archiveName), true);
+                if (Directory.Exists(destRootDir))
+                    Directory.Delete(destRootDir, true);
             }
         }
         #endregion
@@ -226,112 +237,108 @@ namespace PEBakery.Tests.Core.Command
         public void Archive_Expand()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string rawCode; // $"Expand,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"%TestBench%\\CommandArchive\\Decompress\""
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex1.cab"}\",\"%TestBench%\\CommandArchive\\Expand_0\"";
-            Expand_FileTemplate(s, "ex1.cab", "ex1.jpg", 0, rawCode, ErrorCheck.Success);
+            string rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex1.cab\",\"{destDir}\"";
+            Expand_FileTemplate(s, "ex1.cab", destDir, "ex1.jpg", rawCode, ErrorCheck.Success);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex2.cab"}\",\"%TestBench%\\CommandArchive\\Expand_1\",ex2.jpg";
-            Expand_FileTemplate(s, "ex2.cab", "ex2.jpg", 1, rawCode, ErrorCheck.Success);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex2.cab\",\"{destDir}\",ex2.jpg";
+            Expand_FileTemplate(s, "ex2.cab", destDir, "ex2.jpg", rawCode, ErrorCheck.Success);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex2.cab"}\",\"%TestBench%\\CommandArchive\\Expand_2\",ex1.jpg";
-            Expand_FileTemplate(s, "ex2.cab", "ex1.jpg", 2, rawCode, ErrorCheck.Error);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex2.cab\",\"{destDir}\",ex1.jpg";
+            Expand_FileTemplate(s, "ex2.cab", destDir, "ex1.jpg", rawCode, ErrorCheck.Error);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex3.jp_"}\",\"%TestBench%\\CommandArchive\\Expand_3\",ex3.jpg,PRESERVE";
-            Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 3, rawCode, ErrorCheck.Success, false, true);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex3.jp_\",\"{destDir}\",ex3.jpg,PRESERVE";
+            Expand_FileTemplate(s, "ex3.jp_", destDir, "ex3.jpg", rawCode, ErrorCheck.Success, false, true);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex3.jp_"}\",\"%TestBench%\\CommandArchive\\Expand_4\",ex3.jpg,PRESERVE";
-            Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 4, rawCode, ErrorCheck.Overwrite, true, false);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex3.jp_\",\"{destDir}\",ex3.jpg,PRESERVE";
+            Expand_FileTemplate(s, "ex3.jp_", destDir, "ex3.jpg", rawCode, ErrorCheck.Overwrite, true, false);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex3.jp_"}\",\"%TestBench%\\CommandArchive\\Expand_5\",ex3.jpg,PRESERVE,NOWARN";
-            Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 5, rawCode, ErrorCheck.Success, true, false);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex3.jp_\",\"{destDir}\",ex3.jpg,PRESERVE,NOWARN";
+            Expand_FileTemplate(s, "ex3.jp_", destDir, "ex3.jpg", rawCode, ErrorCheck.Success, true, false);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex4.cab"}\",\"%TestBench%\\CommandArchive\\Expand_6\"";
-            Expand_DirTemplate(s, "ex4.cab", "Cab", 6, rawCode, ErrorCheck.Success);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex4.cab\",\"{destDir}\"";
+            Expand_DirTemplate(s, "ex4.cab", destDir, "Cab", rawCode, ErrorCheck.Success);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex4.cab"}\",\"%TestBench%\\CommandArchive\\Expand_7\",ex3.jpg";
-            Expand_FileTemplate(s, "ex4.cab", "ex3.jpg", 7, rawCode, ErrorCheck.Success);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex4.cab\",\"{destDir}\",ex3.jpg";
+            Expand_FileTemplate(s, "ex4.cab", destDir, "ex3.jpg", rawCode, ErrorCheck.Success);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex4.cab"}\",\"%TestBench%\\CommandArchive\\Expand_8\",ex2.jpg,NOWARN";
-            Expand_FileTemplate(s, "ex4.cab", "ex2.jpg", 8, rawCode, ErrorCheck.Success, true);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex4.cab\",\"{destDir}\",ex2.jpg,NOWARN";
+            Expand_FileTemplate(s, "ex4.cab", destDir, "ex2.jpg", rawCode, ErrorCheck.Success, true);
 
-            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex4.cab"}\",\"%TestBench%\\CommandArchive\\Expand_9\",ex2.jpg,NOWARN";
-            Expand_FileTemplate(s, "ex4.cab", "ex2.jpg", 9, rawCode, ErrorCheck.Success, false);
+            rawCode = $"Expand,\"%TestBench%\\CommandArchive\\ex4.cab\",\"{destDir}\",ex2.jpg,NOWARN";
+            Expand_FileTemplate(s, "ex4.cab", destDir, "ex2.jpg", rawCode, ErrorCheck.Success, false);
         }
 
-        public void Expand_FileTemplate(EngineState s, string archiveFile, string compFile, int rev, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
+        public void Expand_FileTemplate(EngineState s, string archiveFile, string destDir, string compFile, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", compFile);
-            string destPath = Path.Combine(dirPath, $"Expand_{rev}", compFile);
+            string destPath = Path.Combine(destDir, compFile);
+            Debug.Assert(destPath != null);
 
             try
             {
                 if (testPreserve) // Check preserve
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                    Directory.CreateDirectory(destDir);
                     File.Create(destPath).Close();
                 }
 
                 EngineTests.Eval(s, rawCode, CodeType.Expand, check);
 
-                if ((!testPreserve && File.Exists(destPath)) || (testPreserve && checkIfPreserve))
+                if (!testPreserve && File.Exists(destPath) || testPreserve && checkIfPreserve)
                 {
                     using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
-                
-                Console.WriteLine($"{archiveFile}, {rev} Success");
             }
             finally
             {
-                Directory.Delete(Path.GetDirectoryName(destPath), true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
 
-        public void Expand_DirTemplate(EngineState s, string archiveFile, string compDir, int rev, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
+        public void Expand_DirTemplate(EngineState s, string archiveFile, string destDir, string compDir, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
         { 
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab");
-            string destPath = Path.Combine(dirPath, $"Expand_{rev}");
 
             try
             {
                 if (testPreserve) // Check preserve
-                    File.Create(destPath).Close();
+                    File.Create(destDir).Close();
 
                 EngineTests.Eval(s, rawCode, CodeType.Expand, check);
 
                 string[] srcFiles = Directory.GetFiles(srcPath, "*", SearchOption.AllDirectories);
-                string[] destFiles = Directory.GetFiles(destPath, "*", SearchOption.AllDirectories);
+                string[] destFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
                 Assert.IsTrue(srcFiles.Length == destFiles.Length);
 
-                if ((!testPreserve && Directory.Exists(destPath))
-                    || (testPreserve && checkIfPreserve))
+                if (!testPreserve && Directory.Exists(destDir) || testPreserve && checkIfPreserve)
                 {
                     for (int i = 0; i < srcFiles.Length; i++)
                     {
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
                 }
-                
-
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
-                Directory.Delete(destPath, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -353,17 +360,16 @@ namespace PEBakery.Tests.Core.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = Path.Combine(dirPath, "CopyOrExpand_1");
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destFile = Path.Combine(destDir, "ex3.jpg");
 
             if (Directory.Exists(destDir))
                 Directory.Delete(destDir, true);
-
             try
             {
                 Directory.CreateDirectory(destDir);
 
-                string rawCode = "CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"%TestBench%\\CommandArchive\\CopyOrExpand_1\"";
+                string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 
                 Assert.IsTrue(Directory.Exists(destDir));
@@ -372,8 +378,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -388,7 +394,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = Path.Combine(dirPath, "CopyOrExpand_2");
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destFile = Path.Combine(destDir, "change.jpg");
 
             if (Directory.Exists(destDir))
@@ -398,7 +404,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Directory.CreateDirectory(destDir);
 
-                string rawCode = "CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"%TestBench%\\CommandArchive\\CopyOrExpand_2\\change.jpg\"";
+                string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\\change.jpg\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 
                 Assert.IsTrue(Directory.Exists(destDir));
@@ -407,8 +413,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -421,7 +427,8 @@ namespace PEBakery.Tests.Core.Command
 
         public void CopyOrExpand_3(EngineState s)
         {
-            string rawCode = "CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"%TestBench%\\CommandArchive\\CopyOrExpand_3\"";
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
             EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
         }
         #endregion

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -26,7 +26,6 @@
 */
 
 using PEBakery.CabLib;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -35,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PEBakery.Exceptions;
 
 namespace PEBakery.Core.Commands
 {
@@ -44,9 +44,10 @@ namespace PEBakery.Core.Commands
         { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
             CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
-
+            Debug.Assert(info != null, "Invalid CodeInfo");
+            
             ArchiveCompressFormat arcType = info.Format;
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
@@ -105,8 +106,9 @@ namespace PEBakery.Core.Commands
         { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Decompress));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Decompress), "Invalid CodeInfo");
             CodeInfo_Decompress info = cmd.Info as CodeInfo_Decompress;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string srcArchive = StringEscaper.Preprocess(s, info.SrcArchive);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
@@ -148,8 +150,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Expand));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Expand), "Invalid CodeInfo");
             CodeInfo_Expand info = cmd.Info as CodeInfo_Expand;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string srcCab = StringEscaper.Preprocess(s, info.SrcCab);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
@@ -216,11 +219,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_CopyOrExpand));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_CopyOrExpand), "Invalid CodeInfo");
             CodeInfo_CopyOrExpand info = cmd.Info as CodeInfo_CopyOrExpand;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
+            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
+            Debug.Assert(destPath != null, $"{nameof(destPath)} != null");
 
             // Path Security Check
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -232,7 +238,7 @@ namespace PEBakery.Core.Commands
             // Check srcFile contains wildcard
             if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                InternalCopyOrExpand(s, logs, info, srcFile, destPath);
+                InternalCopyOrExpand(logs, info, srcFile, destPath);
             }
             else
             { // With Wildcard
@@ -244,11 +250,8 @@ namespace PEBakery.Core.Commands
                 { // One or more file will be copied
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]", cmd));
 
-                    for (int i = 0; i < files.Length; i++)
-                    {
-                        string f = files[i];
-                        InternalCopyOrExpand(s, logs, info, f, destPath);
-                    }
+                    foreach (string file in files)
+                        InternalCopyOrExpand(logs, info, file, destPath);
 
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
@@ -261,8 +264,13 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static void InternalCopyOrExpand(EngineState s, List<LogInfo> logs, CodeInfo_CopyOrExpand info, string srcFile, string destPath)
+        private static void InternalCopyOrExpand(List<LogInfo> logs, CodeInfo_CopyOrExpand info, string srcFile, string destPath)
         {
+            if (srcFile == null)
+                throw new ArgumentNullException(nameof(srcFile));
+            if (destPath == null)
+                throw new ArgumentNullException(nameof(destPath));
+
             string srcFileName = Path.GetFileName(srcFile);
             bool destIsDir = Directory.Exists(destPath);
             bool destIsFile = File.Exists(destPath);
@@ -275,10 +283,8 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten"));
                         return;
                     }
-                    else
-                    {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
-                    }
+
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                 }
             }
 
@@ -295,11 +301,9 @@ namespace PEBakery.Core.Commands
             }
             else
             { // Extract Cabinet from _ (Ex) EXPLORER.EX_ -> EXPLORER.EXE
-                string destDir;
-                if (destIsDir)
-                    destDir = destPath;
-                else
-                    destDir = Path.GetDirectoryName(destPath);
+                string destDir = destIsDir ? destPath : Path.GetDirectoryName(destPath);
+                if (destDir == null)
+                    throw new InternalException("Internal Logic Error at InternalCopyOrExpand");
 
                 string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
                 if (File.Exists(srcCab))
@@ -343,8 +347,11 @@ namespace PEBakery.Core.Commands
 
                                 try
                                 {
-                                    if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
-                                        Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
+                                    string destParent = Path.GetDirectoryName(destFullPath);
+                                    if (destParent == null)
+                                        throw new InternalException("Internal Logic Error at InternalCopyOrExpand");
+                                    if (!Directory.Exists(destParent))
+                                        Directory.CreateDirectory(destParent);
                                     File.Copy(tempFullPath, destFullPath, true);
                                     logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
                                 }

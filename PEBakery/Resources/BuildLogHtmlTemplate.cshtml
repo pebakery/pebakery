@@ -208,7 +208,7 @@
                         {
                         <tr class="py-1">
                             <td>@item.Index</td>
-                            <td class="text-left">@item.Name</td>
+                            <td class="text-left"><a href="#script-@item.Index">@item.Name</a></td>
                             <td>@item.Version</td>
                             <td>@item.TimeStr</td>
                         </tr>
@@ -260,7 +260,7 @@
         <h2 class="container-fluid mt-2">Code Logs</h2>
         @foreach (var tup in @Model.CodeLogs)
         {
-            <div class="container-fluid mt-2">
+            <div id="script-@tup.Item1.Index" class="container-fluid mt-2">
                 <span class="pb-monospace">&#91;@tup.Item1.Index&#47;@Model.CodeLogs.Count&#93; @tup.Item1.Name &#40;@tup.Item1.Path&#41;</span>
                 <div class="table-responsive">
                     <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
@@ -359,6 +359,8 @@
                         </table>
                     </div>
                 }
+			<a class="float-right" href="#page-top">[ Top ]</a>
+			<div class="clearfix"></div>
             </div>
         }
 

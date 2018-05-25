@@ -56,18 +56,18 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultValue = 0;
         public decimal Value
         {
-            get { return (decimal)GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
+            get => (decimal)GetValue(ValueProperty);
+            set => SetValue(ValueProperty, value);
         }
 
         public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(FreeNumberBox),
-            new FrameworkPropertyMetadata(DefaultValue, new PropertyChangedCallback(OnValueChanged), new CoerceValueCallback(CoerceValue)));
+            new FrameworkPropertyMetadata(DefaultValue, OnValueChanged, CoerceValue));
 
         private const decimal DefaultMinimum = 0;
         public decimal Minimum 
         {
-            get { return (decimal)GetValue(MinimumProperty);  }
-            set { SetValue(MinimumProperty, value); }
+            get => (decimal)GetValue(MinimumProperty);
+            set => SetValue(MinimumProperty, value);
         }
 
         public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(FreeNumberBox),
@@ -76,8 +76,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultMaximum = ushort.MaxValue;
         public decimal Maximum
         {
-            get { return (decimal)GetValue(MaximumProperty); }
-            set { SetValue(MaximumProperty, value); }
+            get => (decimal)GetValue(MaximumProperty);
+            set => SetValue(MaximumProperty, value);
         }
 
         public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(FreeNumberBox),
@@ -86,8 +86,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultIncrementUnit = 1;
         public decimal IncrementUnit
         {
-            get { return (decimal)GetValue(IncrementUnitProperty); }
-            set { SetValue(IncrementUnitProperty, value); }
+            get => (decimal)GetValue(IncrementUnitProperty);
+            set => SetValue(IncrementUnitProperty, value);
         }
 
         public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register("IncrementUnit", typeof(decimal), typeof(FreeNumberBox),
@@ -96,8 +96,8 @@ namespace PEBakery.WPF.Controls
         private const int DefaultDecimalPlaces = 0;
         public int DecimalPlaces
         {
-            get { return (int)GetValue(DecimalPlacesProperty); }
-            set { SetValue(DecimalPlacesProperty, value); }
+            get => (int)GetValue(DecimalPlacesProperty);
+            set => SetValue(DecimalPlacesProperty, value);
         }
 
         public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register("DecimalPlaces", typeof(int), typeof(FreeNumberBox),
@@ -106,11 +106,11 @@ namespace PEBakery.WPF.Controls
 
         #region Callbacks
         private static object CoerceValue(DependencyObject element, object value)
-        { // Check if (MinValue <= Value <= MaxValue)
+        {
+            // Check if (MinValue <= Value <= MaxValue)
             if (element is FreeNumberBox control)
                 return LimitDecimalValue(control, (decimal)value);
-            else
-                return value;
+            return value;
         }
 
         private static void OnValueChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
@@ -137,8 +137,8 @@ namespace PEBakery.WPF.Controls
 
         public event RoutedPropertyChangedEventHandler<decimal> ValueChanged
         {
-            add { AddHandler(ValueChangedEvent, value); }
-            remove { RemoveHandler(ValueChangedEvent, value); }
+            add => AddHandler(ValueChangedEvent, value);
+            remove => RemoveHandler(ValueChangedEvent, value);
         }
 
         protected virtual void OnValueChanged(RoutedPropertyChangedEventArgs<decimal> args)
@@ -152,15 +152,29 @@ namespace PEBakery.WPF.Controls
         {
             // Aloow only [0-9]+ 
             bool check = true;
-            for (int i = 0; i < e.Text.Length; i++)
-                check &= char.IsDigit(e.Text[i]);
+            foreach (char ch in e.Text)
+                check &= char.IsDigit(ch);
 
             if (e.Text.Length == 0)
                 check = false;
 
             e.Handled = !check;
 
-            base.OnPreviewTextInput(e);
+            OnPreviewTextInput(e);
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Add event for Up and Down
+            switch (e.Key)
+            {
+                case Key.Up:
+                    Value = LimitDecimalValue(this, Value + IncrementUnit);
+                    break;
+                case Key.Down:
+                    Value = LimitDecimalValue(this, Value - IncrementUnit);
+                    break;
+            }
         }
         #endregion
 

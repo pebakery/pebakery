@@ -47,6 +47,16 @@ PEBakery.IniLib.Tests
 PEBakery.TreeLib
     MIT License
     https://opensource.org/licenses/MIT
+	
+PEBakery.XZLib
+PEBakery.XZLib.Tests
+    MIT License
+    https://opensource.org/licenses/MIT
+	
+PEBakery.LZ4Lib
+PEBakery.LZ4Lib.Tests
+    The 2-Clause BSD License
+    https://opensource.org/licenses/BSD-2-Clause
 
 ManagedWimLib
 ManagedWimLib.Tests
@@ -78,7 +88,7 @@ XZNet20/liblzma64.dll
     Public Domain
     https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
 
-PEBakery/Helper.cs 
+PEBakery/Helper
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -120,20 +130,20 @@ LauncherSharp/Donut.ico
 PEBakery uses Open Source Software (OSS).
 This is the list of open source projects and licenses.
 
-Antlr4
-    The 3-Clause BSD License
-    https://opensource.org/licenses/BSD-3-Clause
-
-    Copyright (c) Terence Parr and Sam Harwell
-    http://www.antlr.org/
-
 BetterWin32Errors
     MIT License
     https://opensource.org/licenses/MIT
     
     Copyright (c) Michael Kropat
     https://github.com/mkropat/BetterWin32Errors
+
+ControlzEx
+    MIT License
+    https://opensource.org/licenses/MIT
     
+    Copyright (c) 2015 Jan Karger, Bastian Schmidt
+    https://github.com/ControlzEx/ControlzEx
+
 ZLibWrapper
     zlib license
     https://opensource.org/licenses/Zlib
@@ -155,6 +165,13 @@ ManagedWimgApi
     Copyright (c) josemesona
     https://github.com/josemesona/ManagedWimgApi
     
+Material Icons
+    Apache License, Version 2.0
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    https://material.io/tools/icons/
+    https://github.com/google/material-design-icons
+
 Newtonsoft.Json
     MIT License
     https://opensource.org/licenses/MIT
@@ -193,5 +210,19 @@ Svg.Net
     https://opensource.org/licenses/MS-PL
 
     https://github.com/vvvv/SVG
+
+System.Buffers
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) .NET Foundation and Contributors
+    https://github.com/dotnet/corefx
+
+UACHelper
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) 2016 Soroush
+    https://github.com/falahati/UACHelper
 
 -----------------------------------------------------------

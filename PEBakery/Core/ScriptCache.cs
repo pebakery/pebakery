@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@ using SQLite;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -73,7 +74,6 @@ namespace PEBakery.Core
         {
             try
             {
-                DateTime buildDate = new FileInfo(Assembly.GetExecutingAssembly().Location).LastWriteTimeUtc;
                 DB_CacheInfo[] infos = new DB_CacheInfo[]
                 {
                     new DB_CacheInfo() { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
@@ -85,24 +85,23 @@ namespace PEBakery.Core
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate
-                    var pUniqueList = project.AllScripts
-                        .GroupBy(x => x.DirectFullPath)
+                    // Exclude directory links because treePath is inconsistent
+                    var scUniqueList = project.AllScripts
+                        .Where(x => x.Type != ScriptType.Directory && !x.IsDirLink)
+                        .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
 
                     listLock = new ReaderWriterLockSlim();
 
                     DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
                     List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
-                    var tasks = pUniqueList.Select(p =>
+
+                    Parallel.ForEach(scUniqueList, sc =>
                     {
-                        return Task.Run(() =>
-                        {
-                            bool updated = CacheScript(p, memDB, updateDB);
-                            worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
-                        });
-                    }).ToArray();
-                    Task.WaitAll(tasks);
-                    
+                        bool updated = CacheScript(sc, memDB, updateDB);
+                        worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
+                    });
+
                     InsertOrReplaceAll(updateDB);
                 }
             }
@@ -115,25 +114,27 @@ namespace PEBakery.Core
         }
 
         /// <returns>Return true if cache is updated</returns>
-        private bool CacheScript(Script p, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
+        private bool CacheScript(Script sc, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
         {
-            if (memDB == null) throw new ArgumentNullException("memDB");
+            if (memDB == null) throw new ArgumentNullException(nameof(memDB));
+            if (updateDB == null) throw new ArgumentNullException(nameof(updateDB));
+            Debug.Assert(sc.Type != ScriptType.Directory);
 
             // Does cache exist?
-            FileInfo f = new FileInfo(p.DirectFullPath);
-            string sPath = p.DirectFullPath.Remove(0, p.Project.BaseDir.Length + 1);
+            FileInfo f = new FileInfo(sc.DirectRealPath);
+            string sPath = sc.DirectRealPath.Remove(0, sc.Project.BaseDir.Length + 1);
 
             bool updated = false;
             // int memIdx = 0;
-            DB_ScriptCache pCache = null;
+            DB_ScriptCache scCache = null;
 
             // Retrieve Cache
-            pCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+            scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
 
             // Update Cache into updateDB
-            if (pCache == null)
+            if (scCache == null)
             { // Cache not exists
-                pCache = new DB_ScriptCache()
+                scCache = new DB_ScriptCache()
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
@@ -144,14 +145,14 @@ namespace PEBakery.Core
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, p);
-                    pCache.Serialized = ms.ToArray();
+                    formatter.Serialize(ms, sc);
+                    scCache.Serialized = ms.ToArray();
                 }
 
                 listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(pCache);
+                    updateDB.Add(scCache);
                     updated = true;
                 }
                 finally
@@ -159,22 +160,22 @@ namespace PEBakery.Core
                     listLock.ExitWriteLock();
                 }
             }
-            else if (pCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                (DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTime) == false || pCache.FileSize != f.Length))
+            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
+                (DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) == false || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, p);
-                    pCache.Serialized = ms.ToArray();
-                    pCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
-                    pCache.FileSize = f.Length;
+                    formatter.Serialize(ms, sc);
+                    scCache.Serialized = ms.ToArray();
+                    scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
+                    scCache.FileSize = f.Length;
                 }
 
                 listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(pCache);
+                    updateDB.Add(scCache);
                     updated = true;
                 }
                 finally
@@ -183,9 +184,9 @@ namespace PEBakery.Core
                 }
             }
 
-            if (p.Type == ScriptType.Link && p.LinkLoaded)
+            if (sc.Type == ScriptType.Link && sc.LinkLoaded)
             {
-                bool linkUpdated = CacheScript(p.Link, memDB, updateDB);
+                bool linkUpdated = CacheScript(sc.Link, memDB, updateDB);
                 updated = updated || linkUpdated;
             }
 
