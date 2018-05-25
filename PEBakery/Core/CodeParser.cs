@@ -332,8 +332,6 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string srcFile = args[0];
-                        string destPath = args[1];
                         bool preserve = false;
                         bool noWarn = false;
                         bool noRec = false;
@@ -365,7 +363,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_FileCopy(srcFile, destPath, preserve, noWarn, noRec);
+                        return new CodeInfo_FileCopy(args[0], args[1], preserve, noWarn, noRec);
                     }
                 case CodeType.FileDelete:
                     { // FileDelete,<FilePath>[,NOWARN][,NOREC]
@@ -756,15 +754,32 @@ namespace PEBakery.Core
                         return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
                 case CodeType.RegCopy:
-                    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
-                        const int argCount = 4;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
+                        const int minArgCount = 4;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         RegistryKey hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         RegistryKey hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
 
-                        return new CodeInfo_RegCopy(hSrcKey, args[1], hDestKey, args[3]);
+                        bool wildcard = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("WILDCARD", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (wildcard)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                wildcard = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_RegCopy(hSrcKey, args[1], hDestKey, args[3], wildcard);
                     }
                 #endregion
                 #region 03 Text

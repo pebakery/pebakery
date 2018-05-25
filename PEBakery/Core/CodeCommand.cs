@@ -768,26 +768,28 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegCopy : CodeInfo
-    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
+    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
         [NonSerialized]
         public RegistryKey HSrcKey;
         public string SrcKeyPath;
         public RegistryKey HDestKey;
         public string DestKeyPath;
+        public bool WildcardFlag;
 
-        public CodeInfo_RegCopy(RegistryKey hSrcKey, string srcKeyPath, RegistryKey hDestKey, string destKeyPath)
+        public CodeInfo_RegCopy(RegistryKey hSrcKey, string srcKeyPath, RegistryKey hDestKey, string destKeyPath, bool wildcard)
         {
             HSrcKey = hSrcKey;
             SrcKeyPath = srcKeyPath;
             HDestKey = hDestKey;
             DestKeyPath = destKeyPath;
+            WildcardFlag = wildcard;
         }
 
         public override string ToString()
         {
             string HKeySrcStr = RegistryHelper.RegKeyToString(HSrcKey);
             string HKeyDestStr = RegistryHelper.RegKeyToString(HDestKey);
-            return $"{HKeySrcStr},{SrcKeyPath},{HKeyDestStr},{DestKeyPath}";
+            return $"{HKeySrcStr},{SrcKeyPath},{HKeyDestStr},{DestKeyPath}{(WildcardFlag ? ",WILDCARD" : string.Empty)}";
         }
     }
     #endregion

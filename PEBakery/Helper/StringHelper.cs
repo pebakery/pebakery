@@ -236,6 +236,46 @@ namespace PEBakery.Helper
 
             return (exe, arguments);
         }
+
+        #region Glob
+        public static string GlobToRegex(string glob)
+        {
+            glob = Regex.Escape(glob);
+            glob = ReplaceEx(glob, "\\*", ".*?", StringComparison.Ordinal);
+            glob = ReplaceEx(glob, "\\?", ".?", StringComparison.Ordinal);
+            return '^' + glob + '$';
+        }
+
+        public static IEnumerable<string> MatchGlob(string glob, IEnumerable<string> strs, StringComparison comp)
+        {
+            string pattern = GlobToRegex(glob);
+            RegexOptions regexOptions = RegexOptions.Compiled;
+            switch (comp)
+            {
+                case StringComparison.CurrentCulture:
+                    break;
+                case StringComparison.CurrentCultureIgnoreCase:
+                    regexOptions |= RegexOptions.IgnoreCase;
+                    break;
+                case StringComparison.InvariantCulture:
+                    regexOptions |= RegexOptions.CultureInvariant;
+                    break;
+                case StringComparison.InvariantCultureIgnoreCase:
+                    regexOptions |= RegexOptions.CultureInvariant;
+                    regexOptions |= RegexOptions.IgnoreCase;
+                    break;
+                case StringComparison.Ordinal:
+                    regexOptions |= RegexOptions.CultureInvariant;
+                    break;
+                case StringComparison.OrdinalIgnoreCase:
+                    regexOptions |= RegexOptions.CultureInvariant;
+                    regexOptions |= RegexOptions.IgnoreCase;
+                    break;
+            }
+
+            return strs.Where(x => Regex.IsMatch(x, pattern, regexOptions));
+        }
+        #endregion
     }
     #endregion
 }

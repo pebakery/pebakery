@@ -34,6 +34,9 @@ using System.Threading.Tasks;
 using BetterWin32Errors;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+// ReSharper disable FieldCanBeMadeReadOnly.Local
+// ReSharper disable MemberCanBePrivate.Local
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Helper
 {
@@ -66,6 +69,7 @@ namespace PEBakery.Helper
             public uint LowPart;
             public int HighPart;
         }
+        // ReSharper disable once UnusedMember.Local
         [StructLayout(LayoutKind.Sequential)]
         private struct LUID_AND_ATTRIBUTES
         {
@@ -80,6 +84,7 @@ namespace PEBakery.Helper
             public uint Attr;
         }
 
+        // ReSharper disable once UnusedMember.Local
         private const int ANYSIZE_ARRAY = 1;
         private const uint SE_PRIVILEGE_ENABLED = 0x00000002;
         private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
@@ -136,6 +141,7 @@ namespace PEBakery.Helper
             CloseHandle(hToken);
         }
 
+        #region Parse
         public static RegistryKey ParseStringToRegKey(string rootKey)
         {
             RegistryKey regRoot;
@@ -217,7 +223,49 @@ namespace PEBakery.Helper
                 hKey = new SafeRegistryHandle(IntPtr.Zero, true);
             return hKey;
         }
+        #endregion
 
+        #region CopySubKey
+        public static void CopySubKey(RegistryKey srcKey, string srcSubKeyPath, RegistryKey destKey, string destSubKeyPath)
+        {
+            using (RegistryKey srcSubKey = srcKey.OpenSubKey(srcSubKeyPath, false))
+            using (RegistryKey destSubKey = destKey.CreateSubKey(destSubKeyPath, true))
+            {
+                if (srcSubKey == null)
+                    throw new ArgumentException($"Unable to find subkey [{srcSubKeyPath}]");
+                if (destSubKey == null)
+                    throw new ArgumentException($"Unalbe to create dest subkey [{destSubKeyPath}]");
+
+                CopySubKey(srcSubKey, destSubKey);
+            }
+        }
+
+        public static void CopySubKey(RegistryKey srcSubKey, RegistryKey destSubKey)
+        {
+            if (srcSubKey == null)
+                throw new ArgumentNullException(nameof(srcSubKey));
+            if (destSubKey == null)
+                throw new ArgumentNullException(nameof(destSubKey));
+
+            foreach (string valueName in srcSubKey.GetValueNames())
+            {
+                RegistryValueKind kind = srcSubKey.GetValueKind(valueName);
+                object value = srcSubKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                destSubKey.SetValue(valueName, value, kind);
+            }
+
+            foreach (string subKeyName in srcSubKey.GetSubKeyNames())
+            {
+                using (RegistryKey copySrcSubKey = srcSubKey.OpenSubKey(subKeyName, false))
+                using (RegistryKey copyDestSubKey = destSubKey.CreateSubKey(subKeyName, true))
+                {
+                    CopySubKey(copySrcSubKey, copyDestSubKey);
+                }
+            }
+        }
+        #endregion
+
+        #region GetDefaultWebBrowserPath
         private static readonly Dictionary<string, string> DefaultWebBrowsers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> DefaultOpenCommands = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public static string GetDefaultWebBrowserPath(string protocol, bool onlyExePath)
@@ -280,6 +328,7 @@ namespace PEBakery.Helper
                 exePathSubKey?.Close();
             }
         }
+        #endregion
     }
     #endregion
 }

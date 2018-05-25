@@ -618,7 +618,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> RegCopy(EngineState s, CodeCommand cmd)
-        { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
+        { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
             List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegCopy), "Invalid CodeInfo");
@@ -628,6 +628,9 @@ namespace PEBakery.Core.Commands
             string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
             string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);
 
+            Debug.Assert(srcKeyPath != null, "Internal Logic Error at RegCopy");
+            Debug.Assert(destKeyPath != null, "Internal Logic Error at RegCopy");
+
             string hSrcKeyStr = RegistryHelper.RegKeyToString(info.HSrcKey);
             string hDestKeyStr = RegistryHelper.RegKeyToString(info.HDestKey);
             if (hSrcKeyStr == null || hDestKeyStr == null)
@@ -635,21 +638,36 @@ namespace PEBakery.Core.Commands
             string fullSrcKeyPath = $"{hSrcKeyStr}\\{srcKeyPath}";
             string fullDestKeyPath = $"{hDestKeyStr}\\{destKeyPath}";
 
-            using (Process proc = new Process())
+            if (info.WildcardFlag)
             {
-                proc.StartInfo.FileName = "REG.exe";
-                proc.StartInfo.Arguments = $"COPY \"{fullSrcKeyPath}\" \"{fullDestKeyPath}\" /S /F"; // Forces copy of all subkeys and values without prompting
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                proc.StartInfo.CreateNoWindow = true;
-                proc.Start();
+                string wildcard = Path.GetFileName(srcKeyPath);
+                if (wildcard.IndexOfAny(new[] { '*', '?' }) == -1)
+                    return LogInfo.LogErrorMessage(logs, $"SrcKeyPath [{srcKeyPath}] does not contain wildcard");
 
-                proc.WaitForExit();
+                string srcKeyParentPath = Path.GetDirectoryName(srcKeyPath);
+                if (srcKeyParentPath == null)
+                    return LogInfo.LogErrorMessage(logs, $"Invalid SrcKeyPath [{srcKeyPath}]");
 
-                if (proc.ExitCode == 0) // Success
-                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
-                else // Failure
-                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullSrcKeyPath}] could not be copied"));
+                using (RegistryKey parentSubKey = info.HSrcKey.OpenSubKey(srcKeyParentPath, false))
+                {
+                    if (parentSubKey == null)
+                        return LogInfo.LogErrorMessage(logs, $"Registry key [{srcKeyPath}] does not exist");
+
+                    foreach (string targetSubKey in StringHelper.MatchGlob(wildcard, parentSubKey.GetSubKeyNames(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        string copySrcSubKeyPath = Path.Combine(srcKeyParentPath, targetSubKey);
+                        string copyDestSubKeyPath = Path.Combine(destKeyPath, targetSubKey);
+                        RegistryHelper.CopySubKey(info.HSrcKey, copySrcSubKeyPath, info.HDestKey, copyDestSubKeyPath);
+                    }
+                }
+
+                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
+            }
+            else
+            { // No Wildcard
+                RegistryHelper.CopySubKey(info.HSrcKey, srcKeyPath, info.HDestKey, destKeyPath);
+
+                logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
             }
 
             return logs;

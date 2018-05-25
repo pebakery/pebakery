@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -14,17 +15,18 @@ namespace PEBakery.Tests.Core.Command
     public class CommandRegistryTests
     {
         #region Const String
-        private const string Dest_Root = @"Software\PEBakery";
-        private const string Dest_RegWrite = @"Software\PEBakery\RegWrite";
-        private const string Dest_RegDelete = @"Software\PEBakery\RegDelete";
-        private const string Dest_RegMulti = @"Software\PEBakery\RegMulti";
+        private const string RootPath = @"Software\PEBakery\Tests";
+        private const string RegWritePath = @"Software\PEBakery\Tests\RegWrite";
+        private const string RegDeletePath = @"Software\PEBakery\Tests\RegDelete";
+        private const string RegMultiPath = @"Software\PEBakery\Tests\RegMulti";
+        private const string RegCopyPath = @"Software\PEBakery\Tests\RegCopy";
         #endregion
 
         #region ClassCleanup
         [ClassCleanup]
         public static void ClassCleanup()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(Dest_Root, false);
+            Registry.CurrentUser.DeleteSubKeyTree(RootPath, false);
         }
         #endregion
 
@@ -64,7 +66,7 @@ namespace PEBakery.Tests.Core.Command
         { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
             EngineState s = EngineTests.CreateEngineState();
 
-            string subKey = Dest_RegWrite;
+            string subKey = RegWritePath;
             Registry.CurrentUser.DeleteSubKeyTree(subKey, false);
 
             RegWrite_Template(s, $@"RegWrite,HKCU,0x0,{subKey},None",
@@ -85,12 +87,12 @@ namespace PEBakery.Tests.Core.Command
             RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,""08,09"",NOWARN",
                 Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 08, 09 });
             RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,1234",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)1234);
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", 1234u);
             RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,-1",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", 4294967295u,
                 ErrorCheck.Overwrite);
             RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,4294967295",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", 4294967295u,
                 ErrorCheck.Overwrite);
             RegWrite_Template(s, $@"RegWrite,HKCU,0xB,{subKey},QWORD,4294967296",
                 Registry.CurrentUser, RegistryValueKind.QWord, subKey, "QWORD", (ulong)4294967296);
@@ -108,7 +110,6 @@ namespace PEBakery.Tests.Core.Command
 
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
             {
-                string valueDataStr;
                 using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
                 {
                     Assert.IsNotNull(subKey);
@@ -140,7 +141,6 @@ namespace PEBakery.Tests.Core.Command
                                 for (int i = 0; i < destStrs.Length; i++)
                                     Assert.IsTrue(destStrs[i].Equals(compStrs[i], StringComparison.Ordinal));
                             }
-                            valueDataStr = StringEscaper.PackRegMultiString((string[])valueData);
                             break;
                         case RegistryValueKind.Binary:
                             {
@@ -185,17 +185,17 @@ namespace PEBakery.Tests.Core.Command
         { // RegDelete,<HKey>,<KeyPath>,[ValueName]
             EngineState s = EngineTests.CreateEngineState();
 
-            Registry.CurrentUser.DeleteSubKeyTree(Dest_RegDelete, false);
+            Registry.CurrentUser.DeleteSubKeyTree(RegDeletePath, false);
 
             // Success
-            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete},ValueName", Registry.CurrentUser, Dest_RegDelete, "ValueName");
-            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete}", Registry.CurrentUser, Dest_RegDelete, null);
+            RegDelete_Template(s, $@"RegDelete,HKCU,{RegDeletePath},ValueName", Registry.CurrentUser, RegDeletePath, "ValueName");
+            RegDelete_Template(s, $@"RegDelete,HKCU,{RegDeletePath}", Registry.CurrentUser, RegDeletePath, null);
 
             // Warning
-            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete},ValueName", Registry.CurrentUser, Dest_RegDelete, "ValueName", false, ErrorCheck.Warning);
-            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete}", Registry.CurrentUser, Dest_RegDelete, null, false, ErrorCheck.Warning);
+            RegDelete_Template(s, $@"RegDelete,HKCU,{RegDeletePath},ValueName", Registry.CurrentUser, RegDeletePath, "ValueName", false, ErrorCheck.Warning);
+            RegDelete_Template(s, $@"RegDelete,HKCU,{RegDeletePath}", Registry.CurrentUser, RegDeletePath, null, false, ErrorCheck.Warning);
 
-            Registry.CurrentUser.DeleteSubKeyTree(Dest_RegDelete, false);
+            Registry.CurrentUser.DeleteSubKeyTree(RegDeletePath, false);
         }
 
         private void RegDelete_Template(EngineState s, string rawCode, RegistryKey hKey, string keyPath, string valueName, bool createDummy = true, ErrorCheck check = ErrorCheck.Success)
@@ -250,7 +250,7 @@ namespace PEBakery.Tests.Core.Command
         { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Action>,<Arg1>,[Arg2]
             EngineState s = EngineTests.CreateEngineState();
 
-            string subKeyStr = Dest_RegMulti;
+            string subKeyStr = RegMultiPath;
             Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
 
             // Append
@@ -300,7 +300,7 @@ namespace PEBakery.Tests.Core.Command
 
         private void RegMulti_Template(EngineState s, string rawCode, string[] compStrs, ErrorCheck check = ErrorCheck.Success)
         {
-            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(Dest_RegMulti, true))
+            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(RegMultiPath, true))
             {
                 subKey.SetValue("Key", new string[] { "A", "B" }, RegistryValueKind.MultiString);
             }
@@ -309,7 +309,7 @@ namespace PEBakery.Tests.Core.Command
 
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
             {
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(Dest_RegMulti, false))
+                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
                 {
                     Assert.IsNotNull(subKey);
 
@@ -329,7 +329,7 @@ namespace PEBakery.Tests.Core.Command
 
         private void RegMulti_IndexTemplate(EngineState s, string rawCode, int compIdx, string compStr, ErrorCheck check = ErrorCheck.Success)
         {
-            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(Dest_RegMulti, true))
+            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(RegMultiPath, true))
             {
                 subKey.SetValue("Key", new string[] { "A", "B" }, RegistryValueKind.MultiString);
             }
@@ -338,7 +338,7 @@ namespace PEBakery.Tests.Core.Command
 
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
             {
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(Dest_RegMulti, false))
+                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(RegMultiPath, false))
                 {
                     Assert.IsNotNull(subKey);
 
@@ -365,8 +365,156 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region RegCopy
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandRegistry")]
+        public void Reg_RegCopy()
+        { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string singleSrcSet = Path.Combine(RegCopyPath, "Src");
+            string multiSrcSet1 = Path.Combine(RegCopyPath, "Set*");
+            string multiSrcSet2 = Path.Combine(RegCopyPath, "Set?0");
+            string destSet = Path.Combine(RegCopyPath, "Dest");
+
+            // Success
+            Single_Template($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet}", Registry.CurrentUser,
+                singleSrcSet, destSet);
+            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
+                RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
+                destSet, new string[] { "Set10", "Set20", "Set31" });
+            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet},WILDCARD", Registry.CurrentUser, 
+                RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
+                destSet, new string[] { "Set10", "Set20" });
+
+            // Error
+            Single_Template($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
+                singleSrcSet, destSet, ErrorCheck.Error);
+            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet}", Registry.CurrentUser,
+                RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
+                destSet, new string[] { "Set10", "Set20", "Set31" }, 
+                ErrorCheck.Error);
+            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet}", Registry.CurrentUser,
+                RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
+                destSet, new string[] { "Set10", "Set20" },
+                ErrorCheck.Error);
+
+            #region CreateRegValues, CheckRegValues
+            void CreateRegValues(RegistryKey hKey, string subKeyPath)
+            {
+                using (RegistryKey key = hKey.CreateSubKey(subKeyPath, true))
+                {
+                    Assert.IsNotNull(key);
+
+                    key.SetValue("Binary", new byte[] { 0x01, 0x02, 0x03 }, RegistryValueKind.Binary);
+                    key.SetValue("Integer", 1225, RegistryValueKind.DWord);
+                    key.SetValue("String", "English", RegistryValueKind.String);
+
+                    using (RegistryKey subKey = key.CreateSubKey("SubKey", true))
+                    {
+                        Assert.IsNotNull(subKey);
+
+                        subKey.SetValue("Unicode", "한국어", RegistryValueKind.ExpandString);
+                        subKey.SetValue("WinDir", "%WinDir%", RegistryValueKind.ExpandString);
+                    }
+                }
+            }
+
+            void CheckRegValues(RegistryKey hKey, string subKeyPath)
+            {
+                using (RegistryKey key = hKey.OpenSubKey(subKeyPath, false))
+                {
+                    Assert.IsNotNull(key);
+
+                    byte[] bin = key.GetValue("Binary") as byte[];
+                    Assert.IsNotNull(bin);
+                    Assert.IsTrue(bin.SequenceEqual(new byte[] { 0x01, 0x02, 0x03 }));
+
+                    int dword = (int)key.GetValue("Integer");
+                    Assert.AreEqual(dword, 1225);
+
+                    string str = key.GetValue("String") as string;
+                    Assert.IsNotNull(str);
+                    Assert.IsTrue(str.Equals("English", StringComparison.Ordinal));
+
+                    using (RegistryKey subKey = key.OpenSubKey("SubKey", false))
+                    {
+                        Assert.IsNotNull(subKey);
+
+                        str = subKey.GetValue("Unicode") as string;
+                        Assert.IsNotNull(str);
+                        Assert.IsTrue(str.Equals("한국어", StringComparison.Ordinal));
+
+                        str = subKey.GetValue("WinDir", null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
+                        Assert.IsNotNull(str);
+                        Assert.IsTrue(str.Equals("%WinDir%", StringComparison.Ordinal));
+                    }
+                }
+            }
+            #endregion
+
+            #region Template
+            void Single_Template(string rawCode, RegistryKey hKey,
+                string srcKeyPath, 
+                string destKeyPath, 
+                ErrorCheck check = ErrorCheck.Success)
+            { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
+                Registry.CurrentUser.DeleteSubKeyTree(RegCopyPath, false);
+                try
+                {
+                    CreateRegValues(hKey, srcKeyPath);
+
+                    EngineTests.Eval(s, rawCode, CodeType.RegCopy, check);
+
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        CheckRegValues(hKey, destKeyPath);
+                    }
+                }
+                finally
+                {
+                    Registry.CurrentUser.DeleteSubKeyTree(RegCopyPath, false);
+                }
+            }
+
+            void Wildcard_Template(string rawCode, RegistryKey hKey, 
+                string srcKeyPath, string[] srcTargets,
+                string destKeyPath, string[] destTargets,
+                ErrorCheck check = ErrorCheck.Success)
+            { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
+                Registry.CurrentUser.DeleteSubKeyTree(RegCopyPath, false);
+
+                try
+                {
+                    foreach (string target in srcTargets)
+                    {
+                        string t = Path.Combine(srcKeyPath, target);
+                        CreateRegValues(hKey, t);
+                    }
+
+                    EngineTests.Eval(s, rawCode, CodeType.RegCopy, check);
+
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        foreach (string target in destTargets)
+                        {
+                            string t = Path.Combine(destKeyPath, target);
+                            CheckRegValues(hKey, t);
+                        }
+                    }
+                }
+                finally
+                {
+                    Registry.CurrentUser.DeleteSubKeyTree(RegCopyPath, false);
+                }
+            }
+            #endregion
+        }
+        #endregion
+
         #region Utility
-        private void RegDestVar_Template(EngineState s, CodeType type, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        private static void RegDestVar_Template(EngineState s, CodeType type, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         {
             EngineTests.Eval(s, rawCode, type, check);
 
