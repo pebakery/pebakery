@@ -213,7 +213,7 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         private readonly string _settingFile;
-        public LogDB LogDB { get; set; }
+        public LogDatabase LogDB { get; set; }
         public ScriptCache CacheDB { get; set; }
         public ProjectCollection Projects { get; private set; }
 
@@ -698,17 +698,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_InterfaceButton;
-        public bool Log_InterfaceButton
-        {
-            get => log_InterfaceButton;
-            set
-            {
-                log_InterfaceButton = value;
-                OnPropertyUpdate(nameof(Log_InterfaceButton));
-            }
-        }
-
         private bool log_DelayedLogging;
         public bool Log_DelayedLogging
         {
@@ -873,7 +862,6 @@ namespace PEBakery.WPF
 #endif
             Log_Macro = true;
             Log_Comment = true;
-            Log_InterfaceButton = false;
             Log_DelayedLogging = true;
 
             // Compatibility
@@ -926,7 +914,6 @@ namespace PEBakery.WPF
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_InterfaceButton), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
@@ -1032,7 +1019,6 @@ namespace PEBakery.WPF
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
             Log_Macro = ParseBoolean(nameof(Log_Macro), Log_Macro);
             Log_Comment = ParseBoolean(nameof(Log_Comment), Log_Comment);
-            Log_InterfaceButton = ParseBoolean(nameof(Log_InterfaceButton), Log_InterfaceButton);
             Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
 
             // Compatibility
@@ -1075,7 +1061,6 @@ namespace PEBakery.WPF
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_InterfaceButton), logStr), Log_InterfaceButton.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean

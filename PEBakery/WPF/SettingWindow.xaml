@@ -390,10 +390,6 @@
                               IsChecked="{Binding Log_Comment}" />
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
-                              Content="Log Interface Button"
-                              IsChecked="{Binding Log_InterfaceButton}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
                               Content="Delayed Logging"
                               ToolTip="Delayed logging vastly improves performance."
                               IsChecked="{Binding Log_DelayedLogging}" />

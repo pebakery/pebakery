@@ -1195,19 +1195,19 @@ namespace PEBakery.WPF
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (Application.Current.MainWindow is MainWindow w)
-                    {
-                        logger = w.Logger;
-                        mainModel = w.Model;
-                        setting = w.Setting;
+                    if (!(Application.Current.MainWindow is MainWindow w))
+return;
 
-                        // Populate BuildTree
-                        if (!hideProgress)
-                        {
-                            w.Model.BuildTree.Children.Clear();
-                            w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
-                            w.CurBuildTree = null;
-                        }
+                    logger = w.Logger;
+                    mainModel = w.Model;
+                    setting = w.Setting;
+
+                    // Populate BuildTree
+                    if (!hideProgress)
+                    {
+                        w.Model.BuildTree.Children.Clear();
+                        w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
+                        w.CurBuildTree = null;
                     }
                 });
 
@@ -1215,7 +1215,8 @@ namespace PEBakery.WPF
 
                 EngineState s = new EngineState(addr.Script.Project, logger, mainModel, EngineMode.RunMainAndOne, addr.Script, addr.Section.Name);
                 s.SetOption(setting);
-                s.DisableLogger = !setting.Log_InterfaceButton;
+                if (s.LogMode == LogMode.PartDelay)
+                    s.LogMode = LogMode.FullDelay;
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -1230,6 +1231,13 @@ namespace PEBakery.WPF
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = true;
+
+                // Flush FullDelayedLogs
+                if (s.LogMode == LogMode.FullDelay)
+                {
+                    DelayedLogging delayed = logger.Delayed;
+                    delayed.FlushFullDelayed(s);
+                }
 
                 // Turn off ProgressRing
                 mainModel.WorkInProgress = false;

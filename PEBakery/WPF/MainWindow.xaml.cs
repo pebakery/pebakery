@@ -36,7 +36,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows.Threading;
@@ -48,7 +47,6 @@ using System.Text;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
-using System.Net;
 using System.Windows.Shell;
 
 namespace PEBakery.WPF
@@ -698,11 +696,12 @@ namespace PEBakery.WPF
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run
-                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
+                int buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
                 Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
+
                 // Turn off progress ring
                 Model.WorkInProgress = false;
 
@@ -842,7 +841,7 @@ namespace PEBakery.WPF
                     Model.SwitchNormalBuildInterface = false;
 
                     // Run
-                    long buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
+                    int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
                     Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);

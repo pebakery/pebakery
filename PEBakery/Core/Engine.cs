@@ -28,18 +28,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows;
-using System.ComponentModel;
-using System.Threading;
-using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
 using System.Diagnostics;
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
@@ -49,13 +44,13 @@ namespace PEBakery.Core
     public class Engine
     {
         #region Variables and Constructor
-        public static Engine WorkingEngine; // Only 1 Instance can run at one time
+        public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         public static int WorkingLock = 0;
         public static bool StopBuildOnError = true;
 
         // ReSharper disable once InconsistentNaming
         public EngineState s;
-        private Task<long> _task;
+        private Task<int> _task;
 
         public Engine(EngineState state)
         {
@@ -85,7 +80,8 @@ namespace PEBakery.Core
                 s.CurrentScript = sc;
 
             // Init Per-Script Log
-            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1);
+            bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
+            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
 
             // Determine EntrySection
             string entrySection = Engine.GetEntrySection(s);
@@ -114,19 +110,6 @@ namespace PEBakery.Core
             s.ProcessedSectionHashes.Clear();
 
             // Set Interface using MainWindow, MainViewModel
-            if (s.RunMode == EngineMode.RunAll)
-                s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
-            else 
-                s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(sc.Title);
-                
-            s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
-            s.MainViewModel.ScriptVersionText = "v" + sc.Version;
-            if (MainWindow.ScriptAuthorLenLimit < sc.Author.Length)
-                s.MainViewModel.ScriptAuthorText = sc.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
-            else
-                s.MainViewModel.ScriptAuthorText = sc.Author;
-            s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
-
             long allLineCount = s.CurrentScript.Sections
                 .Where(x => x.Value.Type == SectionType.Code)
                 .Aggregate<KeyValuePair<string, ScriptSection>, long>(0, (sum, kv) => sum + kv.Value.Lines.Count);
@@ -135,20 +118,31 @@ namespace PEBakery.Core
             s.MainViewModel.BuildScriptProgressBarValue = 0;
             s.MainViewModel.BuildFullProgressBarValue = s.CurrentScriptIdx;
 
-            if (Application.Current != null)
+            if (!prepareBuild || s.RunMode == EngineMode.RunAll)
             {
-                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
-                {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                if (s.RunMode == EngineMode.RunAll)
+                    s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
+                else
+                    s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(sc.Title);
 
-                    // ReSharper disable once PossibleNullReferenceException
+                s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
+                s.MainViewModel.ScriptVersionText = "v" + sc.Version;
+                if (MainWindow.ScriptAuthorLenLimit < sc.Author.Length)
+                    s.MainViewModel.ScriptAuthorText = sc.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
+                else
+                    s.MainViewModel.ScriptAuthorText = sc.Author;
+                s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
+
+                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    if (!(Application.Current.MainWindow is MainWindow w))
+                        return;
+
                     w.DrawScriptLogo(sc);
 
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = false;
-
                     w.CurBuildTree = s.MainViewModel.BuildTree.FindScriptByFullPath(s.CurrentScript.RealPath);
-
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = true;
                 }));
@@ -165,14 +159,14 @@ namespace PEBakery.Core
         #endregion
 
         #region Run, Stop 
-        public Task<long> Run(string runName)
+        public Task<int> Run(string runName)
         {
             _task = Task.Run(() =>
             {
                 s.BuildId = s.Logger.BuildInit(s, runName);
 
-                s.MainViewModel.BuildFullProgressBarMax = s.Scripts.Count;
-                
+                s.MainViewModel.BuildFullProgressBarMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
+
                 // Update project variables
                 s.Project.UpdateProjectVariables();
 
@@ -993,12 +987,10 @@ namespace PEBakery.Core
             return sc;
         }
         #endregion
-
-        
     }
     #endregion
 
-    #region EngineState
+    #region EngineState Enums
     public enum EngineMode
     {
         RunAll,
@@ -1013,6 +1005,31 @@ namespace PEBakery.Core
         OnDriveLetter,
     }
 
+    public enum LogMode
+    {
+        /// <summary>
+        /// For debugging
+        /// - Worst performance impact
+        /// - Write to database without any delays
+        /// </summary>
+        NoDelay,
+        /// <summary>
+        /// For normal usecase
+        /// - Medium performance impact
+        /// - Write to database when script is finised
+        /// </summary>
+        PartDelay,
+        /// <summary>
+        /// For interface button
+        /// - Minimize performance impact
+        /// - Disable trivial LogWindow event
+        /// - Write to database after bulid is finished
+        /// </summary>
+        FullDelay,
+    }
+    #endregion
+
+    #region EngineState
     [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
     public class EngineState
     {
@@ -1023,6 +1040,7 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
+        public LogMode LogMode = LogMode.PartDelay; // For performance (delayed logging)
         public MainViewModel MainViewModel;
 
         // Property
@@ -1047,8 +1065,8 @@ namespace PEBakery.Core
         public bool ErrorHaltFlag = false; 
         public bool CmdHaltFlag = false; // Halt Command
         public bool UserHaltFlag = false;
-        public long BuildId; // Used in logging
-        public long ScriptId; // Used in logging
+        public int BuildId = 0; // Used in logging
+        public int ScriptId = 0; // Used in logging
 
         // ErrorOff
         public ErrorOffState? ErrorOffWaitingRegister = null;
@@ -1066,8 +1084,7 @@ namespace PEBakery.Core
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
-        public bool DisableLogger = false; // For performance (when engine runned by interface)
-        public bool DelayedLogging = true; // For performance
+        public bool DisableLogger = false; // For performance (when engine runned by interface - legacy)
         public string CustomUserAgent = null;
 
         // System Commands
@@ -1140,7 +1157,7 @@ namespace PEBakery.Core
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
-            DelayedLogging = m.Log_DelayedLogging;
+            LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
         }
         #endregion
