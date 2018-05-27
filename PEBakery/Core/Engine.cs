@@ -1040,7 +1040,7 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
-        public LogMode LogMode = LogMode.PartDelay; // For performance (delayed logging)
+        public LogMode LogMode = LogMode.NoDelay; // For performance (delayed logging)
         public MainViewModel MainViewModel;
 
         // Property
