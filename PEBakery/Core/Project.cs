@@ -227,6 +227,12 @@ namespace PEBakery.Core
                         { // Absolute Path
                             Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
+                            if (!Directory.Exists(dirPath))
+                            {
+                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
+                                continue;
+                            }
+
                             var tuples = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
                                 .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\')), x.IsDir));
                             dirLinkPathList.AddRange(tuples);
@@ -236,6 +242,12 @@ namespace PEBakery.Core
                             Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
                             string fullPath = Path.Combine(_baseDir, dirPath);
+                            if (!Directory.Exists(fullPath))
+                            {
+                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
+                                continue;
+                            }
+
                             var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
                                 .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
                             dirLinkPathList.AddRange(tuples);
