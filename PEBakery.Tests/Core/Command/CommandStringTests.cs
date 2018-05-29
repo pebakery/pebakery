@@ -22,7 +22,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Core.Commands;
 using System.Collections.Generic;
-using PEBakery.Exceptions;
 using System.Diagnostics;
 
 namespace PEBakery.Tests.Core.Command

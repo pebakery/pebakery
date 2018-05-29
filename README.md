@@ -16,7 +16,7 @@ PEBakery is compatible with WinBuilder 082.
 ## Disclaimer
 
 - All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
-- Even though I did not experienced data corruption while developing, it is highly recommended to backup your files.
+- Even though I did not experience data corruption while developing, it is highly recommended to backup your files.
 - I do not provide any warranty, use at your own risk.
 - Windows Preinstalled Environment is a registered trademark of Microsoft. 
 

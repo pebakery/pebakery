@@ -30,6 +30,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -39,6 +40,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public static class CommandString
     {
         private const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;

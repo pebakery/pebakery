@@ -635,8 +635,14 @@ namespace PEBakery.Core
                     case CodeType.ReadInterface:
                         logs.AddRange(CommandInterface.ReadInterface(s, cmd));
                         break;
+                    case CodeType.ReadInterfaceOp:
+                        logs.AddRange(CommandInterface.ReadInterfaceOp(s, cmd));
+                        break;
                     case CodeType.WriteInterface:
                         logs.AddRange(CommandInterface.WriteInterface(s, cmd));
+                        break;
+                    case CodeType.WriteInterfaceOp:
+                        logs.AddRange(CommandInterface.WriteInterfaceOp(s, cmd));
                         break;
                     case CodeType.Message:
                         logs.AddRange(CommandInterface.Message(s, cmd));
@@ -784,6 +790,9 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region Error
+                    case CodeType.Retrieve: // Must be translated by CodeParser to different commands
+                        logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at Engine.ExecuteCommand"));
+                        break;
                     default:
                         logs.Add(new LogInfo(LogState.Error, $"Cannot execute [{cmd.Type}] command"));
                         break;
@@ -792,9 +801,8 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Stop Building
-                // Currently not used
                 logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, curDepth));
-                throw new CriticalErrorException();
+                throw;
             }
             catch (InvalidCodeCommandException e)
             {

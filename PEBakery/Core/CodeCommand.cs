@@ -1703,9 +1703,31 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ReadInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_ReadInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_ReadInterface>()).ToList();
+
+        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1727,9 +1749,31 @@ namespace PEBakery.Core
             Value = value;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return $"{Element},{ScriptFile},{Section},{Key},{Value}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WriteInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WriteInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_WriteInterface>()).ToList();
+
+        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 

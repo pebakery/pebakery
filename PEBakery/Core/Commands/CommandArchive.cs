@@ -44,9 +44,7 @@ namespace PEBakery.Core.Commands
         { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
-            CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
             
             ArchiveCompressFormat arcType = info.Format;
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
@@ -61,28 +59,17 @@ namespace PEBakery.Core.Commands
                 encoding = Encoding.UTF8;
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destArchive, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destArchive, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (Directory.Exists(destArchive))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"[{destArchive}] should be a file, not a directory"));
-                return logs;
-            }
-            else
-            {
-                if (File.Exists(destArchive))
-                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
-            }
+                return LogInfo.LogErrorMessage(logs, $"[{destArchive}] should be a file, not a directory");
+
+            if (File.Exists(destArchive))
+                logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
 
             if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find [{srcPath}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
 
             bool success;
             switch (arcType)
@@ -94,6 +81,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Error, $"Compressing to [{arcType}] format is not supported"));
                     return logs;
             }
+
             if (success)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
             else
@@ -106,33 +94,23 @@ namespace PEBakery.Core.Commands
         { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Decompress), "Invalid CodeInfo");
-            CodeInfo_Decompress info = cmd.Info as CodeInfo_Decompress;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
 
             string srcArchive = StringEscaper.Preprocess(s, info.SrcArchive);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!File.Exists(srcArchive))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find [{srcArchive}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcArchive}]");
 
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"[{destDir}] should be a directory, not a file"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"[{destDir}] should be a directory, not a file");
+
                 Directory.CreateDirectory(destDir);
             }
 
@@ -142,7 +120,6 @@ namespace PEBakery.Core.Commands
                 ArchiveHelper.DecompressManaged(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] compressed to [{destDir}]"));
-
             return logs;
         }
 
@@ -150,9 +127,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Expand), "Invalid CodeInfo");
-            CodeInfo_Expand info = cmd.Info as CodeInfo_Expand;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Expand info = cmd.Info.Cast<CodeInfo_Expand>();
 
             string srcCab = StringEscaper.Preprocess(s, info.SrcCab);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
@@ -161,19 +136,13 @@ namespace PEBakery.Core.Commands
                 singleFile = StringEscaper.Preprocess(s, info.SingleFile);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Path [{destDir}] is a file, not a directory"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Path [{destDir}] is a file, not a directory");
                 Directory.CreateDirectory(destDir);
             }
 
@@ -200,10 +169,8 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] already exists, skipping extract from [{srcCab}]"));
                         return logs;
                     }
-                    else
-                    {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
-                    }
+
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                 }
 
                 if (ArchiveHelper.ExtractCab(srcCab, destDir, singleFile)) // Success
@@ -219,9 +186,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_CopyOrExpand), "Invalid CodeInfo");
-            CodeInfo_CopyOrExpand info = cmd.Info as CodeInfo_CopyOrExpand;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_CopyOrExpand info = cmd.Info.Cast<CodeInfo_CopyOrExpand>();
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -229,11 +194,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(destPath != null, $"{nameof(destPath)} != null");
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Check srcFile contains wildcard
             if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -324,8 +286,8 @@ namespace PEBakery.Core.Commands
                         using (CabExtract cab = new CabExtract(fs))
                         {
                             result = cab.ExtractAll(tempDir, out List<string> fileList);
-                            if (2 < fileList.Count)
-                            { // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
+                            if (2 < fileList.Count) // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
+                            { 
                                 logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain only a single file"));
                                 return;
                             }
