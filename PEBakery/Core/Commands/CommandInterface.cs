@@ -33,7 +33,6 @@ using System.Text;
 using System.Threading.Tasks;
 using PEBakery.WPF;
 using System.Windows;
-using System.Windows.Threading;
 using System.Diagnostics;
 using PEBakery.WPF.Controls;
 using System.IO;
@@ -48,9 +47,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible), "Invalid CodeInfo");
-            CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Visible info = cmd.Info.Cast<CodeInfo_Visible>();
 
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
             Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
@@ -443,7 +440,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
         { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
-            List<LogInfo> logs = new List<LogInfo>(4);
+            List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
 
@@ -960,7 +957,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
         { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
-            List<LogInfo> logs = new List<LogInfo>(4);
+            List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
 
@@ -1077,9 +1074,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message), "Invalid CodeInfo");
-            CodeInfo_Message info = cmd.Info as CodeInfo_Message;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Message info = cmd.Info.Cast<CodeInfo_Message>();
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -1142,9 +1137,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo), "Invalid CodeInfo");
-            CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
             
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -1161,9 +1154,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_EchoFile), "Invalid CodeInfo");
-            CodeInfo_EchoFile info = cmd.Info as CodeInfo_EchoFile;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_EchoFile info = cmd.Info.Cast<CodeInfo_EchoFile>();
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
 
@@ -1226,9 +1217,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_UserInput), "Invalid CodeInfo");
-            CodeInfo_UserInput info = cmd.Info as CodeInfo_UserInput;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_UserInput info = cmd.Info.Cast<CodeInfo_UserInput>();
 
             UserInputType type = info.Type;
             switch (type)
@@ -1236,9 +1225,7 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile), "Invalid UserInputInfo");
-                        UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
-                        Debug.Assert(subInfo != null, "Invalid UserInputInfo");
+                        UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
 
                         System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
                         s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
@@ -1282,15 +1269,16 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                             {
                                 SelectedPath = initPath,
                             };
 
                             bool failure = false;
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                MainWindow w = Application.Current.MainWindow as MainWindow;
+                                if (!(Application.Current.MainWindow is MainWindow w))
+                                    return;
 
                                 if (dialog.ShowDialog(w) == true)
                                 {
@@ -1324,9 +1312,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface), "Invalid CodeInfo");
-            CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);

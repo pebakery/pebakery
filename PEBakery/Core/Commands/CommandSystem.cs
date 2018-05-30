@@ -46,18 +46,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_System), "Invalid CodeInfo");
-            CodeInfo_System info = cmd.Info as CodeInfo_System;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_System info = cmd.Info.Cast<CodeInfo_System>();
 
             SystemType type = info.Type;
             switch (type)
             {
                 case SystemType.Cursor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Cursor), "Invalid SystemInfo");
-                        SystemInfo_Cursor subInfo = info.SubInfo as SystemInfo_Cursor;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_Cursor subInfo = info.SubInfo.Cast<SystemInfo_Cursor>();
 
                         string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
 
@@ -85,9 +81,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.ErrorOff:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_ErrorOff), "Invalid SystemInfo");
-                        SystemInfo_ErrorOff subInfo = info.SubInfo as SystemInfo_ErrorOff;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_ErrorOff subInfo = info.SubInfo.Cast<SystemInfo_ErrorOff>();
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
@@ -122,9 +116,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetEnv:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetEnv), "Invalid SystemInfo");
-                        SystemInfo_GetEnv subInfo = info.SubInfo as SystemInfo_GetEnv;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_GetEnv subInfo = info.SubInfo.Cast<SystemInfo_GetEnv>();
 
                         string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVarName);
                         string envVarValue = Environment.GetEnvironmentVariable(envVarName);
@@ -166,9 +158,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeSpace:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeSpace), "Invalid SystemInfo");
-                        SystemInfo_GetFreeSpace subInfo = info.SubInfo as SystemInfo_GetFreeSpace;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_GetFreeSpace subInfo = info.SubInfo.Cast<SystemInfo_GetFreeSpace>();
                         
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
@@ -184,9 +174,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.IsAdmin:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_IsAdmin), "Invalid SystemInfo");
-                        SystemInfo_IsAdmin subInfo = info.SubInfo as SystemInfo_IsAdmin;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_IsAdmin subInfo = info.SubInfo.Cast<SystemInfo_IsAdmin>();
 
                         bool isAdmin;
                         using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
@@ -206,9 +194,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.OnBuildExit:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnBuildExit), "Invalid SystemInfo");
-                        SystemInfo_OnBuildExit subInfo = info.SubInfo as SystemInfo_OnBuildExit;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_OnBuildExit subInfo = info.SubInfo.Cast<SystemInfo_OnBuildExit>();
 
                         s.OnBuildExit = subInfo.Cmd;
 
@@ -217,9 +203,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.OnScriptExit:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnScriptExit), "Invalid SystemInfo");
-                        SystemInfo_OnScriptExit subInfo = info.SubInfo as SystemInfo_OnScriptExit;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_OnScriptExit subInfo = info.SubInfo.Cast<SystemInfo_OnScriptExit>();
 
                         s.OnScriptExit = subInfo.Cmd;
 
@@ -228,7 +212,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshInterface:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
@@ -244,7 +228,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.RescanScripts:
                 case SystemType.RefreshAllScripts:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
                         AutoResetEvent resetEvent = null;
@@ -260,9 +244,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.LoadNewScript:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadNewScript), "Invalid SystemInfo");
-                        SystemInfo_LoadNewScript subInfo = info.SubInfo as SystemInfo_LoadNewScript;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_LoadNewScript subInfo = info.SubInfo.Cast<SystemInfo_LoadNewScript>();
 
                         string srcFilePath = StringEscaper.Preprocess(s, subInfo.SrcFilePath);
                         string destTreeDir = StringEscaper.Preprocess(s, subInfo.DestTreeDir);
@@ -353,9 +335,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshScript:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshScript), "Invalid SystemInfo");
-                        SystemInfo_RefreshScript subInfo = info.SubInfo as SystemInfo_RefreshScript;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_RefreshScript subInfo = info.SubInfo.Cast<SystemInfo_RefreshScript>();
 
                         string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
                         SearchOption searchOption = SearchOption.AllDirectories;
@@ -435,117 +415,9 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Success, $"Refresh [{successCount}] scripts"));
                     }
                     break;
-                    /*
-                case SystemType.Load:
-                    {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load), "Invalid SystemInfo");
-                        SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
-                        
-                        string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
-                        SearchOption searchOption = SearchOption.AllDirectories;
-                        if (subInfo.NoRec)
-                            searchOption = SearchOption.TopDirectoryOnly;
-                            
-                        // Check wildcard
-                        string wildcard = Path.GetFileName(filePath);
-                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
-
-                        string[] files;
-                        if (containsWildcard)
-                        { // With wildcard
-                            files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(filePath), wildcard, searchOption);
-                            if (files.Length == 0)
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
-                                return logs;
-                            }
-                        }
-                        else
-                        { // No wildcard
-                            if (!File.Exists(filePath))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
-                                return logs;
-                            }
-
-                            files = new string[] { filePath };
-                        }
-
-                        int successCount = 0;
-                        foreach (string f in files)
-                        { 
-                            string scRealPath = Path.GetFullPath(f);
-
-                            // Does this file already exists in project.AllScripts?
-                            Project project = cmd.Addr.Project;
-                            if (project.ContainsScriptByRealPath(scRealPath))
-                            { // Project Tree conatins this script, so just refresh it
-                                // RefreshScript -> Update Project.AllScripts
-                                // TODO: Update EngineState.Scripts?
-                                Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
-                                sc = s.Project.RefreshScript(sc);
-                                if (sc == null)
-                                {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
-                                    continue;
-                                }
-
-                                // Update MainWindow and redraw Script
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    if (!(Application.Current.MainWindow is MainWindow w))
-                                        return;
-
-                                    w.UpdateScriptTree(project, false);
-                                    if (sc.Equals(w.CurMainTree.Script))
-                                    {
-                                        w.CurMainTree.Script = sc;
-                                        w.DrawScript(w.CurMainTree.Script);
-                                    }
-                                });
-
-                                logs.Add(new LogInfo(LogState.Success, $"Refreshed script [{f}]"));
-                                successCount += 1;
-                            }
-                            else
-                            { // Add scripts into Project.AllScripts
-                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(scRealPath, false, true);
-                                if (sc == null)
-                                {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));
-                                    continue;
-                                }
-
-                                // Update MainWindow.MainTree and redraw Script
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    if (!(Application.Current.MainWindow is MainWindow w))
-                                        return;
-
-                                    w.UpdateScriptTree(project, false);
-                                    if (sc.Equals(w.CurMainTree.Script))
-                                    {
-                                        w.CurMainTree.Script = sc;
-                                        w.DrawScript(w.CurMainTree.Script);
-                                    }
-                                });
-
-                                logs.Add(new LogInfo(LogState.Success, $"Loaded script [{f}], added to script tree"));
-                                successCount += 1;
-                            }
-                        }
-
-                        if (1 < files.Length)
-                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] scripts"));
-                    }
-                    break;
-                    */
                 case SystemType.SaveLog:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog), "Invalid SystemInfo");
-                        SystemInfo_SaveLog subInfo = info.SubInfo as SystemInfo_SaveLog;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_SaveLog subInfo = info.SubInfo.Cast<SystemInfo_SaveLog>();
 
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
@@ -561,7 +433,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.SetLocal:
                     { // SetLocal
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         Engine.EnableSetLocal(s, cmd.Addr.Section);
 
@@ -571,7 +443,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.EndLocal:
                     { // EndLocal
                         // No CodeInfo
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         if (Engine.DisableSetLocal(s, cmd.Addr.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
                             logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count + 1}) disabled"));
@@ -582,9 +454,7 @@ namespace PEBakery.Core.Commands
                 // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC), "Invalid SystemInfo");
-                        SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_HasUAC subInfo = info.SubInfo.Cast<SystemInfo_HasUAC>();
 
                         logs.Add(new LogInfo(LogState.Warning, "[System,HasUAC] is deprecated"));
 
@@ -606,7 +476,7 @@ namespace PEBakery.Core.Commands
                         s.Variables.ResetVariables(VarsType.Local);
 
                         // Load Global Variables
-                        var varLogs = s.Variables.LoadDefaultGlobalVariables();
+                        List<LogInfo> varLogs = s.Variables.LoadDefaultGlobalVariables();
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         // Load Per-Script Variables
@@ -632,9 +502,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute), "Invalid CodeInfo");
-            CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_ShellExecute info = cmd.Info.Cast<CodeInfo_ShellExecute>();
 
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);

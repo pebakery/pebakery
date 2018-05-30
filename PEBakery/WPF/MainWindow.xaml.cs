@@ -64,10 +64,10 @@ namespace PEBakery.WPF
         public ProjectCollection Projects { get; private set; }
         public string BaseDir { get; }
 
-        private BackgroundWorker loadWorker = new BackgroundWorker();
-        private BackgroundWorker refreshWorker = new BackgroundWorker();
-        private BackgroundWorker cacheWorker = new BackgroundWorker();
-        private BackgroundWorker syntaxCheckWorker = new BackgroundWorker();
+        private BackgroundWorker _loadWorker = new BackgroundWorker();
+        private BackgroundWorker _refreshWorker = new BackgroundWorker();
+        private BackgroundWorker _cacheWorker = new BackgroundWorker();
+        private BackgroundWorker _syntaxCheckWorker = new BackgroundWorker();
 
         public TreeViewModel CurMainTree { get; private set; }
         public TreeViewModel CurBuildTree { get; set; }
@@ -76,7 +76,7 @@ namespace PEBakery.WPF
         private readonly ScriptCache _scriptCache;
 
         public const int MaxDpiScale = 4;
-        private int allScriptCount = 0;
+        private int _allScriptCount = 0;
         public SettingViewModel Setting { get; }
 
         public MainViewModel Model { get; }
@@ -212,8 +212,8 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
             
-            loadWorker = new BackgroundWorker();
-            loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            _loadWorker = new BackgroundWorker();
+            _loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
@@ -231,8 +231,8 @@ namespace PEBakery.WPF
                     Projects = new ProjectCollection(baseDir, null);
                 }
 
-                allScriptCount = Projects.PrepareLoad(out stage2LinksCount);
-                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allScriptCount + stage2LinksCount; });
+                _allScriptCount = Projects.PrepareLoad(out stage2LinksCount);
+                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = _allScriptCount + stage2LinksCount; });
 
                 // Let's load scripts parallelly
                 List<LogInfo> errorLogs = Projects.Load(worker);
@@ -261,14 +261,17 @@ namespace PEBakery.WPF
                     e.Result = false;
                 }
             };
-            loadWorker.WorkerReportsProgress = true;
-            loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+            _loadWorker.WorkerReportsProgress = true;
+            _loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 Interlocked.Increment(ref loadedScriptCount);
                 Model.BottomProgressBarValue = loadedScriptCount;
                 string msg = string.Empty;
                 switch (e.ProgressPercentage)
                 {
+                    case -1: // Loading Cache
+                        msg = "Loading script cache";
+                        break;
                     case 0:  // Stage 1
                         msg = e.UserState == null ? "Error" : $"{e.UserState}";
                         break;
@@ -286,15 +289,19 @@ namespace PEBakery.WPF
                         msg = e.UserState == null ? "Cached - Error" : $"Cached - {e.UserState}";
                         break;
                 }
-                int stage = e.ProgressPercentage / 2 + 1;
-                if (stage == 1)
-                    msg = $"Stage {stage} ({loadedScriptCount} / {allScriptCount}) \r\n{msg}";
-                else
-                    msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
+
+                if (0 <= e.ProgressPercentage)
+                {
+                    int stage = e.ProgressPercentage / 2 + 1;
+                    if (stage == 1)
+                        msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount}) \r\n{msg}";
+                    else
+                        msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
+                }
 
                 Model.ScriptDescriptionText = $"PEBakery loading...\r\n{msg}";               
             };
-            loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            _loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 if ((bool)e.Result)
                 { // Load Success
@@ -315,13 +322,13 @@ namespace PEBakery.WPF
                     string msg;
                     if (Setting.Script_EnableCache)
                     {
-                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allScriptCount + stage2LinksCount);
-                        msg = $"{allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (_allScriptCount + stage2LinksCount);
+                        msg = $"{_allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                         Model.StatusBarText = msg;
                     }
                     else
                     {
-                        msg = $"{allScriptCount} scripts loaded ({t:0.#}s)";
+                        msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
                         Model.StatusBarText = msg;
                     }
                     if (quiet == false)
@@ -349,7 +356,7 @@ namespace PEBakery.WPF
                 resetEvent.Set();
             };
 
-            loadWorker.RunWorkerAsync(BaseDir);
+            _loadWorker.RunWorkerAsync(BaseDir);
 
             return resetEvent;
         }
@@ -362,12 +369,12 @@ namespace PEBakery.WPF
                 try
                 {
                     Stopwatch watch = new Stopwatch();
-                    cacheWorker = new BackgroundWorker();
+                    _cacheWorker = new BackgroundWorker();
 
                     Model.WorkInProgress = true;
                     int updatedCount = 0;
                     int cachedCount = 0;
-                    cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                    _cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                     {
                         BackgroundWorker worker = sender as BackgroundWorker;
 
@@ -375,27 +382,27 @@ namespace PEBakery.WPF
                         _scriptCache.CacheScripts(Projects, BaseDir, worker);
                     };
 
-                    cacheWorker.WorkerReportsProgress = true;
-                    cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+                    _cacheWorker.WorkerReportsProgress = true;
+                    _cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
                     {
                         Interlocked.Increment(ref cachedCount);
                         if (e.ProgressPercentage == 1)
                             Interlocked.Increment(ref updatedCount);
                     };
-                    cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                    _cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
                     {
                         watch.Stop();
 
-                        double cachePercent = (double)updatedCount * 100 / allScriptCount;
+                        double cachePercent = (double)updatedCount * 100 / _allScriptCount;
 
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                        string msg = $"{allScriptCount} scripts cached ({t:0.###}s), {cachePercent:0.#}% updated";
+                        string msg = $"{_allScriptCount} scripts cached ({t:0.###}s), {cachePercent:0.#}% updated";
                         Logger.SystemWrite(new LogInfo(LogState.Info, msg));
                         Logger.SystemWrite(Logger.LogSeperator);
 
                         Model.WorkInProgress = false;
                     };
-                    cacheWorker.RunWorkerAsync();
+                    _cacheWorker.RunWorkerAsync();
                 }
                 finally
                 {
@@ -411,7 +418,7 @@ namespace PEBakery.WPF
             if (CurMainTree?.Script == null)
                 return null;
 
-            if (refreshWorker.IsBusy)
+            if (_refreshWorker.IsBusy)
                 return null;
 
             if (CurMainTree.Script.Type == ScriptType.Directory)
@@ -420,15 +427,15 @@ namespace PEBakery.WPF
             Stopwatch watch = new Stopwatch();
 
             Model.WorkInProgress = true;
-            refreshWorker = new BackgroundWorker();
-            refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            _refreshWorker = new BackgroundWorker();
+            _refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 watch.Start();
                 Script sc = CurMainTree.Script;
                 if (sc.Type != ScriptType.Directory)
                     e.Result = sc.Project.RefreshScript(CurMainTree.Script);
             };
-            refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            _refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 if (e.Result is Script sc)
                 {
@@ -449,7 +456,7 @@ namespace PEBakery.WPF
 
                 resetEvent.Set();
             };
-            refreshWorker.RunWorkerAsync();
+            _refreshWorker.RunWorkerAsync();
 
             return resetEvent;
         }
@@ -459,7 +466,7 @@ namespace PEBakery.WPF
             if (CurMainTree?.Script == null)
                 return;
 
-            if (syntaxCheckWorker.IsBusy)
+            if (_syntaxCheckWorker.IsBusy)
                 return;
 
             Script sc = CurMainTree.Script;
@@ -469,15 +476,15 @@ namespace PEBakery.WPF
             if (!quiet)
                 Model.WorkInProgress = true;
 
-            syntaxCheckWorker = new BackgroundWorker();
-            syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            _syntaxCheckWorker = new BackgroundWorker();
+            _syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 CodeValidator v = new CodeValidator(sc);
                 v.Validate();
 
                 e.Result = v;
             };
-            syntaxCheckWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            _syntaxCheckWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 if (!(e.Result is CodeValidator v))
                     return;
@@ -563,7 +570,7 @@ namespace PEBakery.WPF
                 if (!quiet)
                     Model.WorkInProgress = false;
             };
-            syntaxCheckWorker.RunWorkerAsync();
+            _syntaxCheckWorker.RunWorkerAsync();
         }
         #endregion
 
@@ -730,7 +737,7 @@ namespace PEBakery.WPF
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy)
+            if (_loadWorker.IsBusy)
                 return;
 
             (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
@@ -740,7 +747,7 @@ namespace PEBakery.WPF
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy)
+            if (_loadWorker.IsBusy)
                 return;
 
             double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
@@ -766,7 +773,7 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (loadWorker.IsBusy)
+            if (_loadWorker.IsBusy)
                 return;
 
             if (0 < UtilityWindow.Count)
@@ -1219,13 +1226,13 @@ namespace PEBakery.WPF
             }
 
             // TODO: Do this in more cleaner way
-            while (refreshWorker.IsBusy)
+            while (_refreshWorker.IsBusy)
                 await Task.Delay(500);
 
-            while (cacheWorker.IsBusy)
+            while (_cacheWorker.IsBusy)
                 await Task.Delay(500);
 
-            while (loadWorker.IsBusy)
+            while (_loadWorker.IsBusy)
                 await Task.Delay(500);
 
             _scriptCache?.WaitClose();

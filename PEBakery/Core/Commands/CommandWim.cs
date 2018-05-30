@@ -46,9 +46,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimMount), "Invalid CodeInfo");
-            CodeInfo_WimMount info = cmd.Info as CodeInfo_WimMount;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimMount info = cmd.Info.Cast<CodeInfo_WimMount>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -171,9 +169,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimUnmount), "Invalid CodeInfo");
-            CodeInfo_WimUnmount info = cmd.Info as CodeInfo_WimUnmount;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimUnmount info = cmd.Info.Cast<CodeInfo_WimUnmount>();
 
             string mountDir = StringEscaper.Preprocess(s, info.MountDir);
             string unmountOptionStr = StringEscaper.Preprocess(s, info.UnmountOption);
@@ -320,9 +316,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimInfo), "Invalid CodeInfo");
-            CodeInfo_WimInfo info = cmd.Info as CodeInfo_WimInfo;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimInfo info = cmd.Info.Cast<CodeInfo_WimInfo>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -394,9 +388,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimApply), "Invalid CodeInfo");
-            CodeInfo_WimApply info = cmd.Info as CodeInfo_WimApply;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimApply info = cmd.Info.Cast<CodeInfo_WimApply>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -550,9 +542,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtract), "Invalid CodeInfo");
-            CodeInfo_WimExtract info = cmd.Info as CodeInfo_WimExtract;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimExtract info = cmd.Info.Cast<CodeInfo_WimExtract>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -647,9 +637,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtractOp), "Invalid CodeInfo");
-            CodeInfo_WimExtractOp infoOp = cmd.Info as CodeInfo_WimExtractOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfo");
+            CodeInfo_WimExtractOp infoOp = cmd.Info.Cast<CodeInfo_WimExtractOp>();
 
             CodeInfo_WimExtract firstInfo = infoOp.Infos[0];
             string srcWim = StringEscaper.Preprocess(s, firstInfo.SrcWim);
@@ -748,9 +736,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtractBulk), "Invalid CodeInfo");
-            CodeInfo_WimExtractBulk info = cmd.Info as CodeInfo_WimExtractBulk;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimExtractBulk info = cmd.Info.Cast<CodeInfo_WimExtractBulk>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -892,9 +878,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimCapture), "Invalid CodeInfo");
-            CodeInfo_WimCapture info = cmd.Info as CodeInfo_WimCapture;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimCapture info = cmd.Info.Cast<CodeInfo_WimCapture>();
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -905,7 +889,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Directory [{srcDir}] does not exist");
 
             // Check DestWim
-            if (StringEscaper.PathSecurityCheck(destWim, out string errorMsg) == false)
+            if (!StringEscaper.PathSecurityCheck(destWim, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
@@ -919,7 +903,7 @@ namespace PEBakery.Core.Commands
                 writeFlags |= WriteFlags.CHECK_INTEGRITY;
 
             // Set Compression Type
-            CompressionType compType = CompressionType.NONE;
+            CompressionType compType;
             if (compStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
                 compType = CompressionType.NONE;
             else if (compStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
@@ -998,9 +982,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimAppend), "Invalid CodeInfo");
-            CodeInfo_WimAppend info = cmd.Info as CodeInfo_WimAppend;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimAppend info = cmd.Info.Cast<CodeInfo_WimAppend>();
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
@@ -1010,7 +992,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Directory [{srcDir}] does not exist");
 
             // Check DestWim
-            if (StringEscaper.PathSecurityCheck(destWim, out string errorMsg) == false)
+            if (!StringEscaper.PathSecurityCheck(destWim, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
@@ -1161,9 +1143,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimDelete), "Invalid CodeInfo");
-            CodeInfo_WimDelete info = cmd.Info as CodeInfo_WimDelete;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimDelete info = cmd.Info.Cast<CodeInfo_WimDelete>();
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1264,9 +1244,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathAdd), "Invalid CodeInfo");
-            CodeInfo_WimPathAdd info = cmd.Info as CodeInfo_WimPathAdd;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimPathAdd info = cmd.Info.Cast<CodeInfo_WimPathAdd>();
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1334,9 +1312,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathDelete), "Invalid CodeInfo");
-            CodeInfo_WimPathDelete info = cmd.Info as CodeInfo_WimPathDelete;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimPathDelete info = cmd.Info.Cast<CodeInfo_WimPathDelete>();
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1397,9 +1373,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathRename), "Invalid CodeInfo");
-            CodeInfo_WimPathRename info = cmd.Info as CodeInfo_WimPathRename;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimPathRename info = cmd.Info.Cast<CodeInfo_WimPathRename>();
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -1682,9 +1656,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimOptimize), "Invalid CodeInfo");
-            CodeInfo_WimOptimize info = cmd.Info as CodeInfo_WimOptimize;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimOptimize info = cmd.Info.Cast<CodeInfo_WimOptimize>();
 
             string wimFile = StringEscaper.Preprocess(s, info.WimFile);
 
@@ -1775,9 +1747,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExport), "Invalid CodeInfo");
-            CodeInfo_WimExport info = cmd.Info as CodeInfo_WimExport;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WimExport info = cmd.Info.Cast<CodeInfo_WimExport>();
 
             string srcWimPath = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);

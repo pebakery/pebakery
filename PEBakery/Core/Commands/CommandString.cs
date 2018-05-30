@@ -34,7 +34,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -53,9 +52,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat), "Invalid CodeInfo");
-            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
 
             StrFormatType type = info.Type;
             switch (type)
@@ -63,9 +60,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.IntToBytes:
                 case StrFormatType.Bytes:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_IntToBytes), "Invalid StrFormatInfo");
-                        StrFormatInfo_IntToBytes subInfo = info.SubInfo as StrFormatInfo_IntToBytes;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_IntToBytes subInfo = info.SubInfo.Cast<StrFormatInfo_IntToBytes>();
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
                         if (!NumberHelper.ParseInt64(byteSizeStr, out long byteSize))

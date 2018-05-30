@@ -25,23 +25,16 @@
     not derived from or based on this program. 
 */
 
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Win32;
-using System.IO;
-using System.Net.NetworkInformation;
-using System.Globalization;
 using System;
+using System.Text;
 using System.Linq;
-using System.Windows;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Microsoft.Win32;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using PEBakery.WPF.Controls;
-using PEBakery.IniLib;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using ManagedWimLib;
+
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
@@ -1865,7 +1858,9 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class UserInputInfo { }
+    public class UserInputInfo : CodeInfo
+    {
+    }
 
     [Serializable]
     public class UserInputInfo_DirFile : UserInputInfo
@@ -1951,7 +1946,7 @@ namespace PEBakery.Core
 
     #region StrFormatType, StrFormatInfo
     public enum StrFormatType
-    { // 아니 왜 사칙연산이 StrFormat에 있지...
+    { 
         IntToBytes, Bytes, // IntToBytes == Bytes
         BytesToInt,
         Hex,
@@ -1959,7 +1954,7 @@ namespace PEBakery.Core
         Date,
         FileName, DirPath, Path, Ext, // DirPath == Path
         PathCombine,
-        Inc, Dec, Mult, Div,
+        Inc, Dec, Mult, Div, // 아니 왜 사칙연산이 StrFormat에 있지...
         Left, Right,
         SubStr, // Added in PEBakery
         Len,
@@ -1972,7 +1967,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class StrFormatInfo { }
+    public class StrFormatInfo : CodeInfo { }
 
     [Serializable]
     public class StrFormatInfo_IntToBytes : StrFormatInfo
@@ -2471,7 +2466,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo { }
+    public class MathInfo : CodeInfo { }
 
     [Serializable]
     public class MathInfo_Arithmetic : MathInfo
@@ -4174,7 +4169,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo { }
+    public class SystemInfo : CodeInfo { }
 
     [Serializable]
     public class SystemInfo_Cursor : SystemInfo

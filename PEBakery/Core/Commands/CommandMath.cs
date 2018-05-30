@@ -45,9 +45,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Math), "Invalid CodeInfo");
-            CodeInfo_Math info = cmd.Info as CodeInfo_Math;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Math info = cmd.Info.Cast<CodeInfo_Math>();
 
             MathType type = info.Type;
             switch (type)
@@ -57,9 +55,7 @@ namespace PEBakery.Core.Commands
                 case MathType.Mul:
                 case MathType.Div:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Arithmetic), "Invalid MathInfo");
-                        MathInfo_Arithmetic subInfo = info.SubInfo as MathInfo_Arithmetic;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_Arithmetic subInfo = info.SubInfo.Cast<MathInfo_Arithmetic>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -93,9 +89,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.IntDiv:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntDiv), "Invalid MathInfo");
-                        MathInfo_IntDiv subInfo = info.SubInfo as MathInfo_IntDiv;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_IntDiv subInfo = info.SubInfo.Cast<MathInfo_IntDiv>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -131,9 +125,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Neg:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Neg), "Invalid MathInfo");
-                        MathInfo_Neg subInfo = info.SubInfo as MathInfo_Neg;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_Neg subInfo = info.SubInfo.Cast<MathInfo_Neg>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
@@ -148,10 +140,7 @@ namespace PEBakery.Core.Commands
                     {
                         // Math,IntSign,<DestVar>,<Src>,[8|16|32|64]
                         // Math,IntUnsign,<DestVar>,<Src>,[8|16|32|64]
-
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_IntegerSignedness), "Invalid MathInfo");
-                        MathInfo_IntegerSignedness subInfo = info.SubInfo as MathInfo_IntegerSignedness;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_IntegerSignedness subInfo = info.SubInfo.Cast<MathInfo_IntegerSignedness>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
 
@@ -244,9 +233,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BoolOr:
                 case MathType.BoolXor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolLogicOper), "Invalid MathInfo");
-                        MathInfo_BoolLogicOper subInfo = info.SubInfo as MathInfo_BoolLogicOper;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_BoolLogicOper subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOper>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -284,9 +271,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BoolNot:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BoolNot), "Invalid MathInfo");
-                        MathInfo_BoolNot subInfo = info.SubInfo as MathInfo_BoolNot;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_BoolNot subInfo = info.SubInfo.Cast<MathInfo_BoolNot>();
 
                         bool src = false;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
@@ -303,9 +288,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BitOr:
                 case MathType.BitXor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitLogicOper), "Invalid MathInfo");
-                        MathInfo_BitLogicOper subInfo = info.SubInfo as MathInfo_BitLogicOper;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_BitLogicOper subInfo = info.SubInfo.Cast<MathInfo_BitLogicOper>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -337,9 +320,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitNot:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitNot), "Invalid MathInfo");
-                        MathInfo_BitNot subInfo = info.SubInfo as MathInfo_BitNot;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_BitNot subInfo = info.SubInfo.Cast<MathInfo_BitNot>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string destStr;
@@ -387,9 +368,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.BitShift:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_BitShift), "Invalid MathInfo");
-                        MathInfo_BitShift subInfo = info.SubInfo as MathInfo_BitShift;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_BitShift subInfo = info.SubInfo.Cast<MathInfo_BitShift>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
 
@@ -470,9 +449,7 @@ namespace PEBakery.Core.Commands
                 case MathType.Floor:
                 case MathType.Round:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_CeilFloorRound), "Invalid MathInfo");
-                        MathInfo_CeilFloorRound subInfo = info.SubInfo as MathInfo_CeilFloorRound;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_CeilFloorRound subInfo = info.SubInfo.Cast<MathInfo_CeilFloorRound>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseInt64(srcStr, out long srcInt))
@@ -511,9 +488,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Abs:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Abs), "Invalid MathInfo");
-                        MathInfo_Abs subInfo = info.SubInfo as MathInfo_Abs;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_Abs subInfo = info.SubInfo.Cast<MathInfo_Abs>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
@@ -525,9 +500,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Pow:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Pow), "Invalid MathInfo");
-                        MathInfo_Pow subInfo = info.SubInfo as MathInfo_Pow;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_Pow subInfo = info.SubInfo.Cast<MathInfo_Pow>();
 
                         string baseStr = StringEscaper.Preprocess(s, subInfo.Base);
                         if (!NumberHelper.ParseDecimal(baseStr, out decimal _base))
@@ -543,9 +516,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case MathType.Hex:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Hex), "Invalid MathInfo");
-                        MathInfo_Hex subInfo = info.SubInfo as MathInfo_Hex;
-                        Debug.Assert(subInfo != null, "Invalid MathInfo");
+                        MathInfo_Hex subInfo = info.SubInfo.Cast<MathInfo_Hex>();
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         string dest;

@@ -45,9 +45,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine), "Invalid CodeInfo");
-            CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_TXTAddLine info = cmd.Info.Cast<CodeInfo_TXTAddLine>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string line = StringEscaper.Preprocess(s, info.Line);
@@ -108,6 +106,10 @@ namespace PEBakery.Core.Commands
                 else
                     File.AppendAllText(fileName, "\r\n" + line + "\r\n", encoding);
                 logs.Add(new LogInfo(LogState.Success, $"Appended [{line}] to [{fileName}]", cmd));
+            }
+            else
+            {
+                throw new InvalidOperationException("Internal Logic Error at TXTAddLine");
             }
 
             return logs;
@@ -192,6 +194,10 @@ namespace PEBakery.Core.Commands
 
                 logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
+            else
+            {
+                throw new InvalidOperationException("Internal Logic Error at TXTAddLine");
+            }
 
             return logs;
         }
@@ -200,9 +206,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace), "Invalid CodeInfo");
-            CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_TXTReplace info = cmd.Info.Cast<CodeInfo_TXTReplace>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string oldStr = StringEscaper.Preprocess(s, info.OldStr);
@@ -295,9 +299,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine), "Invalid CodeInfo");
-            CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_TXTDelLine info = cmd.Info.Cast<CodeInfo_TXTDelLine>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
@@ -398,9 +400,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelSpaces), "Invalid CodeInfo");
-            CodeInfo_TXTDelSpaces info = cmd.Info as CodeInfo_TXTDelSpaces;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_TXTDelSpaces info = cmd.Info.Cast<CodeInfo_TXTDelSpaces>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
@@ -442,9 +442,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelEmptyLines), "Invalid CodeInfo");
-            CodeInfo_TXTDelEmptyLines info = cmd.Info as CodeInfo_TXTDelEmptyLines;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_TXTDelEmptyLines info = cmd.Info.Cast<CodeInfo_TXTDelEmptyLines>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))

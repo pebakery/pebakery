@@ -65,8 +65,8 @@ namespace PEBakery.Core
 
         #region Properties
         public string ProjectRoot { get; }
-        public List<Project> Projects => _projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
-        public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList(); 
+        public List<Project> Projects => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
+        public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
         public Project this[int i] => Projects[i];
         public int Count => _projectDict.Count;
         #endregion
@@ -180,7 +180,7 @@ namespace PEBakery.Core
                 if (rawPaths == null)
                     continue;
                 var paths = rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0);
-                
+
                 foreach (string path in paths)
                 {
                     Debug.Assert(path != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
@@ -306,9 +306,12 @@ namespace PEBakery.Core
             List<int> removeIdxs = new List<int>();
 
             // Doing this will consume memory, but also greatly increase performance.
-            DB_ScriptCache[] cacheDB = null;
+            DB_ScriptCache[] cacheDb = null;
             if (_scriptCache != null)
-                cacheDB = _scriptCache.Table<DB_ScriptCache>().Where(x => true).ToArray();
+            {
+                worker?.ReportProgress(-1);
+                cacheDb = _scriptCache.Table<DB_ScriptCache>().ToArray();
+            }
 
             bool cacheValid = true;
             Script[] links = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
@@ -328,10 +331,10 @@ namespace PEBakery.Core
                             break;
 
                         // Load .link's linked scripts with cache
-                        if (cacheDB != null && cacheValid)
+                        if (cacheDb != null && cacheValid)
                         { // Case of ScriptCache enabled
                             FileInfo f = new FileInfo(linkFullPath);
-                            DB_ScriptCache scCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
+                            DB_ScriptCache scCache = cacheDb.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
                             if (scCache != null &&
                                 scCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
                                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
@@ -401,7 +404,7 @@ namespace PEBakery.Core
                     worker?.ReportProgress(cached);
                 }
             });
-            
+
             // Remove malformed link
             var idxs = removeIdxs.OrderByDescending(x => x);
             foreach (int idx in idxs)
@@ -477,9 +480,12 @@ namespace PEBakery.Core
             string mainScriptPath = Path.Combine(ProjectDir, "script.project");
             AllScripts = new List<Script>();
 
-            DB_ScriptCache[] cacheDB = null;
+            DB_ScriptCache[] cacheDb = null;
             if (scriptCache != null)
-                cacheDB = scriptCache.Table<DB_ScriptCache>().Where(x => true).ToArray();
+            {
+                worker?.ReportProgress(-1);
+                cacheDb = scriptCache.Table<DB_ScriptCache>().ToArray();
+            }
 
             // ScriptParseInfo
             var spiList = new List<ScriptParseInfo>();
@@ -497,11 +503,11 @@ namespace PEBakery.Core
                 Script sc = null;
                 try
                 {
-                    if (cacheDB != null && cacheValid)
+                    if (cacheDb != null && cacheValid)
                     { // ScriptCache enabled
                         FileInfo f = new FileInfo(spi.RealPath);
                         string sPath = spi.TreePath.Remove(0, BaseDir.Length + 1); // 1 for \
-                        DB_ScriptCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+                        DB_ScriptCache pCache = cacheDb.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
                         if (pCache != null &&
                             pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
                             DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
@@ -565,7 +571,7 @@ namespace PEBakery.Core
                     worker?.ReportProgress(cached);
                 }
             });
-            
+
             // mainScriptIdx
             SetMainScriptIdx();
 
@@ -779,7 +785,7 @@ namespace PEBakery.Core
                         for (int i = 0; i < paths.Length - 1; i++)
                         {
                             string pathKey = Project.PathKeyGenerator(paths, i);
-                            Script ts = AllScripts.FirstOrDefault(x => 
+                            Script ts = AllScripts.FirstOrDefault(x =>
                                 (x.Level == sc.Level) &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
@@ -793,7 +799,7 @@ namespace PEBakery.Core
 
                     AllScripts.Add(sc);
                 }
-                
+
                 AllScriptCount += 1;
             }
 
@@ -875,7 +881,7 @@ namespace PEBakery.Core
             {
                 bool active = false;
                 if (sc.Type == ScriptType.Script || sc.Type == ScriptType.Link)
-                {                   
+                {
                     if (sc.Selected != SelectedState.None)
                     {
                         if (sc.Mandatory || sc.Selected == SelectedState.True)
@@ -886,7 +892,7 @@ namespace PEBakery.Core
                 if (active)
                     activeScripts.Add(sc);
             }
-            
+
             return activeScripts;
         }
         #endregion

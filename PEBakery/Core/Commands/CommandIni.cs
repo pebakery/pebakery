@@ -43,9 +43,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead), "Invalide CodeInfo");
-            CodeInfo_IniRead info = cmd.Info as CodeInfo_IniRead;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniRead info = cmd.Info.Cast<CodeInfo_IniRead>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
@@ -84,9 +82,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadOp), "Invalid CodeInfo");
-            CodeInfo_IniReadOp infoOp = cmd.Info as CodeInfo_IniReadOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniReadOp infoOp = cmd.Info.Cast<CodeInfo_IniReadOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
@@ -146,9 +142,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite), "Invalid CodeInfo");
-            CodeInfo_IniWrite info = cmd.Info as CodeInfo_IniWrite;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section); 
@@ -179,6 +173,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] written to [{fileName}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Could not write key [{key}] and its value [{value}] to [{fileName}]", cmd));
+
             return logs;
         }
 
@@ -186,9 +181,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteOp), "Invalid CodeInfo");
-            CodeInfo_IniWriteOp infoOp = cmd.Info as CodeInfo_IniWriteOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniWriteOp infoOp = cmd.Info.Cast<CodeInfo_IniWriteOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
@@ -247,9 +240,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete), "Invalid CodeInfo");
-            CodeInfo_IniDelete info = cmd.Info as CodeInfo_IniDelete;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniDelete info = cmd.Info.Cast<CodeInfo_IniDelete>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
@@ -272,6 +263,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Ignore, $"Could not delete key [{key}] from [{fileName}]", cmd));
+
             return logs;
         }
 
@@ -279,19 +271,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteOp), "Invalid CodeInfoOp");
-            CodeInfo_IniDeleteOp infoOp = cmd.Info as CodeInfo_IniDeleteOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniDeleteOp infoOp = cmd.Info.Cast<CodeInfo_IniDeleteOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -338,9 +325,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection), "Invalid CodeInfo");
-            CodeInfo_IniReadSection info = cmd.Info as CodeInfo_IniReadSection;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniReadSection info = cmd.Info.Cast<CodeInfo_IniReadSection>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -380,9 +365,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSectionOp), "Invalid CodeInfoOp");
-            CodeInfo_IniReadSectionOp infoOp = cmd.Info as CodeInfo_IniReadSectionOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniReadSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniReadSectionOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -443,9 +426,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection), "Invalid CodeInfo");
-            CodeInfo_IniAddSection info = cmd.Info as CodeInfo_IniAddSection;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniAddSection info = cmd.Info.Cast<CodeInfo_IniAddSection>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -478,9 +459,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSectionOp), "Invalid CodeInfoOp");
-            CodeInfo_IniAddSectionOp infoOp = cmd.Info as CodeInfo_IniAddSectionOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniAddSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniAddSectionOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -529,9 +508,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection), "Invalid CodeInfo");
-            CodeInfo_IniDeleteSection info = cmd.Info as CodeInfo_IniDeleteSection;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniDeleteSection info = cmd.Info.Cast<CodeInfo_IniDeleteSection>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -558,9 +535,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSectionOp), "Invalid CodeInfo");
-            CodeInfo_IniDeleteSectionOp infoOp = cmd.Info as CodeInfo_IniDeleteSectionOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniDeleteSectionOp infoOp = cmd.Info.Cast<CodeInfo_IniDeleteSectionOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -603,9 +578,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine), "Invalid CodeInfo");
-            CodeInfo_IniWriteTextLine info = cmd.Info as CodeInfo_IniWriteTextLine;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniWriteTextLine info = cmd.Info.Cast<CodeInfo_IniWriteTextLine>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
@@ -633,6 +606,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Line [{line}] wrote to [{fileName}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Could not write line [{line}] to [{fileName}]", cmd));
+
             return logs;
         }
 
@@ -640,9 +614,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLineOp), "Invalid CodeInfoOp");
-            CodeInfo_IniWriteTextLineOp infoOp = cmd.Info as CodeInfo_IniWriteTextLineOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_IniWriteTextLineOp infoOp = cmd.Info.Cast<CodeInfo_IniWriteTextLineOp>();
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -702,9 +674,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniMerge), "Invalid CodeInfo");
-            CodeInfo_IniMerge info = cmd.Info as CodeInfo_IniMerge;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_IniMerge info = cmd.Info.Cast<CodeInfo_IniMerge>();
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destFile = StringEscaper.Preprocess(s, info.DestFile);

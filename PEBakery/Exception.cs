@@ -153,6 +153,7 @@ namespace PEBakery.Exceptions
         public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
     }
 
+    /*
     [Serializable]
     public class VariableInvalidFormatException : Exception
     {
@@ -160,6 +161,7 @@ namespace PEBakery.Exceptions
         public VariableInvalidFormatException(string message) : base(message) { }
         public VariableInvalidFormatException(string message, Exception inner) : base(message, inner) { }
     }
+    */
     #endregion
 
     #region Regsitry
