@@ -39,6 +39,7 @@ using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using MahApps.Metro.IconPacks;
 using System.Threading.Tasks;
 using System.Threading;
@@ -46,6 +47,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
 using Ookii.Dialogs.Wpf;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using Image = System.Windows.Controls.Image;
 
 namespace PEBakery.WPF
 {
@@ -839,18 +843,21 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-            UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
-            Debug.Assert(info != null, "Invalid UIInfo");
+            UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
 
             Border bevel = new Border
             {
-                IsHitTestVisible = false,
+                IsHitTestVisible = false, // Focus is not given when clicked
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0.7),
                 BorderBrush = Brushes.Gray,
             };
+
+            if (!r.ViewMode) // Focus is given when clicked
+                bevel.IsHitTestVisible = true;
+
             SetToolTip(bevel, info.ToolTip);
+            
             SetEditModeProperties(r, bevel, uiCtrl);
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
