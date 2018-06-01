@@ -112,7 +112,7 @@ namespace PEBakery.WPF
             {
                 const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                Model.General_EnableLongFilePath = res != MessageBoxResult.Yes;
+                Model.General_EnableLongFilePath = res == MessageBoxResult.Yes;
             }
         }
 
