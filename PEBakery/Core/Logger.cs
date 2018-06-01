@@ -35,6 +35,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Windows;
 using SQLite;
 
 namespace PEBakery.Core
@@ -365,11 +366,11 @@ namespace PEBakery.Core
     #endregion
 
     #region Logger Class
-    public class Logger
+    public class Logger : IDisposable
     {
         #region Fields and Properties
         // ReSharper disable once InconsistentNaming
-        public LogDatabase DB;
+        public LogDatabase DB { get; private set; }
         public bool SuspendLog = false;
 
         public static DebugLevel DebugLevel;
@@ -408,7 +409,23 @@ namespace PEBakery.Core
 
         ~Logger()
         {
-            DB.Close();
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing && DB != null)
+            {
+                DB.Close();
+                DB = null;
+            }
         }
         #endregion
 
@@ -1232,10 +1249,11 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region LogDB
-    public class LogDatabase : SQLiteConnectionWithLock
+    #region LogDatabase
+    public class LogDatabase : SQLiteConnection
     {
-        public LogDatabase(string path) : base(new SQLiteConnectionString(path, true), SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create)
+        public LogDatabase(string path) 
+            : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
             CreateTable<DB_SystemLog>();
             CreateTable<DB_BuildInfo>();

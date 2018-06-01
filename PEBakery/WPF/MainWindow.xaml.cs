@@ -53,7 +53,6 @@ namespace PEBakery.WPF
 {
     #region MainWindow
     // ReSharper disable once RedundantExtendsListEntry
-    [SuppressMessage("ReSharper", "RedundantNameQualifier")]
     public partial class MainWindow : Window
     {
         #region Constants
@@ -98,7 +97,7 @@ namespace PEBakery.WPF
             {
                 MessageBox.Show($"Invalid version [{App.Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(1);
-            }  
+            }
 
             string argBaseDir = Environment.CurrentDirectory;
             for (int i = 0; i < args.Length; i++)
@@ -107,7 +106,7 @@ namespace PEBakery.WPF
                 {
                     if (i + 1 < args.Length)
                     {
-                        argBaseDir = System.IO.Path.GetFullPath(args[i + 1]);
+                        argBaseDir = Path.GetFullPath(args[i + 1]);
                         if (Directory.Exists(argBaseDir) == false)
                         {
                             MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -132,14 +131,14 @@ namespace PEBakery.WPF
 
             App.BaseDir = BaseDir = argBaseDir;
 
-            var settingFile = Path.Combine(BaseDir, "PEBakery.ini");
+            string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new SettingViewModel(settingFile);
 
-            string dbDir = System.IO.Path.Combine(BaseDir, "Database");
+            string dbDir = Path.Combine(BaseDir, "Database");
             if (!Directory.Exists(dbDir))
                 Directory.CreateDirectory(dbDir);
 
-            string logDbFile = System.IO.Path.Combine(dbDir, "PEBakeryLog.db");
+            string logDbFile = Path.Combine(dbDir, "PEBakeryLog.db");
             try
             {
                 App.Logger = Logger = new Logger(logDbFile);
@@ -156,10 +155,10 @@ namespace PEBakery.WPF
             // If script cache is enabled, generate cache after 5 seconds
             if (Setting.Script_EnableCache)
             {
-                string cacheDBFile = System.IO.Path.Combine(dbDir, "PEBakeryCache.db");
+                string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
                 try
                 {
-                    _scriptCache = new ScriptCache(cacheDBFile);
+                    _scriptCache = new ScriptCache(cacheDbFile);
                     Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {_scriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
                 }
                 catch (SQLiteException e)

@@ -1327,7 +1327,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Message(message, action, timeout);
                     }
                 case CodeType.Echo:
-                    { // Echo,<Message>[,WARN]
+                    { // Echo,<Message>,[WARN]
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))

@@ -39,23 +39,21 @@ namespace PEBakery.Exceptions
     #region CodeCommandException, UIControlException
     public class CodeCommandException : Exception
     {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get => cmd; }
+        public CodeCommand Cmd { get; }
         public CodeCommandException() { }
         public CodeCommandException(string message) : base(message) { }
-        public CodeCommandException(CodeCommand cmd) { this.cmd = cmd; }
-        public CodeCommandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
+        public CodeCommandException(CodeCommand cmd) { Cmd = cmd; }
+        public CodeCommandException(string message, CodeCommand cmd) : base(message) { Cmd = cmd; }
         public CodeCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
     public class UIControlException : Exception
     {
-        private UIControl uiCmd;
-        public UIControl UICtrl { get => uiCmd; }
+        public UIControl UICtrl { get; }
         public UIControlException() { }
         public UIControlException(string message) : base(message) { }
-        public UIControlException(UIControl uiCmd) { this.uiCmd = uiCmd; }
-        public UIControlException(string message, UIControl uiCmd) : base(message) { this.uiCmd = uiCmd; }
+        public UIControlException(UIControl uiCmd) { UICtrl = uiCmd; }
+        public UIControlException(string message, UIControl uiCmd) : base(message) { UICtrl = uiCmd; }
         public UIControlException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
@@ -64,11 +62,10 @@ namespace PEBakery.Exceptions
     [Serializable]
     public class InvalidCommandException : Exception
     {
-        private string rawLine;
-        public string RawLine { get => rawLine; }
+        public string RawLine { get; }
         public InvalidCommandException() { }
         public InvalidCommandException(string message) : base(message) { }
-        public InvalidCommandException(string message, string rawLine) : base(message) { this.rawLine = rawLine; }
+        public InvalidCommandException(string message, string rawLine) : base(message) { RawLine = rawLine; }
         public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -152,16 +149,6 @@ namespace PEBakery.Exceptions
         public VariableCircularReferenceException(string message) : base(message) { }
         public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
     }
-
-    /*
-    [Serializable]
-    public class VariableInvalidFormatException : Exception
-    {
-        public VariableInvalidFormatException() { }
-        public VariableInvalidFormatException(string message) : base(message) { }
-        public VariableInvalidFormatException(string message, Exception inner) : base(message, inner) { }
-    }
-    */
     #endregion
 
     #region Regsitry

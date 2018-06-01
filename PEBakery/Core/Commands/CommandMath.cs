@@ -376,12 +376,12 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(shiftStr, out int shift))
                             return LogInfo.LogErrorMessage(logs, $"[{shiftStr}] is not a valid integer");
 
-                        string leftRightStr = StringEscaper.Preprocess(s, subInfo.LeftRight);
+                        string directionStr = StringEscaper.Preprocess(s, subInfo.Direction);
                         bool isLeft = false;
-                        if (leftRightStr.Equals("Left", StringComparison.OrdinalIgnoreCase))
+                        if (directionStr.Equals("Left", StringComparison.OrdinalIgnoreCase))
                             isLeft = true;
-                        else if (!leftRightStr.Equals("Right", StringComparison.OrdinalIgnoreCase))
-                            return LogInfo.LogErrorMessage(logs, $"[{leftRightStr}] must be one of [Left, Right]");
+                        else if (!directionStr.Equals("Right", StringComparison.OrdinalIgnoreCase))
+                            return LogInfo.LogErrorMessage(logs, $"[{directionStr}] must be one of [Left, Right]");
 
                         string destStr;
                         switch (subInfo.BitSize)
@@ -518,7 +518,7 @@ namespace PEBakery.Core.Commands
                     {
                         MathInfo_Hex subInfo = info.SubInfo.Cast<MathInfo_Hex>();
 
-                        string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        string intStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string dest;
                         switch (subInfo.BitSize)
                         {

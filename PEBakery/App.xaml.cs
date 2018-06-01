@@ -18,7 +18,7 @@ namespace PEBakery
         public static Logger Logger;
         public static string BaseDir;
 
-        void App_Startup(object sender, StartupEventArgs e)
+        internal void App_Startup(object sender, StartupEventArgs e)
         {
             // If no command line arguments were provided, don't process them 
             if (e.Args.Length == 0)
@@ -27,15 +27,14 @@ namespace PEBakery
                 Args = e.Args;
 
             // Initialize zlib and wimlib
-            NativeAssemblyInit();
+            NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.EngineVersion;
         }
 
-        private void NativeAssemblyInit()
+        public static void NativeGlobalInit(string baseDir)
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string arch = IntPtr.Size == 8 ? "x64" : "x86";
 
             string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
@@ -47,6 +46,14 @@ namespace PEBakery
             ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
             PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
             PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);
+        }
+
+        public static void NativeGlobalCleanup()
+        {
+            Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
+            ManagedWimLib.Wim.GlobalCleanup();
+            PEBakery.XZLib.XZStream.GlobalCleanup();
+            PEBakery.LZ4Lib.LZ4FrameStream.GlobalCleanup();
         }
 
     }

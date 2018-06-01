@@ -339,7 +339,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
-                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.CutLen);
+                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.Count);
 
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             return LogInfo.LogErrorMessage(logs, $"[{cutLenStr}] is not a valid integer");
@@ -546,9 +546,9 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Replace));
                         StrFormatInfo_Replace subInfo = info.SubInfo as StrFormatInfo_Replace;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
-                        string subStr = StringEscaper.Preprocess(s, subInfo.ToBeReplaced);
-                        string newStr = StringEscaper.Preprocess(s, subInfo.ReplaceWith);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string subStr = StringEscaper.Preprocess(s, subInfo.SearchStr);
+                        string newStr = StringEscaper.Preprocess(s, subInfo.ReplaceStr);
 
                         StringComparison comp = StringComparison.OrdinalIgnoreCase;
                         if (type == StrFormatType.ReplaceX)
@@ -606,7 +606,7 @@ namespace PEBakery.Core.Commands
                         // Will be deprecated
                         logs.Add(new LogInfo(LogState.Warning, $"Command [StrFormatType,{info.Type}] is deprecated"));
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
                         string destStr;
                         if (type == StrFormatType.ShortPath)
@@ -628,8 +628,8 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_Split subInfo = info.SubInfo as StrFormatInfo_Split;
                         Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
-                        string delimStr = StringEscaper.Preprocess(s, subInfo.Delimeter);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string delimStr = StringEscaper.Preprocess(s, subInfo.Delimiter);
                         string idxStr = StringEscaper.Preprocess(s, subInfo.Index);
                         if (!NumberHelper.ParseInt32(idxStr, out int idx))
                             return LogInfo.LogErrorMessage(logs, $"[{idxStr}] is not a valid integer");

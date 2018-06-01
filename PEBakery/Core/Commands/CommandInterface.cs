@@ -68,9 +68,9 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
-            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
+            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.UIControlKey, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
-                return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]");
+                return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.UIControlKey}] in section [{ifaceSecName}]");
 
             if (uiCtrl.Visibility != visibility)
             {
@@ -86,7 +86,7 @@ namespace PEBakery.Core.Commands
                 });
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Interface control [{info.InterfaceKey}]'s visibility set to [{visibility}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Interface control [{info.UIControlKey}]'s visibility set to [{visibility}]"));
 
             return logs;
         }
@@ -116,7 +116,7 @@ namespace PEBakery.Core.Commands
                 else if (!visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                     return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
-                prepArgs.Add((info.InterfaceKey, visibility, subCmd));
+                prepArgs.Add((info.UIControlKey, visibility, subCmd));
             }
 
             List<UIControl> uiCmds = new List<UIControl>();

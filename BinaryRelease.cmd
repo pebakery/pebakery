@@ -8,6 +8,9 @@ IF %BaseDir:~-1%==\ SET BaseDir=%BaseDir:~0,-1%
 REM SET BaseDir=%BaseDir%\..\..
 SET DestDir=%~dp0\BinaryRelease
 
+REM Nuget Package
+res\nuget restore
+
 REM Build PEBakery solution
 REM Adjust these statements according to your envrionment
 REM SET MSBUILD_PATH="%WinDir%\Microsoft.NET\Framework\v4.0.30319\"
