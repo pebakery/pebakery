@@ -548,7 +548,7 @@ namespace PEBakery.Core.Commands
                         string rootKey = StringEscaper.Preprocess(s, c.Arg1);
                         string subKey = StringEscaper.Preprocess(s, c.Arg2);
                         string valueName = StringEscaper.Preprocess(s, c.Arg3);
-                        string subStr = StringEscaper.Preprocess(s, c.Arg4);
+                        string searchStr = StringEscaper.Preprocess(s, c.Arg4);
 
                         match = false;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
@@ -577,14 +577,14 @@ namespace PEBakery.Core.Commands
                                     else
                                     {
                                         string[] strs = (string[])valueData;
-                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                        if (strs.Contains(searchStr, StringComparer.OrdinalIgnoreCase))
                                         {
                                             match = true;
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{searchStr}]";
                                         }
                                         else
                                         {
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{searchStr}]";
                                         }
                                     }
                                 }
@@ -919,7 +919,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.Question: // can have 1 or 3 argument
                     {
-                        string question = StringEscaper.Preprocess(s, c.Arg1);
+                        string message = StringEscaper.Preprocess(s, c.Arg1);
 
                         bool autoTimeout = c.Arg2 != null && c.Arg3 != null;
 
@@ -946,50 +946,47 @@ namespace PEBakery.Core.Commands
                         if (autoTimeout)
                         {
                             MessageBoxResult result = MessageBoxResult.None;
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
+                                result = CustomMessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
                             });
 
-                            if (result == MessageBoxResult.None)
+                            switch (result)
                             {
-                                match = defaultChoice;
-                                if (defaultChoice)
-                                    logMessage = "[Yes] was automatically chosen";
-                                else
-                                    logMessage = "[No] was automatically chosen";
-                            }
-                            else if (result == MessageBoxResult.Yes)
-                            {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
+                                case MessageBoxResult.None:
+                                    match = defaultChoice;
+                                    if (defaultChoice)
+                                        logMessage = "[Yes] was automatically chosen";
+                                    else
+                                        logMessage = "[No] was automatically chosen";
+                                    break;
+                                case MessageBoxResult.Yes:
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                    break;
+                                case MessageBoxResult.No:
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                    break;
+                                default:
+                                    throw new InternalException("Internal Logic Error at Check() of If,Question");
                             }
                         }
                         else
                         {
-                            MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                            if (result == MessageBoxResult.Yes)
+                            MessageBoxResult result = MessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            switch (result)
                             {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
+                                case MessageBoxResult.Yes:
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                    break;
+                                case MessageBoxResult.No:
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                    break;
+                                default:
+                                    throw new InternalException("Internal Logic Error at Check() of If,Question");
                             }
                         }
 

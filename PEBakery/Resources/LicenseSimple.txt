@@ -211,13 +211,6 @@ Svg.Net
 
     https://github.com/vvvv/SVG
 
-System.Buffers
-    MIT License
-    https://opensource.org/licenses/MIT
-
-    Copyright (c) .NET Foundation and Contributors
-    https://github.com/dotnet/corefx
-
 UACHelper
     MIT License
     https://opensource.org/licenses/MIT

@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                     {
                         SystemInfo_Cursor subInfo = info.SubInfo.Cast<SystemInfo_Cursor>();
 
-                        string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
+                        string iconStr = StringEscaper.Preprocess(s, subInfo.State);
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
@@ -118,7 +118,7 @@ namespace PEBakery.Core.Commands
                     {
                         SystemInfo_GetEnv subInfo = info.SubInfo.Cast<SystemInfo_GetEnv>();
 
-                        string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVarName);
+                        string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVar);
                         string envVarValue = Environment.GetEnvironmentVariable(envVarName);
                         if (envVarValue == null) // Failure
                         {

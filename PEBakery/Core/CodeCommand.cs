@@ -3594,25 +3594,27 @@ namespace PEBakery.Core
     {
         None = 0,
         // Comparison
-        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual,
+        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
         // Existance
         // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
-        ExistFile,
-        ExistDir,
-        ExistSection,
-        ExistRegSection, ExistRegSubKey,
-        ExistRegKey, ExistRegValue,
-        ExistRegMulti,
-        ExistVar,
-        ExistMacro,
+        ExistFile, // <FilePath>
+        ExistDir, // <DirPath>
+        ExistSection, // <IniFile>,<Section>
+        ExistRegSection, ExistRegSubKey, // <RootKey>,<SubKey> 
+        ExistRegKey, ExistRegValue, // <RootKey>,<SubKey>,<ValueName>
+        ExistRegMulti, // <RootKey>,<SubKey>,<ValueName>,<SearchStr>
+        ExistVar, // <%Var%>
+        ExistMacro, // <MacroName>
         // Wim
-        WimExistIndex,
-        WimExistFile,
-        WimExistDir,
-        WimExistImageInfo,
+        WimExistIndex, // <WimFile>,<ImageIndex>
+        WimExistFile, // <WimFile>,<ImageIndex>,<FilePath>
+        WimExistDir, // <WimFile>,<ImageIndex>,<DirPath>
+        WimExistImageInfo, // <WimFile>,<ImageIndex>,<Key>
         // ETC
-        Ping, Online, Question,
+        Ping, // <Host>
+        Online, // No Argument 
+        Question, // <Message> or <Message>,<Timeout>,<DefaultChoice>
         // Deprecated
         License
     }
@@ -3646,7 +3648,7 @@ namespace PEBakery.Core
             NotFlag = notFlag;
             switch (type)
             {
-                case BranchConditionType.ExistFile:
+                case BranchConditionType.ExistFile: 
                 case BranchConditionType.ExistDir:
                 case BranchConditionType.ExistVar:
                 case BranchConditionType.ExistMacro:
@@ -3841,6 +3843,8 @@ namespace PEBakery.Core
     {
         // Loop,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,Params]
         // Loop,BREAK
+        // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,Params]
+        // LoopLetter,BREAK
         public bool Break;
         public string ScriptFile;
         public string SectionName;
@@ -3955,7 +3959,7 @@ namespace PEBakery.Core
     #region CodeInfo 81 - Control
     [Serializable]
     public class CodeInfo_Set : CodeInfo
-    {
+    { // Set,<%Var%>,<Value>,[GLOBAL|PERMANENT]
         public string VarKey;
         public string VarValue;
         public bool Global;
@@ -3980,7 +3984,6 @@ namespace PEBakery.Core
                 b.Append(",GLOBAL");
             if (Permanent)
                 b.Append(",PERMANENT");
-
             return b.ToString();
         }
     }
@@ -4017,7 +4020,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_AddVariables : CodeInfo
-    {
+    { // AddVariables,%ScriptFile%,<Section>,[GLOBAL]
         public string ScriptFile;
         public string SectionName;
         public bool Global;
@@ -4079,7 +4082,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Exit : CodeInfo
-    { // Exit,<Message>[,NOWARN]
+    { // Exit,<Message>,[NOWARN]
         public string Message;
         public bool NoWarn;
 
@@ -4092,7 +4095,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Halt : CodeInfo
-    { // Halt,<Message>[,NOWARN]
+    { // Halt,<Message>,[NOWARN]
         public string Message;
 
         public CodeInfo_Halt(string message)
@@ -4177,17 +4180,17 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_Cursor : SystemInfo
-    { // System,Cursor,<IconKind>
-        public string IconKind;
+    { // System,Cursor,<State>
+        public string State;
 
-        public SystemInfo_Cursor(string iconKind)
+        public SystemInfo_Cursor(string state)
         {
-            IconKind = iconKind;
+            State = state;
         }
 
         public override string ToString()
         {
-            return $"Cursor,{IconKind}";
+            return $"Cursor,{State}";
         }
     }
 
@@ -4209,19 +4212,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_GetEnv : SystemInfo
-    { // System,GetEnv,<EnvVarName>,<%DestVar%>
-        public string EnvVarName;
+    { // System,GetEnv,<EnvVar>,<%DestVar%>
+        public string EnvVar;
         public string DestVar;
 
-        public SystemInfo_GetEnv(string envVarName, string destVar)
+        public SystemInfo_GetEnv(string envVar, string destVar)
         {
-            EnvVarName = envVarName;
+            EnvVar = envVar;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"GetEnv,{EnvVarName},{DestVar}";
+            return $"GetEnv,{EnvVar},{DestVar}";
         }
     }
 
@@ -4325,7 +4328,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_LoadNewScript : SystemInfo
-    { // System,LoadNew,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
+    { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
         public string SrcFilePath;
         public string DestTreeDir;
         public bool PreserveFlag;
@@ -4380,35 +4383,6 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
-
-    /*
-    [Serializable]
-    public class SystemInfo_Load : SystemInfo
-    { // System,Load,<FilePath>,[NOREC]
-        public string FilePath;
-        public bool NoRec;
-
-        public SystemInfo_Load(string filePath, bool noRec)
-        {
-            FilePath = filePath;
-            NoRec = noRec;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder(8);
-            b.Append("Load");
-            if (FilePath != null)
-            {
-                b.Append(",");
-                b.Append(FilePath);
-                if (NoRec)
-                    b.Append(",NOREC");
-            }
-            return b.ToString();
-        }
-    }
-    */
 
     [Serializable]
     public class SystemInfo_SaveLog : SystemInfo
