@@ -258,6 +258,16 @@ namespace PEBakery.Core
                             Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
+                        // Recover mouse cursor icon
+                        if (s.CursorWait)
+                        {
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                System.Windows.Input.Mouse.OverrideCursor = null;
+                            });
+                            s.CursorWait = false;
+                        }
+
                         if (alertUserHalt)
                             MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         else if (alertErrorHalt)
@@ -1073,6 +1083,7 @@ namespace PEBakery.Core
         public bool ErrorHaltFlag = false; 
         public bool CmdHaltFlag = false; // Halt Command
         public bool UserHaltFlag = false;
+        public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
 

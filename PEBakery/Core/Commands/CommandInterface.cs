@@ -1275,22 +1275,25 @@ namespace PEBakery.Core.Commands
                             };
 
                             bool failure = false;
+                            if (dialog.ShowDialog() == true)
+                            {
+                                selectedPath = dialog.SelectedPath;
+                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
+                                failure = true;
+                            }
+                            /*
                             Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 if (!(Application.Current.MainWindow is MainWindow w))
                                     return;
 
-                                if (dialog.ShowDialog(w) == true)
-                                {
-                                    selectedPath = dialog.SelectedPath;
-                                    logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
-                                }
-                                else
-                                {
-                                    logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
-                                    failure = true;
-                                }
+                                
                             });
+                            */
                             if (failure)
                                 return logs;
                         }

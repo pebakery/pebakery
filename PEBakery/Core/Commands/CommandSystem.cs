@@ -63,6 +63,7 @@ namespace PEBakery.Core.Commands
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
+                            s.CursorWait = true;
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Wait]"));
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
@@ -71,6 +72,7 @@ namespace PEBakery.Core.Commands
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
+                            s.CursorWait = false;
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Normal]"));
                         }
                         else
@@ -380,7 +382,6 @@ namespace PEBakery.Core.Commands
                             }
 
                             // RefreshScript -> Update Project.AllScripts
-                            // TODO: Update EngineState.Scripts?
                             Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
                             sc = s.Project.RefreshScript(sc);
                             if (sc == null)
