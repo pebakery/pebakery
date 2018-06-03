@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using PEBakery.Helper;
@@ -558,6 +559,23 @@ namespace PEBakery.Core
         {
             ToolTip = tooltip;
         }
+
+        #region Cast
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T Cast<T>() where T : UIInfo
+        {
+            Debug.Assert(GetType() == typeof(T), "Invalid UIInfo");
+            T cast = this as T;
+            Debug.Assert(cast != null, "Invalid UIInfo");
+            return cast;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Cast<T>(UIInfo info) where T : UIInfo
+        {
+            return info.Cast<T>();
+        }
+        #endregion
 
         #region ForgeRawLine, ToString
         /// <summary>

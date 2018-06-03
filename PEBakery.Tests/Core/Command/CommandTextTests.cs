@@ -40,7 +40,7 @@ namespace PEBakery.Tests.Core.Command
                 Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},나,Append", tempFile, "가\r\n", "가\r\n나\r\n");
 
                 // Test error
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,ErrorMode", tempFile, string.Empty, string.Empty, ErrorCheck.Error);           
+                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,ErrorMode", tempFile, string.Empty, string.Empty, ErrorCheck.ParserError);           
             }
             finally
             {

@@ -65,9 +65,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile), "Invalid CodeInfo");
-            CodeInfo_ExtractFile info = cmd.Info as CodeInfo_ExtractFile;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_ExtractFile info = cmd.Info.Cast<CodeInfo_ExtractFile>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -102,9 +100,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAndRun), "Invalid CodeInfo");
-            CodeInfo_ExtractAndRun info = cmd.Info as CodeInfo_ExtractAndRun;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_ExtractAndRun info = cmd.Info.Cast<CodeInfo_ExtractAndRun>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -169,9 +165,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAllFiles), "Invalid CodeInfo");
-            CodeInfo_ExtractAllFiles info = cmd.Info as CodeInfo_ExtractAllFiles;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_ExtractAllFiles info = cmd.Info.Cast<CodeInfo_ExtractAllFiles>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
@@ -212,9 +206,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Encode), "Invalid CodeInfo");
-            CodeInfo_Encode info = cmd.Info as CodeInfo_Encode;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Encode info = cmd.Info.Cast<CodeInfo_Encode>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);

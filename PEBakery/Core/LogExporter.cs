@@ -39,11 +39,11 @@ namespace PEBakery.Core
 {
     public class LogExporter
     {
-        private readonly LogDB _db;
+        private readonly LogDatabase _db;
         private readonly LogExportType _exportType;
         private readonly StreamWriter _w;
 
-        public LogExporter(LogDB db, LogExportType type, StreamWriter writer)
+        public LogExporter(LogDatabase db, LogExportType type, StreamWriter writer)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _w = writer ?? throw new ArgumentNullException(nameof(writer));
@@ -93,7 +93,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void ExportBuildLog(long buildId)
+        public void ExportBuildLog(int buildId)
         {
             switch (_exportType)
             {
@@ -128,7 +128,7 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Errors>");
 
-                            long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
+                            int[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
                             DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                             foreach (DB_Script scLog in scLogs)
                             {
@@ -152,7 +152,7 @@ namespace PEBakery.Core
                         {
                             _w.WriteLine("<Warnings>");
 
-                            long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
+                            int[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
                             DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                             foreach (DB_Script scLog in scLogs)
                             {
@@ -270,7 +270,7 @@ namespace PEBakery.Core
                             DB_BuildLog[] errors = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
                             if (0 < errors.Length)
                             {
-                                long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
+                                int[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
                                 DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                                 foreach (DB_Script scLog in scLogs)
                                 {
@@ -298,7 +298,7 @@ namespace PEBakery.Core
                             DB_BuildLog[] warns = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
                             if (0 < warns.Length)
                             {
-                                long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
+                                int[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
                                 DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                                 foreach (DB_Script scLog in scLogs)
                                 {

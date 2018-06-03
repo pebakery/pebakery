@@ -27,12 +27,10 @@
 
 using System;
 using System.IO;
-using System.Windows;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PEBakery.Exceptions;
 using System.Diagnostics;
 
 namespace PEBakery.Core
@@ -64,6 +62,8 @@ namespace PEBakery.Core
                 { CodeType.INIDeleteSection, OptimizeINIDeleteSection },
                 { CodeType.INIWriteTextLine, OptimizeINIWriteTextLine },
                 { CodeType.Visible, OptimizeVisible },
+                { CodeType.ReadInterface, OptimizeReadInterface },
+                { CodeType.WriteInterface, OptimizeWriteInterface },
                 { CodeType.WimExtract, OptimizeWimExtract },
                 { CodeType.WimPathAdd, OptimizeWimPath }, // WimPathAdd is a representative of WimPath{Add, Delete, Rename}
             };
@@ -78,23 +78,19 @@ namespace PEBakery.Core
                 switch (cmd.Type)
                 {
                     case CodeType.If:
-                    {
-                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If), "Invalid CodeInfo");
-                        CodeInfo_If info = cmd.Info as CodeInfo_If;
-                        Debug.Assert(info != null, "Invalid CodeInfo");
+                        {
+                            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
 
-                        info.Link = Optimize(info.Link);
+                            info.Link = Optimize(info.Link);
+                        }
                         break;
-                    }    
                     case CodeType.Else:
-                    {
-                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else), "Invalid CodeInfo");
-                        CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-                        Debug.Assert(info != null, "Invalid CodeInfo");
+                        {
+                            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
-                        info.Link = Optimize(info.Link);
+                            info.Link = Optimize(info.Link);
+                        }
                         break;
-                    }
                 }
             }
             return opCodes;
@@ -119,6 +115,23 @@ namespace PEBakery.Core
                         case CodeType.None:
                             switch (cmd.Type)
                             {
+                                case CodeType.TXTAddLine:
+                                case CodeType.TXTReplace:
+                                case CodeType.TXTDelLine:
+                                case CodeType.INIRead:
+                                case CodeType.INIWrite:
+                                case CodeType.INIReadSection:
+                                case CodeType.INIAddSection:
+                                case CodeType.INIDeleteSection:
+                                case CodeType.INIWriteTextLine:
+                                case CodeType.Visible:
+                                case CodeType.ReadInterface:
+                                case CodeType.WriteInterface:
+                                case CodeType.WimExtract:
+                                    s = cmd.Type;
+                                    opDict[cmd.Type].Add(cmd);
+                                    break;
+                                /*
                                 case CodeType.TXTAddLine:
                                     s = CodeType.TXTAddLine;
                                     opDict[CodeType.TXTAddLine].Add(cmd);
@@ -163,6 +176,7 @@ namespace PEBakery.Core
                                     s = CodeType.WimExtract;
                                     opDict[CodeType.WimExtract].Add(cmd);
                                     break;
+                                    */
                                 case CodeType.WimPathAdd:
                                 case CodeType.WimPathDelete:
                                 case CodeType.WimPathRename:
@@ -432,6 +446,54 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
+                        #region ReadInterface
+                        case CodeType.ReadInterface:
+                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_ReadInterface), "Invalid CodeInfo");
+                            switch (cmd.Type)
+                            {
+                                case CodeType.ReadInterface:
+                                    {
+                                        CodeInfo_ReadInterface firstInfo = opDict[s][0].Info.Cast<CodeInfo_ReadInterface>();
+                                        if (firstInfo.OptimizeCompare(cmd.Info))
+                                            opDict[s].Add(cmd);
+                                        else
+                                            goto default;
+                                        break;
+                                    }
+                                case CodeType.Comment: // Remove comments
+                                    break;
+                                default: // Optimize them
+                                    FinalizeSequence(s, opDict[s]);
+                                    s = CodeType.None;
+                                    loopAgain = true;
+                                    break;
+                            }
+                            break;
+                        #endregion
+                        #region WriteInterface
+                        case CodeType.WriteInterface:
+                            Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_WriteInterface), "Invalid CodeInfo");
+                            switch (cmd.Type)
+                            {
+                                case CodeType.WriteInterface:
+                                    {
+                                        CodeInfo_WriteInterface firstInfo = opDict[s][0].Info.Cast<CodeInfo_WriteInterface>();
+                                        if (firstInfo.OptimizeCompare(cmd.Info))
+                                            opDict[s].Add(cmd);
+                                        else
+                                            goto default;
+                                        break;
+                                    }
+                                case CodeType.Comment: // Remove comments
+                                    break;
+                                default: // Optimize them
+                                    FinalizeSequence(s, opDict[s]);
+                                    s = CodeType.None;
+                                    loopAgain = true;
+                                    break;
+                            }
+                            break;
+                        #endregion
                         #region WimExtract
                         case CodeType.WimExtract:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_WimExtract), "Invalid CodeInfo");
@@ -515,7 +577,6 @@ namespace PEBakery.Core
             }
 
             #region Finish
-
             foreach (var kv in opDict)
                 FinalizeSequence(kv.Key, kv.Value);
             #endregion
@@ -625,6 +686,20 @@ namespace PEBakery.Core
             Debug.Assert(0 < cmds.Count);
 
             return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(cmds), cmds[0].LineIdx);
+        }
+
+        private static CodeCommand OptimizeReadInterface(List<CodeCommand> cmds)
+        {
+            Debug.Assert(0 < cmds.Count);
+
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.ReadInterfaceOp, new CodeInfo_ReadInterfaceOp(cmds), cmds[0].LineIdx);
+        }
+
+        private static CodeCommand OptimizeWriteInterface(List<CodeCommand> cmds)
+        {
+            Debug.Assert(0 < cmds.Count);
+
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WriteInterfaceOp, new CodeInfo_WriteInterfaceOp(cmds), cmds[0].LineIdx);
         }
 
         private static CodeCommand OptimizeWimExtract(List<CodeCommand> cmds)

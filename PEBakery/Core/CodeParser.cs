@@ -359,7 +359,7 @@ namespace PEBakery.Core
                             }
                             else
                             {
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
@@ -393,7 +393,7 @@ namespace PEBakery.Core
                             }
                             else
                             {
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
@@ -466,7 +466,7 @@ namespace PEBakery.Core
                                 encoding = Encoding.ASCII;
                             }
                             else
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
@@ -583,7 +583,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // Compatbility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         // It will be done in RegWriteLegacy
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
@@ -775,7 +775,7 @@ namespace PEBakery.Core
                             }
                             else
                             {
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
@@ -789,13 +789,13 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
+                        
                         string fileName = args[0];
                         string line = args[1];
                         string mode;
                         if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase) ||
                             args[2].Equals("Append", StringComparison.OrdinalIgnoreCase) ||
-                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < StringHelper.CountOccurrences(args[1], "#"))
+                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
                             mode = args[2];
                         else
                             throw new InvalidCommandException("Mode must be one of Prepend, Append, or variable.", rawCode);
@@ -998,7 +998,7 @@ namespace PEBakery.Core
                             }
                             else
                             {
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
@@ -1047,7 +1047,7 @@ namespace PEBakery.Core
                             }
                             else
                             {
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
@@ -1073,11 +1073,19 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 preserve = true;
+                            }
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_Expand(srcCab, destDir, singleFile, preserve, noWarn);
@@ -1098,11 +1106,19 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 preserve = true;
+                            }
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noWarn = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_CopyOrExpand(srcFile, destPath, preserve, noWarn);
@@ -1233,29 +1249,22 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string interfaceKey;
-                        try
-                        {
-                            interfaceKey = Variables.TrimPercentMark(args[0]);
-                        }
-                        catch (VariableInvalidFormatException)
-                        {
-                            throw new InvalidCommandException("InterfaceKey must be enclosed by %", rawCode);
-                        }
+                        string interfaceKey = Variables.TrimPercentMark(args[0]);
+                        if (interfaceKey == null)
+                            throw new InvalidCommandException($"Invalid InterfaceKey [{interfaceKey}]", rawCode);
 
                         string visibility;
                         if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
                             args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < StringHelper.CountOccurrences(args[1], "#"))
+                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
                             visibility = args[1];
                         else
                             throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
 
                         if (2 < args.Count)
                         {
-                            if (args[2].Equals("PERMANENT", StringComparison.OrdinalIgnoreCase) == false)
-                                throw new InvalidCommandException($"Invalid argument [{args[2]}]", rawCode);
+                            if (!args[2].Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{args[2]}]", rawCode);
                         }
 
                         return new CodeInfo_Visible(interfaceKey, visibility);
@@ -1318,7 +1327,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Message(message, action, timeout);
                     }
                 case CodeType.Echo:
-                    { // Echo,<Message>[,WARN]
+                    { // Echo,<Message>,[WARN]
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1346,11 +1355,19 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (warn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 warn = true;
+                            }
                             else if (arg.Equals("ENCODE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encode)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 encode = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_EchoFile(args[0], warn, encode);
@@ -1366,7 +1383,7 @@ namespace PEBakery.Core
                         return new CodeInfo_AddInterface(args[0], args[1], args[2]);
                     }
                 case CodeType.Retrieve:
-                    { // Put Compability Shim here
+                    { // Compability Shim for WinBuilder 082
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -1422,8 +1439,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
-                        else
-                            return new CodeInfo_Hash(args[0], args[1], args[2]);
+
+                        return new CodeInfo_Hash(args[0], args[1], args[2]);
                     }
                 #endregion
                 #region 10 String
@@ -2049,8 +2066,8 @@ namespace PEBakery.Core
                         { // Loop,BREAK
                             if (args[0].Equals("BREAK", StringComparison.OrdinalIgnoreCase))
                                 return new CodeInfo_Loop(true);
-                            else
-                                throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
+
+                            throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
                         }
                         else
                         { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
@@ -2091,11 +2108,19 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (global)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 global = true;
+                            }
                             else if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (permanent)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 permanent = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_Set(varName, varValue, global, permanent);
@@ -2115,12 +2140,20 @@ namespace PEBakery.Core
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
-                            if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
-                                permanent = true;
-                            else if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                            if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (global)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 global = true;
+                            }
+                            else if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (permanent)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                permanent = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_SetMacro(macroName, macroCommand, global, permanent);
@@ -2140,9 +2173,13 @@ namespace PEBakery.Core
                         {
                             string arg = args[i];
                             if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (global)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 global = true;
+                            }
                             else
-                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_AddVariables(varName, varValue, global);
@@ -2583,8 +2620,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_Arithmetic(args[0], args[1]);
+
+                        info = new StrFormatInfo_Arithmetic(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Left:
@@ -2698,8 +2735,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[3]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[3]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_Replace(args[0], args[1], args[2], args[3]);
+
+                        info = new StrFormatInfo_Replace(args[0], args[1], args[2], args[3]);
                     }
                     break;
                 case StrFormatType.ShortPath:
@@ -2852,7 +2889,7 @@ namespace PEBakery.Core
                         break;
                 }
 
-                if (processed == false && idx < wbFormatStr.Length)
+                if (!processed && idx < wbFormatStr.Length)
                 {
                     char ch = wbFormatStr[idx];
                     if ('a' <= ch && ch <= 'z') // Error
@@ -2867,7 +2904,7 @@ namespace PEBakery.Core
             string formatStr = b.ToString();
             if (hour12)
             {
-                foreach (var (hIdx, len, replace) in hourIdxs)
+                foreach ((int hIdx, int len, string replace) in hourIdxs)
                 {
                     formatStr = StringHelper.ReplaceAt(formatStr, hIdx, len, replace);
                 }
@@ -3222,8 +3259,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_GetEnv(args[0], args[1]);
+
+                        info = new SystemInfo_GetEnv(args[0], args[1]);
                     }
                     break;
                 case SystemType.GetFreeDrive:
@@ -3234,8 +3271,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_GetFreeDrive(args[0]);
+                        
+                        info = new SystemInfo_GetFreeDrive(args[0]);
                     }
                     break;
                 case SystemType.GetFreeSpace:
@@ -3246,8 +3283,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_GetFreeSpace(args[0], args[1]);
+
+                        info = new SystemInfo_GetFreeSpace(args[0], args[1]);
                     }
                     break;
                 case SystemType.IsAdmin:
@@ -3258,8 +3295,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_IsAdmin(args[0]);
+                        
+                        info = new SystemInfo_IsAdmin(args[0]);
                     }
                     break;
                 case SystemType.OnBuildExit:
@@ -3335,7 +3372,7 @@ namespace PEBakery.Core
                                 noRec = true;
                             }
                             else
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         info = new SystemInfo_LoadNewScript(args[0], args[1], preserve, noWarn, noRec);
@@ -3359,32 +3396,12 @@ namespace PEBakery.Core
                                 noRec = true;
                             }
                             else
-                                throw new InvalidCommandException($"Invalid argument or flag [{arg}]", rawCode);
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
                         
                         info = new SystemInfo_RefreshScript(args[0], noRec);
                     }
                     break;
-                    /*
-                case SystemType.Load:
-                    { // System,Load,<FilePath>,[NOREC]
-                        const int minArgCount = 1;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        bool noRec = false;
-                        if (args.Count == 2)
-                        {
-                            if (args[1].Equals("NOREC", StringComparison.OrdinalIgnoreCase))
-                                noRec = true;
-                            else
-                                throw new InvalidCommandException($"Invalid Flag [{args[1]}]", rawCode);
-                        }
-                        info = new SystemInfo_Load(args[0], noRec);
-                    }
-                    break;
-                    */
                 case SystemType.SaveLog:
                     { // System,SaveLog,<DestPath>,[LogFormat]
                         const int minArgCount = 1;
@@ -3427,8 +3444,8 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_HasUAC(args[0]);
+
+                        info = new SystemInfo_HasUAC(args[0]);
                     }
                     break;
                 case SystemType.FileRedirect:
@@ -3466,8 +3483,8 @@ namespace PEBakery.Core
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
         public static bool StringContainsVariable(string str)
         {
-            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
-            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
+            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
             bool sectionParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
             bool sectionReturnValueMatch = str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1; // #r

@@ -159,7 +159,7 @@ namespace PEBakery.Tests
         public void FileHelper_DirectoryCopy()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
-            string destDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper_DirCopy");
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
             // Test 1
             FileHelper_DirectoryCopy_Template(destDir, () =>

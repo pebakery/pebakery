@@ -31,9 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace PEBakery.Core.Commands
 {
@@ -43,9 +41,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Hash), "Invalid CodeInfo");
-            CodeInfo_Hash info = cmd.Info as CodeInfo_Hash;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Hash info = cmd.Info.Cast<CodeInfo_Hash>();
 
             string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);

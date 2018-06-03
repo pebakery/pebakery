@@ -23,7 +23,7 @@ namespace PEBakery.Tests
             EngineTests.Project = projects.Projects[0];
 
             // Init NativeAssembly
-            NativeAssemblyInit();
+            NativeGlobalInit();
 
             // Use InMemory Database for Tests
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
@@ -34,7 +34,7 @@ namespace PEBakery.Tests
             App.BaseDir = EngineTests.BaseDir;
         }
 
-        private static void NativeAssemblyInit()
+        private static void NativeGlobalInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string arch = IntPtr.Size == 8 ? "x64" : "x86";
@@ -53,7 +53,7 @@ namespace PEBakery.Tests
         [AssemblyCleanup]
         public static void AssemblyCleanup()
         {
-            EngineTests.Logger.DB.Close();
+            EngineTests.Logger.Dispose();
 
             Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();

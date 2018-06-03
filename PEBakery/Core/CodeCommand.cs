@@ -25,23 +25,16 @@
     not derived from or based on this program. 
 */
 
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Win32;
-using System.IO;
-using System.Net.NetworkInformation;
-using System.Globalization;
 using System;
+using System.Text;
 using System.Linq;
-using System.Windows;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Microsoft.Win32;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using PEBakery.WPF.Controls;
-using PEBakery.IniLib;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using ManagedWimLib;
+
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
@@ -65,7 +58,7 @@ namespace PEBakery.Core
         INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
         INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
-        Compress = 500, Decompress, Expand, CopyOrExpand, 
+        Compress = 500, Decompress, Expand, CopyOrExpand,
         // 06 Network
         WebGet = 600,
         WebGetIfNotExist = 699, // Will be deprecated
@@ -120,7 +113,7 @@ namespace PEBakery.Core
                 bool result = Script == addr.Script && Section == addr.Section;
                 return result;
             }
-            
+
             return false;
         }
 
@@ -173,16 +166,16 @@ namespace PEBakery.Core
             return RawCode;
         }
 
-        public static readonly CodeType[] DeprecatedCodeType = 
+        public static readonly CodeType[] DeprecatedCodeType =
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.GetParam,
             CodeType.PackParam,
         };
 
-        public static readonly CodeType[] OptimizedCodeType = 
+        public static readonly CodeType[] OptimizedCodeType =
         {
-            CodeType.TXTAddLineOp, 
+            CodeType.TXTAddLineOp,
             CodeType.TXTDelLineOp,
             CodeType.INIReadOp,
             CodeType.INIWriteOp,
@@ -228,7 +221,7 @@ namespace PEBakery.Core
     #region CodeInfo 00 - Error
     [Serializable]
     public class CodeInfo_Error : CodeInfo
-    { 
+    {
         public string ErrorMessage;
 
         public CodeInfo_Error(string errorMessage)
@@ -281,7 +274,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileDelete : CodeInfo
-    { // FileDelete,<FilePath>[,NOWARN][,NOREC]
+    { // FileDelete,<FilePath>,[NOWARN],[NOREC]
         public string FilePath;
         public bool NoWarn;
         public bool NoRec;
@@ -326,12 +319,12 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
-    { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8|UTF16|UTF16BE|ANSI]
+    { // FileCreateBlank,<FilePath>,[Encoding],[PRESERVE],[NOWARN]
         public string FilePath;
         public bool Preserve;
         public bool NoWarn;
-        public Encoding Encoding; // Optional
-        
+        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
+
         public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, Encoding encoding)
         {
             FilePath = filePath;
@@ -367,7 +360,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileSize : CodeInfo
-    { // FileSize,<FilePath>,<DestVar>
+    { // FileSize,<FilePath>,<%DestVar%>
         public string FilePath;
         public string DestVar;
 
@@ -385,7 +378,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileVersion : CodeInfo
-    { // FileVersion,<FilePath>,<DestVar>
+    { // FileVersion,<FilePath>,<%DestVar%>
         public string FilePath;
         public string DestVar;
 
@@ -466,7 +459,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirSize : CodeInfo
-    { // DirSize,<DirPath>,<DestVar>
+    { // DirSize,<DirPath>,<%DestVar%>
         public string DirPath;
         public string DestVar;
 
@@ -538,7 +531,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegRead : CodeInfo
-    { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+    { // RegRead,<HKey>,<KeyPath>,<ValueName>,<%DestVar%>
         [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
@@ -613,7 +606,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_RegWriteLegacy : CodeInfo
+    public class CodeInfo_RegWriteLegacy : CodeInfo // Compatibility Shim for Win10PESE
     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
         public string HKey;
         public string ValueType;
@@ -830,7 +823,7 @@ namespace PEBakery.Core
             b.Append(Mode);
             return b.ToString();
         }
-    }    
+    }
 
     [Serializable]
     public class CodeInfo_TXTAddLineOp : CodeInfo
@@ -922,6 +915,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelLineOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
@@ -973,7 +967,7 @@ namespace PEBakery.Core
     #region CodeInfo 04 - INI
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
-    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
+    { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>
         public string FileName;
         public string Section;
         public string Key;
@@ -1013,7 +1007,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniReadOp : CodeInfo
-    {    
+    {
         public List<CodeCommand> Cmds;
         public List<CodeInfo_IniRead> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniRead>()).ToList();
 
@@ -1025,7 +1019,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniWrite : CodeInfo
-    { // INIWrite,<FileName>,<Section>,<Key>,<Value>
+    { // IniWrite,<FileName>,<Section>,<Key>,<Value>
         public string FileName;
         public string Section;
         public string Key;
@@ -1076,7 +1070,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDelete : CodeInfo
-    { // INIDelete,<FileName>,<Section>,<Key>
+    { // IniDelete,<FileName>,<Section>,<Key>
         public string FileName;
         public string Section;
         public string Key;
@@ -1123,7 +1117,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
-    { // INIReadSection,<FileName>,<Section>,<DestVar>
+    { // IniReadSection,<FileName>,<Section>,<%DestVar%>
         public string FileName;
         public string Section;
         public string DestVar;
@@ -1164,7 +1158,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniAddSection : CodeInfo
-    { // INIAddSection,<FileName>,<Section>
+    { // IniAddSection,<FileName>,<Section>
         public string FileName;
         public string Section;
 
@@ -1207,7 +1201,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDeleteSection : CodeInfo
-    { // INIDeleteSection,<FileName>,<Section>
+    { // IniDeleteSection,<FileName>,<Section>
         public string FileName;
         public string Section;
 
@@ -1238,7 +1232,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDeleteSectionOp : CodeInfo
-    { 
+    {
         public List<CodeCommand> Cmds;
         public List<CodeInfo_IniDeleteSection> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniDeleteSection>()).ToList();
 
@@ -1287,7 +1281,7 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
-   
+
     [Serializable]
     public class CodeInfo_IniWriteTextLineOp : CodeInfo
     {
@@ -1302,7 +1296,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniMerge : CodeInfo
-    { // INIMerge,<SrcFile>,<DestFile>
+    { // IniMerge,<SrcFile>,<DestFile>
         public string SrcFile;
         public string DestFile;
 
@@ -1327,12 +1321,12 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Encoding]
         public ArchiveCompressFormat Format;
         public string SrcPath;
         public string DestArchive;
         public ArchiveHelper.CompressLevel? CompressLevel;
-        public Encoding Encoding;
+        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
 
         public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel, Encoding encoding)
         {
@@ -1382,10 +1376,10 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+    { // Decompress,<SrcArchive>,<DestDir>,[Encoding]
         public string SrcArchive;
         public string DestDir;
-        public Encoding Encoding;
+        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
 
         public CodeInfo_Decompress(string srcArchive, string destArchive, Encoding encoding)
         {
@@ -1528,7 +1522,7 @@ namespace PEBakery.Core
     #region CodeInfo 07 - Script
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
-    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
+    { // ExtractFile,<ScriptFile>,<DirName>,<FileName>,<DestDir>
         public string ScriptFile;
         public string DirName;
         public string FileName;
@@ -1550,7 +1544,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ExtractAndRun : CodeInfo
-    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
+    { // ExtractAndRun,<ScriptFile>,<DirName>,<FileName>,[Params]
         public string ScriptFile;
         public string DirName;
         public string FileName;
@@ -1583,7 +1577,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ExtractAllFiles : CodeInfo
-    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
+    { // ExtractAllFiles,<ScriptFile>,<DirName>,<DestDir>
         public string ScriptFile;
         public string DirName;
         public string DestDir;
@@ -1603,7 +1597,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Encode : CodeInfo
-    { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
+    { // Encode,<ScriptFile>,<DirName>,<FileName>,[Compression]
         public string ScriptFile;
         public string DirName;
         public string FilePath; // Can have Wildcard
@@ -1638,13 +1632,13 @@ namespace PEBakery.Core
     #region CodeInfo 08 - Interface
     [Serializable]
     public class CodeInfo_Visible : CodeInfo
-    { // Visible,<%InterfaceKey%>,<Visibility>
-        public string InterfaceKey; // Must start and end with %
+    { // Visible,<%UIControlKey%>,<Visibility>
+        public string UIControlKey; // Must start and end with %
         public string Visibility; // True or False
 
-        public CodeInfo_Visible(string interfaceKey, string visibility)
+        public CodeInfo_Visible(string uiCtrlKey, string visibility)
         {
-            InterfaceKey = interfaceKey;
+            UIControlKey = uiCtrlKey;
             Visibility = visibility;
         }
 
@@ -1652,13 +1646,13 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{InterfaceKey},{Visibility}";
+            return $"{UIControlKey},{Visibility}";
         }
     }
 
     [Serializable]
     public class CodeInfo_VisibleOp : CodeInfo
-    { // Visible,<%InterfaceKey%>,<Visiblity>
+    {
         public List<CodeCommand> Cmds;
         public List<CodeInfo_Visible> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_Visible>()).ToList();
 
@@ -1668,7 +1662,6 @@ namespace PEBakery.Core
         }
     }
 
-    [Serializable]
     public enum InterfaceElement
     {
         // General
@@ -1687,7 +1680,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ReadInterface : CodeInfo
-    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<%DestVar%>
         public InterfaceElement Element;
         public string ScriptFile;
         public string Section;
@@ -1703,9 +1696,31 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ReadInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_ReadInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_ReadInterface>()).ToList();
+
+        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1727,6 +1742,16 @@ namespace PEBakery.Core
             Value = value;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return $"{Element},{ScriptFile},{Section},{Key},{Value}";
@@ -1734,11 +1759,25 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
+    public class CodeInfo_WriteInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WriteInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_WriteInterface>()).ToList();
+
+        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
+        }
+    }
+
+    public enum CodeMessageAction
+    {
+        None, Information, Confirmation, Error, Warning
+    }
 
     [Serializable]
     public class CodeInfo_Message : CodeInfo
-    { // Message,<Message>[,ICON][,TIMEOUT]
+    { // Message,<Message>,[Icon],[TIMEOUT]
         public string Message;
         public CodeMessageAction Action; // Optional;
         public string Timeout; // Optional, Its type should be int, but set to string because of variable system
@@ -1767,7 +1806,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Echo : CodeInfo
-    {
+    { // Echo,<Message>,[WARN]
         public string Message;
         public bool Warn;
 
@@ -1789,7 +1828,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_EchoFile : CodeInfo
-    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+    { // EchoFile,<SrcFile>,[WARN],[ENCODE]
         public string SrcFile;
         public bool Warn;
         public bool Encode;
@@ -1813,55 +1852,6 @@ namespace PEBakery.Core
         }
     }
 
-    #region UserInputType, UserInputInfo
-    public enum UserInputType
-    { 
-        DirPath,
-        FilePath,
-    }
-
-    [Serializable]
-    public class UserInputInfo { }
-
-    [Serializable]
-    public class UserInputInfo_DirFile : UserInputInfo
-    {
-        // UserInput,Dir,<InitPath>,<DestVar>
-        // UserInput,File,<InitPath>,<DestVar>
-        public string InitPath;
-        public string DestVar;
-
-        public UserInputInfo_DirFile(string initPath, string destVar)
-        {
-            InitPath = initPath;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"{InitPath},{DestVar}";
-        }
-    }
-    #endregion
-
-    [Serializable]
-    public class CodeInfo_UserInput : CodeInfo
-    {
-        public UserInputType Type;
-        public UserInputInfo SubInfo;
-
-        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
-        {
-            Type = type;
-            SubInfo = subInfo;
-        }
-
-        public override string ToString()
-        {
-            return $"{Type},{SubInfo}";
-        }
-    }
-
     [Serializable]
     public class CodeInfo_AddInterface : CodeInfo
     { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
@@ -1881,12 +1871,61 @@ namespace PEBakery.Core
             return $"{ScriptFile},{Interface},{Prefix}";
         }
     }
+
+    [Serializable]
+    public class CodeInfo_UserInput : CodeInfo
+    { // UserInput, ...
+        public UserInputType Type;
+        public UserInputInfo SubInfo;
+
+        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo}";
+        }
+    }
+
+    #region UserInputType, UserInputInfo
+    public enum UserInputType
+    {
+        DirPath,
+        FilePath,
+    }
+
+    [Serializable]
+    public class UserInputInfo : CodeInfo { }
+
+    [Serializable]
+    public class UserInputInfo_DirFile : UserInputInfo
+    {
+        // UserInput,File,<InitPath>,<%DestVar%>
+        // UserInput,Dir,<InitPath>,<%DestVar%>
+        public string InitPath;
+        public string DestVar;
+
+        public UserInputInfo_DirFile(string initPath, string destVar)
+        {
+            InitPath = initPath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{InitPath},{DestVar}";
+        }
+    }
+    #endregion
     #endregion
 
     #region CodeInfo 09 - Hash
     [Serializable]
     public class CodeInfo_Hash : CodeInfo
-    { // Hash,<HashHelper.HashType>,<FilePath>,<DestVar>
+    { // Hash,<HashType>,<FilePath>,<%DestVar%>
         public string HashType;
         public string FilePath;
         public string DestVar;
@@ -1907,7 +1946,7 @@ namespace PEBakery.Core
 
     #region StrFormatType, StrFormatInfo
     public enum StrFormatType
-    { // 아니 왜 사칙연산이 StrFormat에 있지...
+    {
         IntToBytes, Bytes, // IntToBytes == Bytes
         BytesToInt,
         Hex,
@@ -1915,7 +1954,7 @@ namespace PEBakery.Core
         Date,
         FileName, DirPath, Path, Ext, // DirPath == Path
         PathCombine,
-        Inc, Dec, Mult, Div,
+        Inc, Dec, Mult, Div, // 아니 왜 사칙연산이 StrFormat에 있지...
         Left, Right,
         SubStr, // Added in PEBakery
         Len,
@@ -1928,11 +1967,11 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class StrFormatInfo { }
+    public class StrFormatInfo : CodeInfo { }
 
     [Serializable]
     public class StrFormatInfo_IntToBytes : StrFormatInfo
-    { // StrFormat,Bytes,<Integer>,<DestVar>
+    { // StrFormat,Bytes,<Integer>,<%DestVar%>
         public string ByteSize;
         public string DestVar;
 
@@ -1950,7 +1989,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_BytesToInt : StrFormatInfo
-    { // StrFormat,BytesToInt,<Bytes>,<DestVar>
+    { // StrFormat,BytesToInt,<Bytes>,<%DestVar%>
         public string HumanReadableByteSize;
         public string DestVar;
 
@@ -1968,7 +2007,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Hex : StrFormatInfo
-    { // StrFormat,Hex,<Integer>,<DestVar>
+    { // StrFormat,Hex,<Integer>,<%DestVar%>
         public string Integer;
         public string DestVar;
 
@@ -1991,9 +2030,9 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_CeilFloorRound : StrFormatInfo
     {
-        // StrFormat,Ceil,<SizeVar>,<CeilTo>
-        // StrFormat,Floor,<SizeVar>,<FloorTo>
-        // StrFormat,Round,<SizeVar>,<RoundTo>
+        // StrFormat,Ceil,<%SizeVar%>,<CeilTo>
+        // StrFormat,Floor,<%SizeVar%>,<FloorTo>
+        // StrFormat,Round,<%SizeVar%>,<RoundTo>
         // <RoundTo> can be [PositiveInteger], [K], [M], [G], [T], [P]
 
         public string SizeVar;
@@ -2013,7 +2052,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Date : StrFormatInfo
-    { // StrFormat,Date,<DestVar>,<FormatString>
+    { // StrFormat,Date,<%DestVar%>,<FormatString>
         public string DestVar;
         public string FormatString;
 
@@ -2037,9 +2076,9 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Path : StrFormatInfo
     {
-        // StrFormat,FileName,<FilePath>,<DestVar>
-        // StrFormat,DirPath,<FilePath>,<DestVar> -- Same with StrFormat,Path
-        // StrFormat,Ext,<FilePath>,<DestVar>
+        // StrFormat,FileName,<FilePath>,<%DestVar%>
+        // StrFormat,DirPath,<FilePath>,<%DestVar%> -- Same with StrFormat,Path
+        // StrFormat,Ext,<FilePath>,<%DestVar%>
         public string FilePath;
         public string DestVar;
 
@@ -2054,14 +2093,14 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.Doublequote(FilePath));
             b.Append(",");
-            b.Append(DestVar);            
+            b.Append(DestVar);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class StrFormatInfo_PathCombine : StrFormatInfo
-    { // StrFormat,PathCombine,<DirPath>,<FileName>,<DestVar>
+    { // StrFormat,PathCombine,<DirPath>,<FileName>,<%DestVar%>
         public string DirPath;
         public string FileName;
         public string DestVar;
@@ -2088,10 +2127,10 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Arithmetic : StrFormatInfo
     {
-        // StrFormat,Inc,<DestVar>,<Integer>
-        // StrFormat,Dec,<DestVar>,<Integer>
-        // StrFormat,Mult,<DestVar>,<Integer>
-        // StrFormat,Div,<DestVar>,<Integer>
+        // StrFormat,Inc,<%DestVar%>,<Integer>
+        // StrFormat,Dec,<%DestVar%>,<Integer>
+        // StrFormat,Mult,<%DestVar%>,<Integer>
+        // StrFormat,Div,<%DestVar%>,<Integer>
 
         public string DestVar;
         public string Integer; // These value's type must be integer, but set to string because of variables system
@@ -2115,16 +2154,16 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_LeftRight : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
-        // StrFormat,Left,<SrcString>,<Integer>,<DestVar>
-        // StrFormat,Right,<SrcString>,<Integer>,<DestVar>
+        // StrFormat,Left,<SrcStr>,<Count>,<%DestVar%>
+        // StrFormat,Right,<SrcStr>,<Count>,<%DestVar%>
         public string SrcStr;
-        public string CutLen; 
+        public string Count;
         public string DestVar;
 
-        public StrFormatInfo_LeftRight(string srcString, string integer, string destVar)
+        public StrFormatInfo_LeftRight(string srcStr, string count, string destVar)
         {
-            SrcStr = srcString;
-            CutLen = integer;
+            SrcStr = srcStr;
+            Count = count;
             DestVar = destVar;
         }
 
@@ -2133,7 +2172,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(CutLen));
+            b.Append(StringEscaper.Doublequote(Count));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2142,15 +2181,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
-    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVar>
+    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
         public string SrcStr;
         public string StartPos; // Index start from 1, not 0!
-        public string Length; 
+        public string Length;
         public string DestVar;
 
-        public StrFormatInfo_SubStr(string srcString, string startPos, string length, string destVar)
+        public StrFormatInfo_SubStr(string srcStr, string startPos, string length, string destVar)
         {
-            SrcStr = srcString;
+            SrcStr = srcStr;
             StartPos = startPos;
             Length = length;
             DestVar = destVar;
@@ -2172,7 +2211,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Len : StrFormatInfo
-    { // StrFormat,Len,<SrcString>,<DestVarName>
+    { // StrFormat,Len,<SrcStr>,<%DestVar%>
         public string SrcStr;
         public string DestVar;
 
@@ -2195,17 +2234,17 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Trim : StrFormatInfo
     {
-        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVar>
-        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVar>
-        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVar>
+        // StrFormat,LTrim,<SrcStr>,<Integer>,<%DestVar%>
+        // StrFormat,RTrim,<SrcStr>,<Integer>,<%DestVar%>
+        // StrFormat,CTrim,<SrcStr>,<Chars>,<%DestVar%>
 
         public string SrcStr;
         public string ToTrim;
         public string DestVarName;
 
-        public StrFormatInfo_Trim(string srcString, string trimValue, string destVar)
+        public StrFormatInfo_Trim(string srcStr, string trimValue, string destVar)
         {
-            SrcStr = srcString;
+            SrcStr = srcStr;
             ToTrim = trimValue;
             DestVarName = destVar;
         }
@@ -2224,13 +2263,13 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_NTrim : StrFormatInfo
-    { // StrFormat,NTrim,<SrcString>,<DestVar>
+    { // StrFormat,NTrim,<SrcStr>,<%DestVar%>
         public string SrcStr;
         public string DestVar;
 
-        public StrFormatInfo_NTrim(string srcString,  string destVar)
+        public StrFormatInfo_NTrim(string srcStr, string destVar)
         {
-            SrcStr = srcString;
+            SrcStr = srcStr;
             DestVar = destVar;
         }
 
@@ -2247,8 +2286,8 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_ULCase : StrFormatInfo
     {
-        // StrFormat,UCase,<SrcString>,<DestVar>
-        // StrFormat,LCase,<SrcString>,<DestVar>
+        // StrFormat,UCase,<SrcStr>,<%DestVar%>
+        // StrFormat,LCase,<SrcStr>,<%DestVar%>
 
         public string SrcStr;
         public string DestVar;
@@ -2271,15 +2310,18 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Pos : StrFormatInfo
-    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVar>
+    {
+        // StrFormat,Pos,<SrcStr>,<SubStr>,<%DestVar%>
+        // StrFormat,PosX,<SrcStr>,<SubStr>,<%DestVar%>
+
         public string SrcStr;
         public string SubStr;
         public string DestVar;
 
-        public StrFormatInfo_Pos(string srcString, string subString, string destVar)
+        public StrFormatInfo_Pos(string srcStr, string subStr, string destVar)
         {
-            SrcStr = srcString;
-            SubStr = subString;
+            SrcStr = srcStr;
+            SubStr = subStr;
             DestVar = destVar;
         }
 
@@ -2298,30 +2340,30 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Replace : StrFormatInfo
     {
-        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
-        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
+        // StrFormat,Replace,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
+        // StrFormat,ReplaceX,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
 
-        public string SrcString;
-        public string ToBeReplaced;
-        public string ReplaceWith;
+        public string SrcStr;
+        public string SearchStr;
+        public string ReplaceStr;
         public string DestVar;
 
-        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith, string destVar)
+        public StrFormatInfo_Replace(string srcStr, string searchStr, string replaceStr, string destVar)
         {
-            SrcString = srcString;
-            ToBeReplaced = toBeReplaced;
-            ReplaceWith = replaceWith;
+            SrcStr = srcStr;
+            SearchStr = searchStr;
+            ReplaceStr = replaceStr;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(ToBeReplaced));
+            b.Append(StringEscaper.QuoteEscape(SearchStr));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(ReplaceWith));
+            b.Append(StringEscaper.QuoteEscape(ReplaceStr));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2331,22 +2373,22 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_ShortLongPath : StrFormatInfo
     {
-        // StrFormat,ShortPath,<SrcString>,<DestVar>
-        // StrFormat,LongPath,<SrcString>,<DestVar>
+        // StrFormat,ShortPath,<SrcStr>,<%DestVar%>
+        // StrFormat,LongPath,<SrcStr>,<%DestVar%>
 
-        public string SrcString;
+        public string SrcStr;
         public string DestVar;
 
-        public StrFormatInfo_ShortLongPath(string srcString, string destVar)
+        public StrFormatInfo_ShortLongPath(string srcStr, string destVar)
         {
-            SrcString = srcString;
+            SrcStr = srcStr;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2355,16 +2397,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Split : StrFormatInfo
-    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVar>
-        public string SrcString;
-        public string Delimeter;
-        public string Index; 
+    { // StrFormat,Split,<SrcStr>,<Delimiter>,<Index>,<%DestVar%>
+        public string SrcStr;
+        public string Delimiter;
+        public string Index;
         public string DestVar;
 
-        public StrFormatInfo_Split(string srcString, string delimeter, string index, string destVar)
+        public StrFormatInfo_Split(string srcString, string delimiter, string index, string destVar)
         {
-            SrcString = srcString;
-            Delimeter = delimeter;
+            SrcStr = srcString;
+            Delimiter = delimiter;
             Index = index;
             DestVar = destVar;
         }
@@ -2372,9 +2414,9 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(Delimeter));
+            b.Append(StringEscaper.QuoteEscape(Delimiter));
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(Index));
             b.Append(",");
@@ -2410,7 +2452,7 @@ namespace PEBakery.Core
 
     #region MathType, MathInfo
     public enum MathType
-    { 
+    {
         Add, Sub, Mul, Div,
         IntDiv,
         Neg,
@@ -2420,22 +2462,22 @@ namespace PEBakery.Core
         BitAnd, BitOr, BitXor,
         BitNot,
         BitShift,
-        Ceil, Floor, Round, 
+        Ceil, Floor, Round,
         Abs,
         Pow,
         Hex,
     }
 
     [Serializable]
-    public class MathInfo { }
+    public class MathInfo : CodeInfo { }
 
     [Serializable]
     public class MathInfo_Arithmetic : MathInfo
-    { 
-        // Math,Add,<DestVar>,<Src1>,<Src2>
-        // Math,Sub,<DestVar>,<Src1>,<Src2>
-        // Math,Mul,<DestVar>,<Src1>,<Src2>
-        // Math,Div,<DestVar>,<Src1>,<Src2>
+    {
+        // Math,Add,<%DestVar%>,<Src1>,<Src2>
+        // Math,Sub,<%DestVar%>,<Src1>,<Src2>
+        // Math,Mul,<%DestVar%>,<Src1>,<Src2>
+        // Math,Div,<%DestVar%>,<Src1>,<Src2>
 
         public string DestVar;
         public string Src1;
@@ -2456,7 +2498,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_IntDiv : MathInfo
-    { // Math,IntDiv,<QuotientVar>,<RemainderVar>,<Src1>,<Src2>
+    { // Math,IntDiv,<%QuotientVar%>,<%RemainderVar%>,<Src1>,<Src2>
         public string QuotientVar;
         public string RemainderVar;
         public string Src1;
@@ -2478,7 +2520,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_Neg : MathInfo
-    { // Math,Neg,<DestVar>,<Src>
+    { // Math,Neg,<%DestVar%>,<Src>
         public string DestVar;
         public string Src;
 
@@ -2497,12 +2539,12 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_IntegerSignedness : MathInfo
     {
-        // Math,ToSign,<DestVar>,<Src>,[8|16|32|64]
-        // Math,ToUnsign,<DestVar>,<Src>,[8|16|32|64]
+        // Math,ToSign,<%DestVar%>,<Src>,[BitSize]
+        // Math,ToUnsign,<%DestVar%>,<Src>,[BitSize]
 
         public string DestVar;
         public string Src;
-        public uint BitSize;
+        public uint BitSize; // [8|16|32|64]
 
         public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
         {
@@ -2520,9 +2562,9 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_BoolLogicOper : MathInfo
     {
-        // Math,BoolAnd,<DestVar>,<Src1>,<Src2>
-        // Math,BoolOr,<DestVar>,<Src1>,<Src2>
-        // Math,BoolXor,<DestVar>,<Src1>,<Src2>
+        // Math,BoolAnd,<%DestVar%>,<Src1>,<Src2>
+        // Math,BoolOr,<%DestVar%>,<Src1>,<Src2>
+        // Math,BoolXor,<%DestVar%>,<Src1>,<Src2>
 
         public string DestVar;
         public string Src1;
@@ -2543,7 +2585,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BoolNot : MathInfo
-    { // Math,BoolNot,<DestVar>,<Src>
+    { // Math,BoolNot,<%DestVar%>,<Src>
         public string DestVar;
         public string Src;
 
@@ -2562,9 +2604,9 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_BitLogicOper : MathInfo
     {
-        // Math,BitAnd,<DestVar>,<Src1>,<Src2>
-        // Math,BitOr,<DestVar>,<Src1>,<Src2>
-        // Math,BitXor,<DestVar>,<Src1>,<Src2>
+        // Math,BitAnd,<%DestVar%>,<Src1>,<Src2>
+        // Math,BitOr,<%DestVar%>,<Src1>,<Src2>
+        // Math,BitXor,<%DestVar%>,<Src1>,<Src2>
 
         public string DestVar;
         public string Src1; // Should be unsigned
@@ -2585,10 +2627,10 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitNot : MathInfo
-    { // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
+    { // Math,BitNot,<%DestVar%>,<Src>,[BitSize]
         public string DestVar;
         public string Src; // Should be unsigned
-        public uint BitSize; // Optional
+        public uint BitSize; // [8|16|32|64]
 
         public MathInfo_BitNot(string destVar, string src, uint bitSize)
         {
@@ -2605,19 +2647,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitShift : MathInfo
-    { // Math,BitShift,<DestVar>,<Src>,<LEFT|RIGHT>,<Shift>,[8|16|32|64],[UNSIGNED]
+    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,[BitSize],[UNSIGNED]
         public string DestVar;
         public string Src;
-        public string LeftRight;
+        public string Direction;
         public string Shift;
         public uint BitSize; // Optional, [8|16|32|64]
         public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint botSoze, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint botSoze, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
-            LeftRight = leftRight;
+            Direction = direction;
             Shift = shift;
             BitSize = botSoze;
             Unsigned = _unsigned;
@@ -2625,16 +2667,16 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{LeftRight},{Shift},{BitSize},{Unsigned}";
+            return $"{DestVar},{Src},{Direction},{Shift},{BitSize},{Unsigned}";
         }
     }
 
     [Serializable]
     public class MathInfo_CeilFloorRound : MathInfo
     {
-        // Math,Ceil,<DestVar>,<Src>,<Unit>
-        // Math,Floor,<DestVar>,<Src>,<Unit>
-        // Math,Round,<DestVar>,<Src>,<Unit>
+        // Math,Ceil,<%DestVar%>,<Src>,<Unit>
+        // Math,Floor,<%DestVar%>,<Src>,<Unit>
+        // Math,Round,<%DestVar%>,<Src>,<Unit>
 
         public string DestVar;
         public string Src;
@@ -2655,7 +2697,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_Abs : MathInfo
-    { // Math,Abs,<DestVar>,<Src>
+    { // Math,Abs,<%DestVar%>,<Src>
         public string DestVar;
         public string Src;
 
@@ -2673,7 +2715,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_Pow : MathInfo
-    { // Math,Pow,<DestVar>,<Base>,<PowerOf>
+    { // Math,Pow,<%DestVar%>,<Base>,<PowerOf>
         public string DestVar;
         public string Base;
         public string Power;
@@ -2693,15 +2735,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_Hex : MathInfo
-    { // Math,Hex,<DestVar>,<Integer>,[BitSize]
+    { // Math,Hex,<%DestVar%>,<Src>,[BitSize]
         public string DestVar;
-        public string Integer;
+        public string Src;
         public uint BitSize; // Optional, [8|16|32|64]
 
-        public MathInfo_Hex(string destVar, string integer, uint bitSize)
+        public MathInfo_Hex(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
-            Integer = integer;
+            Src = src;
             BitSize = bitSize;
         }
 
@@ -2710,7 +2752,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
             b.Append(",");
-            b.Append(Integer);
+            b.Append(Src);
             b.Append(",");
             b.Append(BitSize);
             return b.ToString();
@@ -2745,11 +2787,11 @@ namespace PEBakery.Core
     #region CodeInfo 12 - WIM
     [Serializable]
     public class CodeInfo_WimMount : CodeInfo
-    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<MountOption>
         public string SrcWim;
         public string ImageIndex;
         public string MountDir;
-        public string MountOption;
+        public string MountOption; // <READONLY|READWRITE>
 
         public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir, string mountOption)
         {
@@ -2767,9 +2809,9 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimUnmount : CodeInfo
-    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
+    { // WimUnmount,<MountDir>,<UnmountOption>
         public string MountDir;
-        public string UnmountOption;
+        public string UnmountOption; // <DISCARD|COMMIT>
 
         public CodeInfo_WimUnmount(string mountDir, string unmountOption)
         {
@@ -2785,7 +2827,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimInfo : CodeInfo
-    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>,[NOERR]
+    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<%DestVar%>,[NOERR]
         public string SrcWim;
         public string ImageIndex;
         public string Key;
@@ -2819,7 +2861,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimApply : CodeInfo
-    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
+    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB]
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
@@ -2864,7 +2906,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimExtract : CodeInfo
-    { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+    { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB]
         // For extracting mutiple path at once, rely on WimExtractOp or WimExtractBulk
         public string SrcWim;
         public string ImageIndex;
@@ -2952,7 +2994,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimExtractBulk : CodeInfo
-    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR],[NOWARN]
+    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB],[NOERR],[NOWARN]
         public string SrcWim;
         public string ImageIndex;
         public string ListFile;
@@ -3013,7 +3055,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimCapture : CodeInfo
-    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[BOOT],[CHECK],[NOACL]
+    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[ImageName=<Str>],[ImageDesc=<Str>],[Flags=<Str>],[BOOT],[CHECK],[NOACL]
         public string SrcDir;
         public string DestWim;
         public string Compress; // [NONE|XPRESS|LZX|LZMS]
@@ -3080,7 +3122,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimAppend : CodeInfo
-    { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
+    { // WimAppend,<SrcDir>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
         public string SrcDir;
         public string DestWim;
         public string ImageName; // Optional
@@ -3152,7 +3194,7 @@ namespace PEBakery.Core
     public class CodeInfo_WimDelete : CodeInfo
     { // WimDelete,<SrcWim>,<ImageIndex>,[CHECK]
         public string SrcWim;
-        public string ImageIndex; 
+        public string ImageIndex;
         public bool CheckFlag; // Optional Flag
 
         public CodeInfo_WimDelete(string srcWim, string imageIndex, bool check)
@@ -3442,7 +3484,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimOptimize : CodeInfo
-    { // WimOptimize,<WimFile>,[Recomp=STR],[CHECK|NOCHECK]
+    { // WimOptimize,<WimFile>,[Recomp=<Str>],[CHECK|NOCHECK]
         public string WimFile;
         public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
         public bool? CheckFlag; // Optional Flag
@@ -3476,14 +3518,13 @@ namespace PEBakery.Core
         }
     }
 
-    #region WimExport
     [Serializable]
     public class CodeInfo_WimExport : CodeInfo
-    { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Split=STR],[Recomp=STR],[BOOT],[CHECK|NOCHECK]
+    { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=<Str>],[ImageDesc=<Str>],[Split=<Str>],[Recomp=<Str>],[BOOT],[CHECK|NOCHECK]
         public string SrcWim;
         public string ImageIndex;
         public string DestWim;
-        public string ImageName; // Optional.
+        public string ImageName; // Optional
         public string ImageDesc; // Optional
         public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
         public string Split;  // Optional
@@ -3547,32 +3588,34 @@ namespace PEBakery.Core
         }
     }
     #endregion
-    #endregion
 
     #region BranchCondition
     public enum BranchConditionType
     {
         None = 0,
         // Comparison
-        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual,
+        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
         // Existance
-        // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
+        // Note : Wrong terminoloy with ExistRegSection/ExistRegKey!
+        // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
-        ExistFile,
-        ExistDir,
-        ExistSection,
-        ExistRegSection, ExistRegSubKey,
-        ExistRegKey, ExistRegValue,
-        ExistRegMulti,
-        ExistVar,
-        ExistMacro,
+        ExistFile, // <FilePath>
+        ExistDir, // <DirPath>
+        ExistSection, // <IniFile>,<Section>
+        ExistRegSection, ExistRegSubKey, // <RootKey>,<SubKey> 
+        ExistRegKey, ExistRegValue, // <RootKey>,<SubKey>,<ValueName>
+        ExistRegMulti, // <RootKey>,<SubKey>,<ValueName>,<SearchStr>
+        ExistVar, // <%Var%>
+        ExistMacro, // <MacroName>
         // Wim
-        WimExistIndex,
-        WimExistFile,
-        WimExistDir,
-        WimExistImageInfo,
+        WimExistIndex, // <WimFile>,<ImageIndex>
+        WimExistFile, // <WimFile>,<ImageIndex>,<FilePath>
+        WimExistDir, // <WimFile>,<ImageIndex>,<DirPath>
+        WimExistImageInfo, // <WimFile>,<ImageIndex>,<Key>
         // ETC
-        Ping, Online, Question,
+        Ping, // <Host>
+        Online, // No Argument 
+        Question, // <Message> or <Message>,<Timeout>,<DefaultChoice>
         // Deprecated
         License
     }
@@ -3606,7 +3649,7 @@ namespace PEBakery.Core
             NotFlag = notFlag;
             switch (type)
             {
-                case BranchConditionType.ExistFile:
+                case BranchConditionType.ExistFile: 
                 case BranchConditionType.ExistDir:
                 case BranchConditionType.ExistVar:
                 case BranchConditionType.ExistMacro:
@@ -3767,6 +3810,9 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
+        // Run,<ScriptFile%,<Section>,[Params]
+        // Exec,<ScriptFile%,<Section>,[Params]
+
         public string ScriptFile;
         public string SectionName;
         public List<string> Parameters;
@@ -3796,13 +3842,15 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
-        // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+        // Loop,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,Params]
         // Loop,BREAK
+        // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,Params]
+        // LoopLetter,BREAK
         public bool Break;
         public string ScriptFile;
         public string SectionName;
         public string StartIdx;
-        public string EndIdx; 
+        public string EndIdx;
         public List<string> Parameters;
 
         public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
@@ -3912,7 +3960,7 @@ namespace PEBakery.Core
     #region CodeInfo 81 - Control
     [Serializable]
     public class CodeInfo_Set : CodeInfo
-    {
+    { // Set,<%Var%>,<Value>,[GLOBAL|PERMANENT]
         public string VarKey;
         public string VarValue;
         public bool Global;
@@ -3937,7 +3985,6 @@ namespace PEBakery.Core
                 b.Append(",GLOBAL");
             if (Permanent)
                 b.Append(",PERMANENT");
-
             return b.ToString();
         }
     }
@@ -3974,7 +4021,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_AddVariables : CodeInfo
-    {
+    { // AddVariables,%ScriptFile%,<Section>,[GLOBAL]
         public string ScriptFile;
         public string SectionName;
         public bool Global;
@@ -3989,7 +4036,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_GetParam : CodeInfo
-    { // GetParam,<Index>,<DestVar>
+    { // GetParam,<Index>,<%DestVar%>
         public string Index;
         public string DestVar;
 
@@ -4007,7 +4054,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_PackParam : CodeInfo
-    { // PackParam,<StartIndex>,<DestVar>,[VarCount]
+    { // PackParam,<StartIndex>,<%DestVar%>,[VarCount]
         public string StartIndex;
         public string DestVar;
         public string VarCount; // optional
@@ -4036,7 +4083,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Exit : CodeInfo
-    { // Exit,<Message>[,NOWARN]
+    { // Exit,<Message>,[NOWARN]
         public string Message;
         public bool NoWarn;
 
@@ -4049,7 +4096,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Halt : CodeInfo
-    { // Halt,<Message>[,NOWARN]
+    { // Halt,<Message>,[NOWARN]
         public string Message;
 
         public CodeInfo_Halt(string message)
@@ -4130,21 +4177,21 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo { }
+    public class SystemInfo : CodeInfo { }
 
     [Serializable]
     public class SystemInfo_Cursor : SystemInfo
-    { // System,Cursor,<IconKind>
-        public string IconKind;
+    { // System,Cursor,<State>
+        public string State;
 
-        public SystemInfo_Cursor(string iconKind)
+        public SystemInfo_Cursor(string state)
         {
-            IconKind = iconKind;
+            State = state;
         }
 
         public override string ToString()
         {
-            return $"Cursor,{IconKind}";
+            return $"Cursor,{State}";
         }
     }
 
@@ -4166,25 +4213,25 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_GetEnv : SystemInfo
-    { // System,GetEnv,<EnvVarName>,<DestVar>
-        public string EnvVarName;
+    { // System,GetEnv,<EnvVar>,<%DestVar%>
+        public string EnvVar;
         public string DestVar;
 
-        public SystemInfo_GetEnv(string envVarName, string destVar)
+        public SystemInfo_GetEnv(string envVar, string destVar)
         {
-            EnvVarName = envVarName;
+            EnvVar = envVar;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"GetEnv,{EnvVarName},{DestVar}";
+            return $"GetEnv,{EnvVar},{DestVar}";
         }
     }
 
     [Serializable]
     public class SystemInfo_GetFreeDrive : SystemInfo
-    { // System,GetFreeDrive,<DestVar>
+    { // System,GetFreeDrive,<%DestVar%>
         public string DestVar;
 
         public SystemInfo_GetFreeDrive(string destVar)
@@ -4200,7 +4247,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_GetFreeSpace : SystemInfo
-    { // System,GetFreeSpace,<Path>,<DestVar>
+    { // System,GetFreeSpace,<Path>,<%DestVar%>
         public string Path;
         public string DestVar;
 
@@ -4218,7 +4265,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_HasUAC : SystemInfo
-    { // System,HasUAC,<DestVar>
+    { // System,HasUAC,<%DestVar%>
         public string DestVar;
 
         public SystemInfo_HasUAC(string destVar)
@@ -4234,7 +4281,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_IsAdmin : SystemInfo
-    { // System,IsAdmin,<DestVar>
+    { // System,IsAdmin,<%DestVar%>
         public string DestVar;
 
         public SystemInfo_IsAdmin(string destVar)
@@ -4279,10 +4326,10 @@ namespace PEBakery.Core
             return $"OnScriptExit,{Cmd}";
         }
     }
-    
+
     [Serializable]
     public class SystemInfo_LoadNewScript : SystemInfo
-    { // System,LoadNew,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
+    { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
         public string SrcFilePath;
         public string DestTreeDir;
         public bool PreserveFlag;
@@ -4337,35 +4384,6 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
-
-    /*
-    [Serializable]
-    public class SystemInfo_Load : SystemInfo
-    { // System,Load,<FilePath>,[NOREC]
-        public string FilePath;
-        public bool NoRec;
-
-        public SystemInfo_Load(string filePath, bool noRec)
-        {
-            FilePath = filePath;
-            NoRec = noRec;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder(8);
-            b.Append("Load");
-            if (FilePath != null)
-            {
-                b.Append(",");
-                b.Append(FilePath);
-                if (NoRec)
-                    b.Append(",NOREC");
-            }
-            return b.ToString();
-        }
-    }
-    */
 
     [Serializable]
     public class SystemInfo_SaveLog : SystemInfo

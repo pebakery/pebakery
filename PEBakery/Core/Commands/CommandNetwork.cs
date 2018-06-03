@@ -45,9 +45,7 @@ namespace PEBakery.Core.Commands
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WebGet), "Invalid CodeInfo");
-            CodeInfo_WebGet info = cmd.Info as CodeInfo_WebGet;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_WebGet info = cmd.Info.Cast<CodeInfo_WebGet>();
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);

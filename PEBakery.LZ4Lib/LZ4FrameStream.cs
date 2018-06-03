@@ -56,7 +56,8 @@ namespace PEBakery.LZ4Lib
 
         // Compression
         private const int SrcBufSizeMax = 4 * 1024 * 1024; // 4MB
-        private readonly uint _destBufSize; // 4MB
+        // private const int SrcBufSizeMax = 64 * 1024; // 64K
+        private readonly uint _destBufSize; 
 
         // Decompression
         private const int DecompDone = -1;

@@ -97,7 +97,10 @@ namespace PEBakery.Tests.Core
             cmd = CodeParser.ParseStatement(rawCode, addr);
             if (cmd.Type == CodeType.Error)
             {
-                Console.WriteLine((cmd.Info as CodeInfo_Error).ErrorMessage);
+                CodeInfo_Error info = cmd.Info as CodeInfo_Error;
+                Debug.Assert(info != null, "Internal Logic Error");
+
+                Console.WriteLine(info.ErrorMessage);
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;
             }

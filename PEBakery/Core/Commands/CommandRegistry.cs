@@ -48,9 +48,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveLoad), "Invalid CodeInfo");
-            CodeInfo_RegHiveLoad info = cmd.Info as CodeInfo_RegHiveLoad;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegHiveLoad info = cmd.Info.Cast<CodeInfo_RegHiveLoad>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
@@ -77,9 +75,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegHiveUnload), "Invalid CodeInfo");
-            CodeInfo_RegHiveUnload info = cmd.Info as CodeInfo_RegHiveUnload;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegHiveUnload info = cmd.Info.Cast<CodeInfo_RegHiveUnload>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
@@ -102,9 +98,7 @@ namespace PEBakery.Core.Commands
         { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegRead), "Invalid CodeInfo");
-            CodeInfo_RegRead info = cmd.Info as CodeInfo_RegRead;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegRead info = cmd.Info.Cast<CodeInfo_RegRead>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -161,9 +155,7 @@ namespace PEBakery.Core.Commands
         { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>,[OptionalData]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWrite), "Invalid CodeInfo");
-            CodeInfo_RegWrite info = cmd.Info as CodeInfo_RegWrite;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegWrite info = cmd.Info.Cast<CodeInfo_RegWrite>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = null;
@@ -277,12 +269,10 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> RegWriteLegacy(EngineState s, CodeCommand cmd)
-        {
+        { // Compatibility Shim for WinBuilder 082
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegWriteLegacy), "Invalid CodeInfo");
-            CodeInfo_RegWriteLegacy info = cmd.Info as CodeInfo_RegWriteLegacy;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegWriteLegacy info = cmd.Info.Cast<CodeInfo_RegWriteLegacy>();
 
             string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
             RegistryKey hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
@@ -306,9 +296,7 @@ namespace PEBakery.Core.Commands
         { // RegDelete,<HKey>,<KeyPath>,[ValueName]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegDelete), "Invalid CodeInfo");
-            CodeInfo_RegDelete info = cmd.Info as CodeInfo_RegDelete;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegDelete info = cmd.Info.Cast<CodeInfo_RegDelete>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
 
@@ -361,9 +349,7 @@ namespace PEBakery.Core.Commands
         { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Action>,<Arg1>,[Arg2]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegMulti), "Invalid CodeInfo");
-            CodeInfo_RegMulti info = cmd.Info as CodeInfo_RegMulti;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegMulti info = cmd.Info.Cast<CodeInfo_RegMulti>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string valueName = StringEscaper.Preprocess(s, info.ValueName);
@@ -552,9 +538,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport), "Invalid CodeInfo");
-            CodeInfo_RegImport info = cmd.Info as CodeInfo_RegImport;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegImport info = cmd.Info.Cast<CodeInfo_RegImport>();
 
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
@@ -621,9 +605,7 @@ namespace PEBakery.Core.Commands
         { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegCopy), "Invalid CodeInfo");
-            CodeInfo_RegCopy info = cmd.Info as CodeInfo_RegCopy;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegCopy info = cmd.Info.Cast<CodeInfo_RegCopy>();
 
             string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
             string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);

@@ -30,7 +30,6 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -44,7 +43,7 @@ namespace PEBakery.Core
         Fixed = 0,
         Global = 1,
         Local = 2,
-    };
+    }
 
     public class Variables : ICloneable
     {
@@ -59,7 +58,7 @@ namespace PEBakery.Core
          *    2. Local Variables
          *    3. Global Variables
          */
-        
+
         #region Static
         public static bool OverridableFixedVariables = false;
         public static bool EnableEnvironmentVariables = false;
@@ -126,7 +125,7 @@ namespace PEBakery.Core
 
             string projectTitle = dict["Title"];
             if (string.IsNullOrWhiteSpace(projectTitle))
-                projectTitle = _project.ProjectName;  
+                projectTitle = _project.ProjectName;
 
             // ProjectTitle
             logs.Add(SetValue(VarsType.Fixed, "ProjectTitle", projectTitle));
@@ -346,7 +345,7 @@ namespace PEBakery.Core
              * Set,%C%,%A% -> Wrong
              */
 
-                    string str = value;
+            string str = value;
             while (true)
             {
                 if (str.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) != -1) // Found circular reference
@@ -446,7 +445,7 @@ namespace PEBakery.Core
 
         public bool ContainsKey(string key)
         {
-            return _localVars.ContainsKey(key) || _globalVars.ContainsKey(key) || _fixedVars.ContainsKey(key); 
+            return _localVars.ContainsKey(key) || _globalVars.ContainsKey(key) || _fixedVars.ContainsKey(key);
         }
 
         public bool ContainsKey(VarsType type, string key)
@@ -455,9 +454,9 @@ namespace PEBakery.Core
             return vars.ContainsKey(key);
         }
 
-        public bool ContainsValue(string _val)
+        public bool ContainsValue(string val)
         {
-            return _localVars.ContainsValue(_val) || _globalVars.ContainsValue(_val) || _fixedVars.ContainsValue(_val);
+            return _localVars.ContainsValue(val) || _globalVars.ContainsValue(val) || _fixedVars.ContainsValue(val);
         }
 
         public bool ContainsValue(VarsType type, string _val)
@@ -640,12 +639,6 @@ namespace PEBakery.Core
             return new List<LogInfo>();
         }
 
-        public List<LogInfo> AddVariables(VarsType type, string[] lines)
-        {
-            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
-            return InternalAddDictionary(type, dict);
-        }
-
         public List<LogInfo> AddVariables(VarsType type, IEnumerable<string> lines)
         {
             Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
@@ -692,10 +685,10 @@ namespace PEBakery.Core
         public static string TrimPercentMark(string varName)
         {
             if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
-                throw new VariableInvalidFormatException($"[{varName}] is not enclosed with %");
+                return null;
             varName = varName.Substring(1, varName.Length - 2);
             if (varName.Contains('%'))
-                throw new VariableInvalidFormatException($"% cannot be placed in the middle of [{varName}]");
+                return null;
             return varName;
         }
 
@@ -732,16 +725,16 @@ namespace PEBakery.Core
                 return 0; // Error
         }
 
-        public const string VarKeyRegex_ContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        public const string VarKeyRegex_ContainsSectionParams = @"(#[0-9]+)";
-        public const string VarKeyRegex_Variable = @"^" + VarKeyRegex_ContainsVariable + @"$";
-        public const string VarKeyRegex_SectionParams = @"^" + VarKeyRegex_ContainsSectionParams + @"$";
+        public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
+        public const string VarKeyRegexContainsSectionParams = @"(#[0-9]+)";
+        public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
+        public const string VarKeyRegexSectionParams = @"^" + VarKeyRegexContainsSectionParams + @"$";
         public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
         public static VarKeyType DetermineType(string key)
         {
-            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
+            if (Regex.Match(key, Variables.VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
+            else if (Regex.Match(key, Variables.VarKeyRegexSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
                 return VarKeyType.ReturnValue;
@@ -761,7 +754,7 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
                 return new LogInfo(LogState.Error, "Section parameter cannot have a circular reference");
-                
+
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }

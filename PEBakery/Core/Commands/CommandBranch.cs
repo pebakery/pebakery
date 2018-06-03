@@ -28,18 +28,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using Microsoft.Win32;
-using PEBakery.Exceptions;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.NetworkInformation;
+using Microsoft.Win32;
+using ManagedWimLib;
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
-using ManagedWimLib;
-using System.Net.NetworkInformation;
-using System.Windows;
 using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
@@ -54,9 +54,7 @@ namespace PEBakery.Core.Commands
 
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec), "Invalid CodeInfo");
-            CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -107,8 +105,6 @@ namespace PEBakery.Core.Commands
 
             // Run Section
             int depthBackup = s.CurDepth;
-            // int errorOffStartLineIdxBackup = s.ErrorOffStartLineIdx;
-            //int erroroffCountBackup = s.ErrorOffLineCount;
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             if (cmd.Type == CodeType.Exec)
@@ -122,16 +118,12 @@ namespace PEBakery.Core.Commands
             }
 
             s.CurDepth = depthBackup;
-            // s.ErrorOffStartLineIdx = errorOffStartLineIdxBackup;
-            // s.ErrorOffLineCount = erroroffCountBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
         }  
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop), "Invalid CodeInfo");
-            CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
 
             if (info.Break)
             {
@@ -269,9 +261,7 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If), "Invalid CodeInfo");
-            CodeInfo_If info = cmd.Info as CodeInfo_If;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
             
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
@@ -293,10 +283,8 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else), "Invalid CodeInfo");
-            CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-            Debug.Assert(info != null, "Invalid CodeInfo");
-
+            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+            
             if (s.ElseFlag)
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
@@ -321,9 +309,7 @@ namespace PEBakery.Core.Commands
                 CodeCommand subCmd = link[0];
                 if (subCmd.Type == CodeType.System)
                 {
-                    Debug.Assert(subCmd.Info.GetType() == typeof(CodeInfo_System), "Invalid CodeInfo");
-                    CodeInfo_System info = subCmd.Info as CodeInfo_System;
-                    Debug.Assert(info != null, "Invalid CodeInfo");
+                    CodeInfo_System info = subCmd.Info.Cast<CodeInfo_System>();
 
                     if (info.Type == SystemType.ErrorOff)
                         s.ErrorOffDepthMinusOne = true;
@@ -562,7 +548,7 @@ namespace PEBakery.Core.Commands
                         string rootKey = StringEscaper.Preprocess(s, c.Arg1);
                         string subKey = StringEscaper.Preprocess(s, c.Arg2);
                         string valueName = StringEscaper.Preprocess(s, c.Arg3);
-                        string subStr = StringEscaper.Preprocess(s, c.Arg4);
+                        string searchStr = StringEscaper.Preprocess(s, c.Arg4);
 
                         match = false;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
@@ -591,14 +577,14 @@ namespace PEBakery.Core.Commands
                                     else
                                     {
                                         string[] strs = (string[])valueData;
-                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                        if (strs.Contains(searchStr, StringComparer.OrdinalIgnoreCase))
                                         {
                                             match = true;
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{searchStr}]";
                                         }
                                         else
                                         {
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{searchStr}]";
                                         }
                                     }
                                 }
@@ -933,7 +919,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.Question: // can have 1 or 3 argument
                     {
-                        string question = StringEscaper.Preprocess(s, c.Arg1);
+                        string message = StringEscaper.Preprocess(s, c.Arg1);
 
                         bool autoTimeout = c.Arg2 != null && c.Arg3 != null;
 
@@ -960,50 +946,47 @@ namespace PEBakery.Core.Commands
                         if (autoTimeout)
                         {
                             MessageBoxResult result = MessageBoxResult.None;
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
+                                result = CustomMessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
                             });
 
-                            if (result == MessageBoxResult.None)
+                            switch (result)
                             {
-                                match = defaultChoice;
-                                if (defaultChoice)
-                                    logMessage = "[Yes] was automatically chosen";
-                                else
-                                    logMessage = "[No] was automatically chosen";
-                            }
-                            else if (result == MessageBoxResult.Yes)
-                            {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
+                                case MessageBoxResult.None:
+                                    match = defaultChoice;
+                                    if (defaultChoice)
+                                        logMessage = "[Yes] was automatically chosen";
+                                    else
+                                        logMessage = "[No] was automatically chosen";
+                                    break;
+                                case MessageBoxResult.Yes:
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                    break;
+                                case MessageBoxResult.No:
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                    break;
+                                default:
+                                    throw new InternalException("Internal Logic Error at Check() of If,Question");
                             }
                         }
                         else
                         {
-                            MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                            if (result == MessageBoxResult.Yes)
+                            MessageBoxResult result = MessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            switch (result)
                             {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
+                                case MessageBoxResult.Yes:
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                    break;
+                                case MessageBoxResult.No:
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                    break;
+                                default:
+                                    throw new InternalException("Internal Logic Error at Check() of If,Question");
                             }
                         }
 
