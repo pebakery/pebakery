@@ -3596,7 +3596,8 @@ namespace PEBakery.Core
         // Comparison
         Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
         // Existance
-        // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
+        // Note : Wrong terminoloy with ExistRegSection/ExistRegKey!
+        // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
         ExistFile, // <FilePath>
         ExistDir, // <DirPath>

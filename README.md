@@ -58,6 +58,6 @@ See [here](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 
-### PEBakery Beta 3
+### PEBakery Beta 4
 
-![Korean IME by PEBakery Beta 3](./Image/PEBakery-Korean_IME.png)
+![ChrisPE with PEBakery Beta 4](./Image/PEBakery-ChrisPE.png)
