@@ -1010,8 +1010,7 @@ namespace PEBakery.Core
                 return _lines;
 
             List<string> lines = Ini.ParseIniSection(Script.RealPath, Name);
-            if (lines == null)
-                throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
+            _lines = lines ?? throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
             return _lines;
         }
 
