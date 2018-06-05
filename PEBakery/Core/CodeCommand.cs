@@ -43,7 +43,7 @@ namespace PEBakery.Core
     public enum CodeType
     {
         // 00 Misc
-        None = 0, Comment, Error,
+        None = 0, Error, Comment, 
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
@@ -218,7 +218,18 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 00 - Error
+    #region CodeInfo 00 - Misc
+    [Serializable]
+    public class CodeInfo_Comment : CodeInfo
+    {
+        public bool IsLine;
+
+        public CodeInfo_Comment(bool isLine)
+        {
+            IsLine = isLine;
+        }
+    }
+
     [Serializable]
     public class CodeInfo_Error : CodeInfo
     {

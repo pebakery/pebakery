@@ -860,17 +860,17 @@ namespace PEBakery.Tests.Core.Command
 
         #region Utility
         public void BranchCondition_Single_Template(EngineState s, string rawCode, string comp)
-        {
+        { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, CodeType.If, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
 
         public void BranchCondition_Comparison_Template(EngineState s, string src, string rawCode,  string comp)
-        {
+        { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Src"] = src;
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, CodeType.If, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
         #endregion

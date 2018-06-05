@@ -45,7 +45,7 @@ namespace PEBakery.Core
         Local = 2,
     }
 
-    public class Variables : ICloneable
+    public class Variables
     {
         /*
          * Variables Search Order
@@ -791,18 +791,9 @@ namespace PEBakery.Core
                         if (globalResult || localResult)
                         {
                             if (Ini.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
-                            {
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
-                            }
                             else
-                            {
-                                if (globalResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
-                                else if (localResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
-                                else
-                                    throw new InternalException("Internal Error at Variables.SetVariable");
-                            }
+                                logs.Add(new LogInfo(LogState.Success, globalResult ? $"Global variable [%{key}%] was deleted" : $"Local variable [%{key}%] was deleted"));
                         }
                         else
                         {
@@ -907,8 +898,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Clone
-        public object Clone()
+        #region DeepCopy
+        public Variables DeepCopy()
         {
             Variables variables = new Variables(_project)
             {

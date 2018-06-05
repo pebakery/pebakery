@@ -25,13 +25,11 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using PEBakery.Exceptions;
 
@@ -135,19 +133,17 @@ namespace PEBakery.Core
                 {
                     case CodeType.If:
                         {
-                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
-                            CodeInfo_If info = cmd.Info as CodeInfo_If;
+                            CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
 
                             if (info.Condition.Type == BranchConditionType.ExistSection)
                             { 
-                                // Exception Handling for 1-files.script
+                                // Exception Handling for Win10PESE's 1-files.script
                                 // If,ExistSection,%ScriptFile%,Cache_Delete_B,Run,%ScriptFile%,Cache_Delete_B
                                 if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                 {
                                     if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
                                     {
-                                        Debug.Assert(info.Embed.Info.GetType() == typeof(CodeInfo_RunExec));
-                                        CodeInfo_RunExec subInfo = info.Embed.Info as CodeInfo_RunExec;
+                                        CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
 
                                         if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                         {
@@ -163,8 +159,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Else:
                         {
-                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
-                            CodeInfo_Else info = cmd.Info as CodeInfo_Else;
+                            CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
                             InternalValidateCodes(info.Link, logs);
                         }
@@ -172,8 +167,7 @@ namespace PEBakery.Core
                     case CodeType.Run:
                     case CodeType.Exec:
                         {
-                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
-                            CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
+                            CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
@@ -187,8 +181,7 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Loop:
                         {
-                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
-                            CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
+                            CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
 
                             if (info.Break)
                                 continue;

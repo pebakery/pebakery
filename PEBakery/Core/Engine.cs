@@ -328,12 +328,6 @@ namespace PEBakery.Core
                 return;
             }
 
-            /*
-            List<LogInfo> parseErrorLogs = addr.Section.LogInfos;
-            ProcessErrorOff(s, addr.Section, 0, parseErrorLogs); // Used 0 to keep current ErrorOffState
-            s.Logger.BuildWrite(s, LogInfo.AddDepth(parseErrorLogs, s.CurDepth + 1));
-            */
-
             // Set CurrentSection
             s.CurrentSection = addr.Section;
 
@@ -363,7 +357,6 @@ namespace PEBakery.Core
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", depth));
                 return;
             }
-            // s.Logger.BuildWrite(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             // Set CurrentSection
             s.CurrentSection = addr.Section;
@@ -381,30 +374,23 @@ namespace PEBakery.Core
         #endregion
 
         #region RunCommands, RunCallback
-        public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
+        public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
-            if (codes.Count == 0)
+            if (cmds.Count == 0)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in [{addr.Script.TreePath}]::[{addr.Section.Name}]", s.CurDepth + 1));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{addr.Script.TreePath}]'s section [{addr.Section.Name}]", s.CurDepth + 1));
                 return;
             }
 
-            foreach (CodeCommand code in codes)
+            foreach (CodeCommand cmd in cmds)
             {
-                try
-                {
-                    s.CurDepth = depth;
-                    s.CurSectionParams = sectionParams;
-                    ExecuteCommand(s, code);
+                s.CurDepth = depth;
+                s.CurSectionParams = sectionParams;
 
-                    if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
-                        break;
-                }
-                catch (CriticalErrorException)
-                { // Critical Error, stop build
-                    s.ErrorHaltFlag = true;
+                ExecuteCommand(s, cmd);
+
+                if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
-                }
             }
 
             if (Engine.DisableSetLocal(s, addr.Section)) 
@@ -443,17 +429,26 @@ namespace PEBakery.Core
                     case CodeType.None:
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
-                    case CodeType.Comment:
-                        if (s.LogComment)
-                            logs.Add(new LogInfo(LogState.Ignore, string.Empty));
-                        break;
                     case CodeType.Error:
                         {
-                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error), "Invalid CodeInfo");
-                            CodeInfo_Error info = cmd.Info as CodeInfo_Error;
-                            Debug.Assert(info != null, "Invalid CodeInfo");
+                            CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
                             
                             logs.Add(new LogInfo(LogState.Error, info.ErrorMessage));
+                        }
+                        break;
+                    case CodeType.Comment:
+                        {
+                            CodeInfo_Comment info = cmd.Info.Cast<CodeInfo_Comment>();
+                            if (info.IsLine)
+                            {
+                                if (s.LogLineComment)
+                                    logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                            }
+                            else
+                            {
+                                if (s.LogBlockComment)
+                                    logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                            }
                         }
                         break;
                     #endregion
@@ -810,9 +805,9 @@ namespace PEBakery.Core
                 }
             }
             catch (CriticalErrorException)
-            { // Stop Building
+            { // Critical Error, stop build
                 logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, curDepth));
-                throw;
+                s.ErrorHaltFlag = true;
             }
             catch (InvalidCodeCommandException e)
             {
@@ -1099,7 +1094,8 @@ namespace PEBakery.Core
         public WebClient RunningWebClient = null;
 
         // Options
-        public bool LogComment = true; // Used in logging
+        public bool LogLineComment = true; // Used in logging
+        public bool LogBlockComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
@@ -1172,7 +1168,7 @@ namespace PEBakery.Core
         #region SetOption
         public void SetOption(SettingViewModel m)
         {
-            LogComment = m.Log_Comment;
+            LogLineComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;

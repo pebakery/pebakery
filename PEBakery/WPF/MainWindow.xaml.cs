@@ -37,7 +37,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;

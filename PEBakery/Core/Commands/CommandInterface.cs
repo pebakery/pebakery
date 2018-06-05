@@ -1285,15 +1285,7 @@ namespace PEBakery.Core.Commands
                                 logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
                                 failure = true;
                             }
-                            /*
-                            Application.Current?.Dispatcher.Invoke(() =>
-                            {
-                                if (!(Application.Current.MainWindow is MainWindow w))
-                                    return;
 
-                                
-                            });
-                            */
                             if (failure)
                                 return logs;
                         }

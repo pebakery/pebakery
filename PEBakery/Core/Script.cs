@@ -205,7 +205,7 @@ namespace PEBakery.Core
         #region Constructor
         public Script(
             ScriptType type,
-            string realPath, string treePath, 
+            string realPath, string treePath,
             Project project, string projectRoot,
             int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
@@ -224,7 +224,7 @@ namespace PEBakery.Core
             _isMainScript = isMainScript;
             _linkLoaded = false;
             _isDirLink = isDirLink;
-            
+
             Debug.Assert(!_isDirLink || type != ScriptType.Link);
 
             switch (type)
@@ -379,12 +379,13 @@ namespace PEBakery.Core
                 bool loadSection = false;
                 SectionType type = SectionType.None;
                 List<string> lines = new List<string>();
+
                 while ((line = reader.ReadLine()) != null)
                 { // Read text line by line
                     idx++;
+
                     line = line.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) &&
-                        line.EndsWith("]", StringComparison.Ordinal))
+                    if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
                         if (inSection)
                         { // End of section
@@ -736,7 +737,7 @@ namespace PEBakery.Core
         public string Name { get; }
         public SectionType Type { get; set; }
         public SectionDataType DataType { get; set; }
-        public SectionDataConverted ConvertedType => _convDataType; 
+        public SectionDataConverted ConvertedType => _convDataType;
         public bool Loaded { get; private set; }
         public int LineIdx { get; }
 
@@ -900,19 +901,19 @@ namespace PEBakery.Core
                     switch (_convDataType)
                     {
                         case SectionDataConverted.Codes:
-                        {
-                            SectionAddress addr = new SectionAddress(Script, this);
-                            _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
-                            _logInfos.AddRange(logList);
-                            break;
-                        }
+                            {
+                                SectionAddress addr = new SectionAddress(Script, this);
+                                _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                                _logInfos.AddRange(logList);
+                                break;
+                            }
                         case SectionDataConverted.Interfaces:
-                        {
-                            SectionAddress addr = new SectionAddress(Script, this);
-                            _uiCtrls = UIParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
-                            _logInfos.AddRange(logList);
-                            break;
-                        }
+                            {
+                                SectionAddress addr = new SectionAddress(Script, this);
+                                _uiCtrls = UIParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                                _logInfos.AddRange(logList);
+                                break;
+                            }
                     }
                     break;
                 default:
@@ -981,7 +982,7 @@ namespace PEBakery.Core
                 throw new InternalException($"Section [{Name}] is not a Line section");
             }
         }
- 
+
         public Dictionary<string, string> GetIniDict()
         {
             if (DataType == SectionDataType.IniDict)
@@ -1011,8 +1012,6 @@ namespace PEBakery.Core
             List<string> lines = Ini.ParseIniSection(Script.RealPath, Name);
             if (lines == null)
                 throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
-            else
-                _lines = lines;
             return _lines;
         }
 
@@ -1021,7 +1020,7 @@ namespace PEBakery.Core
             if (DataType == SectionDataType.Lines &&
                 _convDataType == SectionDataConverted.Codes)
                 return Codes; // Codes for Load()
-            
+
             throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 

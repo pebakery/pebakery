@@ -56,12 +56,12 @@ namespace PEBakery.Tests.Core
         #endregion
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = true, Script p = null)
+        public static EngineState CreateEngineState(bool doCopy = true, Script p = null)
         {
-            // Clone is needed for parallel test execution
-            if (doClone)
+            // Clone is needed for parallel test execution (Partial Deep Clone)
+            if (doCopy)
             {
-                Project project = EngineTests.Project.Clone() as Project;
+                Project project = EngineTests.Project.PartialDeepCopy();
                 Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
                 if (p == null)
@@ -93,14 +93,13 @@ namespace PEBakery.Tests.Core
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
             // Create CodeCommand
-            SectionAddress addr = EngineTests.DummySectionAddress();
+            SectionAddress addr = DummySectionAddress();
             cmd = CodeParser.ParseStatement(rawCode, addr);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info as CodeInfo_Error;
-                Debug.Assert(info != null, "Internal Logic Error");
-
+                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
                 Console.WriteLine(info.ErrorMessage);
+
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;
             }
@@ -110,7 +109,7 @@ namespace PEBakery.Tests.Core
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
 
             // Assert
-            EngineTests.CheckErrorLogs(logs, check);
+            CheckErrorLogs(logs, check);
 
             // Return EngineState
             return s;
@@ -118,38 +117,34 @@ namespace PEBakery.Tests.Core
 
         public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check)
         {
-            EngineState s = EngineTests.CreateEngineState();
-            return EngineTests.Eval(s, rawCode, type, check);
+            EngineState s = CreateEngineState();
+            return Eval(s, rawCode, type, check);
         }
 
         public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            EngineState s = EngineTests.CreateEngineState();
-            return EngineTests.Eval(s, rawCode, type, check, out cmd);
+            EngineState s = CreateEngineState();
+            return Eval(s, rawCode, type, check, out cmd);
         }
 
-        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check)
+        public static EngineState EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check)
         {
-            return EvalLines(s, rawCodes, type, check, out List<CodeCommand> dummy);
+            return EvalLines(s, rawCodes, check, out _);
         }
 
-        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check, out List<CodeCommand> cmds)
+        public static EngineState EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
             // Create CodeCommand
-            SectionAddress addr = EngineTests.DummySectionAddress();
+            SectionAddress addr = DummySectionAddress();
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
             if (errorLogs.Any(x => x.State == LogState.Error))
-            { 
+            {
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;
             }
-            Assert.IsTrue(cmds[0].Type == type);
 
-            // Run CodeCommand
-            List<LogInfo> logs = Engine.ExecuteCommand(s, cmds[0]);
-
-            // Assert
-            EngineTests.CheckErrorLogs(logs, check);
+            // Run CodeCommands
+            Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
 
             // Return EngineState
             return s;
@@ -211,6 +206,5 @@ namespace PEBakery.Tests.Core
             }
         }
         #endregion
-
     }
 }

@@ -417,7 +417,7 @@ namespace PEBakery.Core
     #endregion
 
     #region Project
-    public class Project : ICloneable
+    public class Project
     {
         #region Fields
         private int _mainScriptIdx;
@@ -945,17 +945,16 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Clone
-        [SuppressMessage("ReSharper", "ArrangeThisQualifier")]
-        public object Clone()
+        #region DeepCopy
+        public Project PartialDeepCopy()
         {
             Project project = new Project(BaseDir, ProjectName)
             {
-                _mainScriptIdx = this._mainScriptIdx,
-                AllScripts = new List<Script>(this.AllScripts),
-                Variables = this.Variables.Clone() as Variables,
-                LoadedScriptCount = this.LoadedScriptCount,
-                AllScriptCount = this.AllScriptCount,
+                _mainScriptIdx = _mainScriptIdx,
+                AllScripts = new List<Script>(AllScripts),
+                Variables = Variables.DeepCopy(),
+                LoadedScriptCount = LoadedScriptCount,
+                AllScriptCount = AllScriptCount,
             };
             return project;
         }

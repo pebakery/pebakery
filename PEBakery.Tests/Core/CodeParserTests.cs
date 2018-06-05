@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -29,8 +29,9 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using System.Collections.Generic;
+using System.Text;
 
-namespace PEBakery.Tests
+namespace PEBakery.Tests.Core
 {
     [TestClass]
     public class CodeParserTests
@@ -38,7 +39,7 @@ namespace PEBakery.Tests
         #region GetNextArgument
         [TestMethod]
         [TestCategory("CodeParser")]
-        public void CodeParser_GetNextArgument()
+        public void GetNextArgument()
         {
             CodeParser_GetNextArgument_1();
             CodeParser_GetNextArgument_2();
@@ -49,13 +50,12 @@ namespace PEBakery.Tests
 
         public static void CodeParser_GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
         {
-            Tuple<string, string> tuple;
-            string next, remainder = code;
+            string remainder = code;
 
             foreach (Tuple<string, string> testcase in testcases)
             {
-                tuple = CodeParser.GetNextArgument(remainder);
-                next = tuple.Item1;
+                var tuple = CodeParser.GetNextArgument(remainder);
+                string next = tuple.Item1;
                 remainder = tuple.Item2;
 
                 Console.WriteLine(next);
@@ -74,7 +74,7 @@ namespace PEBakery.Tests
 
         public void CodeParser_GetNextArgument_1()
         {
-            string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
+            const string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
             {
                 new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
@@ -88,7 +88,7 @@ namespace PEBakery.Tests
 
         public void CodeParser_GetNextArgument_2()
         {
-            string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
+            const string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
             {
                 new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
@@ -102,7 +102,7 @@ namespace PEBakery.Tests
 
         public void CodeParser_GetNextArgument_3()
         {
-            string code = @"StrFormat,REPLACE,#2,\,,#8";
+            const string code = @"StrFormat,REPLACE,#2,\,,#8";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
             {
                 new Tuple<string, string>(@"StrFormat", @"REPLACE,#2,\,,#8"),
@@ -118,7 +118,7 @@ namespace PEBakery.Tests
 
         public void CodeParser_GetNextArgument_4()
         {
-            string code = @"Set,%Waik2Tools%,";
+            const string code = @"Set,%Waik2Tools%,";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
             {
                 new Tuple<string, string>(@"Set", @"%Waik2Tools%,"),
@@ -131,7 +131,7 @@ namespace PEBakery.Tests
 
         public void CodeParser_GetNextArgument_5()
         {
-            string code = "Message,\"Hello\"\"World\",Information";
+            const string code = "Message,\"Hello\"\"World\",Information";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
             {
                 new Tuple<string, string>("Message", "\"Hello\"\"World\",Information"),
@@ -140,6 +140,31 @@ namespace PEBakery.Tests
             };
 
             CodeParser_GetNextArgument_Test(code, testcases);
+        }
+        #endregion
+
+        #region BlockComments
+        [TestMethod]
+        [TestCategory("CodeParser")]
+        public void BlockComments()
+        {
+            void Template(List<string> rawCodes, CodeType compType = CodeType.Comment)
+            {
+                SectionAddress addr = EngineTests.DummySectionAddress();
+                List<CodeCommand> cmds = CodeParser.ParseStatements(rawCodes, addr, out _);
+
+                StringBuilder b = new StringBuilder();
+                foreach (string str in rawCodes)
+                    b.AppendLine(str);
+                Assert.IsTrue(cmds[0].RawCode.Equals(b.ToString().Trim(), StringComparison.Ordinal));
+                Assert.AreEqual(cmds[0].Type, compType);
+            }
+
+            Template(new List<string> { "/* Block Comment 1 */" });
+            Template(new List<string> { "/* Block Comment 2", "ABC */" });
+            Template(new List<string> { "/* Block Comment 3", "DEF", "*/" });
+            Template(new List<string> { "/* Block Comment 4", "XYZ */ Error" }, CodeType.Error);
+            Template(new List<string> { "/* Block Comment 5", "No end identifier" }, CodeType.Error);
         }
         #endregion
     }

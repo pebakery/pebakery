@@ -47,9 +47,8 @@ namespace PEBakery.Core
         #region ParseStatement, ParseStatements
         public static CodeCommand ParseStatement(string rawCode, SectionAddress addr)
         {
-            List<string> list = new List<string>();
             int idx = 0;
-            list.Add(rawCode);
+            List<string> list = new List<string> { rawCode };
 
             try
             {
@@ -64,32 +63,35 @@ namespace PEBakery.Core
         public static List<CodeCommand> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
-            errorLogs = new List<LogInfo>();
             List<CodeCommand> codeList = new List<CodeCommand>(32);
             for (int i = 0; i < lines.Count; i++)
             {
                 try
                 {
-                    codeList.Add(ParseCommand(lines, addr, ref i));
+                    CodeCommand cmd = ParseCommand(lines, addr, ref i);
+                    codeList.Add(cmd);
                 }
                 catch (InvalidCommandException e)
                 {
                     CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
-                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
                 }
                 catch (Exception e)
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
-                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
                 }
             }
 
-            List<CodeCommand> compiledList = codeList.Where(x => x.Type != CodeType.None).ToList();
+            errorLogs = codeList
+                .Where(x => x.Type == CodeType.Error)
+                .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
+                .ToList();
+
+            List<CodeCommand> foldedList = codeList.Where(x => x.Type != CodeType.None).ToList();
             try
             {
-                CompileBranchCodeBlock(compiledList, out compiledList);
+                FoldBranchCodeBlock(foldedList, out foldedList);
             }
             catch (InvalidCodeCommandException e)
             {
@@ -97,9 +99,9 @@ namespace PEBakery.Core
             }
 
             if (OptimizeCode)
-                return CodeOptimizer.Optimize(compiledList);
+                return CodeOptimizer.Optimize(foldedList);
             else
-                return compiledList;
+                return foldedList;
         }
         #endregion
 
@@ -184,13 +186,61 @@ namespace PEBakery.Core
             // Remove whitespace of rawCode's from start and end
             string rawCode = rawCodes[idx].Trim();
 
-            // Check if rawCode is Empty
-            if (rawCode.Length == 0 || rawCode.Equals(string.Empty, StringComparison.Ordinal))
+            // Check if rawCode is empty
+            if (rawCode.Length == 0)
                 return new CodeCommand(string.Empty, addr, CodeType.None, null, lineIdx);
 
-            // Comment Format : starts with '//' or '#', ';'
+            // Line Comment Identifier : '//', '#', ';'
             if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
-                return new CodeCommand(rawCode, addr, CodeType.Comment, null, lineIdx);
+                return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo_Comment(true), lineIdx);
+
+            // Block Comment Identifier : '/*' ~ '*/'
+            if (rawCode.StartsWith("/*", StringComparison.Ordinal))
+            {
+                StringBuilder b = new StringBuilder();
+
+                int endIdx;
+                int violation = 0;
+                do
+                {
+                    b.AppendLine(rawCode);
+                    endIdx = rawCode.IndexOf("*/", StringComparison.Ordinal);
+
+                    if (endIdx != -1) // End of the block comment
+                    {
+                        // In many language using '/*' ~ '*/' as a block comment identifier, new line char does not seperates statements.
+                        // So the new statement can come right after '*/'.
+                        //
+                        // In contrast, PEBakery script grammar does use newline char as a block comment identifier,
+                        // which means new statement should not be allowed to come after '*/' without newline.
+                        if (endIdx != rawCode.Length - 2) // '*/' is not placed at the end of the line
+                            violation = 1;
+                    }
+                    else
+                    { // Get next raw code, increase index
+                        if (rawCodes.Count <= idx + 1)
+                        { // Reached end of code but unable to find '*/'
+                            violation = 2;
+                            break;
+                        }
+
+                        idx++;
+                        rawCode = rawCodes[idx].Trim();
+                    }
+                }
+                while (endIdx == -1);
+
+                string comments = b.ToString().Trim();
+                switch (violation)
+                {
+                    case 0:
+                        return new CodeCommand(comments, addr, CodeType.Comment, new CodeInfo_Comment(false), lineIdx);
+                    case 1:
+                        return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Block comment end identifier [*/] must be placed at the end of the line"), lineIdx);
+                    case 2:
+                        return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Unable to find block comment end identifier [*/]"), lineIdx);
+                } 
+            }
 
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
@@ -202,7 +252,7 @@ namespace PEBakery.Core
 
             // Check doublequote's occurence - must be 2n
             if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be an even number");
+                throw new InvalidCommandException("Doublequote's number should be an even number", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();
@@ -226,9 +276,9 @@ namespace PEBakery.Core
                     string nextRawCode = rawCodes[idx + 1].Trim();
 
                     // Check if nextRawCode is Empty / Comment
-                    if (nextRawCode.Length == 0 || 
+                    if (nextRawCode.Length == 0 ||
                         rawCode.StartsWith("//") ||
-                        rawCode.StartsWith("#") || 
+                        rawCode.StartsWith("#") ||
                         rawCode.StartsWith(";"))
                         throw new InvalidCommandException(@"Valid command should be placed after '\'", rawCode);
 
@@ -297,12 +347,12 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
-            bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) || 
+            bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
                            !Enum.IsDefined(typeof(CodeType), type) ||
                            type == CodeType.None ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
-            
+
             if (isMacro)
             {
                 type = CodeType.Macro;
@@ -629,7 +679,7 @@ namespace PEBakery.Core
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
-                                {                                    
+                                {
                                     if (4 == cnt)
                                     { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
@@ -789,7 +839,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        
+
                         string fileName = args[0];
                         string line = args[1];
                         string mode;
@@ -1130,7 +1180,7 @@ namespace PEBakery.Core
                 case CodeType.WebGetIfNotExist: // Will be deprecated
                     { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
                         const int minArgCount = 2;
-                        const int maxArgCount = 4; 
+                        const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -1319,7 +1369,7 @@ namespace PEBakery.Core
                                 action = CodeMessageAction.Warning;
                             else
                                 throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
-                         }
+                        }
 
                         if (args.Count == 3)
                             timeout = args[2];
@@ -1542,7 +1592,7 @@ namespace PEBakery.Core
                             }
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                        }  
+                        }
 
                         return new CodeInfo_WimApply(args[0], args[1], args[2], split, check, noAcl, noAttrib);
                     }
@@ -2358,7 +2408,7 @@ namespace PEBakery.Core
         {
             if (max == -1) // Unlimited argument count
                 return op.Count < min;
-             else
+            else
                 return op.Count < min || max < op.Count;
         }
         #endregion
@@ -2397,7 +2447,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) ||
                            !Enum.IsDefined(typeof(RegMultiType), type);
 
             if (invalid)
@@ -2413,7 +2463,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) || 
+            bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) ||
                            !Enum.IsDefined(typeof(InterfaceElement), e);
 
             if (invalid)
@@ -2466,7 +2516,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) ||
                            !Enum.IsDefined(typeof(UserInputType), type);
 
             if (invalid)
@@ -2831,9 +2881,9 @@ namespace PEBakery.Core
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
         private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
-        
+
         private static string StrFormat_Date_FormatString(string str)
-        { 
+        {
             // dd-mmm-yyyy-hh.nn
             // 02-11-2017-13.49
 
@@ -2951,7 +3001,7 @@ namespace PEBakery.Core
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
-                        
+
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
@@ -3208,7 +3258,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out MathType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out MathType type) ||
                            !Enum.IsDefined(typeof(MathType), type);
 
             if (invalid)
@@ -3271,7 +3321,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        
+
                         info = new SystemInfo_GetFreeDrive(args[0]);
                     }
                     break;
@@ -3295,7 +3345,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        
+
                         info = new SystemInfo_IsAdmin(args[0]);
                     }
                     break;
@@ -3398,7 +3448,7 @@ namespace PEBakery.Core
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
-                        
+
                         info = new SystemInfo_RefreshScript(args[0], noRec);
                     }
                     break;
@@ -3470,7 +3520,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) ||
                            !Enum.IsDefined(typeof(SystemType), type);
 
             if (invalid)
@@ -3590,7 +3640,7 @@ namespace PEBakery.Core
                     embIdx = cIdx + 4;
                 }
                 else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
-                { 
+                {
                     cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
                     embIdx = cIdx + 5;
                 }
@@ -3704,7 +3754,7 @@ namespace PEBakery.Core
                         throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
                     }
                 }
-                    
+
                 embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), addr, lineIdx);
             }
 
@@ -3724,11 +3774,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region CompileBranchCodeBlock
-        public static void CompileBranchCodeBlock(List<CodeCommand> codeList, out List<CodeCommand> compiledList)
+        #region FoldBranchCodeBlock
+        public static void FoldBranchCodeBlock(List<CodeCommand> codeList, out List<CodeCommand> foldedList)
         {
             bool elseFlag = false;
-            compiledList = new List<CodeCommand>();
+            foldedList = new List<CodeCommand>();
 
             for (int i = 0; i < codeList.Count; i++)
             {
@@ -3739,13 +3789,13 @@ namespace PEBakery.Core
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (info.LinkParsed)
-                        compiledList.Add(cmd); 
+                        foldedList.Add(cmd);
                     else
-                        i = ParseNestedIf(cmd, codeList, i, compiledList);
+                        i = ParseNestedIf(cmd, codeList, i, foldedList);
 
                     elseFlag = true;
 
-                    CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
+                    FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                     info.Link = newLinkList;
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
@@ -3756,21 +3806,21 @@ namespace PEBakery.Core
                     if (elseFlag)
                     {
                         if (info.LinkParsed)
-                            compiledList.Add(cmd); 
+                            foldedList.Add(cmd);
                         else
-                            i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
+                            i = ParseNestedElse(cmd, codeList, i, foldedList, out elseFlag);
 
-                        CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
+                        FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                         info.Link = newLinkList;
                     }
                     else
                         throw new InvalidCodeCommandException("[Else] must be used after [If]", cmd);
-                        
+
                 }
                 else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
                 {
                     elseFlag = false;
-                    compiledList.Add(cmd);
+                    foldedList.Add(cmd);
                 }
             }
         }
