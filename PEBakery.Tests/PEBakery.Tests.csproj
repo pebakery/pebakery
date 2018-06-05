@@ -84,6 +84,7 @@
     <Compile Include="Core\Command\CommandWimTests.cs" />
     <Compile Include="Core\EncodedFileTests.cs" />
     <Compile Include="Core\EngineTests.cs" />
+    <Compile Include="Core\ScriptTests.cs" />
     <Compile Include="Core\StringEscaperTests.cs" />
     <Compile Include="Core\UIParserTests.cs" />
     <Compile Include="HelperTests.cs" />

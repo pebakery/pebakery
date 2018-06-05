@@ -56,7 +56,7 @@ namespace PEBakery.Tests.Core
         #endregion
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doCopy = true, Script p = null)
+        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null)
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             if (doCopy)
@@ -64,19 +64,19 @@ namespace PEBakery.Tests.Core
                 Project project = EngineTests.Project.PartialDeepCopy();
                 Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
-                if (p == null)
+                if (sc == null)
                     return new EngineState(project, logger, model, EngineMode.RunAll);
                 else
-                    return new EngineState(project, logger, model, EngineMode.RunOne, p);
+                    return new EngineState(project, logger, model, EngineMode.RunOne, sc);
             }
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
                 MainViewModel model = new MainViewModel();
-                if (p == null)
+                if (sc == null)
                     return new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
-                    return new EngineState(Project, Logger, model, EngineMode.RunOne, p);
+                    return new EngineState(Project, Logger, model, EngineMode.RunOne, sc);
             }
         }
 

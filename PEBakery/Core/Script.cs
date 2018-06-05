@@ -35,6 +35,7 @@ using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace PEBakery.Core
 {
@@ -369,7 +370,7 @@ namespace PEBakery.Core
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
             Encoding encoding = FileHelper.DetectTextEncoding(_realPath);
-            using (StreamReader reader = new StreamReader(_realPath, encoding))
+            using (StreamReader r = new StreamReader(_realPath, encoding))
             {
                 int idx = 0;
                 int sectionIdx = 0;
@@ -377,21 +378,39 @@ namespace PEBakery.Core
                 string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
+                bool inBlockComment = false;
+                bool sectionHeader = false;
                 SectionType type = SectionType.None;
                 List<string> lines = new List<string>();
 
-                while ((line = reader.ReadLine()) != null)
+                void FinalizeSection()
+                {
+                    if (inSection)
+                    {
+                        dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
+                        lines = new List<string>();
+                    }
+                }
+
+                while ((line = r.ReadLine()) != null)
                 { // Read text line by line
                     idx++;
-
                     line = line.Trim();
-                    if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                    sectionHeader = false;
+
+                    // Surpress recognition of section while in block comment (/* ~ */)
+                    if (inBlockComment)
+                    {
+                        if (line.IndexOf("*/", StringComparison.Ordinal) != -1)
+                            inBlockComment = false;
+                    }
+                    else if (line.StartsWith("/*", StringComparison.Ordinal))
+                    {
+                        inBlockComment = true;
+                    }
+                    else if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
-                        if (inSection)
-                        { // End of section
-                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
-                            lines = new List<string>();
-                        }
+                        FinalizeSection(); 
 
                         sectionIdx = idx;
                         currentSection = line.Substring(1, line.Length - 2);
@@ -399,20 +418,15 @@ namespace PEBakery.Core
                         if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
                         inSection = true;
-                    }
-                    else if (inSection && loadSection)
-                    { // line of section
-                        lines.Add(line);
+
+                        sectionHeader = true;
                     }
 
-                    if (reader.Peek() == -1)
-                    { // End of .script
-                        if (inSection)
-                        {
-                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
-                            lines = new List<string>();
-                        }
-                    }
+                    if (!sectionHeader && inSection && loadSection) // line of section
+                        lines.Add(line);
+
+                    if (r.Peek() == -1) // End of .script
+                        FinalizeSection();
                 }
             }
 
