@@ -687,14 +687,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_Comment;
-        public bool Log_Comment
+        private bool log_LineComment;
+        public bool Log_LineComment
         {
-            get => log_Comment;
+            get => log_LineComment;
             set
             {
-                log_Comment = value;
-                OnPropertyUpdate(nameof(Log_Comment));
+                log_LineComment = value;
+                OnPropertyUpdate(nameof(Log_LineComment));
+            }
+        }
+
+        private bool log_BlockComment;
+        public bool Log_BlockComment
+        {
+            get => log_BlockComment;
+            set
+            {
+                log_BlockComment = value;
+                OnPropertyUpdate(nameof(Log_BlockComment));
             }
         }
 
@@ -861,7 +872,8 @@ namespace PEBakery.WPF
             Log_DebugLevelIndex = 0;
 #endif
             Log_Macro = true;
-            Log_Comment = true;
+            Log_LineComment = true;
+            Log_BlockComment = false;
             Log_DelayedLogging = true;
 
             // Compatibility
@@ -913,7 +925,8 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_LineComment), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_BlockComment), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
@@ -928,6 +941,7 @@ namespace PEBakery.WPF
             keys = Ini.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
+            #region Parse Helpers
             (string Section, string Key) SplitSectionKey(string varName)
             {
                 int sIdx = varName.IndexOf('_');
@@ -982,6 +996,7 @@ namespace PEBakery.WPF
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
                 return defaultValue;
             }
+            #endregion
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -1018,7 +1033,8 @@ namespace PEBakery.WPF
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
             Log_Macro = ParseBoolean(nameof(Log_Macro), Log_Macro);
-            Log_Comment = ParseBoolean(nameof(Log_Comment), Log_Comment);
+            Log_LineComment = ParseBoolean(nameof(Log_LineComment), Log_LineComment);
+            Log_BlockComment = ParseBoolean(nameof(Log_BlockComment), Log_BlockComment);
             Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
 
             // Compatibility
@@ -1060,7 +1076,8 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_LineComment), logStr), Log_LineComment.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_BlockComment), logStr), Log_BlockComment.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean

@@ -1168,12 +1168,15 @@ namespace PEBakery.Core
         #region SetOption
         public void SetOption(SettingViewModel m)
         {
-            LogLineComment = m.Log_Comment;
+            CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
+
             LogMacro = m.Log_Macro;
+            LogLineComment = m.Log_LineComment;
+            LogBlockComment = m.Log_BlockComment;
+            LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
+
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
-            LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
-            CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
         }
         #endregion
     }
