@@ -12,7 +12,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public LicenseD:\Jang\Build\Source\PEBakery\pebakery\PEBakery\Core\Commands\CommandControl.cs
+    You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     Additional permission under GNU GPL version 3 section 7
@@ -29,13 +29,11 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Media;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands

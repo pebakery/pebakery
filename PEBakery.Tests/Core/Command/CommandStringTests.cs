@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -14,15 +14,22 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
-using PEBakery.Core.Commands;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -158,37 +165,31 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_1()
         {
-            string rawCode = "StrFormat,Date,%Dest%,yyyy-mm-dd_hh:nn:ss.zzz";
+            const string rawCode = "StrFormat,Date,%Dest%,yyyy-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
-            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
-
-            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
-            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
+            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyy-MM-dd_HH:mm:ss.fff", StringComparison.Ordinal));
         }
 
         public void StrFormat_Date_2()
         {
-            string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
+            const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
-            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
-
-            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
-            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
+            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddHHmmssfff", StringComparison.Ordinal));
         }
 
         public void StrFormat_Date_3()
         {
-            string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
+            const string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
@@ -200,7 +201,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_4()
         {
-            string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
+            const string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
@@ -212,15 +213,12 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_5()
         {
-            string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
+            const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
-            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
-
-            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
-            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+            CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
+            StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
 
             Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddhhmmssfff tt", StringComparison.Ordinal));
         }

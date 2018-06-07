@@ -118,11 +118,9 @@ namespace PEBakery.Core
 
                 return projNameList;
             }
-            else
-            {
-                // CAnnot find projectRoot, return empty list
-                return new List<string>();
-            }
+
+            // Cannot find projectRoot, return empty list
+            return new List<string>();
         }
         #endregion
 
@@ -193,6 +191,12 @@ namespace PEBakery.Core
 
                         if (Path.IsPathRooted(dirPath))
                         { // Absolute Path
+                            if (!Directory.Exists(dirPath))
+                            {
+                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
+                                continue;
+                            }
+
                             string[] subDirs = Directory.GetDirectories(dirPath);
                             foreach (string subDir in subDirs)
                             {
@@ -206,6 +210,12 @@ namespace PEBakery.Core
                         else
                         { // Relative to %BaseDir%
                             string fullPath = Path.Combine(_baseDir, dirPath);
+                            if (!Directory.Exists(fullPath))
+                            {
+                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
+                                continue;
+                            }
+
                             string[] subDirs = Directory.GetDirectories(fullPath);
                             foreach (string subDir in subDirs)
                             {
@@ -622,7 +632,6 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        // Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, this, ProjectRoot, sc.Level, false, false, false);
                         string treePath = Path.Combine(ProjectName, pathKey);
                         Script ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                         Debug.Assert(ts != null, "Internal Logic Error at InternalSortScripts");
@@ -762,6 +771,11 @@ namespace PEBakery.Core
         /// </summary>
         public Script LoadScriptMonkeyPatch(string realPath, string treePath, bool ignoreMain = false, bool addToProjectTree = false, bool overwriteProjectTree = false)
         {
+            if (realPath == null)
+                throw new ArgumentNullException(nameof(realPath));
+            if (treePath == null)
+                throw new ArgumentNullException(nameof(treePath));
+
             Script sc = LoadScript(realPath, treePath, ignoreMain, false);
             if (addToProjectTree)
             {
@@ -786,12 +800,13 @@ namespace PEBakery.Core
                         {
                             string pathKey = Project.PathKeyGenerator(paths, i);
                             Script ts = AllScripts.FirstOrDefault(x =>
-                                (x.Level == sc.Level) &&
+                                x.Level == sc.Level &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
                             {
                                 string fullTreePath = Path.Combine(ProjectRoot, ProjectName, pathKey);
-                                Script dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                                string fullRealPath = Path.GetDirectoryName(realPath);
+                                Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                                 AllScripts.Add(dirScript);
                             }
                         }

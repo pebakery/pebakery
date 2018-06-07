@@ -379,7 +379,6 @@ namespace PEBakery.Core
                 bool inSection = false;
                 bool loadSection = false;
                 bool inBlockComment = false;
-                bool sectionHeader = false;
                 SectionType type = SectionType.None;
                 List<string> lines = new List<string>();
 
@@ -396,7 +395,7 @@ namespace PEBakery.Core
                 { // Read text line by line
                     idx++;
                     line = line.Trim();
-                    sectionHeader = false;
+                    bool sectionHeader = false;
 
                     // Surpress recognition of section while in block comment (/* ~ */)
                     if (inBlockComment)

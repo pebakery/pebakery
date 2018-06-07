@@ -4342,6 +4342,10 @@ namespace PEBakery.Core
     public class SystemInfo_LoadNewScript : SystemInfo
     { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
         public string SrcFilePath;
+        /// <summary>
+        /// DestTreeDir should not include project root directory.
+        /// Ex) ChrisPE\Core\IME.script -> Use 'Core' as DestTreeDir
+        /// </summary>
         public string DestTreeDir;
         public bool PreserveFlag;
         public bool NoWarnFlag;

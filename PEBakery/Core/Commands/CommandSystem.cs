@@ -254,39 +254,43 @@ namespace PEBakery.Core.Commands
                         if (subInfo.NoRecFlag)
                             searchOption = SearchOption.TopDirectoryOnly;
 
+                        Debug.Assert(srcFilePath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
+
                         // Check wildcard
                         string wildcard = Path.GetFileName(srcFilePath);
                         bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
-
+                        
                         string[] files;
                         if (containsWildcard)
                         { // With wildcard
                             files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(srcFilePath), wildcard, searchOption);
                             if (files.Length == 0)
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
-                                return logs;
-                            }
+                                return LogInfo.LogErrorMessage(logs, $"Script [{srcFilePath}] does not exist");
                         }
                         else
                         { // No wildcard
                             if (!File.Exists(srcFilePath))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
-                                return logs;
-                            }
+                                return LogInfo.LogErrorMessage(logs, $"Script [{srcFilePath}] does not exist");
 
                             files = new string[] { srcFilePath };
                         }
                         List<Script> newScripts = new List<Script>(files.Length);
 
+                        string srcDirPath = Path.GetDirectoryName(srcFilePath);
+                        Debug.Assert(srcDirPath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
+
+                        (string fullPath, string shortPath)[] fileTuples = files
+                            .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
+                            .ToArray();
+
                         int successCount = 0;
-                        foreach (string f in files)
+                        foreach ((string fullPath, string shortPath) in fileTuples)
                         {
                             // Add scripts into Project.AllScripts
-                            string scRealPath = Path.GetFullPath(f);
+                            string scRealPath = Path.GetFullPath(fullPath);
 
-                            string destTreePath = Path.Combine(destTreeDir, Path.GetFileName(f));
+                            string projDirName = s.Project.ProjectDir.Substring(s.Project.ProjectRoot.Length).Trim('\\');
+                            string destTreePath = Path.Combine(projDirName, destTreeDir, shortPath);
                             if (s.Project.ContainsScriptByTreePath(destTreePath))
                             {
                                 if (subInfo.PreserveFlag)
@@ -294,10 +298,8 @@ namespace PEBakery.Core.Commands
                                     logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Warning, $"Script [{destTreeDir}] already exists in project tree", cmd));
                                     continue;
                                 }
-                                else
-                                {
-                                    logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
-                                }
+
+                                logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
                             }
 
                             Script sc = s.Project.LoadScriptMonkeyPatch(scRealPath, destTreePath, false, true, true);
