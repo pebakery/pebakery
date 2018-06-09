@@ -28,20 +28,19 @@
 // #define DEBUG_MIDDLE_FILE
 
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System.IO;
 using System.Linq;
 using PEBakery.Helper;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using PEBakery.Exceptions;
 using System.Text;
-using Joveler.ZLibWrapper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
 using PEBakery.IniLib;
 using PEBakery.LZ4Lib;
 using PEBakery.XZLib;
+using Joveler.ZLibWrapper;
 
 namespace PEBakery.Tests.Core
 {

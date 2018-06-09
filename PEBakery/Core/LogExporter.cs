@@ -115,7 +115,7 @@ namespace PEBakery.Core
                         _w.WriteLine("<Log Statistics>");
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
-                        { 
+                        {
                             int count = _db.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
                             _w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
                         }
@@ -424,7 +424,7 @@ namespace PEBakery.Core
                                     }).ToArray();
 
                                 m.CodeLogs.Add(new Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>(pModel, logModel.ToArray(), localVarModel));
-                            }                            
+                            }
                         }
 
                         string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.BuildLogHtmlTemplate, "BuildLogHtmlTemplateKey", null, m);

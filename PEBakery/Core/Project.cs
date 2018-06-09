@@ -727,42 +727,6 @@ namespace PEBakery.Core
         public Script LoadScriptMonkeyPatch(string realPath, bool ignoreMain = false, bool addToProjectTree = false, bool overwriteProjectTree = false)
         {
             return LoadScriptMonkeyPatch(realPath, realPath, ignoreMain, addToProjectTree, overwriteProjectTree);
-            // Limit: fullPath must be in BaseDir
-            // if (!fullPath.StartsWith(BaseDir, StringComparison.OrdinalIgnoreCase))
-            //    return null;
-
-            /*
-            Script sc = LoadScript(fullPath, fullPath, ignoreMain, false);
-            if (addToProjectTree)
-            {
-                AllScripts.Add(sc);
-                AllScriptCount += 1;
-            }
-            */
-
-            /*
-            Script sc = LoadScript(realPath, realPath, ignoreMain, false);
-            if (addToProjectTree)
-            {
-                // int idx = AllScripts.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                int idx = AllScripts.FindIndex(x => x.TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase));
-                if (idx != -1)
-                { // TreePath collision
-                    if (overwriteProjectTree)
-                        AllScripts[idx] = sc;
-                    else
-                        throw new InvalidOperationException($"Unable to overwrite project tree [{sc.TreePath}]");
-                }
-                else
-                {
-                    AllScripts.Add(sc);
-                }
-
-                AllScriptCount += 1;
-            }
-
-            return sc;
-            */
         }
 
         /// <summary>

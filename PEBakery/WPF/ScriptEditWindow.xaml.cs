@@ -16,7 +16,6 @@ using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
@@ -153,8 +152,8 @@ namespace PEBakery.WPF
             {
                 m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
             }
-                
-            m.ScriptTitle = _sc.Title; 
+
+            m.ScriptTitle = _sc.Title;
             m.ScriptAuthor = _sc.Author;
             m.ScriptVersion = _sc.Version;
             m.ScriptDate = GetStringValue("Date");
@@ -228,133 +227,133 @@ namespace PEBakery.WPF
             switch (uiCtrl.Type)
             {
                 case UIControlType.TextBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                    UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
+                        UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlTextBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlTextBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.TextLabel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                    UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
+                        UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlTextLabelInfo = info;
-                    break;
-                }
+                        m.UICtrlTextLabelInfo = info;
+                        break;
+                    }
                 case UIControlType.NumberBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                    UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
+                        UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlNumberBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlNumberBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.CheckBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                        UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlCheckBoxInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlCheckBoxInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.ComboBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                        UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlComboBoxInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlComboBoxInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.Image:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-                    UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+                        UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlImageInfo = info;
-                    m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlImageInfo = info;
+                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.TextFile:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                    m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.Button:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                        UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlButtonInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                    break;
-                }
+                        m.UICtrlButtonInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        break;
+                    }
                 case UIControlType.WebLabel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
-                    UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
+                        UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlWebLabelInfo = info;
-                    break;
-                }
+                        m.UICtrlWebLabelInfo = info;
+                        break;
+                    }
                 case UIControlType.RadioButton:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                        UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
-                    m.UICtrlRadioButtonInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
+                        m.UICtrlRadioButtonInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.Bevel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
                         UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlBevelInfo = info;
-                    break;
-                }
+                        m.UICtrlBevelInfo = info;
+                        break;
+                    }
                 case UIControlType.FileBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
-                    UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
+                        UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlFileBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlFileBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.RadioGroup:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                        UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlRadioGroupInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlRadioGroupInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
             }
 
             m.UIControlModifiedEventToggle = false;
@@ -375,7 +374,7 @@ namespace PEBakery.WPF
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
-            }           
+            }
 
             IniKey[] keys =
             {
@@ -444,71 +443,71 @@ namespace PEBakery.WPF
             switch (uiCtrl.Type)
             {
                 case UIControlType.CheckBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
+                        UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.ComboBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
+                        UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    uiCtrl.Text = info.Items[info.Index];
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        uiCtrl.Text = info.Items[info.Index];
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.Image:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
 
-                    m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.TextFile:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                    m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.Button:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
+                        UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.RadioButton:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
+                        UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.RadioGroup:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
+                        UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
+                        Debug.Assert(info != null, "Invalid UIInfo");
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
             }
         }
         #endregion
@@ -526,7 +525,7 @@ namespace PEBakery.WPF
 
             string srcFile = dialog.FileName;
             try
-            { 
+            {
                 string srcFileName = System.IO.Path.GetFileName(srcFile);
                 _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
                 MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -943,7 +942,7 @@ namespace PEBakery.WPF
                 default:
                     throw new InvalidOperationException(internalErrorMsg);
             }
-            
+
             m.InvokeUIControlEvent(false);
         }
 
@@ -1110,7 +1109,7 @@ namespace PEBakery.WPF
                         m.UICtrlButtonPictureSet = true;
                         break;
                 }
-                
+
                 m.InvokeUIControlEvent(false);
                 WriteScriptInterface(false);
             }
@@ -1523,15 +1522,15 @@ namespace PEBakery.WPF
                     MessageBox.Show("Internal Logic Error at ScriptEditWindow.AttachFileButton_Click", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
             }
-                
+
             try
             {
                 if (EncodedFile.ContainsFile(_sc, item.Name, m.AttachNewFileName))
                 {
                     MessageBoxResult result = MessageBox.Show(
                         $"Attached file [{m.AttachNewFileName}] will be overwritten.\r\nContinue?",
-                        "Confirm", 
-                        MessageBoxButton.YesNo, 
+                        "Confirm",
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Error);
                     if (result == MessageBoxResult.No)
                         return;
@@ -1825,7 +1824,7 @@ namespace PEBakery.WPF
                         break;
                     case null:
                         _scriptSelectedState = SelectedState.None;
-                        break;                
+                        break;
                 }
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
@@ -2007,7 +2006,7 @@ namespace PEBakery.WPF
             set
             {
                 _selectedUICtrl = value;
-                
+
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
                 OnPropertyUpdate(nameof(UICtrlKey));
@@ -2018,7 +2017,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(UICtrlWidth));
                 OnPropertyUpdate(nameof(UICtrlHeight));
                 OnPropertyUpdate(nameof(UICtrlToolTip));
-                
+
                 // UIControl Visibility
                 OnPropertyUpdate(nameof(IsUICtrlTextBox));
                 OnPropertyUpdate(nameof(IsUICtrlTextLabel));
@@ -2085,7 +2084,7 @@ namespace PEBakery.WPF
         }
         public int UICtrlX
         {
-            get => _selectedUICtrl != null ? (int) _selectedUICtrl.Rect.X : 0;
+            get => _selectedUICtrl != null ? (int)_selectedUICtrl.Rect.X : 0;
             set
             {
                 if (_selectedUICtrl == null)
@@ -2274,7 +2273,7 @@ namespace PEBakery.WPF
             {
                 if (_uiCtrlTextLabelInfo?.FontStyle == null)
                     return 0;
-                return (int) _uiCtrlTextLabelInfo.FontStyle + 1;
+                return (int)_uiCtrlTextLabelInfo.FontStyle + 1;
             }
             set
             {
@@ -2415,7 +2414,7 @@ namespace PEBakery.WPF
                 _uiCtrlImageInfo = value;
                 if (value == null)
                     return;
-                
+
                 OnPropertyUpdate(nameof(UICtrlImageUrl));
             }
         }

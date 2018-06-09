@@ -34,7 +34,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -47,12 +46,12 @@ using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
-using PEBakery.WPF.Controls;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
 {
     #region SettingWindow
+    // ReSharper disable once RedundantExtendsListEntry
     public partial class SettingWindow : Window
     {
         #region Field and Constructor
@@ -80,16 +79,16 @@ namespace PEBakery.WPF
 
         private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
         {
-            if (ScriptCache.dbLock == 0)
+            if (ScriptCache.DbLock == 0)
             {
-                Interlocked.Increment(ref ScriptCache.dbLock);
+                Interlocked.Increment(ref ScriptCache.DbLock);
                 try
                 {
                     Model.ClearCacheDB();
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref ScriptCache.dbLock);
+                    Interlocked.Decrement(ref ScriptCache.DbLock);
                 }
             }
         }
@@ -259,7 +258,7 @@ namespace PEBakery.WPF
             set
             {
                 project_SelectedIndex = value;
-                
+
                 if (0 <= value && value < Project_List.Count)
                 {
                     string fullPath = Projects[value].MainScript.RealPath;
@@ -290,7 +289,7 @@ namespace PEBakery.WPF
                                 Project_SourceDirectoryList.Add(dir);
                         }
                     }
-                    
+
                     if (0 < Project_SourceDirectoryList.Count)
                     {
                         project_SourceDirectoryIndex = 0;
@@ -302,7 +301,7 @@ namespace PEBakery.WPF
                         project_TargetDirectory = keys[1].Value;
                         OnPropertyUpdate(nameof(Project_TargetDirectory));
                     }
-                    
+
                     if (keys[2].Value != null)
                     {
                         project_ISOFile = keys[2].Value;
@@ -360,7 +359,7 @@ namespace PEBakery.WPF
                     }
                     Ini.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
-                
+
                 OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
             }
         }
@@ -479,7 +478,7 @@ namespace PEBakery.WPF
                 general_CustomUserAgent = value;
                 OnPropertyUpdate(nameof(General_CustomUserAgent));
             }
-        } 
+        }
         #endregion
 
         #region Property - Interface
@@ -904,7 +903,7 @@ namespace PEBakery.WPF
             const string compatStr = "Compat";
 
             // General_CustomUserAgent
-            IniKey[] keys = 
+            IniKey[] keys =
             {
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
@@ -937,7 +936,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             };
-            
+
             keys = Ini.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
@@ -1056,7 +1055,7 @@ namespace PEBakery.WPF
             const string logStr = "Log";
             const string compatStr = "Compat";
 
-            IniKey[] keys = 
+            IniKey[] keys =
             {
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr), General_EnableLongFilePath.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr), General_OptimizeCode.ToString()), // Boolean

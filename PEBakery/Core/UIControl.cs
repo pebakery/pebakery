@@ -178,7 +178,7 @@ namespace PEBakery.Core
             b.Append(StringEscaper.QuoteEscape(Text));
             b.Append(",");
             b.Append(Visibility ? "1," : "0,");
-            b.Append((int) Type);
+            b.Append((int)Type);
             b.Append(",");
             b.Append(Rect.Left);
             b.Append(",");
@@ -197,7 +197,7 @@ namespace PEBakery.Core
         {
             return Ini.WriteKey(Addr.Script.RealPath, Addr.Section.Name, Key, ForgeRawLine(false));
         }
-        
+
         public static bool Update(List<UIControl> uiCtrls)
         {
             if (uiCtrls.Count == 0)
@@ -613,7 +613,7 @@ namespace PEBakery.Core
     {
         public string Value;
 
-        public UIInfo_TextBox(string tooltip,  string str)
+        public UIInfo_TextBox(string tooltip, string str)
             : base(tooltip)
         {
             Value = str;
@@ -631,7 +631,7 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
-    } 
+    }
 
     [Serializable]
     public class UIInfo_TextLabel : UIInfo
@@ -661,7 +661,7 @@ namespace PEBakery.Core
                 b.Append(FontStyle);
             }
             b.Append(base.ForgeRawLine());
-            return b.ToString(); 
+            return b.ToString();
         }
 
         public override string ToString() => ForgeRawLine();
@@ -868,7 +868,7 @@ namespace PEBakery.Core
     {
         public string Url;
 
-        public UIInfo_WebLabel(string tooltip,  string url) 
+        public UIInfo_WebLabel(string tooltip, string url)
             : base(tooltip)
         {
             Url = url;
@@ -895,7 +895,7 @@ namespace PEBakery.Core
         public string SectionName; // Optional
         public bool HideProgress; // Optional
 
-        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false) 
+        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Selected = selected;
@@ -1019,7 +1019,7 @@ namespace PEBakery.Core
         public string SectionName; // Optional
         public bool HideProgress; // Optional
 
-        public UIInfo_RadioGroup(string tooltip,  List<string> items, int selected, string sectionName = null, bool hideProgress = false)
+        public UIInfo_RadioGroup(string tooltip, List<string> items, int selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;

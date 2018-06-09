@@ -25,18 +25,16 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.WPF;
 using System.Windows;
 using System.Diagnostics;
-using PEBakery.WPF.Controls;
-using System.IO;
+using System.Collections.Generic;
 using PEBakery.Helper;
+using PEBakery.WPF;
+using PEBakery.WPF.Controls;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.Core.Commands
@@ -103,7 +101,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
-            
+
             List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
@@ -125,7 +123,7 @@ namespace PEBakery.Core.Commands
                 UIControl uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                     return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSecName}]");
-                
+
                 uiCmd.Visibility = visibility;
                 uiCmds.Add(uiCmd);
             }
@@ -531,7 +529,7 @@ namespace PEBakery.Core.Commands
             }
 
             if (1 < successCount)
-                logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from section [{section}] of [{scriptFile}]")); 
+                logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from section [{section}] of [{scriptFile}]"));
             else
                 logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] value from section [{section}] of [{scriptFile}]"));
             return logs;
@@ -831,7 +829,7 @@ namespace PEBakery.Core.Commands
                                     UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
 
                                     if (sectionName == null)
-                                        return ReturnErrorLog( "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
+                                        return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
 
                                     subInfo.SectionName = sectionName;
                                 }
@@ -940,7 +938,7 @@ namespace PEBakery.Core.Commands
                                 }
                                 break;
                             default:
-                                return ReturnErrorLog( $"Writing [{element}] to [{uiCtrl.Type}] is not supported");
+                                return ReturnErrorLog($"Writing [{element}] to [{uiCtrl.Type}] is not supported");
                         }
                     }
                     break;
@@ -1110,7 +1108,7 @@ namespace PEBakery.Core.Commands
             else
             {
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
-                
+
                 if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
                     return LogInfo.LogErrorMessage(logs, $"[{timeoutStr}] is not a valid positive integer");
                 if (timeout <= 0)
@@ -1138,7 +1136,7 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
-            
+
             string message = StringEscaper.Preprocess(s, info.Message);
 
             Debug.Assert(message != null, $"{nameof(message)} != null");
@@ -1172,7 +1170,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     // Create dummy script instance
-                    FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                    FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
                     Script sc = cmd.Addr.Project.LoadScript(tempFile, tempFile, true, false);
 
                     // Encode binary file into script instance
@@ -1297,7 +1295,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    throw new InvalidCodeCommandException($"Wrong UserInputType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandInterface.UserInput");
             }
 
             return logs;

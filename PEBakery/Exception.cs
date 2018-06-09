@@ -34,30 +34,8 @@ using PEBakery.Core;
 using PEBakery.Core.Commands;
 using System.Runtime.Serialization;
 
-namespace PEBakery.Exceptions
+namespace PEBakery
 {
-    #region CodeCommandException, UIControlException
-    public class CodeCommandException : Exception
-    {
-        public CodeCommand Cmd { get; }
-        public CodeCommandException() { }
-        public CodeCommandException(string message) : base(message) { }
-        public CodeCommandException(CodeCommand cmd) { Cmd = cmd; }
-        public CodeCommandException(string message, CodeCommand cmd) : base(message) { Cmd = cmd; }
-        public CodeCommandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    public class UIControlException : Exception
-    {
-        public UIControl UICtrl { get; }
-        public UIControlException() { }
-        public UIControlException(string message) : base(message) { }
-        public UIControlException(UIControl uiCmd) { UICtrl = uiCmd; }
-        public UIControlException(string message, UIControl uiCmd) : base(message) { UICtrl = uiCmd; }
-        public UIControlException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
     #region CodeParser, UIParser, Commands
     [Serializable]
     public class InvalidCommandException : Exception
@@ -69,22 +47,14 @@ namespace PEBakery.Exceptions
         public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
-
-    public class InvalidUIControlException : UIControlException
+    [Serializable]
+    public class InvalidCodeCommandException : Exception
     {
-        public InvalidUIControlException() { }
-        public InvalidUIControlException(string message) : base(message) { }
-        public InvalidUIControlException(UIControl uiCmd) : base(uiCmd) { }
-        public InvalidUIControlException(string message, UIControl uiCmd) : base(message, uiCmd) { }
-        public InvalidUIControlException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    public class InvalidCodeCommandException : CodeCommandException
-    {
+        public CodeCommand Cmd { get; }
         public InvalidCodeCommandException() { }
         public InvalidCodeCommandException(string message) : base(message) { }
-        public InvalidCodeCommandException(CodeCommand cmd) : base(cmd) { }
-        public InvalidCodeCommandException(string message, CodeCommand cmd) : base(message, cmd) { }
+        public InvalidCodeCommandException(CodeCommand cmd) { Cmd = cmd; }
+        public InvalidCodeCommandException(string message, CodeCommand cmd) : base(message) { Cmd = cmd; }
         public InvalidCodeCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -118,17 +88,15 @@ namespace PEBakery.Exceptions
     }
     #endregion
 
-    #region Engine / EngineState
+    #region Engine and EngineState
     /// <summary>
     /// Such a critical error that build must be halt
     /// </summary>
     [Serializable]
-    public class CriticalErrorException : CodeCommandException
+    public class CriticalErrorException : Exception
     {
         public CriticalErrorException() { }
         public CriticalErrorException(string message) : base(message) { }
-        public CriticalErrorException(CodeCommand cmd) : base(cmd) { }
-        public CriticalErrorException(string message, CodeCommand cmd) : base(message, cmd) { }
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 

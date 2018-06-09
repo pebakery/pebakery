@@ -1504,11 +1504,11 @@ namespace PEBakery.IniLib
             List<string> lines = new List<string>();
 
             Encoding encoding = IniHelper.DetectTextEncoding(file);
-            using (StreamReader reader = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, true))
             {
                 string line;
                 bool appendState = false;
-                while ((line = reader.ReadLine()) != null)
+                while ((line = r.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();
 

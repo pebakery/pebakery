@@ -31,11 +31,9 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using PEBakery.Helper;
-using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace PEBakery.Core
 {
@@ -397,6 +395,7 @@ namespace PEBakery.Core
                     line = line.Trim();
                     bool sectionHeader = false;
 
+#if BLOCK_COMMENT
                     // Surpress recognition of section while in block comment (/* ~ */)
                     if (inBlockComment)
                     {
@@ -407,9 +406,11 @@ namespace PEBakery.Core
                     {
                         inBlockComment = true;
                     }
-                    else if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                    else
+#endif
+                    if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
-                        FinalizeSection(); 
+                        FinalizeSection();
 
                         sectionIdx = idx;
                         currentSection = line.Substring(1, line.Length - 2);

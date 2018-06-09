@@ -27,7 +27,6 @@
 
 using PEBakery.Core;
 using PEBakery.Helper;
-using PEBakery.Exceptions;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -503,7 +502,7 @@ namespace PEBakery.WPF
                     if (Uri.TryCreate(info.Url, UriKind.Absolute, out Uri _)) // Success
                         hasUrl = true;
                     else // Failure
-                        throw new InvalidUIControlException($"Invalid URL [{info.Url}]", uiCtrl);
+                        throw new InvalidCommandException($"Invalid URL [{info.Url}]");
                 }
 
                 string toolTip = info.ToolTip;
@@ -598,7 +597,7 @@ namespace PEBakery.WPF
                     }
                 }
             }
-            
+
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetCanContentScroll(textBox, true);
@@ -638,7 +637,7 @@ namespace PEBakery.WPF
                     }
                 };
             }
-                
+
             if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey(EncodedFile.GetSectionName(EncodedFile.InterfaceEncoded, info.Picture)))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
@@ -832,7 +831,7 @@ namespace PEBakery.WPF
                 bevel.IsHitTestVisible = true;
 
             SetToolTip(bevel, info.ToolTip);
-            
+
             SetEditModeProperties(r, bevel, uiCtrl);
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
@@ -918,7 +917,7 @@ namespace PEBakery.WPF
                     uiCtrl.Update();
                 };
             }
-                
+
             SetToolTip(box, info.ToolTip);
             SetEditModeProperties(r, box, uiCtrl);
 
@@ -1112,7 +1111,7 @@ namespace PEBakery.WPF
                 element.Opacity = 0.5;
         }
 
-        private static double CalcFontPointScale(double fontPoint = UIControl.DefaultFontPoint) 
+        private static double CalcFontPointScale(double fontPoint = UIControl.DefaultFontPoint)
         {
             return fontPoint * UIControl.PointToDeviceIndependentPixel;
         }
@@ -1155,7 +1154,7 @@ namespace PEBakery.WPF
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
-return;
+                        return;
 
                     logger = w.Logger;
                     mainModel = w.Model;

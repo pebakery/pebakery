@@ -446,7 +446,7 @@ namespace PEBakery.Tests.Core.Command
         private static string SampleText()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.Write("Hello\r\nArchive\r\nPEBakery\r\nUnitTest");

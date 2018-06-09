@@ -481,7 +481,7 @@ namespace PEBakery.Core
                         Value = kv.Value,
                     };
                     varLogs.Add(dbVar);
-                    
+
                     // Fire Event
                     if (s.LogMode != LogMode.FullDelay)
                         VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
@@ -489,12 +489,12 @@ namespace PEBakery.Core
             }
 
             if (s.LogMode == LogMode.FullDelay)
-                _delayed.VariablePool.AddRange(varLogs); 
+                _delayed.VariablePool.AddRange(varLogs);
             else
                 DB.InsertAll(varLogs);
 
             SystemWrite(new LogInfo(LogState.Info, $"Build [{name}] started"));
-            
+
             return s.BuildId;
         }
 
@@ -964,7 +964,7 @@ namespace PEBakery.Core
         {
             LogExportType logFormat = LogExportType.Html;
             if (str.Equals("HTML", StringComparison.OrdinalIgnoreCase))
-                logFormat = LogExportType.Html; 
+                logFormat = LogExportType.Html;
             else if (str.Equals("Text", StringComparison.OrdinalIgnoreCase))
                 logFormat = LogExportType.Text;
 
@@ -1236,7 +1236,7 @@ namespace PEBakery.Core
                         str = b.ToString();
                     }
                     break;
-                #endregion
+                    #endregion
             }
 
             return str;
@@ -1252,7 +1252,7 @@ namespace PEBakery.Core
     #region LogDatabase
     public class LogDatabase : SQLiteConnection
     {
-        public LogDatabase(string path) 
+        public LogDatabase(string path)
             : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
             CreateTable<DB_SystemLog>();

@@ -31,7 +31,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -121,7 +120,7 @@ namespace PEBakery.Helper
             return bitmap;
         }
 
-        public static (int, int ) GetImageSize(Stream stream)
+        public static (int, int) GetImageSize(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
             return (bitmap.PixelWidth, bitmap.PixelHeight);
@@ -166,7 +165,7 @@ namespace PEBakery.Helper
 
                 if (Math.Abs(imageRatio - drawRatio) < float.Epsilon) // Ratio is equal, do not touch it 
                     return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
-                else if (imageRatio < drawRatio) 
+                else if (imageRatio < drawRatio)
                     return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width / imageRatio, 0), height));
                 else // if (drawRatio < imageRatio) 
                     return ImageHelper.ToBitmapImage(svgDoc.Draw(width, (int)Math.Round(height / imageRatio, 0)));

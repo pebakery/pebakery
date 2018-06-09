@@ -29,7 +29,6 @@
 // #define ENABLE_LZ4
 
 using Joveler.ZLibWrapper;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
@@ -42,15 +41,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using PEBakery.LZ4Lib;
 using PEBakery.XZLib;
+#if ENABLE_LZ4
+using PEBakery.LZ4Lib;
+#endif
 
 namespace PEBakery.Core
 {
+    #region Attachment Format
     /*
     [Attachment Format]
     Streams are encoded in base64 format.
@@ -116,6 +116,7 @@ namespace PEBakery.Core
     - Zopfli support in place of zlib, for better compression rate while keeping compability with WB082
     - Design more robust script format. 
     */
+    #endregion
 
     #region EncodedFile
     public class EncodedFile
@@ -153,7 +154,7 @@ namespace PEBakery.Core
 
         public static string EncodeModeStr(EncodeMode? mode, bool containerName)
         {
-            return mode == null ? "Unknown" : EncodeModeStr((EncodeMode) mode, containerName);
+            return mode == null ? "Unknown" : EncodeModeStr((EncodeMode)mode, containerName);
         }
 
         public static string EncodeModeStr(EncodeMode mode, bool containerName)
@@ -289,7 +290,7 @@ namespace PEBakery.Core
 
             return AttachFile(sc, InterfaceEncoded, fileName, srcFilePath, type);
         }
-        
+
         public static bool ContainsInterface(Script sc, string fileName)
         {
             return ContainsFile(sc, InterfaceEncoded, fileName);
@@ -357,7 +358,7 @@ namespace PEBakery.Core
             if (folderName == null)
                 throw new ArgumentNullException(nameof(folderName));
 
-            if (!StringEscaper.IsFileNameValid(folderName, new char[] {'[', ']', '\t'}))
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
 
             if (!overwrite)
@@ -365,7 +366,7 @@ namespace PEBakery.Core
                 if (sc.Sections.ContainsKey(folderName))
                     throw new InvalidOperationException($"Section [{folderName}] already exists");
             }
-           
+
             // Write folder name into EncodedFolder (except AuthorEncoded, InterfaceEncoded)
             if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                 !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
@@ -475,7 +476,7 @@ namespace PEBakery.Core
                 }
             }
         }
-        
+
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
         {
             if (sc == null)
@@ -523,7 +524,7 @@ namespace PEBakery.Core
                 Source = imageSource
             };
         }
-        
+
         public static MemoryStream ExtractInterface(Script sc, string fileName)
         {
             string section = GetSectionName(InterfaceEncoded, fileName);
@@ -587,7 +588,7 @@ namespace PEBakery.Core
             {
                 DirName = AuthorEncoded,
             };
-            
+
             if (!sc.Sections.ContainsKey(AuthorEncoded))
                 throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
 
@@ -958,13 +959,13 @@ namespace PEBakery.Core
                 {
                     errorMsg = $"Logo not found in [{sc.RealPath}]";
                     return sc;
-                } 
+                }
                 string logoFile = fileDict["Logo"];
                 if (!fileDict.ContainsKey(logoFile))
                 {
                     errorMsg = $"Logo not found in [{sc.RealPath}]";
                     return sc;
-                }   
+                }
 
                 // Delete encoded file section
                 if (!Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, logoFile)))
@@ -1204,7 +1205,7 @@ namespace PEBakery.Core
                             writeFolderSection = false;
                     }
 
-                    if (writeFolderSection && 
+                    if (writeFolderSection &&
                         !folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                         !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                         Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
@@ -1229,7 +1230,7 @@ namespace PEBakery.Core
                         Ini.DeleteKey(sc.RealPath, AuthorEncoded, lastLogo);
                         Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, lastLogo));
                     }
-                }    
+                }
             }
             catch
             { // Error -> Rollback!
@@ -1241,7 +1242,7 @@ namespace PEBakery.Core
                 if (File.Exists(backupFile))
                     File.Delete(backupFile);
             }
-            
+
             // [Stage 8] Refresh Script
             return sc.Project.RefreshScript(sc);
         }
@@ -1286,7 +1287,7 @@ namespace PEBakery.Core
                     // [Stage 4] Decompress first footer
                     byte[] firstFooter = new byte[0x226];
                     using (MemoryStream compressedFooter = new MemoryStream(compressedFooterLen))
-                    { 
+                    {
                         decodeStream.Position = compressedFooterIdx;
                         decodeStream.CopyTo(compressedFooter, compressedFooterLen);
                         decodeStream.Position = 0;
@@ -1317,7 +1318,7 @@ namespace PEBakery.Core
                     switch ((EncodeMode)compMode)
                     {
                         case EncodeMode.ZLib: // Type 1, zlib
-                            if (compressedBodyLen2 == 0 || 
+                            if (compressedBodyLen2 == 0 ||
                                 compressedBodyLen2 != compressedBodyLen)
                                 throw new InvalidOperationException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
@@ -1330,7 +1331,7 @@ namespace PEBakery.Core
                                 throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
                         case EncodeMode.XZ: // Type 3, LZMA
-                            if (compressedBodyLen2 == 0 || 
+                            if (compressedBodyLen2 == 0 ||
                                 compressedBodyLen2 != compressedBodyLen)
                                 throw new InvalidOperationException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
@@ -1557,7 +1558,7 @@ namespace PEBakery.Core
             switch ((EncodeMode)compMode)
             {
                 case EncodeMode.ZLib: // Type 1, zlib
-                    if (compressedBodyLen2 == 0 || 
+                    if (compressedBodyLen2 == 0 ||
                         compressedBodyLen2 != compressedBodyLen)
                         throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     if (compLevel < 1 || 9 < compLevel)
@@ -1570,7 +1571,7 @@ namespace PEBakery.Core
                         throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
                 case EncodeMode.XZ: // Type 3, LZMA
-                    if (compressedBodyLen2 == 0 || 
+                    if (compressedBodyLen2 == 0 ||
                         compressedBodyLen2 != compressedBodyLen)
                         throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     if (9 < compLevel)
@@ -1594,7 +1595,7 @@ namespace PEBakery.Core
             switch ((EncodeMode)compMode)
             {
                 case EncodeMode.ZLib: // Type 1, zlib
-                {
+                    {
 #if DEBUG_MIDDLE_FILE
                     string debugDir = Path.Combine(App.BaseDir, "Debug");
                     Directory.CreateDirectory(debugDir);
@@ -1606,16 +1607,16 @@ namespace PEBakery.Core
                     }
 #endif
 
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
-                    {
-                        zs.CopyTo(rawBodyStream);
+                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
+                        {
+                            zs.CopyTo(rawBodyStream);
+                        }
                     }
-                }
                     break;
                 case EncodeMode.Raw: // Type 2, raw
-                {
-                    rawBodyStream.Write(decoded, 0, rawBodyLen);
+                    {
+                        rawBodyStream.Write(decoded, 0, rawBodyLen);
 #if DEBUG_MIDDLE_FILE
                     string debugDir = Path.Combine(App.BaseDir, "Debug");
                     Directory.CreateDirectory(debugDir);
@@ -1625,10 +1626,10 @@ namespace PEBakery.Core
                         debug.Write(decoded, 0, rawBodyLen);
                     }
 #endif
-                }
+                    }
                     break;
                 case EncodeMode.XZ: // Type 3, LZMA
-                {
+                    {
 #if DEBUG_MIDDLE_FILE
                     string debugDir = Path.Combine(App.BaseDir, "Debug");
                     Directory.CreateDirectory(debugDir);
@@ -1639,12 +1640,12 @@ namespace PEBakery.Core
                         ms.CopyTo(debug);
                     }
 #endif
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (XZStream xzs = new XZStream(ms, LzmaMode.Decompress))
-                    {
-                        xzs.CopyTo(rawBodyStream);
+                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (XZStream xzs = new XZStream(ms, LzmaMode.Decompress))
+                        {
+                            xzs.CopyTo(rawBodyStream);
+                        }
                     }
-                }
                     break;
 #if ENABLE_LZ4
                 case EncodeMode.LZ4: // Type 3, LZ4
@@ -1863,7 +1864,7 @@ namespace PEBakery.Core
                 int readByte = stream.Read(buffer, 0, buffer.Length);
                 calc.Append(buffer, 0, readByte);
             }
-            
+
             stream.Position = posBak;
             return calc.Checksum;
         }
@@ -1947,7 +1948,7 @@ namespace PEBakery.Core
                 // Remove Base64 Padding (==, =)
                 if (readByte < buffer.Length)
                     encodedStr = encodedStr.TrimEnd('=');
-                    
+
                 // Tokenize encoded string by 4090 chars
                 int encodeLine = encodedStr.Length / 4090;
                 for (int x = 0; x < encodeLine; x++)
@@ -2021,7 +2022,7 @@ namespace PEBakery.Core
             {
                 string block = base64Blocks[i];
 
-                if (4090 < block.Length || 
+                if (4090 < block.Length ||
                     i + 1 < base64Blocks.Count && block.Length != lineLen)
                     throw new InvalidOperationException("Length of encoded lines is inconsistent");
 
@@ -2065,8 +2066,8 @@ namespace PEBakery.Core
         public static byte[] DecodeInMem(List<string> encodedList)
         {
             // Remove "lines=n"
-            encodedList.RemoveAt(0);         
-           
+            encodedList.RemoveAt(0);
+
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))

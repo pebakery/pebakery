@@ -30,21 +30,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using Microsoft.Win32;
 using ManagedWimLib;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
 {
-    [SuppressMessage("ReSharper", "RedundantAssignment")]
     public static class CommandBranch
     {
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
@@ -119,7 +115,7 @@ namespace PEBakery.Core.Commands
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
-        }  
+        }
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
@@ -262,7 +258,7 @@ namespace PEBakery.Core.Commands
         public static void If(EngineState s, CodeCommand cmd)
         {
             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
-            
+
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
@@ -284,7 +280,7 @@ namespace PEBakery.Core.Commands
         public static void Else(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
-            
+
             if (s.ElseFlag)
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));

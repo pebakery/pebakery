@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -60,10 +59,6 @@ namespace PEBakery.Core
                 }
 
                 return uiCtrl;
-            }
-            catch (InvalidUIControlException e)
-            {
-                errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine})"));
             }
             catch (InvalidCommandException e)
             {
@@ -105,10 +100,6 @@ namespace PEBakery.Core
                     else
                         uiCtrls.Add(uiCtrl);
                 }
-                catch (InvalidUIControlException e)
-                {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine}) (Line {lineIdx})"));
-                }
                 catch (InvalidCommandException e)
                 {
                     errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine}) (Line {lineIdx})"));
@@ -137,6 +128,7 @@ namespace PEBakery.Core
             if (rawLine.StartsWith("//", StringComparison.Ordinal) || rawLine[0] == '#' || rawLine[0] == ';')
                 return null;
 
+#if BLOCK_COMMENT
             // Block Comment Identifier : '/*' ~ '*/'
             if (rawLine.StartsWith("/*", StringComparison.Ordinal))
             {
@@ -150,6 +142,7 @@ namespace PEBakery.Core
                 }
                 return null;
             }
+#endif
 
             // Find key of interface control
             string key;

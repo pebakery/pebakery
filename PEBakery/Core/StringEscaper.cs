@@ -25,17 +25,14 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -44,9 +41,9 @@ namespace PEBakery.Core
         #region Static Variables and Constructor
         private static readonly List<string> ForbiddenPaths = new List<string>
         {
-            Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), 
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
         };
         #endregion
 
@@ -96,7 +93,7 @@ namespace PEBakery.Core
 
             // Ex) "C:\Program Files"
             Match m = Regex.Match(path, "^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            if (m.Success) 
+            if (m.Success)
             {
                 for (int i = 0; i < path.Length; i++)
                 {
@@ -121,11 +118,12 @@ namespace PEBakery.Core
             {
                 foreach (char ch in path)
                 {
+                    // ReSharper disable once PossibleMultipleEnumeration
                     if (more.Contains(ch))
                         return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -146,6 +144,7 @@ namespace PEBakery.Core
             {
                 foreach (char ch in path)
                 {
+                    // ReSharper disable once PossibleMultipleEnumeration
                     if (more.Contains(ch))
                         return false;
                 }
@@ -235,7 +234,7 @@ namespace PEBakery.Core
                             { // Last 2 characters of string
                                 b.Append("#$");
                                 idx = hIdx + 2;
-                            }                               
+                            }
                         }
                         else
                         {
@@ -254,7 +253,7 @@ namespace PEBakery.Core
 
             if (escapePercent)
                 str = UnescapePercent(str);
-            
+
             return str;
         }
 
@@ -342,7 +341,7 @@ namespace PEBakery.Core
 
             if (escapePercent)
                 str = EscapePercent(str);
-            
+
             return str;
         }
 
@@ -448,7 +447,7 @@ namespace PEBakery.Core
                         param = s.CurSectionParams[pIdx];
                     }
                     else
-                    { 
+                    {
                         if (s.CurDepth == 1) // Dirty Hack for WB082 compatibility
                             param = $"##{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
                         else
@@ -483,7 +482,7 @@ namespace PEBakery.Core
                 case LoopState.OnDriveLetter:
                     str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopLetter.ToString(), StringComparison.Ordinal);
                     break;
-            }              
+            }
 
             return str;
         }
@@ -564,7 +563,7 @@ namespace PEBakery.Core
         #region Registry
         public static string PackRegBinary(byte[] bin, bool escape = false)
         { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
-            string seperator =  ",";
+            string seperator = ",";
             if (escape)
                 seperator = "#$c";
 

@@ -252,7 +252,7 @@ namespace PEBakery.Tests.Core.Command
             File.Create(testFile).Close();
             try
             {
-                FileHelper.WriteTextBOM(testFile, Encoding.UTF8);
+                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);

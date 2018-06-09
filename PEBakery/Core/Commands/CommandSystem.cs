@@ -25,18 +25,17 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using PEBakery.WPF;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Principal;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using System.Security.Principal;
+using System.Collections.Generic;
+using PEBakery.WPF;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -91,7 +90,7 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             return LogInfo.LogErrorMessage(logs, $"[{linesStr}] is not a positive integer");
 
-                        if (s.ErrorOff == null) 
+                        if (s.ErrorOff == null)
                         {
                             // Enable s.ErrorOff
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
@@ -161,7 +160,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.GetFreeSpace:
                     {
                         SystemInfo_GetFreeSpace subInfo = info.SubInfo.Cast<SystemInfo_GetFreeSpace>();
-                        
+
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
                         FileInfo f = new FileInfo(path);
@@ -258,8 +257,8 @@ namespace PEBakery.Core.Commands
 
                         // Check wildcard
                         string wildcard = Path.GetFileName(srcFilePath);
-                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
-                        
+                        bool containsWildcard = wildcard.IndexOfAny(new[] { '*', '?' }) != -1;
+
                         string[] files;
                         if (containsWildcard)
                         { // With wildcard
@@ -432,7 +431,7 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                             s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
                         }
-                    }   
+                    }
                     break;
                 case SystemType.SetLocal:
                     { // SetLocal
@@ -472,7 +471,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.RegRedirect: // Do nothing
                     logs.Add(new LogInfo(LogState.Ignore, "[System,RegRedirect] is not necessary in PEBakery"));
                     break;
-                case SystemType.RebuildVars: 
+                case SystemType.RebuildVars:
                     { // Reset Variables to clean state
                         s.Variables.ResetVariables(VarsType.Fixed);
                         s.Variables.ResetVariables(VarsType.Global);
@@ -495,7 +494,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    return LogInfo.LogErrorMessage(logs, $"Wrong SystemType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandSystem.System");
             }
 
             return logs;
@@ -616,7 +615,7 @@ namespace PEBakery.Core.Commands
                             }
                         };
                     }
-                    
+
                     proc.Start();
 
                     if (redirectStandardStream)

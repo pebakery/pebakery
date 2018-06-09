@@ -25,8 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
-using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,7 +33,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -139,26 +137,26 @@ namespace PEBakery.Core.Commands
                         switch (type)
                         {
                             case StrFormatType.Ceil:
-                            {
-                                long remainder = srcInt % roundTo;
-                                destInt = srcInt - remainder + roundTo;
-                                break;
-                            }
-                            case StrFormatType.Floor:
-                            {
-                                long remainder = srcInt % roundTo;
-                                destInt = srcInt - remainder;
-                                break;
-                            }
-                            case StrFormatType.Round:
-                            {
-                                long remainder = srcInt % roundTo;
-                                if ((roundTo - 1) / 2 < remainder)
+                                {
+                                    long remainder = srcInt % roundTo;
                                     destInt = srcInt - remainder + roundTo;
-                                else
+                                    break;
+                                }
+                            case StrFormatType.Floor:
+                                {
+                                    long remainder = srcInt % roundTo;
                                     destInt = srcInt - remainder;
-                                break;
-                            }
+                                    break;
+                                }
+                            case StrFormatType.Round:
+                                {
+                                    long remainder = srcInt % roundTo;
+                                    if ((roundTo - 1) / 2 < remainder)
+                                        destInt = srcInt - remainder + roundTo;
+                                    else
+                                        destInt = srcInt - remainder;
+                                    break;
+                                }
                             default:
                                 throw new InternalException($"Internal Logic Error at StrFormat,{type}");
                         }
@@ -228,7 +226,7 @@ namespace PEBakery.Core.Commands
                                         else
                                             destStr = srcStr.Substring(0, sIdx + 1);
                                     }
-                                
+
                                     logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
                                     break;
                                 case StrFormatType.Ext:
@@ -268,7 +266,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Dec:
                 case StrFormatType.Mult:
                 case StrFormatType.Div:
-                    { 
+                    {
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic), "Invalid StrFormatInfo");
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
                         Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
@@ -326,7 +324,7 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer"));
                             return logs;
                         }
-                        
+
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
@@ -663,7 +661,7 @@ namespace PEBakery.Core.Commands
                     break;
                 // Error
                 default:
-                    throw new InvalidCodeCommandException($"Wrong StrFormatType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandString.StrFormat");
             }
 
             return logs;

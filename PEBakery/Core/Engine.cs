@@ -31,12 +31,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows;
-using PEBakery.Exceptions;
-using PEBakery.Core.Commands;
-using PEBakery.WPF;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using PEBakery.WPF;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
@@ -188,7 +187,7 @@ namespace PEBakery.Core
                     // End of Script
                     FinishRunScript(s);
 
-                    if(s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                    if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                         s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
 
                     // OnScriptExit event callback
@@ -393,7 +392,7 @@ namespace PEBakery.Core
                     break;
             }
 
-            if (Engine.DisableSetLocal(s, addr.Section)) 
+            if (Engine.DisableSetLocal(s, addr.Section))
             {
                 int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
@@ -432,7 +431,7 @@ namespace PEBakery.Core
                     case CodeType.Error:
                         {
                             CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
-                            
+
                             logs.Add(new LogInfo(LogState.Error, info.ErrorMessage));
                         }
                         break;
@@ -843,7 +842,7 @@ namespace PEBakery.Core
         {
             if (cbCmd == null)
                 return;
-            
+
             s.Logger.BuildWrite(s, $"Processing callback of event [{eventName}]");
 
             if (changeCurrentScript)
@@ -855,7 +854,7 @@ namespace PEBakery.Core
                 Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec), "Invalid CodeInfo");
                 CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
                 Debug.Assert(info != null, "Invalid CodeInfo");
-                
+
                 if (1 <= info.Parameters.Count)
                     info.Parameters[0] = eventParam;
                 else
@@ -1075,23 +1074,12 @@ namespace PEBakery.Core
         public char LoopLetter = ' ';
         public bool InMacro = false;
         public bool PassCurrentScriptFlag = false; // Exit Command
-        public bool ErrorHaltFlag = false; 
+        public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false; // Halt Command
         public bool UserHaltFlag = false;
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
-
-        // ErrorOff
-        public ErrorOffState? ErrorOffWaitingRegister = null;
-        public bool ErrorOffDepthMinusOne = false;
-        public ErrorOffState? ErrorOff = null;
-        // ShellExecute
-        public Process RunningSubProcess = null;
-        // System,SetLocal
-        public Stack<SetLocalState> SetLocalStack = new Stack<SetLocalState>(16);
-        // WebGet
-        public WebClient RunningWebClient = null;
 
         // Options
         public bool LogLineComment = true; // Used in logging
@@ -1102,9 +1090,20 @@ namespace PEBakery.Core
         public bool DisableLogger = false; // For performance (when engine runned by interface - legacy)
         public string CustomUserAgent = null;
 
-        // System Commands
+        // Command State
+        // |- Callback
         public CodeCommand OnBuildExit = null;
         public CodeCommand OnScriptExit = null;
+        // |- System,ErrorOff
+        public ErrorOffState? ErrorOffWaitingRegister = null;
+        public bool ErrorOffDepthMinusOne = false;
+        public ErrorOffState? ErrorOff = null;
+        // |- System,SetLocal
+        public Stack<SetLocalState> SetLocalStack = new Stack<SetLocalState>(16);
+        // |- ShellExecute
+        public Process RunningSubProcess = null;
+        // |- WebGet
+        public WebClient RunningWebClient = null;
 
         // Readonly Fields
         public readonly string RunOneEntrySection;

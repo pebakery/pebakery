@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
@@ -33,7 +32,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
@@ -64,7 +62,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
 
                 string escapedValue = StringEscaper.Escape(value, false, true);
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false); 
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false);
                 logs.AddRange(varLogs);
             }
             else
@@ -96,7 +94,7 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniRead info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
-                string key = StringEscaper.Preprocess(s, info.Key); 
+                string key = StringEscaper.Preprocess(s, info.Key);
 
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -137,7 +135,7 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
-        
+
         public static List<LogInfo> IniWrite(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -145,8 +143,8 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); 
-            string key = StringEscaper.Preprocess(s, info.Key); 
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
+            string key = StringEscaper.Preprocess(s, info.Key);
             string value = StringEscaper.Preprocess(s, info.Value);
 
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
@@ -194,7 +192,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniWrite info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string value = StringEscaper.Preprocess(s, info.Value);
 
@@ -232,7 +230,7 @@ namespace PEBakery.Core.Commands
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] values to [{fileName}]", cmd));
             }
-            
+
             return logs;
         }
 
@@ -286,7 +284,7 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniDelete info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
-                string key = StringEscaper.Preprocess(s, info.Key); 
+                string key = StringEscaper.Preprocess(s, info.Key);
 
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -473,7 +471,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniAddSection info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
@@ -690,7 +688,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Could not merge [{srcFile}] into [{destFile}]", cmd));
-            
+
             return logs;
         }
     }

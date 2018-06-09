@@ -46,12 +46,11 @@ namespace PEBakery.Core
     #region ScriptCache
     public class ScriptCache : SQLiteConnection
     {
-        public static int dbLock = 0;
-        private ReaderWriterLockSlim listLock;
+        public static int DbLock = 0;
+        private ReaderWriterLockSlim _listLock;
 
         public ScriptCache(string path) : base(path)
         {
-            dbLock = 0;
             CreateTable<DB_CacheInfo>();
             CreateTable<DB_ScriptCache>();
         }
@@ -60,9 +59,9 @@ namespace PEBakery.Core
         {
             while (true)
             {
-                if (dbLock == 0)
+                if (DbLock == 0)
                 {
-                    base.Close();
+                    Close();
                     return;
                 }
                 await Task.Delay(200);
@@ -74,11 +73,11 @@ namespace PEBakery.Core
         {
             try
             {
-                DB_CacheInfo[] infos = new DB_CacheInfo[]
+                DB_CacheInfo[] infos =
                 {
-                    new DB_CacheInfo() { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
-                    new DB_CacheInfo() { Key = "BuildDate", Value = Properties.Resources.BuildDate },
-                    new DB_CacheInfo() { Key = "BaseDir", Value = baseDir },
+                    new DB_CacheInfo { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
+                    new DB_CacheInfo { Key = "BuildDate", Value = Properties.Resources.BuildDate },
+                    new DB_CacheInfo { Key = "BaseDir", Value = baseDir },
                 };
                 InsertOrReplaceAll(infos);
 
@@ -91,7 +90,7 @@ namespace PEBakery.Core
                         .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
 
-                    listLock = new ReaderWriterLockSlim();
+                    _listLock = new ReaderWriterLockSlim();
 
                     DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
                     List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
@@ -124,17 +123,14 @@ namespace PEBakery.Core
             FileInfo f = new FileInfo(sc.DirectRealPath);
             string sPath = sc.DirectRealPath.Remove(0, sc.Project.BaseDir.Length + 1);
 
-            bool updated = false;
-            // int memIdx = 0;
-            DB_ScriptCache scCache = null;
-
             // Retrieve Cache
-            scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+            bool updated = false;
+            DB_ScriptCache scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
 
             // Update Cache into updateDB
             if (scCache == null)
             { // Cache not exists
-                scCache = new DB_ScriptCache()
+                scCache = new DB_ScriptCache
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
@@ -149,7 +145,7 @@ namespace PEBakery.Core
                     scCache.Serialized = ms.ToArray();
                 }
 
-                listLock.EnterWriteLock();
+                _listLock.EnterWriteLock();
                 try
                 {
                     updateDB.Add(scCache);
@@ -157,11 +153,11 @@ namespace PEBakery.Core
                 }
                 finally
                 {
-                    listLock.ExitWriteLock();
+                    _listLock.ExitWriteLock();
                 }
             }
-            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                (DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) == false || scCache.FileSize != f.Length))
+            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) &&
+                (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
@@ -172,7 +168,7 @@ namespace PEBakery.Core
                     scCache.FileSize = f.Length;
                 }
 
-                listLock.EnterWriteLock();
+                _listLock.EnterWriteLock();
                 try
                 {
                     updateDB.Add(scCache);
@@ -180,7 +176,7 @@ namespace PEBakery.Core
                 }
                 finally
                 {
-                    listLock.ExitWriteLock();
+                    _listLock.ExitWriteLock();
                 }
             }
 
@@ -193,26 +189,26 @@ namespace PEBakery.Core
             return updated;
         }
         #endregion
-        
+
         #region IsGlobalCacheValid
         public bool IsGlobalCacheValid(string baseDir)
         {
             Dictionary<string, string> infoDict = Table<DB_CacheInfo>().ToDictionary(x => x.Key, x => x.Value);
 
             // Does key exist?
-            if (infoDict.ContainsKey("EngineVersion") == false)
+            if (!infoDict.ContainsKey("EngineVersion"))
                 return false;
-            if (infoDict.ContainsKey("BuildDate") == false)
+            if (!infoDict.ContainsKey("BuildDate"))
                 return false;
-            if (infoDict.ContainsKey("BaseDir") == false)
+            if (!infoDict.ContainsKey("BaseDir"))
                 return false;
 
             // Does value match?
-            if (infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal) == false)
+            if (!infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
                 return false;
-            if (infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal) == false)
+            if (!infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal))
                 return false;
-            if (infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal) == false)
+            if (!infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal))
                 return false;
 
             return true;
@@ -242,7 +238,7 @@ namespace PEBakery.Core
         [PrimaryKey]
         public string Key { get; set; }
         public string Value { get; set; }
-        
+
         public override string ToString()
         {
             return $"Key [{Key}] = {Value}";

@@ -320,7 +320,7 @@ namespace PEBakery.Helper
                     DefaultOpenCommands[protocol] = browserPath;
                     return browserPath;
                 }
-                    
+
             }
             finally
             {

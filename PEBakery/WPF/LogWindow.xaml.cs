@@ -30,23 +30,20 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace PEBakery.WPF
 {
-    [SuppressMessage("ReSharper", "RedundantExtendsListEntry")]
+    // ReSharper disable once RedundantExtendsListEntry
     public partial class LogWindow : Window
     {
         public static int Count = 0;
-
         private readonly LogViewModel _m = new LogViewModel();
 
         public LogWindow(int selectedTabIndex = 0)
@@ -96,7 +93,7 @@ namespace PEBakery.WPF
                 _m.SelectScriptIndex < _m.SelectScriptEntries.Count &&
                 _m.SelectScriptEntries[_m.SelectScriptIndex].Item2 == e.Log.ScriptId)
             {
-                Application.Current.Dispatcher.Invoke(() => 
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     _m.BuildLogListModel.Add(e.Log);
                     _m.OnPropertyUpdate(nameof(BuildLogListModel));
@@ -106,7 +103,7 @@ namespace PEBakery.WPF
                         BuildLogSimpleListView.UpdateLayout();
                         BuildLogSimpleListView.ScrollIntoView(BuildLogSimpleListView.Items[BuildLogSimpleListView.Items.Count - 1]);
                     }
-                    
+
                     if (0 < BuildLogDetailListView.Items.Count)
                     {
                         BuildLogDetailListView.UpdateLayout();

@@ -32,8 +32,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.Core;
 
 namespace PEBakery.Helper
 {
@@ -62,25 +60,27 @@ namespace PEBakery.Helper
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
-            else if (bom[0] == 0xFF && bom[1] == 0xFE)
+            if (bom[0] == 0xFF && bom[1] == 0xFE)
                 return Encoding.Unicode;
-            else if (bom[0] == 0xFE && bom[1] == 0xFF)
+            if (bom[0] == 0xFE && bom[1] == 0xFF)
                 return Encoding.BigEndianUnicode;
             return Encoding.Default;
         }
 
-        public static void WriteTextBOM(string path, Encoding encoding)
+        public static void WriteTextBom(string path, Encoding encoding)
         {
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                WriteTextBOM(fs, encoding);
+                WriteTextBom(fs, encoding);
             }
         }
 
-        public static void WriteTextBOM(Stream stream, Encoding encoding)
+        public static void WriteTextBom(Stream stream, Encoding encoding)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
 
             long posBackup = stream.Position;
             stream.Position = 0;
@@ -108,15 +108,15 @@ namespace PEBakery.Helper
             stream.Position = posBackup;
         }
 
-        public static long TextBOMLength(string filePath)
+        public static long TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return TextBOMLength(fs);
+                return TextBomLength(fs);
             }
         }
 
-        public static long TextBOMLength(Stream stream)
+        public static long TextBomLength(Stream stream)
         {
             byte[] bom = new byte[3];
 
@@ -127,12 +127,11 @@ namespace PEBakery.Helper
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return 3;
-            else if (bom[0] == 0xFF && bom[1] == 0xFE)
+            if (bom[0] == 0xFF && bom[1] == 0xFE)
                 return 2;
-            else if (bom[0] == 0xFE && bom[1] == 0xFF)
-                return 2;
-            else
-                return 0;
+            if (bom[0] == 0xFE && bom[1] == 0xFF)
+                return 1;
+            return 0;
         }
 
         public static void ConvertTextFileToEncoding(string srcFile, string destFile, Encoding destEnc)
@@ -156,7 +155,7 @@ namespace PEBakery.Helper
 
         public static string GetProgramAbsolutePath()
         {
-            return FileHelper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory);
+            return RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory);
         }
 
         /// <summary>

@@ -209,7 +209,7 @@ namespace PEBakery.WPF
             if (quiet == false)
                 Model.WorkInProgress = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
-            
+
             _loadWorker = new BackgroundWorker();
             _loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
@@ -297,7 +297,7 @@ namespace PEBakery.WPF
                         msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
                 }
 
-                Model.ScriptDescriptionText = $"PEBakery loading...\r\n{msg}";               
+                Model.ScriptDescriptionText = $"PEBakery loading...\r\n{msg}";
             };
             _loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -361,9 +361,9 @@ namespace PEBakery.WPF
 
         private void StartCacheWorker()
         {
-            if (ScriptCache.dbLock == 0)
+            if (ScriptCache.DbLock == 0)
             {
-                Interlocked.Increment(ref ScriptCache.dbLock);
+                Interlocked.Increment(ref ScriptCache.DbLock);
                 try
                 {
                     Stopwatch watch = new Stopwatch();
@@ -404,11 +404,11 @@ namespace PEBakery.WPF
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref ScriptCache.dbLock);
+                    Interlocked.Decrement(ref ScriptCache.DbLock);
                 }
             }
         }
-        
+
         public AutoResetEvent StartRefreshScriptWorker()
         {
             AutoResetEvent resetEvent = new AutoResetEvent(false);
@@ -441,7 +441,7 @@ namespace PEBakery.WPF
                     CurMainTree.ParentCheckedPropagation();
                     UpdateTreeViewIcon(CurMainTree);
 
-                    DrawScript(CurMainTree.Script);                   
+                    DrawScript(CurMainTree.Script);
                 }
 
                 Model.WorkInProgress = false;
@@ -541,7 +541,7 @@ namespace PEBakery.WPF
                         b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
 
                         MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
-                    } 
+                    }
                 }
                 else
                 {
@@ -603,7 +603,7 @@ namespace PEBakery.WPF
                 {
                     Model.ScriptVersionText = "v" + verStr;
                 }
-                
+
                 if (ScriptAuthorLenLimit < sc.Author.Length)
                     Model.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
                 else
@@ -618,7 +618,7 @@ namespace PEBakery.WPF
                 UIRenderer render = new UIRenderer(MainCanvas, this, sc, scaleFactor, true);
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
-                
+
                 if (Setting.Script_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
             }
@@ -991,7 +991,7 @@ namespace PEBakery.WPF
                             string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
                             dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                         }
-                        
+
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -1346,7 +1346,7 @@ namespace PEBakery.WPF
         }
 
         public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open External Editor" : "Open Folder";
-        public PackIconMaterialKind OpenExternalButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
+        public PackIconMaterialKind OpenExternalButtonIconKind => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
 
         private bool? _scriptCheckResult = null;
         public bool? ScriptCheckResult
@@ -2009,7 +2009,7 @@ namespace PEBakery.WPF
 
         public TreeViewModel FindScriptByFullPath(string fullPath)
         {
-            return RecursiveFindScriptByFullPath(Root, fullPath); 
+            return RecursiveFindScriptByFullPath(Root, fullPath);
         }
 
         private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)

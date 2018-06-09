@@ -28,13 +28,15 @@ using System.Linq;
 using System.Windows;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+// ReSharper disable EnumUnderlyingTypeIsInt
 
 namespace PEBakery.Helper
 {
     #region FontHelper
     public static class FontHelper
     {
-        // if we specify CharSet.Auto instead of CharSet.Ansi, then the string will be unreadable
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public class LOGFONT
         {
@@ -117,10 +119,10 @@ namespace PEBakery.Helper
             CLIP_CHARACTER_PRECIS = 1,
             CLIP_STROKE_PRECIS = 2,
             CLIP_MASK = 0xf,
-            CLIP_LH_ANGLES = (1 << 4),
-            CLIP_TT_ALWAYS = (2 << 4),
-            CLIP_DFA_DISABLE = (4 << 4),
-            CLIP_EMBEDDED = (8 << 4),
+            CLIP_LH_ANGLES = 1 << 4,
+            CLIP_TT_ALWAYS = 2 << 4,
+            CLIP_DFA_DISABLE = 4 << 4,
+            CLIP_EMBEDDED = 8 << 4,
         }
 
         public enum LogFontQuality : byte
@@ -140,12 +142,12 @@ namespace PEBakery.Helper
             DEFAULT_PITCH = 0,
             FIXED_PITCH = 1,
             VARIABLE_PITCH = 2,
-            FF_DONTCARE = (0 << 4),
-            FF_ROMAN = (1 << 4),
-            FF_SWISS = (2 << 4),
-            FF_MODERN = (3 << 4),
-            FF_SCRIPT = (4 << 4),
-            FF_DECORATIVE = (5 << 4),
+            FF_DONTCARE = 0 << 4,
+            FF_ROMAN = 1 << 4,
+            FF_SWISS = 2 << 4,
+            FF_MODERN = 3 << 4,
+            FF_SCRIPT = 4 << 4,
+            FF_DECORATIVE = 5 << 4,
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -166,7 +168,7 @@ namespace PEBakery.Helper
             [MarshalAs(UnmanagedType.LPTStr)]
             public string lpszStyle;
             public short nFontType;
-            private short _alignment;
+            private readonly short _alignment;
             public int nSizeMin;
             public int nSizeMax;
         }
@@ -176,7 +178,7 @@ namespace PEBakery.Helper
         {
             CF_SCREENFONTS = 0x00000001,
             CF_PRINTERFONTS = 0x00000002,
-            CF_BOTH = (CF_SCREENFONTS | CF_PRINTERFONTS),
+            CF_BOTH = CF_SCREENFONTS | CF_PRINTERFONTS,
             CF_SHOWHELP = 0x00000004,
             CF_ENABLEHOOK = 0x00000008,
             CF_ENABLETEMPLATE = 0x00000010,
@@ -306,7 +308,7 @@ namespace PEBakery.Helper
 
         public static WPFFont ChooseFontDialog(WPFFont font, Window window, bool useStyle = false, bool monospace = false)
         {
-            LOGFONT logFont = new LOGFONT()
+            LOGFONT logFont = new LOGFONT
             {
                 lfCharSet = LogFontCharSet.DEFAULT_CHARSET,
                 lfPitchAndFamily = LogFontPitchAndFamily.DEFAULT_PITCH | LogFontPitchAndFamily.FF_DONTCARE,
@@ -317,27 +319,27 @@ namespace PEBakery.Helper
             IntPtr pLogFont = Marshal.AllocHGlobal(Marshal.SizeOf(logFont));
             Marshal.StructureToPtr(logFont, pLogFont, false);
 
-            CHOOSEFONT chooseFont = new CHOOSEFONT()
+            CHOOSEFONT chosenFont = new CHOOSEFONT
             {
                 hwndOwner = new WindowInteropHelper(window).Handle,
                 lpLogFont = pLogFont,
-                Flags = (ChooseFontFlags.CF_SCREENFONTS
+                Flags = ChooseFontFlags.CF_SCREENFONTS
                  | ChooseFontFlags.CF_FORCEFONTEXIST
                  | ChooseFontFlags.CF_INITTOLOGFONTSTRUCT // Use LOGFONT
-                 | ChooseFontFlags.CF_SCALABLEONLY),
+                 | ChooseFontFlags.CF_SCALABLEONLY,
             };
             if (monospace)
-                chooseFont.Flags |= ChooseFontFlags.CF_FIXEDPITCHONLY;
+                chosenFont.Flags |= ChooseFontFlags.CF_FIXEDPITCHONLY;
             if (useStyle)
-                chooseFont.Flags |= ChooseFontFlags.CF_EFFECTS;
-            chooseFont.lStructSize = Marshal.SizeOf(chooseFont);
+                chosenFont.Flags |= ChooseFontFlags.CF_EFFECTS;
+            chosenFont.lStructSize = Marshal.SizeOf(chosenFont);
 
-            bool result = ChooseFont(ref chooseFont);
+            ChooseFont(ref chosenFont);
             Marshal.PtrToStructure(pLogFont, logFont);
 
             System.Windows.Media.FontFamily fontFamily = new System.Windows.Media.FontFamily(logFont.lfFaceName);
             System.Windows.FontWeight fontWeight = FontWeightConvert_LogFontToWPF(logFont.lfWeight);
-            int fontSize = -(int) Math.Round(logFont.lfHeight * 72 / 96f); // Point - 72DPI, Device Independent Pixel - 96DPI
+            int fontSize = -(int)Math.Round(logFont.lfHeight * 72 / 96f); // Point - 72DPI, Device Independent Pixel - 96DPI
 
             Marshal.FreeHGlobal(pLogFont);
 

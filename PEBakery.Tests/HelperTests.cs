@@ -56,15 +56,15 @@ namespace PEBakery.Tests
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Default);
 
                 // UTF-16 LE
-                FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+                FileHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Unicode);
 
                 // UTF-16 BE
-                FileHelper.WriteTextBOM(tempFile, Encoding.BigEndianUnicode);
+                FileHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.BigEndianUnicode);
 
                 // UTF-8
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.UTF8);
             }
             finally

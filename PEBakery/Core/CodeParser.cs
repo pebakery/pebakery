@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using Microsoft.Win32;
 
@@ -95,7 +94,7 @@ namespace PEBakery.Core
             }
             catch (InvalidCodeCommandException e)
             {
-                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{addr.Section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
             if (OptimizeCode)
@@ -194,6 +193,7 @@ namespace PEBakery.Core
             if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
                 return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo_Comment(true), lineIdx);
 
+#if BLOCK_COMMENT
             // Block Comment Identifier : '/*' ~ '*/'
             if (rawCode.StartsWith("/*", StringComparison.Ordinal))
             {
@@ -239,8 +239,9 @@ namespace PEBakery.Core
                         return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Block comment end identifier [*/] must be placed at the end of the line"), lineIdx);
                     case 2:
                         return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Unable to find block comment end identifier [*/]"), lineIdx);
-                } 
+                }
             }
+#endif
 
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
@@ -304,7 +305,7 @@ namespace PEBakery.Core
             return new CodeCommand(rawCode, addr, type, info, lineIdx);
 
             // [Process] <- LineIdx
-            // Echo,A <- if idx is 0, should point here -> so add 1
+            // Echo,A <- if idx is 0, should point here. Add 1 to solve this.
             // Echo,B
         }
 

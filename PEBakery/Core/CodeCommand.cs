@@ -32,7 +32,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 
 // ReSharper disable InconsistentNaming

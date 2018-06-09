@@ -32,12 +32,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -49,9 +47,7 @@ using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
-    /// <summary>
-    /// UtilityWindow.xaml에 대한 상호 작용 논리
-    /// </summary>
+    // ReSharper disable RedundantExtendsListEntry
     public partial class UtilityWindow : Window
     {
         #region Field and Constructor
@@ -259,9 +255,9 @@ namespace PEBakery.WPF
 
         #region InputBinding Event
         public static RoutedUICommand CodeBoxSaveCommand { get; } = new RoutedUICommand("Save", "Save", typeof(UtilityWindow));
-        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow), 
+        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow),
             new InputGestureCollection { new KeyGesture(Key.F5, ModifierKeys.Control) });
-            
+
         private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = m.TabIndex == 0;
@@ -346,7 +342,7 @@ Description=Test Commands
 
 ";
                     }
-                }               
+                }
 
                 OnPropertyUpdate("CodeBox_SelectedProjectIndex");
             }

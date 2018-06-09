@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
@@ -823,7 +822,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+                    throw new InvalidCommandException($"Invalid variable name [{varKey}]");
                 }
             }
             else
@@ -890,7 +889,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+                    throw new InvalidCommandException($"Invalid variable name [{varKey}]");
                 }
             }
 
