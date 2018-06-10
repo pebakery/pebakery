@@ -400,7 +400,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (containsWildcard)
                         {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
+                            if (!Directory.Exists(FileHelper.GetDirNameEx(filePath)))
                             {
                                 match = false;
                             }
@@ -441,7 +441,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (containsWildcard)
                         {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
+                            if (!Directory.Exists(FileHelper.GetDirNameEx(dirPath)))
                             {
                                 match = false;
                             }
@@ -491,7 +491,7 @@ namespace PEBakery.Core.Commands
 
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             match = regSubKey != null;
@@ -515,7 +515,7 @@ namespace PEBakery.Core.Commands
                         match = true;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
@@ -549,7 +549,7 @@ namespace PEBakery.Core.Commands
                         match = false;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)

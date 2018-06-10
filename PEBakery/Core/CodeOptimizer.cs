@@ -35,36 +35,31 @@ using System.Diagnostics;
 
 namespace PEBakery.Core
 {
-    /* 
-     * [Basic of Code Optimization]
-     * If a seqeunce of commands access same file, one file will be opened many time.
-     * -> Compact these works them can be done in ONE FILE IO.
-     */
+    // [Basic of Code Optimization]
+    // If a seqeunce of commands access same file, one file will be opened many time.
+    // -> Pack them into one command to reduce disk access
 
     public static class CodeOptimizer
     {
-        #region Dictionary and Delegate
-        private delegate CodeCommand PackCommandDelegate(List<CodeCommand> cmdList);
-
-        private static readonly Dictionary<CodeType, PackCommandDelegate> PackDict =
-            new Dictionary<CodeType, PackCommandDelegate>
-            {
-                { CodeType.TXTAddLine, OptimizeTXTAddLine },
-                { CodeType.TXTReplace, OptimizeTXTReplace },
-                { CodeType.TXTDelLine, OptimizeTXTDelLine },
-                { CodeType.INIRead, OptimizeINIRead },
-                { CodeType.INIWrite, OptimizeINIWrite },
-                { CodeType.INIDelete, OptimizeINIDelete },
-                { CodeType.INIReadSection, OptimizeINIReadSection },
-                { CodeType.INIAddSection, OptimizeINIAddSection },
-                { CodeType.INIDeleteSection, OptimizeINIDeleteSection },
-                { CodeType.INIWriteTextLine, OptimizeINIWriteTextLine },
-                { CodeType.Visible, OptimizeVisible },
-                { CodeType.ReadInterface, OptimizeReadInterface },
-                { CodeType.WriteInterface, OptimizeWriteInterface },
-                { CodeType.WimExtract, OptimizeWimExtract },
-                { CodeType.WimPathAdd, OptimizeWimPath }, // WimPathAdd is a representative of WimPath{Add, Delete, Rename}
-            };
+        #region OptimizedCodeTypes
+        private static readonly CodeType[] OptimizedCodeTypes =
+        {
+            CodeType.TXTAddLine,
+            CodeType.TXTReplace,
+            CodeType.TXTDelLine,
+            CodeType.IniRead,
+            CodeType.IniWrite,
+            CodeType.IniDelete,
+            CodeType.IniReadSection,
+            CodeType.IniAddSection,
+            CodeType.IniDeleteSection,
+            CodeType.IniWriteTextLine,
+            CodeType.Visible,
+            CodeType.ReadInterface,
+            CodeType.WriteInterface,
+            CodeType.WimExtract,
+            CodeType.WimPathAdd, // WimPathAdd is a representative of WimPath{Add, Delete, Rename}
+        };
         #endregion
 
         #region OptimizeCommands
@@ -92,14 +87,14 @@ namespace PEBakery.Core
             return opCodes;
         }
 
-        private static List<CodeCommand> InternalOptimize(List<CodeCommand> codes)
+        private static List<CodeCommand> InternalOptimize(List<CodeCommand> cmds)
         {
-            List<CodeCommand> optimized = new List<CodeCommand>(codes.Count);
+            List<CodeCommand> optimized = new List<CodeCommand>(cmds.Count);
 
-            Dictionary<CodeType, List<CodeCommand>> opDict = PackDict.ToDictionary(x => x.Key, x => new List<CodeCommand>(codes.Count / 2));
+            Dictionary<CodeType, List<CodeCommand>> opDict = OptimizedCodeTypes.ToDictionary(x => x, x => new List<CodeCommand>(cmds.Count / 2));
 
             CodeType s = CodeType.None;
-            foreach (CodeCommand cmd in codes)
+            foreach (CodeCommand cmd in cmds)
             {
                 bool loopAgain;
                 do
@@ -114,12 +109,12 @@ namespace PEBakery.Core
                                 case CodeType.TXTAddLine:
                                 case CodeType.TXTReplace:
                                 case CodeType.TXTDelLine:
-                                case CodeType.INIRead:
-                                case CodeType.INIWrite:
-                                case CodeType.INIReadSection:
-                                case CodeType.INIAddSection:
-                                case CodeType.INIDeleteSection:
-                                case CodeType.INIWriteTextLine:
+                                case CodeType.IniRead:
+                                case CodeType.IniWrite:
+                                case CodeType.IniReadSection:
+                                case CodeType.IniAddSection:
+                                case CodeType.IniDeleteSection:
+                                case CodeType.IniWriteTextLine:
                                 case CodeType.Visible:
                                 case CodeType.ReadInterface:
                                 case CodeType.WriteInterface:
@@ -211,12 +206,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIRead
-                        case CodeType.INIRead:
+                        #region IniRead
+                        case CodeType.IniRead:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniRead), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIRead:
+                                case CodeType.IniRead:
                                     {
                                         CodeInfo_IniRead firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniRead>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -235,12 +230,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIWrite
-                        case CodeType.INIWrite:
+                        #region IniWrite
+                        case CodeType.IniWrite:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniWrite), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIWrite:
+                                case CodeType.IniWrite:
                                     {
                                         CodeInfo_IniWrite firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWrite>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -259,12 +254,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIDelete
-                        case CodeType.INIDelete:
+                        #region IinDelete
+                        case CodeType.IniDelete:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniDelete), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIDelete:
+                                case CodeType.IniDelete:
                                     {
                                         CodeInfo_IniDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDelete>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -283,12 +278,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIReadSection
-                        case CodeType.INIReadSection:
+                        #region IniReadSection
+                        case CodeType.IniReadSection:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniReadSection));
                             switch (cmd.Type)
                             {
-                                case CodeType.INIReadSection:
+                                case CodeType.IniReadSection:
                                     {
                                         CodeInfo_IniReadSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniReadSection>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -307,12 +302,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIAddSection
-                        case CodeType.INIAddSection:
+                        #region IniAddSection
+                        case CodeType.IniAddSection:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniAddSection), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIAddSection:
+                                case CodeType.IniAddSection:
                                     {
                                         CodeInfo_IniAddSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniAddSection>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -331,12 +326,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIDeleteSection
-                        case CodeType.INIDeleteSection:
+                        #region IniDeleteSection
+                        case CodeType.IniDeleteSection:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniDeleteSection), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIDeleteSection:
+                                case CodeType.IniDeleteSection:
                                     {
                                         CodeInfo_IniDeleteSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDeleteSection>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -355,12 +350,12 @@ namespace PEBakery.Core
                             }
                             break;
                         #endregion
-                        #region INIWriteTextLine
-                        case CodeType.INIWriteTextLine:
+                        #region IniWriteTextLine
+                        case CodeType.IniWriteTextLine:
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniWriteTextLine), "Invalid CodeInfo");
                             switch (cmd.Type)
                             {
-                                case CodeType.INIWriteTextLine:
+                                case CodeType.IniWriteTextLine:
                                     {
                                         CodeInfo_IniWriteTextLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWriteTextLine>();
                                         if (firstInfo.OptimizeCompare(cmd.Info))
@@ -518,8 +513,7 @@ namespace PEBakery.Core
                         #endregion
                         #region Error
                         default:
-                            Debug.Assert(false);
-                            break;
+                            throw new InternalException("Internal Logic Error at CodeOptimizer.InternalOptimize()");
                             #endregion
                     }
                 }
@@ -532,20 +526,20 @@ namespace PEBakery.Core
             #endregion
 
             #region FinalizeSequence
-            void FinalizeSequence(CodeType state, List<CodeCommand> cmds)
+            void FinalizeSequence(CodeType state, List<CodeCommand> cmdSeq)
             {
                 CodeCommand opCmd;
-                if (cmds.Count == 1)
-                    opCmd = cmds[0];
-                else if (1 < cmds.Count)
-                    opCmd = PackDict[state](new List<CodeCommand>(cmds));
-                else // if (cmds.Count < 0)
+                if (cmdSeq.Count == 1)
+                    opCmd = cmdSeq[0];
+                else if (1 < cmdSeq.Count)
+                    opCmd = PackCommand(state, new List<CodeCommand>(cmdSeq));
+                else // if (cmds.Count <= 0)
                     return;
 
-                Debug.Assert(opCmd != null, "Internal Logic Error in CodeOptimizer.Optimize"); // Logic Error
+                Debug.Assert(opCmd != null, "Internal Logic Error in CodeOptimizer.Optimize"); 
                 optimized.Add(opCmd);
 
-                cmds.Clear();
+                cmdSeq.Clear();
             }
             #endregion
 
@@ -553,115 +547,79 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Optimize Individual
-        // TODO: Is there any 'generic' way?
-        private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmds)
+        #region PackCommand
+        private static CodeCommand PackCommand(CodeType type, List<CodeCommand> cmds)
         {
             Debug.Assert(0 < cmds.Count);
 
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(cmds), cmds[0].LineIdx);
+            CodeType packType;
+            CodeInfo packInfo;
+
+            switch (type)
+            {
+                case CodeType.TXTAddLine:
+                    packType = CodeType.TXTAddLineOp;
+                    packInfo = new CodeInfo_TXTAddLineOp(cmds);
+                    break;
+                case CodeType.TXTReplace:
+                    packType = CodeType.TXTReplaceOp;
+                    packInfo = new CodeInfo_TXTReplaceOp(cmds);
+                    break;
+                case CodeType.TXTDelLine:
+                    packType = CodeType.TXTDelLineOp;
+                    packInfo = new CodeInfo_TXTDelLineOp(cmds);
+                    break;
+                case CodeType.IniRead:
+                    packType = CodeType.IniReadOp;
+                    packInfo = new CodeInfo_IniReadOp(cmds);
+                    break;
+                case CodeType.IniWrite:
+                    packType = CodeType.IniWriteOp;
+                    packInfo = new CodeInfo_IniWriteOp(cmds);
+                    break;
+                case CodeType.IniReadSection:
+                    packType = CodeType.IniReadSectionOp;
+                    packInfo = new CodeInfo_IniReadSectionOp(cmds);
+                    break;
+                case CodeType.IniAddSection:
+                    packType = CodeType.IniAddSectionOp;
+                    packInfo = new CodeInfo_IniAddSectionOp(cmds);
+                    break;
+                case CodeType.IniDeleteSection:
+                    packType = CodeType.IniDeleteSectionOp;
+                    packInfo = new CodeInfo_IniDeleteSectionOp(cmds);
+                    break;
+                case CodeType.IniWriteTextLine:
+                    packType = CodeType.IniWriteTextLineOp;
+                    packInfo = new CodeInfo_IniWriteTextLineOp(cmds);
+                    break;
+                case CodeType.Visible:
+                    packType = CodeType.VisibleOp;
+                    packInfo = new CodeInfo_VisibleOp(cmds);
+                    break;
+                case CodeType.ReadInterface:
+                    packType = CodeType.ReadInterfaceOp;
+                    packInfo = new CodeInfo_ReadInterfaceOp(cmds);
+                    break;
+                case CodeType.WriteInterface:
+                    packType = CodeType.WriteInterfaceOp;
+                    packInfo = new CodeInfo_WriteInterfaceOp(cmds);
+                    break;
+                case CodeType.WimExtract:
+                    packType = CodeType.WimExtractOp;
+                    packInfo = new CodeInfo_WimExtractOp(cmds);
+                    break;
+                case CodeType.WimPathAdd: // Use WimPathAdd as representative of WimPath*
+                    packType = CodeType.WimPathOp;
+                    packInfo = new CodeInfo_WimPathOp(cmds);
+                    break;
+                default:
+                    throw new InternalException("Internal Logic Error at CodeOptimizer.InternalOptimize");
+            }
+
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, packType, packInfo, cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeTXTReplace(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTReplaceOp, new CodeInfo_TXTReplaceOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIRead(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIWriteOp, new CodeInfo_IniWriteOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIDelete(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniDeleteOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIReadSection(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIReadSectionOp, new CodeInfo_IniReadSectionOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_IniAddSectionOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIDeleteSection(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_IniDeleteSectionOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeINIWriteTextLine(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniWriteTextLineOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeVisible(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeReadInterface(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.ReadInterfaceOp, new CodeInfo_ReadInterfaceOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeWriteInterface(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WriteInterfaceOp, new CodeInfo_WriteInterfaceOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeWimExtract(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WimExtractOp, new CodeInfo_WimExtractOp(cmds), cmds[0].LineIdx);
-        }
-
-        private static CodeCommand OptimizeWimPath(List<CodeCommand> cmds)
-        {
-            Debug.Assert(0 < cmds.Count);
-
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WimPathOp, new CodeInfo_WimPathOp(cmds), cmds[0].LineIdx);
-        }
-        #endregion
-
-        #region Utility
         private static string MergeRawCodes(List<CodeCommand> cmds)
         {
             StringBuilder b = new StringBuilder();

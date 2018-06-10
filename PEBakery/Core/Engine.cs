@@ -534,49 +534,49 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 04 INI
-                    case CodeType.INIRead:
+                    case CodeType.IniRead:
                         logs.AddRange(CommandIni.IniRead(s, cmd));
                         break;
-                    case CodeType.INIReadOp:
+                    case CodeType.IniReadOp:
                         logs.AddRange(CommandIni.IniReadOp(s, cmd));
                         break;
-                    case CodeType.INIWrite:
+                    case CodeType.IniWrite:
                         logs.AddRange(CommandIni.IniWrite(s, cmd));
                         break;
-                    case CodeType.INIWriteOp:
+                    case CodeType.IniWriteOp:
                         logs.AddRange(CommandIni.IniWriteOp(s, cmd));
                         break;
-                    case CodeType.INIDelete:
+                    case CodeType.IniDelete:
                         logs.AddRange(CommandIni.IniDelete(s, cmd));
                         break;
-                    case CodeType.INIDeleteOp:
+                    case CodeType.IniDeleteOp:
                         logs.AddRange(CommandIni.IniDeleteOp(s, cmd));
                         break;
-                    case CodeType.INIReadSection:
+                    case CodeType.IniReadSection:
                         logs.AddRange(CommandIni.IniReadSection(s, cmd));
                         break;
-                    case CodeType.INIReadSectionOp:
+                    case CodeType.IniReadSectionOp:
                         logs.AddRange(CommandIni.IniReadSectionOp(s, cmd));
                         break;
-                    case CodeType.INIAddSection:
+                    case CodeType.IniAddSection:
                         logs.AddRange(CommandIni.IniAddSection(s, cmd));
                         break;
-                    case CodeType.INIAddSectionOp:
+                    case CodeType.IniAddSectionOp:
                         logs.AddRange(CommandIni.IniAddSectionOp(s, cmd));
                         break;
-                    case CodeType.INIDeleteSection:
+                    case CodeType.IniDeleteSection:
                         logs.AddRange(CommandIni.IniDeleteSection(s, cmd));
                         break;
-                    case CodeType.INIDeleteSectionOp:
+                    case CodeType.IniDeleteSectionOp:
                         logs.AddRange(CommandIni.IniDeleteSectionOp(s, cmd));
                         break;
-                    case CodeType.INIWriteTextLine:
+                    case CodeType.IniWriteTextLine:
                         logs.AddRange(CommandIni.IniWriteTextLine(s, cmd));
                         break;
-                    case CodeType.INIWriteTextLineOp:
+                    case CodeType.IniWriteTextLineOp:
                         logs.AddRange(CommandIni.IniWriteTextLineOp(s, cmd));
                         break;
-                    case CodeType.INIMerge:
+                    case CodeType.IniMerge:
                         logs.AddRange(CommandIni.IniMerge(s, cmd));
                         break;
                     #endregion
@@ -1180,16 +1180,6 @@ namespace PEBakery.Core
         public int LineCount;
 
         public const int ForceDisable = -1;
-    }
-    #endregion
-
-    #region Exception
-    [Serializable]
-    public class ExecuteException : Exception
-    {
-        public ExecuteException() { }
-        public ExecuteException(string message) : base(message) { }
-        public ExecuteException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 }

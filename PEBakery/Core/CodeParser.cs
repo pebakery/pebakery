@@ -840,7 +840,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region 04 INI
-                case CodeType.INIRead:
+                case CodeType.IniRead:
                     { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
@@ -852,7 +852,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
                     }
-                case CodeType.INIWrite:
+                case CodeType.IniWrite:
                     { // INIWrite,<FileName>,<Section>,<Key>,<Value>
                         const int argCount = 4;
                         if (args.Count != argCount)
@@ -860,7 +860,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniWrite(args[0], args[1], args[2], args[3]);
                     }
-                case CodeType.INIDelete:
+                case CodeType.IniDelete:
                     { // INIDelete,<FileName>,<Section>,<Key>
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -868,7 +868,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
-                case CodeType.INIReadSection:
+                case CodeType.IniReadSection:
                     { // INIReadSection,<FileName>,<Section>,<DestVar>
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -880,7 +880,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniReadSection(args[0], args[1], args[2]);
                     }
-                case CodeType.INIAddSection:
+                case CodeType.IniAddSection:
                     { // INIAddSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -888,7 +888,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniAddSection(args[0], args[1]);
                     }
-                case CodeType.INIDeleteSection:
+                case CodeType.IniDeleteSection:
                     { // INIDeleteSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -896,7 +896,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniDeleteSection(args[0], args[1]);
                     }
-                case CodeType.INIWriteTextLine:
+                case CodeType.IniWriteTextLine:
                     {  // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
@@ -914,7 +914,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniWriteTextLine(args[0], args[1], args[2], append);
                     }
-                case CodeType.INIMerge:
+                case CodeType.IniMerge:
                     { // INIMerge,<SrcFile>,<DestFile>
                         const int argCount = 2;
                         if (args.Count != argCount)

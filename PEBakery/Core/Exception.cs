@@ -98,11 +98,11 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class InternalException : Exception
+    public class ExecuteException : Exception
     {
-        public InternalException() { }
-        public InternalException(string message) : base(message) { }
-        public InternalException(string message, Exception inner) : base(message, inner) { }
+        public ExecuteException() { }
+        public ExecuteException(string message) : base(message) { }
+        public ExecuteException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 
@@ -116,12 +116,13 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Regsitry
-    public class InvalidRegKeyException : Exception
+    #region Internal Error
+    [Serializable]
+    public class InternalException : Exception
     {
-        public InvalidRegKeyException() { }
-        public InvalidRegKeyException(string message) : base(message) { }
-        public InvalidRegKeyException(string message, Exception inner) : base(message, inner) { }
+        public InternalException() { }
+        public InternalException(string message) : base(message) { }
+        public InternalException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 }

@@ -54,8 +54,8 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
-        INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
+        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge,
+        IniWriteOp = 480, IniReadOp, IniDeleteOp, IniReadSectionOp, IniAddSectionOp, IniDeleteSectionOp, IniWriteTextLineOp,
         // 05 Compress
         Compress = 500, Decompress, Expand, CopyOrExpand,
         // 06 Network
@@ -176,11 +176,11 @@ namespace PEBakery.Core
         {
             CodeType.TXTAddLineOp,
             CodeType.TXTDelLineOp,
-            CodeType.INIReadOp,
-            CodeType.INIWriteOp,
-            CodeType.INIAddSectionOp,
-            CodeType.INIDeleteSectionOp,
-            CodeType.INIWriteTextLineOp,
+            CodeType.IniReadOp,
+            CodeType.IniWriteOp,
+            CodeType.IniAddSectionOp,
+            CodeType.IniDeleteSectionOp,
+            CodeType.IniWriteTextLineOp,
             CodeType.VisibleOp,
             CodeType.ReadInterfaceOp,
             CodeType.WriteInterfaceOp,
