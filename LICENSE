@@ -92,31 +92,41 @@ PEBakery/Helper
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery/WPF/Controls/AutoSizedGridView
+PEBakery/WPF/Controls/NumberBox.xaml
+PEBakery/WPF/Controls/NumberBox.xaml.cs
+    MIT License
+    https://opensource.org/licenses/MIT
+
+PEBakery/WPF/Controls/DragCanvas.cs
+PEBakery/WPF/Controls/EditCanvas.cs
+    MIT License
+    https://opensource.org/licenses/MIT
+
+PEBakery/WPF/Controls/AutoSizedGridView.cs
     MIT License
     https://opensource.org/licenses/MIT
 
     Derived from http://stackoverflow.com/a/15745082
 
-PEBakery/WPF/Controls/CustomMessageBox
+PEBakery/WPF/Controls/CustomMessageBox.cs
+PEBakery/WPF/Controls/CustomMessageBoxUtil.cs
+PEBakery/WPF/Controls/CustomMessageBoxWindow.xaml
+PEBakery/WPF/Controls/CustomMessageBoxWindow.xaml.cs
     MIT License
     https://opensource.org/licenses/MIT
 
     Copyright (c) 2013 Evan Wondrasek / Apricity Software LLC
     Derived from https://github.com/evanwon/WPFCustomMessageBox
 
-PEBakery/WPF/Controls/MahApps 
+PEBakery/WPF/Controls/ProgressRing.cs
+PEBakery/WPF/Controls/ProgressRing.xaml
     MIT License
     https://opensource.org/licenses/MIT
 
     Copyright (c) 2016 MahApps
     Derived from https://github.com/MahApps/MahApps.Metro
 
-PEBakery/WPF/Controls/FreeNumberBox
-    MIT License
-    https://opensource.org/licenses/MIT
-
-PEBakery/WPF/Controls/Svg/Donut.xaml
+PEBakery/WPF/Controls/Donut.xaml
 PEBakery/Resources/Donut.ico
 LauncherNative/Donut.ico
 LauncherSharp/Donut.ico

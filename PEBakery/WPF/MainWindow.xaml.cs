@@ -190,8 +190,8 @@ namespace PEBakery.WPF
             // Prepare PEBakery Loading Information
             if (quiet == false)
             {
-                Model.ScriptTitleText = "Welcome to PEBakery!";
-                Model.ScriptDescriptionText = "PEBakery loading...";
+                Model.ScriptTitleText = "PEBakery loading...";
+                Model.ScriptDescriptionText = string.Empty;
             }
             Logger.SystemWrite(new LogInfo(LogState.Info, $@"Loading from [{BaseDir}]"));
             MainCanvas.Children.Clear();
@@ -297,7 +297,7 @@ namespace PEBakery.WPF
                         msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
                 }
 
-                Model.ScriptDescriptionText = $"PEBakery loading...\r\n{msg}";
+                Model.ScriptDescriptionText = msg;
             };
             _loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -342,13 +342,13 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Model.ScriptTitleText = "Unable to find projects.";
-                    Model.ScriptDescriptionText = $"Please populate project in [{Projects.ProjectRoot}]";
+                    Model.ScriptTitleText = "Unable to find project.";
+                    Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
 
                     if (quiet == false)
                         Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
-                    Model.StatusBarText = "Unable to find projects.";
+                    Model.StatusBarText = "Unable to find project.";
                 }
 
                 resetEvent.Set();

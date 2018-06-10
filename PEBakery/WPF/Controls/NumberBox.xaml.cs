@@ -40,13 +40,10 @@ using System.Windows.Shapes;
 
 namespace PEBakery.WPF.Controls
 {
-    /// <summary>
-    /// FreeNumberBox.xaml에 대한 상호 작용 논리
-    /// </summary>
-    public partial class FreeNumberBox : UserControl
+    public partial class NumberBox : UserControl
     {
         #region Constructor
-        public FreeNumberBox()
+        public NumberBox()
         {
             InitializeComponent();
         }
@@ -60,7 +57,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(ValueProperty, value);
         }
 
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(FreeNumberBox),
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultValue, OnValueChanged, CoerceValue));
 
         private const decimal DefaultMinimum = 0;
@@ -70,7 +67,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(FreeNumberBox),
+        public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultMinimum));
 
         private const decimal DefaultMaximum = ushort.MaxValue;
@@ -80,7 +77,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(MaximumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(FreeNumberBox),
+        public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultMaximum));
 
         private const decimal DefaultIncrementUnit = 1;
@@ -90,7 +87,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(IncrementUnitProperty, value);
         }
 
-        public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register("IncrementUnit", typeof(decimal), typeof(FreeNumberBox),
+        public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register("IncrementUnit", typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultIncrementUnit));
 
         private const int DefaultDecimalPlaces = 0;
@@ -100,7 +97,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(DecimalPlacesProperty, value);
         }
 
-        public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register("DecimalPlaces", typeof(int), typeof(FreeNumberBox),
+        public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register("DecimalPlaces", typeof(int), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultDecimalPlaces));
         #endregion
 
@@ -108,21 +105,21 @@ namespace PEBakery.WPF.Controls
         private static object CoerceValue(DependencyObject element, object value)
         {
             // Check if (MinValue <= Value <= MaxValue)
-            if (element is FreeNumberBox control)
+            if (element is NumberBox control)
                 return LimitDecimalValue(control, (decimal)value);
             return value;
         }
 
         private static void OnValueChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            FreeNumberBox control = (FreeNumberBox)obj;
+            NumberBox control = (NumberBox)obj;
 
             RoutedPropertyChangedEventArgs<decimal> e = new RoutedPropertyChangedEventArgs<decimal>(
                 (decimal)args.OldValue, (decimal)args.NewValue, ValueChangedEvent);
             control.OnValueChanged(e);
         }
 
-        public static decimal LimitDecimalValue(FreeNumberBox control, decimal value)
+        public static decimal LimitDecimalValue(NumberBox control, decimal value)
         {
             value = Math.Max(control.Minimum, Math.Min(control.Maximum, value));
             value = decimal.Round(value, control.DecimalPlaces);
@@ -133,7 +130,7 @@ namespace PEBakery.WPF.Controls
         #region Control Events
         public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent(
             "ValueChanged", RoutingStrategy.Bubble,
-            typeof(RoutedPropertyChangedEventHandler<decimal>), typeof(FreeNumberBox));
+            typeof(RoutedPropertyChangedEventHandler<decimal>), typeof(NumberBox));
 
         public event RoutedPropertyChangedEventHandler<decimal> ValueChanged
         {

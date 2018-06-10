@@ -30,9 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PEBakery.Core;
-using PEBakery.Core.Commands;
-using System.Runtime.Serialization;
 
 namespace PEBakery.Core
 {

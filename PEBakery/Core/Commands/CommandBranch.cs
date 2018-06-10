@@ -187,7 +187,7 @@ namespace PEBakery.Core.Commands
                             endLetter = char.ToUpper(endStr[0]);
 
                             if (endLetter < startLetter)
-                                throw new ExecuteException("StartLetter must be smaller than EndLetter in lexicographic order");
+                                throw new ExecuteException("<StartLetter> must be smaller than <EndLetter> in lexicographic order");
 
                             loopCount = endLetter - startLetter + 1;
                         }
@@ -199,7 +199,7 @@ namespace PEBakery.Core.Commands
                 // Log Messages
                 string logMessage;
                 if (inCurrentScript)
-                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
+                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times ({startStr} ~ {endStr})";
                 else
                     logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));

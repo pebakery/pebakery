@@ -177,24 +177,24 @@
     <Compile Include="WPF\AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\AutoSizedGridView\AutoSizedGridView.cs" />
-    <Compile Include="WPF\Controls\CustomCanvas\EditCanvas.cs" />
-    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBox.cs" />
-    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
+    <Compile Include="WPF\Controls\AutoSizedGridView.cs" />
+    <Compile Include="WPF\Controls\EditCanvas.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBox.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxUtil.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBoxUtil.cs" />
     <Compile Include="Core\EncodedFile.cs" />
     <Compile Include="Core\Commands\CommandBranch.cs" />
     <Compile Include="Core\Engine.cs" />
     <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Core\Exception.cs" />
     <Compile Include="Core\Logger.cs" />
-    <Compile Include="WPF\Controls\CustomCanvas\DragCanvas.cs" />
-    <Compile Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml.cs">
-      <DependentUpon>FreeNumberBox.xaml</DependentUpon>
+    <Compile Include="WPF\Controls\DragCanvas.cs" />
+    <Compile Include="WPF\Controls\NumberBox.xaml.cs">
+      <DependentUpon>NumberBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
+    <Compile Include="WPF\Controls\ProgressRing.cs" />
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
@@ -219,19 +219,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
+    <Page Include="WPF\Controls\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml">
+    <Page Include="WPF\Controls\NumberBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WPF\Controls\Svg\Donut.xaml">
+    <Page Include="WPF\Controls\Donut.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="WPF\Controls\MahApps\ProgressRing.xaml">
+    <Page Include="WPF\Controls\ProgressRing.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

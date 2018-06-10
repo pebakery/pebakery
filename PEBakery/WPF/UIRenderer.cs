@@ -305,7 +305,7 @@ namespace PEBakery.WPF
         {
             UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
 
-            FreeNumberBox box = new FreeNumberBox
+            NumberBox box = new NumberBox
             {
                 Value = info.Value,
                 FontSize = CalcFontPointScale(),
