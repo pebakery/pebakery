@@ -429,26 +429,11 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Error:
-                        {
-                            CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
-
-                            logs.Add(new LogInfo(LogState.Error, info.ErrorMessage));
-                        }
+                        logs.Add(new LogInfo(LogState.Error, cmd.Info.Cast<CodeInfo_Error>().ErrorMessage));
                         break;
                     case CodeType.Comment:
-                        {
-                            CodeInfo_Comment info = cmd.Info.Cast<CodeInfo_Comment>();
-                            if (info.IsLine)
-                            {
-                                if (s.LogLineComment)
-                                    logs.Add(new LogInfo(LogState.Ignore, string.Empty));
-                            }
-                            else
-                            {
-                                if (s.LogBlockComment)
-                                    logs.Add(new LogInfo(LogState.Ignore, string.Empty));
-                            }
-                        }
+                        if (s.LogComment)
+                            logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     #endregion
                     #region 01 File
@@ -851,9 +836,7 @@ namespace PEBakery.Core
             s.CurDepth = 0;
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
-                Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec), "Invalid CodeInfo");
-                CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
-                Debug.Assert(info != null, "Invalid CodeInfo");
+                CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
 
                 if (1 <= info.Parameters.Count)
                     info.Parameters[0] = eventParam;
@@ -1082,8 +1065,7 @@ namespace PEBakery.Core
         public int ScriptId = 0; // Used in logging
 
         // Options
-        public bool LogLineComment = true; // Used in logging
-        public bool LogBlockComment = true; // Used in logging
+        public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
@@ -1170,8 +1152,7 @@ namespace PEBakery.Core
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
 
             LogMacro = m.Log_Macro;
-            LogLineComment = m.Log_LineComment;
-            LogBlockComment = m.Log_BlockComment;
+            LogComment = m.Log_Comment;
             LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
 
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;

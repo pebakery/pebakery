@@ -39,23 +39,5 @@ namespace PEBakery.Tests.Core
     [TestClass]
     public class ScriptTests
     {
-        #region BlockComment (ParseScript)
-        [TestMethod]
-        [TestCategory("Script")]
-        public void BlockComment()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-
-            string treePath = Path.Combine("TestSuite", "Core", "ParseScript.script");
-            Script sc = s.Project.GetScriptByTreePath(treePath);
-
-            Assert.IsTrue(sc.Sections.ContainsKey("Section1"));
-            Assert.IsTrue(sc.Sections.ContainsKey("Section2"));
-            Assert.IsFalse(sc.Sections.ContainsKey("Section3"));
-
-            Assert.IsFalse(EncodedFile.ContainsFile(sc, "AttachTest", "UTF8.txt"));
-            Assert.IsFalse(sc.Sections.ContainsKey(EncodedFile.GetSectionName("AttachTest", "UTF8.txt")));
-        }
-        #endregion
     }
 }

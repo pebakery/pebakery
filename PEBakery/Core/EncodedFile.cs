@@ -181,8 +181,8 @@ namespace PEBakery.Core
         #endregion
 
         #region Const Strings, String Factory
-        private const string EncodedFolders = "EncodedFolders";
-        private const string AuthorEncoded = "AuthorEncoded";
+        internal const string EncodedFolders = "EncodedFolders";
+        internal const string AuthorEncoded = "AuthorEncoded";
         internal const string InterfaceEncoded = "InterfaceEncoded";
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";

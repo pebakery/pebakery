@@ -376,7 +376,6 @@ namespace PEBakery.Core
                 string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
-                bool inBlockComment = false;
                 SectionType type = SectionType.None;
                 List<string> lines = new List<string>();
 
@@ -393,21 +392,7 @@ namespace PEBakery.Core
                 { // Read text line by line
                     idx++;
                     line = line.Trim();
-                    bool sectionHeader = false;
 
-#if BLOCK_COMMENT
-                    // Surpress recognition of section while in block comment (/* ~ */)
-                    if (inBlockComment)
-                    {
-                        if (line.IndexOf("*/", StringComparison.Ordinal) != -1)
-                            inBlockComment = false;
-                    }
-                    else if (line.StartsWith("/*", StringComparison.Ordinal))
-                    {
-                        inBlockComment = true;
-                    }
-                    else
-#endif
                     if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
                         FinalizeSection();
@@ -418,12 +403,11 @@ namespace PEBakery.Core
                         if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
                         inSection = true;
-
-                        sectionHeader = true;
                     }
-
-                    if (!sectionHeader && inSection && loadSection) // line of section
+                    else if (inSection && loadSection)
+                    { // line of section
                         lines.Add(line);
+                    }
 
                     if (r.Peek() == -1) // End of .script
                         FinalizeSection();
@@ -442,14 +426,14 @@ namespace PEBakery.Core
             List<string> encodedFolders;
             if (_fullyParsed)
             {
-                if (_sections.ContainsKey("EncodedFolders"))
-                    encodedFolders = _sections["EncodedFolders"].GetLines();
+                if (_sections.ContainsKey(EncodedFile.EncodedFolders))
+                    encodedFolders = _sections[EncodedFile.EncodedFolders].GetLines();
                 else
                     return false;
             }
             else
             {
-                encodedFolders = Ini.ParseIniSection(_realPath, "EncodedFolders");
+                encodedFolders = Ini.ParseIniSection(_realPath, EncodedFile.EncodedFolders);
                 if (encodedFolders == null)  // No EncodedFolders section, exit
                     return false;
             }
@@ -472,10 +456,10 @@ namespace PEBakery.Core
                 type = SectionType.Variables;
             else if (sectionName.Equals("Interface", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Interface;
-            else if (sectionName.Equals("EncodedFolders", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(EncodedFile.EncodedFolders, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFolderList;
-            else if (sectionName.Equals("AuthorEncoded", StringComparison.OrdinalIgnoreCase)
-                || sectionName.Equals("InterfaceEncoded", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(EncodedFile.AuthorEncoded, StringComparison.OrdinalIgnoreCase)
+                || sectionName.Equals(EncodedFile.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFileList;
             else if (string.Compare(sectionName, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0) // lazy loading
                 type = SectionType.AttachEncode;

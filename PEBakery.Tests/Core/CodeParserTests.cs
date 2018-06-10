@@ -142,30 +142,5 @@ namespace PEBakery.Tests.Core
             CodeParser_GetNextArgument_Test(code, testcases);
         }
         #endregion
-
-        #region BlockComments
-        [TestMethod]
-        [TestCategory("CodeParser")]
-        public void BlockComments()
-        {
-            void Template(List<string> rawCodes, CodeType compType = CodeType.Comment)
-            {
-                SectionAddress addr = EngineTests.DummySectionAddress();
-                List<CodeCommand> cmds = CodeParser.ParseStatements(rawCodes, addr, out _);
-
-                StringBuilder b = new StringBuilder();
-                foreach (string str in rawCodes)
-                    b.AppendLine(str);
-                Assert.IsTrue(cmds[0].RawCode.Equals(b.ToString().Trim(), StringComparison.Ordinal));
-                Assert.AreEqual(cmds[0].Type, compType);
-            }
-
-            Template(new List<string> { "/* Block Comment 1 */" });
-            Template(new List<string> { "/* Block Comment 2", "ABC */" });
-            Template(new List<string> { "/* Block Comment 3", "DEF", "*/" });
-            Template(new List<string> { "/* Block Comment 4", "XYZ */ Error" }, CodeType.Error);
-            Template(new List<string> { "/* Block Comment 5", "No end identifier" }, CodeType.Error);
-        }
-        #endregion
     }
 }

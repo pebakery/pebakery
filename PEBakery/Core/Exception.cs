@@ -34,7 +34,7 @@ using PEBakery.Core;
 using PEBakery.Core.Commands;
 using System.Runtime.Serialization;
 
-namespace PEBakery
+namespace PEBakery.Core
 {
     #region CodeParser, UIParser, Commands
     [Serializable]

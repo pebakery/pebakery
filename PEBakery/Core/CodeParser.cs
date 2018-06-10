@@ -191,57 +191,7 @@ namespace PEBakery.Core
 
             // Line Comment Identifier : '//', '#', ';'
             if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
-                return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo_Comment(true), lineIdx);
-
-#if BLOCK_COMMENT
-            // Block Comment Identifier : '/*' ~ '*/'
-            if (rawCode.StartsWith("/*", StringComparison.Ordinal))
-            {
-                StringBuilder b = new StringBuilder();
-
-                int endIdx;
-                int violation = 0;
-                do
-                {
-                    b.AppendLine(rawCode);
-                    endIdx = rawCode.IndexOf("*/", StringComparison.Ordinal);
-
-                    if (endIdx != -1) // End of the block comment
-                    {
-                        // In many language using '/*' ~ '*/' as a block comment identifier, new line char does not seperates statements.
-                        // So the new statement can come right after '*/'.
-                        //
-                        // In contrast, PEBakery script grammar does use newline char as a block comment identifier,
-                        // which means new statement should not be allowed to come after '*/' without newline.
-                        if (endIdx != rawCode.Length - 2) // '*/' is not placed at the end of the line
-                            violation = 1;
-                    }
-                    else
-                    { // Get next raw code, increase index
-                        if (rawCodes.Count <= idx + 1)
-                        { // Reached end of code but unable to find '*/'
-                            violation = 2;
-                            break;
-                        }
-
-                        idx++;
-                        rawCode = rawCodes[idx].Trim();
-                    }
-                }
-                while (endIdx == -1);
-
-                string comments = b.ToString().Trim();
-                switch (violation)
-                {
-                    case 0:
-                        return new CodeCommand(comments, addr, CodeType.Comment, new CodeInfo_Comment(false), lineIdx);
-                    case 1:
-                        return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Block comment end identifier [*/] must be placed at the end of the line"), lineIdx);
-                    case 2:
-                        return new CodeCommand(comments, addr, CodeType.Error, new CodeInfo_Error("Unable to find block comment end identifier [*/]"), lineIdx);
-                }
-            }
-#endif
+                return new CodeCommand(rawCode, addr, CodeType.Comment, null, lineIdx);
 
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);

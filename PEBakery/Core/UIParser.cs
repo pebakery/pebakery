@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 // ReSharper disable InconsistentNaming
 
@@ -127,22 +126,6 @@ namespace PEBakery.Core
             // Line Comment Identifier : '//', '#', ';'
             if (rawLine.StartsWith("//", StringComparison.Ordinal) || rawLine[0] == '#' || rawLine[0] == ';')
                 return null;
-
-#if BLOCK_COMMENT
-            // Block Comment Identifier : '/*' ~ '*/'
-            if (rawLine.StartsWith("/*", StringComparison.Ordinal))
-            {
-                string startLine = rawLine;
-                while (rawLine.IndexOf("*/", StringComparison.Ordinal) == -1)
-                {
-                    if (rawLines.Count <= idx + 1) // Reached end of code but unable to find '*/'
-                        throw new InvalidCommandException("Unable to find block comment end identifier [*/]", startLine);
-                    idx++;
-                    rawLine = rawLines[idx].Trim();
-                }
-                return null;
-            }
-#endif
 
             // Find key of interface control
             string key;

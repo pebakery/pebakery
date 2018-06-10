@@ -38,28 +38,5 @@ namespace PEBakery.Tests.Core
     [TestClass]
     public class UIParserTests
     {
-        #region BlockComments
-        [TestMethod]
-        [TestCategory("UIParser")]
-        public void BlockComments()
-        {
-            void Template(List<string> rawLines, bool success = true)
-            {
-                SectionAddress addr = EngineTests.DummySectionAddress();
-                UIParser.ParseStatements(rawLines, addr, out List<LogInfo> errLogs);
-
-                if (success)
-                    Assert.IsTrue(errLogs.Count == 0);
-                else
-                    Assert.IsTrue(0 < errLogs.Count);
-            }
-
-            Template(new List<string> { "/* Block Comment 1 */" });
-            Template(new List<string> { "/* Block Comment 2", "ABC */" });
-            Template(new List<string> { "/* Block Comment 3", "DEF", "*/" });
-            Template(new List<string> { "/* Block Comment 4", "XYZ */ Error" });
-            Template(new List<string> { "/* Block Comment 5", "No end identifier" }, false);
-        }
-        #endregion
     }
 }
