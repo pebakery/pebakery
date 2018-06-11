@@ -56,7 +56,7 @@ namespace PEBakery.Core
     }
 
     /// <summary>
-    /// Internal error which unable to continue parsing
+    /// Unable to continue parsing because of internal parser error
     /// </summary>
     [Serializable]
     public class InternalParserException : Exception
@@ -85,7 +85,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Engine and EngineState
+    #region Engine
     /// <summary>
     /// Such a critical error that build must be halt
     /// </summary>
@@ -116,7 +116,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Internal Error
+    #region Internal
     [Serializable]
     public class InternalException : Exception
     {

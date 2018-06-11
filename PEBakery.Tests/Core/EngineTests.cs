@@ -148,6 +148,40 @@ namespace PEBakery.Tests.Core
             return s;
         }
 
+        public static EngineState EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
+        { // Use null in opType to check if rawCodes is not opitimzed
+            return EvalOptLines(s, opType, rawCodes, check, out _);
+        }
+
+        public static EngineState EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        { // Use null in opType to check if rawCodes is not opitimzed
+            // Create CodeCommand
+            SectionAddress addr = DummySectionAddress();
+            cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
+
+            if (errorLogs.Any(x => x.State == LogState.Error))
+            {
+                Assert.IsTrue(check == ErrorCheck.ParserError);
+                return s;
+            }
+
+            if (opType is CodeType type)
+            {
+                Assert.AreEqual(cmds.Count, 1);
+                Assert.AreEqual(cmds[0].Type, type);
+            }
+            else
+            {
+                Assert.IsTrue(1 < cmds.Count);
+            }
+
+            // Run CodeCommands
+            Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+
+            // Return EngineState
+            return s;
+        }
+
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)
         {
             switch (check)

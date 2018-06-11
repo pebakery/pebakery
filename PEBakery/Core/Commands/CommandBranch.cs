@@ -389,12 +389,13 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistFile:
                     {
                         string filePath = StringEscaper.Preprocess(s, c.Arg1);
+                        Debug.Assert(filePath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
                         // Check filePath contains wildcard
-                        bool containsWildcard = Path.GetFileName(filePath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
+                        bool containsWildcard = Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) != -1;
 
                         // Check if file exists
-                        if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        if (filePath.Length == 0)
                         {
                             match = false;
                         }
@@ -430,12 +431,13 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistDir:
                     {
                         string dirPath = StringEscaper.Preprocess(s, c.Arg1);
+                        Debug.Assert(dirPath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
                         // Check filePath contains wildcard
-                        bool containsWildcard = Path.GetFileName(dirPath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
+                        bool containsWildcard = Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) != -1;
 
                         // Check if directory exists
-                        if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        if (dirPath.Length == 0)
                         {
                             match = false;
                         }
@@ -905,9 +907,9 @@ namespace PEBakery.Core.Commands
                         match = NetworkInterface.GetIsNetworkAvailable();
 
                         if (match)
-                            logMessage = "System is online";
+                            logMessage = "Network is online";
                         else
-                            logMessage = "System is offline";
+                            logMessage = "Network is offline";
 
                         if (c.NotFlag)
                             match = !match;

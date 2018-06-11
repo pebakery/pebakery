@@ -228,6 +228,11 @@ namespace PEBakery.Core
             ErrorMessage = errorMessage;
         }
 
+        public CodeInfo_Error(Exception e)
+        {
+            ErrorMessage = Logger.LogExceptionMessage(e);
+        }
+
         public override string ToString()
         {
             return ErrorMessage;

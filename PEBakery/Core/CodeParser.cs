@@ -55,7 +55,7 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                return new CodeCommand(rawCode.Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + idx + 1);
+                return new CodeCommand(rawCode.Trim(), addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + idx + 1);
             }
         }
 
@@ -72,12 +72,12 @@ namespace PEBakery.Core
                 }
                 catch (InvalidCommandException e)
                 {
-                    CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
                 }
                 catch (Exception e)
                 {
-                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
                 }
             }
