@@ -274,6 +274,118 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region IniDelete
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandIni")]
+        public void IniDelete()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
+                string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
+
+                WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},6DoF,Descent", tempFile, string.Empty, string.Empty);
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("Descent=Overload");
+                    string sampleStr = b.ToString();
+
+                    b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    string resultStr = b.ToString();
+
+                    WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},6DoF,Descent", tempFile, sampleStr, resultStr);
+                }
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("Descent=Overload");
+                    b.AppendLine();
+                    b.AppendLine("[Update]");
+                    b.AppendLine("Roguelike=Sublevel Zero Redux");
+                    string sampleStr = b.ToString();
+
+                    b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("Descent=Overload");
+                    b.AppendLine();
+                    b.AppendLine("[Update]");
+                    string resultStr = b.ToString();
+
+                    WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},Update,Roguelike", tempFile, sampleStr, resultStr);
+                }
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("// Descent=1");
+                    b.AppendLine("# Descent=2");
+                    b.AppendLine("; Descent=Freespace");
+                    b.AppendLine("Descent=Overload");
+                    string sampleStr = b.ToString();
+
+                    b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("// Descent=1");
+                    b.AppendLine("# Descent=2");
+                    b.AppendLine("; Descent=Freespace");
+                    string resultStr = b.ToString();
+
+                    WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},6DoF,Descent", tempFile, sampleStr, resultStr);
+                }
+                WriteTemplate(s, CodeType.IniDelete, $@"IniDelete,{tempFile},A", tempFile, string.Empty, null, ErrorCheck.ParserError);
+
+                // Optimization
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("Descent=Overload");
+                    b.AppendLine();
+                    b.AppendLine("[Update]");
+                    b.AppendLine("Roguelike=Sublevel Zero Redux");
+                    string sampleStr = b.ToString();
+
+                    b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine();
+                    b.AppendLine("[Update]");
+                    string resultStr = b.ToString();
+
+                    WriteOptTemplate(s, CodeType.IniDeleteOp, new List<string>
+                    {
+                        $@"IniDelete,{tempFile},6DoF,Descent",
+                        $@"IniDelete,{tempFile},Update,Roguelike",
+                    }, tempFile, sampleStr, resultStr);
+                }
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    b.AppendLine("Descent=Overload");
+                    string sampleStr = b.ToString();
+
+                    b = new StringBuilder();
+                    b.AppendLine("[6DoF]");
+                    string resultStr = b.ToString();
+
+                    WriteOptTemplate(s, null, new List<string>
+                    {
+                        $@"IniDelete,{tempFile},6DoF,Descent",
+                        $@"IniDelete,{tempFile2},6DoF,Parallax",
+                    }, tempFile, sampleStr, resultStr);
+                }
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+
         #region Template
         private static void ReadTemplate(
             EngineState s, CodeType type,

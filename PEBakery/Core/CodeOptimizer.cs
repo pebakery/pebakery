@@ -110,6 +110,7 @@ namespace PEBakery.Core
                                 case CodeType.TXTDelLine:
                                 case CodeType.IniRead:
                                 case CodeType.IniWrite:
+                                case CodeType.IniDelete:
                                 case CodeType.IniReadSection:
                                 case CodeType.IniAddSection:
                                 case CodeType.IniDeleteSection:
@@ -575,6 +576,10 @@ namespace PEBakery.Core
                 case CodeType.IniWrite:
                     packType = CodeType.IniWriteOp;
                     packInfo = new CodeInfo_IniWriteOp(cmds);
+                    break;
+                case CodeType.IniDelete:
+                    packType = CodeType.IniDeleteOp;
+                    packInfo = new CodeInfo_IniDeleteOp(cmds);
                     break;
                 case CodeType.IniReadSection:
                     packType = CodeType.IniReadSectionOp;

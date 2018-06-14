@@ -167,8 +167,8 @@ namespace PEBakery.Tests.Core
 
             if (opType is CodeType type)
             {
-                Assert.AreEqual(cmds.Count, 1);
-                Assert.AreEqual(cmds[0].Type, type);
+                Assert.AreEqual(1, cmds.Count);
+                Assert.AreEqual(type, cmds[0].Type);
             }
             else
             {
