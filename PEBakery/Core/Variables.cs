@@ -436,10 +436,8 @@ namespace PEBakery.Core
                 vars.Remove(key);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public bool ContainsKey(string key)

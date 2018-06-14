@@ -54,6 +54,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
+                string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
 
                 // Test empty string
                 SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Append", tempFile, string.Empty, "C\r\n");
@@ -88,6 +89,19 @@ namespace PEBakery.Tests.Core.Command
                     $@"TXTAddLine,{tempFile},Y,Prepend",
                     $@"TXTAddLine,{tempFile},Z,Prepend",
                 }, tempFile, "A\r\nB", "Z\r\nY\r\nX\r\nA\r\nB");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Append",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile2},Z,Append",
+                }, tempFile, "A\r\nB", "A\r\nB\r\nX\r\nY\r\n");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Prepend",
+                    $@"TXTAddLine,{tempFile},Y,Prepend",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile},Z,Prepend",
+                }, tempFile, "A\r\nB", "Z\r\nY\r\nX\r\nA\r\nB\r\nY\r\n");
             }
             finally
             {
@@ -104,13 +118,13 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+                string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
+
                 SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "ABCD", "XYZCD");
                 SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},ab,XYZ", tempFile, "ABCD", "XYZCD");
                 SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "abcd", "XYZcd");
@@ -126,6 +140,11 @@ namespace PEBakery.Tests.Core.Command
                     $@"TXTReplace,{tempFile},PE,XY",
                     $@"TXTReplace,{tempFile},XYZ,TEB",
                 }, tempFile, "ABC\r\nXYZ\r\nABC\r\n가나다", "XYC\r\nTEB\r\nXYC\r\n가나다");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTReplace,{tempFile},AB,PE",
+                    $@"TXTReplace,{tempFile2},XYZ,TEB",
+                }, tempFile, "ABC\r\nXYZ\r\nABC\r\n가나다", "PEC\r\nXYZ\r\nPEC\r\n가나다");
             }
             finally
             {
@@ -142,15 +161,14 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string sampleStr = GenerateSampleText(true, true, true, true);
-
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
+                string tempFile2 = Path.Combine(tempDir, "TXTReplace2.txt");
+
                 // Test empty string
                 // Strange, but WB082 works like this
                 SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},Z", tempFile, string.Empty, string.Empty);
@@ -172,6 +190,11 @@ namespace PEBakery.Tests.Core.Command
                     $@"TXTDelLine,{tempFile},AB",
                     $@"TXTDelLine,{tempFile},XY",
                 }, tempFile, sampleStr, GenerateSampleText(false, true, false, true));
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTDelLine,{tempFile},AB",
+                    $@"TXTDelLine,{tempFile2},XY",
+                }, tempFile, sampleStr, GenerateSampleText(false, true, true, true));
             }
             finally
             {
@@ -198,21 +221,20 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("A B C");
-            b.AppendLine(" D E F");
-            b.AppendLine("  X Y Z");
-            b.AppendLine();
-            b.AppendLine("\t가 나 다");
-            string sampleStr = b.ToString();
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("A B C");
+                b.AppendLine(" D E F");
+                b.AppendLine("  X Y Z");
+                b.AppendLine();
+                b.AppendLine("\t가 나 다");
+                string sampleStr = b.ToString();
+
                 SingleTemplate(s, CodeType.TXTDelSpaces, $@"TXTDelSpaces,{tempFile}", tempFile, string.Empty, string.Empty);
 
                 b = new StringBuilder();
@@ -238,23 +260,22 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("A B C");
-            b.AppendLine(" D E F");
-            b.AppendLine("  X Y Z");
-            b.AppendLine();
-            b.AppendLine("\t가 나 다");
-            b.AppendLine();
-            b.AppendLine("힣");
-            string sampleStr = b.ToString();
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("A B C");
+                b.AppendLine(" D E F");
+                b.AppendLine("  X Y Z");
+                b.AppendLine();
+                b.AppendLine("\t가 나 다");
+                b.AppendLine();
+                b.AppendLine("힣");
+                string sampleStr = b.ToString();
+
                 SingleTemplate(s, CodeType.TXTDelEmptyLines, $@"TXTDelEmptyLines,{tempFile}", tempFile, string.Empty, string.Empty);
 
                 b = new StringBuilder();
