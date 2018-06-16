@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using PEBakery.Core;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.IniLib;
 using PEBakery.Helper;
@@ -111,7 +112,7 @@ namespace PEBakery.Tests.Core.Command
                     @"Visible,%pTextBox1%,False",
                     @"Visible,%pNumberBox1%,False",
                     @"Visible,%pCheckBox1%,False",
-                }, new (string, string)[]
+                }, new(string, string)[]
                 {
                     ("pTextBox1", @"Display,0,0,20,20,200,21,StringValue"),
                     ("pNumberBox1", @"pNumberBox1,0,2,20,70,40,22,3,0,100,1"),
@@ -179,7 +180,7 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pTextLabel1,%Dest%", null, ErrorCheck.Error);
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pTextLabel1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,FontSize,{scriptFile},Interface,pTextLabel1,%Dest%", @"8");
-            SingleTemplate( $@"ReadInterface,FontWeight,{scriptFile},Interface,pTextLabel1,%Dest%", @"Normal");
+            SingleTemplate($@"ReadInterface,FontWeight,{scriptFile},Interface,pTextLabel1,%Dest%", @"Normal");
 
             // 2 - NumberBox
             SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pNumberBox1,%Dest%", @"pNumberBox1");
@@ -218,7 +219,7 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"ReadInterface,Items,{scriptFile},Interface,pComboBox1,%Dest%", @"A|B|C|D");
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pComboBox1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pComboBox1,%Dest%", "None");
-            
+
             // 5 - Image
             SingleTemplate($@"ReadInterface,Text,{scriptFile},Interface,pImage1,%Dest%", @"Logo.jpg");
             SingleTemplate($@"ReadInterface,Visible,{scriptFile},Interface,pImage1,%Dest%", @"True");
@@ -412,7 +413,7 @@ namespace PEBakery.Tests.Core.Command
                 @"Display,1,0,20,20,200,21,PEBakery");
 
             // 1 - TextLabel
-            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1", 
+            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1",
                 null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,FontSize,{scriptFile},Interface,pTextLabel1,10", @"pTextLabel1",
                 @"Display,1,1,20,50,230,18,10,Normal");
@@ -462,7 +463,7 @@ namespace PEBakery.Tests.Core.Command
                 null, ErrorCheck.Error);
 
             // 5 - Image
-            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pImage1,PEBakery", @"pImage1", 
+            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pImage1,PEBakery", @"pImage1",
                 null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pImage1,https://github.com/pebakery/pebakery", @"pImage1",
                 @"Logo.jpg,1,5,20,230,40,40,https://github.com/pebakery/pebakery");
@@ -472,7 +473,7 @@ namespace PEBakery.Tests.Core.Command
                 null, ErrorCheck.Error);
 
             // 8 - Button
-            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pButton1,PEBakery", @"pButton1", 
+            SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pButton1,PEBakery", @"pButton1",
                 null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,World", @"pButton1",
                 @"ShowProgress,1,8,240,115,80,25,World,0,False");
@@ -529,7 +530,7 @@ namespace PEBakery.Tests.Core.Command
                 $@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2",
                 $@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z",
                 $@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery",
-            }, new (string, string)[]
+            }, new(string, string)[]
             {
                 ("pRadioGroup1",  @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2"),
                 (@"pComboBox1", @"X,1,4,20,130,150,21,X,Y,Z"),
@@ -538,12 +539,40 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region Echo
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandInterface")]
+        public void Echo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            void SingleTemplate(string rawCode, string msg, bool warn, ErrorCheck check = ErrorCheck.Success)
+            {
+                List<LogInfo> logs = EngineTests.Eval(s, rawCode, CodeType.Echo, check);
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.AreEqual(1, logs.Count);
+
+                    LogInfo log = logs[0];
+                    if (warn)
+                        Assert.AreEqual(LogState.Warning, log.State);
+                    else
+                        Assert.AreEqual(LogState.Success, log.State);
+                    Assert.IsTrue(log.Message.Equals(msg, StringComparison.Ordinal));
+                }
+            }
+
+            SingleTemplate(@"Echo,Hello World!", @"Hello World!", false, ErrorCheck.Success);
+            SingleTemplate(@"Echo,PEBakery,WARN", @"PEBakery", true, ErrorCheck.Warning);
+        }
+        #endregion
+
         #region AddInterface
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandInterface")]
         public void AddInterface()
-        { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
+        {
             EngineState s = EngineTests.CreateEngineState();
             string scriptFile = Path.Combine("%ProjectDir%", TestSuiteInterface, "AddInterface.script");
 
@@ -563,7 +592,7 @@ namespace PEBakery.Tests.Core.Command
                 }
             }
 
-            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,\"\"", new (string, string)[]
+            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,\"\"", new(string, string)[]
             {
                 ("pNumberBox1", "3"),
                 ("pCheckBox1", "True"),

@@ -1135,28 +1135,23 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Echo(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
 
             string message = StringEscaper.Preprocess(s, info.Message);
-
             Debug.Assert(message != null, $"{nameof(message)} != null");
 
             s.MainViewModel.BuildEchoMessage = message;
 
             logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, message, cmd));
-
             return logs;
         }
 
         public static List<LogInfo> EchoFile(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_EchoFile info = cmd.Info.Cast<CodeInfo_EchoFile>();
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
-
             Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
 
             if (!File.Exists(srcFile))

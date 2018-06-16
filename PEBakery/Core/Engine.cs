@@ -373,20 +373,24 @@ namespace PEBakery.Core
         #endregion
 
         #region RunCommands, RunCallback
-        public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth, bool callback = false)
+        // ReSharper disable once PossibleNullReferenceException
+        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
             if (cmds.Count == 0)
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{addr.Script.TreePath}]'s section [{addr.Section.Name}]", s.CurDepth + 1));
-                return;
+                return null;
             }
 
+            List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
             {
                 s.CurDepth = depth;
                 s.CurSectionParams = sectionParams;
 
-                ExecuteCommand(s, cmd);
+                List<LogInfo> logs = ExecuteCommand(s, cmd);
+                if (s.TestMode)
+                    allLogs.AddRange(logs);
 
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
@@ -400,6 +404,7 @@ namespace PEBakery.Core
             }
 
             DisableErrorOff(s, addr.Section, depth, ErrorOffState.ForceDisable);
+            return s.TestMode ? allLogs : null;
         }
         #endregion
 
@@ -1069,6 +1074,7 @@ namespace PEBakery.Core
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
+        public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // For performance (when engine runned by interface - legacy)
         public string CustomUserAgent = null;
 
