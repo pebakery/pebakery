@@ -1119,6 +1119,10 @@ namespace PEBakery.Core
         }
     }
 
+    /// <summary>
+    /// PEBakery script language does not support array, so this command is provided only for logging
+    /// TODO: Rework this command so it can be used in practical manner?
+    /// </summary>
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
     { // IniReadSection,<FileName>,<Section>,<%DestVar%>

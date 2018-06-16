@@ -98,10 +98,10 @@ namespace PEBakery.Tests.Core
                 CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
                 Console.WriteLine(info.ErrorMessage);
 
-                Assert.IsTrue(check == ErrorCheck.ParserError);
+                Assert.AreEqual(ErrorCheck.ParserError, check);
                 return s;
             }
-            Assert.IsTrue(cmd.Type == type);
+            Assert.AreEqual(type, cmd.Type);
 
             // Run CodeCommand
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
@@ -137,7 +137,7 @@ namespace PEBakery.Tests.Core
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
-                Assert.IsTrue(check == ErrorCheck.ParserError);
+                Assert.AreEqual(ErrorCheck.ParserError, check);
                 return s;
             }
 
@@ -161,7 +161,7 @@ namespace PEBakery.Tests.Core
 
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
-                Assert.IsTrue(check == ErrorCheck.ParserError);
+                Assert.AreEqual(ErrorCheck.ParserError, check);
                 return s;
             }
 

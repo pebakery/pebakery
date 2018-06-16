@@ -1181,7 +1181,7 @@ namespace PEBakery.IniLib
             rwLock.EnterWriteLock();
             try
             {
-                if (File.Exists(file) == false)
+                if (!File.Exists(file))
                     return false;
 
                 string tempPath = Path.GetTempFileName();
