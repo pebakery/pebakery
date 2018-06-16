@@ -78,7 +78,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandIni")]
         public void IniRead()
-        { 
+        {
             EngineState s = EngineTests.CreateEngineState();
             string sampleStr = SampleStr();
 
@@ -196,7 +196,7 @@ namespace PEBakery.Tests.Core.Command
                     $@"IniWrite,{tempFile},6DoF,Descent,Overload",
                     $@"IniWrite,{tempFile},Update,Roguelike,Sublevel Zero Redux",
                 }, tempFile, string.Empty, resultStr);
-                
+
                 b.Clear();
                 b.AppendLine("[6DoF]");
                 b.AppendLine("// Descent=1");
@@ -220,7 +220,7 @@ namespace PEBakery.Tests.Core.Command
                     $@"IniWrite,{tempFile},6DoF,Descent,Sublevel Zero Redux",
                     $@"IniWrite,{tempFile},Update,Parallax,Revival",
                 }, tempFile, sampleStr, resultStr);
-                
+
                 b.Clear();
                 b.AppendLine("[6DoF]");
                 b.AppendLine("Descent=Overload");
@@ -447,7 +447,7 @@ namespace PEBakery.Tests.Core.Command
                 b.AppendLine("[6DoF]");
                 resultStr = b.ToString();
                 WriteTemplate(s, CodeType.IniAddSection, $@"IniAddSection,{tempFile},6DoF", tempFile, sampleStr, resultStr);
-                
+
                 WriteTemplate(s, CodeType.IniAddSection, $@"IniAddSection,{tempFile},A,B", tempFile, string.Empty, null, ErrorCheck.ParserError);
 
                 // Optimization
@@ -731,7 +731,7 @@ namespace PEBakery.Tests.Core.Command
                 b.AppendLine("[6DoF]");
                 b.AppendLine("Descent=Overload");
                 string resultStr = b.ToString();
-                MergeTemplate(s, CodeType.IniMerge, $@"IniMerge,{tempSrcFile},{tempDestFile}", 
+                MergeTemplate(s, CodeType.IniMerge, $@"IniMerge,{tempSrcFile},{tempDestFile}",
                     tempSrcFile, srcSampleStr, tempDestFile, destSampleStr, resultStr);
 
                 b.Clear();
