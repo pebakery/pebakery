@@ -46,7 +46,8 @@ namespace PEBakery.Tests.Core.Command
             string tempFile = CommandHashTests.SampleText();
 
             string rawCode = $"Hash,MD5,{tempFile},%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Hash, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
             string comp = "1179cf94187d2d2f94010a8d39099543";
@@ -63,7 +64,8 @@ namespace PEBakery.Tests.Core.Command
             string tempFile = CommandHashTests.SampleText();
 
             string rawCode = $"Hash,SHA1,{tempFile},%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Hash, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
             string comp = "0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
@@ -80,7 +82,8 @@ namespace PEBakery.Tests.Core.Command
             string tempFile = CommandHashTests.SampleText();
 
             string rawCode = $"Hash,SHA256,{tempFile},%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Hash, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
             string comp = "3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
@@ -97,10 +100,11 @@ namespace PEBakery.Tests.Core.Command
             string tempFile = CommandHashTests.SampleText();
 
             string rawCode = $"Hash,SHA384,{tempFile},%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Hash, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            string comp = "e068a3ac0b4ab4b37306dc354af6b8a4c89ef3fbbf1db969ec6d6a4281f1ab1f472fcd7bc2f16c0cf41c1991056846a6";
+            const string comp = "e068a3ac0b4ab4b37306dc354af6b8a4c89ef3fbbf1db969ec6d6a4281f1ab1f472fcd7bc2f16c0cf41c1991056846a6";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             File.Delete(tempFile);
@@ -114,10 +118,11 @@ namespace PEBakery.Tests.Core.Command
             string tempFile = CommandHashTests.SampleText();
 
             string rawCode = $"Hash,SHA512,{tempFile},%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Hash, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            string comp = "f5829cb5e052ab5ef6820630fd992acabb798512d21b5c5295fb81b88b74f3812863c0804e730f26e166b51d77eb5f1de200fd75913278522da78fbb269600cc";
+            const string comp = "f5829cb5e052ab5ef6820630fd992acabb798512d21b5c5295fb81b88b74f3812863c0804e730f26e166b51d77eb5f1de200fd75913278522da78fbb269600cc";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             File.Delete(tempFile);

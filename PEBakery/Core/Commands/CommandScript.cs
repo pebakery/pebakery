@@ -71,7 +71,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s,s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -105,7 +105,7 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             Directory.CreateDirectory(tempDir);
@@ -170,7 +170,7 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -225,7 +225,7 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
             }
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)

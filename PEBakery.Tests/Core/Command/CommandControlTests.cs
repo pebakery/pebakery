@@ -179,7 +179,8 @@ namespace PEBakery.Tests.Core.Command
         public void Exit_1()
         { 
             string rawCode = $"Exit,UnitTest";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Warning);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Warning);
 
             Assert.IsTrue(s.PassCurrentScriptFlag);
         }
@@ -187,7 +188,8 @@ namespace PEBakery.Tests.Core.Command
         public void Exit_2()
         {
             string rawCode = $"Exit,UnitTest,NOWARN";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Success);
 
             Assert.IsTrue(s.PassCurrentScriptFlag);
         }
@@ -205,7 +207,8 @@ namespace PEBakery.Tests.Core.Command
         public void Halt_1()
         {
             string rawCode = $"Halt,UnitTest";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Halt, ErrorCheck.Warning);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
             Assert.IsTrue(s.CmdHaltFlag);
         }
@@ -225,7 +228,8 @@ namespace PEBakery.Tests.Core.Command
             Stopwatch w = Stopwatch.StartNew();
             
             string rawCode = $"Wait,1";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Wait, ErrorCheck.Success);
+            EngineState s = EngineTests.CreateEngineState();
+            EngineTests.Eval(s, rawCode, CodeType.Wait, ErrorCheck.Success);
 
             long elapsed = w.ElapsedMilliseconds;
             Assert.IsTrue(1000 <= elapsed);

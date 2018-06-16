@@ -958,7 +958,7 @@ namespace PEBakery.Core
         /// <summary>
         /// Get script instance from path string.
         /// </summary>
-        public static Script GetScriptInstance(EngineState s, CodeCommand cmd, string currentScriptPath, string loadScriptPath, out bool inCurrentScript)
+        public static Script GetScriptInstance(EngineState s, string currentScriptPath, string loadScriptPath, out bool inCurrentScript)
         {
             inCurrentScript = loadScriptPath.Equals(currentScriptPath, StringComparison.OrdinalIgnoreCase) ||
                               loadScriptPath.Equals(Path.GetDirectoryName(currentScriptPath), StringComparison.OrdinalIgnoreCase);

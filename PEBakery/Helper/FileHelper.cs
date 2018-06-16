@@ -263,6 +263,13 @@ namespace PEBakery.Helper
             return found;
         }
 
+        public static string GetTempFileNameEx()
+        {
+            string path = Path.GetTempFileName();
+            File.Delete(path);
+            return path;
+        }
+
         public static void CopyOffset(string srcFile, string destFile, long offset, long length)
         {
             using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
@@ -533,9 +540,9 @@ namespace PEBakery.Helper
                 isLongPathDisabled = true;
             }
 
-            if (isLongPathDisabled == false)
+            if (!isLongPathDisabled)
             {
-                if (longPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal) == false)
+                if (!longPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
                     longPath = LONG_PATH_PREFIX + longPath;
             }
 
@@ -543,7 +550,7 @@ namespace PEBakery.Helper
             GetShortPathName(longPath, shortPath, MAX_LONG_PATH);
 
             string str = shortPath.ToString();
-            if (isLongPathDisabled == false)
+            if (!isLongPathDisabled)
             {
                 if (str.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
                     return str.Substring(LONG_PATH_PREFIX.Length);

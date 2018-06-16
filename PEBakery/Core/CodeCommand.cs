@@ -3516,12 +3516,7 @@ namespace PEBakery.Core
                 b.Append(Recompress);
             }
             if (CheckFlag != null)
-            {
-                if (CheckFlag == true)
-                    b.Append(",CHECK");
-                else
-                    b.Append(",NOCHECK");
-            }
+                b.Append(CheckFlag == true ? ",CHECK" : ",NOCHECK");
             return b.ToString();
         }
     }

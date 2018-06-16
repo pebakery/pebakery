@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!sc.Sections.ContainsKey(sectionName))
@@ -151,7 +151,7 @@ namespace PEBakery.Core.Commands
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-                Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+                Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exists?
                 if (!sc.Sections.ContainsKey(sectionName))

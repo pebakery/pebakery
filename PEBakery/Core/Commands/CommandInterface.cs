@@ -78,8 +78,9 @@ namespace PEBakery.Core.Commands
                 // Re-render Script
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
+                    if (!(Application.Current.MainWindow is MainWindow w))
+                        return;
+                    if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
                         w.DrawScript(cmd.Addr.Script);
                 });
             }
@@ -437,7 +438,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
@@ -450,7 +451,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(section != null, $"{nameof(section)} != null");
             Debug.Assert(key != null, $"{nameof(key)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
@@ -474,7 +475,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> ReadInterfaceOp(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        { 
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_ReadInterfaceOp>();
@@ -486,7 +487,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
@@ -954,7 +955,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
@@ -969,7 +970,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(key != null, $"{nameof(key)} != null");
             Debug.Assert(finalValue != null, $"{nameof(finalValue)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
@@ -1001,7 +1002,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterfaceOp(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        { 
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_WriteInterfaceOp>();
@@ -1013,7 +1014,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
@@ -1315,7 +1316,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(interfaceSection != null, $"{nameof(interfaceSection)} != null");
             Debug.Assert(prefix != null, $"{nameof(prefix)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;

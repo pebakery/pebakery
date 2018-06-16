@@ -383,7 +383,7 @@ namespace PEBakery.Core.Commands
                             }
 
                             // RefreshScript -> Update Project.AllScripts
-                            Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
+                            Script sc = Engine.GetScriptInstance(s, cmd.Addr.Script.RealPath, scRealPath, out _);
                             sc = s.Project.RefreshScript(sc);
                             if (sc == null)
                             {

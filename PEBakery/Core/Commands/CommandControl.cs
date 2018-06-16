@@ -126,7 +126,7 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             // Does section exist?
             if (!sc.Sections.ContainsKey(sectionName))
