@@ -25,15 +25,14 @@
     not derived from or based on this program. 
 */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using PEBakery.Core;
-using System.IO;
 using PEBakery.Helper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command

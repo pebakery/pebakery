@@ -26,79 +26,77 @@
 */
 
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using PEBakery.Helper;
 using System.Text;
+using PEBakery.Core;
+using PEBakery.Helper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class CommandHashTests
     {
         #region Hash
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandHash")]
-        [TestMethod]
-        public void Hash_MD5()
-        { // Hash,<HashType>,<FilePath>,<DestVar>
-            string tempFile = CommandHashTests.SampleText();
-
+        public void MD5()
+        {
+            string tempFile = SampleText();
             string rawCode = $"Hash,MD5,{tempFile},%Dest%";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            string comp = "1179cf94187d2d2f94010a8d39099543";
+            const string comp = "1179cf94187d2d2f94010a8d39099543";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             File.Delete(tempFile);
         }
 
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandHash")]
-        [TestMethod]
-        public void Hash_SHA1()
-        { // Hash,<HashType>,<FilePath>,<DestVar>
-            string tempFile = CommandHashTests.SampleText();
-
+        public void SHA1()
+        {
+            string tempFile = SampleText();
             string rawCode = $"Hash,SHA1,{tempFile},%Dest%";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            string comp = "0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
+            const string comp = "0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             File.Delete(tempFile);
         }
 
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandHash")]
-        [TestMethod]
-        public void Hash_SHA256()
-        { // Hash,<HashType>,<FilePath>,<DestVar>
-            string tempFile = CommandHashTests.SampleText();
-
+        public void SHA256()
+        {
+            string tempFile = SampleText();
             string rawCode = $"Hash,SHA256,{tempFile},%Dest%";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            string comp = "3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
+            const string comp = "3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             File.Delete(tempFile);
         }
 
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandHash")]
-        [TestMethod]
-        public void Hash_SHA384()
-        { // Hash,<HashType>,<FilePath>,<DestVar>
-            string tempFile = CommandHashTests.SampleText();
-
+        public void SHA384()
+        {
+            string tempFile = SampleText();
             string rawCode = $"Hash,SHA384,{tempFile},%Dest%";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);
@@ -110,13 +108,12 @@ namespace PEBakery.Tests.Core.Command
             File.Delete(tempFile);
         }
 
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandHash")]
-        [TestMethod]
-        public void Hash_SHA512()
-        { // Hash,<HashType>,<FilePath>,<DestVar>
+        public void SHA512()
+        {
             string tempFile = CommandHashTests.SampleText();
-
             string rawCode = $"Hash,SHA512,{tempFile},%Dest%";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Hash, ErrorCheck.Success);

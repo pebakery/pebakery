@@ -26,11 +26,10 @@
 */
 
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System.IO;
-using System.Text;
 using System.Linq;
+using PEBakery.Core;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -41,7 +40,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandNetwork")]
-        public void Network_WebGet()
+        public void WebGet()
         { 
             EngineState s = EngineTests.CreateEngineState();
 

@@ -25,22 +25,20 @@
     not derived from or based on this program. 
 */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Win32;
-using PEBakery.Core;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.Helper;
+using Microsoft.Win32;
+using PEBakery.Core;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
+    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandRegistryTests
     {
         #region Const String
@@ -66,10 +64,8 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandRegistry")]
         public void RegRead()
-        {
+        { // Note: Only subKey is not going to be changed in later release of Windows should be used!
             EngineState s = EngineTests.CreateEngineState();
-
-            // Note: Use subKey will not be changed!
 
             // REG_SZ
             ReadTemplate(s, CodeType.RegRead, @"RegRead,HKLM,SOFTWARE\Microsoft\DirectX,Version,%Dest%", "4.09.00.0904");

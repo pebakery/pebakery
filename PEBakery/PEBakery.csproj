@@ -149,6 +149,7 @@
     </ApplicationDefinition>
     <Compile Include="Core\CodeOptimizer.cs" />
     <Compile Include="Core\CodeValidator.cs" />
+    <Compile Include="Core\Commands\CommandList.cs" />
     <Compile Include="Core\Commands\CommandMacro.cs" />
     <Compile Include="Core\Commands\CommandArchive.cs" />
     <Compile Include="Core\Commands\CommandHash.cs" />

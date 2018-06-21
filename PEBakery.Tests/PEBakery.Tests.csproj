@@ -76,6 +76,7 @@
     <Compile Include="Core\Command\CommandControlTests.cs" />
     <Compile Include="Core\Command\CommandIniTests.cs" />
     <Compile Include="Core\Command\CommandInterfaceTests.cs" />
+    <Compile Include="Core\Command\CommandListTests.cs" />
     <Compile Include="Core\Command\CommandNetworkTests.cs" />
     <Compile Include="Core\Command\CommandMathTests.cs" />
     <Compile Include="Core\Command\CommandRegistryTests.cs" />

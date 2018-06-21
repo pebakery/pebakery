@@ -88,9 +88,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.Hex:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Hex), "Invalid StrFormatInfo");
-                        StrFormatInfo_Hex subInfo = info.SubInfo as StrFormatInfo_Hex;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Hex subInfo = info.SubInfo.Cast<StrFormatInfo_Hex>();
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt32(intStr, out int intVal))
@@ -104,9 +102,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Floor:
                 case StrFormatType.Round:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_CeilFloorRound), "Invalid StrFormatInfo");
-                        StrFormatInfo_CeilFloorRound subInfo = info.SubInfo as StrFormatInfo_CeilFloorRound;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_CeilFloorRound subInfo = info.SubInfo.Cast<StrFormatInfo_CeilFloorRound>();
 
                         string roundToStr = StringEscaper.Preprocess(s, subInfo.RoundTo);
 
@@ -167,9 +163,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.Date:
                     { // <yyyy-mmm-dd hh:nn am/pm> 
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date), "Invalid StrFormatInfo");
-                        StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
 
                         string formatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
 
@@ -184,9 +178,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Path:
                 case StrFormatType.Ext:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Path), "Invalid StrFormatInfo");
-                        StrFormatInfo_Path subInfo = info.SubInfo as StrFormatInfo_Path;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Path subInfo = info.SubInfo.Cast<StrFormatInfo_Path>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.FilePath);
                         string destStr = string.Empty;
@@ -244,9 +236,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.PathCombine:
                     { // StrFormat,PathCombine,<DirPath>,<FileName>,<DestVar>
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_PathCombine), "Invalid StrFormatInfo");
-                        StrFormatInfo_PathCombine subInfo = info.SubInfo as StrFormatInfo_PathCombine;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_PathCombine subInfo = info.SubInfo.Cast<StrFormatInfo_PathCombine>();
 
                         string dirPath = StringEscaper.Preprocess(s, subInfo.DirPath).Trim();
                         string fileName = StringEscaper.Preprocess(s, subInfo.FileName).Trim();
@@ -267,16 +257,11 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Mult:
                 case StrFormatType.Div:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic), "Invalid StrFormatInfo");
-                        StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Arithmetic subInfo = info.SubInfo.Cast<StrFormatInfo_Arithmetic>();
 
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt64(operandStr, out long operand))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{operandStr}] is not a valid integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{operandStr}] is not a valid integer");
 
                         string destStr;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
@@ -312,17 +297,13 @@ namespace PEBakery.Core.Commands
 
                             if (upper && !StringHelper.IsUpperAlphabet(dest) ||
                                 lower && !StringHelper.IsLowerAlphabet(dest))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, "Result is not a valid drive letter"));
-                                return logs;
-                            }
+                                return LogInfo.LogErrorMessage(logs, "Result is not a valid drive letter");
 
                             destStr = dest.ToString();
                         }
                         else
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer"));
-                            return logs;
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
@@ -332,9 +313,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Left:
                 case StrFormatType.Right:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_LeftRight), "Invalid StrFormatInfo");
-                        StrFormatInfo_LeftRight subInfo = info.SubInfo as StrFormatInfo_LeftRight;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_LeftRight subInfo = info.SubInfo.Cast<StrFormatInfo_LeftRight>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string cutLenStr = StringEscaper.Preprocess(s, subInfo.Count);
@@ -373,9 +352,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.SubStr:
                     { // Index start from 1, not 0!
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_SubStr), "Invalid StrFormatInfo");
-                        StrFormatInfo_SubStr subInfo = info.SubInfo as StrFormatInfo_SubStr;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_SubStr subInfo = info.SubInfo.Cast<StrFormatInfo_SubStr>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
@@ -404,9 +381,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.Len:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Len), "Invalid StrFormatInfo");
-                        StrFormatInfo_Len subInfo = info.SubInfo as StrFormatInfo_Len;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Len subInfo = info.SubInfo.Cast<StrFormatInfo_Len>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
@@ -418,9 +393,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.RTrim:
                 case StrFormatType.CTrim:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Trim), "Invalid StrFormatInfo");
-                        StrFormatInfo_Trim subInfo = info.SubInfo as StrFormatInfo_Trim;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Trim subInfo = info.SubInfo.Cast<StrFormatInfo_Trim>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string toTrim = StringEscaper.Preprocess(s, subInfo.ToTrim);
@@ -478,9 +451,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.NTrim:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_NTrim), "Invalid StrFormatInfo");
-                        StrFormatInfo_NTrim subInfo = info.SubInfo as StrFormatInfo_NTrim;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_NTrim subInfo = info.SubInfo.Cast<StrFormatInfo_NTrim>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
@@ -498,9 +469,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.UCase:
                 case StrFormatType.LCase:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_ULCase), "Invalid StrFormatInfo");
-                        StrFormatInfo_ULCase subInfo = info.SubInfo as StrFormatInfo_ULCase;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_ULCase subInfo = info.SubInfo.Cast<StrFormatInfo_ULCase>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
@@ -519,8 +488,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Pos:
                 case StrFormatType.PosX:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Pos), "Invalid StrFormatInfo");
-                        StrFormatInfo_Pos subInfo = info.SubInfo as StrFormatInfo_Pos;
+                        StrFormatInfo_Pos subInfo = info.SubInfo.Cast<StrFormatInfo_Pos>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string subStr = StringEscaper.Preprocess(s, subInfo.SubStr);
@@ -541,8 +509,7 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Replace:
                 case StrFormatType.ReplaceX:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Replace));
-                        StrFormatInfo_Replace subInfo = info.SubInfo as StrFormatInfo_Replace;
+                        StrFormatInfo_Replace subInfo = info.SubInfo.Cast<StrFormatInfo_Replace>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string subStr = StringEscaper.Preprocess(s, subInfo.SearchStr);
@@ -554,54 +521,15 @@ namespace PEBakery.Core.Commands
 
                         string destStr = StringHelper.ReplaceEx(srcStr, subStr, newStr, comp);
 
-                        /*
-                        if (subStr.Equals(string.Empty, StringComparison.Ordinal))
-                        {
-                            destStr = srcStr;
-                        }
-                        else
-                        {
-                            StringBuilder b = new StringBuilder();
-                            int startIdx = 0;
-                            int newIdx = srcStr.Substring(startIdx).IndexOf(subStr, comp);
-                            if (newIdx != -1)
-                            {
-                                while (newIdx != -1)
-                                {
-                                    string tmpStr = srcStr.Substring(startIdx, newIdx);
-                                    b.Append(tmpStr);
-                                    b.Append(newStr);
-
-                                    startIdx += tmpStr.Length + subStr.Length;
-                                    newIdx = srcStr.Substring(startIdx).IndexOf(subStr, comp);
-
-                                    if (newIdx == -1)
-                                    {
-                                        b.Append(srcStr.Substring(startIdx));
-                                        break;
-                                    }
-                                }
-
-                                destStr = b.ToString();
-                            }
-                            else
-                            {
-                                destStr = srcStr;
-                            }
-                        }
-                        */
-
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
                 case StrFormatType.ShortPath:
                 case StrFormatType.LongPath:
-                    {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_ShortLongPath));
-                        StrFormatInfo_ShortLongPath subInfo = info.SubInfo as StrFormatInfo_ShortLongPath;
+                    { // Will be deprecated
+                        StrFormatInfo_ShortLongPath subInfo = info.SubInfo.Cast<StrFormatInfo_ShortLongPath>();
 
-                        // Will be deprecated
                         logs.Add(new LogInfo(LogState.Warning, $"Command [StrFormatType,{info.Type}] is deprecated"));
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
@@ -622,9 +550,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.Split:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Split), "Invalid StrFormatInfo");
-                        StrFormatInfo_Split subInfo = info.SubInfo as StrFormatInfo_Split;
-                        Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
+                        StrFormatInfo_Split subInfo = info.SubInfo.Cast<StrFormatInfo_Split>();
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string delimStr = StringEscaper.Preprocess(s, subInfo.Delimiter);

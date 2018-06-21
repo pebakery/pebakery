@@ -42,7 +42,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_DetectTextEncoding()
+        public void DetectTextEncoding()
         {
             string tempDir = Path.GetTempFileName();
             File.Delete(tempDir);
@@ -78,7 +78,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_GetFilesEx()
+        public void GetFilesEx()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
 
@@ -99,7 +99,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_GetFilesExWithDir()
+        public void GetFilesExWithDir()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
 
@@ -156,7 +156,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_DirectoryCopy()
+        public void DirectoryCopy()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -218,11 +218,9 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("StringHelper")]
-        public void StringHelper_ReplaceEx()
+        public void ReplaceEx()
         {
-            string str;
-
-            str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
+            string str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
             Assert.IsTrue(str.Equals("XYZCD", StringComparison.Ordinal));
 
             str = StringHelper.ReplaceEx(@"ABCD", "ab", "XYZ", StringComparison.Ordinal);

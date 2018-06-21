@@ -167,7 +167,7 @@ namespace PEBakery.Core
             { @"#$x", Environment.NewLine},
         };
         */
-        public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
+        public const string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
         {
@@ -696,6 +696,37 @@ namespace PEBakery.Core
             // If does not conform to Semantic Versioning, return null
             NumberHelper.VersionEx semVer = NumberHelper.VersionEx.Parse(str);
             return semVer?.ToString();
+        }
+        #endregion
+
+        #region List as Concatinated String
+        public static List<string> UnpackListStr(string listStr, string delimiter)
+        {
+            return listStr.Split(new string[] {delimiter}, StringSplitOptions.None).ToList();
+        }
+
+        public static string PackListStr(List<string> list, string delimter)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < list.Count; i++)
+            {
+                b.Append(list[i]);
+                if (i + 1 != list.Count)
+                    b.Append(delimter);
+            }
+            return b.ToString();
+        }
+
+        public static string PackListStr(string[] arr, string delimiter)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                b.Append(arr[i]);
+                if (i + 1 != arr.Length)
+                    b.Append(delimiter);
+            }
+            return b.ToString();
         }
         #endregion
     }

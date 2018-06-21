@@ -42,7 +42,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_Set()
+        public void Set()
         {
             EngineState s = EngineTests.CreateEngineState();
 
@@ -54,20 +54,20 @@ namespace PEBakery.Tests.Core.Command
 
         public void Set_1(EngineState s)
         {
-            string rawCode = "Set,%Dest%,PEBakery";
+            const string rawCode = "Set,%Dest%,PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
-            string comp = "PEBakery";
+            const string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Local, "Dest");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Set_2(EngineState s)
         {
-            string rawCode = "Set,%Dest%,PEBakery,GLOBAL";
+            const string rawCode = "Set,%Dest%,PEBakery,GLOBAL";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
-            string comp = "PEBakery";
+            const string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Dest");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
@@ -79,15 +79,15 @@ namespace PEBakery.Tests.Core.Command
             string pPath = s.Project.MainScript.RealPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
-            string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
+            const string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
-            string comp = "PEBakery";
+            const string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             string permanent = Ini.ReadKey(pPath, "Variables", "%Set_3%");
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            Assert.IsTrue(dest.Equals(permanent, StringComparison.Ordinal));
 
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
         }
@@ -96,7 +96,7 @@ namespace PEBakery.Tests.Core.Command
         {
             s.Variables["Dest"] = "PEBakery";
 
-            string rawCode = "Set,%Dest%,NIL";
+            const string rawCode = "Set,%Dest%,NIL";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = string.Empty;
@@ -109,7 +109,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_AddVariables()
+        public void AddVariables()
         {
             AddVariables_1();
             AddVariables_2();
@@ -118,9 +118,11 @@ namespace PEBakery.Tests.Core.Command
         public void AddVariables_1()
         { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
             EngineState s = EngineTests.CreateEngineState();
-            string tempFile = "AddVariables_1.script";
+            const string tempFile = "AddVariables_1.script";
             string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            Directory.CreateDirectory(Path.GetDirectoryName(pPath));
+            string pDir = Path.GetDirectoryName(pPath);
+            Assert.IsNotNull(pDir);
+            Directory.CreateDirectory(pDir);
 
             using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
             {
@@ -130,7 +132,7 @@ namespace PEBakery.Tests.Core.Command
                 w.WriteLine("%C%=3");
             }
 
-            string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars";
+            string rawCode = $@"AddVariables,%ProjectTemp%\{tempFile},TestVars";
             EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
 
             Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "A").Equals("1", StringComparison.Ordinal));
@@ -143,9 +145,11 @@ namespace PEBakery.Tests.Core.Command
         public void AddVariables_2()
         { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
             EngineState s = EngineTests.CreateEngineState();
-            string tempFile = "AddVariables_2.script";
+            const string tempFile = "AddVariables_2.script";
             string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            Directory.CreateDirectory(Path.GetDirectoryName(pPath));
+            string pDir = Path.GetDirectoryName(pPath);
+            Assert.IsNotNull(pDir);
+            Directory.CreateDirectory(pDir);
 
             using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
             {
@@ -170,15 +174,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_Exit()
+        public void Exit()
         {
             Exit_1();
             Exit_2();
         }
 
         public void Exit_1()
-        { 
-            string rawCode = $"Exit,UnitTest";
+        {
+            const string rawCode = "Exit,UnitTest";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Warning);
 
@@ -187,7 +191,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Exit_2()
         {
-            string rawCode = $"Exit,UnitTest,NOWARN";
+            const string rawCode = "Exit,UnitTest,NOWARN";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Success);
 
@@ -199,14 +203,14 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_Halt()
+        public void Halt()
         {
             Halt_1();
         }
 
         public void Halt_1()
         {
-            string rawCode = $"Halt,UnitTest";
+            const string rawCode = "Halt,UnitTest";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Halt, ErrorCheck.Warning);
 
@@ -218,7 +222,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_Wait()
+        public void Wait()
         {
             Wait_1();
         }
@@ -226,8 +230,8 @@ namespace PEBakery.Tests.Core.Command
         public void Wait_1()
         {
             Stopwatch w = Stopwatch.StartNew();
-            
-            string rawCode = $"Wait,1";
+
+            const string rawCode = "Wait,1";
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.Eval(s, rawCode, CodeType.Wait, ErrorCheck.Success);
 
@@ -240,7 +244,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandControl")]
-        public void Control_Beep()
+        public void Beep()
         {
             EngineState s = EngineTests.CreateEngineState();
 
@@ -255,9 +259,7 @@ namespace PEBakery.Tests.Core.Command
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
-            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
-
+            CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
             Assert.IsTrue(info.Type == beepType);
         }
         #endregion

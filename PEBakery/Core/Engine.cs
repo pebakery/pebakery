@@ -538,7 +538,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandText.TXTDelEmptyLines(s, cmd));
                         break;
                     #endregion
-                    #region 04 INI
+                    #region 04 Ini
                     case CodeType.IniRead:
                         logs.AddRange(CommandIni.IniRead(s, cmd));
                         break;
@@ -585,91 +585,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandIni.IniMerge(s, cmd));
                         break;
                     #endregion
-                    #region 05 Archive
-                    case CodeType.Compress:
-                        logs.AddRange(CommandArchive.Compress(s, cmd));
-                        break;
-                    case CodeType.Decompress:
-                        logs.AddRange(CommandArchive.Decompress(s, cmd));
-                        break;
-                    case CodeType.Expand:
-                        logs.AddRange(CommandArchive.Expand(s, cmd));
-                        break;
-                    case CodeType.CopyOrExpand:
-                        logs.AddRange(CommandArchive.CopyOrExpand(s, cmd));
-                        break;
-                    #endregion
-                    #region 06 Network
-                    case CodeType.WebGet:
-                    case CodeType.WebGetIfNotExist: // Deprecated
-                        logs.AddRange(CommandNetwork.WebGet(s, cmd));
-                        break;
-                    #endregion
-                    #region 07 Script
-                    case CodeType.ExtractFile:
-                        logs.AddRange(CommandScript.ExtractFile(s, cmd));
-                        break;
-                    case CodeType.ExtractAndRun:
-                        logs.AddRange(CommandScript.ExtractAndRun(s, cmd));
-                        break;
-                    case CodeType.ExtractAllFiles:
-                        logs.AddRange(CommandScript.ExtractAllFiles(s, cmd));
-                        break;
-                    case CodeType.Encode:
-                        logs.AddRange(CommandScript.Encode(s, cmd));
-                        break;
-                    #endregion
-                    #region 08 Interface
-                    case CodeType.Visible:
-                        logs.AddRange(CommandInterface.Visible(s, cmd));
-                        break;
-                    case CodeType.VisibleOp:
-                        logs.AddRange(CommandInterface.VisibleOp(s, cmd));
-                        break;
-                    case CodeType.ReadInterface:
-                        logs.AddRange(CommandInterface.ReadInterface(s, cmd));
-                        break;
-                    case CodeType.ReadInterfaceOp:
-                        logs.AddRange(CommandInterface.ReadInterfaceOp(s, cmd));
-                        break;
-                    case CodeType.WriteInterface:
-                        logs.AddRange(CommandInterface.WriteInterface(s, cmd));
-                        break;
-                    case CodeType.WriteInterfaceOp:
-                        logs.AddRange(CommandInterface.WriteInterfaceOp(s, cmd));
-                        break;
-                    case CodeType.Message:
-                        logs.AddRange(CommandInterface.Message(s, cmd));
-                        break;
-                    case CodeType.Echo:
-                        logs.AddRange(CommandInterface.Echo(s, cmd));
-                        break;
-                    case CodeType.EchoFile:
-                        logs.AddRange(CommandInterface.EchoFile(s, cmd));
-                        break;
-                    case CodeType.UserInput:
-                        logs.AddRange(CommandInterface.UserInput(s, cmd));
-                        break;
-                    case CodeType.AddInterface:
-                        logs.AddRange(CommandInterface.AddInterface(s, cmd));
-                        break;
-                    #endregion
-                    #region 09 Hash
-                    case CodeType.Hash:
-                        logs.AddRange(CommandHash.Hash(s, cmd));
-                        break;
-                    #endregion
-                    #region 10 String
-                    case CodeType.StrFormat:
-                        logs.AddRange(CommandString.StrFormat(s, cmd));
-                        break;
-                    #endregion
-                    #region 11 Math
-                    case CodeType.Math:
-                        logs.AddRange(CommandMath.Math(s, cmd));
-                        break;
-                    #endregion
-                    #region 12 Wim
+                    #region 05 Wim
                     case CodeType.WimMount:
                         logs.AddRange(CommandWim.WimMount(s, cmd));
                         break;
@@ -717,6 +633,95 @@ namespace PEBakery.Core
                         break;
                     case CodeType.WimExport:
                         logs.AddRange(CommandWim.WimExport(s, cmd));
+                        break;
+                    #endregion
+                    #region 06 Archive
+                    case CodeType.Compress:
+                        logs.AddRange(CommandArchive.Compress(s, cmd));
+                        break;
+                    case CodeType.Decompress:
+                        logs.AddRange(CommandArchive.Decompress(s, cmd));
+                        break;
+                    case CodeType.Expand:
+                        logs.AddRange(CommandArchive.Expand(s, cmd));
+                        break;
+                    case CodeType.CopyOrExpand:
+                        logs.AddRange(CommandArchive.CopyOrExpand(s, cmd));
+                        break;
+                    #endregion
+                    #region 07 Network
+                    case CodeType.WebGet:
+                    case CodeType.WebGetIfNotExist: // Deprecated
+                        logs.AddRange(CommandNetwork.WebGet(s, cmd));
+                        break;
+                    #endregion
+                    #region 08 Hash
+                    case CodeType.Hash:
+                        logs.AddRange(CommandHash.Hash(s, cmd));
+                        break;
+                    #endregion
+                    #region 09 Script
+                    case CodeType.ExtractFile:
+                        logs.AddRange(CommandScript.ExtractFile(s, cmd));
+                        break;
+                    case CodeType.ExtractAndRun:
+                        logs.AddRange(CommandScript.ExtractAndRun(s, cmd));
+                        break;
+                    case CodeType.ExtractAllFiles:
+                        logs.AddRange(CommandScript.ExtractAllFiles(s, cmd));
+                        break;
+                    case CodeType.Encode:
+                        logs.AddRange(CommandScript.Encode(s, cmd));
+                        break;
+                    #endregion
+                    #region 10 Interface
+                    case CodeType.Visible:
+                        logs.AddRange(CommandInterface.Visible(s, cmd));
+                        break;
+                    case CodeType.VisibleOp:
+                        logs.AddRange(CommandInterface.VisibleOp(s, cmd));
+                        break;
+                    case CodeType.ReadInterface:
+                        logs.AddRange(CommandInterface.ReadInterface(s, cmd));
+                        break;
+                    case CodeType.ReadInterfaceOp:
+                        logs.AddRange(CommandInterface.ReadInterfaceOp(s, cmd));
+                        break;
+                    case CodeType.WriteInterface:
+                        logs.AddRange(CommandInterface.WriteInterface(s, cmd));
+                        break;
+                    case CodeType.WriteInterfaceOp:
+                        logs.AddRange(CommandInterface.WriteInterfaceOp(s, cmd));
+                        break;
+                    case CodeType.Message:
+                        logs.AddRange(CommandInterface.Message(s, cmd));
+                        break;
+                    case CodeType.Echo:
+                        logs.AddRange(CommandInterface.Echo(s, cmd));
+                        break;
+                    case CodeType.EchoFile:
+                        logs.AddRange(CommandInterface.EchoFile(s, cmd));
+                        break;
+                    case CodeType.UserInput:
+                        logs.AddRange(CommandInterface.UserInput(s, cmd));
+                        break;
+                    case CodeType.AddInterface:
+                        logs.AddRange(CommandInterface.AddInterface(s, cmd));
+                        break;
+                    #endregion
+                    #region 20 String
+                    case CodeType.StrFormat:
+                        logs.AddRange(CommandString.StrFormat(s, cmd));
+                        break;
+                    #endregion
+                    #region 21 Math
+                    case CodeType.Math:
+                        logs.AddRange(CommandMath.Math(s, cmd));
+                        break;
+                    #endregion
+                    #region 22 List
+                    case CodeType.List:
+                        logs.AddRange(CommandList.List(s, cmd));
                         break;
                     #endregion
                     #region 80 Branch

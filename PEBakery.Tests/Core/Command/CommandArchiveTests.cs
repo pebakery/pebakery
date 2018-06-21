@@ -43,7 +43,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
-        public void Archive_Compress()
+        public void Compress()
         {
             Compress_DirTemplate("Zip", "France", "France_Store.zip", ArchiveHelper.CompressLevel.Store);
             Compress_DirTemplate("Zip", "Korea", "Korea_Best.zip", ArchiveHelper.CompressLevel.Best);
@@ -147,7 +147,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_Decompress()
+        public void Decompress()
         {
             Decompress_DirTemplate("Korea.zip");
             Decompress_DirTemplate("Korea.7z");
@@ -170,7 +170,7 @@ namespace PEBakery.Tests.Core.Command
             string srcPath = Path.Combine(dirPath, archiveName, compFile);
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destPath = Path.Combine(destDir, compFile);
-            
+
             try
             {
                 Directory.CreateDirectory(destDir);
@@ -187,8 +187,6 @@ namespace PEBakery.Tests.Core.Command
                     byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
-
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
@@ -229,7 +227,6 @@ namespace PEBakery.Tests.Core.Command
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
@@ -243,7 +240,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_Expand()
+        public void Expand()
         {
             EngineState s = EngineTests.CreateEngineState();
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -315,7 +312,7 @@ namespace PEBakery.Tests.Core.Command
         }
 
         public void Expand_DirTemplate(EngineState s, string archiveFile, string destDir, string compDir, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
-        { 
+        {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab");
 
@@ -356,7 +353,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_CopyOrExpand()
+        public void CopyOrExpand()
         {
             EngineState s = EngineTests.CreateEngineState();
 
