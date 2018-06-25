@@ -149,6 +149,9 @@ namespace PEBakery.Tests.Core
                 Assert.AreEqual(ErrorCheck.ParserError, check);
                 return new List<LogInfo>();
             }
+            
+            // Reset halt flags
+            s.ResetHaltFlags();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
@@ -209,7 +212,7 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, SectionAddress addr, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
-            // Create CodeCommand
+            // Parse CodeCommand
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
 
             if (errorLogs.Any(x => x.State == LogState.Error))
@@ -227,6 +230,9 @@ namespace PEBakery.Tests.Core
             {
                 Assert.IsTrue(1 < cmds.Count);
             }
+
+            // Reset halt flags
+            s.ResetHaltFlags();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);

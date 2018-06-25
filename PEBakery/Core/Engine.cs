@@ -1170,6 +1170,16 @@ namespace PEBakery.Core
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
         }
         #endregion
+
+        #region ResetHaltFlags
+        public void ResetHaltFlags()
+        {
+            PassCurrentScriptFlag = false;
+            ErrorHaltFlag = false;
+            UserHaltFlag = false;
+            CmdHaltFlag = false;
+        }
+        #endregion
     }
     #endregion
 
