@@ -698,7 +698,7 @@ namespace PEBakery.Core
         {
             if (varName.StartsWith("%") && varName.EndsWith("%"))
             {
-                if (StringHelper.CountOccurrences(varName, "%") == 2)
+                if (StringHelper.CountSubStr(varName, "%") == 2)
                 {
                     string varKey = varName.Substring(1, varName.Length - 2);
                     return StringEscaper.ExpandSectionParams(s, varKey);

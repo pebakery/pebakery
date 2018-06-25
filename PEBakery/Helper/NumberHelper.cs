@@ -43,7 +43,7 @@ namespace PEBakery.Helper
 
         public static StringNumberType IsStringHexInteger(string str)
         {
-            int pCnt = StringHelper.CountOccurrences(str, ".");
+            int pCnt = StringHelper.CountSubStr(str, ".");
             if (1 < pCnt)
                 return StringNumberType.NotNumber;
 

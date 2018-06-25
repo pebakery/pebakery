@@ -603,7 +603,7 @@ namespace PEBakery.Core
                 return null;
 
             // Check doublequote's occurence - must be 2n
-            if (StringHelper.CountOccurrences(rawLine, "\"") % 2 == 1)
+            if (StringHelper.CountSubStr(rawLine, "\"") % 2 == 1)
                 throw new ExecuteException("Doublequote's number should be even number");
 
             // Parse Arguments

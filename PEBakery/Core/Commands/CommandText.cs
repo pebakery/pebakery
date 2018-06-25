@@ -420,7 +420,7 @@ namespace PEBakery.Core.Commands
                 {
                     // WB082 delete spaces only if spaces are placed in front of line.
                     // Same with C#'s string.TrimStart().
-                    int count = StringHelper.CountOccurrences(srcLine, " ");
+                    int count = StringHelper.CountSubStr(srcLine, " ");
                     if (0 < count)
                     {
                         i++;

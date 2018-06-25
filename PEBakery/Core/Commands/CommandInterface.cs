@@ -316,14 +316,14 @@ namespace PEBakery.Core.Commands
                                 {
                                     UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, delim);
+                                    destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
                                     UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, delim);
+                                    destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             default:

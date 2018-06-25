@@ -156,7 +156,7 @@ namespace PEBakery.Core
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Check doublequote's occurence - must be 2n
-            if (StringHelper.CountOccurrences(rawValue, "\"") % 2 == 1)
+            if (StringHelper.CountSubStr(rawValue, "\"") % 2 == 1)
                 throw new InvalidCommandException("Doublequote's number should be an even number", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists

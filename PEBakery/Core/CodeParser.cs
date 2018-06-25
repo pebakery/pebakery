@@ -202,7 +202,7 @@ namespace PEBakery.Core
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
 
             // Check doublequote's occurence - must be 2n
-            if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
+            if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("Doublequote's number should be an even number", rawCode);
 
             // Parse Arguments

@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -700,32 +701,33 @@ namespace PEBakery.Core
         #endregion
 
         #region List as Concatinated String
-        public static List<string> UnpackListStr(string listStr, string delimiter)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<string> UnpackListStr(string listStr, string seperator)
         {
-            return listStr.Split(new string[] {delimiter}, StringSplitOptions.None).ToList();
+            return StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase).ToList();
         }
 
-        public static string PackListStr(List<string> list, string delimter)
+        public static string PackListStr(List<string> list, string seperator)
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < list.Count; i++)
+            for (int i = 0; i < list.Count - 1; i++)
             {
                 b.Append(list[i]);
-                if (i + 1 != list.Count)
-                    b.Append(delimter);
+                b.Append(seperator);
             }
+            b.Append(list[list.Count - 1]);
             return b.ToString();
         }
 
-        public static string PackListStr(string[] arr, string delimiter)
+        public static string PackListStr(string[] arr, string seperator)
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < arr.Length; i++)
+            for (int i = 0; i < arr.Length - 1; i++)
             {
                 b.Append(arr[i]);
-                if (i + 1 != arr.Length)
-                    b.Append(delimiter);
+                b.Append(seperator);
             }
+            b.Append(arr[arr.Length - 1]);
             return b.ToString();
         }
         #endregion
