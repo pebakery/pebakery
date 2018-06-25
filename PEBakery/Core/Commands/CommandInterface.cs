@@ -146,7 +146,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static (bool, string) InternalReadInterface(UIControl uiCtrl, InterfaceElement element)
+        private static (bool, string) InternalReadInterface(UIControl uiCtrl, InterfaceElement element, string delim)
         {
             string destStr;
             switch (element)
@@ -316,14 +316,14 @@ namespace PEBakery.Core.Commands
                                 {
                                     UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                    destStr = StringHelper.ConcatStrings(subInfo.Items, delim);
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
                                     UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                    destStr = StringHelper.ConcatStrings(subInfo.Items, delim);
                                 }
                                 break;
                             default:
@@ -446,6 +446,9 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
+            string delim = "|";
+            if (info.Delim != null)
+                delim = StringEscaper.Preprocess(s, info.Delim);
 
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
@@ -463,7 +466,7 @@ namespace PEBakery.Core.Commands
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
 
             // Read value from uiCtrl
-            (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element);
+            (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element, delim);
             if (!success) // Operation failed, destStr contains error message
                 return LogInfo.LogErrorMessage(logs, destStr);
 
@@ -514,7 +517,11 @@ namespace PEBakery.Core.Commands
             int successCount = 0;
             foreach ((UIControl uiCtrl, CodeInfo_ReadInterface info, CodeCommand subCmd) in targets)
             {
-                (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element);
+                string delim = "|";
+                if (info.Delim != null)
+                    delim = StringEscaper.Preprocess(s, info.Delim);
+
+                (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element, delim);
                 if (success)
                 {
                     List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, destStr, false, false, false);
@@ -537,7 +544,7 @@ namespace PEBakery.Core.Commands
         }
 
         // ReSharper disable once UnusedMethodReturnValue.Local
-        private static (bool, List<LogInfo>) InternalWriteInterface(UIControl uiCtrl, InterfaceElement element, string finalValue)
+        private static (bool, List<LogInfo>) InternalWriteInterface(UIControl uiCtrl, InterfaceElement element, string delim, string finalValue)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -768,7 +775,7 @@ namespace PEBakery.Core.Commands
                 #region Items - ComboBox, RadioGroup
                 case InterfaceElement.Items:
                     {
-                        string[] newItems = finalValue.Split(UIControl.ItemSeperatorChar);
+                        string[] newItems = finalValue.Split(new string[] { delim }, StringSplitOptions.None);
 
                         switch (uiCtrl.Type)
                         {
@@ -964,6 +971,9 @@ namespace PEBakery.Core.Commands
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
+            string delim = "|";
+            if (info.Delim != null)
+                delim = StringEscaper.Preprocess(s, info.Delim);
 
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
@@ -983,7 +993,7 @@ namespace PEBakery.Core.Commands
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
 
             // Write value to uiCtrl
-            (_, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, finalValue);
+            (_, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, delim, finalValue);
             logs.AddRange(resultLogs);
 
             // Update uiCtrl into file
@@ -1021,13 +1031,16 @@ namespace PEBakery.Core.Commands
             ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
-            var targets = new List<(UIControl, InterfaceElement, string, CodeCommand)>(infoOp.Cmds.Count);
+            var targets = new List<(UIControl, InterfaceElement, string, string, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
                 CodeInfo_WriteInterface info = subCmd.Info.Cast<CodeInfo_WriteInterface>();
 
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string finalValue = StringEscaper.Preprocess(s, info.Value);
+                string delim = "|";
+                if (info.Delim != null)
+                    delim = StringEscaper.Preprocess(s, info.Delim);
 
                 UIControl uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCtrl == null)
@@ -1036,13 +1049,13 @@ namespace PEBakery.Core.Commands
                     continue;
                 }
 
-                targets.Add((uiCtrl, info.Element, finalValue, subCmd));
+                targets.Add((uiCtrl, info.Element, delim, finalValue, subCmd));
             }
 
             List<UIControl> updatedUICtrls = new List<UIControl>(targets.Count);
-            foreach ((UIControl uiCtrl, InterfaceElement element, string finalValue, CodeCommand subCmd) in targets)
+            foreach ((UIControl uiCtrl, InterfaceElement element, string delim, string finalValue, CodeCommand subCmd) in targets)
             {
-                (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, element, finalValue);
+                (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, element, delim, finalValue);
                 LogInfo.AddCommand(resultLogs, subCmd);
                 logs.AddRange(resultLogs);
 

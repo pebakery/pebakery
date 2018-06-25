@@ -2512,20 +2512,22 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ReadInterface : CodeInfo
-    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<%DestVar%>
+    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<%DestVar%>,[Delim=<Str>]
         public InterfaceElement Element;
         public string ScriptFile;
         public string Section;
         public string Key;
         public string DestVar;
+        public string Delim;
 
-        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar)
+        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar, string delim)
         {
             Element = element;
             ScriptFile = scriptFile;
             Section = section;
             Key = key;
             DestVar = destVar;
+            Delim = delim;
         }
 
         public new bool OptimizeCompare(CodeInfo cmpInfo)
@@ -2540,7 +2542,22 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
+            StringBuilder b = new StringBuilder();
+            b.Append(Element);
+            b.Append(",");
+            b.Append(ScriptFile);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append("Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
         }
     }
 
@@ -2558,20 +2575,22 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WriteInterface : CodeInfo
-    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
+    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
         public InterfaceElement Element;
         public string ScriptFile;
         public string Section;
         public string Key;
         public string Value;
+        public string Delim;
 
-        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value)
+        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value, string delim)
         {
             Element = element;
             ScriptFile = scriptFile;
             Section = section;
             Key = key;
             Value = value;
+            Delim = delim;
         }
 
         public new bool OptimizeCompare(CodeInfo cmpInfo)
@@ -2586,7 +2605,22 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{ScriptFile},{Section},{Key},{Value}";
+            StringBuilder b = new StringBuilder();
+            b.Append(Element);
+            b.Append(",");
+            b.Append(ScriptFile);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(Value);
+            if (Delim != null)
+            {
+                b.Append("Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
         }
     }
 

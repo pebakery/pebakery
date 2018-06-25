@@ -1873,12 +1873,11 @@ namespace PEBakery.Core
                         return new CodeInfo_Visible(interfaceKey, visibility);
                     }
                 case CodeType.ReadInterface:
-                    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+                    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>,[Delim=<Str>]
                         const int minArgCount = 5;
-                        const int maxArgCount = 5;
+                        const int maxArgCount = 6;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
@@ -1886,18 +1885,60 @@ namespace PEBakery.Core
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar);
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        if (delim != null && element != InterfaceElement.Items)
+                            throw new InvalidCommandException($"Argument [Delim] can be only used with [{element}]", rawCode);
+
+                        return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar, delim);
                     }
                 case CodeType.WriteInterface:
-                    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
+                    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
                         const int minArgCount = 5;
-                        const int maxArgCount = 5;
+                        const int maxArgCount = 6;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
-                        return new CodeInfo_WriteInterface(element, args[1], args[2], args[3], args[4]);
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        if (delim != null && element != InterfaceElement.Items)
+                            throw new InvalidCommandException($"Argument [Delim] can be only used with [{element}]", rawCode);
+
+                        return new CodeInfo_WriteInterface(element, args[1], args[2], args[3], args[4], delim);
                     }
                 case CodeType.Message:
                     { // Message,<Message>[,ICON][,TIMEOUT]

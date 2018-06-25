@@ -543,8 +543,6 @@ namespace PEBakery.Core
         #region Const
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
-        public const string ItemSeperatorStr = "|";
-        public const char ItemSeperatorChar = '|';
         #endregion
     }
     #endregion

@@ -215,6 +215,7 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pComboBox1,%Dest%", @"A");
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pComboBox1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,Items,{scriptFile},Interface,pComboBox1,%Dest%", @"A|B|C|D");
+            SingleTemplate($@"ReadInterface,Items,{scriptFile},Interface,pComboBox1,%Dest%,Delim=$", @"A$B$C$D");
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pComboBox1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pComboBox1,%Dest%", "None");
 
@@ -313,6 +314,7 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pRadioGroup1,%Dest%", @"60");
             SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pRadioGroup1,%Dest%", @"0");
             SingleTemplate($@"ReadInterface,Items,{scriptFile},Interface,pRadioGroup1,%Dest%", @"Option1|Option2|Option3");
+            SingleTemplate($@"ReadInterface,Items,{scriptFile},Interface,pRadioGroup1,%Dest%,Delim=$", @"Option1$Option2$Option3");
             SingleTemplate($@"ReadInterface,SectionName,{scriptFile},Interface,pRadioGroup1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,%Dest%", "None");
 
@@ -453,6 +455,8 @@ namespace PEBakery.Tests.Core.Command
                 null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z", @"pComboBox1",
                 @"X,1,4,20,130,150,21,X,Y,Z");
+            SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X$Y$Z,Delim=$", @"pComboBox1",
+                @"X,1,4,20,130,150,21,X,Y,Z");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pComboBox1,Hello", @"pComboBox1",
                 @"A,1,4,20,130,150,21,A,B,C,D,_Hello_,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pComboBox1,None", @"pComboBox1",
@@ -514,6 +518,8 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,Items", @"pRadioGroup1",
                 null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X|Y|Z", @"pRadioGroup1",
+                @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
+            SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X$Y$Z,Delim=$", @"pRadioGroup1",
                 @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pRadioGroup1,Hello", @"pRadioGroup1",
                 @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0,_Hello_,False");
