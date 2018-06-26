@@ -829,7 +829,7 @@ namespace PEBakery.Tests.Core.Command
                 $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\가,\다",
                 $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt",
                 $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABDE,\RENAME"
-            }, "LZX.wim", new (string, bool)[]
+            }, "LZX.wim", new(string, bool)[]
             {
                 (@"\다", true),
                 (@"\ACDE.txt", false),

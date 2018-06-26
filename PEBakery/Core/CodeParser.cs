@@ -869,16 +869,35 @@ namespace PEBakery.Core
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
                 case CodeType.IniReadSection:
-                    { // INIReadSection,<FileName>,<Section>,<DestVar>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    {
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[2];
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        return new CodeInfo_IniReadSection(args[0], args[1], args[2]);
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_IniReadSection(args[0], args[1], args[2], delim);
                     }
                 case CodeType.IniAddSection:
                     { // INIAddSection,<FileName>,<Section>

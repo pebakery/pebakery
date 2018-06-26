@@ -478,7 +478,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> ReadInterfaceOp(EngineState s, CodeCommand cmd)
-        { 
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_ReadInterfaceOp>();
@@ -1012,7 +1012,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterfaceOp(EngineState s, CodeCommand cmd)
-        { 
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_WriteInterfaceOp>();

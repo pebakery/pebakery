@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-
 using System;
 using System.IO;
 using System.Linq;
@@ -51,7 +50,7 @@ namespace PEBakery.Tests.Core.Command
             string.Empty, // 4
             "[Sec2]", // 5
             "// Comment", // 6
-            "X=4", // 7
+            "X=%Four%", // 7
             "Y=5", // 8
             "Z=6", // 9
             string.Empty, // 10
@@ -355,24 +354,9 @@ namespace PEBakery.Tests.Core.Command
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
-                StringBuilder b = new StringBuilder();
-                b.Append("[Sec1]#$x");
-                b.Append("A=1#$x");
-                b.Append("B=2#$x");
-                b.Append("C=3#$x");
-                string sec1 = b.ToString();
-                b.Clear();
-                b.Append("[Sec2]#$x");
-                b.Append("X=4#$x");
-                b.Append("Y=5#$x");
-                b.Append("Z=6#$x");
-                string sec2 = b.ToString();
-                b.Clear();
-                b.Append("[Sec3]#$x");
-                b.Append("가=7#$x");
-                b.Append("나=8#$x");
-                b.Append("다=9#$x");
-                string sec3 = b.ToString();
+                const string sec1 = "A|1|B|2|C|3";
+                const string sec2 = "X|#$pFour#$p|Y|5|Z|6";
+                const string sec3 = "가|7|나|8|다|9";
 
                 ReadTemplate(s, CodeType.IniReadSection, $@"IniReadSection,{tempFile},Sec1,%Dest%", tempFile, sampleStr, sec1);
                 ReadTemplate(s, CodeType.IniReadSection, $@"IniReadSection,{tempFile},Sec2,%Dest%", tempFile, sampleStr, sec2);

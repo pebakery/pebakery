@@ -1127,16 +1127,18 @@ namespace PEBakery.Core
     /// </summary>
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
-    { // IniReadSection,<FileName>,<Section>,<%DestVar%>
+    { // IniReadSection,<FileName>,<Section>,<%DestVar%>,[Delim=<Str>]
         public string FileName;
         public string Section;
         public string DestVar;
+        public string Delim;
 
-        public CodeInfo_IniReadSection(string fileName, string section, string destVar)
+        public CodeInfo_IniReadSection(string fileName, string section, string destVar, string delim)
         {
             FileName = fileName;
             Section = section;
             DestVar = destVar;
+            Delim = delim;
         }
 
         public new bool OptimizeCompare(CodeInfo cmpInfo)
@@ -1150,7 +1152,18 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{FileName},{Section},{DestVar}";
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",");
+                b.Append(Delim);
+            }
+            return b.ToString();
         }
     }
 
