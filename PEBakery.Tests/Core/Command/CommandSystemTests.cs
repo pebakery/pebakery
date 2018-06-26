@@ -26,13 +26,12 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Threading.Tasks;
+using System.Linq;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -42,7 +41,7 @@ namespace PEBakery.Tests.Core.Command
         #region LoadNewScript
         [TestMethod]
         [TestCategory("Command")]
-        [TestCategory("CommandString")]
+        [TestCategory("CommandSystem")]
         public void LoadNewScript()
         {
             void Template(string rawCode, string[] destTreePaths, ErrorCheck check = ErrorCheck.Success)
@@ -79,6 +78,68 @@ namespace PEBakery.Tests.Core.Command
                 @"TestSuite\Load\Blank1.script",
                 @"TestSuite\Load\Blank2.script",
             });
+        }
+        #endregion
+
+        #region SetLocal, EndLocal
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandSystem")]
+        public void SetEndLocal()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void SingleTemplate(List<string> rawCodes, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
+            {
+                s.Variables.Delete(VarsType.Local, "Dest");
+                s.SectionReturnValue = string.Empty;
+
+                EngineTests.EvalLines(s, rawCodes, check);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string dest = s.Variables["Dest"];
+                    string ret = s.SectionReturnValue;
+                    Assert.IsTrue(dest.Equals(destComp, StringComparison.Ordinal));
+                    Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
+                }
+            }
+            void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
+            {
+                s.Variables.Delete(VarsType.Local, "Dest");
+                s.SectionReturnValue = string.Empty;
+
+                (EngineState st, _) = EngineTests.EvalScript(treePath, check);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string dest = st.Variables["Dest"];
+                    string ret = st.SectionReturnValue;
+                    Assert.IsTrue(dest.Equals(destComp, StringComparison.Ordinal));
+                    Assert.IsTrue(ret.Equals(retComp, StringComparison.Ordinal));
+                }
+            }
+
+            SingleTemplate(new List<string>
+            {
+                @"Set,%Dest%,0",
+                @"Set,#r,A",
+                @"System,SetLocal",
+                @"Set,%Dest%,1",
+                @"Set,#r,B",
+                @"System,EndLocal",
+            }, "0", "B");
+            SingleTemplate(new List<string>
+            {
+                @"System,SetLocal",
+                @"System,SetLocal",
+                @"System,EndLocal",
+            }, null, null, ErrorCheck.Error);
+            SingleTemplate(new List<string>
+            {
+                @"System,EndLocal",
+            }, null, null, ErrorCheck.Error);
+
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
+            ScriptTemplate(scPath, "0", "B");
         }
         #endregion
     }

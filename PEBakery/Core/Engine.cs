@@ -1171,13 +1171,33 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ResetHaltFlags
-        public void ResetHaltFlags()
+        #region ResetFlags
+        public void ResetFlags()
         {
+            // Halt Flags
             PassCurrentScriptFlag = false;
             ErrorHaltFlag = false;
             UserHaltFlag = false;
             CmdHaltFlag = false;
+
+            // Engine State
+            SectionReturnValue = string.Empty;
+            CurDepth = 1;
+            ElseFlag = false;
+            LoopState = LoopState.Off;
+            LoopCounter = 0;
+            LoopLetter = ' ';
+            InMacro = false;
+
+            // Command State
+            OnBuildExit = null;
+            OnScriptExit = null;
+            ErrorOff = null;
+            ErrorOffDepthMinusOne = false;
+            ErrorOffWaitingRegister = null;
+            SetLocalStack = new Stack<SetLocalState>(16);
+            RunningSubProcess = null;
+            RunningWebClient = null;
         }
         #endregion
     }

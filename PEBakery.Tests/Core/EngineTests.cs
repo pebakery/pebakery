@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using SQLite;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -32,6 +33,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.WPF;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PEBakery.Tests.Core
 {
@@ -151,7 +153,7 @@ namespace PEBakery.Tests.Core
             }
             
             // Reset halt flags
-            s.ResetHaltFlags();
+            s.ResetFlags();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
@@ -232,10 +234,37 @@ namespace PEBakery.Tests.Core
             }
 
             // Reset halt flags
-            s.ResetHaltFlags();
+            s.ResetFlags();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+        }
+        #endregion
+
+        #region EvalScript
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check)
+        {
+            Script sc = Project.GetScriptByTreePath(treePath);
+            Assert.IsNotNull(sc);
+
+            Project project = EngineTests.Project.PartialDeepCopy();
+            Logger logger = EngineTests.Logger;
+            MainViewModel model = new MainViewModel();
+            EngineState s = new EngineState(project, logger, model, EngineMode.RunOne, sc);
+
+            Engine engine = new Engine(s);
+            Task<int> t = engine.Run($"Test [{sc.Title}]");
+            t.Wait();
+            int buildId = t.Result;
+            List<DB_BuildLog> buildLogs = logger.DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId).ToList();
+
+            List<LogInfo> logs = new List<LogInfo>(buildLogs.Count);
+            foreach (DB_BuildLog buildLog in buildLogs)
+                logs.Add(new LogInfo(buildLog));
+
+            CheckErrorLogs(logs, check);
+
+            return (s, logs);
         }
         #endregion
 

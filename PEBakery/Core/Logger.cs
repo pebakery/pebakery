@@ -132,6 +132,16 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Constructor - DB_BuildLog
+        public LogInfo(DB_BuildLog buildLog)
+        {
+            State = buildLog.State;
+            Message = buildLog.Message;
+            Command = null;
+            Depth = buildLog.Depth;
+        }
+        #endregion
+
         #region AddCommand, AddDepth
         public static LogInfo AddCommand(LogInfo log, CodeCommand command)
         {

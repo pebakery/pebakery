@@ -25,21 +25,19 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using SQLite;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using SQLite;
 
 namespace PEBakery.Core
 {
@@ -49,7 +47,7 @@ namespace PEBakery.Core
         public static int DbLock = 0;
         private ReaderWriterLockSlim _listLock;
 
-        public ScriptCache(string path) : base(path)
+        public ScriptCache(string path) : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
             CreateTable<DB_CacheInfo>();
             CreateTable<DB_ScriptCache>();
@@ -92,16 +90,16 @@ namespace PEBakery.Core
 
                     _listLock = new ReaderWriterLockSlim();
 
-                    DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
-                    List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
+                    DB_ScriptCache[] memDb = Table<DB_ScriptCache>().ToArray();
+                    List<DB_ScriptCache> updateDb = new List<DB_ScriptCache>();
 
                     Parallel.ForEach(scUniqueList, sc =>
                     {
-                        bool updated = CacheScript(sc, memDB, updateDB);
+                        bool updated = CacheScript(sc, memDb, updateDb);
                         worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
                     });
 
-                    InsertOrReplaceAll(updateDB);
+                    InsertOrReplaceAll(updateDb);
                 }
             }
             catch (SQLiteException e)
@@ -113,10 +111,10 @@ namespace PEBakery.Core
         }
 
         /// <returns>Return true if cache is updated</returns>
-        private bool CacheScript(Script sc, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
+        private bool CacheScript(Script sc, DB_ScriptCache[] memDb, List<DB_ScriptCache> updateDb)
         {
-            if (memDB == null) throw new ArgumentNullException(nameof(memDB));
-            if (updateDB == null) throw new ArgumentNullException(nameof(updateDB));
+            if (memDb == null) throw new ArgumentNullException(nameof(memDb));
+            if (updateDb == null) throw new ArgumentNullException(nameof(updateDb));
             Debug.Assert(sc.Type != ScriptType.Directory);
 
             // Does cache exist?
@@ -125,7 +123,7 @@ namespace PEBakery.Core
 
             // Retrieve Cache
             bool updated = false;
-            DB_ScriptCache scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+            DB_ScriptCache scCache = memDb.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
 
             // Update Cache into updateDB
             if (scCache == null)
@@ -148,7 +146,7 @@ namespace PEBakery.Core
                 _listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(scCache);
+                    updateDb.Add(scCache);
                     updated = true;
                 }
                 finally
@@ -171,7 +169,7 @@ namespace PEBakery.Core
                 _listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(scCache);
+                    updateDb.Add(scCache);
                     updated = true;
                 }
                 finally
@@ -182,7 +180,7 @@ namespace PEBakery.Core
 
             if (sc.Type == ScriptType.Link && sc.LinkLoaded)
             {
-                bool linkUpdated = CacheScript(sc.Link, memDB, updateDB);
+                bool linkUpdated = CacheScript(sc.Link, memDb, updateDb);
                 updated = updated || linkUpdated;
             }
 
