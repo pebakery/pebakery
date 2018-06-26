@@ -56,7 +56,7 @@ namespace PEBakery.Tests.Core
         #endregion
 
         #region CreateEngineState, DummySectionAddress
-        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null)
+        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = "Process")
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             EngineState s;
@@ -68,7 +68,7 @@ namespace PEBakery.Tests.Core
                 if (sc == null)
                     s = new EngineState(project, logger, model, EngineMode.RunAll);
                 else
-                    s = new EngineState(project, logger, model, EngineMode.RunOne, sc);
+                    s = new EngineState(project, logger, model, EngineMode.RunOne, sc, entrySection);
             }
             else
             {
@@ -77,7 +77,7 @@ namespace PEBakery.Tests.Core
                 if (sc == null)
                     s = new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
-                    s = new EngineState(Project, Logger, model, EngineMode.RunOne, sc);
+                    s = new EngineState(Project, Logger, model, EngineMode.RunOne, sc, entrySection);
             }
 
             s.LogMode = LogMode.NoDelay;
@@ -242,21 +242,18 @@ namespace PEBakery.Tests.Core
         #endregion
 
         #region EvalScript
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check)
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = "Process")
         {
             Script sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
 
-            Project project = EngineTests.Project.PartialDeepCopy();
-            Logger logger = EngineTests.Logger;
-            MainViewModel model = new MainViewModel();
-            EngineState s = new EngineState(project, logger, model, EngineMode.RunOne, sc);
+            EngineState s = CreateEngineState(true, sc, entrySection);
 
             Engine engine = new Engine(s);
             Task<int> t = engine.Run($"Test [{sc.Title}]");
             t.Wait();
             int buildId = t.Result;
-            List<DB_BuildLog> buildLogs = logger.DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId).ToList();
+            List<DB_BuildLog> buildLogs = s.Logger.DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId).ToList();
 
             List<LogInfo> logs = new List<LogInfo>(buildLogs.Count);
             foreach (DB_BuildLog buildLog in buildLogs)

@@ -7,9 +7,6 @@ Level=5
 Selected=True
 Mandatory=False
 
-[Interface]
-pTextLabel1=SetEndLocal,1,1,20,50,230,18,8,Normal
-
 [Process]
 Set,%Dest%,0
 Run,%ScriptFile%,Depth1

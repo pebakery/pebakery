@@ -38,6 +38,48 @@ namespace PEBakery.Tests.Core.Command
     [TestClass]
     public class CommandSystemTests
     {
+        #region SetLocal, EndLocal
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandSystem")]
+        public void ErrorOff()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void SingleTemplate(List<string> rawCodes, ErrorCheck check = ErrorCheck.Success)
+            {
+                EngineTests.EvalLines(s, rawCodes, check);
+            }
+            void ScriptTemplate(string treePath, ErrorCheck check = ErrorCheck.Success)
+            {
+                EngineTests.EvalScript(treePath, check);
+            }
+
+            SingleTemplate(new List<string>
+            {
+                @"System,ErrorOff",
+                @"Error1",
+            });
+            SingleTemplate(new List<string>
+            {
+                @"System,ErrorOff,3",
+                @"Error1",
+                @"Error2",
+                @"Error3",
+            });
+            SingleTemplate(new List<string>
+            {
+                @"System,ErrorOff,2",
+                @"Error1",
+                @"Error2",
+                @"Error3",
+            }, ErrorCheck.Error);
+
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "ErrorOff.script");
+            ScriptTemplate(scPath);
+        }
+        #endregion
+
         #region LoadNewScript
         [TestMethod]
         [TestCategory("Command")]
