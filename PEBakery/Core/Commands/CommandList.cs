@@ -253,6 +253,49 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case ListType.Sort:
+                case ListType.SortX:
+                    {
+                        ListInfo_Sort subInfo = info.SubInfo.Cast<ListInfo_Sort>();
+
+                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
+                        string order = StringEscaper.Preprocess(s, subInfo.Order);
+
+                        if (subInfo.Delim != null)
+                            delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
+
+                        bool reverse;
+                        if (order.Equals("ASC", StringComparison.OrdinalIgnoreCase))
+                            reverse = false;
+                        else if (order.Equals("DESC", StringComparison.OrdinalIgnoreCase))
+                            reverse = true;
+                        else
+                            return LogInfo.LogErrorMessage(logs, "Order should be [ASC] or [DESC]");
+
+                        List<string> list = StringEscaper.UnpackListStr(listStr, delimiter);
+                        switch (type)
+                        {
+                            case ListType.Sort:
+                                list = list
+                                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                                    .ThenBy(x => x, StringComparer.Ordinal)
+                                    .ToList();
+                                break;
+                            case ListType.SortX:
+                                list.Sort(StringComparer.Ordinal);
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at CommandList");
+                        }
+
+                        if (reverse)
+                            list.Reverse();
+
+                        listStr = StringEscaper.PackListStr(list, delimiter);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.ListVar, listStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 default: // Error
                     throw new InternalException("Internal Logic Error at CommandList");
             }

@@ -3652,6 +3652,7 @@ namespace PEBakery.Core
         RemoveAt,
         Count = 40,
         Pos = 50, PosX, LastPos, LastPosX,
+        Sort = 60, SortX,
     }
 
     [Serializable]
@@ -3900,6 +3901,35 @@ namespace PEBakery.Core
             b.Append(Item);
             b.Append(',');
             b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Sort : ListInfo
+    { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+        public string ListVar;
+        public string Order;
+        public string Delim;
+
+        public ListInfo_Sort(string listVar, string order, string delim)
+        {
+            ListVar = listVar;
+            Order = order;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Order);
             if (Delim != null)
             {
                 b.Append(",Delim=");

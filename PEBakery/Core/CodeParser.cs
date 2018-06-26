@@ -869,7 +869,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
                 case CodeType.IniReadSection:
-                    {
+                    { // INIReadSection,<FileName>,<Section>,<DestVar>
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -3571,6 +3571,40 @@ namespace PEBakery.Core
                         }
 
                         info = new ListInfo_Pos(listVar, args[1], destVar, delim);
+                    }
+                    break;
+                case ListType.Sort:
+                case ListType.SortX:
+                    { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Sort(listVar, args[1], delim);
                     }
                     break;
                 default: // Error

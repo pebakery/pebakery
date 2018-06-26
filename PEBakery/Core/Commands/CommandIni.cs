@@ -347,7 +347,7 @@ namespace PEBakery.Core.Commands
                     kvList.Add(k.Value);
                 }
                 string destStr = StringEscaper.PackListStr(kvList, delim);
- 
+
                 logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read from [{fileName}]"));
 
                 string escapedValue = StringEscaper.Escape(destStr, false, true);

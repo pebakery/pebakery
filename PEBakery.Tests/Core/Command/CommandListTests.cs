@@ -26,8 +26,8 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
@@ -264,6 +264,44 @@ namespace PEBakery.Tests.Core.Command
             ReadTemplate(s, "List,LastPosX,%ListStr%,Z,%Dest%,Error", string.Empty, null, ErrorCheck.ParserError);
             ReadTemplate(s, "List,LastPosX,ListStr,Z,%Dest%", "A|B|C|D|B|E", null, ErrorCheck.ParserError);
             ReadTemplate(s, "List,LastPosX,%ListStr%,Z,Dest", "A|B|C|D|B|E", null, ErrorCheck.ParserError);
+        }
+        #endregion
+
+        #region ListSort
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandList")]
+        public void ListSort()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            WriteTemplate(s, "List,Sort,%ListStr%,ASC", "1|5|3|2|4", "1|2|3|4|5");
+            WriteTemplate(s, "List,Sort,%ListStr%,DESC", "1|5|3|2|4", "5|4|3|2|1");
+            WriteTemplate(s, "List,Sort,%ListStr%,ASC", "A|C|b|B|a", "A|a|B|b|C");
+            WriteTemplate(s, "List,Sort,%ListStr%,DESC", "A|C|b|B|a", "C|b|B|a|A");
+            WriteTemplate(s, "List,Sort,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
+            WriteTemplate(s, "List,Sort,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
+            WriteTemplate(s, "List,Sort,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,Sort,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
+        }
+        #endregion
+
+        #region ListSortX
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandList")]
+        public void ListSortX()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            WriteTemplate(s, "List,SortX,%ListStr%,ASC", "1|5|3|2|4", "1|2|3|4|5");
+            WriteTemplate(s, "List,SortX,%ListStr%,DESC", "1|5|3|2|4", "5|4|3|2|1");
+            WriteTemplate(s, "List,SortX,%ListStr%,ASC", "A|C|b|B|a", "A|B|C|a|b");
+            WriteTemplate(s, "List,SortX,%ListStr%,DESC", "A|C|b|B|a", "b|a|C|B|A");
+            WriteTemplate(s, "List,SortX,%ListStr%,ASC,Delim=$", "1|5|3|2|4", "1|5|3|2|4");
+            WriteTemplate(s, "List,SortX,%ListStr%,ASC,Delim=$", "1$5$3$2$4", "1$2$3$4$5");
+            WriteTemplate(s, "List,SortX,%ListStr%,Error", "1|2|3|4|5", null, ErrorCheck.Error);
+            WriteTemplate(s, "List,SortX,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }
         #endregion
 
