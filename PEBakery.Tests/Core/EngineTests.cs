@@ -153,7 +153,7 @@ namespace PEBakery.Tests.Core
             }
             
             // Reset halt flags
-            s.ResetFlags();
+            s.Reset();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
@@ -234,7 +234,7 @@ namespace PEBakery.Tests.Core
             }
 
             // Reset halt flags
-            s.ResetFlags();
+            s.Reset();
 
             // Run CodeCommands
             return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);

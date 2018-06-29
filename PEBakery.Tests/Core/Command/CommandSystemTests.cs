@@ -38,7 +38,7 @@ namespace PEBakery.Tests.Core.Command
     [TestClass]
     public class CommandSystemTests
     {
-        #region SetLocal, EndLocal
+        #region ErrorOff
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandSystem")]
@@ -77,6 +77,29 @@ namespace PEBakery.Tests.Core.Command
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "ErrorOff.script");
             ScriptTemplate(scPath);
+        }
+        #endregion
+
+        #region OnBuildExit, OnScriptExit
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandSystem")]
+        public void OnBuildScriptExit()
+        {
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "Callback.script");
+
+            // OnBuildExit
+            ScriptTemplate(scPath, "Process-BuildCallback");
+
+            // OnScriptExit
+            ScriptTemplate(scPath, "Process-ScriptCallback");
         }
         #endregion
 
@@ -182,6 +205,64 @@ namespace PEBakery.Tests.Core.Command
 
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "System", "SetEndLocal.script");
             ScriptTemplate(scPath, "0", "B");
+        }
+        #endregion
+
+        #region ShellExecute
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandSystem")]
+        public void ShellExecute()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string pbBatch = Path.Combine("%TestBench%", "CommandSystem", "TestBatch.cmd");
+            string destDir = Path.GetRandomFileName();
+            try
+            {
+                File.Delete(destDir);
+                Directory.CreateDirectory(destDir);
+                string srcBatch = StringEscaper.Preprocess(s, pbBatch);
+                string destBatch = Path.Combine(destDir, "TestBatch.cmd");
+
+                void BaseTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
+                {
+                    s.Variables.Delete(VarsType.Local, exitKey);
+                    s.SectionReturnValue = string.Empty;
+
+                    EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check);
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        string dest = s.Variables[exitKey];
+                        Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                    }
+                }
+
+                void DeleteTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
+                {
+                    File.Copy(srcBatch, destBatch, true);
+
+                    s.Variables.Delete(VarsType.Local, exitKey);
+                    s.SectionReturnValue = string.Empty;
+
+                    EngineTests.Eval(s, rawCode, CodeType.ShellExecuteDelete, check);
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        string dest = s.Variables[exitKey];
+                        Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                        Assert.IsFalse(File.Exists(destBatch));
+                    }
+                }
+
+                BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78");
+                BaseTemplate($@"ShellExecute,Open,{pbBatch},3,,%Dest%", "Dest", "3");
+                DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},78", "ExitCode", "78");
+                DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},3,,%Dest%", "Dest", "3");
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
         }
         #endregion
     }

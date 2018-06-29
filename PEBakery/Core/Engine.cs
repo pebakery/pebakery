@@ -250,10 +250,11 @@ namespace PEBakery.Core
                         s.CmdHaltFlag = false;
 
                         // OnBuildExit event callback
-                        if (s.RunMode == EngineMode.RunAll)
+                        if (s.RunMode == EngineMode.RunAll || s.TestMode)
                         {
                             // OnBuildExit is not called on script interface control, or codebox
                             // (which uses EngineMode.RunMainAndOne or EngineMode.RunOne)
+                            // But it should be called in full script unit test
                             Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
@@ -1171,8 +1172,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ResetFlags
-        public void ResetFlags()
+        #region Reset
+        public void Reset()
         {
             // Halt Flags
             PassCurrentScriptFlag = false;
