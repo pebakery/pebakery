@@ -82,6 +82,25 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region IfElse
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void IfElse()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-IfElse");
+        }
+        #endregion
+
         #region IfBeginEnd
         [TestMethod]
         [TestCategory("Command")]

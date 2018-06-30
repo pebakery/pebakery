@@ -45,6 +45,16 @@ List,Append,%Dest%,#c
 List,Append,%Dest%,#1
 If,#c,Equal,#2,Loop,BREAK
 
+[Process-IfElse]
+Set,%Dest%,F
+Set,#r,False
+If,#r,Equal,True,Begin
+    Set,%Dest%,F
+End
+Else,Begin
+	Set,%Dest%,T
+End
+
 [Process-IfBeginEnd]
 Set,%Dest%,F
 Set,#r,True
