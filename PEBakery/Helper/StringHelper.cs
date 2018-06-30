@@ -145,6 +145,8 @@ namespace PEBakery.Helper
         #region SplitEx
         public static List<string> SplitEx(string str, string seperator, StringComparison comp)
         {
+            if (str.Length == 0)
+                return new List<string>();
             if (seperator.Length == 0)
                 return new List<string> { str };
             if (str.IndexOf(seperator, comp) == -1)
