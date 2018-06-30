@@ -3656,19 +3656,25 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class ListInfo : CodeInfo { }
+    public class ListInfo : CodeInfo
+    {
+        public string ListVar;
+
+        public ListInfo(string listVar)
+        {
+            ListVar = listVar;
+        }
+    }
 
     [Serializable]
     public class ListInfo_Get : ListInfo
     { // List,Get,<%ListVar%>,<Index>,<%DestVar%>,[Delim=<Str>]
-        public string ListVar;
         public string Index;
         public string DestVar;
         public string Delim;
 
-        public ListInfo_Get(string listStr, string index, string destVar, string delim)
+        public ListInfo_Get(string listVar, string index, string destVar, string delim) : base(listVar)
         {
-            ListVar = listStr;
             Index = index;
             DestVar = destVar;
             Delim = delim;
@@ -3694,14 +3700,12 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Set : ListInfo
     { // List,Set,<%ListVar%>,<Index>,<Item>,[Delim=<Str>]
-        public string ListVar;
         public string Index;
         public string Item;
         public string Delim;
 
-        public ListInfo_Set(string listVar, string index, string item, string delim)
+        public ListInfo_Set(string listVar, string index, string item, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Index = index;
             Item = item;
             Delim = delim;
@@ -3727,13 +3731,11 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Append : ListInfo
     { // List,Append,<%ListVar%>,<Item>,[Delim=<Str>]
-        public string ListVar;
         public string Item;
         public string Delim;
 
-        public ListInfo_Append(string listVar, string item, string delim)
+        public ListInfo_Append(string listVar, string item, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Item = item;
             Delim = delim;
         }
@@ -3756,14 +3758,12 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Insert : ListInfo
     { // List,Insert,<%ListVar%>,<Index>,<Item>,[Delim=<Str>]
-        public string ListVar;
         public string Index;
         public string Item;
         public string Delim;
 
-        public ListInfo_Insert(string listVar, string index, string item, string delim)
+        public ListInfo_Insert(string listVar, string index, string item, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Index = index;
             Item = item;
             Delim = delim;
@@ -3789,13 +3789,11 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Remove : ListInfo
     { // List,Remove,<%ListVar%>,<Item>,[Delim=<Str>]
-        public string ListVar;
         public string Item;
         public string Delim;
 
-        public ListInfo_Remove(string listVar, string item, string delim)
+        public ListInfo_Remove(string listVar, string item, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Item = item;
             Delim = delim;
         }
@@ -3818,13 +3816,11 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_RemoveAt : ListInfo
     { // List,RemoveAt,<%ListVar%>,<Index>,[Delim=<Str>]
-        public string ListVar;
         public string Index;
         public string Delim;
 
-        public ListInfo_RemoveAt(string listVar, string index, string delim)
+        public ListInfo_RemoveAt(string listVar, string index, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Index = index;
             Delim = delim;
         }
@@ -3847,13 +3843,11 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Count : ListInfo
     { // List,Count,<%ListVar%>,<%DestVar%>,[Delim=<Str>]
-        public string ListVar;
         public string DestVar;
         public string Delim;
 
-        public ListInfo_Count(string listVar, string destVar, string delim)
+        public ListInfo_Count(string listVar, string destVar, string delim) : base(listVar)
         {
-            ListVar = listVar;
             DestVar = destVar;
             Delim = delim;
         }
@@ -3880,14 +3874,12 @@ namespace PEBakery.Core
         // List,PosX,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
         // List,LastPos,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
         // List,LastPosX,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
-        public string ListVar;
         public string Item;
         public string DestVar;
         public string Delim;
 
-        public ListInfo_Pos(string listStr, string item, string destVar, string delim)
+        public ListInfo_Pos(string listVar, string item, string destVar, string delim) : base(listVar)
         {
-            ListVar = listStr;
             Item = item;
             DestVar = destVar;
             Delim = delim;
@@ -3913,13 +3905,11 @@ namespace PEBakery.Core
     [Serializable]
     public class ListInfo_Sort : ListInfo
     { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
-        public string ListVar;
         public string Order;
         public string Delim;
 
-        public ListInfo_Sort(string listVar, string order, string delim)
+        public ListInfo_Sort(string listVar, string order, string delim) : base(listVar)
         {
-            ListVar = listVar;
             Order = order;
             Delim = delim;
         }

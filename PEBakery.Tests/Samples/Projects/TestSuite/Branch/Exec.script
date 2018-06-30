@@ -1,0 +1,14 @@
+[Main]
+Title=BranchExec
+Author=ied206
+Description=UnitTest
+Version=001
+Level=5
+Selected=True
+Mandatory=False
+
+[Variables]
+%ExecVar%=T
+
+[SetTrue]
+Set,#r,%ExecVar%

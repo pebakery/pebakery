@@ -45,6 +45,18 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
             CodeInfo_List info = cmd.Info.Cast<CodeInfo_List>();
 
+            /*
+            string listVar = info.SubInfo.ListVar;
+            if (Variables.ContainsKey(s, listVar) != true)
+                return LogInfo.LogErrorMessage(logs, $"Unable to find variable [{listVar}]");
+            string listStr = StringEscaper.Preprocess(s, listVar);
+            */
+
+            string listStr = string.Empty;
+            string listVar = info.SubInfo.ListVar;
+            if (Variables.ContainsKey(s, listVar) == true)
+                listStr = StringEscaper.Preprocess(s, listVar);
+
             ListType type = info.Type;
             string delimiter = "|";
             switch (type)
@@ -53,7 +65,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Get subInfo = info.SubInfo.Cast<ListInfo_Get>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
 
                         if (!NumberHelper.ParseInt32(indexStr, out int index))
@@ -75,7 +86,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Set subInfo = info.SubInfo.Cast<ListInfo_Set>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
@@ -99,7 +109,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Append subInfo = info.SubInfo.Cast<ListInfo_Append>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
                         if (subInfo.Delim != null)
@@ -117,7 +126,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Insert subInfo = info.SubInfo.Cast<ListInfo_Insert>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
@@ -142,7 +150,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Remove subInfo = info.SubInfo.Cast<ListInfo_Remove>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
                         if (subInfo.Delim != null)
@@ -180,7 +187,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_RemoveAt subInfo = info.SubInfo.Cast<ListInfo_RemoveAt>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string indexStr = StringEscaper.Preprocess(s, subInfo.Index);
 
                         if (subInfo.Delim != null)
@@ -203,8 +209,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Count subInfo = info.SubInfo.Cast<ListInfo_Count>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
-
                         if (subInfo.Delim != null)
                             delimiter = StringEscaper.Preprocess(s, subInfo.Delim);
 
@@ -222,7 +226,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Pos subInfo = info.SubInfo.Cast<ListInfo_Pos>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string item = StringEscaper.Preprocess(s, subInfo.Item);
 
                         if (subInfo.Delim != null)
@@ -258,7 +261,6 @@ namespace PEBakery.Core.Commands
                     {
                         ListInfo_Sort subInfo = info.SubInfo.Cast<ListInfo_Sort>();
 
-                        string listStr = StringEscaper.Preprocess(s, subInfo.ListVar);
                         string order = StringEscaper.Preprocess(s, subInfo.Order);
 
                         if (subInfo.Delim != null)

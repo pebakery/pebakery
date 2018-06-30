@@ -92,6 +92,9 @@ namespace PEBakery.Tests.Core.Command
             WriteTemplate(s, "List,Append,%ListStr%,Z,Delim=abc", "1|2|3|4|5", "1|2|3|4|5abcZ");
             WriteTemplate(s, "List,Append,%ListStr%,Z,Error", "1|2|3|4|5", null, ErrorCheck.ParserError);
             WriteTemplate(s, "List,Append,ListStr,Z", "1|2|3|4|5", null, ErrorCheck.ParserError);
+
+            WriteTemplate(s, "List,Append,%ListStr%,Z", string.Empty, "Z");
+            WriteTemplate(s, "List,Append,%ListStr%,Z", null, "Z");
         }
         #endregion
 
@@ -321,7 +324,10 @@ namespace PEBakery.Tests.Core.Command
 
         public void WriteTemplate(EngineState s, string rawCode, string listStr, string destCheck, ErrorCheck check = ErrorCheck.Success)
         {
-            s.Variables["ListStr"] = listStr;
+            if (listStr == null)
+                s.Variables.Delete(VarsType.Local, "listStr");
+            else
+                s.Variables["ListStr"] = listStr;
 
             EngineTests.Eval(s, rawCode, CodeType.List, check);
             if (check == ErrorCheck.Success || check == ErrorCheck.Warning)

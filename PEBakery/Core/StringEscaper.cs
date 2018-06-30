@@ -704,7 +704,13 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<string> UnpackListStr(string listStr, string seperator)
         {
-            return StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase).ToList();
+            List<string> list = StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase);
+
+            // Handle empty string as empty lists
+            if (list.Count == 1 && list[0].Length == 0)
+                list.Clear();
+
+            return list;
         }
 
         public static string PackListStr(List<string> list, string seperator)

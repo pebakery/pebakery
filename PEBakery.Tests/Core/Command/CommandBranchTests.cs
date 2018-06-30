@@ -33,13 +33,74 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
     public class CommandBranchTests
     {
+        #region RunExec
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void RunExec()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-Run");
+            ScriptTemplate(scPath, "Process-Exec");
+        }
+        #endregion
+
+        #region Loop
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Loop()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, string compStr, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals(compStr, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-Loop01", "1|Z|2|Z|3|Z");
+            ScriptTemplate(scPath, "Process-Loop02", "1|Z|2|Z|3|Z");
+            ScriptTemplate(scPath, "Process-LoopLetter01", "C|Z|D|Z|E|Z");
+            ScriptTemplate(scPath, "Process-LoopLetter02", "C|Z|D|Z|E|Z");
+        }
+        #endregion
+
+        #region IfBeginEnd
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void IfBeginEnd()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-IfBeginEnd");
+        }
+        #endregion
+
         #region ExistFile
         [TestMethod]
         [TestCategory("Command")]
@@ -105,7 +166,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistSection()
+        public void IfExistSection()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.ExistSection;
@@ -240,7 +301,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistVar()
+        public void IfExistVar()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.ExistVar;
@@ -467,7 +528,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfEqual()
+        public void IfEqual()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.Equal;
@@ -658,7 +719,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfBigger()
+        public void IfBigger()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.Bigger;
@@ -715,7 +776,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfBiggerEqual()
+        public void IfBiggerEqual()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.BiggerEqual;
@@ -772,7 +833,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfEqualX()
+        public void IfEqualX()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.EqualX;
