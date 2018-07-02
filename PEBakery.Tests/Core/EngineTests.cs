@@ -244,12 +244,19 @@ namespace PEBakery.Tests.Core
         #region EvalScript
         public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = "Process")
         {
+            return EvalScript(treePath, check, null, entrySection);
+        }
+
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> applySetting, string entrySection = "Process")
+        {
             Script sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
 
             EngineState s = CreateEngineState(true, sc, entrySection);
 
             Engine engine = new Engine(s);
+            applySetting?.Invoke(s);
+
             Task<int> t = engine.Run($"Test [{sc.Title}]");
             t.Wait();
             int buildId = t.Result;

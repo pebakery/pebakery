@@ -425,6 +425,10 @@
                                       IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
                             <CheckBox Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
+                                      Content="Allow Letter in Loop's Argument"
+                                      IsChecked="{Binding Compat_AllowLetterInLoop}" />
+                            <CheckBox Margin="0, 0, 0, 5"
+                                      VerticalContentAlignment="Center"
                                       Content="Allow Deprecated Legacy Branch Condition"
                                       IsChecked="{Binding Compat_LegacyBranchCondition}" />
                             <CheckBox Margin="0, 0, 0, 5"

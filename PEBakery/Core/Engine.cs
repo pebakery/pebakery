@@ -1083,6 +1083,7 @@ namespace PEBakery.Core
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
+        public bool CompatAllowLetterInLoop = false; // Compatibility
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // For performance (when engine runned by interface - legacy)
         public string CustomUserAgent = null;
@@ -1172,6 +1173,7 @@ namespace PEBakery.Core
 
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
+            CompatAllowLetterInLoop = m.Compat_AllowLetterInLoop;
         }
         #endregion
 

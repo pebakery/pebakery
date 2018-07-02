@@ -120,6 +120,7 @@ namespace PEBakery.Core.Commands
         public static void Loop(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+            CodeType type = cmd.Type;
 
             if (info.Break)
             {
@@ -165,14 +166,30 @@ namespace PEBakery.Core.Commands
                 long loopCount;
                 long startIdx = 0, endIdx = 0;
                 char startLetter = ' ', endLetter = ' ';
-                switch (cmd.Type)
+                switch (type)
                 {
                     case CodeType.Loop:
                         { // Integer Index
+                            bool startIdxError = false;
+                            bool endIdxError = false;
+
                             if (!NumberHelper.ParseInt64(startStr, out startIdx))
-                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                                startIdxError = true;
                             if (!NumberHelper.ParseInt64(endStr, out endIdx))
+                                endIdxError = true;
+
+                            if (s.CompatAllowLetterInLoop && startIdxError && endIdxError &&
+                                startStr.Length == 1 && StringHelper.IsAlphabet(startStr[0]) &&
+                                endStr.Length == 1 && StringHelper.IsAlphabet(endStr[0]))
+                            {
+                                type = CodeType.LoopLetter;
+                                goto case CodeType.LoopLetter;
+                            }
+                            else if (startIdxError)
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                            else if (endIdxError)
                                 throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
+
                             loopCount = endIdx - startIdx + 1;
                         }
                         break;
@@ -207,7 +224,7 @@ namespace PEBakery.Core.Commands
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
                 int loopIdx = 1;
-                switch (cmd.Type)
+                switch (type)
                 {
                     case CodeType.Loop:
                         for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
