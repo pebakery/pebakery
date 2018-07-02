@@ -2130,6 +2130,11 @@ namespace PEBakery.Core
                 EncodeMode = EncodeMode,
             };
         }
+
+        public override string ToString()
+        {
+            return EncodedFile.GetSectionName(DirName, FileName);
+        }
     }
     #endregion
 }

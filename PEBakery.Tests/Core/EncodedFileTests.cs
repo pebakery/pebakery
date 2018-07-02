@@ -663,8 +663,8 @@ namespace PEBakery.Tests.Core
                 {
                     Assert.IsTrue(infoDict.ContainsKey(kv.Key));
                     Assert.AreEqual(kv.Value.Count, infoDict[kv.Key].Count);
-                    for (int i = 0; i < kv.Value.Count; i++)
-                        Assert.IsTrue(kv.Value[i].Equals(infoDict[kv.Key][i]));
+                    foreach (EncodedFileInfo fileInfo in kv.Value)
+                        Assert.IsTrue(infoDict[kv.Key].Contains(fileInfo));
                 } 
             }
 
@@ -697,6 +697,17 @@ namespace PEBakery.Tests.Core
                         EncodeMode = EncodedFile.EncodeMode.XZ
                     }
                 },
+                ["FolderRun"] = new List<EncodedFileInfo>
+                {
+                    new EncodedFileInfo
+                    {
+                        DirName = "FolderRun",
+                        FileName = "TestBatch.cmd",
+                        RawSize = 34,
+                        EncodedSize = 144,
+                        EncodeMode = EncodedFile.EncodeMode.Raw
+                    }
+                },
                 ["BannerImage"] = new List<EncodedFileInfo>
                 {
                     new EncodedFileInfo
@@ -715,7 +726,7 @@ namespace PEBakery.Tests.Core
                         EncodedSize = 6287,
                         EncodeMode = EncodedFile.EncodeMode.ZLib
                     },
-                },
+                }
             };
 
             Dictionary<string, List<EncodedFileInfo>> compNoDetailDict = new Dictionary<string, List<EncodedFileInfo>>();

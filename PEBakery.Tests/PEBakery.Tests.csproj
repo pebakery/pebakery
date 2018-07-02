@@ -75,6 +75,7 @@
     <Reference Include="System.Data.DataSetExtensions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\Command\CommandScriptTests.cs" />
     <Compile Include="Core\Command\CommandArchiveTests.cs" />
     <Compile Include="Core\Command\CommandBranchTests.cs" />
     <Compile Include="Core\Command\CommandFileTests.cs" />
