@@ -29,6 +29,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using PEBakery.Helper;
+using NaturalSort.Extension;
 
 namespace PEBakery.Core.Commands
 {
@@ -44,13 +45,6 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
             CodeInfo_List info = cmd.Info.Cast<CodeInfo_List>();
-
-            /*
-            string listVar = info.SubInfo.ListVar;
-            if (Variables.ContainsKey(s, listVar) != true)
-                return LogInfo.LogErrorMessage(logs, $"Unable to find variable [{listVar}]");
-            string listStr = StringEscaper.Preprocess(s, listVar);
-            */
 
             string listStr = string.Empty;
             string listVar = info.SubInfo.ListVar;
@@ -258,6 +252,8 @@ namespace PEBakery.Core.Commands
                     break;
                 case ListType.Sort:
                 case ListType.SortX:
+                case ListType.SortN:
+                case ListType.SortNX:
                     {
                         ListInfo_Sort subInfo = info.SubInfo.Cast<ListInfo_Sort>();
 
@@ -285,6 +281,15 @@ namespace PEBakery.Core.Commands
                                 break;
                             case ListType.SortX:
                                 list.Sort(StringComparer.Ordinal);
+                                break;
+                            case ListType.SortN:
+                                list = list
+                                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase.WithNaturalSort())
+                                    .ThenBy(x => x, StringComparer.Ordinal.WithNaturalSort())
+                                    .ToList();
+                                break;
+                            case ListType.SortNX:
+                                list.Sort(StringComparer.Ordinal.WithNaturalSort());
                                 break;
                             default:
                                 throw new InternalException("Internal Logic Error at CommandList");

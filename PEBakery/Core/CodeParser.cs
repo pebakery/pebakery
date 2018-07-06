@@ -3575,6 +3575,8 @@ namespace PEBakery.Core
                     break;
                 case ListType.Sort:
                 case ListType.SortX:
+                case ListType.SortN:
+                case ListType.SortNX:
                     { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;

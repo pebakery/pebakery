@@ -3652,7 +3652,7 @@ namespace PEBakery.Core
         RemoveAt,
         Count = 40,
         Pos = 50, PosX, LastPos, LastPosX,
-        Sort = 60, SortX,
+        Sort = 60, SortX, SortN, SortNX,
     }
 
     [Serializable]
