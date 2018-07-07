@@ -34,7 +34,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 using System.Windows;

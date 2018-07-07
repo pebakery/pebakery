@@ -170,6 +170,7 @@
     <Compile Include="Core\Commands\CommandControl.cs" />
     <Compile Include="Core\Commands\CommandWim.cs" />
     <Compile Include="Core\LogExporter.cs" />
+    <Compile Include="Core\ScriptUpdater.cs" />
     <Compile Include="Helper\ArchiveHelper.cs" />
     <Compile Include="Helper\FileHelper.cs" />
     <Compile Include="Helper\HashHelper.cs" />

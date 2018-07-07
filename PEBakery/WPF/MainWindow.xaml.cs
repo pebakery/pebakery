@@ -946,7 +946,7 @@ namespace PEBakery.WPF
             switch (sc.Type)
             {
                 case ScriptType.Script:
-                case ScriptType.Link:
+                    case ScriptType.Link:
                     OpenTextFile(sc.RealPath, false);
                     break;
                 default:

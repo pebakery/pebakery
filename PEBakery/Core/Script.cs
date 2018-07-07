@@ -199,6 +199,8 @@ namespace PEBakery.Core
                 }
             }
         }
+
+        public ScriptSection this[string key] => Sections[key];
         #endregion
 
         #region Constructor

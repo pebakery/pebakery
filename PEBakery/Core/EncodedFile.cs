@@ -683,7 +683,7 @@ namespace PEBakery.Core
             if (ieIdx != -1)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
-                dirNames.RemoveAt(aeIdx);
+                dirNames.RemoveAt(ieIdx);
             }
 
             foreach (string dirName in dirNames)
