@@ -526,7 +526,7 @@ namespace PEBakery.WPF
             string srcFile = dialog.FileName;
             try
             {
-                string srcFileName = System.IO.Path.GetFileName(srcFile);
+                string srcFileName = Path.GetFileName(srcFile);
                 _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
                 MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -1070,7 +1070,7 @@ namespace PEBakery.WPF
                 return;
 
             string srcFilePath = dialog.FileName;
-            string srcFileName = System.IO.Path.GetFileName(srcFilePath);
+            string srcFileName = Path.GetFileName(srcFilePath);
             if (EncodedFile.ContainsInterface(_sc, srcFileName))
             {
                 List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
@@ -1381,7 +1381,7 @@ namespace PEBakery.WPF
                 {
                     EncodedFileInfo info = fileInfos[i];
 
-                    string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                    string destFile = Path.Combine(destDir, info.FileName);
                     if (File.Exists(destFile))
                     {
                         fileOverwrited = true;
@@ -1417,7 +1417,7 @@ namespace PEBakery.WPF
                 {
                     try
                     {
-                        string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                        string destFile = Path.Combine(destDir, info.FileName);
                         using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
                             EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
@@ -1565,7 +1565,7 @@ namespace PEBakery.WPF
 
             EncodedFileInfo info = item.Detail;
 
-            string ext = System.IO.Path.GetExtension(info.FileName);
+            string ext = Path.GetExtension(info.FileName);
             SaveFileDialog dialog = new SaveFileDialog
             {
                 OverwritePrompt = true,

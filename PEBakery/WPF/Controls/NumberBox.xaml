@@ -31,10 +31,10 @@
              mc:Ignorable="d" 
              d:DesignHeight="20" d:DesignWidth="100"
              Focusable="True"
-             IsTabStop="True">
-    <Grid x:Name="LayoutGrid"
-          Width="{Binding Width, ElementName=NumberBox}"
-          Height="{Binding Height, ElementName=NumberBox}">
+             IsTabStop="True"
+             Name="NumberBoxControl">
+    <Grid Width="{Binding Width, ElementName=NumberBoxControl}"
+          Height="{Binding Height, ElementName=NumberBoxControl}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
@@ -50,7 +50,7 @@
                  VerticalContentAlignment="Center"
                  PreviewTextInput="TextBox_PreviewTextInput"
                  PreviewKeyDown="TextBox_PreviewKeyDown"
-                 Text="{Binding Path=Value, ElementName=NumberBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                 Text="{Binding Path=Value, ElementName=NumberBoxControl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
         <RepeatButton Grid.Row="0" Grid.Column="1"
                       Click="UpButton_Click">
