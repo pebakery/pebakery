@@ -185,6 +185,7 @@ namespace PEBakery.Tests.Core.Command
             ReadTemplate(s, "List,Count,%ListStr%,%Dest%", "1", "1");
             ReadTemplate(s, "List,Count,%ListStr%,%Dest%", "1|2|3", "3");
             ReadTemplate(s, "List,Count,%ListStr%,%Dest%", "1|2|3|4|5", "5");
+            ReadTemplate(s, "List,Count,%ListStr%,%Dest%", "|10|98||50|32||0|1|5|2|4|3|", "14");
             ReadTemplate(s, "List,Count,ListStr,%Dest%", "1|2|3|4|5", null, ErrorCheck.ParserError);
             ReadTemplate(s, "List,Count,%ListStr%,Dest", "1|2|3|4|5", null, ErrorCheck.ParserError);
         }

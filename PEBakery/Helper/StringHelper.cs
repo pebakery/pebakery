@@ -154,7 +154,7 @@ namespace PEBakery.Helper
 
             int idx = 0;
             List<string> split = new List<string>();
-            while (idx < str.Length)
+            while (idx <= str.Length)
             {
                 int vIdx = str.IndexOf(seperator, idx, comp);
                 if (vIdx == -1)

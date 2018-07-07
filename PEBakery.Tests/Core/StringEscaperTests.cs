@@ -780,7 +780,7 @@ namespace PEBakery.Tests.Core
             void Template(string listStr, string delimiter, List<string> compList)
             {
                 List<string> destList = StringEscaper.UnpackListStr(listStr, delimiter);
-                Assert.AreEqual(destList.Count, compList.Count);
+                Assert.AreEqual(compList.Count, destList.Count);
                 for (int i = 0; i < destList.Count; i++)
                     Assert.IsTrue(destList[i].Equals(compList[i], StringComparison.Ordinal));
             }
@@ -806,6 +806,34 @@ namespace PEBakery.Tests.Core
             {
                 "1|2",
                 "4|5"
+            });
+
+            Template("|a", "|", new List<string>
+            {
+                string.Empty,
+                "a",
+            });
+            Template("a|", "|", new List<string>
+            {
+                "a",
+                string.Empty,
+            });
+            Template("|10|98||50|32||0|1|5|2|4|3|", "|", new List<string>
+            {
+                string.Empty,
+                "10",
+                "98",
+                string.Empty,
+                "50",
+                "32",
+                string.Empty,
+                "0",
+                "1",
+                "5",
+                "2",
+                "4",
+                "3",
+                string.Empty,
             });
         }
 
