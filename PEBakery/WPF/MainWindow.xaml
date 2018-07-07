@@ -602,29 +602,20 @@
                                 Click="ScriptRunButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Run Script">
-                            <iconPacks:PackIconMaterial Kind="Play"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="4"/>
+                            <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                         <Button Grid.Row="1"
                                 Grid.Column="0"
                                 Click="ScriptRefreshButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Refresh Script">
-                            <iconPacks:PackIconMaterial Kind="Refresh"
-                                                        Width="Auto"
-                                                        Height="Auto"
-                                                        Margin="4"/>
+                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                         <Button Grid.Row="2"
                                 Grid.Column="0"
                                 Click="ScriptEditButton_Click"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="Edit Script">
-                            <iconPacks:PackIconMaterial Kind="Pencil"
-                                                        Width="Auto"
-                                                        Height="Auto" Margin="4"/>
+                                ToolTip="{Binding OpenExternalButtonToolTip}">
+                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Internal Editor"
@@ -638,12 +629,10 @@
                         </Button>
                         <Button Grid.Row="3"
                                 Grid.Column="0"
-                                Click="ScriptExternalEditor_Click"
-                                ToolTip="{Binding OpenExternalButtonToopTip}">
-                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="4"/>
+                                Click="ScriptUpdateButton"
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="{Binding ScriptUpdateButtonToolTip}">
+                            <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                     </Grid>
                 </Grid>

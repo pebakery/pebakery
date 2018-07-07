@@ -876,6 +876,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurMainTree?.Script == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
+            StartRefreshScriptWorker();
+        }
+
         private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
@@ -883,11 +894,19 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            if (sender is Button button && button.ContextMenu is ContextMenu menu)
-            {
-                menu.PlacementTarget = button;
-                menu.IsOpen = true;
+            if (Model.IsTreeEntryFile)
+            { // Open Context Menu
+                if (sender is Button button && button.ContextMenu is ContextMenu menu)
+                {
+                    menu.PlacementTarget = button;
+                    menu.IsOpen = true;
+                }
             }
+            else
+            { // Open Folder
+                ScriptExternalEditor_Click(sender, e);
+            }
+            
 
             e.Handled = true;
         }
@@ -924,25 +943,32 @@ namespace PEBakery.WPF
                 return;
 
             Script sc = CurMainTree.Script;
-            OpenTextFile(sc.RealPath, false);
+            switch (sc.Type)
+            {
+                case ScriptType.Script:
+                case ScriptType.Link:
+                    OpenTextFile(sc.RealPath, false);
+                    break;
+                default:
+                    OpenFolder(sc.RealPath);
+                    break;
+            }
         }
 
-        private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
+        private void ScriptUpdateButton(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
-
             if (Model.WorkInProgress)
                 return;
 
-            StartRefreshScriptWorker();
+
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
-
             if (Model.WorkInProgress)
                 return;
 
@@ -1170,12 +1196,12 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region OpenTextFile
-        public void OpenTextFile(string textFile, bool deleteTextFile = false)
+        #region OpenTextFile, OpenFolder
+        public void OpenTextFile(string filePath, bool deleteTextFile = false)
         {
-            if (!(File.Exists(textFile) || Directory.Exists(textFile)))
+            if (!File.Exists(filePath))
             {
-                MessageBox.Show($"Path [{textFile}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -1198,17 +1224,32 @@ namespace PEBakery.WPF
                 proc.StartInfo = new ProcessStartInfo(Setting.Interface_CustomEditorPath)
                 {
                     UseShellExecute = true,
-                    Arguments = textFile,
+                    Arguments = filePath,
                 };
             }
             else
             {
-                proc.StartInfo = new ProcessStartInfo(textFile);
+                proc.StartInfo = new ProcessStartInfo(filePath);
             }
 
             if (deleteTextFile)
-                proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(textFile);
+                proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(filePath);
 
+            proc.Start();
+        }
+
+        public void OpenFolder(string filePath)
+        {
+            if (!Directory.Exists(filePath))
+            {
+                MessageBox.Show($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo(filePath)
+            };
             proc.Start();
         }
         #endregion
@@ -1354,13 +1395,15 @@ namespace PEBakery.WPF
                 _isTreeEntryFile = value;
                 OnPropertyUpdate(nameof(IsTreeEntryFile));
                 OnPropertyUpdate(nameof(ScriptCheckVisiblility));
-                OnPropertyUpdate(nameof(OpenExternalButtonToopTip));
+                OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
         }
 
-        public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open External Editor" : "Open Folder";
-        public PackIconMaterialKind OpenExternalButtonIconKind => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
+        public string OpenExternalButtonToolTip => IsTreeEntryFile ? "Edit Script" : "Open Folder";
+        public PackIconMaterialKind OpenExternalButtonIconKind => IsTreeEntryFile ? PackIconMaterialKind.Pencil : PackIconMaterialKind.Folder;
+
+        public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
 
         private bool? _scriptCheckResult = null;
         public bool? ScriptCheckResult
