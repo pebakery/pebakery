@@ -33,6 +33,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         FontSize="13"
         FontFamily="Segoe UI"
@@ -624,10 +625,20 @@
                             <iconPacks:PackIconMaterial Kind="Pencil"
                                                         Width="Auto"
                                                         Height="Auto" Margin="4"/>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Internal Editor"
+                                              ToolTip="Manage header, interface and attachment"
+                                              Click="ScriptInernalEditor_Click"/>
+                                    <MenuItem Header="External Editor"
+                                              ToolTip="Write and edit script code"
+                                              Click="ScriptExternalEditor_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
                         </Button>
                         <Button Grid.Row="3"
                                 Grid.Column="0"
-                                Click="ScriptOpenExternalButton_Click"
+                                Click="ScriptExternalEditor_Click"
                                 ToolTip="{Binding OpenExternalButtonToopTip}">
                             <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
                                                             Width="Auto"

@@ -876,23 +876,26 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptOpenExternalButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (CurMainTree?.Script == null)
-                return;
-
-            if (Model.WorkInProgress)
-                return;
-
-            Script sc = CurMainTree.Script;
-            OpenTextFile(sc.RealPath, false);
-        }
-
         private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
+            if (Model.WorkInProgress)
+                return;
 
+            if (sender is Button button && button.ContextMenu is ContextMenu menu)
+            {
+                menu.PlacementTarget = button;
+                menu.IsOpen = true;
+            }
+
+            e.Handled = true;
+        }
+
+        private void ScriptInernalEditor_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurMainTree?.Script == null)
+                return;
             if (Model.WorkInProgress)
                 return;
 
@@ -911,6 +914,17 @@ namespace PEBakery.WPF
                     CurMainTree.Script = sc;
                 }
             }
+        }
+
+        private void ScriptExternalEditor_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurMainTree?.Script == null)
+                return;
+            if (Model.WorkInProgress)
+                return;
+
+            Script sc = CurMainTree.Script;
+            OpenTextFile(sc.RealPath, false);
         }
 
         private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
