@@ -911,7 +911,7 @@ namespace PEBakery.WPF
             e.Handled = true;
         }
 
-        private void ScriptInernalEditor_Click(object sender, RoutedEventArgs e)
+        private void ScriptInternalEditor_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
@@ -973,6 +973,17 @@ namespace PEBakery.WPF
                 return;
 
             StartSyntaxCheckWorker(false);
+        }
+
+        private void ScriptOpenFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurMainTree?.Script == null)
+                return;
+            if (Model.WorkInProgress)
+                return;
+
+            Script sc = CurMainTree.Script;
+            OpenFolder(Path.GetDirectoryName(sc.RealPath));
         }
         #endregion
 
@@ -1193,6 +1204,26 @@ namespace PEBakery.WPF
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
+        }
+
+        private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            TreeViewItem treeViewItem = VisualUpwardSearch(e.OriginalSource as DependencyObject);
+
+            if (treeViewItem != null)
+            {
+                treeViewItem.Focus();
+                treeViewItem.IsSelected = true;
+                e.Handled = true;
+            }
+        }
+
+        static TreeViewItem VisualUpwardSearch(DependencyObject source)
+        {
+            while (source != null && !(source is TreeViewItem))
+                source = VisualTreeHelper.GetParent(source);
+
+            return source as TreeViewItem;
         }
         #endregion
 
