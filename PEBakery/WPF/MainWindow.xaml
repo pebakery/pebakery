@@ -406,8 +406,49 @@
                           BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
+                          PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
+                    <TreeView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Run Script" Click="ScriptRunButton_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Refresh Script" Click="ScriptRefreshButton_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Edit Script Properties" Click="ScriptInternalEditor_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Edit Script Source" Click="ScriptExternalEditor_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="OpenInApp" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Update Script" Click="ScriptUpdateButton">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Syntax Check" Click="ScriptCheckButton_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Magnify" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="Open Script Folder" Click="ScriptOpenFolderButton_Click">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
                                                   ItemsSource="{Binding Children}">
@@ -619,10 +660,10 @@
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Internal Editor"
-                                              ToolTip="Manage header, interface and attachment"
-                                              Click="ScriptInernalEditor_Click"/>
+                                              ToolTip="Manage header, interface and attachments"
+                                              Click="ScriptInternalEditor_Click"/>
                                     <MenuItem Header="External Editor"
-                                              ToolTip="Write and edit script code"
+                                              ToolTip="Edit script code"
                                               Click="ScriptExternalEditor_Click"/>
                                 </ContextMenu>
                             </Button.ContextMenu>
