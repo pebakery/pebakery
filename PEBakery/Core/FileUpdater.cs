@@ -111,7 +111,7 @@ namespace PEBakery.Core
                 { // Success
                     File.Copy(tempFile, sc.DirectRealPath, true);
                     Script newScript = p.RefreshScript(sc);
-                    return newScript != null ? (newScript, $"Updated script [{sc.Title}] to [{sc.Version}] from [{newScript.Version}]") : (null, @"Downloaded script is corrupted");
+                    return newScript != null ? (newScript, $"Updated script [{sc.Title}] to [v{sc.Version}] from [v{newScript.Version}]") : (null, @"Downloaded script is corrupted");
                 }
                 else
                 { // Failure
@@ -212,8 +212,6 @@ namespace PEBakery.Core
                 return ScriptUpdateType.Standalone;
             return ScriptUpdateType.None;
         }
-
-        
 
         private static (bool, string) DownloadFile(string url, string destFile, FileUpdaterOptions opts)
         {

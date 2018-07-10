@@ -411,16 +411,14 @@ namespace PEBakery.WPF
 
         public AutoResetEvent StartRefreshScriptWorker()
         {
-            AutoResetEvent resetEvent = new AutoResetEvent(false);
-
             if (CurMainTree?.Script == null)
                 return null;
-
             if (_refreshWorker.IsBusy)
                 return null;
-
             if (CurMainTree.Script.Type == ScriptType.Directory)
                 return null;
+
+            AutoResetEvent resetEvent = new AutoResetEvent(false);
 
             Stopwatch watch = new Stopwatch();
 
@@ -436,13 +434,7 @@ namespace PEBakery.WPF
             _refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 if (e.Result is Script sc)
-                {
-                    CurMainTree.Script = sc;
-                    CurMainTree.ParentCheckedPropagation();
-                    UpdateTreeViewIcon(CurMainTree);
-
-                    DrawScript(CurMainTree.Script);
-                }
+                    PostRefreshScript(sc);
 
                 Model.WorkInProgress = false;
                 watch.Stop();
@@ -457,6 +449,14 @@ namespace PEBakery.WPF
             _refreshWorker.RunWorkerAsync();
 
             return resetEvent;
+        }
+
+        private void PostRefreshScript(Script sc)
+        {
+            CurMainTree.Script = sc;
+            CurMainTree.ParentCheckedPropagation();
+            UpdateTreeViewIcon(CurMainTree);
+            DrawScript(CurMainTree.Script);
         }
 
         private void StartSyntaxCheckWorker(bool quiet)
@@ -978,11 +978,18 @@ namespace PEBakery.WPF
 
             Stopwatch watch = Stopwatch.StartNew();
 
-            FileUpdaterOptions opts = new FileUpdaterOptions { Model = Model };
-            if (Setting.General_UseCustomUserAgent)
-                opts.UserAgent = Setting.General_CustomUserAgent;
+            Script newScript = null;
+            string msg = string.Empty;
+            Task task = Task.Run(() =>
+            {
+                FileUpdaterOptions opts = new FileUpdaterOptions { Model = Model };
+                if (Setting.General_UseCustomUserAgent)
+                    opts.UserAgent = Setting.General_CustomUserAgent;
 
-            (Script newScript, string msg) = FileUpdater.UpdateScript(p, sc, opts);
+                (newScript, msg) = FileUpdater.UpdateScript(p, sc, opts);
+            });
+            task.Wait();
+
             if (newScript == null)
             { // Failure
                 MessageBox.Show(msg, "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -990,6 +997,9 @@ namespace PEBakery.WPF
             }
             else
             {
+                PostRefreshScript(newScript);
+
+                MessageBox.Show(msg, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 App.Logger.SystemWrite(new LogInfo(LogState.Success, msg));
             }
 
@@ -1004,6 +1014,7 @@ namespace PEBakery.WPF
             // Build Ended, Switch to Normal View
             Model.SwitchNormalBuildInterface = true;
             DrawScript(CurMainTree.Script);
+            
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
@@ -1353,10 +1364,8 @@ namespace PEBakery.WPF
             // TODO: Do this in more cleaner way
             while (_refreshWorker.IsBusy)
                 await Task.Delay(500);
-
             while (_cacheWorker.IsBusy)
                 await Task.Delay(500);
-
             while (_loadWorker.IsBusy)
                 await Task.Delay(500);
 
