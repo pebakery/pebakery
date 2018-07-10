@@ -77,7 +77,7 @@ namespace PEBakery.Core.Commands
 
                         #region Set UI
                         Script sc = cmd.Addr.Script;
-                        ScriptSection iface = sc.GetInterface(out _);
+                        ScriptSection iface = sc.GetInterfaceSection(out _);
                         if (iface == null)
                             goto case false;
 

@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
             Script sc = cmd.Addr.Script;
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
@@ -97,7 +97,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
             Script sc = cmd.Addr.Script;
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 

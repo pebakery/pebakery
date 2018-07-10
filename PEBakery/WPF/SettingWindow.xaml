@@ -387,11 +387,7 @@
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
                               Content="Log Line Comment (//)"
-                              IsChecked="{Binding Log_LineComment}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Log Block Comment (/* ~ */)"
-                              IsChecked="{Binding Log_BlockComment}" />
+                              IsChecked="{Binding Log_Comment}" />
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
                               Content="Delayed Logging"

@@ -73,8 +73,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.RealPath;
-                else
-                    return _realPath;
+                return _realPath;
             }
         }
         public string DirectRealPath => _realPath;
@@ -85,8 +84,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Sections;
-                else
-                    return _sections;
+                return _sections;
             }
         }
         public Dictionary<string, string> MainInfo
@@ -98,8 +96,9 @@ namespace PEBakery.Core
 
                 if (_sections.ContainsKey("Main"))
                     return _sections["Main"].GetIniDict();
-                else // Just return empty dictionary
-                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                // Just return empty dictionary
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -114,8 +113,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Project;
-                else
-                    return _project;
+                return _project;
             }
             set => _project = value;
         }
@@ -125,8 +123,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Title;
-                else
-                    return _title;
+                return _title;
             }
         }
         public string Author
@@ -135,8 +132,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Author;
-                else
-                    return _author;
+                return _author;
             }
         }
         public string Description
@@ -145,8 +141,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Description;
-                else
-                    return _description;
+                return _description;
             }
         }
         public string Version
@@ -155,8 +150,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Version;
-                else
-                    return _version;
+                return _version;
             }
         }
         public int Level
@@ -165,8 +159,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Level;
-                else
-                    return _level;
+                return _level;
             }
         }
         public bool Mandatory
@@ -175,8 +168,7 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.Mandatory;
-                else
-                    return _mandatory;
+                return _mandatory;
             }
         }
         public SelectedState Selected
@@ -184,18 +176,15 @@ namespace PEBakery.Core
             get => _selected;
             set
             {
-                if (_selected != value)
+                if (_selected == value)
+                    return;
+
+                _selected = value;
+                string valStr = value.ToString();
+                if (_type != ScriptType.Directory && _sections.ContainsKey("Main"))
                 {
-                    _selected = value;
-                    string valStr = value.ToString();
-                    if (_type != ScriptType.Directory)
-                    {
-                        if (_sections.ContainsKey("Main"))
-                        {
-                            _sections["Main"].IniDict["Selected"] = valStr;
-                            Ini.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
-                        }
-                    }
+                    _sections["Main"].IniDict["Selected"] = valStr;
+                    Ini.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
                 }
             }
         }
@@ -450,7 +439,6 @@ namespace PEBakery.Core
 
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
-            // OnProcessEntry, OnProcessExit : deprecated, it is not used in WinPESE
             SectionType type;
             if (sectionName.Equals("Main", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Main;
@@ -639,14 +627,75 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetInterface
-        public ScriptSection GetInterface(out string sectionName)
+        #region Interface Methods - Get, Apply
+        public ScriptSection GetInterfaceSection(out string sectionName)
         {
             sectionName = "Interface";
             if (MainInfo.ContainsKey("Interface"))
                 sectionName = MainInfo["Interface"];
 
             return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
+        }
+
+        public List<UIControl> GetInterfaceControls(out string sectionName)
+        {
+            ScriptSection iface = GetInterfaceSection(out sectionName);
+            return iface?.GetUICtrls(true);
+        }
+
+        public List<UIControl> GetInterfaceControls(string srcSection)
+        {
+            return Sections.ContainsKey(srcSection) ? Sections[srcSection].GetUICtrls(true) : null;
+        }
+
+        public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = "Interface")
+        {
+            if (!Sections.ContainsKey(destSection))
+                return false; // Section [destSection] not found
+
+            ScriptSection iface = Sections[destSection];
+            List<UIControl> oldCtrls = iface.GetUICtrls(true);
+
+            List<UIControl> updatedCtrls = new List<UIControl>();
+            foreach (UIControl newCtrl in newCtrls)
+            {
+                UIControl oldCtrl = oldCtrls.Find(x => x.Key.Equals(newCtrl.Key, StringComparison.OrdinalIgnoreCase));
+                if (oldCtrl == null)
+                { // newCtrl not exist in oldCtrls, append it
+                    updatedCtrls.Add(newCtrl);
+                    continue;
+                }
+
+                // newCtrl exist in oldCtrls
+                oldCtrls.Remove(oldCtrl);
+                if (oldCtrl.Type != newCtrl.Type)
+                { // Keep oldCtrl. They are different uiCtrls even though they have same key
+                    updatedCtrls.Add(oldCtrl);
+                    continue;
+                }
+                    
+                string val = newCtrl.GetValue();
+                if (val == null)
+                { // This ctrl does not have 'value'. Keep oldCtrl.
+                    updatedCtrls.Add(oldCtrl);
+                    continue;
+                }
+
+                if (!oldCtrl.SetValue(val, false, out _))
+                { // Unable to write value to oldCtrl
+                    updatedCtrls.Add(oldCtrl);
+                    continue;
+                }
+
+                // Apply newCtrl
+                updatedCtrls.Add(newCtrl);
+            }
+
+            // Append leftover oldCtrls
+            updatedCtrls.AddRange(oldCtrls);
+
+            // Write to file
+            return UIControl.Update(updatedCtrls);
         }
         #endregion
 

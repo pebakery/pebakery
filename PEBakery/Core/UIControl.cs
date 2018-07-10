@@ -248,28 +248,19 @@ namespace PEBakery.Core
             {
                 case UIControlType.TextBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                        UIInfo_TextBox info = Info as UIInfo_TextBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
-
+                        UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
                         value = info.Value;
                     }
                     break;
                 case UIControlType.NumberBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                        UIInfo_NumberBox info = Info as UIInfo_NumberBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
-
+                        UIInfo_NumberBox info = Info.Cast<UIInfo_NumberBox>();
                         value = info.Value.ToString();
                     }
                     break;
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                        UIInfo_CheckBox info = Info as UIInfo_CheckBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
-
+                        UIInfo_CheckBox info = Info.Cast<UIInfo_CheckBox>();
                         value = info.Value ? "True" : "False";
                     }
                     break;
@@ -278,10 +269,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                        UIInfo_RadioButton info = Info as UIInfo_RadioButton;
-                        Debug.Assert(info != null, "Invalid UIInfo");
-
+                        UIInfo_RadioButton info = Info.Cast<UIInfo_RadioButton>();
                         value = info.Selected ? "True" : "False";
                     }
                     break;
@@ -290,10 +278,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                        UIInfo_RadioGroup info = Info as UIInfo_RadioGroup;
-                        Debug.Assert(info != null, "Invalid UIInfo");
-
+                        UIInfo_RadioGroup info = Info.Cast<UIInfo_RadioGroup>();
                         value = info.Selected.ToString();
                     }
                     break;
@@ -310,10 +295,7 @@ namespace PEBakery.Core
             {
                 case UIControlType.TextBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                        UIInfo_TextBox uiInfo = Info as UIInfo_TextBox;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
-
+                        UIInfo_TextBox uiInfo = Info.Cast<UIInfo_TextBox>();
                         uiInfo.Value = newValue;
 
                         logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
@@ -322,9 +304,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.NumberBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                        UIInfo_NumberBox uiInfo = Info as UIInfo_NumberBox;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
+                        UIInfo_NumberBox uiInfo = Info.Cast<UIInfo_NumberBox>();
 
                         // WB082 just write string value in case of error, but PEBakery will throw error
                         if (!NumberHelper.ParseInt32(newValue, out int intVal))
@@ -349,9 +329,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                        UIInfo_CheckBox uiInfo = Info as UIInfo_CheckBox;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
+                        UIInfo_CheckBox uiInfo = Info.Cast<UIInfo_CheckBox>();
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -376,9 +354,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.ComboBox:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                        UIInfo_ComboBox uiInfo = Info as UIInfo_ComboBox;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
+                        UIInfo_ComboBox uiInfo = Info.Cast<UIInfo_ComboBox>();
 
                         int idx = uiInfo.Items.FindIndex(x => x.Equals(newValue, StringComparison.OrdinalIgnoreCase));
                         if (idx == -1)
@@ -396,9 +372,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                        UIInfo_RadioButton uiInfo = Info as UIInfo_RadioButton;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
+                        UIInfo_RadioButton uiInfo = Info.Cast<UIInfo_RadioButton>();
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                         {
@@ -423,10 +397,6 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.FileBox:
                     {
-                        // Debug.Assert(Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
-                        // UIInfo_FileBox uiInfo = Info as UIInfo_FileBox;
-                        // Debug.Assert(uiInfo != null, "Invalid UIInfo");
-
                         Text = newValue;
 
                         logs.Add(new LogInfo(LogState.Success, $"Interface Control [{Key}] set to [{newValue}]"));
@@ -435,9 +405,7 @@ namespace PEBakery.Core
                     break;
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                        UIInfo_RadioGroup uiInfo = Info as UIInfo_RadioGroup;
-                        Debug.Assert(uiInfo != null, "Invalid UIInfo");
+                        UIInfo_RadioGroup uiInfo = Info.Cast<UIInfo_RadioGroup>();
 
                         if (!NumberHelper.ParseInt32(newValue, out int idx))
                         {

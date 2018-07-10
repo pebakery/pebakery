@@ -51,6 +51,8 @@ namespace PEBakery.Core
         public EngineState s;
         private Task<int> _task;
 
+        public static readonly string DefaultUserAgent = $"PEBakery/{Properties.Resources.EngineVersion}";
+
         public Engine(EngineState state)
         {
             s = state;

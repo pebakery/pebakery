@@ -681,13 +681,13 @@ namespace PEBakery.WPF
                 }
 
                 // Determine current project
-                Project project = CurMainTree.Script.Project;
+                Project p = CurMainTree.Script.Project;
 
                 Model.BuildTree.Children.Clear();
-                ScriptListToTreeViewModel(project, project.ActiveScripts, false, Model.BuildTree, null);
+                ScriptListToTreeViewModel(p, p.ActiveScripts, false, Model.BuildTree, null);
                 CurBuildTree = null;
 
-                EngineState s = new EngineState(project, Logger, Model);
+                EngineState s = new EngineState(p, Logger, Model);
                 s.SetOption(Setting);
 
                 Engine.WorkingEngine = new Engine(s);
@@ -701,7 +701,7 @@ namespace PEBakery.WPF
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run
-                int buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
+                int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
                 Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
@@ -716,7 +716,7 @@ namespace PEBakery.WPF
 
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
-                Model.StatusBarText = $"{project.ProjectName} build done ({t:h\\:mm\\:ss})";
+                Model.StatusBarText = $"{p.ProjectName} build done ({t:h\\:mm\\:ss})";
 
                 if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
@@ -748,8 +748,8 @@ namespace PEBakery.WPF
             if (_loadWorker.IsBusy)
                 return;
 
-            double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
-            bool old_Script_EnableCache = Setting.Script_EnableCache;
+            double oldInterfaceScaleFactor = Setting.Interface_ScaleFactor;
+            bool oldScriptEnableCache = Setting.Script_EnableCache;
 
             SettingWindow dialog = new SettingWindow(Setting);
             bool? result = dialog.ShowDialog();
@@ -757,11 +757,11 @@ namespace PEBakery.WPF
             {
                 // Scale Factor
                 double newScaleFactor = Setting.Interface_ScaleFactor;
-                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                if (double.Epsilon < Math.Abs(newScaleFactor - oldInterfaceScaleFactor)) // Not Equal
                     DrawScript(CurMainTree.Script);
 
                 // Script
-                if (old_Script_EnableCache == false && Setting.Script_EnableCache)
+                if (!oldScriptEnableCache && Setting.Script_EnableCache)
                     StartCacheWorker();
 
                 // Apply
@@ -906,7 +906,7 @@ namespace PEBakery.WPF
             { // Open Folder
                 ScriptExternalEditor_Click(sender, e);
             }
-            
+
 
             e.Handled = true;
         }
@@ -946,7 +946,7 @@ namespace PEBakery.WPF
             switch (sc.Type)
             {
                 case ScriptType.Script:
-                    case ScriptType.Link:
+                case ScriptType.Link:
                     OpenTextFile(sc.RealPath, false);
                     break;
                 default:
@@ -962,7 +962,48 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
+            Script sc = CurMainTree.Script;
+            Project p = CurMainTree.Script.Project;
 
+            Model.BuildTree.Children.Clear();
+            ScriptListToTreeViewModel(p, new List<Script> { sc }, false, Model.BuildTree, null);
+            CurBuildTree = null;
+
+            // Switch to Build View
+            Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+            Model.SwitchNormalBuildInterface = false;
+
+            // Turn on progress ring
+            Model.WorkInProgress = true;
+
+            Stopwatch watch = Stopwatch.StartNew();
+
+            FileUpdaterOptions opts = new FileUpdaterOptions { Model = Model };
+            if (Setting.General_UseCustomUserAgent)
+                opts.UserAgent = Setting.General_CustomUserAgent;
+
+            (Script newScript, string msg) = FileUpdater.UpdateScript(p, sc, opts);
+            if (newScript == null)
+            { // Failure
+                MessageBox.Show(msg, "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
+            }
+            else
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Success, msg));
+            }
+
+            watch.Stop();
+            TimeSpan t = watch.Elapsed;
+            Model.StatusBarText = $"{p.ProjectName} build done ({t:h\\:mm\\:ss})";
+
+            // Turn off progress ring
+            Model.BuildScriptFullProgressVisibility = Visibility.Visible;
+            Model.WorkInProgress = false;
+
+            // Build Ended, Switch to Normal View
+            Model.SwitchNormalBuildInterface = true;
+            DrawScript(CurMainTree.Script);
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
@@ -1224,7 +1265,7 @@ namespace PEBakery.WPF
                 proc.StartInfo = new ProcessStartInfo(Setting.Interface_CustomEditorPath)
                 {
                     UseShellExecute = true,
-                    Arguments = filePath,
+                    Arguments = StringEscaper.Doublequote(filePath),
                 };
             }
             else
@@ -1330,7 +1371,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Normal Interface
+        #region Normal Interface Properties
         private bool _workInProgress = false;
         public bool WorkInProgress
         {
@@ -1626,7 +1667,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Build Interface
+        #region Build Interface Properties
         private TreeViewModel _buildTree;
         public TreeViewModel BuildTree
         {
@@ -1682,18 +1723,18 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(BuildScriptProgressBarValue));
             }
         }
-
-        private Visibility _buildFullProgressBarVisibility = Visibility.Visible;
-        public Visibility BuildFullProgressBarVisibility
+        
+        private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
+        public Visibility BuildScriptFullProgressVisibility
         {
-            get => _buildFullProgressBarVisibility;
+            get => _buildScriptFullProgressVisibility;
             set
             {
-                _buildFullProgressBarVisibility = value;
-                OnPropertyUpdate(nameof(BuildFullProgressBarVisibility));
+                _buildScriptFullProgressVisibility = value;
+                OnPropertyUpdate(nameof(BuildScriptFullProgressVisibility));
             }
         }
-
+        
         private double _buildFullProgressBarMax = 100;
         public double BuildFullProgressBarMax
         {
@@ -1843,6 +1884,24 @@ namespace PEBakery.WPF
                 _taskbarProgressState = value;
                 OnPropertyUpdate(nameof(TaskbarProgressState));
             }
+        }
+        #endregion
+
+        #region Build Interface Methods
+        public void SetBuildCommandProgress(string title, int max = 100)
+        {
+            BuildCommandProgressTitle = title;
+            BuildCommandProgressText = string.Empty;
+            BuildCommandProgressMax = max;
+            BuildCommandProgressShow = true;
+        }
+
+        public void ResetBuildCommandProgress()
+        {
+            BuildCommandProgressShow = false;
+            BuildCommandProgressTitle = "Progress";
+            BuildCommandProgressText = string.Empty;
+            BuildCommandProgressValue = 0;
         }
         #endregion
 

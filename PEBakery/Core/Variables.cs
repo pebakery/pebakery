@@ -275,7 +275,7 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface != null)
             {
                 List<UIControl> uiCtrls = null;
