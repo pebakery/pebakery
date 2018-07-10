@@ -363,6 +363,8 @@ namespace PEBakery.Core
 
         public static string Doublequote(string str)
         {
+            if (str.StartsWith("\"") && str.EndsWith("\""))
+                return str;
             if (str.Contains(' '))
                 return "\"" + str + "\"";
             return str;

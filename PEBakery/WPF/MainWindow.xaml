@@ -659,10 +659,10 @@
                             <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
                             <Button.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Internal Editor"
+                                    <MenuItem Header="Edit Script Properties"
                                               ToolTip="Manage header, interface and attachments"
                                               Click="ScriptInternalEditor_Click"/>
-                                    <MenuItem Header="External Editor"
+                                    <MenuItem Header="Edit Script Source"
                                               ToolTip="Edit script code"
                                               Click="ScriptExternalEditor_Click"/>
                                 </ContextMenu>

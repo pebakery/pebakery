@@ -60,7 +60,7 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptMonkeyPatch(scriptFile);
-                    SectionAddress addr = new SectionAddress(sc, sc.GetInterface(out _));
+                    SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
                     try
                     {
                         EngineTests.Eval(s, addr, rawCode, CodeType.Visible, check);
@@ -82,7 +82,7 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptMonkeyPatch(scriptFile);
-                    SectionAddress addr = new SectionAddress(sc, sc.GetInterface(out _));
+                    SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
                     try
                     {
                         CodeType? opType = optSuccess ? (CodeType?)CodeType.VisibleOp : null;
