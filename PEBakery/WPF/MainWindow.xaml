@@ -25,7 +25,8 @@
     not derived from or based on this program. 
 -->
     
-<Window x:Class="PEBakery.WPF.MainWindow"
+<Window x:Name="Main"
+        x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -47,6 +48,7 @@
     </Window.DataContext>
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
+        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
@@ -408,43 +410,44 @@
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling">
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          Tag="{Binding DataContext, ElementName=Main}">
                     <TreeView.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="Run Script" Click="ScriptRunButton_Click">
+                            <MenuItem Header="Run Script" Click="ScriptRunButton_Click" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="Play" Width="15" Height="15" Margin="4"/>
+                                </MenuItem.Icon>
+                             </MenuItem>
+                            <MenuItem Header="Refresh Script" Click="ScriptRefreshButton_Click" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Refresh" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Refresh Script" Click="ScriptRefreshButton_Click">
+                            <MenuItem Header="Edit Script Properties" Click="ScriptInternalEditor_Click" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Edit Script Properties" Click="ScriptInternalEditor_Click">
+                            <MenuItem Header="Edit Script Source" Click="ScriptExternalEditor_Click" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="OpenInApp" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Edit Script Source" Click="ScriptExternalEditor_Click">
+                            <MenuItem Header="Update Script" Click="ScriptUpdateButton" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="OpenInApp" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="Download" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Update Script" Click="ScriptUpdateButton">
+                            <MenuItem Header="Syntax Check" Click="ScriptCheckButton_Click" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="Magnify" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Syntax Check" Click="ScriptCheckButton_Click">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Magnify" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <Separator/>
+                            <Separator  Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
                             <MenuItem Header="Open Script Folder" Click="ScriptOpenFolderButton_Click">
                                 <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Width="Auto" Height="Auto" Margin="4"/>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Width="15" Height="15" Margin="4"/>
                                 </MenuItem.Icon>
                             </MenuItem>
                         </ContextMenu>
