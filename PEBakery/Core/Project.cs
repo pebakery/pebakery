@@ -497,7 +497,7 @@ namespace PEBakery.Core
             }
 
             // ScriptParseInfo
-            var spiList = new List<ScriptParseInfo>();
+            List<ScriptParseInfo> spiList = new List<ScriptParseInfo>();
             spiList.AddRange(allScriptPathList.Select(x => new ScriptParseInfo(x.Path, x.Path, x.IsDir, false)));
             spiList.AddRange(allDirLinkPathList.Select(x => new ScriptParseInfo(x.RealPath, x.TreePath, x.IsDir, true)));
 
@@ -603,10 +603,10 @@ namespace PEBakery.Core
 
         private List<Script> InternalSortScripts(List<Script> scList)
         {
-            Tree<Script> pTree = new Tree<Script>();
+            Tree<Script> scTree = new Tree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-            int rootId = pTree.AddNode(0, MainScript); // Root is script.project
+            int rootId = scTree.AddNode(0, MainScript); // Root is script.project
 
             foreach (Script sc in scList)
             {
@@ -636,23 +636,23 @@ namespace PEBakery.Core
                         Debug.Assert(ts != null, "Internal Logic Error at InternalSortScripts");
 
                         Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, ProjectRoot, sc.Level, false, false, ts.IsDirLink);
-                        nodeId = pTree.AddNode(nodeId, dirScript);
+                        nodeId = scTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
                     }
                 }
 
-                pTree.AddNode(nodeId, sc);
+                scTree.AddNode(nodeId, sc);
             }
 
             // Sort - Script first, Directory last
-            pTree.Sort((x, y) =>
+            scTree.Sort((x, y) =>
             {
                 if (x.Data.Level == y.Data.Level)
                 {
                     if (x.Data.Type == ScriptType.Directory)
                     {
                         if (y.Data.Type == ScriptType.Directory)
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.Ordinal);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
                         else
                             return 1;
                     }
@@ -661,7 +661,7 @@ namespace PEBakery.Core
                         if (y.Data.Type == ScriptType.Directory)
                             return -1;
                         else
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.Ordinal);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
                     }
                 }
                 else
@@ -671,7 +671,7 @@ namespace PEBakery.Core
             });
 
             List<Script> newList = new List<Script>();
-            foreach (Script sc in pTree)
+            foreach (Script sc in scTree)
                 newList.Add(sc);
 
             return newList;
