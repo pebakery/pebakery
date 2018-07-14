@@ -72,7 +72,7 @@ namespace PEBakery.Core.Commands
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Macro [{info.MacroType}] ({cmd.RawCode})", s.CurDepth + 1));
                 s.Logger.TurnOff.Push(true);
                 CommandBranch.RunExec(s, macroCmd, true);
-                s.Logger.TurnOff.TryPop(out bool dummy);
+                s.Logger.TurnOff.TryPop(out _);
             }
         }
     }

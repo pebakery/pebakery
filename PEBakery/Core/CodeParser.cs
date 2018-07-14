@@ -1970,21 +1970,22 @@ namespace PEBakery.Core
                         CodeMessageAction action = CodeMessageAction.None;
                         string timeout = null;
 
-                        if (args.Count > 1)
+                        if (2 <= args.Count)
                         {
-                            if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
+                            string arg = args[1];
+                            if (arg.Equals("Information", StringComparison.OrdinalIgnoreCase) || arg.Equals("Info", StringComparison.OrdinalIgnoreCase))
                                 action = CodeMessageAction.Information;
-                            else if (args[1].Equals("Confirmation", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("Confirmation", StringComparison.OrdinalIgnoreCase) || arg.Equals("Confirm", StringComparison.OrdinalIgnoreCase))
                                 action = CodeMessageAction.Confirmation;
-                            else if (args[1].Equals("Error", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("Error", StringComparison.OrdinalIgnoreCase))
                                 action = CodeMessageAction.Error;
-                            else if (args[1].Equals("Warning", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("Warning", StringComparison.OrdinalIgnoreCase) || arg.Equals("Warn", StringComparison.OrdinalIgnoreCase))
                                 action = CodeMessageAction.Warning;
                             else
                                 throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
                         }
 
-                        if (args.Count == 3)
+                        if (3 <= args.Count)
                             timeout = args[2];
 
                         return new CodeInfo_Message(message, action, timeout);
