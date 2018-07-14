@@ -1140,7 +1140,9 @@ namespace PEBakery.WPF
             }
             return max;
         }
+        #endregion
 
+        #region RunOneSection
         private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)
         {
             if (Engine.WorkingLock == 0)

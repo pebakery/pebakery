@@ -228,36 +228,28 @@ namespace PEBakery.WPF
             {
                 case UIControlType.TextBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                        UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
                         m.UICtrlTextBoxInfo = info;
                         break;
                     }
                 case UIControlType.TextLabel:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                        UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
 
                         m.UICtrlTextLabelInfo = info;
                         break;
                     }
                 case UIControlType.NumberBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                        UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
 
                         m.UICtrlNumberBoxInfo = info;
                         break;
                     }
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                        UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
                         m.UICtrlCheckBoxInfo = info;
                         m.UICtrlSectionToRun = info.SectionName;
@@ -266,9 +258,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.ComboBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                        UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
                         m.UICtrlComboBoxInfo = info;
                         m.UICtrlSectionToRun = info.SectionName;
@@ -277,9 +267,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Image:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-                        UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
                         m.UICtrlImageInfo = info;
                         m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
@@ -294,9 +282,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Button:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                        UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
                         m.UICtrlButtonInfo = info;
                         m.UICtrlSectionToRun = info.SectionName;
@@ -306,18 +292,14 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.WebLabel:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
-                        UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
 
                         m.UICtrlWebLabelInfo = info;
                         break;
                     }
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                        UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
                         m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
                         m.UICtrlRadioButtonInfo = info;
@@ -327,27 +309,21 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Bevel:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-                        UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
 
                         m.UICtrlBevelInfo = info;
                         break;
                     }
                 case UIControlType.FileBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
-                        UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
                         m.UICtrlFileBoxInfo = info;
                         break;
                     }
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                        UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
                         m.UICtrlRadioGroupInfo = info;
                         m.UICtrlSectionToRun = info.SectionName;
@@ -444,9 +420,7 @@ namespace PEBakery.WPF
             {
                 case UIControlType.CheckBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                        UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
                         info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
                         info.HideProgress = m.UICtrlHideProgress;
@@ -454,9 +428,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.ComboBox:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                        UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
                         uiCtrl.Text = info.Items[info.Index];
                         info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
@@ -479,9 +451,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.Button:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                        UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
                         m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
                         info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
@@ -490,9 +460,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.RadioButton:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                        UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
                         info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
                         info.HideProgress = m.UICtrlHideProgress;
@@ -500,9 +468,7 @@ namespace PEBakery.WPF
                     }
                 case UIControlType.RadioGroup:
                     {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                        UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                        Debug.Assert(info != null, "Invalid UIInfo");
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
                         info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
                         info.HideProgress = m.UICtrlHideProgress;
@@ -704,6 +670,12 @@ namespace PEBakery.WPF
                 return;
             }
 
+            if (!_sc.Sections.ContainsKey(_ifaceSectionName))
+            { // No [Interface] section, so add it
+                Ini.AddSection(_sc.DirectRealPath, _ifaceSectionName);
+                _sc = _sc.Project.RefreshScript(_sc);
+            }
+
             SectionAddress addr = new SectionAddress(_sc, _sc.Sections[_ifaceSectionName]);
             string line = UIControl.GetUIControlTemplate(type, key);
 
@@ -719,15 +691,15 @@ namespace PEBakery.WPF
             _render.Render();
             m.SelectedUICtrl = uiCtrl;
             m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
+
+            m.InterfaceNotSaved = true;
+            m.InterfaceUpdated = true;
         }
 
         private void UICtrlDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (m.SelectedUICtrl == null)
                 return;
-
-            m.InterfaceNotSaved = true;
-            m.InterfaceUpdated = true;
 
             UIControl uiCtrl = m.SelectedUICtrl;
             m.UICtrlToBeDeleted.Add(uiCtrl);
@@ -738,6 +710,9 @@ namespace PEBakery.WPF
 
             _render.Render();
             m.SelectedUICtrl = null;
+
+            m.InterfaceNotSaved = true;
+            m.InterfaceUpdated = true;
         }
         #endregion
         #region For Image
