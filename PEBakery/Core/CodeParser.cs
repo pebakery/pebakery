@@ -3824,10 +3824,11 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        if (args.Count == 1)
-                            info = new SystemInfo_SaveLog(args[0]);
-                        else
-                            info = new SystemInfo_SaveLog(args[0], args[1]);
+                        string logFormat = null;
+                        if (minArgCount < args.Count)
+                            logFormat = args[1];
+
+                        info = new SystemInfo_SaveLog(args[0], logFormat);
                     }
                     break;
                 case SystemType.SetLocal:

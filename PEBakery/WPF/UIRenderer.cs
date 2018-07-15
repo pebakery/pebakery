@@ -1185,7 +1185,6 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = false;
 
                 // Run
-                // long buildId = await Engine.WorkingEngine.Run(logMsg);
                 await Engine.WorkingEngine.Run(logMsg);
 
                 // Build Ended, Switch to Normal View

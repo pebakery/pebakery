@@ -4760,7 +4760,7 @@ namespace PEBakery.Core
         public string DestPath;
         public string LogFormat;
 
-        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        public SystemInfo_SaveLog(string destPath, string logFormat)
         {
             DestPath = destPath;
             LogFormat = logFormat;
@@ -4768,7 +4768,15 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"SaveLog,{DestPath},{LogFormat}";
+            StringBuilder b = new StringBuilder();
+            b.Append("SaveLog,");
+            b.Append(DestPath);
+            if (LogFormat == null)
+            {
+                b.Append(",");
+                b.Append(LogFormat);
+            }
+            return b.ToString();
         }
     }
     #endregion

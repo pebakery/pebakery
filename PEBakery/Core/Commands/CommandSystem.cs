@@ -134,9 +134,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeDrive:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeDrive), "Invalid SystemInfo");
-                        SystemInfo_GetFreeDrive subInfo = info.SubInfo as SystemInfo_GetFreeDrive;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_GetFreeDrive subInfo = info.SubInfo.Cast<SystemInfo_GetFreeDrive>();
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -422,14 +420,31 @@ namespace PEBakery.Core.Commands
                         SystemInfo_SaveLog subInfo = info.SubInfo.Cast<SystemInfo_SaveLog>();
 
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
-                        string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
+                        Debug.Assert(destPath != null, "Invalid SubInfo");
 
-                        LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
+                        LogExportType logFormat;
+                        if (subInfo.LogFormat == null)
+                        {
+                            string ext = Path.GetExtension(destPath);
+                            if (ext.Equals(".htm", StringComparison.OrdinalIgnoreCase) ||
+                                ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
+                                logFormat = LogExportType.Html;
+                            else
+                                logFormat = LogExportType.Text;
+                        }
+                        else
+                        {
+                            string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
+                            logFormat = Logger.ParseLogExportType(logFormatStr);
+                        }
 
                         if (!s.DisableLogger)
                         { // When logger is disabled, s.BuildId is invalid.
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
-                            s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
+                            // Flush deferred logs into database
+                            int realBuildId = s.Logger.Flush(s);
+
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId); // Do not use s.BuildId, for case of FullDelayedLogging
                         }
                     }
                     break;

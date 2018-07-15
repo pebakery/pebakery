@@ -305,22 +305,96 @@ namespace PEBakery.Core
     #region DelayedLogging
     public class DelayedLogging
     {
-        public int CurrentScriptId = 0;
-        public DB_BuildInfo BuildInfo = null;
+        public int CurrentScriptId;
+        public DB_BuildInfo BuildInfo;
         public List<DB_Script> ScriptLogPool;
         public List<DB_Variable> VariablePool;
-        public List<DB_BuildLog> BuildLogPool = new List<DB_BuildLog>(4096);
+        public List<DB_BuildLog> BuildLogPool;
+
+        private readonly Dictionary<int, int> _scriptIdMatchDict;
 
         public DelayedLogging(bool fullDelayed)
         {
+            CurrentScriptId = 0;
+            BuildInfo = null;
+            BuildLogPool = new List<DB_BuildLog>(1024);
             if (fullDelayed)
             {
-                ScriptLogPool = new List<DB_Script>(256);
-                VariablePool = new List<DB_Variable>(256);
+                ScriptLogPool = new List<DB_Script>(64);
+                VariablePool = new List<DB_Variable>(128);
+                _scriptIdMatchDict = new Dictionary<int, int>(64) { [0] = 0 };
             }
         }
 
-        public void FlushFullDelayed(EngineState s)
+        /// <summary>
+        /// Flush FullDelayedLogging
+        /// </summary>
+        /// <param name="s">EngineState</param>
+        /// <returns>Real BuildId after written to database</returns>
+        public int FlushFullDelayed(EngineState s)
+        {
+            if (s.LogMode != LogMode.FullDelay)
+                return s.BuildId;
+
+            Debug.Assert(BuildInfo != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(ScriptLogPool != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(VariablePool != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(BuildLogPool != null, "Internal Logic Error at DelayedLogging");
+
+            if (BuildInfo.Id <= 0)
+            { // Write to database if it did not
+                BuildInfo.Id = 0;
+                s.Logger.DB.Insert(BuildInfo);
+            }
+            int buildId = BuildInfo.Id;
+
+            // Flush ScriptLogPool
+            DB_Script[] newScriptLogPool = ScriptLogPool.Where(x => x.Id < 0).ToArray();
+            Dictionary<string, int> scriptOldIdDict = newScriptLogPool.ToDictionary(x => $"{x.Name}_{x.Path}", x => x.Id);
+            foreach (DB_Script log in newScriptLogPool)
+            {
+                log.Id = 0;
+                log.BuildId = buildId;
+            }
+            s.Logger.DB.InsertAll(newScriptLogPool);
+            foreach (DB_Script log in newScriptLogPool)
+            {
+                int oldId = scriptOldIdDict[$"{log.Name}_{log.Path}"];
+                _scriptIdMatchDict[oldId] = log.Id;
+            }
+
+            // [DelayedVariablePool]
+            // s.ScriptId is 0 -> fixed/global variables
+            // s.ScriptId is -N -> local variables
+
+            // Flush VariablePool
+            DB_Variable[] newVariablePool = VariablePool.Where(x => x.Id == 0).ToArray();
+            foreach (DB_Variable log in newVariablePool)
+            {
+                log.BuildId = buildId;
+                log.ScriptId = _scriptIdMatchDict[log.ScriptId];
+            }
+            s.Logger.DB.InsertAll(newVariablePool);
+
+            // Flush BuildLogPool
+            DB_BuildLog[] newBuildLogPool = BuildLogPool.Where(x => x.Id == 0).ToArray();
+            foreach (DB_BuildLog log in newBuildLogPool)
+            {
+                log.BuildId = buildId;
+                log.ScriptId = _scriptIdMatchDict[log.ScriptId];
+            }
+            s.Logger.DB.InsertAll(newBuildLogPool);
+
+            // ScriptIdMatchDict should be kept alive
+            ScriptLogPool.Clear();
+            VariablePool.Clear();
+            BuildLogPool.Clear();
+            s.Logger.InvokeFullRefresh();
+
+            return buildId;
+        }
+        /*
+        public void FinishFullDelayed(EngineState s)
         {
             if (s.LogMode != LogMode.FullDelay)
                 return;
@@ -329,20 +403,21 @@ namespace PEBakery.Core
             // s.ScriptId is 0 -> fixed/global variables
             // s.ScriptId is -N -> local variables
 
-            Debug.Assert(BuildInfo != null, "Internal Logic Error at UIRender.RunOneSection");
-            Debug.Assert(ScriptLogPool != null, "Internal Logic Error at UIRender.RunOneSection");
-            Debug.Assert(VariablePool != null, "Internal Logic Error at UIRender.RunOneSection");
-            Debug.Assert(BuildLogPool != null, "Internal Logic Error at UIRender.RunOneSection");
+            Debug.Assert(BuildInfo != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(ScriptLogPool != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(VariablePool != null, "Internal Logic Error at DelayedLogging");
+            Debug.Assert(BuildLogPool != null, "Internal Logic Error at DelayedLogging");
 
             BuildInfo.Id = 0;
             s.Logger.DB.Insert(BuildInfo);
             int buildId = BuildInfo.Id;
 
+            // Flush ScriptLogPool
             Dictionary<string, int> scriptOldIdDict = new Dictionary<string, int>();
             Dictionary<int, int> scriptNewIdDict = new Dictionary<int, int>();
             foreach (DB_Script log in ScriptLogPool)
             {
-                Debug.Assert(log.Id < 0, "Internal Logic Error at UIRender.RunOneSection");
+                Debug.Assert(log.Id < 0, "Internal Logic Error at DelayedLogging");
 
                 scriptOldIdDict[$"{log.Name}_{log.Path}"] = log.Id;
 
@@ -357,6 +432,7 @@ namespace PEBakery.Core
                 scriptNewIdDict[oldId] = log.Id;
             }
 
+            // Flush VariablePool
             foreach (DB_Variable log in VariablePool)
             {
                 log.BuildId = buildId;
@@ -364,6 +440,7 @@ namespace PEBakery.Core
             }
             s.Logger.DB.InsertAll(VariablePool);
 
+            // Flush BuildLogPool
             foreach (DB_BuildLog log in BuildLogPool)
             {
                 log.BuildId = buildId;
@@ -372,6 +449,7 @@ namespace PEBakery.Core
             s.Logger.DB.InsertAll(BuildLogPool);
             s.Logger.InvokeFullRefresh();
         }
+        */
     }
     #endregion
 
@@ -436,6 +514,27 @@ namespace PEBakery.Core
                 DB.Close();
                 DB = null;
             }
+        }
+        #endregion
+
+        #region Flush
+        /// <summary>
+        /// Flush delayed logs
+        /// </summary>
+        /// <param name="s">EngineState</param>
+        /// <returns>Real BuildId written to database</returns>
+        public int Flush(EngineState s)
+        {
+            switch (s.LogMode)
+            {
+                case LogMode.PartDelay:
+                    DB.InsertAll(_delayed.BuildLogPool);
+                    _delayed.BuildLogPool.Clear();
+                    break;
+                case LogMode.FullDelay:
+                    return _delayed.FlushFullDelayed(s);
+            }
+            return s.BuildId;
         }
         #endregion
 
@@ -523,8 +622,7 @@ namespace PEBakery.Core
             switch (s.LogMode)
             {
                 case LogMode.PartDelay:
-                    DB.InsertAll(_delayed.BuildLogPool);
-                    _delayed.BuildLogPool.Clear();
+                    Flush(s);
                     break;
                 case LogMode.NoDelay:
                     DB.Update(dbBuild);
@@ -977,7 +1075,6 @@ namespace PEBakery.Core
                 logFormat = LogExportType.Html;
             else if (str.Equals("Text", StringComparison.OrdinalIgnoreCase))
                 logFormat = LogExportType.Text;
-
             return logFormat;
         }
 
