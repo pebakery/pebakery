@@ -516,18 +516,18 @@ namespace PEBakery.Core
                     { // ScriptCache enabled
                         FileInfo f = new FileInfo(spi.RealPath);
                         string sPath = spi.TreePath.Remove(0, BaseDir.Length + 1); // 1 for \
-                        DB_ScriptCache pCache = cacheDb.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
-                        if (pCache != null &&
-                            pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
-                            DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
-                            pCache.FileSize == f.Length)
+                        DB_ScriptCache scCache = cacheDb.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+                        if (scCache != null &&
+                            scCache.Path.Equals(sPath, StringComparison.Ordinal) &&
+                            DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                            scCache.FileSize == f.Length)
                         { // Cache Hit
                             try
                             {
-                                using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                using (MemoryStream ms = new MemoryStream(scCache.Serialized))
                                 {
                                     BinaryFormatter formatter = new BinaryFormatter();
-                                    sc = formatter.Deserialize(memStream) as Script;
+                                    sc = formatter.Deserialize(ms) as Script;
                                 }
 
                                 if (sc == null)
@@ -680,8 +680,8 @@ namespace PEBakery.Core
         public void SetMainScriptIdx()
         {
             _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
-            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1);
-            Debug.Assert(_mainScriptIdx != -1);
+            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
+            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
         }
         #endregion
 
@@ -722,7 +722,6 @@ namespace PEBakery.Core
         /// Load scripts into project while running
         /// Return true if error
         /// </summary>
-        // public Script LoadScriptMonkeyPatch2(string fullPath, bool addToProjectTree = false, bool ignoreMain = false, bool overwriteProjectTree = false)
         public Script LoadScriptMonkeyPatch(string realPath, bool ignoreMain = false, bool addToProjectTree = false, bool overwriteProjectTree = false)
         {
             return LoadScriptMonkeyPatch(realPath, realPath, ignoreMain, addToProjectTree, overwriteProjectTree);
@@ -789,7 +788,7 @@ namespace PEBakery.Core
             Script sc;
             try
             {
-                if (realPath.Equals(Path.Combine(ProjectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                if (realPath.Equals(Path.Combine(ProjectRoot, ProjectName, "script.project"), StringComparison.OrdinalIgnoreCase))
                 {
                     sc = new Script(ScriptType.Script, realPath, treePath, this, ProjectRoot, 0, true, ignoreMain, isDirLink);
                 }

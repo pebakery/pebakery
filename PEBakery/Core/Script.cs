@@ -580,7 +580,7 @@ namespace PEBakery.Core
             if (sc.Type == ScriptType.Directory || sc._isMainScript)
                 return null;
 
-            if (sc.MainInfo.ContainsKey("Disable") == false)
+            if (!sc.MainInfo.ContainsKey("Disable"))
                 return null;
 
             sc.Project.Variables.ResetVariables(VarsType.Local);

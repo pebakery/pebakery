@@ -105,8 +105,8 @@ namespace PEBakery.Core
                             dbBuild.EndTime = DateTime.UtcNow;
 
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
-                        _w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
-                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture)}");
                         TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
                         _w.WriteLine($"Took {t:h\\:mm\\:ss}");
                         _w.WriteLine();
@@ -244,8 +244,8 @@ namespace PEBakery.Core
                         {
                             PEBakeryVersion = Properties.Resources.StringVersionFull,
                             BuildName = dbBuild.Name,
-                            BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
-                            BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
+                            BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
+                            BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.EndTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             LogStats = new List<LogStatHtmlModel>(),
                         };

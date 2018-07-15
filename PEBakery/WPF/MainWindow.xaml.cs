@@ -25,10 +25,11 @@
     not derived from or based on this program. 
 */
 
-using MahApps.Metro.IconPacks;
+
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -37,16 +38,15 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Collections.ObjectModel;
-using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Shell;
 using SQLite;
-using System.Text;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
-using System.Windows.Shell;
+using MahApps.Metro.IconPacks;
 
 namespace PEBakery.WPF
 {
@@ -188,7 +188,7 @@ namespace PEBakery.WPF
             ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
 
             // Prepare PEBakery Loading Information
-            if (quiet == false)
+            if (!quiet)
             {
                 Model.ScriptTitleText = "PEBakery loading...";
                 Model.ScriptDescriptionText = string.Empty;
@@ -206,7 +206,7 @@ namespace PEBakery.WPF
             Model.BottomProgressBarMinimum = 0;
             Model.BottomProgressBarMaximum = 100;
             Model.BottomProgressBarValue = 0;
-            if (quiet == false)
+            if (!quiet)
                 Model.WorkInProgress = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
 
@@ -232,7 +232,7 @@ namespace PEBakery.WPF
                 _allScriptCount = Projects.PrepareLoad(out stage2LinksCount);
                 Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = _allScriptCount + stage2LinksCount; });
 
-                // Let's load scripts parallelly
+                // Load scripts in parallel
                 List<LogInfo> errorLogs = Projects.Load(worker);
                 Logger.SystemWrite(errorLogs);
                 Setting.UpdateProjectList();
@@ -329,7 +329,7 @@ namespace PEBakery.WPF
                         msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
                         Model.StatusBarText = msg;
                     }
-                    if (quiet == false)
+                    if (!quiet)
                         Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
 
@@ -345,7 +345,7 @@ namespace PEBakery.WPF
                     Model.ScriptTitleText = "Unable to find project.";
                     Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
 
-                    if (quiet == false)
+                    if (!quiet)
                         Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Model.StatusBarText = "Unable to find project.";
@@ -880,7 +880,6 @@ namespace PEBakery.WPF
         {
             if (CurMainTree?.Script == null)
                 return;
-
             if (Model.WorkInProgress)
                 return;
 
