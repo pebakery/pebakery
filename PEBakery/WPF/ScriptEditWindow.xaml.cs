@@ -108,7 +108,7 @@ namespace PEBakery.WPF
                 RefreshMainWindow();
 
             // If script was updated, force MainWindow to refresh script
-            DialogResult = m.ScriptHeaderUpdated || m.InterfaceUpdated;
+            DialogResult = m.ScriptHeaderUpdated || m.ScriptLogoUpdated || m.InterfaceUpdated || m.ScriptAttachUpdated;
 
             Tag = _sc;
         }
@@ -132,15 +132,6 @@ namespace PEBakery.WPF
         {
             // Nested Function
             string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
-            /*
-            int GetIntValue(string key, int defaultValue = 0)
-            {
-                if (_sc.MainInfo.ContainsKey(key))
-                    return NumberHelper.ParseInt32(key, out int intVal) ? intVal : defaultValue;
-                else
-                    return defaultValue;
-            }
-            */
 
             // General
             if (EncodedFile.ContainsLogo(_sc))
@@ -151,6 +142,7 @@ namespace PEBakery.WPF
             else
             {
                 m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
+                m.ScriptLogoInfo = null;
             }
 
             m.ScriptTitle = _sc.Title;
@@ -496,7 +488,7 @@ namespace PEBakery.WPF
                 _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
                 MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                m.ScriptHeaderUpdated = true;
+                m.ScriptLogoUpdated = true;
                 ReadScriptGeneral();
             }
             catch (Exception ex)
@@ -559,7 +551,7 @@ namespace PEBakery.WPF
             {
                 MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                m.ScriptHeaderUpdated = true;
+                m.ScriptLogoUpdated = true;
                 ReadScriptGeneral();
             }
             else
@@ -1328,6 +1320,7 @@ namespace PEBakery.WPF
                 MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
+            m.ScriptAttachUpdated = true;
             ReadScriptAttachment();
 
             m.AttachSelected = null;
@@ -1428,6 +1421,7 @@ namespace PEBakery.WPF
             _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
             if (errMsg == null)
             {
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
                 m.AttachSelected = null;
@@ -1517,7 +1511,9 @@ namespace PEBakery.WPF
                 m.AttachNewFilePath = string.Empty;
                 m.AttachNewFileName = string.Empty;
 
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
+
                 m.AttachSelected = null;
                 m.UpdateAttachFileDetail();
             }
@@ -1586,6 +1582,7 @@ namespace PEBakery.WPF
             _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
             if (errMsg == null)
             {
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
                 m.AttachSelected = null;
@@ -1821,6 +1818,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General - Script Logo
+        public bool ScriptLogoUpdated { get; set; } = false;
+
         public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone, 10);
         private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
         public FrameworkElement ScriptLogoImage
@@ -1840,6 +1839,7 @@ namespace PEBakery.WPF
             set
             {
                 _scriptLogoInfo = value;
+                OnPropertyUpdate(nameof(ScriptLogoLoaded));
                 OnPropertyUpdate(nameof(ScriptLogoName));
                 OnPropertyUpdate(nameof(ScriptLogoRawSize));
                 OnPropertyUpdate(nameof(ScriptLogoEncodedSize));
@@ -2735,6 +2735,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Attachment
+        public bool ScriptAttachUpdated { get; set; } = false;
+
         public static bool DeepInspectAttachedFile = false;
 
         public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();

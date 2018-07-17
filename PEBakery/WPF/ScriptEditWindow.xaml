@@ -1226,51 +1226,47 @@
 
                                         <!-- Name -->
                                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Name"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Name"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileName}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileName}"/>
 
                                         <!-- Raw Size -->
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Raw Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Raw Size"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileRawSize}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileRawSize}"/>
 
                                         <!-- Encoded Size -->
                                         <TextBlock Grid.Row="2" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Encoded Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Encoded Size"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="2" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileEncodedSize}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileEncodedSize}"/>
 
                                         <!-- Compression -->
                                         <TextBlock Grid.Row="3" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Compression"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Compression"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="3" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileCompression}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileCompression}"/>
                                     </Grid>
                                 </GroupBox>
 
@@ -1323,7 +1319,6 @@
                                                Margin="0, 0, 10, 0"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
-                                               FontWeight="Bold"
                                                Text="Folder Name"/>
                                     <TextBox Grid.Column="1"
                                              Margin="0, 0, 5, 0"
@@ -1373,7 +1368,7 @@
                                                        Margin="0, 0, 10, 5"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
+
                                                        Text="Path"/>
                                             <TextBox Grid.Row="0" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
@@ -1400,7 +1395,6 @@
                                                        Margin="0, 0, 10, 5"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
                                                        Text="File Name"/>
                                             <TextBox Grid.Row="1" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
@@ -1411,7 +1405,6 @@
                                                        Margin="0, 0, 10, 0"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
                                                        Text="Compression"/>
                                             <ComboBox Grid.Row="2" Grid.Column="1"
                                                       Margin="0, 0, 5, 0"

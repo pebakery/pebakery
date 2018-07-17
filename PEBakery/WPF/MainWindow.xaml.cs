@@ -923,6 +923,7 @@ namespace PEBakery.WPF
                 ScriptEditDialog = new ScriptEditWindow(sc);
 
                 // Open as Modal
+                // If ScriptEditWindow returns true in DialogResult, refresh script
                 if (ScriptEditDialog.ShowDialog() == true)
                 {
                     sc = ScriptEditDialog.Tag as Script;
