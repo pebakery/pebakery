@@ -67,7 +67,7 @@ namespace PEBakery.Tests.Core
                 string scPath = Path.Combine(dirPath, "EncodeFileTests.script");
                 File.Copy(blankPath, scPath, true);
 
-                Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
                 string originFile = Path.Combine(dirPath, fileName);
                 sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode);
@@ -133,7 +133,7 @@ namespace PEBakery.Tests.Core
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", scriptPath);
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+                Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
                 Assert.AreEqual(EncodedFile.ContainsFile(sc, folderName, fileName), result);
             }
@@ -156,7 +156,7 @@ namespace PEBakery.Tests.Core
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", fileName);
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+                Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
                 Assert.AreEqual(EncodedFile.ContainsLogo(sc), result);
             }
@@ -185,7 +185,7 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(originScript, destScript, true);
 
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
                     try
                     {
                         sc = EncodedFile.AddFolder(sc, folderName, overwrite);
@@ -259,7 +259,7 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(originScript, destScript, true);
 
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
                     Assert.AreEqual(EncodedFile.ContainsFolder(sc, folderName), result);
                 }
                 finally
@@ -286,7 +286,7 @@ namespace PEBakery.Tests.Core
                 EngineState s = EngineTests.CreateEngineState();
                 string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
                 scPath = StringEscaper.Preprocess(s, scPath);
-                Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
                 byte[] extractDigest;
                 using (MemoryStream ms = new MemoryStream())
@@ -324,7 +324,7 @@ namespace PEBakery.Tests.Core
                 EngineState s = EngineTests.CreateEngineState();
                 string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
                 scPath = StringEscaper.Preprocess(s, scPath);
-                Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
                 byte[] extractDigest;
                 using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))
@@ -368,7 +368,7 @@ namespace PEBakery.Tests.Core
                     Directory.CreateDirectory(destDir);
                 try
                 {
-                    Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+                    Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
                     EncodedFile.ExtractFolder(sc, folderName, destDir);
 
@@ -401,7 +401,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             scPath = StringEscaper.Preprocess(s, scPath);
-            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+            Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
@@ -436,7 +436,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             scPath = StringEscaper.Preprocess(s, scPath);
-            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+            Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterface(sc, "PEBakeryAlphaMemory.jpg"))
@@ -469,7 +469,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
-            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
@@ -538,10 +538,10 @@ namespace PEBakery.Tests.Core
             string scriptDir = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile");
 
             string logoScriptFile = Path.Combine(scriptDir, "Blank.script");
-            Script logoScript = s.Project.LoadScriptMonkeyPatch(logoScriptFile);
+            Script logoScript = s.Project.LoadScriptRuntime(logoScriptFile, new LoadScriptRuntimeOptions());
 
             string noLogoScriptFile = Path.Combine(scriptDir, "CompleteBlank.script");
-            Script noLogoScript = s.Project.LoadScriptMonkeyPatch(noLogoScriptFile);
+            Script noLogoScript = s.Project.LoadScriptRuntime(noLogoScriptFile, new LoadScriptRuntimeOptions());
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
@@ -589,7 +589,7 @@ namespace PEBakery.Tests.Core
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
@@ -652,7 +652,7 @@ namespace PEBakery.Tests.Core
             string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-            Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+            Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, Dictionary<string, List<EncodedFileInfo>> compDict)
@@ -768,7 +768,7 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
                     sc = EncodedFile.DeleteFile(sc, folderName, fileName, out string errMsg);
                     if (errMsg != null)
@@ -831,7 +831,7 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(originScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
                     Dictionary<string, string> fileDict = null;
                     if (result)
@@ -903,7 +903,7 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(testScriptPath, destScript, true);
 
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
                     sc = EncodedFile.DeleteLogo(sc, out string errMsg);
 
                     if (errMsg != null)

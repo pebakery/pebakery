@@ -299,7 +299,11 @@ namespace PEBakery.Core.Commands
                                 logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
                             }
 
-                            Script sc = s.Project.LoadScriptMonkeyPatch(scRealPath, destTreePath, false, true, true);
+                            Script sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
+                            {
+                                AddToProjectTree = true,
+                                OverwriteToProjectTree = true,
+                            });
                             if (sc == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));

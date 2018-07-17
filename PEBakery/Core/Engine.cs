@@ -989,7 +989,8 @@ namespace PEBakery.Core
                 { // Still not found in s.Scripts
                     if (!File.Exists(fullPath))
                         throw new ExecuteException($"No script in [{fullPath}]");
-                    sc = s.Project.LoadScriptMonkeyPatch(fullPath, true, false);
+
+                    sc = s.Project.LoadScriptRuntime(fullPath, new LoadScriptRuntimeOptions { IgnoreMain = true });
                     if (sc == null)
                         throw new ExecuteException($"Unable to load script [{fullPath}]");
                 }

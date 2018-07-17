@@ -717,34 +717,34 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region LoadScript, LoadScriptMonkeyPatch
+        #region LoadScript, LoadScriptRuntime
         /// <summary>
         /// Load scripts into project while running
         /// Return true if error
         /// </summary>
-        public Script LoadScriptMonkeyPatch(string realPath, bool ignoreMain = false, bool addToProjectTree = false, bool overwriteProjectTree = false)
-        {
-            return LoadScriptMonkeyPatch(realPath, realPath, ignoreMain, addToProjectTree, overwriteProjectTree);
+        public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
+        { 
+            return LoadScriptRuntime(realPath, realPath, opts);
         }
 
         /// <summary>
         /// Load scripts into project while running
         /// Return true if error
         /// </summary>
-        public Script LoadScriptMonkeyPatch(string realPath, string treePath, bool ignoreMain = false, bool addToProjectTree = false, bool overwriteProjectTree = false)
+        public Script LoadScriptRuntime(string realPath, string treePath, LoadScriptRuntimeOptions opts)
         {
             if (realPath == null)
                 throw new ArgumentNullException(nameof(realPath));
             if (treePath == null)
                 throw new ArgumentNullException(nameof(treePath));
 
-            Script sc = LoadScript(realPath, treePath, ignoreMain, false);
-            if (addToProjectTree)
+            Script sc = LoadScript(realPath, treePath, opts.IgnoreMain, false);
+            if (opts.AddToProjectTree)
             {
                 int sIdx = AllScripts.FindIndex(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                 if (sIdx != -1)
                 { // TreePath collision
-                    if (overwriteProjectTree)
+                    if (opts.OverwriteToProjectTree)
                         AllScripts[sIdx] = sc;
                     else
                         throw new InvalidOperationException($"Unable to overwrite project tree [{treePath}]");
@@ -788,7 +788,8 @@ namespace PEBakery.Core
             Script sc;
             try
             {
-                if (realPath.Equals(Path.Combine(ProjectRoot, ProjectName, "script.project"), StringComparison.OrdinalIgnoreCase))
+                string mainScriptPath = Path.Combine(ProjectRoot, ProjectName, "script.project");
+                if (realPath.Equals(mainScriptPath, StringComparison.OrdinalIgnoreCase))
                 {
                     sc = new Script(ScriptType.Script, realPath, treePath, this, ProjectRoot, 0, true, ignoreMain, isDirLink);
                 }
@@ -966,6 +967,15 @@ namespace PEBakery.Core
             return ProjectName;
         }
         #endregion
+    }
+    #endregion
+
+    #region struct LoadScriptRuntimeOptions
+    public struct LoadScriptRuntimeOptions
+    {
+        public bool IgnoreMain;
+        public bool AddToProjectTree;
+        public bool OverwriteToProjectTree;
     }
     #endregion
 }

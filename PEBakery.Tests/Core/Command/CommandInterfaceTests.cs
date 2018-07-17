@@ -59,7 +59,7 @@ namespace PEBakery.Tests.Core.Command
                     File.Copy(srcFile, scriptFile, true);
 
                     EngineState s = EngineTests.CreateEngineState();
-                    Script sc = s.Project.LoadScriptMonkeyPatch(scriptFile);
+                    Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
                     SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
                     try
                     {
@@ -81,7 +81,7 @@ namespace PEBakery.Tests.Core.Command
                     File.Copy(srcFile, scriptFile, true);
 
                     EngineState s = EngineTests.CreateEngineState();
-                    Script sc = s.Project.LoadScriptMonkeyPatch(scriptFile);
+                    Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
                     SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
                     try
                     {

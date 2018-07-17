@@ -145,8 +145,7 @@ namespace PEBakery.Tests.Core.Command
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
                         string srcFile = Path.Combine(srcDir, srcFileName);
-
-                        Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                        Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
                         // Check whether file was successfully encoded
                         Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
@@ -162,7 +161,7 @@ namespace PEBakery.Tests.Core.Command
 
                         Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{srcFileName}"));
                         List<string> encodedFile = sc.Sections[$"EncodedFile-FolderExample-{srcFileName}"].GetLinesOnce();
-                        encodedFile = encodedFile.Where(x => !x.Equals(string.Empty, StringComparison.Ordinal)).ToList();
+                        encodedFile = encodedFile.Where(x => x.Length != 0).ToList();
                         Assert.IsTrue(1 < encodedFile.Count);
                         Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
 

@@ -145,7 +145,7 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref Engine.WorkingLock);
 
                 Project project = m.CodeBox_CurrentProject;
-                Script sc = project.LoadScriptMonkeyPatch(m.CodeFile);
+                Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
 
                 Logger logger = null;
                 SettingViewModel setting = null;
