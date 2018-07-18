@@ -27,7 +27,6 @@
 
 using System;
 using System.Linq;
-using System.Text;
 using System.Collections.Generic;
 
 namespace PEBakery.Core.Commands
@@ -38,16 +37,19 @@ namespace PEBakery.Core.Commands
         {
             CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
 
+            bool isGlobal;
             CodeCommand macroCmd;
-            if (s.Macro.MacroDict.ContainsKey(info.MacroType))
+            if (s.Macro.GlobalDict.ContainsKey(info.MacroType))
             {
-                macroCmd = s.Macro.MacroDict[info.MacroType];
+                macroCmd = s.Macro.GlobalDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
+                isGlobal = true;
             }
             else if (s.Macro.LocalDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.LocalDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
+                isGlobal = false;
             }
             else
             {
@@ -61,19 +63,22 @@ namespace PEBakery.Core.Commands
 
             s.CurSectionParams = paramDict;
 
-            if (s.LogMacro)
-            {
-                s.InMacro = true;
-                CommandBranch.RunExec(s, macroCmd, true);
-                s.InMacro = false;
-            }
-            else // Do not log macro
+            if (!s.LogMacro) // Do not log macro
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Macro [{info.MacroType}] ({cmd.RawCode})", s.CurDepth + 1));
-                s.Logger.TurnOff.Push(true);
-                CommandBranch.RunExec(s, macroCmd, true);
-                s.Logger.TurnOff.TryPop(out _);
             }
+
+            // Backup and set EngineState values
+            int realScriptIdBackup = s.RealScriptId;
+            if (isGlobal)
+                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, macroCmd.Addr.Script);
+            s.InMacro = true;
+
+            CommandBranch.RunExec(s, macroCmd, true);
+
+            // Restore and reset EngineState values
+            s.RealScriptId = realScriptIdBackup;
+            s.InMacro = false;
         }
     }
 }

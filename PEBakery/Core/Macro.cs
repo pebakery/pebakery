@@ -50,7 +50,7 @@ namespace PEBakery.Core
         /// <summary>
         /// [ApiVar] of macro script
         /// </summary>
-        public Dictionary<string, CodeCommand> MacroDict { get; }
+        public Dictionary<string, CodeCommand> GlobalDict { get; }
             = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
         /// Macro defined in current script's [Variables] 
@@ -117,7 +117,7 @@ namespace PEBakery.Core
                     try
                     {
                         if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
-                            MacroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                            GlobalDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                     }
@@ -141,7 +141,7 @@ namespace PEBakery.Core
                     {
                         // Macro Name Validation
                         if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
-                            MacroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                            GlobalDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                     }
@@ -242,7 +242,7 @@ namespace PEBakery.Core
                 // Put into dictionary
                 if (permanent) // MacroDict
                 {
-                    MacroDict[macroName] = cmd;
+                    GlobalDict[macroName] = cmd;
                     if (Ini.WriteKey(addr.Project.MainScript.RealPath, Variables.VarSectionName, macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
@@ -251,7 +251,7 @@ namespace PEBakery.Core
 
                 if (global) // MacroDict
                 {
-                    MacroDict[macroName] = cmd;
+                    GlobalDict[macroName] = cmd;
                     return new LogInfo(LogState.Success, $"Global Macro [{macroName}] set to [{cmd.RawCode}]");
                 }
 
@@ -264,9 +264,9 @@ namespace PEBakery.Core
                 // Put into dictionary
                 if (permanent) // MacroDict
                 {
-                    if (MacroDict.ContainsKey(macroName))
+                    if (GlobalDict.ContainsKey(macroName))
                     {
-                        MacroDict.Remove(macroName);
+                        GlobalDict.Remove(macroName);
                         Ini.DeleteKey(addr.Project.MainScript.RealPath, Variables.VarSectionName, macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
@@ -276,15 +276,13 @@ namespace PEBakery.Core
 
                 if (global) // MacroDict
                 {
-                    if (MacroDict.ContainsKey(macroName))
+                    if (GlobalDict.ContainsKey(macroName))
                     {
-                        MacroDict.Remove(macroName);
+                        GlobalDict.Remove(macroName);
                         return new LogInfo(LogState.Success, $"Global Macro [{macroName}] deleted");
                     }
-                    else
-                    {
-                        return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
-                    }
+
+                    return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
                 }
 
                 // LocalDict

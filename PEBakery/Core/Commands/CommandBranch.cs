@@ -29,9 +29,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Text;
 using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using Microsoft.Win32;
 using ManagedWimLib;
@@ -44,11 +44,6 @@ namespace PEBakery.Core.Commands
     public static class CommandBranch
     {
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
-        {
-            RunExec(s, cmd, preserveCurParams, forceLog, false);
-        }
-
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
@@ -74,16 +69,17 @@ namespace PEBakery.Core.Commands
                     paramDict[i + 1] = paramList[i];
             }
 
-            // Branch to new section
+            // Prepare to branch to a new section
             SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
 
+            // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
             Dictionary<string, string> fixedVars = null;
             Dictionary<string, CodeCommand> localMacros = null;
             if (cmd.Type == CodeType.Exec)
             {
-                // Backup Varaibles and Macros
+                // Backup Variables and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
                 localMacros = s.Macro.LocalDict;
@@ -99,10 +95,20 @@ namespace PEBakery.Core.Commands
                 s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 
-            // Run Section
+            // Backup EngineState values
             int depthBackup = s.CurDepth;
-            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
+            int realScriptIdBackup = s.RealScriptId;
+            if (!inCurrentScript)
+                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
 
+            // Run Section
+            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+            // Restore EngineState values
+            s.CurDepth = depthBackup;
+            s.RealScriptId = realScriptIdBackup;
+
+            // Restore Variables and Macros for Exec
             if (cmd.Type == CodeType.Exec)
             {
                 // Restore Variables
@@ -113,7 +119,6 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
         }
 
@@ -232,13 +237,26 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
+                            // Backup EngineState values
                             int depthBackup = s.CurDepth;
+                            int realScriptIdBackup = s.RealScriptId;
+                            if (!inCurrentScript)
+                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+
+                            // Set s.LoopState
                             s.LoopState = LoopState.OnIndex;
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+
+                            // Run Loop Section
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+                            // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
                                 break;
                             s.LoopState = LoopState.Off;
+
+                            // Restore EngineState values
                             s.CurDepth = depthBackup;
+                            s.RealScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
@@ -250,13 +268,25 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
+                            // Backup EngineState values
                             int depthBackup = s.CurDepth;
+                            int realScriptIdBackup = s.RealScriptId;
+                            if (!inCurrentScript)
+                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+
+                            // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+                            // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
                                 break;
                             s.LoopState = LoopState.Off;
+
+                            // Restore EngineState values
                             s.CurDepth = depthBackup;
+                            s.RealScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
@@ -329,11 +359,12 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1, false);
+            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1);
             s.CurDepth = depthBackup;
         }
 
         #region BranchConditionCheck
+        [SuppressMessage("ReSharper", "RedundantAssignment")]
         public static bool CheckBranchCondition(EngineState s, BranchCondition c, out string logMessage)
         {
             bool match = false;
@@ -634,7 +665,7 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistMacro:
                     {
                         string macroName = StringEscaper.Preprocess(s, c.Arg1);
-                        match = s.Macro.MacroDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
+                        match = s.Macro.GlobalDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
 
                         if (match)
                             logMessage = $"Macro [{macroName}] exists";

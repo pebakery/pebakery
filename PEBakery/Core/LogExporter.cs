@@ -129,7 +129,7 @@ namespace PEBakery.Core
                             _w.WriteLine("<Errors>");
 
                             int[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
-                            DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            var scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id));
                             foreach (DB_Script scLog in scLogs)
                             {
                                 DB_BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();

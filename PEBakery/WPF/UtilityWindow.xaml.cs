@@ -164,7 +164,7 @@ namespace PEBakery.WPF
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
-                s.SetOption(setting);
+                s.SetOptions(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -230,7 +230,7 @@ namespace PEBakery.WPF
                         CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
                         Debug.Assert(info != null, "Invalid CodeInfo");
 
-                        if (!macro.MacroDict.ContainsKey(info.MacroType))
+                        if (!macro.GlobalDict.ContainsKey(info.MacroType))
                             errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
                     }
                 }

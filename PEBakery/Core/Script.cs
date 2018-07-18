@@ -67,6 +67,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Properties
+        public string FullIdentifier => $"{_level}_{_realPath}_{_treePath}";
+        public string RealIdentifier => $"{_level}_{_realPath}";
+        public string TreeIdentifier => $"{_level}_{_treePath}";
         public string RealPath
         {
             get

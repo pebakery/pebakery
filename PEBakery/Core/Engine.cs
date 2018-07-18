@@ -67,8 +67,8 @@ namespace PEBakery.Core
         {
             // Turn off System,ErrorOff
             s.ErrorOff = null;
-            // Turn off System,Log,Off
-            s.Logger.SuspendLog = false;
+            // Turn off temporary log suspend
+            s.Logger.SuspendBuildLog = false;
 
             // Assert s.CurDepth == 1
             Debug.Assert(s.CurDepth == 1);
@@ -83,6 +83,7 @@ namespace PEBakery.Core
             // Init Per-Script Log
             bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
             s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
+            s.RealScriptId = s.ScriptId;
 
             // Determine EntrySection
             string entrySection = Engine.GetEntrySection(s);
@@ -182,7 +183,7 @@ namespace PEBakery.Core
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         SectionAddress addr = new SectionAddress(s.CurrentScript, mainSection);
                         s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
-                        Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), 1, false);
+                        Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), 1);
                         s.Logger.LogEndOfSection(s, addr, 0, true, null);
                     }
 
@@ -203,12 +204,9 @@ namespace PEBakery.Core
 
                         // Reset Halt Flags before running OnScriptExit
                         // Otherwise only first command is executed
-                        s.PassCurrentScriptFlag = false;
-                        s.ErrorHaltFlag = false;
-                        s.UserHaltFlag = false;
-                        s.CmdHaltFlag = false;
+                        s.ResetHaltFlags();
 
-                        Engine.CheckAndRunCallback(s, ref s.OnScriptExit, eventParam, "OnScriptExit");
+                        CheckAndRunCallback(s, ref s.OnScriptExit, eventParam, "OnScriptExit");
 
                         s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
                         s.ErrorHaltFlag = bakErrorHalt;
@@ -246,10 +244,7 @@ namespace PEBakery.Core
 
                         // Reset Halt Flags before running OnBuildExit
                         // Otherwise only first command is executed
-                        s.PassCurrentScriptFlag = false;
-                        s.ErrorHaltFlag = false;
-                        s.UserHaltFlag = false;
-                        s.CmdHaltFlag = false;
+                        s.ResetHaltFlags();
 
                         // OnBuildExit event callback
                         if (s.RunMode == EngineMode.RunAll || s.TestMode)
@@ -257,7 +252,7 @@ namespace PEBakery.Core
                             // OnBuildExit is not called on script interface control, or codebox
                             // (which uses EngineMode.RunMainAndOne or EngineMode.RunOne)
                             // But it should be called in full script unit test
-                            Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
+                            CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
                         // Recover mouse cursor icon
@@ -298,7 +293,9 @@ namespace PEBakery.Core
 
             return _task;
         }
+        #endregion
 
+        #region ForceStop
         public void ForceStop()
         {
             s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
@@ -320,42 +317,21 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
+        public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth)
         {
-            List<CodeCommand> codes;
-            try
-            {
-                codes = addr.Section.GetCodes(true);
-            }
-            catch (InternalException)
-            {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", depth));
-                return;
-            }
-
-            // Set CurrentSection
-            s.CurrentSection = addr.Section;
-
-            // Set SectionReturnValue to empty string
-            s.SectionReturnValue = string.Empty;
-
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, sectionParams[i]);
 
-            RunCommands(s, addr, codes, paramDict, depth, callback);
-
-            // Increase only if cmd resides in CurrentScript
-            if (s.CurrentScript.Equals(addr.Script))
-                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
+            RunSection(s, addr, paramDict, depth);
         }
 
-        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
+        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth)
         {
-            List<CodeCommand> codes;
+            List<CodeCommand> cmds;
             try
             {
-                codes = addr.Section.GetCodes(true);
+                cmds = addr.Section.GetCodes(true);
             }
             catch (InternalException)
             {
@@ -370,17 +346,17 @@ namespace PEBakery.Core
             s.SectionReturnValue = string.Empty;
 
             // Must copy ParamDict by value, not reference
-            RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
+            RunCommands(s, addr, cmds, new Dictionary<int, string>(paramDict), depth);
 
-            // Increase only if cmd resides is CurrentScript
+            // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(addr.Script))
                 s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
         #endregion
 
-        #region RunCommands, RunCallback
+        #region RunCommands
         // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth, bool callback = false)
+        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth)
         {
             if (cmds.Count == 0)
             {
@@ -838,7 +814,9 @@ namespace PEBakery.Core
             // Return logs, used in unit test
             return logs;
         }
+        #endregion
 
+        #region CheckAndRunCallback
         private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentScript = false)
         {
             if (cbCmd == null)
@@ -859,7 +837,7 @@ namespace PEBakery.Core
                 else
                     info.Parameters.Add(eventParam);
 
-                CommandBranch.RunExec(s, cbCmd, false, false, true);
+                CommandBranch.RunExec(s, cbCmd);
             }
             else
             {
@@ -1080,6 +1058,7 @@ namespace PEBakery.Core
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
+        public int RealScriptId = 0; // Used in logging
 
         // Options
         public bool LogComment = true; // Used in logging
@@ -1088,8 +1067,8 @@ namespace PEBakery.Core
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool CompatAllowLetterInLoop = false; // Compatibility
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
-        public bool DisableLogger = false; // For performance (when engine runned by interface - legacy)
-        public string CustomUserAgent = null;
+        public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
+        public string CustomUserAgent = null; // For WebGet
 
         // Command State
         // |- Callback
@@ -1165,8 +1144,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region SetOption
-        public void SetOption(SettingViewModel m)
+        #region SetOptions
+        public void SetOptions(SettingViewModel m)
         {
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
 
@@ -1181,13 +1160,10 @@ namespace PEBakery.Core
         #endregion
 
         #region Reset
-        public void Reset()
+        public void ResetFull()
         {
             // Halt Flags
-            PassCurrentScriptFlag = false;
-            ErrorHaltFlag = false;
-            UserHaltFlag = false;
-            CmdHaltFlag = false;
+            ResetHaltFlags();
 
             // Engine State
             SectionReturnValue = string.Empty;
@@ -1208,11 +1184,20 @@ namespace PEBakery.Core
             RunningSubProcess = null;
             RunningWebClient = null;
         }
+
+        public void ResetHaltFlags()
+        {
+            // Halt Flags
+            PassCurrentScriptFlag = false;
+            ErrorHaltFlag = false;
+            UserHaltFlag = false;
+            CmdHaltFlag = false;
+        }
         #endregion
     }
     #endregion
 
-    #region SetLocalState
+    #region struct SetLocalState
     public struct SetLocalState
     {
         public ScriptSection Section;
@@ -1221,7 +1206,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region ErrorOffState
+    #region struct ErrorOffState
     public struct ErrorOffState
     {
         public ScriptSection Section;

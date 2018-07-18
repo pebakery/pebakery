@@ -133,6 +133,7 @@ namespace PEBakery.Core
             return logs;
 
             // Work in Progress
+            /*
             List<(Script, string)> newScripts = new List<(Script, string)>(p.AllScripts.Count);
 
             // Get BaseUrl
@@ -200,6 +201,7 @@ namespace PEBakery.Core
             }
 
             return logs;
+            */
         }
         #endregion
 
