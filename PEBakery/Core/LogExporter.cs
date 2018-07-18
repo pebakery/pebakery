@@ -174,7 +174,7 @@ namespace PEBakery.Core
 
                         // Script
                         var scripts = _db.Table<DB_Script>()
-                            .Where(x => x.BuildId == buildId)
+                            .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
                         _w.WriteLine("<Scripts>");
                         {
@@ -321,7 +321,7 @@ namespace PEBakery.Core
 
                         // Scripts
                         var scripts = _db.Table<DB_Script>()
-                            .Where(x => x.BuildId == buildId)
+                            .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
                         m.Scripts = new List<ScriptHtmlModel>();
                         {

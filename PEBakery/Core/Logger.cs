@@ -673,7 +673,7 @@ namespace PEBakery.Core
 
             // Fire Event
             if (s.LogMode == LogMode.PartDelay)
-                ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));            
+                ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
         public int BuildReferenceScriptWrite(EngineState s, Script sc)
@@ -746,7 +746,7 @@ namespace PEBakery.Core
                 return;
             // If engine is running macro and s.LogMacro is false, skip
             if (!s.LogMacro && s.InMacro)
-                return; 
+                return;
 
             DB_BuildLog dbCode = new DB_BuildLog
             {
@@ -1173,7 +1173,7 @@ namespace PEBakery.Core
         public int BuildId { get; set; }
         // Referenced scripts   : Set to 0 (Usually macro script)
         // Active build scripts : Starts from 1
-        public int Order { get; set; } 
+        public int Order { get; set; }
         public int Level { get; set; }
         [MaxLength(256)]
         public string Name { get; set; }
@@ -1305,7 +1305,7 @@ namespace PEBakery.Core
                         str = b.ToString();
                     }
                     break;
-                #endregion
+                    #endregion
             }
 
             return str;

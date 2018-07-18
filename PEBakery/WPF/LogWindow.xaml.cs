@@ -338,7 +338,10 @@ namespace PEBakery.WPF
                 {
                     // Populate SelectScriptEntries
                     SelectScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
-                    DB_Script[] scripts = LogDB.Table<DB_Script>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
+                    DB_Script[] scripts = LogDB.Table<DB_Script>()
+                        .Where(x => x.BuildId == buildId && 0 < x.Order)
+                        .OrderBy(x => x.Order)
+                        .ToArray();
                     foreach (DB_Script sc in scripts)
                     {
                         SelectScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.Path})", sc.Id, (int)buildId));
