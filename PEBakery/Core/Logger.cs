@@ -344,7 +344,7 @@ namespace PEBakery.Core
             if (BuildInfo.Id <= 0)
             { // Write to database if it did not
                 BuildInfo.Id = 0;
-                s.Logger.DB.Insert(BuildInfo);
+                s.Logger.Db.Insert(BuildInfo);
             }
             int buildId = BuildInfo.Id;
 
@@ -356,7 +356,7 @@ namespace PEBakery.Core
                 log.Id = 0;
                 log.BuildId = buildId;
             }
-            s.Logger.DB.InsertAll(newScriptLogPool);
+            s.Logger.Db.InsertAll(newScriptLogPool);
             foreach (DB_Script log in newScriptLogPool)
             {
                 int oldId = scriptOldIdDict[$"{log.Name}_{log.Path}"];
@@ -374,7 +374,7 @@ namespace PEBakery.Core
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
             }
-            s.Logger.DB.InsertAll(newVariablePool);
+            s.Logger.Db.InsertAll(newVariablePool);
 
             // Flush BuildLogPool
             DB_BuildLog[] newBuildLogPool = BuildLogPool.Where(x => x.Id == 0).ToArray();
@@ -383,7 +383,7 @@ namespace PEBakery.Core
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
             }
-            s.Logger.DB.InsertAll(newBuildLogPool);
+            s.Logger.Db.InsertAll(newBuildLogPool);
 
             // ScriptIdMatchDict should be kept alive
             ScriptLogPool.Clear();
@@ -401,7 +401,7 @@ namespace PEBakery.Core
     {
         #region Fields and Properties
         // ReSharper disable once InconsistentNaming
-        public LogDatabase DB { get; private set; }
+        public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
         public static DebugLevel DebugLevel;
@@ -435,7 +435,7 @@ namespace PEBakery.Core
         #region Constructor, Destructor
         public Logger(string path)
         {
-            DB = new LogDatabase(path);
+            Db = new LogDatabase(path);
         }
 
         ~Logger()
@@ -452,10 +452,10 @@ namespace PEBakery.Core
 
         private void Dispose(bool disposing)
         {
-            if (disposing && DB != null)
+            if (disposing && Db != null)
             {
-                DB.Close();
-                DB = null;
+                Db.Close();
+                Db = null;
             }
         }
         #endregion
@@ -471,7 +471,7 @@ namespace PEBakery.Core
             switch (s.LogMode)
             {
                 case LogMode.PartDelay:
-                    DB.InsertAll(_delayed.BuildLogPool);
+                    Db.InsertAll(_delayed.BuildLogPool);
                     _delayed.BuildLogPool.Clear();
                     break;
                 case LogMode.FullDelay:
@@ -509,7 +509,7 @@ namespace PEBakery.Core
 
             if (s.LogMode != LogMode.FullDelay)
             {
-                DB.Insert(dbBuild);
+                Db.Insert(dbBuild);
 
                 // Fire Event
                 BuildInfoUpdated?.Invoke(this, new BuildInfoUpdateEventArgs(dbBuild));
@@ -543,7 +543,7 @@ namespace PEBakery.Core
             if (s.LogMode == LogMode.FullDelay)
                 _delayed.VariablePool.AddRange(varLogs);
             else
-                DB.InsertAll(varLogs);
+                Db.InsertAll(varLogs);
 
             SystemWrite(new LogInfo(LogState.Info, $"Build [{name}] started"));
 
@@ -566,10 +566,10 @@ namespace PEBakery.Core
             {
                 case LogMode.PartDelay:
                     Flush(s);
-                    DB.Update(dbBuild);
+                    Db.Update(dbBuild);
                     break;
                 case LogMode.NoDelay:
-                    DB.Update(dbBuild);
+                    Db.Update(dbBuild);
                     break;
             }
 
@@ -607,7 +607,7 @@ namespace PEBakery.Core
             }
             else
             {
-                DB.Insert(dbScript);
+                Db.Insert(dbScript);
             }
 
             _scriptWatchDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
@@ -626,7 +626,7 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.PartDelay)
             {
-                DB.InsertAll(_delayed.BuildLogPool);
+                Db.InsertAll(_delayed.BuildLogPool);
                 _delayed.BuildLogPool.Clear();
             }
 
@@ -666,11 +666,11 @@ namespace PEBakery.Core
                 if (s.LogMode == LogMode.FullDelay)
                     _delayed.VariablePool.AddRange(varLogs);
                 else
-                    DB.InsertAll(varLogs);
+                    Db.InsertAll(varLogs);
             }
 
             if (s.LogMode != LogMode.FullDelay)
-                DB.Update(dbScript);
+                Db.Update(dbScript);
 
             // Fire Event
             if (s.LogMode == LogMode.PartDelay)
@@ -705,7 +705,7 @@ namespace PEBakery.Core
             }
             else
             {
-                DB.Insert(dbScript);
+                Db.Insert(dbScript);
             }
 
             _scriptRefIdDict[sc.FullIdentifier] = dbScript.Id;
@@ -718,7 +718,7 @@ namespace PEBakery.Core
         {
             if (s == null)
             {
-                DB.Insert(dbCode);
+                Db.Insert(dbCode);
 
                 // Fire Event
                 BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
@@ -732,7 +732,7 @@ namespace PEBakery.Core
                         _delayed.BuildLogPool.Add(dbCode);
                         break;
                     case LogMode.NoDelay:
-                        DB.Insert(dbCode);
+                        Db.Insert(dbCode);
                         // Fire Event
                         BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
                         break;
@@ -858,7 +858,7 @@ namespace PEBakery.Core
                 Message = message,
             };
 
-            DB.Insert(dbLog);
+            Db.Insert(dbLog);
 
             // Fire Event
             SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
@@ -873,7 +873,7 @@ namespace PEBakery.Core
                 Message = log.Message,
             };
 
-            DB.Insert(dbLog);
+            Db.Insert(dbLog);
 
             // Fire Event
             SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
@@ -1019,7 +1019,7 @@ namespace PEBakery.Core
         {
             using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
             {
-                LogExporter exporter = new LogExporter(DB, type, w);
+                LogExporter exporter = new LogExporter(Db, type, w);
                 exporter.ExportSystemLog();
             }
         }
@@ -1028,7 +1028,7 @@ namespace PEBakery.Core
         {
             using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
             {
-                LogExporter exporter = new LogExporter(DB, type, w);
+                LogExporter exporter = new LogExporter(Db, type, w);
                 exporter.ExportBuildLog(buildId);
             }
         }
@@ -1136,6 +1136,11 @@ namespace PEBakery.Core
         public DateTime EndTime { get; set; }
         [MaxLength(256)]
         public string Name { get; set; }
+
+        [Ignore]
+        public string TimeStr => StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+        [Ignore]
+        public string Text => $"[{TimeStr}] {Name} ({Id})";
 
         public override string ToString()
         {
@@ -1312,6 +1317,32 @@ namespace PEBakery.Core
             CreateTable<DB_Variable>();
             CreateTable<DB_BuildLog>();
         }
+
+        #region ClearTable
+        public struct ClearTableOptions
+        {
+            public bool SystemLog;
+            public bool BuildInfo;
+            public bool Script;
+            public bool BuildLog;
+            public bool Variable;
+        }
+
+        public void ClearTable(ClearTableOptions opts)
+        {
+            if (opts.SystemLog)
+                DeleteAll<DB_SystemLog>();
+            if (opts.BuildInfo)
+                DeleteAll<DB_BuildInfo>();
+            if (opts.Script)
+                DeleteAll<DB_Script>();
+            if (opts.BuildLog)
+                DeleteAll<DB_BuildLog>();
+            if (opts.Variable)
+                DeleteAll<DB_Variable>();
+            Execute("VACUUM");
+        }
+        #endregion
     }
     #endregion
 }

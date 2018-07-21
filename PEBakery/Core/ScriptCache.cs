@@ -227,6 +227,23 @@ namespace PEBakery.Core
             return c;
         }
         #endregion
+
+        #region ClearTable
+        public struct ClearTableOptions
+        {
+            public bool CacheInfo;
+            public bool ScriptCache;
+        }
+
+        public void ClearTable(ClearTableOptions opts)
+        {
+            if (opts.CacheInfo)
+                DeleteAll<DB_CacheInfo>();
+            if (opts.ScriptCache)
+                DeleteAll<DB_ScriptCache>();
+            Execute("VACUUM");
+        }
+        #endregion
     }
     #endregion
 
@@ -248,7 +265,7 @@ namespace PEBakery.Core
         [PrimaryKey]
         public int Hash { get; set; }
         [MaxLength(32768)]
-        public string Path { get; set; } // Without BaseDir
+        public string Path { get; set; } // TreePath (== Without BaseDir)
         public DateTime LastWriteTimeUtc { get; set; }
         public long FileSize { get; set; }
         public byte[] Serialized { get; set; }

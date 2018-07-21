@@ -30,22 +30,20 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
     // ReSharper disable once RedundantExtendsListEntry
     public partial class LogWindow : Window
     {
+        #region Field and Constructor
         public static int Count = 0;
         private readonly LogViewModel _m = new LogViewModel();
 
@@ -53,8 +51,8 @@ namespace PEBakery.WPF
         {
             Interlocked.Increment(ref LogWindow.Count);
 
-            InitializeComponent();
             DataContext = _m;
+            InitializeComponent();
 
             _m.SelectedTabIndex = selectedTabIndex;
             _m.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
@@ -66,8 +64,12 @@ namespace PEBakery.WPF
 
             SystemLogListView.UpdateLayout();
             if (1 < SystemLogListView.Items.Count)
-                SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
+            {
+                int idx = SystemLogListView.Items.Count - 1;
+                SystemLogListView.ScrollIntoView(SystemLogListView.Items[idx]);
+            }
         }
+        #endregion
 
         #region Logger EventHandler
         public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
@@ -89,12 +91,12 @@ namespace PEBakery.WPF
 
         public void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e)
         {
-            if (_m.SelectBuildEntries != null &&
-                _m.SelectBuildIndex < _m.SelectBuildEntries.Count &&
-                _m.SelectBuildEntries[_m.SelectBuildIndex].Item2 == e.Log.BuildId &&
-                _m.SelectScriptEntries != null &&
-                _m.SelectScriptIndex < _m.SelectScriptEntries.Count &&
-                _m.SelectScriptEntries[_m.SelectScriptIndex].Item2 == e.Log.ScriptId)
+            if (_m.BuildEntries != null &&
+                _m.SelectedBuildIndex < _m.BuildEntries.Count &&
+                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId &&
+                _m.ScriptEntries != null &&
+                _m.SelectedScriptIndex < _m.ScriptEntries.Count &&
+                _m.ScriptEntries[_m.SelectedScriptIndex].Item2 == e.Log.ScriptId)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -123,9 +125,9 @@ namespace PEBakery.WPF
 
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
         {
-            if (_m.SelectBuildEntries != null &&
-                0 <= _m.SelectBuildIndex && _m.SelectBuildIndex < _m.SelectBuildEntries.Count &&
-                _m.SelectBuildEntries[_m.SelectBuildIndex].Item2 == e.Log.BuildId)
+            if (_m.BuildEntries != null &&
+                0 <= _m.SelectedBuildIndex && _m.SelectedBuildIndex < _m.BuildEntries.Count &&
+                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
                 {
@@ -232,14 +234,20 @@ namespace PEBakery.WPF
             switch (idx)
             {
                 case 0: // System Log 
-                    _m.LogDB.DeleteAll<DB_SystemLog>();
+                    _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
+                    {
+                        SystemLog = true,
+                    });
                     _m.RefreshSystemLog();
                     break;
                 case 1: // Build Log
-                    _m.LogDB.DeleteAll<DB_BuildInfo>();
-                    _m.LogDB.DeleteAll<DB_BuildLog>();
-                    _m.LogDB.DeleteAll<DB_Script>();
-                    _m.LogDB.DeleteAll<DB_Variable>();
+                    _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
+                    {
+                        BuildInfo = true,
+                        BuildLog = true,
+                        Script = true,
+                        Variable = true,
+                    });
                     _m.RefreshBuildLog();
                     break;
             }
@@ -247,52 +255,15 @@ namespace PEBakery.WPF
 
         private void ExportButton_Click(object sender, RoutedEventArgs e)
         {
-            string baseDir;
-            {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                baseDir = w.BaseDir;
-            }
+            LogExportModel exportModel = new LogExportModel(_m.Logger, _m.BuildEntries);
 
-            string title;
-            if (_m.SelectedTabIndex == 0) // System Log
-                title = "Export System Log";
-            else // Build Log
-                title = "Export Build Log";
+            if (_m.SelectedTabIndex == 0) // Export System Logs
+                exportModel.SetSystemLog();
+            else // Export Build Logs
+                exportModel.SetBuildLog(_m.SelectedBuildIndex, _m.BuildLogShowComments, _m.BuildLogShowMacros);
 
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Title = title,
-                Filter = "Text Format (*.txt)|*.txt|HTML Format (*.html)|*.html",
-                InitialDirectory = baseDir,
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                string ext = System.IO.Path.GetExtension(dialog.FileName);
-                LogExportType type = LogExportType.Text;
-                if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                    type = LogExportType.Html;
-
-                if (_m.SelectedTabIndex == 0) // System Log
-                {
-                    _m.Logger.ExportSystemLog(type, dialog.FileName);
-                }
-                else // Build Log
-                {
-                    int idx = _m.SelectBuildIndex;
-                    int buildId = _m.SelectBuildEntries[idx].Item2; // Build Id
-                    _m.Logger.ExportBuildLog(type, dialog.FileName, buildId);
-                }
-
-                // Open log file
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
-                    w.OpenTextFile(dialog.FileName);
-                });
-            }
+            LogExportWindow dialog = new LogExportWindow(exportModel);
+            dialog.ShowDialog();
         }
         #endregion
     }
@@ -301,8 +272,7 @@ namespace PEBakery.WPF
     public class LogViewModel : INotifyPropertyChanged
     {
         #region Fields and Properties
-        // ReSharper disable once InconsistentNaming
-        public LogDatabase LogDB => Logger.DB;
+        public LogDatabase LogDb => Logger.Db;
         public Logger Logger { get; set; }
         #endregion
 
@@ -319,7 +289,7 @@ namespace PEBakery.WPF
         public void RefreshSystemLog()
         {
             ObservableCollection<DB_SystemLog> list = new ObservableCollection<DB_SystemLog>();
-            foreach (DB_SystemLog log in LogDB.Table<DB_SystemLog>())
+            foreach (DB_SystemLog log in LogDb.Table<DB_SystemLog>())
             {
                 log.Time = log.Time.ToLocalTime();
                 list.Add(log);
@@ -337,13 +307,14 @@ namespace PEBakery.WPF
                 VariableLogs.Clear();
 
                 // Populate SelectBuildEntries
-                SelectBuildEntries.Clear();
-                foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
-                {
-                    string timeStr = b.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-                    SelectBuildEntries.Add(new Tuple<string, int>($"[{timeStr}] {b.Name} ({b.Id})", b.Id));
-                }
-                SelectBuildIndex = 0;
+                DB_BuildInfo[] buildEntries = LogDb.Table<DB_BuildInfo>()
+                    .OrderByDescending(x => x.StartTime)
+                    .ToArray();
+                BuildEntries = new ObservableCollection<Tuple<string, int>>(
+                    buildEntries.Select(x => new Tuple<string, int>(x.Text, x.Id))
+                );
+
+                SelectedBuildIndex = 0;
             });
         }
 
@@ -351,29 +322,29 @@ namespace PEBakery.WPF
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                SelectScriptEntries.Clear();
+                ScriptEntries.Clear();
 
                 if (buildId == null)
                 {  // Clear
-                    SelectScriptIndex = 0;
+                    SelectedScriptIndex = 0;
                 }
                 else
                 {
                     // Populate SelectScriptEntries
-                    SelectScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
-                    DB_Script[] scripts = LogDB.Table<DB_Script>()
+                    ScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
+                    DB_Script[] scripts = LogDb.Table<DB_Script>()
                         .Where(x => x.BuildId == buildId && 0 < x.Order)
                         .OrderBy(x => x.Order)
                         .ToArray();
                     foreach (DB_Script sc in scripts)
                     {
-                        SelectScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.Path})", sc.Id, (int)buildId));
+                        ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.Path})", sc.Id, (int)buildId));
                     }
 
                     if (showLastScript)
-                        SelectScriptIndex = SelectScriptEntries.Count - 1; // Last Script, which is just added
+                        SelectedScriptIndex = ScriptEntries.Count - 1; // Last Script, which is just added
                     else
-                        SelectScriptIndex = 0;
+                        SelectedScriptIndex = 0;
                 }
             });
         }
@@ -383,10 +354,10 @@ namespace PEBakery.WPF
         /// </summary>
         public void RefreshBuildLog(int scriptIdx)
         {
-            if (scriptIdx != -1 && 0 < _selectScriptEntries.Count)
+            if (scriptIdx != -1 && 0 < _scriptEntries.Count)
             {
-                int scriptId = _selectScriptEntries[scriptIdx].Item2;
-                int buildId = _selectScriptEntries[scriptIdx].Item3;
+                int scriptId = _scriptEntries[scriptIdx].Item2;
+                int buildId = _scriptEntries[scriptIdx].Item3;
 
                 if (scriptId == -1)
                 { // Summary
@@ -394,7 +365,7 @@ namespace PEBakery.WPF
                     _allBuildLogs = new List<DB_BuildLog>();
                     foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning })
                     {
-                        var bLogs = LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == state);
+                        var bLogs = LogDb.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == state);
                         _allBuildLogs.AddRange(bLogs);
                     }
                     if (_allBuildLogs.Count == 0)
@@ -410,7 +381,7 @@ namespace PEBakery.WPF
                     BuildLogs = new ObservableCollection<DB_BuildLog>(_allBuildLogs);
 
                     // Variables
-                    var varLogs = LogDB.Table<DB_Variable>()
+                    var varLogs = LogDb.Table<DB_Variable>()
                         .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
                         .OrderBy(x => x.Type)
                         .ThenBy(x => x.Key);
@@ -421,7 +392,7 @@ namespace PEBakery.WPF
                     var existStates = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                     foreach (LogState state in existStates)
                     {
-                        int count = LogDB
+                        int count = LogDb
                             .Table<DB_BuildLog>()
                             .Count(x => x.BuildId == buildId && x.State == state);
 
@@ -432,22 +403,22 @@ namespace PEBakery.WPF
                 else
                 { // Per Script
                   // BuildLog
-                    var builds = LogDB.Table<DB_BuildLog>()
+                    var builds = LogDb.Table<DB_BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
-                    if (!BuildLogShowComment)
+                    if (!BuildLogShowComments)
                         builds = builds.Where(x => x.CodeType != CodeType.Comment);
-                    if (!BuildLogShowMacro)
+                    if (!BuildLogShowMacros)
                         builds = builds.Where(x => !x.IsMacro);
                     _allBuildLogs = new List<DB_BuildLog>(builds);
                     BuildLogs = new ObservableCollection<DB_BuildLog>(_allBuildLogs);
 
                     // Variables
                     List<DB_Variable> varLogs = new List<DB_Variable>();
-                    varLogs.AddRange(LogDB.Table<DB_Variable>()
+                    varLogs.AddRange(LogDb.Table<DB_Variable>()
                         .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
                         .OrderBy(x => x.Type)
                         .ThenBy(x => x.Key));
-                    varLogs.AddRange(LogDB.Table<DB_Variable>()
+                    varLogs.AddRange(LogDb.Table<DB_Variable>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId && x.Type == VarsType.Local)
                         .OrderBy(x => x.Key));
                     VariableLogs = new ObservableCollection<DB_Variable>(varLogs);
@@ -457,7 +428,7 @@ namespace PEBakery.WPF
                     var existStates = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                     foreach (LogState state in existStates)
                     {
-                        int count = LogDB
+                        int count = LogDb
                             .Table<DB_BuildLog>()
                             .Count(x => x.BuildId == buildId && x.ScriptId == scriptId && x.State == state);
 
@@ -515,16 +486,16 @@ namespace PEBakery.WPF
 
         #region BuildLog
         private int _selectBuildIndex;
-        public int SelectBuildIndex
+        public int SelectedBuildIndex
         {
             get => _selectBuildIndex;
             set
             {
                 _selectBuildIndex = value;
 
-                if (0 < _selectBuildEntries.Count)
+                if (0 < _buildEntries.Count)
                 {
-                    int buildId = _selectBuildEntries[value].Item2;
+                    int buildId = _buildEntries[value].Item2;
                     RefreshScript(buildId, false);
                 }
                 else
@@ -532,42 +503,44 @@ namespace PEBakery.WPF
                     RefreshScript(null, false);
                 }
 
-                OnPropertyUpdate(nameof(SelectBuildIndex));
+                OnPropertyUpdate(nameof(SelectedBuildIndex));
             }
         }
 
-        private ObservableCollection<Tuple<string, int>> _selectBuildEntries = new ObservableCollection<Tuple<string, int>>();
-        public ObservableCollection<Tuple<string, int>> SelectBuildEntries
+        private ObservableCollection<Tuple<string, int>> _buildEntries = new ObservableCollection<Tuple<string, int>>();
+        public ObservableCollection<Tuple<string, int>> BuildEntries
         {
-            get => _selectBuildEntries;
+            get => _buildEntries;
             set
             {
-                _selectBuildEntries = value;
-                OnPropertyUpdate(nameof(SelectBuildEntries));
+                _buildEntries = value;
+                OnPropertyUpdate(nameof(BuildEntries));
             }
         }
 
-        private int _selectScriptIndex;
-        public int SelectScriptIndex
+        public bool CheckSelectBulidIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
+
+        private int _selectedScriptIndex;
+        public int SelectedScriptIndex
         {
-            get => _selectScriptIndex;
+            get => _selectedScriptIndex;
             set
             {
-                _selectScriptIndex = value;
-                RefreshBuildLog(_selectScriptIndex);
-                OnPropertyUpdate(nameof(SelectScriptIndex));
+                _selectedScriptIndex = value;
+                RefreshBuildLog(_selectedScriptIndex);
+                OnPropertyUpdate(nameof(SelectedScriptIndex));
             }
         }
 
         // Script Name, Script Id, Build Id
-        private ObservableCollection<Tuple<string, int, int>> _selectScriptEntries = new ObservableCollection<Tuple<string, int, int>>();
-        public ObservableCollection<Tuple<string, int, int>> SelectScriptEntries
+        private ObservableCollection<Tuple<string, int, int>> _scriptEntries = new ObservableCollection<Tuple<string, int, int>>();
+        public ObservableCollection<Tuple<string, int, int>> ScriptEntries
         {
-            get => _selectScriptEntries;
+            get => _scriptEntries;
             set
             {
-                _selectScriptEntries = value;
-                OnPropertyUpdate(nameof(SelectScriptEntries));
+                _scriptEntries = value;
+                OnPropertyUpdate(nameof(ScriptEntries));
             }
         }
 
@@ -638,27 +611,27 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool _buildLogShowComment = true;
-        public bool BuildLogShowComment
+        private bool _buildLogShowComments = true;
+        public bool BuildLogShowComments
         {
-            get => _buildLogShowComment;
+            get => _buildLogShowComments;
             set
             {
-                _buildLogShowComment = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacro));
-                RefreshBuildLog(SelectScriptIndex);
+                _buildLogShowComments = value;
+                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                RefreshBuildLog(SelectedScriptIndex);
             }
         }
 
-        private bool _buildLogShowMacro = true;
-        public bool BuildLogShowMacro
+        private bool _buildLogShowMacros = true;
+        public bool BuildLogShowMacros
         {
-            get => _buildLogShowMacro;
+            get => _buildLogShowMacros;
             set
             {
-                _buildLogShowMacro = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacro));
-                RefreshBuildLog(SelectScriptIndex);
+                _buildLogShowMacros = value;
+                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                RefreshBuildLog(SelectedScriptIndex);
             }
         }
         #endregion

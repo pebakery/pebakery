@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Invalid Command [{info.MacroType}]", s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Invalid Command [{info.MacroType}]", cmd, s.CurDepth));
                 return;
             }
 
@@ -62,7 +62,7 @@ namespace PEBakery.Core.Commands
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
             s.CurSectionParams = paramDict;
-            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Macro [{info.MacroType}] ({cmd.RawCode})", s.CurDepth));
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing Command [{info.MacroType}]", cmd, s.CurDepth));
 
             // Backup and set EngineState values
             int realScriptIdBackup = s.RealScriptId;

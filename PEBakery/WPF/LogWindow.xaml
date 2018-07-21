@@ -114,9 +114,8 @@
                                    Text="Select Build">
                         </TextBlock>
                         <ComboBox Name="SelectBuildComboBox"
-                                  SelectedIndex="{Binding SelectBuildIndex}"
-                                  ItemsSource="{Binding SelectBuildEntries}"
-                                  AlternationCount="2">
+                                  SelectedIndex="{Binding SelectedBuildIndex}"
+                                  ItemsSource="{Binding BuildEntries}">
                              <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -134,9 +133,8 @@
                                    Text="Select Script">
                         </TextBlock>
                          <ComboBox Name="SelectScriptComboBox"
-                                   SelectedIndex="{Binding SelectScriptIndex}"
-                                   ItemsSource="{Binding SelectScriptEntries}"
-                                   AlternationCount="2">
+                                   SelectedIndex="{Binding SelectedScriptIndex}"
+                                   ItemsSource="{Binding ScriptEntries}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -298,15 +296,15 @@
                           VerticalAlignment="Center"
                           VerticalContentAlignment="Center"
                           Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowComment}"
-                          Content="Show Comment"/>
+                          IsChecked="{Binding BuildLogShowComments}"
+                          Content="Show Comments"/>
                 <CheckBox DockPanel.Dock="Left"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
                           VerticalContentAlignment="Center"
                           Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowMacro}"
-                          Content="Show Macro"/>
+                          IsChecked="{Binding BuildLogShowMacros}"
+                          Content="Show Macros"/>
             </StackPanel>
         </DockPanel>
     </Grid>

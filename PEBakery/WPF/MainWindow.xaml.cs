@@ -150,7 +150,7 @@ namespace PEBakery.WPF
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
-            Setting.LogDB = Logger.DB;
+            Setting.LogDb = Logger.Db;
 
             // If script cache is enabled, generate cache after 5 seconds
             if (Setting.Script_EnableCache)
@@ -168,7 +168,7 @@ namespace PEBakery.WPF
                     Application.Current.Shutdown(1);
                 }
 
-                Setting.CacheDB = _scriptCache;
+                Setting.CacheDb = _scriptCache;
             }
             else
             {
@@ -1371,7 +1371,7 @@ namespace PEBakery.WPF
                 await Task.Delay(500);
 
             _scriptCache?.WaitClose();
-            Logger.DB.Close();
+            Logger.Db.Close();
         }
 
         private void BuildConOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)

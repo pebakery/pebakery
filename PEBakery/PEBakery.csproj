@@ -200,6 +200,9 @@
       <DependentUpon>NumberBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\ProgressRing.cs" />
+    <Compile Include="WPF\LogExportWindow.xaml.cs">
+      <DependentUpon>LogExportWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
@@ -239,6 +242,10 @@
     <Page Include="WPF\Controls\ProgressRing.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="WPF\LogExportWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WPF\LogWindow.xaml">
       <SubType>Designer</SubType>

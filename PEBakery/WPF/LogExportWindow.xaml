@@ -1,0 +1,135 @@
+﻿<!--
+    Copyright (C) 2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+-->
+    
+<Window x:Class="PEBakery.WPF.LogExportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        mc:Ignorable="d"
+        FontSize="13"
+        Width="500" Height="280"
+        FontFamily="Segoe UI"
+        Title="Export Logs" 
+        d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
+    <Window.CommandBindings>
+        <CommandBinding Command="local:LogExportCommands.Export"
+                        CanExecute="ExportCommand_CanExecute"
+                        Executed="ExportCommand_Executed"/>
+    </Window.CommandBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Orientation="Vertical"
+                    Margin="5, 5, 5, 0">
+            <GroupBox Margin="0, 0, 0, 5"
+                      BorderBrush="Gray">
+                <GroupBox.Header>
+                    <TextBlock Text="Log Type"
+                               FontWeight="Bold"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <RadioButton Height="20"
+                                 VerticalAlignment="Top"
+                                 VerticalContentAlignment="Center"
+                                 GroupName="LogType"
+                                 IsChecked="{Binding ExportSystemLog}"
+                                 Content="System Log"/>
+                    <RadioButton Height="20"
+                                 VerticalAlignment="Top"
+                                 VerticalContentAlignment="Center"
+                                 GroupName="LogType"
+                                 IsEnabled="{Binding BuildLogRadioEnabled}"
+                                 IsChecked="{Binding ExportBuildLog}"
+                                 Content="Build Log"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox BorderBrush="Gray">
+                <GroupBox.Header>
+                    <TextBlock Text="Build Log Export Options"
+                               FontWeight="Bold"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Height="20"
+                               Margin="5, 0, 0, 0"
+                               VerticalAlignment="Top"
+                               Text="Select Build"/>
+                    <ComboBox Height="25"
+                              FontSize="11"
+                              Margin="3, 0, 3, 10"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              ItemsSource="{Binding BuildEntries}"
+                              SelectedIndex="{Binding SelectedBuildEntryIndex}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Item1}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogIncludeComments}"
+                              Content="Include Comments"/>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogIncludeMacros}"
+                              Content="Include Macro Commands"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+        <StackPanel Grid.Row="1"
+                    Margin="0, 10, 0, 0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button HorizontalAlignment="Right"
+                    Margin="0, 0, 10, 10"
+                    Width="80"
+                    IsDefault="True"
+                    x:Name="ExportButton"
+                    Command="local:LogExportCommands.Export"
+                    Content="Export"/>
+            <Button HorizontalAlignment="Right"
+                    Margin="0, 0, 10, 10"
+                    Width="80"
+                    IsCancel="True"
+                    Content="Cancel"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -78,7 +78,7 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref ScriptCache.DbLock);
                 try
                 {
-                    Model.ClearCacheDB();
+                    Model.ClearCacheDb();
                 }
                 finally
                 {
@@ -89,13 +89,13 @@ namespace PEBakery.WPF
 
         private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
         {
-            Model.ClearLogDB();
+            Model.ClearLogDb();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            Model.UpdateCacheDBState();
-            Model.UpdateLogDBState();
+            Model.UpdateCacheDbState();
+            Model.UpdateLogDbState();
             Model.UpdateProjectList();
         }
 
@@ -206,8 +206,8 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         private readonly string _settingFile;
-        public LogDatabase LogDB { get; set; }
-        public ScriptCache CacheDB { get; set; }
+        public LogDatabase LogDb { get; set; }
+        public ScriptCache CacheDb { get; set; }
         public ProjectCollection Projects { get; private set; }
 
         public SettingViewModel(string settingFile)
@@ -1062,42 +1062,47 @@ namespace PEBakery.WPF
         #endregion
 
         #region Database Operation
-        public void ClearLogDB()
+        public void ClearLogDb()
         {
-            LogDB.DeleteAll<DB_SystemLog>();
-            LogDB.DeleteAll<DB_BuildInfo>();
-            LogDB.DeleteAll<DB_Script>();
-            LogDB.DeleteAll<DB_Variable>();
-            LogDB.DeleteAll<DB_BuildLog>();
-
-            UpdateLogDBState();
+            LogDb.ClearTable(new LogDatabase.ClearTableOptions
+            {
+                SystemLog = true,
+                BuildInfo = true,
+                BuildLog = true,
+                Script = true,
+                Variable = true,
+            });
+            UpdateLogDbState();
         }
 
-        public void ClearCacheDB()
+        public void ClearCacheDb()
         {
-            if (CacheDB != null)
+            if (CacheDb != null)
             {
-                CacheDB.DeleteAll<DB_ScriptCache>();
-                UpdateCacheDBState();
+                CacheDb.ClearTable(new ScriptCache.ClearTableOptions
+                {
+                    ScriptCache = true,
+                });
+                UpdateCacheDbState();
             }
         }
 
-        public void UpdateLogDBState()
+        public void UpdateLogDbState()
         {
-            int systemLogCount = LogDB.Table<DB_SystemLog>().Count();
-            int codeLogCount = LogDB.Table<DB_BuildLog>().Count();
+            int systemLogCount = LogDb.Table<DB_SystemLog>().Count();
+            int codeLogCount = LogDb.Table<DB_BuildLog>().Count();
             Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 
-        public void UpdateCacheDBState()
+        public void UpdateCacheDbState()
         {
-            if (CacheDB == null)
+            if (CacheDb == null)
             {
                 Script_CacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = CacheDB.Table<DB_ScriptCache>().Count();
+                int cacheCount = CacheDb.Table<DB_ScriptCache>().Count();
                 Script_CacheState = $"{cacheCount} scripts cached";
             }
         }
@@ -1106,26 +1111,26 @@ namespace PEBakery.WPF
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (Application.Current.MainWindow is MainWindow w)
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+
+                Projects = w.Projects;
+
+                bool foundDefault = false;
+                List<string> projNameList = Projects.ProjectNames;
+                Project_List = new ObservableCollection<string>();
+                for (int i = 0; i < projNameList.Count; i++)
                 {
-                    Projects = w.Projects;
-
-                    bool foundDefault = false;
-                    List<string> projNameList = Projects.ProjectNames;
-                    Project_List = new ObservableCollection<string>();
-                    for (int i = 0; i < projNameList.Count; i++)
+                    Project_List.Add(projNameList[i]);
+                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
                     {
-                        Project_List.Add(projNameList[i]);
-                        if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foundDefault = true;
-                            Project_SelectedIndex = Project_DefaultIndex = i;
-                        }
+                        foundDefault = true;
+                        Project_SelectedIndex = Project_DefaultIndex = i;
                     }
-
-                    if (foundDefault == false)
-                        Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
                 }
+
+                if (foundDefault == false)
+                    Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
             });
         }
         #endregion

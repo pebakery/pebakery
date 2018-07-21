@@ -42,8 +42,8 @@
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="Projects">
@@ -453,7 +453,7 @@
             </TabItem>
         </TabControl>
         <Grid Grid.Row="1"
-              Margin="15, 15, 15, 15">
+              Margin="10, 10, 10, 10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>
