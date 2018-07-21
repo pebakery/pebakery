@@ -408,7 +408,7 @@ namespace PEBakery.Core
 
         private readonly ConcurrentDictionary<int, DB_BuildInfo> _buildDict = new ConcurrentDictionary<int, DB_BuildInfo>();
         private readonly ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>>();
-        private readonly ConcurrentDictionary<string, int> _scriptIdDict = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, int> _scriptRefIdDict = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
@@ -566,6 +566,7 @@ namespace PEBakery.Core
             {
                 case LogMode.PartDelay:
                     Flush(s);
+                    DB.Update(dbBuild);
                     break;
                 case LogMode.NoDelay:
                     DB.Update(dbBuild);
@@ -574,7 +575,7 @@ namespace PEBakery.Core
 
             SystemWrite(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished ({t:h\\:mm\\:ss})"));
 
-            _scriptIdDict.Clear();
+            _scriptRefIdDict.Clear();
         }
 
         public int BuildScriptInit(EngineState s, Script sc, int order, bool prepareBuild)
@@ -682,8 +683,8 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return 0;
 
-            if (_scriptIdDict.ContainsKey(sc.FullIdentifier))
-                return _scriptIdDict[sc.FullIdentifier];
+            if (_scriptRefIdDict.ContainsKey(sc.FullIdentifier))
+                return _scriptRefIdDict[sc.FullIdentifier];
 
             DB_Script dbScript = new DB_Script
             {
@@ -707,7 +708,7 @@ namespace PEBakery.Core
                 DB.Insert(dbScript);
             }
 
-            _scriptIdDict[sc.FullIdentifier] = dbScript.Id;
+            _scriptRefIdDict[sc.FullIdentifier] = dbScript.Id;
             return dbScript.Id;
         }
         #endregion
@@ -744,9 +745,6 @@ namespace PEBakery.Core
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
-                return;
 
             DB_BuildLog dbCode = new DB_BuildLog
             {
@@ -755,6 +753,7 @@ namespace PEBakery.Core
                 ScriptId = s.ScriptId,
                 RealScriptId = s.RealScriptId,
                 Message = message,
+                IsMacro = s.InMacro,
             };
 
             InternalBuildWrite(s, dbCode);
@@ -764,9 +763,6 @@ namespace PEBakery.Core
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
-                return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
                 return;
 
             // Normally this should be already done in Engine.ExecuteCommand.
@@ -787,6 +783,7 @@ namespace PEBakery.Core
                 RealScriptId = s.RealScriptId,
                 Depth = log.Depth,
                 State = state,
+                IsMacro = s.InMacro,
             };
 
             if (log.Command == null)
@@ -799,6 +796,7 @@ namespace PEBakery.Core
                     dbCode.Message = log.Command.Type.ToString();
                 else
                     dbCode.Message = $"{log.Command.Type} - {log.Message}";
+                dbCode.CodeType = log.Command.Type;
                 dbCode.RawCode = log.Command.RawCode;
                 dbCode.LineIdx = log.Command.LineIdx;
             }
@@ -810,9 +808,6 @@ namespace PEBakery.Core
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
-                return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
                 return;
 
             foreach (LogInfo log in logs)
@@ -843,6 +838,7 @@ namespace PEBakery.Core
                         dbCode.Message = log.Command.Type.ToString();
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
+                    dbCode.CodeType = log.Command.Type;
                     dbCode.RawCode = log.Command.RawCode;
                     dbCode.LineIdx = log.Command.LineIdx;
                 }
@@ -903,9 +899,6 @@ namespace PEBakery.Core
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
-                return;
 
             if (logScriptName)
                 LogStartOfSection(s, addr.Section.Name, depth, sectionParam, cmd);
@@ -917,9 +910,6 @@ namespace PEBakery.Core
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
-                return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
                 return;
 
             string msg = $"Processing Section [{sectionName}]";
@@ -936,9 +926,6 @@ namespace PEBakery.Core
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
-                return;
 
             string msg = $"Processing [{scriptName}]'s Section [{sectionName}]";
             if (cmd == null)
@@ -954,9 +941,6 @@ namespace PEBakery.Core
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
-                return;
 
             if (logScriptName)
                 LogEndOfSection(s, addr.Section.Name, depth, cmd);
@@ -968,9 +952,6 @@ namespace PEBakery.Core
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
-                return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
                 return;
 
             string msg = $"End of Section [{sectionName}]";
@@ -984,9 +965,6 @@ namespace PEBakery.Core
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
-                return;
-            // If engine is running macro and s.LogMacro is false, skip
-            if (!s.LogMacro && s.InMacro)
                 return;
 
             string msg = $"End of [{scriptName}]'s Section [{sectionName}]";
@@ -1224,11 +1202,15 @@ namespace PEBakery.Core
         public string Message { get; set; }
         public int LineIdx { get; set; }
         [MaxLength(65535)]
+        public CodeType CodeType { get; set; }
         public string RawCode { get; set; }
+        public bool IsMacro { get; set; }
 
         // Used in LogWindow
         [Ignore]
         public string StateStr => State == LogState.None ? string.Empty : State.ToString();
+        [Ignore]
+        public char IsMacroChar => IsMacro ? 'M' : ' ';
 
         [Ignore]
         public string TimeStr
@@ -1243,7 +1225,7 @@ namespace PEBakery.Core
         [Ignore]
         public string Text => Export(LogExportType.Text);
         [Ignore]
-        public string LineIdxStr => LineIdx.ToString();
+        public string LineIdxStr => LineIdx == 0 ? string.Empty : LineIdx.ToString();
 
         public string Export(LogExportType type, bool logDepth = true)
         {

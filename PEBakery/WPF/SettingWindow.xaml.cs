@@ -35,13 +35,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
@@ -675,28 +669,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_Macro;
-        public bool Log_Macro
-        {
-            get => log_Macro;
-            set
-            {
-                log_Macro = value;
-                OnPropertyUpdate(nameof(Log_Macro));
-            }
-        }
-
-        private bool log_Comment;
-        public bool Log_Comment
-        {
-            get => log_Comment;
-            set
-            {
-                log_Comment = value;
-                OnPropertyUpdate(nameof(Log_Comment));
-            }
-        }
-
         private bool log_DelayedLogging;
         public bool Log_DelayedLogging
         {
@@ -857,7 +829,7 @@ namespace PEBakery.WPF
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteConOut = true;
             Interface_UseCustomEditor = false;
-            Interface_CustomEditorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+            Interface_CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
 
             // Script
             Script_EnableCache = true;
@@ -870,8 +842,6 @@ namespace PEBakery.WPF
 #else
             Log_DebugLevelIndex = 0;
 #endif
-            Log_Macro = true;
-            Log_Comment = true;
             Log_DelayedLogging = true;
 
             // Compatibility
@@ -923,8 +893,6 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
@@ -1031,8 +999,6 @@ namespace PEBakery.WPF
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
-            Log_Macro = ParseBoolean(nameof(Log_Macro), Log_Macro);
-            Log_Comment = ParseBoolean(nameof(Log_Comment), Log_Comment);
             Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
 
             // Compatibility
@@ -1074,8 +1040,6 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean

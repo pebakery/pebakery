@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -2220,7 +2221,7 @@ namespace PEBakery.WPF
     #endregion
 
     #region Converters
-    public class TaskbarProgressConverter : System.Windows.Data.IMultiValueConverter
+    public class TaskbarProgressConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {

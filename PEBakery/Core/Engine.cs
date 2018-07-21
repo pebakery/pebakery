@@ -419,8 +419,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Error, cmd.Info.Cast<CodeInfo_Error>().ErrorMessage));
                         break;
                     case CodeType.Comment:
-                        if (s.LogComment)
-                            logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     #endregion
                     #region 01 File
@@ -1061,8 +1060,6 @@ namespace PEBakery.Core
         public int RealScriptId = 0; // Used in logging
 
         // Options
-        public bool LogComment = true; // Used in logging
-        public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool CompatAllowLetterInLoop = false; // Compatibility
@@ -1149,8 +1146,6 @@ namespace PEBakery.Core
         {
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
 
-            LogMacro = m.Log_Macro;
-            LogComment = m.Log_Comment;
             LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
 
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;

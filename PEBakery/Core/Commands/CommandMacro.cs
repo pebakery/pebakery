@@ -62,11 +62,7 @@ namespace PEBakery.Core.Commands
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
             s.CurSectionParams = paramDict;
-
-            if (!s.LogMacro) // Do not log macro
-            {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Macro [{info.MacroType}] ({cmd.RawCode})", s.CurDepth + 1));
-            }
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Macro [{info.MacroType}] ({cmd.RawCode})", s.CurDepth));
 
             // Backup and set EngineState values
             int realScriptIdBackup = s.RealScriptId;

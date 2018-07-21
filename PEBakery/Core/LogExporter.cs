@@ -173,14 +173,19 @@ namespace PEBakery.Core
                         }
 
                         // Script
-                        var scripts = _db.Table<DB_Script>()
-                            .Where(x => x.BuildId == buildId && 0 < x.Order)
-                            .OrderBy(x => x.Order);
+                        DB_Script[] scripts = _db.Table<DB_Script>()
+                            .Where(x => x.BuildId == buildId)
+                            .ToArray();
+
+                        DB_Script[] processedScripts = scripts
+                            .Where(x => 0 < x.Order)
+                            .OrderBy(x => x.Order)
+                            .ToArray();
                         _w.WriteLine("<Scripts>");
                         {
-                            int count = scripts.Count();
+                            int count = processedScripts.Length;
                             int idx = 1;
-                            foreach (DB_Script sc in scripts)
+                            foreach (DB_Script sc in processedScripts)
                             {
                                 _w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
                                 idx++;
@@ -191,6 +196,7 @@ namespace PEBakery.Core
                             _w.WriteLine();
                         }
 
+                        // Variables
                         _w.WriteLine("<Variables>");
                         VarsType[] typeList = { VarsType.Fixed, VarsType.Global };
                         foreach (VarsType varsType in typeList)
@@ -207,7 +213,7 @@ namespace PEBakery.Core
 
                         _w.WriteLine("<Code Logs>");
                         {
-                            foreach (DB_Script scLog in scripts)
+                            foreach (DB_Script scLog in processedScripts)
                             {
                                 // Log codes
                                 var cLogs = _db.Table<DB_BuildLog>()
