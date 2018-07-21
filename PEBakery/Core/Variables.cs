@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
@@ -35,6 +34,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static PEBakery.Core.Variables;
 
 namespace PEBakery.Core
 {
@@ -45,7 +45,7 @@ namespace PEBakery.Core
         Local = 2,
     }
 
-    public class Variables : ICloneable
+    public class Variables
     {
         /*
          * Variables Search Order
@@ -275,7 +275,7 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface != null)
             {
                 List<UIControl> uiCtrls = null;
@@ -437,10 +437,8 @@ namespace PEBakery.Core
                 vars.Remove(key);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public bool ContainsKey(string key)
@@ -607,7 +605,7 @@ namespace PEBakery.Core
 
                 iter++;
                 if (32 < iter)
-                    throw new VariableCircularReferenceException($"Circular Reference by [{str}]");
+                    throw new VariableCircularReferenceException($"Circular reference by [{str}]");
             }
             while (0 < matches.Count);
 
@@ -681,7 +679,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Utility Static Methods
+        #region Static Methods - Utility
         public static string TrimPercentMark(string varName)
         {
             if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
@@ -691,7 +689,9 @@ namespace PEBakery.Core
                 return null;
             return varName;
         }
+        #endregion
 
+        #region Static Methods - With EngineState
         /// <summary>
         /// Return % trimmed string, to use as variable key.
         /// Return null if this string cannot be used as variable key.
@@ -701,7 +701,7 @@ namespace PEBakery.Core
         {
             if (varName.StartsWith("%") && varName.EndsWith("%"))
             {
-                if (StringHelper.CountOccurrences(varName, "%") == 2)
+                if (StringHelper.CountSubStr(varName, "%") == 2)
                 {
                     string varKey = varName.Substring(1, varName.Length - 2);
                     return StringEscaper.ExpandSectionParams(s, varKey);
@@ -732,9 +732,9 @@ namespace PEBakery.Core
         public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
         public static VarKeyType DetermineType(string key)
         {
-            if (Regex.Match(key, Variables.VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
+            if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            else if (Regex.Match(key, Variables.VarKeyRegexSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
+            else if (Regex.Match(key, VarKeyRegexSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
                 return VarKeyType.ReturnValue;
@@ -744,7 +744,7 @@ namespace PEBakery.Core
 
         public static LogInfo SetSectionParam(EngineState s, string key, string value)
         {
-            int pIdx = Variables.GetSectionParamIndex(key);
+            int pIdx = GetSectionParamIndex(key);
             return SetSectionParam(s, pIdx, value);
         }
 
@@ -774,13 +774,13 @@ namespace PEBakery.Core
             else
                 finalValue = varValue;
 
-            Variables.VarKeyType type = Variables.DetermineType(varKey);
+            VarKeyType type = DetermineType(varKey);
             if (finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
             { // Remove variable
                 // Determine varKey's type - %A% vs #1
-                if (type == Variables.VarKeyType.Variable) // %A%
+                if (type == VarKeyType.Variable) // %A%
                 {
-                    string key = Variables.GetVariableName(s, varKey);
+                    string key = GetVariableName(s, varKey);
                     if (key == null)
                         logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{varKey}] must start and end with %"));
 
@@ -791,18 +791,9 @@ namespace PEBakery.Core
                         if (globalResult || localResult)
                         {
                             if (Ini.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
-                            {
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
-                            }
                             else
-                            {
-                                if (globalResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
-                                else if (localResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
-                                else
-                                    throw new InternalException("Internal Error at Variables.SetVariable");
-                            }
+                                logs.Add(new LogInfo(LogState.Success, globalResult ? $"Global variable [%{key}%] was deleted" : $"Local variable [%{key}%] was deleted"));
                         }
                         else
                         {
@@ -821,26 +812,26 @@ namespace PEBakery.Core
                             logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }
                 }
-                else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionParams) // #1, #2, #3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
+                    logs.Add(SetSectionParam(s, varKey, finalValue));
                 }
-                else if (type == Variables.VarKeyType.ReturnValue) // #r
+                else if (type == VarKeyType.ReturnValue) // #r
                 { // s.SectionReturnValue's defalt value is string.Empty
                     s.SectionReturnValue = string.Empty;
                     logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+                    throw new InvalidCommandException($"Invalid variable name [{varKey}]");
                 }
             }
             else
             {
                 // Determine varKey's type - %A% vs #1
-                if (type == Variables.VarKeyType.Variable) // %A%
+                if (type == VarKeyType.Variable) // %A%
                 {
-                    string key = Variables.GetVariableName(s, varKey);
+                    string key = GetVariableName(s, varKey);
                     if (key == null)
                         logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
 
@@ -888,27 +879,51 @@ namespace PEBakery.Core
                         logs.Add(s.Variables.SetValue(VarsType.Local, key, finalValue));
                     }
                 }
-                else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionParams) // #1, #2, #3, ...
                 {
-                    logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
+                    logs.Add(SetSectionParam(s, varKey, finalValue));
                 }
-                else if (type == Variables.VarKeyType.ReturnValue) // #r
+                else if (type == VarKeyType.ReturnValue) // #r
                 {
                     s.SectionReturnValue = finalValue;
                     logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
                 }
                 else
                 {
-                    throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+                    throw new InvalidCommandException($"Invalid variable name [{varKey}]");
                 }
             }
 
             return logs;
         }
+
+        /// <summary>
+        /// Check if key is stored in Variables|SectionParam|ReturnValue.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="key"></param>
+        /// <returns>Return null at error</returns>
+        public static bool? ContainsKey(EngineState s, string varKey)
+        {
+            VarKeyType type = DetermineType(varKey);
+            switch (type)
+            {
+                case VarKeyType.Variable:
+                    string key = TrimPercentMark(varKey);
+                    return key != null && s.Variables.ContainsKey(key);
+                case VarKeyType.SectionParams:
+                    int sIdx = GetSectionParamIndex(varKey);
+                    return sIdx != 0 && s.CurSectionParams.ContainsKey(sIdx);
+                case VarKeyType.ReturnValue:
+                    return true;
+                default:
+                    return null;
+            }
+        }
         #endregion
 
-        #region Clone
-        public object Clone()
+        #region DeepCopy
+        public Variables DeepCopy()
         {
             Variables variables = new Variables(_project)
             {

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
@@ -34,7 +43,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
-        public void Archive_Compress()
+        public void Compress()
         {
             Compress_DirTemplate("Zip", "France", "France_Store.zip", ArchiveHelper.CompressLevel.Store);
             Compress_DirTemplate("Zip", "Korea", "Korea_Best.zip", ArchiveHelper.CompressLevel.Best);
@@ -138,7 +147,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_Decompress()
+        public void Decompress()
         {
             Decompress_DirTemplate("Korea.zip");
             Decompress_DirTemplate("Korea.7z");
@@ -161,7 +170,7 @@ namespace PEBakery.Tests.Core.Command
             string srcPath = Path.Combine(dirPath, archiveName, compFile);
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destPath = Path.Combine(destDir, compFile);
-            
+
             try
             {
                 Directory.CreateDirectory(destDir);
@@ -178,8 +187,6 @@ namespace PEBakery.Tests.Core.Command
                     byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
-
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
@@ -220,7 +227,6 @@ namespace PEBakery.Tests.Core.Command
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
@@ -234,7 +240,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_Expand()
+        public void Expand()
         {
             EngineState s = EngineTests.CreateEngineState();
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -306,7 +312,7 @@ namespace PEBakery.Tests.Core.Command
         }
 
         public void Expand_DirTemplate(EngineState s, string archiveFile, string destDir, string compDir, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
-        { 
+        {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab");
 
@@ -347,7 +353,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         [TestMethod]
-        public void Archive_CopyOrExpand()
+        public void CopyOrExpand()
         {
             EngineState s = EngineTests.CreateEngineState();
 
@@ -437,7 +443,7 @@ namespace PEBakery.Tests.Core.Command
         private static string SampleText()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.Write("Hello\r\nArchive\r\nPEBakery\r\nUnitTest");

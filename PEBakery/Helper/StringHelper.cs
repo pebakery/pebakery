@@ -29,13 +29,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Helper
 {
     #region StringHelper
     public static class StringHelper
     {
+        #region RemoveLastLine
         /// <summary>
         /// Remove last newline in the string, removes whitespaces also.
         /// </summary>
@@ -45,7 +45,9 @@ namespace PEBakery.Helper
         {
             return str.Trim().TrimEnd(Environment.NewLine.ToCharArray()).Trim();
         }
+        #endregion
 
+        #region Is{Hex|Alphabet|...}
         public static bool IsHex(string str)
         {
             if (str.Length % 2 == 1)
@@ -123,12 +125,10 @@ namespace PEBakery.Helper
         {
             return str.IndexOfAny(new[] { '*', '?' }) != -1;
         }
+        #endregion
 
-        /// <summary>
-        /// Count occurrences of strings.
-        /// http://www.dotnetperls.com/string-occurrence
-        /// </summary>
-        public static int CountOccurrences(string text, string pattern)
+        #region CountSubStr
+        public static int CountSubStr(string text, string pattern)
         {
             // Loop through all instances of the string 'text'.
             int count = 0;
@@ -140,12 +140,41 @@ namespace PEBakery.Helper
             }
             return count;
         }
+        #endregion
 
+        #region SplitEx
+        public static List<string> SplitEx(string str, string seperator, StringComparison comp)
+        {
+            if (str.Length == 0)
+                return new List<string>();
+            if (seperator.Length == 0)
+                return new List<string> { str };
+            if (str.IndexOf(seperator, comp) == -1)
+                return new List<string> { str };
+
+            int idx = 0;
+            List<string> split = new List<string>();
+            while (idx <= str.Length)
+            {
+                int vIdx = str.IndexOf(seperator, idx, comp);
+                if (vIdx == -1)
+                {
+                    split.Add(str.Substring(idx));
+                    break;
+                }
+
+                split.Add(str.Substring(idx, vIdx - idx));
+                idx = vIdx + seperator.Length;
+            }
+            return split;
+        }
+        #endregion
+
+        #region Replace Series
         public static string ReplaceEx(string str, string oldValue, string newValue, StringComparison comp)
         {
-            if (oldValue.Equals(string.Empty, comp))
+            if (oldValue.Length == 0)
                 return str;
-
             if (str.IndexOf(oldValue, comp) == -1)
                 return str;
 
@@ -165,7 +194,6 @@ namespace PEBakery.Helper
                 idx = vIdx + oldValue.Length;
             }
             return b.ToString();
-
         }
 
         public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
@@ -204,20 +232,9 @@ namespace PEBakery.Helper
             if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
             return str.Substring(0, index) + newValue + str.Substring(index + length);
         }
+        #endregion
 
-        public static string ConcatStrings(IEnumerable<string> strs, string seperator)
-        {
-            string[] strArr = strs.ToArray();
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < strArr.Length - 1; i++)
-            {
-                b.Append(strArr[i]);
-                b.Append(seperator);
-            }
-            b.Append(strArr.Last());
-            return b.ToString();
-        }
-
+        #region GetUriProtocol, FormatOpenCommand
         public static string GetUriProtocol(string str)
         {
             int idx = str.IndexOf(@"://", StringComparison.Ordinal);
@@ -236,6 +253,7 @@ namespace PEBakery.Helper
 
             return (exe, arguments);
         }
+        #endregion
 
         #region Glob
         public static string GlobToRegex(string glob)

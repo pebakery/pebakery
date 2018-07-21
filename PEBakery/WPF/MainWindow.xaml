@@ -25,7 +25,8 @@
     not derived from or based on this program. 
 -->
     
-<Window x:Class="PEBakery.WPF.MainWindow"
+<Window x:Name="Main"
+        x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -33,6 +34,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         FontSize="13"
         FontFamily="Segoe UI"
@@ -46,6 +48,7 @@
     </Window.DataContext>
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
+        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
@@ -405,8 +408,50 @@
                           BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
+                          PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling">
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          Tag="{Binding DataContext, ElementName=Main}">
+                    <TreeView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Run Script" Click="ScriptRunButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Play" Width="15" Height="15" Margin="4"/>
+                                </MenuItem.Icon>
+                             </MenuItem>
+                            <MenuItem Header="Refresh Script" Click="ScriptRefreshButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Edit Script Properties" Click="ScriptInternalEditor_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Edit Script Source" Click="ScriptExternalEditor_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="OpenInApp" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Update Script" Click="ScriptUpdateButton" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Syntax Check" Click="ScriptCheckButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Magnify" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
+                            <MenuItem Header="Open Script Folder" Click="ScriptOpenFolderButton_Click" Grid.IsSharedSizeScope="True" >
+                                <MenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Width="Auto" Height="Auto" Margin="4"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
                                                   ItemsSource="{Binding Children}">
@@ -601,56 +646,73 @@
                                 Click="ScriptRunButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Run Script">
-                            <iconPacks:PackIconMaterial Kind="Play"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="4"/>
+                            <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                         <Button Grid.Row="1"
                                 Grid.Column="0"
                                 Click="ScriptRefreshButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Refresh Script">
-                            <iconPacks:PackIconMaterial Kind="Refresh"
-                                                        Width="Auto"
-                                                        Height="Auto"
-                                                        Margin="4"/>
+                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                         <Button Grid.Row="2"
                                 Grid.Column="0"
                                 Click="ScriptEditButton_Click"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="Edit Script">
-                            <iconPacks:PackIconMaterial Kind="Pencil"
-                                                        Width="Auto"
-                                                        Height="Auto" Margin="4"/>
+                                ToolTip="{Binding OpenExternalButtonToolTip}">
+                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Edit Script Properties"
+                                              ToolTip="Manage header, interface and attachments"
+                                              Click="ScriptInternalEditor_Click"/>
+                                    <MenuItem Header="Edit Script Source"
+                                              ToolTip="Edit script code"
+                                              Click="ScriptExternalEditor_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
                         </Button>
                         <Button Grid.Row="3"
                                 Grid.Column="0"
-                                Click="ScriptOpenExternalButton_Click"
-                                ToolTip="{Binding OpenExternalButtonToopTip}">
-                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="4"/>
+                                Click="ScriptUpdateButton"
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="{Binding ScriptUpdateButtonToolTip}">
+                            <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
                     </Grid>
                 </Grid>
 
-                <Grid Grid.Row="1"
-                      HorizontalAlignment="Stretch"
-                      Visibility="{Binding BuildInterfaceVisibility}">
+                <DockPanel Grid.Row="1"
+                           HorizontalAlignment="Stretch"
+                           Visibility="{Binding BuildInterfaceVisibility}">
+                    <StackPanel DockPanel.Dock="Bottom"
+                                Orientation="Vertical"
+                                HorizontalAlignment="Stretch"
+                                Visibility="{Binding BuildScriptFullProgressVisibility}"
+                                Margin="20, 0, 20, 10">
 
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="25" />
-                        <RowDefinition Height="38" />
-                        <RowDefinition Height="25" />
-                        <RowDefinition Height="38" />
-                        <RowDefinition Height="10" />
-                    </Grid.RowDefinitions>
+                        <TextBlock Height="20"
+                                   Margin="0, 0, 0, 5"
+                                   TextAlignment="Left"
+                                   FontWeight="SemiBold"
+                                   Text="Script Progress" />
+                        <ProgressBar Height="28"
+                                     Margin="0, 0, 0, 10"
+                                     Minimum="0"
+                                     Maximum="{Binding BuildScriptProgressBarMax}"
+                                     Value="{Binding BuildScriptProgressBarValue}" />
+                        <TextBlock Height="20"
+                                   Margin="0, 0, 0, 5"
+                                   TextAlignment="Left"
+                                   FontWeight="SemiBold"
+                                   Text="Full Progress"/>
+                        <ProgressBar Height="28"
+                                     Margin="0, 0, 0, 10"
+                                     Minimum="0"
+                                     Maximum="{Binding BuildFullProgressBarMax}"
+                                     Value="{Binding BuildFullProgressBarValue}" />
+                    </StackPanel>
 
-                    <Border Grid.Row="0"
+                    <Border DockPanel.Dock="Top"
                             BorderBrush="Gray"
                             BorderThickness="1"
                             Margin="20, 20, 20, 20">
@@ -712,34 +774,14 @@
                                        Text="{Binding BuildCommandProgressText}"/>
                         </DockPanel>
                     </Border>
-
-                    <TextBlock Grid.Row="1"
-                               Margin="20, 0, 20, 5"
-                               TextAlignment="Left"
-                               FontWeight="SemiBold"
-                               Text="Script Progress" />
-                    <ProgressBar Grid.Row="2"
-                                 Margin="20, 0, 20, 10"
-                                 Minimum="0"
-                                 Maximum="{Binding BuildScriptProgressBarMax}"
-                                 Value="{Binding BuildScriptProgressBarValue}" />
-                    <TextBlock Grid.Row="3"
-                               Margin="20, 0, 20, 5"
-                               TextAlignment="Left"
-                               FontWeight="SemiBold"
-                               Text="Full Progress" />
-                    <ProgressBar Grid.Row="4"
-                                 Margin="20, 0, 20, 10"
-                                 Minimum="0"
-                                 Maximum="{Binding BuildFullProgressBarMax}"
-                                 Value="{Binding BuildFullProgressBarValue}" />
-                </Grid>
+                </DockPanel>
 
                 <ScrollViewer Grid.Row="1"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Stretch"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
+                              Focusable="False"
                               Visibility="{Binding NormalInterfaceVisibility}"
                               Content="{Binding MainCanvas}"/>
             </Grid>

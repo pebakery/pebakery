@@ -25,18 +25,17 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using PEBakery.WPF;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Principal;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using System.Security.Principal;
+using System.Collections.Generic;
+using PEBakery.WPF;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -63,6 +62,7 @@ namespace PEBakery.Core.Commands
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
+                            s.CursorWait = true;
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Wait]"));
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
@@ -71,6 +71,7 @@ namespace PEBakery.Core.Commands
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
+                            s.CursorWait = false;
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Normal]"));
                         }
                         else
@@ -89,7 +90,7 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             return LogInfo.LogErrorMessage(logs, $"[{linesStr}] is not a positive integer");
 
-                        if (s.ErrorOff == null) 
+                        if (s.ErrorOff == null)
                         {
                             // Enable s.ErrorOff
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
@@ -133,9 +134,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeDrive:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeDrive), "Invalid SystemInfo");
-                        SystemInfo_GetFreeDrive subInfo = info.SubInfo as SystemInfo_GetFreeDrive;
-                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        SystemInfo_GetFreeDrive subInfo = info.SubInfo.Cast<SystemInfo_GetFreeDrive>();
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -159,7 +158,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.GetFreeSpace:
                     {
                         SystemInfo_GetFreeSpace subInfo = info.SubInfo.Cast<SystemInfo_GetFreeSpace>();
-                        
+
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
                         FileInfo f = new FileInfo(path);
@@ -252,39 +251,43 @@ namespace PEBakery.Core.Commands
                         if (subInfo.NoRecFlag)
                             searchOption = SearchOption.TopDirectoryOnly;
 
+                        Debug.Assert(srcFilePath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
+
                         // Check wildcard
                         string wildcard = Path.GetFileName(srcFilePath);
-                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
+                        bool containsWildcard = wildcard.IndexOfAny(new[] { '*', '?' }) != -1;
 
                         string[] files;
                         if (containsWildcard)
                         { // With wildcard
                             files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(srcFilePath), wildcard, searchOption);
                             if (files.Length == 0)
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
-                                return logs;
-                            }
+                                return LogInfo.LogErrorMessage(logs, $"Script [{srcFilePath}] does not exist");
                         }
                         else
                         { // No wildcard
                             if (!File.Exists(srcFilePath))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Script [{srcFilePath}] does not exist"));
-                                return logs;
-                            }
+                                return LogInfo.LogErrorMessage(logs, $"Script [{srcFilePath}] does not exist");
 
                             files = new string[] { srcFilePath };
                         }
                         List<Script> newScripts = new List<Script>(files.Length);
 
+                        string srcDirPath = Path.GetDirectoryName(srcFilePath);
+                        Debug.Assert(srcDirPath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
+
+                        (string fullPath, string shortPath)[] fileTuples = files
+                            .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
+                            .ToArray();
+
                         int successCount = 0;
-                        foreach (string f in files)
+                        foreach ((string fullPath, string shortPath) in fileTuples)
                         {
                             // Add scripts into Project.AllScripts
-                            string scRealPath = Path.GetFullPath(f);
+                            string scRealPath = Path.GetFullPath(fullPath);
 
-                            string destTreePath = Path.Combine(destTreeDir, Path.GetFileName(f));
+                            string projDirName = s.Project.ProjectDir.Substring(s.Project.ProjectRoot.Length).Trim('\\');
+                            string destTreePath = Path.Combine(projDirName, destTreeDir, shortPath);
                             if (s.Project.ContainsScriptByTreePath(destTreePath))
                             {
                                 if (subInfo.PreserveFlag)
@@ -292,13 +295,15 @@ namespace PEBakery.Core.Commands
                                     logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Warning, $"Script [{destTreeDir}] already exists in project tree", cmd));
                                     continue;
                                 }
-                                else
-                                {
-                                    logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
-                                }
+
+                                logs.Add(new LogInfo(subInfo.NoWarnFlag ? LogState.Ignore : LogState.Overwrite, $"Script [{destTreeDir}] will be overwritten", cmd));
                             }
 
-                            Script sc = s.Project.LoadScriptMonkeyPatch(scRealPath, destTreePath, false, true, true);
+                            Script sc = s.Project.LoadScriptRuntime(scRealPath, destTreePath, new LoadScriptRuntimeOptions
+                            {
+                                AddToProjectTree = true,
+                                OverwriteToProjectTree = true,
+                            });
                             if (sc == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));
@@ -380,8 +385,7 @@ namespace PEBakery.Core.Commands
                             }
 
                             // RefreshScript -> Update Project.AllScripts
-                            // TODO: Update EngineState.Scripts?
-                            Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
+                            Script sc = Engine.GetScriptInstance(s, cmd.Addr.Script.RealPath, scRealPath, out _);
                             sc = s.Project.RefreshScript(sc);
                             if (sc == null)
                             {
@@ -420,16 +424,33 @@ namespace PEBakery.Core.Commands
                         SystemInfo_SaveLog subInfo = info.SubInfo.Cast<SystemInfo_SaveLog>();
 
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
-                        string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
+                        Debug.Assert(destPath != null, "Invalid SubInfo");
 
-                        LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
+                        LogExportType logFormat;
+                        if (subInfo.LogFormat == null)
+                        {
+                            string ext = Path.GetExtension(destPath);
+                            if (ext.Equals(".htm", StringComparison.OrdinalIgnoreCase) ||
+                                ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
+                                logFormat = LogExportType.Html;
+                            else
+                                logFormat = LogExportType.Text;
+                        }
+                        else
+                        {
+                            string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
+                            logFormat = Logger.ParseLogExportType(logFormatStr);
+                        }
 
                         if (!s.DisableLogger)
                         { // When logger is disabled, s.BuildId is invalid.
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
-                            s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
+                            // Flush deferred logs into database
+                            int realBuildId = s.Logger.Flush(s);
+
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId); // Do not use s.BuildId, for case of FullDelayedLogging
                         }
-                    }   
+                    }
                     break;
                 case SystemType.SetLocal:
                     { // SetLocal
@@ -469,7 +490,7 @@ namespace PEBakery.Core.Commands
                 case SystemType.RegRedirect: // Do nothing
                     logs.Add(new LogInfo(LogState.Ignore, "[System,RegRedirect] is not necessary in PEBakery"));
                     break;
-                case SystemType.RebuildVars: 
+                case SystemType.RebuildVars:
                     { // Reset Variables to clean state
                         s.Variables.ResetVariables(VarsType.Fixed);
                         s.Variables.ResetVariables(VarsType.Global);
@@ -492,7 +513,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    return LogInfo.LogErrorMessage(logs, $"Wrong SystemType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandSystem.System");
             }
 
             return logs;
@@ -613,7 +634,7 @@ namespace PEBakery.Core.Commands
                             }
                         };
                     }
-                    
+
                     proc.Start();
 
                     if (redirectStandardStream)

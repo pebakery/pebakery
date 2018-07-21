@@ -32,8 +32,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.Exceptions;
 
 namespace PEBakery.Core.Commands
 {
@@ -122,7 +120,7 @@ namespace PEBakery.Core.Commands
                         foreach (string f in files)
                         {
                             string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
-                            
+
                             if (File.Exists(destFullPath))
                             {
                                 if (info.Preserve)
@@ -297,7 +295,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
-            FileHelper.WriteTextBOM(filePath, encoding);
+            FileHelper.WriteTextBom(filePath, encoding);
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
 
             return logs;
@@ -336,7 +334,7 @@ namespace PEBakery.Core.Commands
             string verStr = $"{v.FileMajorPart}.{v.FileMinorPart}.{v.FileBuildPart}.{v.FilePrivatePart}";
             logs.Add(new LogInfo(LogState.Success, $"File [{filePath}]'s version is [{verStr}]", cmd));
 
-            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verStr); 
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verStr);
             logs.AddRange(varLogs);
 
             return logs;
@@ -387,7 +385,7 @@ namespace PEBakery.Core.Commands
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
                 if (!dirInfo.Exists)
                     throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
-                
+
                 if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy _bug_
                     foreach (FileInfo f in dirInfo.GetFiles(wildcard))
@@ -459,7 +457,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destFullPath}]"));
             }
             else
-            { 
+            {
                 Directory.Move(srcDir, destPath);
 
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));

@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,15 +25,15 @@
     not derived from or based on this program. 
 */
 
+using SQLite;
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.WPF;
-using PEBakery.Exceptions;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PEBakery.Tests.Core
 {
@@ -55,106 +55,224 @@ namespace PEBakery.Tests.Core
         public static string BaseDir;
         #endregion
 
-        #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = true, Script p = null)
+        #region CreateEngineState, DummySectionAddress
+        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = "Process")
         {
-            // Clone is needed for parallel test execution
-            if (doClone)
+            // Clone is needed for parallel test execution (Partial Deep Clone)
+            EngineState s;
+            if (doCopy)
             {
-                Project project = EngineTests.Project.Clone() as Project;
+                Project project = EngineTests.Project.PartialDeepCopy();
                 Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
-                if (p == null)
-                    return new EngineState(project, logger, model, EngineMode.RunAll);
+                if (sc == null)
+                    s = new EngineState(project, logger, model, EngineMode.RunAll);
                 else
-                    return new EngineState(project, logger, model, EngineMode.RunOne, p);
+                    s = new EngineState(project, logger, model, EngineMode.RunOne, sc, entrySection);
             }
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
                 MainViewModel model = new MainViewModel();
-                if (p == null)
-                    return new EngineState(Project, Logger, model, EngineMode.RunAll);
+                if (sc == null)
+                    s = new EngineState(Project, Logger, model, EngineMode.RunAll);
                 else
-                    return new EngineState(Project, Logger, model, EngineMode.RunOne, p);
+                    s = new EngineState(Project, Logger, model, EngineMode.RunOne, sc, entrySection);
             }
+
+            s.LogMode = LogMode.NoDelay;
+            s.TestMode = true;
+
+            return s;
         }
 
         public static SectionAddress DummySectionAddress()
         {
             return new SectionAddress(Project.MainScript, Project.MainScript.Sections["Process"]);
         }
+        #endregion
 
-        public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
+        #region Eval
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, rawCode, type, check, out _);
+            SectionAddress addr = DummySectionAddress();
+            return Eval(s, addr, rawCode, type, check, out _);
         }
 
-        public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
+            SectionAddress addr = DummySectionAddress();
+            return Eval(s, addr, rawCode, type, check, out cmd);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, SectionAddress addr, string rawCode, CodeType type, ErrorCheck check)
+        {
+            return Eval(s, addr, rawCode, type, check, out _);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, SectionAddress addr, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
             // Create CodeCommand
-            SectionAddress addr = EngineTests.DummySectionAddress();
             cmd = CodeParser.ParseStatement(rawCode, addr);
             if (cmd.Type == CodeType.Error)
             {
-                CodeInfo_Error info = cmd.Info as CodeInfo_Error;
-                Debug.Assert(info != null, "Internal Logic Error");
-
+                CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
                 Console.WriteLine(info.ErrorMessage);
-                Assert.IsTrue(check == ErrorCheck.ParserError);
-                return s;
+
+                Assert.AreEqual(ErrorCheck.ParserError, check);
+                return new List<LogInfo>();
             }
-            Assert.IsTrue(cmd.Type == type);
+            Assert.AreEqual(type, cmd.Type);
 
             // Run CodeCommand
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
 
             // Assert
-            EngineTests.CheckErrorLogs(logs, check);
+            CheckErrorLogs(logs, check);
 
-            // Return EngineState
-            return s;
+            // Return logs
+            return logs;
         }
+        #endregion
 
-        public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check)
+        #region EvalLines
+        public static List<LogInfo> EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check)
         {
-            EngineState s = EngineTests.CreateEngineState();
-            return EngineTests.Eval(s, rawCode, type, check);
+            return EvalLines(s, rawCodes, check, out _);
         }
 
-        public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            return EngineTests.Eval(s, rawCode, type, check, out cmd);
-        }
-
-        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check)
-        {
-            return EvalLines(s, rawCodes, type, check, out List<CodeCommand> dummy);
-        }
-
-        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check, out List<CodeCommand> cmds)
+        public static List<LogInfo> EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
             // Create CodeCommand
-            SectionAddress addr = EngineTests.DummySectionAddress();
+            SectionAddress addr = DummySectionAddress();
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
             if (errorLogs.Any(x => x.State == LogState.Error))
-            { 
-                Assert.IsTrue(check == ErrorCheck.ParserError);
-                return s;
+            {
+                Assert.AreEqual(ErrorCheck.ParserError, check);
+                return new List<LogInfo>();
             }
-            Assert.IsTrue(cmds[0].Type == type);
+            
+            // Reset halt flags
+            s.ResetFull();
 
-            // Run CodeCommand
-            List<LogInfo> logs = Engine.ExecuteCommand(s, cmds[0]);
+            // Run CodeCommands
+            return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+        }
+        #endregion
 
-            // Assert
-            EngineTests.CheckErrorLogs(logs, check);
-
-            // Return EngineState
-            return s;
+        #region EvalOptLines
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
+        {
+            SectionAddress addr = DummySectionAddress();
+            return EvalOptLines(s, addr, opType, rawCodes, check, out _);
         }
 
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        {
+            SectionAddress addr = DummySectionAddress();
+            return EvalOptLines(s, addr, opType, rawCodes, check, out cmds);
+        }
+
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="addr"></param>
+        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, SectionAddress addr, CodeType? opType, List<string> rawCodes, ErrorCheck check)
+        {
+            return EvalOptLines(s, addr, opType, rawCodes, check, out _);
+        }
+
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="addr"></param>
+        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, SectionAddress addr, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        {
+            // Parse CodeCommand
+            cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
+
+            if (errorLogs.Any(x => x.State == LogState.Error))
+            {
+                Assert.AreEqual(ErrorCheck.ParserError, check);
+                return new List<LogInfo>();
+            }
+
+            if (opType is CodeType type)
+            {
+                Assert.AreEqual(1, cmds.Count);
+                Assert.AreEqual(type, cmds[0].Type);
+            }
+            else
+            {
+                Assert.IsTrue(1 < cmds.Count);
+            }
+
+            // Reset halt flags
+            s.ResetFull();
+
+            // Run CodeCommands
+            return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+        }
+        #endregion
+
+        #region EvalScript
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = "Process")
+        {
+            return EvalScript(treePath, check, null, entrySection);
+        }
+
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> applySetting, string entrySection = "Process")
+        {
+            Script sc = Project.GetScriptByTreePath(treePath);
+            Assert.IsNotNull(sc);
+
+            EngineState s = CreateEngineState(true, sc, entrySection);
+
+            Engine engine = new Engine(s);
+            applySetting?.Invoke(s);
+
+            Task<int> t = engine.Run($"Test [{sc.Title}]");
+            t.Wait();
+            int buildId = t.Result;
+            List<DB_BuildLog> buildLogs = s.Logger.Db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId).ToList();
+
+            List<LogInfo> logs = new List<LogInfo>(buildLogs.Count);
+            foreach (DB_BuildLog buildLog in buildLogs)
+                logs.Add(new LogInfo(buildLog));
+
+            CheckErrorLogs(logs, check);
+
+            return (s, logs);
+        }
+        #endregion
+
+        #region CheckErrorLogs
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)
         {
             switch (check)
@@ -211,6 +329,5 @@ namespace PEBakery.Tests.Core
             }
         }
         #endregion
-
     }
 }

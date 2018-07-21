@@ -12,7 +12,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public LicenseD:\Jang\Build\Source\PEBakery\pebakery\PEBakery\Core\Commands\CommandControl.cs
+    You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     Additional permission under GNU GPL version 3 section 7
@@ -29,13 +29,11 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Media;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
@@ -79,7 +77,7 @@ namespace PEBakery.Core.Commands
 
                         #region Set UI
                         Script sc = cmd.Addr.Script;
-                        ScriptSection iface = sc.GetInterface(out _);
+                        ScriptSection iface = sc.GetInterfaceSection(out _);
                         if (iface == null)
                             goto case false;
 
@@ -128,9 +126,9 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
-            // Does section exists?
+            // Does section exist?
             if (!sc.Sections.ContainsKey(sectionName))
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 

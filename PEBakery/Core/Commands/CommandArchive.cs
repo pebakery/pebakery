@@ -33,8 +33,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.Exceptions;
 
 namespace PEBakery.Core.Commands
 {
@@ -45,14 +43,14 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
-            
+
             ArchiveCompressFormat arcType = info.Format;
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
 
             ArchiveHelper.CompressLevel compLevel = ArchiveHelper.CompressLevel.Normal;
             if (info.CompressLevel != null)
-                compLevel = (ArchiveHelper.CompressLevel) info.CompressLevel;
+                compLevel = (ArchiveHelper.CompressLevel)info.CompressLevel;
 
             Encoding encoding = info.Encoding;
             if (info.Encoding == null)
@@ -287,7 +285,7 @@ namespace PEBakery.Core.Commands
                         {
                             result = cab.ExtractAll(tempDir, out List<string> fileList);
                             if (2 < fileList.Count) // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
-                            { 
+                            {
                                 logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain only a single file"));
                                 return;
                             }

@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20180603과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20180711과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -92,7 +92,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   094과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   095과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string EngineVersion {
             get {
@@ -122,7 +122,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   0.9.4과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   0.9.5과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string StringVersion {
             get {
@@ -131,7 +131,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   0.9.4 beta4과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   0.9.5 beta5과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string StringVersionFull {
             get {

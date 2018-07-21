@@ -32,12 +32,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -49,9 +47,7 @@ using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
-    /// <summary>
-    /// UtilityWindow.xaml에 대한 상호 작용 논리
-    /// </summary>
+    // ReSharper disable RedundantExtendsListEntry
     public partial class UtilityWindow : Window
     {
         #region Field and Constructor
@@ -149,7 +145,7 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref Engine.WorkingLock);
 
                 Project project = m.CodeBox_CurrentProject;
-                Script sc = project.LoadScriptMonkeyPatch(m.CodeFile);
+                Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
 
                 Logger logger = null;
                 SettingViewModel setting = null;
@@ -168,7 +164,7 @@ namespace PEBakery.WPF
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
-                s.SetOption(setting);
+                s.SetOptions(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -234,7 +230,7 @@ namespace PEBakery.WPF
                         CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
                         Debug.Assert(info != null, "Invalid CodeInfo");
 
-                        if (!macro.MacroDict.ContainsKey(info.MacroType))
+                        if (!macro.GlobalDict.ContainsKey(info.MacroType))
                             errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
                     }
                 }
@@ -259,9 +255,9 @@ namespace PEBakery.WPF
 
         #region InputBinding Event
         public static RoutedUICommand CodeBoxSaveCommand { get; } = new RoutedUICommand("Save", "Save", typeof(UtilityWindow));
-        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow), 
+        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow),
             new InputGestureCollection { new KeyGesture(Key.F5, ModifierKeys.Control) });
-            
+
         private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = m.TabIndex == 0;
@@ -346,7 +342,7 @@ Description=Test Commands
 
 ";
                     }
-                }               
+                }
 
                 OnPropertyUpdate("CodeBox_SelectedProjectIndex");
             }

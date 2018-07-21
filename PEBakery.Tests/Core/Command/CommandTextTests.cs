@@ -1,12 +1,39 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿/*
+    Copyright (C) 2017-2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+*/
+
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using PEBakery.Core;
-using System.IO;
 using PEBakery.Helper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -17,30 +44,63 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandText")]
-        public void Text_TXTAddLine()
-        { // TXTAddLine,<FileName>,<Line>,<Mode>
+        public void TXTAddLine()
+        {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+                string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
+
                 // Test empty string
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Append", tempFile, string.Empty, "C\r\n");
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Prepend", tempFile, string.Empty, "C\r\n");
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Append", tempFile, string.Empty, "C\r\n");
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Prepend", tempFile, string.Empty, "C\r\n");
 
                 // Test normal text
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Append", tempFile, "A\r\nB", "A\r\nB\r\nC\r\n");
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Prepend", tempFile, "A\r\nB", "C\r\nA\r\nB\r\n");
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Append", tempFile, "A\r\nB", "A\r\nB\r\nC\r\n");
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,Prepend", tempFile, "A\r\nB", "C\r\nA\r\nB\r\n");
 
                 // Test unicode text
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},나,Append", tempFile, "가\r\n", "가\r\n나\r\n");
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},나,Append", tempFile, "가\r\n", "가\r\n나\r\n");
 
                 // Test error
-                Text_Template(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,ErrorMode", tempFile, string.Empty, string.Empty, ErrorCheck.ParserError);           
+                SingleTemplate(s, CodeType.TXTAddLine, $@"TXTAddLine,{tempFile},C,ErrorMode", tempFile, string.Empty, string.Empty, ErrorCheck.ParserError);
+
+                // Optimization
+                OptTemplate(s, CodeType.TXTAddLineOp, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Append",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile},Z,Append",
+                }, tempFile, string.Empty, "X\r\nY\r\nZ\r\n");
+                OptTemplate(s, CodeType.TXTAddLineOp, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Append",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile},Z,Append",
+                }, tempFile, "A\r\nB", "A\r\nB\r\nX\r\nY\r\nZ\r\n");
+                OptTemplate(s, CodeType.TXTAddLineOp, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Prepend",
+                    $@"TXTAddLine,{tempFile},Y,Prepend",
+                    $@"TXTAddLine,{tempFile},Z,Prepend",
+                }, tempFile, "A\r\nB", "Z\r\nY\r\nX\r\nA\r\nB");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Append",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile2},Z,Append",
+                }, tempFile, "A\r\nB", "A\r\nB\r\nX\r\nY\r\n");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTAddLine,{tempFile},X,Prepend",
+                    $@"TXTAddLine,{tempFile},Y,Prepend",
+                    $@"TXTAddLine,{tempFile},Y,Append",
+                    $@"TXTAddLine,{tempFile},Z,Prepend",
+                }, tempFile, "A\r\nB", "Z\r\nY\r\nX\r\nA\r\nB\r\nY\r\n");
             }
             finally
             {
@@ -53,24 +113,37 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandText")]
-        public void Text_TXTReplace()
-        { // TXTReplace,<FileName>,<OldStr>,<NewStr>
+        public void TXTReplace()
+        {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                Text_Template(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "ABCD", "XYZCD");
-                Text_Template(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},ab,XYZ", tempFile, "ABCD", "XYZCD");
-                Text_Template(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "abcd", "XYZcd");
-                Text_Template(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},ab,XYZ", tempFile, "abcd", "XYZcd");
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+                string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
+
+                SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "ABCD", "XYZCD");
+                SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},ab,XYZ", tempFile, "ABCD", "XYZCD");
+                SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},AB,XYZ", tempFile, "abcd", "XYZcd");
+                SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},ab,XYZ", tempFile, "abcd", "XYZcd");
 
                 // Unicode, NewLine Test
-                Text_Template(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},#$x,나다", tempFile, "가\r\n라", "가나다라");
+                SingleTemplate(s, CodeType.TXTReplace, $@"TXTReplace,{tempFile},#$x,나다", tempFile, "가\r\n라", "가나다라");
+
+                // Optimization
+                OptTemplate(s, CodeType.TXTReplaceOp, new List<string>
+                {
+                    $@"TXTReplace,{tempFile},AB,PE",
+                    $@"TXTReplace,{tempFile},PE,XY",
+                    $@"TXTReplace,{tempFile},XYZ,TEB",
+                }, tempFile, "ABC\r\nXYZ\r\nABC\r\n가나다", "XYC\r\nTEB\r\nXYC\r\n가나다");
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTReplace,{tempFile},AB,PE",
+                    $@"TXTReplace,{tempFile2},XYZ,TEB",
+                }, tempFile, "ABC\r\nXYZ\r\nABC\r\n가나다", "PEC\r\nXYZ\r\nPEC\r\n가나다");
             }
             finally
             {
@@ -83,48 +156,59 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandText")]
-        public void Text_TXTDelLine()
-        { // TXTDelLine,<FileName>,<DeleteLine>
+        public void TXTDelLine()
+        {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
-
-            string sampleStr = Generate_SampleText(true, true, true, true);
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string sampleStr = GenerateSampleText(true, true, true, true);
             try
             {
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
+                string tempFile2 = Path.Combine(tempDir, "TXTReplace2.txt");
+
                 // Test empty string
                 // Strange, but WB082 works like this
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},Z", tempFile, string.Empty, string.Empty);
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},Z", tempFile, string.Empty, string.Empty);
 
                 // Test normal text
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},AB", tempFile, sampleStr, Generate_SampleText(false, true, true, true));
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},ab", tempFile, sampleStr, Generate_SampleText(true, true, true, true));
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},D", tempFile, sampleStr, Generate_SampleText(true, false, true, true));
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},d", tempFile, sampleStr, Generate_SampleText(true, true, true, true));
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},Z", tempFile, sampleStr, Generate_SampleText(true, true, true, true));
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},z", tempFile, sampleStr, Generate_SampleText(true, true, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},AB", tempFile, sampleStr, GenerateSampleText(false, true, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},ab", tempFile, sampleStr, GenerateSampleText(true, true, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},D", tempFile, sampleStr, GenerateSampleText(true, false, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},d", tempFile, sampleStr, GenerateSampleText(true, true, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},Z", tempFile, sampleStr, GenerateSampleText(true, true, true, true));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},z", tempFile, sampleStr, GenerateSampleText(true, true, true, true));
 
                 // Test unicode text
-                Text_Template(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},가", tempFile, sampleStr, Generate_SampleText(true, true, true, false));
+                SingleTemplate(s, CodeType.TXTDelLine, $@"TXTDelLine,{tempFile},가", tempFile, sampleStr, GenerateSampleText(true, true, true, false));
+
+                // Optimization
+                OptTemplate(s, CodeType.TXTDelLineOp, new List<string>
+                {
+                    $@"TXTDelLine,{tempFile},AB",
+                    $@"TXTDelLine,{tempFile},XY",
+                }, tempFile, sampleStr, GenerateSampleText(false, true, false, true));
+                OptTemplate(s, null, new List<string>
+                {
+                    $@"TXTDelLine,{tempFile},AB",
+                    $@"TXTDelLine,{tempFile2},XY",
+                }, tempFile, sampleStr, GenerateSampleText(false, true, true, true));
             }
             finally
             {
                 Directory.Delete(tempDir, true);
             }
-        }
 
-        public string Generate_SampleText(bool t1, bool t2, bool t3, bool t4)
-        {
-            StringBuilder b = new StringBuilder();
-            if (t1) b.AppendLine("ABC");
-            if (t2) b.AppendLine("DEF");
-            if (t3) b.AppendLine("XYZ");
-            if (t4) b.AppendLine("가나다");
-            return b.ToString();
+            string GenerateSampleText(bool t1, bool t2, bool t3, bool t4)
+            {
+                StringBuilder b = new StringBuilder();
+                if (t1) b.AppendLine("ABC");
+                if (t2) b.AppendLine("DEF");
+                if (t3) b.AppendLine("XYZ");
+                if (t4) b.AppendLine("가나다");
+                return b.ToString();
+            }
         }
         #endregion
 
@@ -132,26 +216,25 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandText")]
-        public void Text_TXTDelSpaces()
-        { // TXTDelSpaces,<FileName>
+        public void TXTDelSpaces()
+        {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("A B C");
-            b.AppendLine(" D E F");
-            b.AppendLine("  X Y Z");
-            b.AppendLine();
-            b.AppendLine("\t가 나 다");
-            string sampleStr = b.ToString();
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                Text_Template(s, CodeType.TXTDelSpaces, $@"TXTDelSpaces,{tempFile}", tempFile, string.Empty, string.Empty);
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("A B C");
+                b.AppendLine(" D E F");
+                b.AppendLine("  X Y Z");
+                b.AppendLine();
+                b.AppendLine("\t가 나 다");
+                string sampleStr = b.ToString();
+
+                SingleTemplate(s, CodeType.TXTDelSpaces, $@"TXTDelSpaces,{tempFile}", tempFile, string.Empty, string.Empty);
 
                 b = new StringBuilder();
                 b.AppendLine("A B C");
@@ -159,7 +242,7 @@ namespace PEBakery.Tests.Core.Command
                 b.AppendLine("X Y Z");
                 b.AppendLine();
                 b.AppendLine("가 나 다");
-                Text_Template(s, CodeType.TXTDelSpaces, $@"TXTDelSpaces,{tempFile}", tempFile, sampleStr, b.ToString());
+                SingleTemplate(s, CodeType.TXTDelSpaces, $@"TXTDelSpaces,{tempFile}", tempFile, sampleStr, b.ToString());
             }
             finally
             {
@@ -172,28 +255,27 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandText")]
-        public void Text_TXTDelEmptyLines()
-        { // TXTDelEmptyLines,<FileName>
+        public void TXTDelEmptyLines()
+        {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.GetTempFileName();
-            File.Delete(tempDir);
-            Directory.CreateDirectory(tempDir);
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("A B C");
-            b.AppendLine(" D E F");
-            b.AppendLine("  X Y Z");
-            b.AppendLine();
-            b.AppendLine("\t가 나 다");
-            b.AppendLine();
-            b.AppendLine("힣");
-            string sampleStr = b.ToString();
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                Text_Template(s, CodeType.TXTDelEmptyLines, $@"TXTDelEmptyLines,{tempFile}", tempFile, string.Empty, string.Empty);
+                Directory.CreateDirectory(tempDir);
+                string tempFile = Path.Combine(tempDir, "Sample.txt");
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("A B C");
+                b.AppendLine(" D E F");
+                b.AppendLine("  X Y Z");
+                b.AppendLine();
+                b.AppendLine("\t가 나 다");
+                b.AppendLine();
+                b.AppendLine("힣");
+                string sampleStr = b.ToString();
+
+                SingleTemplate(s, CodeType.TXTDelEmptyLines, $@"TXTDelEmptyLines,{tempFile}", tempFile, string.Empty, string.Empty);
 
                 b = new StringBuilder();
                 b.AppendLine("A B C");
@@ -201,7 +283,7 @@ namespace PEBakery.Tests.Core.Command
                 b.AppendLine("  X Y Z");
                 b.AppendLine("\t가 나 다");
                 b.AppendLine("힣");
-                Text_Template(s, CodeType.TXTDelEmptyLines, $@"TXTDelEmptyLines,{tempFile}", tempFile, sampleStr, b.ToString());
+                SingleTemplate(s, CodeType.TXTDelEmptyLines, $@"TXTDelEmptyLines,{tempFile}", tempFile, sampleStr, b.ToString());
             }
             finally
             {
@@ -210,22 +292,19 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region Utility
-        private void Text_Template(
-            EngineState s,
-            CodeType type,
-            string rawCode,
-            string testFile,
-            string sampleStr,
-            string comp,
+        #region Template
+        private static void SingleTemplate(
+            EngineState s, CodeType type,
+            string rawCode, string testFile, string sampleStr, string compStr,
             ErrorCheck check = ErrorCheck.Success)
         {
             if (File.Exists(testFile))
                 File.Delete(testFile);
-            File.Create(testFile).Close();
             try
             {
-                FileHelper.WriteTextBOM(testFile, Encoding.UTF8);
+                File.Create(testFile).Close();
+
+                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -240,7 +319,42 @@ namespace PEBakery.Tests.Core.Command
                         dest = r.ReadToEnd();
                     }
 
-                    Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+                    Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
+                }
+            }
+            finally
+            {
+                if (File.Exists(testFile))
+                    File.Delete(testFile);
+            }
+        }
+
+        private static void OptTemplate(
+            EngineState s, CodeType? opType,
+            List<string> rawCodes, string testFile, string sampleStr, string compStr,
+            ErrorCheck check = ErrorCheck.Success)
+        {
+            if (File.Exists(testFile))
+                File.Delete(testFile);
+            File.Create(testFile).Close();
+            try
+            {
+                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
+                {
+                    w.Write(sampleStr);
+                }
+
+                EngineTests.EvalOptLines(s, opType, rawCodes, check);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string dest;
+                    using (StreamReader r = new StreamReader(testFile, Encoding.UTF8))
+                    {
+                        dest = r.ReadToEnd();
+                    }
+
+                    Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                 }
             }
             finally

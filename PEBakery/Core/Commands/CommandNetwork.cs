@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -35,7 +34,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -80,10 +79,7 @@ namespace PEBakery.Core.Commands
                 destFile = destPath;
             }
 
-            s.MainViewModel.BuildCommandProgressTitle = "WebGet Progress";
-            s.MainViewModel.BuildCommandProgressText = string.Empty;
-            s.MainViewModel.BuildCommandProgressMax = 100;
-            s.MainViewModel.BuildCommandProgressShow = true;
+            s.MainViewModel.SetBuildCommandProgress("WebGet Progress");
             try
             {
                 if (info.HashType == HashHelper.HashType.None)
@@ -154,10 +150,7 @@ namespace PEBakery.Core.Commands
             }
             finally
             {
-                s.MainViewModel.BuildCommandProgressShow = false;
-                s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                s.MainViewModel.BuildCommandProgressText = string.Empty;
-                s.MainViewModel.BuildCommandProgressValue = 0;
+                s.MainViewModel.ResetBuildCommandProgress();
             }
 
             return logs;
@@ -178,7 +171,7 @@ namespace PEBakery.Core.Commands
             Stopwatch watch = Stopwatch.StartNew();
             using (WebClient client = new WebClient())
             {
-                string userAgent = s.CustomUserAgent ?? $"PEBakery/{Properties.Resources.EngineVersion}";
+                string userAgent = s.CustomUserAgent ?? Engine.DefaultUserAgent;
                 client.Headers.Add("User-Agent", userAgent);
 
                 client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>

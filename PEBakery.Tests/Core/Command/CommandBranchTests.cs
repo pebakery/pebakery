@@ -1,4 +1,31 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿/*
+    Copyright (C) 2017-2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+*/
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Core.Commands;
 using System;
@@ -6,29 +33,115 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
     public class CommandBranchTests
     {
+        #region RunExec
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void RunExec()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-Run");
+            ScriptTemplate(scPath, "Process-Exec");
+        }
+        #endregion
+
+        #region Loop
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Loop()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, string compStr, bool letterCompat, ErrorCheck check = ErrorCheck.Success)
+            {
+                void Setting(EngineState x) => x.CompatAllowLetterInLoop = letterCompat;
+
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, Setting, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals(compStr, StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-Loop01", "1|Z|2|Z|3|Z", false);
+            ScriptTemplate(scPath, "Process-Loop02", "1|Z|2|Z|3|Z", false);
+            ScriptTemplate(scPath, "Process-LoopLetter01", "C|Z|D|Z|E|Z", false);
+            ScriptTemplate(scPath, "Process-LoopLetter02", "C|Z|D|Z|E|Z", false);
+
+            ScriptTemplate(scPath, "Process-LoopCompat01", "C|Z|D|Z|E|Z", true);
+            ScriptTemplate(scPath, "Process-LoopCompat02", "C|Z|D|Z|E|Z", true);
+            ScriptTemplate(scPath, "Process-LoopCompat01", string.Empty, false, ErrorCheck.Error);
+            ScriptTemplate(scPath, "Process-LoopCompat02", string.Empty, false, ErrorCheck.Error);
+        }
+        #endregion
+
+        #region IfElse
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void IfElse()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-IfElse");
+        }
+        #endregion
+
+        #region IfBeginEnd
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void IfBeginEnd()
+        {
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Branch", "General.script");
+
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
+                string destStr = s.Variables["Dest"];
+                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+            }
+
+            ScriptTemplate(scPath, "Process-IfBeginEnd");
+        }
+        #endregion
+
         #region ExistFile
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistFile()
+        public void IfExistFile()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.ExistFile;
+            const BranchConditionType type = BranchConditionType.ExistFile;
 
             string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
             string invalid = Path.GetTempFileName();
             File.Delete(invalid);
 
-            cond = new BranchCondition(type, false, kernel32);
+            BranchCondition cond = new BranchCondition(type, false, kernel32);
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -38,10 +151,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, invalid);
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,ExistFile,{kernel32},Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,ExistFile,{invalid},Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,ExistFile,{kernel32},Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,ExistFile,{invalid},Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,ExistFile,{kernel32},Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,ExistFile,{invalid},Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,ExistFile,{kernel32},Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,ExistFile,{invalid},Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -49,17 +162,16 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistDir()
+        public void IfExistDir()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.ExistDir;
+            const BranchConditionType type = BranchConditionType.ExistDir;
 
             string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             string invalid = Path.GetTempFileName();
             File.Delete(invalid);
 
-            cond = new BranchCondition(type, false, winDir);
+            BranchCondition cond = new BranchCondition(type, false, winDir);
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -69,10 +181,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, invalid);
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,ExistDir,{winDir},Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,ExistDir,{invalid},Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,ExistDir,{winDir},Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,ExistDir,{invalid},Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,ExistDir,{winDir},Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,ExistDir,{invalid},Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,ExistDir,{winDir},Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,ExistDir,{invalid},Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -80,11 +192,10 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistSection()
+        public void IfExistSection()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.ExistSection;
+            const BranchConditionType type = BranchConditionType.ExistSection;
 
             string tempPath = Path.GetTempFileName();
             try
@@ -98,7 +209,7 @@ namespace PEBakery.Tests.Core.Command
                     w.WriteLine("B=2");
                 }
 
-                cond = new BranchCondition(type, false, tempPath, "Hello");
+                BranchCondition cond = new BranchCondition(type, false, tempPath, "Hello");
                 Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
                 cond = new BranchCondition(type, false, tempPath, "PEBakery");
                 Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -108,17 +219,17 @@ namespace PEBakery.Tests.Core.Command
                 cond = new BranchCondition(type, true, tempPath, "PEBakery");
                 Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-                BranchCondition_Single_Template(s, $"If,ExistSection,{tempPath},Hello,Set,%Dest%,T", "T");
-                BranchCondition_Single_Template(s, $"If,ExistSection,{tempPath},PEBakery,Set,%Dest%,T", "F");
-                BranchCondition_Single_Template(s, $"If,Not,ExistSection,{tempPath},Hello,Set,%Dest%,T", "F");
-                BranchCondition_Single_Template(s, $"If,Not,ExistSection,{tempPath},PEBakery,Set,%Dest%,T", "T");
+                SingleTemplate(s, $"If,ExistSection,{tempPath},Hello,Set,%Dest%,T", "T");
+                SingleTemplate(s, $"If,ExistSection,{tempPath},PEBakery,Set,%Dest%,T", "F");
+                SingleTemplate(s, $"If,Not,ExistSection,{tempPath},Hello,Set,%Dest%,T", "F");
+                SingleTemplate(s, $"If,Not,ExistSection,{tempPath},PEBakery,Set,%Dest%,T", "T");
             }
             finally
             {
                 if (File.Exists(tempPath))
                     File.Delete(tempPath);
             }
-            
+
         }
         #endregion
 
@@ -126,13 +237,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistRegSubKey()
+        public void IfExistRegSubKey()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.ExistRegSubKey;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.ExistRegSubKey;
 
-            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
+            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -142,10 +252,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -153,13 +263,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistRegValue()
+        public void IfExistRegValue()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.ExistRegValue;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.ExistRegValue;
 
-            cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
+            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -173,12 +282,12 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectMusic,NoFilePath,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -186,13 +295,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistRegMulti()
+        public void IfExistRegMulti()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.ExistRegMulti;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.ExistRegMulti;
 
-            cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
+            BranchCondition cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -206,12 +314,12 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -219,17 +327,16 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistVar()
+        public void IfExistVar()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.ExistVar;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.ExistVar;
 
             s.Variables.SetValue(VarsType.Fixed, "F", "ixed");
             s.Variables.SetValue(VarsType.Fixed, "G", "lobal");
             s.Variables.SetValue(VarsType.Fixed, "L", "ocal");
 
-            cond = new BranchCondition(type, false, "%F%");
+            BranchCondition cond = new BranchCondition(type, false, "%F%");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%G%");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -247,14 +354,14 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "%N%");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,ExistVar,%F%,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistVar,%G%,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistVar,%L%,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistVar,%N%,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistVar,%F%,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistVar,%G%,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistVar,%L%,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistVar,%N%,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistVar,%F%,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistVar,%G%,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistVar,%L%,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistVar,%N%,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistVar,%F%,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistVar,%G%,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistVar,%L%,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistVar,%N%,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -262,18 +369,17 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfExistMacro()
+        public void IfExistMacro()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.ExistMacro;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.ExistMacro;
 
             // Test if Unicode can be used in macro name
-            s.Macro.MacroDict["대한"] = CodeParser.ParseStatement("Echo,054-790-6641", EngineTests.DummySectionAddress());
+            s.Macro.GlobalDict["대한"] = CodeParser.ParseStatement("Echo,054-790-6641", EngineTests.DummySectionAddress());
             s.Macro.LocalDict["Sonic"] = CodeParser.ParseStatement("Echo,Tails", EngineTests.DummySectionAddress());
             s.Variables.SetValue(VarsType.Local, "Tails", "Sonic");
 
-            cond = new BranchCondition(type, false, "대한");
+            BranchCondition cond = new BranchCondition(type, false, "대한");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "민국");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -291,14 +397,14 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "%Tails%");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,ExistMacro,대한,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistMacro,민국,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,ExistMacro,Sonic,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,ExistMacro,%Tails%,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,ExistMacro,대한,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistMacro,민국,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,ExistMacro,Sonic,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,ExistMacro,%Tails%,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,ExistMacro,대한,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistMacro,민국,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,ExistMacro,Sonic,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,ExistMacro,%Tails%,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,ExistMacro,대한,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistMacro,민국,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,ExistMacro,Sonic,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,ExistMacro,%Tails%,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -306,15 +412,14 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfWimExistIndex()
+        public void IfWimExistIndex()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.WimExistIndex;
+            const BranchConditionType type = BranchConditionType.WimExistIndex;
 
             string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
 
-            cond = new BranchCondition(type, false, srcWim, "0");
+            BranchCondition cond = new BranchCondition(type, false, srcWim, "0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, srcWim, "1");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -336,16 +441,16 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, srcWim, "4");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},0,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},1,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},2,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},3,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},4,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},0,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},1,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},2,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},3,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},4,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistIndex,{srcWim},0,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,WimExistIndex,{srcWim},1,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistIndex,{srcWim},2,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistIndex,{srcWim},3,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistIndex,{srcWim},4,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistIndex,{srcWim},0,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,Not,WimExistIndex,{srcWim},1,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistIndex,{srcWim},2,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistIndex,{srcWim},3,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistIndex,{srcWim},4,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -353,15 +458,14 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfWimExistFile()
+        public void IfWimExistFile()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.WimExistFile;
+            const BranchConditionType type = BranchConditionType.WimExistFile;
 
             string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
 
-            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            BranchCondition cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, srcWim, "1", "B");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -371,10 +475,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, srcWim, "1", "B");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -382,15 +486,14 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfWimExistDir()
+        public void IfWimExistDir()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.WimExistDir;
+            const BranchConditionType type = BranchConditionType.WimExistDir;
 
             string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
 
-            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            BranchCondition cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, srcWim, "1", "B");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -400,10 +503,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, srcWim, "1", "B");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,Not,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -411,7 +514,7 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfWimExistImageInfo()
+        public void IfWimExistImageInfo()
         {
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.WimExistImageInfo;
@@ -436,14 +539,14 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, srcWim, "2", "Name");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,Not,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "F");
+            SingleTemplate(s, $"If,Not,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "T");
+            SingleTemplate(s, $"If,Not,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -451,14 +554,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfEqual()
+        public void IfEqual()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.Equal;
+            const BranchConditionType type = BranchConditionType.Equal;
 
             // Equal
-            cond = new BranchCondition(type, false, "A", "A");
+            BranchCondition cond = new BranchCondition(type, false, "A", "A");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -499,29 +601,29 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "-1", "0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Equal,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Equal,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Equal,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,Equal,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,Equal,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,Equal,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Equal,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,Equal,11,Set,%Dest%,T", "F");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,==,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,==,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,==,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,==,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,==,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,==,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,==,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,==,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,==,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,==,11,Set,%Dest%,T", "F");
 
-            BranchCondition_Comparison_Template(s, "A", "If,Not,%Src%,Equal,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,NotEqual,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,NotEqual,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,Not,%Src%,Equal,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,Not,%Src%,Equal,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,Not,%Src%,Equal,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,NotEqual,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,NotEqual,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,Not,%Src%,Equal,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,Not,%Src%,Equal,11,Set,%Dest%,T", "T");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,!=,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,!=,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,!=,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,!=,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,!=,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,!=,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,!=,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,!=,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,!=,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,!=,11,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -529,13 +631,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfSmaller()
+        public void IfSmaller()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.Smaller;
+            const BranchConditionType type = BranchConditionType.Smaller;
 
-            cond = new BranchCondition(type, false, "11.1", "11.1.0");
+            BranchCondition cond = new BranchCondition(type, false, "11.1", "11.1.0");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -569,17 +670,17 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Smaller,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Smaller,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Smaller,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Smaller,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Smaller,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,Smaller,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,Smaller,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Smaller,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Smaller,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Smaller,11,Set,%Dest%,T", "T");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,<,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,<,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,<,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,<,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,<,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,<,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,<,11,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -587,13 +688,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfSmallerEqual()
+        public void IfSmallerEqual()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.SmallerEqual;
+            const BranchConditionType type = BranchConditionType.SmallerEqual;
 
-            cond = new BranchCondition(type, false, "11.1", "11.1.0");
+            BranchCondition cond = new BranchCondition(type, false, "11.1", "11.1.0");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -627,17 +727,17 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,SmallerEqual,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,SmallerEqual,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,SmallerEqual,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,SmallerEqual,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,SmallerEqual,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,SmallerEqual,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,SmallerEqual,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,SmallerEqual,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,SmallerEqual,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,SmallerEqual,11,Set,%Dest%,T", "T");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,<=,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,<=,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<=,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<=,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,<=,11,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,<=,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,<=,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,<=,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,<=,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,<=,11,Set,%Dest%,T", "T");
         }
         #endregion
 
@@ -645,13 +745,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfBigger()
+        public void IfBigger()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.Bigger;
+            const BranchConditionType type = BranchConditionType.Bigger;
 
-            cond = new BranchCondition(type, false, "11.1", "11.1.0");
+            BranchCondition cond = new BranchCondition(type, false, "11.1", "11.1.0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -685,17 +784,17 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Bigger,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,Bigger,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Bigger,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Bigger,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,Bigger,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,Bigger,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,Bigger,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Bigger,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,Bigger,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,Bigger,11,Set,%Dest%,T", "F");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,>,A,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,>,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>,10,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,>,A,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,>,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,>,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,>,10,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,>,11,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -703,13 +802,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfBiggerEqual()
+        public void IfBiggerEqual()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.BiggerEqual;
+            const BranchConditionType type = BranchConditionType.BiggerEqual;
 
-            cond = new BranchCondition(type, false, "11.1", "11.1.0");
+            BranchCondition cond = new BranchCondition(type, false, "11.1", "11.1.0");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -743,17 +841,17 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,BiggerEqual,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,BiggerEqual,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,BiggerEqual,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,BiggerEqual,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,BiggerEqual,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,BiggerEqual,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,BiggerEqual,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,BiggerEqual,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,BiggerEqual,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,BiggerEqual,11,Set,%Dest%,T", "F");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,>=,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,>=,a,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>=,09,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>=,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,>=,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,>=,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,>=,a,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,>=,09,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,>=,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,>=,11,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -761,13 +859,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfEqualX()
+        public void IfEqualX()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchCondition cond;
-            BranchConditionType type = BranchConditionType.EqualX;
+            const BranchConditionType type = BranchConditionType.EqualX;
 
-            cond = new BranchCondition(type, false, "A", "A");
+            BranchCondition cond = new BranchCondition(type, false, "A", "A");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -804,17 +901,17 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,EqualX,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,EqualX,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,EqualX,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,EqualX,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,EqualX,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,EqualX,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,EqualX,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,EqualX,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,EqualX,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,EqualX,11,Set,%Dest%,T", "F");
 
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,===,A,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "A", "If,%Src%,===,a,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,===,09,Set,%Dest%,T", "F");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,===,10,Set,%Dest%,T", "T");
-            BranchCondition_Comparison_Template(s, "10", "If,%Src%,===,11,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "A", "If,%Src%,===,A,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "A", "If,%Src%,===,a,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,===,09,Set,%Dest%,T", "F");
+            ComparisonTemplate(s, "10", "If,%Src%,===,10,Set,%Dest%,T", "T");
+            ComparisonTemplate(s, "10", "If,%Src%,===,11,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -822,14 +919,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
-        public void Branch_IfPing()
+        public void IfPing()
         {
             EngineState s = EngineTests.CreateEngineState();
-            BranchConditionType type = BranchConditionType.Ping;
-            BranchCondition cond;
+            const BranchConditionType type = BranchConditionType.Ping;
 
             // According to https://www.iana.org/domains/root/db, root domain .zzz does not exist
-            cond = new BranchCondition(type, false, "aaa.zzz");
+            BranchCondition cond = new BranchCondition(type, false, "aaa.zzz");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "localhost");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
@@ -847,30 +943,30 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, true, "::1");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
-            BranchCondition_Single_Template(s, @"If,Ping,aaa.zzz,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Ping,localhost,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Ping,127.0.0.1,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Ping,::1,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,Ping,aaa.zzz,Set,%Dest%,T", "T");
-            BranchCondition_Single_Template(s, @"If,Not,Ping,localhost,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,Ping,127.0.0.1,Set,%Dest%,T", "F");
-            BranchCondition_Single_Template(s, @"If,Not,Ping,::1,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Ping,aaa.zzz,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Ping,localhost,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Ping,127.0.0.1,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Ping,::1,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,Ping,aaa.zzz,Set,%Dest%,T", "T");
+            SingleTemplate(s, @"If,Not,Ping,localhost,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,Ping,127.0.0.1,Set,%Dest%,T", "F");
+            SingleTemplate(s, @"If,Not,Ping,::1,Set,%Dest%,T", "F");
         }
         #endregion
 
         #region Utility
-        public void BranchCondition_Single_Template(EngineState s, string rawCode, string comp)
-        {
+        public void SingleTemplate(EngineState s, string rawCode, string comp)
+        { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, CodeType.If, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
 
-        public void BranchCondition_Comparison_Template(EngineState s, string src, string rawCode,  string comp)
-        {
+        public void ComparisonTemplate(EngineState s, string src, string rawCode, string comp)
+        { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Src"] = src;
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, CodeType.If, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
         #endregion

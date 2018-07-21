@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -26,12 +26,13 @@
 */
 
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System.Text;
 using System.Collections.Generic;
-using PEBakery.Exceptions;
 using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core
 {
@@ -41,7 +42,7 @@ namespace PEBakery.Tests.Core
         #region Escape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_Escape()
+        public void Escape()
         {
             Escape_1();
             Escape_2();
@@ -53,7 +54,7 @@ namespace PEBakery.Tests.Core
         {
             string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, false, false);
-            string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
+            const string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -61,7 +62,7 @@ namespace PEBakery.Tests.Core
         {
             string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, true, false);
-            string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
+            const string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -69,15 +70,15 @@ namespace PEBakery.Tests.Core
         {
             string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, true, true);
-            string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
+            const string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Escape_4()
         {
-            string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]"};
+            string[] srcs = { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> dests = StringEscaper.Escape(srcs, true);
-            string[] comps = new string[]
+            string[] comps =
             {
                "Comma#$s[#$c]",
                "Space#$s[#$s]",
@@ -92,7 +93,7 @@ namespace PEBakery.Tests.Core
         #region QuoteEscape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_QuoteEscape()
+        public void QuoteEscape()
         {
             QuoteEscape_1();
             QuoteEscape_2();
@@ -141,7 +142,7 @@ namespace PEBakery.Tests.Core
         #region Unescape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_Unescape()
+        public void Unescape()
         {
             Unescape_1();
             Unescape_2();
@@ -206,7 +207,7 @@ namespace PEBakery.Tests.Core
         #region QuoteUnescape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_QuoteUnescape()
+        public void QuoteUnescape()
         {
             QuoteUnescape_1();
             QuoteUnescape_2();
@@ -244,7 +245,7 @@ namespace PEBakery.Tests.Core
         #region ExpandSectionParams
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_ExpandSectionParams()
+        public void ExpandSectionParams()
         {
             ExpandSectionParams_1();
             ExpandSectionParams_2();
@@ -261,9 +262,9 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% ##1 #1";
+            const string src = "%A% ##1 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% ##1 World";
+            const string comp = "%A% ##1 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -272,9 +273,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% ##2 #1";
+            const string src = "%A% ##2 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% ##2 World";
+            const string comp = "%A% ##2 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -283,9 +284,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% ##1";
+            const string comp = "%A% ##1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -295,9 +296,9 @@ namespace PEBakery.Tests.Core
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% ";
+            const string comp = "%A% ";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -308,7 +309,7 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
-            string[] srcs = new string[]
+            string[] srcs = 
             {
                 "A_%A%",
                 "B_%B%",
@@ -316,7 +317,7 @@ namespace PEBakery.Tests.Core
                 "D_#2"
             };
             List<string> dests = StringEscaper.ExpandSectionParams(s, srcs);
-            string[] comps = new string[]
+            string[] comps = 
             {
                 "A_%A%",
                 "B_%B%",
@@ -329,7 +330,7 @@ namespace PEBakery.Tests.Core
         }
 
         public void ExpandSectionParams_6()
-        {   
+        {
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
@@ -337,9 +338,9 @@ namespace PEBakery.Tests.Core
             Variables.SetVariable(s, "#2", "#3");
             Variables.SetVariable(s, "#3", "#1");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "Hello ";
+            const string comp = "Hello ";
 
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
@@ -349,9 +350,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.SectionReturnValue = "TEST";
 
-            string src = "##1 ##a ##r #r";
+            const string src = "##1 ##a ##r #r";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "##1 ##a ##r TEST";
+            const string comp = "##1 ##a ##r TEST";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
@@ -359,7 +360,7 @@ namespace PEBakery.Tests.Core
         #region ExpandVariables
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_ExpandVariables()
+        public void ExpandVariables()
         {
             ExpandVariables_1();
             ExpandVariables_2();
@@ -375,9 +376,9 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             s.CurSectionParams[1] = "World";
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "Hello World";
+            const string comp = "Hello World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -386,9 +387,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurSectionParams[1] = "World";
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "#$pA#$p World"; 
+            const string comp = "#$pA#$p World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -397,9 +398,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "Hello ##1";
+            const string comp = "Hello ##1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -409,9 +410,9 @@ namespace PEBakery.Tests.Core
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "Hello ";
+            const string comp = "Hello ";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -422,7 +423,7 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             s.CurSectionParams[2] = "WPF";
 
-            string[] srcs = new string[]
+            string[] srcs =
             {
                 "A_%A%",
                 "B_%B%",
@@ -430,7 +431,7 @@ namespace PEBakery.Tests.Core
                 "D_#2"
             };
             List<string> dests = StringEscaper.ExpandVariables(s, srcs);
-            string[] comps = new string[]
+            string[] comps =
             {
                 "A_#$pA#$p",
                 "B_C#",
@@ -453,9 +454,8 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
             s.CurSectionParams[1] = "#2";
 
-            string src = "%A% #1";
-            string dest;
-            try { dest = StringEscaper.ExpandVariables(s, src); }
+            const string src = "%A% #1";
+            try { StringEscaper.ExpandVariables(s, src); }
             catch (VariableCircularReferenceException) { return; }
 
             Assert.Fail();
@@ -465,7 +465,7 @@ namespace PEBakery.Tests.Core
         #region Preprocess
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_Preprocess()
+        public void Preprocess()
         {
             Preprocess_1();
             Preprocess_2();
@@ -481,9 +481,9 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
-            string comp = "Hello World";
+            const string comp = "Hello World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -492,9 +492,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
-            string comp = "%A% World";
+            const string comp = "%A% World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -503,9 +503,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
-            string comp = "Hello #1";
+            const string comp = "Hello #1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -515,9 +515,9 @@ namespace PEBakery.Tests.Core
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
-            string src = "%A% #1";
+            const string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
-            string comp = "Hello ";
+            const string comp = "Hello ";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -528,7 +528,7 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
-            string[] srcs = new string[]
+            string[] srcs =
             {
                 "A_%A%",
                 "B_%B%",
@@ -536,7 +536,7 @@ namespace PEBakery.Tests.Core
                 "D_#2"
             };
             List<string> dests = StringEscaper.Preprocess(s, srcs);
-            string[] comps = new string[]
+            string[] comps =
             {
                 "A_%A%",
                 "B_C#",
@@ -556,13 +556,13 @@ namespace PEBakery.Tests.Core
             // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
-            s.Variables.SetValue(VarsType.Local, "C", "%A%"); 
+            s.Variables.SetValue(VarsType.Local, "C", "%A%");
             Variables.SetVariable(s, "#1", "#2");
             Variables.SetVariable(s, "#2", "#3");
             Variables.SetVariable(s, "#3", "#1");
 
-            string src = "%A% #1";
-            try { string dest = StringEscaper.Preprocess(s, src); }
+            const string src = "%A% #1";
+            try { StringEscaper.Preprocess(s, src); }
             catch (VariableCircularReferenceException) { return; }
 
             Assert.Fail();
@@ -572,7 +572,7 @@ namespace PEBakery.Tests.Core
         #region PathSecurityCheck
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_PathSecurityCheck()
+        public void PathSecurityCheck()
         {
             PathSecurityCheck_1();
             PathSecurityCheck_2();
@@ -589,6 +589,7 @@ namespace PEBakery.Tests.Core
         public void PathSecurityCheck_2()
         {
             string windir = Environment.GetEnvironmentVariable("windir");
+            Assert.IsNotNull(windir);
             string path = Path.Combine(windir, "System32", "notepad.exe");
             Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
         }
@@ -596,6 +597,7 @@ namespace PEBakery.Tests.Core
         public void PathSecurityCheck_3()
         {
             string windir = Environment.GetEnvironmentVariable("ProgramFiles");
+            Assert.IsNotNull(windir);
             string path = Path.Combine(windir, "System32", "notepad.exe");
             Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
         }
@@ -605,6 +607,7 @@ namespace PEBakery.Tests.Core
             if (Environment.Is64BitProcess)
             { // Only in 64bit process
                 string windir = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                Assert.IsNotNull(windir);
                 string path = Path.Combine(windir, "System32", "notepad.exe");
                 Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
             }
@@ -614,7 +617,7 @@ namespace PEBakery.Tests.Core
         #region IsPathValid
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_IsPathValid()
+        public void IsPathValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
             {
@@ -642,7 +645,7 @@ namespace PEBakery.Tests.Core
         #region IsFileNameValid
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_IsFileNameValid()
+        public void IsFileNameValid()
         {
             void Template(string path, bool result, IEnumerable<char> more = null)
             {
@@ -670,7 +673,7 @@ namespace PEBakery.Tests.Core
         #region PackRegBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_PackRegBinary()
+        public void PackRegBinary()
         {
             PackRegBinary_1();
             PackRegBinary_2();
@@ -696,7 +699,7 @@ namespace PEBakery.Tests.Core
         #region UnpackRegBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_UnpackRegBinary()
+        public void UnpackRegBinary()
         {
             UnpackRegBinary_1();
         }
@@ -714,7 +717,7 @@ namespace PEBakery.Tests.Core
         #region PackRegMultiBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_PackRegMultiBinary()
+        public void PackRegMultiBinary()
         {
             PackRegMultiBinary_1();
         }
@@ -736,21 +739,16 @@ namespace PEBakery.Tests.Core
         #region PackRegMultiString
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_PackRegMultiString()
+        public void PackRegMultiString()
         {
-            PackRegMultiString_1();
-        }
-
-        public void PackRegMultiString_1()
-        {
-            string[] src = new string[]
+            string[] src =
             {
                 "C:\\",
                 "Hello",
                 "World",
             };
             string dest = StringEscaper.PackRegMultiString(src);
-            string comp = "C:\\#$zHello#$zWorld";
+            const string comp = "C:\\#$zHello#$zWorld";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
@@ -758,16 +756,11 @@ namespace PEBakery.Tests.Core
         #region UnpackRegMultiString
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void StringEscaper_UnpackRegMultiString()
+        public void UnpackRegMultiString()
         {
-            UnpackRegMultiString_1();
-        }
-
-        public void UnpackRegMultiString_1()
-        {
-            string src = "C:\\#$zHello#$zWorld";
+            const string src = "C:\\#$zHello#$zWorld";
             List<string> dests = StringEscaper.UnpackRegMultiString(src);
-            string[] comps = new string[]
+            string[] comps =
             {
                 "C:\\",
                 "Hello",
@@ -779,13 +772,115 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
+        #region List as Concatinated String
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void UnpackListStr()
+        {
+            void Template(string listStr, string delimiter, List<string> compList)
+            {
+                List<string> destList = StringEscaper.UnpackListStr(listStr, delimiter);
+                Assert.AreEqual(compList.Count, destList.Count);
+                for (int i = 0; i < destList.Count; i++)
+                    Assert.IsTrue(destList[i].Equals(compList[i], StringComparison.Ordinal));
+            }
+
+            Template("1|2|3|4|5", "|", new List<string>
+            {
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+            });
+            Template("1|2|3|4|5", "3", new List<string>
+            {
+                "1|2|",
+                "|4|5"
+            });
+            Template("1|2|3|4|5", "$", new List<string>
+            {
+                "1|2|3|4|5"
+            });
+            Template("1|2|3|4|5", "|3|", new List<string>
+            {
+                "1|2",
+                "4|5"
+            });
+
+            Template("|a", "|", new List<string>
+            {
+                string.Empty,
+                "a",
+            });
+            Template("a|", "|", new List<string>
+            {
+                "a",
+                string.Empty,
+            });
+            Template("|10|98||50|32||0|1|5|2|4|3|", "|", new List<string>
+            {
+                string.Empty,
+                "10",
+                "98",
+                string.Empty,
+                "50",
+                "32",
+                string.Empty,
+                "0",
+                "1",
+                "5",
+                "2",
+                "4",
+                "3",
+                string.Empty,
+            });
+        }
+
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void PackListStr()
+        {
+            void Template(List<string> list, string delimiter, string comp)
+            {
+                string dest = StringEscaper.PackListStr(list, delimiter);
+                Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            }
+
+            Template(new List<string>
+            {
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+            }, "|", "1|2|3|4|5");
+            Template(new List<string>
+            {
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+            }, "$", "1$2$3$4$5");
+            Template(new List<string>
+            {
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+            }, "12", "1122123124125");
+        }
+        #endregion
+
         #region Utility
-        private static string sampleString = null;
+        private static string _sampleString = null;
         public static string SampleString
         {
             get
             {
-                if (sampleString == null)
+                if (_sampleString == null)
                 {
                     StringBuilder b = new StringBuilder();
                     b.AppendLine("Comma [,]");
@@ -796,12 +891,9 @@ namespace PEBakery.Tests.Core
                     b.AppendLine("Sharp [#]");
                     b.AppendLine("NewLine [");
                     b.Append("]");
-                    return sampleString = b.ToString();
+                    return _sampleString = b.ToString();
                 }
-                else
-                {
-                    return sampleString;
-                }
+                return _sampleString;
             }
         }
         #endregion

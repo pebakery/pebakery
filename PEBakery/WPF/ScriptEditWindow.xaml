@@ -147,7 +147,7 @@
                                            VerticalAlignment="Center"
                                            FontWeight="Bold"
                                            Text="Level"/>
-                                <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
+                                <custom:NumberBox Grid.Row="2" Grid.Column="3"
                                                       x:Name="ScriptLevel"
                                                       VerticalAlignment="Center"
                                                       Minimum="-256"
@@ -439,31 +439,31 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="X" />
-                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Y"/>
-                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
-                                                              Minimum="0"
-                                                              IsEnabled="{Binding UICtrlEditEnabled}"
-                                                              Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                                          Minimum="0"
+                                                          IsEnabled="{Binding UICtrlEditEnabled}"
+                                                          Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Width"/>
-                                        <custom:FreeNumberBox Grid.Row="4" Grid.Column="1"
-                                                              Minimum="0"
-                                                              IsEnabled="{Binding UICtrlEditEnabled}"
-                                                              Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="4" Grid.Column="1"
+                                                          Minimum="0"
+                                                          IsEnabled="{Binding UICtrlEditEnabled}"
+                                                          Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="5" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Height" />
-                                        <custom:FreeNumberBox Grid.Row="5" Grid.Column="1"
-                                                              Minimum="0"
-                                                              IsEnabled="{Binding UICtrlEditEnabled}"
-                                                              Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="5" Grid.Column="1"
+                                                          Minimum="0"
+                                                          IsEnabled="{Binding UICtrlEditEnabled}"
+                                                          Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="6" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="ToolTip" />
@@ -515,10 +515,10 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
-                                                              Minimum="0"
-                                                              IncrementUnit="1"
-                                                              Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                                          Minimum="0"
+                                                          IncrementUnit="1"
+                                                          Value="{Binding UICtrlTextLabelFontSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Weight" />
@@ -557,27 +557,27 @@
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
-                                        <custom:FreeNumberBox Grid.Row="0" Grid.Column="1"
-                                                              Minimum="0"
-                                                              Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="0" Grid.Column="1"
+                                                          Minimum="0"
+                                                          Value="{Binding UICtrlNumberBoxValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Min" />
-                                        <custom:FreeNumberBox Grid.Row="1" Grid.Column="1"
-                                                              Minimum="0"
-                                                              Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                                          Minimum="0"
+                                                          Value="{Binding UICtrlNumberBoxMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Max" />
-                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
-                                                              Minimum="0"
-                                                              Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                                          Minimum="0"
+                                                          Value="{Binding UICtrlNumberBoxMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Tick" />
-                                        <custom:FreeNumberBox Grid.Row="3" Grid.Column="1"
-                                                              Minimum="1"
-                                                              Value="{Binding UICtrlNumberBoxTick, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                                          Minimum="1"
+                                                          Value="{Binding UICtrlNumberBoxTick, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                     <!-- CheckBox -->
                                     <Grid Visibility="{Binding IsUICtrlCheckBox}" Margin="0, 10, 0, 0">
@@ -623,10 +623,7 @@
                                                 Click="UICtrlInterfaceAttachButton_Click"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
-                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
-                                                                            Width="Auto"
-                                                                            Height="Auto"
-                                                                            Margin="3"/>
+                                                <iconPacks:PackIconMaterial Kind="ArrowExpandLeft" Width="Auto" Height="Auto" Margin="3"/>
                                                 <TextBlock Text="Import"
                                                            Margin="5, 0, 0, 0"
                                                            VerticalAlignment="Center"/>
@@ -640,10 +637,7 @@
                                                     Click="UICtrlInterfaceExtractButton_Click"
                                                     ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
-                                                                                Width="Auto"
-                                                                                Height="Auto"
-                                                                                Margin="3"/>
+                                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight" Width="Auto" Height="Auto" Margin="3"/>
                                                     <TextBlock Text="Extract"
                                                                Margin="5, 0, 0, 0"
                                                                VerticalAlignment="Center"/>
@@ -654,10 +648,7 @@
                                                     Click="UICtrlInterfaceResetButton_Click"
                                                     ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <iconPacks:PackIconMaterial Kind="BorderNone"
-                                                                                Width="Auto"
-                                                                                Height="Auto"
-                                                                                Margin="3"/>
+                                                    <iconPacks:PackIconMaterial Kind="BorderNone" Width="Auto" Height="Auto" Margin="3"/>
                                                     <TextBlock Text="Reset"
                                                                Margin="5, 0, 0, 0"
                                                                VerticalAlignment="Center"/>
@@ -889,7 +880,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="1"
+                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
                                                               Minimum="0"
                                                               IncrementUnit="1"
                                                               IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
@@ -1235,51 +1226,47 @@
 
                                         <!-- Name -->
                                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Name"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Name"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="0" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileName}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileName}"/>
 
                                         <!-- Raw Size -->
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Raw Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Raw Size"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileRawSize}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileRawSize}"/>
 
                                         <!-- Encoded Size -->
                                         <TextBlock Grid.Row="2" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Encoded Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Encoded Size"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="2" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileEncodedSize}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileEncodedSize}"/>
 
                                         <!-- Compression -->
                                         <TextBlock Grid.Row="3" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Compression"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Compression"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="3" Grid.Column="1"
-                                               Margin="5, 0, 0, 0"
-                                               VerticalAlignment="Center"
-                                               Text="{Binding AttachFileCompression}"/>
+                                                   Margin="5, 0, 0, 0"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding AttachFileCompression}"/>
                                     </Grid>
                                 </GroupBox>
 
@@ -1332,7 +1319,6 @@
                                                Margin="0, 0, 10, 0"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
-                                               FontWeight="Bold"
                                                Text="Folder Name"/>
                                     <TextBox Grid.Column="1"
                                              Margin="0, 0, 5, 0"
@@ -1382,7 +1368,7 @@
                                                        Margin="0, 0, 10, 5"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
+
                                                        Text="Path"/>
                                             <TextBox Grid.Row="0" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
@@ -1409,7 +1395,6 @@
                                                        Margin="0, 0, 10, 5"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
                                                        Text="File Name"/>
                                             <TextBox Grid.Row="1" Grid.Column="1"
                                                      VerticalContentAlignment="Center"
@@ -1420,7 +1405,6 @@
                                                        Margin="0, 0, 10, 0"
                                                        HorizontalAlignment="Right"
                                                        VerticalAlignment="Center"
-                                                       FontWeight="Bold"
                                                        Text="Compression"/>
                                             <ComboBox Grid.Row="2" Grid.Column="1"
                                                       Margin="0, 0, 5, 0"

@@ -32,6 +32,8 @@ namespace PEBakery.Tests
 
             App.Logger = EngineTests.Logger;
             App.BaseDir = EngineTests.BaseDir;
+
+            CodeParser.OptimizeCode = true;
         }
 
         private static void NativeGlobalInit()

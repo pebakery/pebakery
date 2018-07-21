@@ -42,8 +42,8 @@
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="Projects">
@@ -382,14 +382,6 @@
                     </GroupBox>
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
-                              Content="Log Macro"
-                              IsChecked="{Binding Log_Macro}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Log Comment"
-                              IsChecked="{Binding Log_Comment}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
                               Content="Delayed Logging"
                               ToolTip="Delayed logging vastly improves performance."
                               IsChecked="{Binding Log_DelayedLogging}" />
@@ -419,6 +411,10 @@
                                       VerticalContentAlignment="Center"
                                       Content="FileRename and DirMove work like PathMove"
                                       IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
+                            <CheckBox Margin="0, 0, 0, 5"
+                                      VerticalContentAlignment="Center"
+                                      Content="Allow Letter in Loop's Argument"
+                                      IsChecked="{Binding Compat_AllowLetterInLoop}" />
                             <CheckBox Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
                                       Content="Allow Deprecated Legacy Branch Condition"
@@ -457,7 +453,7 @@
             </TabItem>
         </TabControl>
         <Grid Grid.Row="1"
-              Margin="15, 15, 15, 15">
+              Margin="10, 10, 10, 10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>

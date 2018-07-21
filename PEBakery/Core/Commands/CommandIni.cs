@@ -25,15 +25,13 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace PEBakery.Core.Commands
 {
@@ -64,7 +62,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
 
                 string escapedValue = StringEscaper.Escape(value, false, true);
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false); 
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false);
                 logs.AddRange(varLogs);
             }
             else
@@ -96,7 +94,7 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniRead info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
-                string key = StringEscaper.Preprocess(s, info.Key); 
+                string key = StringEscaper.Preprocess(s, info.Key);
 
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -137,7 +135,7 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
-        
+
         public static List<LogInfo> IniWrite(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -145,8 +143,8 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); 
-            string key = StringEscaper.Preprocess(s, info.Key); 
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
+            string key = StringEscaper.Preprocess(s, info.Key);
             string value = StringEscaper.Preprocess(s, info.Value);
 
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
@@ -194,7 +192,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniWrite info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string value = StringEscaper.Preprocess(s, info.Value);
 
@@ -232,7 +230,7 @@ namespace PEBakery.Core.Commands
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] values to [{fileName}]", cmd));
             }
-            
+
             return logs;
         }
 
@@ -286,7 +284,7 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniDelete info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
-                string key = StringEscaper.Preprocess(s, info.Key); 
+                string key = StringEscaper.Preprocess(s, info.Key);
 
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -329,6 +327,9 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
+            string delim = "|";
+            if (info.Delim != null)
+                delim = StringEscaper.Preprocess(s, info.Delim);
 
             Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
@@ -339,14 +340,17 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = Ini.ReadSection(fileName, section);
             if (keys != null)
             {
-                StringBuilder b = new StringBuilder();
-                b.AppendLine($"[{section}]");
+                List<string> kvList = new List<string>(keys.Length * 2);
                 foreach (IniKey k in keys)
-                    b.AppendLine($"{k.Key}={k.Value}");
+                {
+                    kvList.Add(k.Key);
+                    kvList.Add(k.Value);
+                }
+                string destStr = StringEscaper.PackListStr(kvList, delim);
 
-                logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read in [{fileName}]"));
+                logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read from [{fileName}]"));
 
-                string escapedValue = StringEscaper.Escape(b.ToString(), false, true);
+                string escapedValue = StringEscaper.Escape(destStr, false, true);
                 List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false);
                 logs.AddRange(varLogs);
             }
@@ -373,6 +377,7 @@ namespace PEBakery.Core.Commands
 
             string[] sections = new string[infoOp.Cmds.Count];
             string[] destVars = new string[infoOp.Cmds.Count];
+            string[] delims = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
                 CodeInfo_IniReadSection info = infoOp.Infos[i];
@@ -383,6 +388,9 @@ namespace PEBakery.Core.Commands
 
                 sections[i] = section;
                 destVars[i] = info.DestVar;
+                delims[i] = "|";
+                if (info.Delim != null)
+                    delims[i] = StringEscaper.Preprocess(s, info.Delim);
             }
 
             Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(fileName, sections);
@@ -391,19 +399,22 @@ namespace PEBakery.Core.Commands
             for (int i = 0; i < sections.Length; i++)
             {
                 string section = sections[i];
+                string delim = delims[i];
                 IniKey[] keys = keyDict[section];
                 CodeCommand subCmd = infoOp.Cmds[i];
 
                 if (keys != null)
                 {
-                    StringBuilder b = new StringBuilder();
-                    b.AppendLine($"[{section}]");
+                    List<string> kvList = new List<string>(keys.Length * 2);
                     foreach (IniKey k in keys)
-                        b.AppendLine($"{k.Key}={k.Value}");
-
+                    {
+                        kvList.Add(k.Key);
+                        kvList.Add(k.Value);
+                    }
+                    string destStr = StringEscaper.PackListStr(kvList, delim);
                     logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read", subCmd));
 
-                    string escapedValue = StringEscaper.Escape(b.ToString(), false, true);
+                    string escapedValue = StringEscaper.Escape(destStr, false, true);
                     List<LogInfo> varLogs = Variables.SetVariable(s, destVars[i], escapedValue, false, false, false);
                     LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
@@ -473,7 +484,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniAddSection info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
                 if (sectionName.Length == 0)
                     return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
@@ -690,7 +701,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Could not merge [{srcFile}] into [{destFile}]", cmd));
-            
+
             return logs;
         }
     }

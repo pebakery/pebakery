@@ -25,33 +25,30 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using SQLite;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using SQLite;
 
 namespace PEBakery.Core
 {
     #region ScriptCache
     public class ScriptCache : SQLiteConnection
     {
-        public static int dbLock = 0;
-        private ReaderWriterLockSlim listLock;
+        public static int DbLock = 0;
+        private ReaderWriterLockSlim _listLock;
 
-        public ScriptCache(string path) : base(path)
+        public ScriptCache(string path) : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
-            dbLock = 0;
             CreateTable<DB_CacheInfo>();
             CreateTable<DB_ScriptCache>();
         }
@@ -60,9 +57,9 @@ namespace PEBakery.Core
         {
             while (true)
             {
-                if (dbLock == 0)
+                if (DbLock == 0)
                 {
-                    base.Close();
+                    Close();
                     return;
                 }
                 await Task.Delay(200);
@@ -74,11 +71,11 @@ namespace PEBakery.Core
         {
             try
             {
-                DB_CacheInfo[] infos = new DB_CacheInfo[]
+                DB_CacheInfo[] infos =
                 {
-                    new DB_CacheInfo() { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
-                    new DB_CacheInfo() { Key = "BuildDate", Value = Properties.Resources.BuildDate },
-                    new DB_CacheInfo() { Key = "BaseDir", Value = baseDir },
+                    new DB_CacheInfo { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
+                    new DB_CacheInfo { Key = "BuildDate", Value = Properties.Resources.BuildDate },
+                    new DB_CacheInfo { Key = "BaseDir", Value = baseDir },
                 };
                 InsertOrReplaceAll(infos);
 
@@ -91,18 +88,18 @@ namespace PEBakery.Core
                         .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
 
-                    listLock = new ReaderWriterLockSlim();
+                    _listLock = new ReaderWriterLockSlim();
 
-                    DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
-                    List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
+                    DB_ScriptCache[] memDb = Table<DB_ScriptCache>().ToArray();
+                    List<DB_ScriptCache> updateDb = new List<DB_ScriptCache>();
 
                     Parallel.ForEach(scUniqueList, sc =>
                     {
-                        bool updated = CacheScript(sc, memDB, updateDB);
+                        bool updated = CacheScript(sc, memDb, updateDb);
                         worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
                     });
 
-                    InsertOrReplaceAll(updateDB);
+                    InsertOrReplaceAll(updateDb);
                 }
             }
             catch (SQLiteException e)
@@ -114,27 +111,24 @@ namespace PEBakery.Core
         }
 
         /// <returns>Return true if cache is updated</returns>
-        private bool CacheScript(Script sc, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
+        private bool CacheScript(Script sc, DB_ScriptCache[] memDb, List<DB_ScriptCache> updateDb)
         {
-            if (memDB == null) throw new ArgumentNullException(nameof(memDB));
-            if (updateDB == null) throw new ArgumentNullException(nameof(updateDB));
+            if (memDb == null) throw new ArgumentNullException(nameof(memDb));
+            if (updateDb == null) throw new ArgumentNullException(nameof(updateDb));
             Debug.Assert(sc.Type != ScriptType.Directory);
 
             // Does cache exist?
             FileInfo f = new FileInfo(sc.DirectRealPath);
             string sPath = sc.DirectRealPath.Remove(0, sc.Project.BaseDir.Length + 1);
 
-            bool updated = false;
-            // int memIdx = 0;
-            DB_ScriptCache scCache = null;
-
             // Retrieve Cache
-            scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+            bool updated = false;
+            DB_ScriptCache scCache = memDb.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
 
             // Update Cache into updateDB
             if (scCache == null)
             { // Cache not exists
-                scCache = new DB_ScriptCache()
+                scCache = new DB_ScriptCache
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
@@ -149,19 +143,19 @@ namespace PEBakery.Core
                     scCache.Serialized = ms.ToArray();
                 }
 
-                listLock.EnterWriteLock();
+                _listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(scCache);
+                    updateDb.Add(scCache);
                     updated = true;
                 }
                 finally
                 {
-                    listLock.ExitWriteLock();
+                    _listLock.ExitWriteLock();
                 }
             }
-            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                (DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) == false || scCache.FileSize != f.Length))
+            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) &&
+                (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
@@ -172,47 +166,47 @@ namespace PEBakery.Core
                     scCache.FileSize = f.Length;
                 }
 
-                listLock.EnterWriteLock();
+                _listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(scCache);
+                    updateDb.Add(scCache);
                     updated = true;
                 }
                 finally
                 {
-                    listLock.ExitWriteLock();
+                    _listLock.ExitWriteLock();
                 }
             }
 
             if (sc.Type == ScriptType.Link && sc.LinkLoaded)
             {
-                bool linkUpdated = CacheScript(sc.Link, memDB, updateDB);
+                bool linkUpdated = CacheScript(sc.Link, memDb, updateDb);
                 updated = updated || linkUpdated;
             }
 
             return updated;
         }
         #endregion
-        
+
         #region IsGlobalCacheValid
         public bool IsGlobalCacheValid(string baseDir)
         {
             Dictionary<string, string> infoDict = Table<DB_CacheInfo>().ToDictionary(x => x.Key, x => x.Value);
 
             // Does key exist?
-            if (infoDict.ContainsKey("EngineVersion") == false)
+            if (!infoDict.ContainsKey("EngineVersion"))
                 return false;
-            if (infoDict.ContainsKey("BuildDate") == false)
+            if (!infoDict.ContainsKey("BuildDate"))
                 return false;
-            if (infoDict.ContainsKey("BaseDir") == false)
+            if (!infoDict.ContainsKey("BaseDir"))
                 return false;
 
             // Does value match?
-            if (infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal) == false)
+            if (!infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
                 return false;
-            if (infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal) == false)
+            if (!infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal))
                 return false;
-            if (infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal) == false)
+            if (!infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal))
                 return false;
 
             return true;
@@ -233,6 +227,23 @@ namespace PEBakery.Core
             return c;
         }
         #endregion
+
+        #region ClearTable
+        public struct ClearTableOptions
+        {
+            public bool CacheInfo;
+            public bool ScriptCache;
+        }
+
+        public void ClearTable(ClearTableOptions opts)
+        {
+            if (opts.CacheInfo)
+                DeleteAll<DB_CacheInfo>();
+            if (opts.ScriptCache)
+                DeleteAll<DB_ScriptCache>();
+            Execute("VACUUM");
+        }
+        #endregion
     }
     #endregion
 
@@ -242,7 +253,7 @@ namespace PEBakery.Core
         [PrimaryKey]
         public string Key { get; set; }
         public string Value { get; set; }
-        
+
         public override string ToString()
         {
             return $"Key [{Key}] = {Value}";
@@ -254,7 +265,7 @@ namespace PEBakery.Core
         [PrimaryKey]
         public int Hash { get; set; }
         [MaxLength(32768)]
-        public string Path { get; set; } // Without BaseDir
+        public string Path { get; set; } // TreePath (== Without BaseDir)
         public DateTime LastWriteTimeUtc { get; set; }
         public long FileSize { get; set; }
         public byte[] Serialized { get; set; }

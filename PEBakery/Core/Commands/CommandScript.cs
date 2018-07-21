@@ -25,15 +25,13 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
-using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using PEBakery.Helper;
+using PEBakery.IniLib;
 
 namespace PEBakery.Core.Commands
 {
@@ -72,7 +70,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s,s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -81,7 +79,7 @@ namespace PEBakery.Core.Commands
             {
                 if (File.Exists(destDir)) // Error, cannot proceed
                     return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory.");
-                
+
                 Directory.CreateDirectory(destDir);
             }
 
@@ -105,8 +103,8 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             Directory.CreateDirectory(tempDir);
@@ -158,7 +156,7 @@ namespace PEBakery.Core.Commands
             else
                 logs.Add(new LogInfo(LogState.Success, $"Extracted and executed [{fileName} {_params}]"));
 
-            return logs;            
+            return logs;
         }
 
         public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
@@ -171,7 +169,7 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -225,8 +223,8 @@ namespace PEBakery.Core.Commands
                 else
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
             }
-           
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)

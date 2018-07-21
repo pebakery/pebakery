@@ -16,7 +16,6 @@ using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
@@ -109,7 +108,7 @@ namespace PEBakery.WPF
                 RefreshMainWindow();
 
             // If script was updated, force MainWindow to refresh script
-            DialogResult = m.ScriptHeaderUpdated || m.InterfaceUpdated;
+            DialogResult = m.ScriptHeaderUpdated || m.ScriptLogoUpdated || m.InterfaceUpdated || m.ScriptAttachUpdated;
 
             Tag = _sc;
         }
@@ -133,15 +132,6 @@ namespace PEBakery.WPF
         {
             // Nested Function
             string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
-            /*
-            int GetIntValue(string key, int defaultValue = 0)
-            {
-                if (_sc.MainInfo.ContainsKey(key))
-                    return NumberHelper.ParseInt32(key, out int intVal) ? intVal : defaultValue;
-                else
-                    return defaultValue;
-            }
-            */
 
             // General
             if (EncodedFile.ContainsLogo(_sc))
@@ -152,9 +142,10 @@ namespace PEBakery.WPF
             else
             {
                 m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
+                m.ScriptLogoInfo = null;
             }
-                
-            m.ScriptTitle = _sc.Title; 
+
+            m.ScriptTitle = _sc.Title;
             m.ScriptAuthor = _sc.Author;
             m.ScriptVersion = _sc.Version;
             m.ScriptDate = GetStringValue("Date");
@@ -228,133 +219,109 @@ namespace PEBakery.WPF
             switch (uiCtrl.Type)
             {
                 case UIControlType.TextBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
-                    UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
-                    m.UICtrlTextBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlTextBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.TextLabel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
-                    UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
 
-                    m.UICtrlTextLabelInfo = info;
-                    break;
-                }
+                        m.UICtrlTextLabelInfo = info;
+                        break;
+                    }
                 case UIControlType.NumberBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
-                    UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
 
-                    m.UICtrlNumberBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlNumberBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.CheckBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
-                    m.UICtrlCheckBoxInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlCheckBoxInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.ComboBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-                    m.UICtrlComboBoxInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlComboBoxInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.Image:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-                    UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-                    m.UICtrlImageInfo = info;
-                    m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlImageInfo = info;
+                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.TextFile:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                    m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.Button:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                    m.UICtrlButtonInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                    break;
-                }
+                        m.UICtrlButtonInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        break;
+                    }
                 case UIControlType.WebLabel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
-                    UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
 
-                    m.UICtrlWebLabelInfo = info;
-                    break;
-                }
+                        m.UICtrlWebLabelInfo = info;
+                        break;
+                    }
                 case UIControlType.RadioButton:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
-                    m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
-                    m.UICtrlRadioButtonInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
+                        m.UICtrlRadioButtonInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
                 case UIControlType.Bevel:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
-                        UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
 
-                    m.UICtrlBevelInfo = info;
-                    break;
-                }
+                        m.UICtrlBevelInfo = info;
+                        break;
+                    }
                 case UIControlType.FileBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
-                    UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
-                    m.UICtrlFileBoxInfo = info;
-                    break;
-                }
+                        m.UICtrlFileBoxInfo = info;
+                        break;
+                    }
                 case UIControlType.RadioGroup:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
-                    m.UICtrlRadioGroupInfo = info;
-                    m.UICtrlSectionToRun = info.SectionName;
-                    m.UICtrlHideProgress = info.HideProgress;
-                    break;
-                }
+                        m.UICtrlRadioGroupInfo = info;
+                        m.UICtrlSectionToRun = info.SectionName;
+                        m.UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
             }
 
             m.UIControlModifiedEventToggle = false;
@@ -375,7 +342,7 @@ namespace PEBakery.WPF
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
-            }           
+            }
 
             IniKey[] keys =
             {
@@ -444,71 +411,61 @@ namespace PEBakery.WPF
             switch (uiCtrl.Type)
             {
                 case UIControlType.CheckBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
-                    UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.ComboBox:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
-                    UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-                    uiCtrl.Text = info.Items[info.Index];
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        uiCtrl.Text = info.Items[info.Index];
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.Image:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
 
-                    m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.TextFile:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                    m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                    break;
-                }
+                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
                 case UIControlType.Button:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
-                    UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                    m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.RadioButton:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                    UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
                 case UIControlType.RadioGroup:
-                {
-                    Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
-                    UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
-                    Debug.Assert(info != null, "Invalid UIInfo");
+                    {
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
-                    info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                    info.HideProgress = m.UICtrlHideProgress;
-                    break;
-                }
+                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
+                        info.HideProgress = m.UICtrlHideProgress;
+                        break;
+                    }
             }
         }
         #endregion
@@ -526,12 +483,12 @@ namespace PEBakery.WPF
 
             string srcFile = dialog.FileName;
             try
-            { 
-                string srcFileName = System.IO.Path.GetFileName(srcFile);
+            {
+                string srcFileName = Path.GetFileName(srcFile);
                 _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
                 MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                m.ScriptHeaderUpdated = true;
+                m.ScriptLogoUpdated = true;
                 ReadScriptGeneral();
             }
             catch (Exception ex)
@@ -594,7 +551,7 @@ namespace PEBakery.WPF
             {
                 MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                m.ScriptHeaderUpdated = true;
+                m.ScriptLogoUpdated = true;
                 ReadScriptGeneral();
             }
             else
@@ -705,6 +662,12 @@ namespace PEBakery.WPF
                 return;
             }
 
+            if (!_sc.Sections.ContainsKey(_ifaceSectionName))
+            { // No [Interface] section, so add it
+                Ini.AddSection(_sc.DirectRealPath, _ifaceSectionName);
+                _sc = _sc.Project.RefreshScript(_sc);
+            }
+
             SectionAddress addr = new SectionAddress(_sc, _sc.Sections[_ifaceSectionName]);
             string line = UIControl.GetUIControlTemplate(type, key);
 
@@ -720,15 +683,15 @@ namespace PEBakery.WPF
             _render.Render();
             m.SelectedUICtrl = uiCtrl;
             m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
+
+            m.InterfaceNotSaved = true;
+            m.InterfaceUpdated = true;
         }
 
         private void UICtrlDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (m.SelectedUICtrl == null)
                 return;
-
-            m.InterfaceNotSaved = true;
-            m.InterfaceUpdated = true;
 
             UIControl uiCtrl = m.SelectedUICtrl;
             m.UICtrlToBeDeleted.Add(uiCtrl);
@@ -739,6 +702,9 @@ namespace PEBakery.WPF
 
             _render.Render();
             m.SelectedUICtrl = null;
+
+            m.InterfaceNotSaved = true;
+            m.InterfaceUpdated = true;
         }
         #endregion
         #region For Image
@@ -943,7 +909,7 @@ namespace PEBakery.WPF
                 default:
                     throw new InvalidOperationException(internalErrorMsg);
             }
-            
+
             m.InvokeUIControlEvent(false);
         }
 
@@ -1071,7 +1037,7 @@ namespace PEBakery.WPF
                 return;
 
             string srcFilePath = dialog.FileName;
-            string srcFileName = System.IO.Path.GetFileName(srcFilePath);
+            string srcFileName = Path.GetFileName(srcFilePath);
             if (EncodedFile.ContainsInterface(_sc, srcFileName))
             {
                 List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
@@ -1110,7 +1076,7 @@ namespace PEBakery.WPF
                         m.UICtrlButtonPictureSet = true;
                         break;
                 }
-                
+
                 m.InvokeUIControlEvent(false);
                 WriteScriptInterface(false);
             }
@@ -1354,6 +1320,7 @@ namespace PEBakery.WPF
                 MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
+            m.ScriptAttachUpdated = true;
             ReadScriptAttachment();
 
             m.AttachSelected = null;
@@ -1382,7 +1349,7 @@ namespace PEBakery.WPF
                 {
                     EncodedFileInfo info = fileInfos[i];
 
-                    string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                    string destFile = Path.Combine(destDir, info.FileName);
                     if (File.Exists(destFile))
                     {
                         fileOverwrited = true;
@@ -1418,7 +1385,7 @@ namespace PEBakery.WPF
                 {
                     try
                     {
-                        string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                        string destFile = Path.Combine(destDir, info.FileName);
                         using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
                             EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
@@ -1454,6 +1421,7 @@ namespace PEBakery.WPF
             _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
             if (errMsg == null)
             {
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
                 m.AttachSelected = null;
@@ -1523,15 +1491,15 @@ namespace PEBakery.WPF
                     MessageBox.Show("Internal Logic Error at ScriptEditWindow.AttachFileButton_Click", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
             }
-                
+
             try
             {
                 if (EncodedFile.ContainsFile(_sc, item.Name, m.AttachNewFileName))
                 {
                     MessageBoxResult result = MessageBox.Show(
                         $"Attached file [{m.AttachNewFileName}] will be overwritten.\r\nContinue?",
-                        "Confirm", 
-                        MessageBoxButton.YesNo, 
+                        "Confirm",
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Error);
                     if (result == MessageBoxResult.No)
                         return;
@@ -1543,7 +1511,9 @@ namespace PEBakery.WPF
                 m.AttachNewFilePath = string.Empty;
                 m.AttachNewFileName = string.Empty;
 
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
+
                 m.AttachSelected = null;
                 m.UpdateAttachFileDetail();
             }
@@ -1566,7 +1536,7 @@ namespace PEBakery.WPF
 
             EncodedFileInfo info = item.Detail;
 
-            string ext = System.IO.Path.GetExtension(info.FileName);
+            string ext = Path.GetExtension(info.FileName);
             SaveFileDialog dialog = new SaveFileDialog
             {
                 OverwritePrompt = true,
@@ -1612,6 +1582,7 @@ namespace PEBakery.WPF
             _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
             if (errMsg == null)
             {
+                m.ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
                 m.AttachSelected = null;
@@ -1825,7 +1796,7 @@ namespace PEBakery.WPF
                         break;
                     case null:
                         _scriptSelectedState = SelectedState.None;
-                        break;                
+                        break;
                 }
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
@@ -1847,6 +1818,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General - Script Logo
+        public bool ScriptLogoUpdated { get; set; } = false;
+
         public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone, 10);
         private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
         public FrameworkElement ScriptLogoImage
@@ -1866,6 +1839,7 @@ namespace PEBakery.WPF
             set
             {
                 _scriptLogoInfo = value;
+                OnPropertyUpdate(nameof(ScriptLogoLoaded));
                 OnPropertyUpdate(nameof(ScriptLogoName));
                 OnPropertyUpdate(nameof(ScriptLogoRawSize));
                 OnPropertyUpdate(nameof(ScriptLogoEncodedSize));
@@ -2007,7 +1981,7 @@ namespace PEBakery.WPF
             set
             {
                 _selectedUICtrl = value;
-                
+
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
                 OnPropertyUpdate(nameof(UICtrlKey));
@@ -2018,7 +1992,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(UICtrlWidth));
                 OnPropertyUpdate(nameof(UICtrlHeight));
                 OnPropertyUpdate(nameof(UICtrlToolTip));
-                
+
                 // UIControl Visibility
                 OnPropertyUpdate(nameof(IsUICtrlTextBox));
                 OnPropertyUpdate(nameof(IsUICtrlTextLabel));
@@ -2085,7 +2059,7 @@ namespace PEBakery.WPF
         }
         public int UICtrlX
         {
-            get => _selectedUICtrl != null ? (int) _selectedUICtrl.Rect.X : 0;
+            get => _selectedUICtrl != null ? (int)_selectedUICtrl.Rect.X : 0;
             set
             {
                 if (_selectedUICtrl == null)
@@ -2274,7 +2248,7 @@ namespace PEBakery.WPF
             {
                 if (_uiCtrlTextLabelInfo?.FontStyle == null)
                     return 0;
-                return (int) _uiCtrlTextLabelInfo.FontStyle + 1;
+                return (int)_uiCtrlTextLabelInfo.FontStyle + 1;
             }
             set
             {
@@ -2415,7 +2389,7 @@ namespace PEBakery.WPF
                 _uiCtrlImageInfo = value;
                 if (value == null)
                     return;
-                
+
                 OnPropertyUpdate(nameof(UICtrlImageUrl));
             }
         }
@@ -2761,6 +2735,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Attachment
+        public bool ScriptAttachUpdated { get; set; } = false;
+
         public static bool DeepInspectAttachedFile = false;
 
         public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();

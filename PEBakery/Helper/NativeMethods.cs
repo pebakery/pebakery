@@ -25,5 +25,8 @@ namespace PEBakery.Helper
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
             public string szTypeName;
         }
+
+        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+        public static extern int StrCmpLogical(string psz1, string psz2);
     }
 }

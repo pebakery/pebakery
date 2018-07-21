@@ -30,11 +30,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using Microsoft.Win32;
 using PEBakery.Helper;
-using PEBakery.Exceptions;
-using System.IO;
 
 namespace PEBakery.Core.Commands
 {
@@ -120,7 +118,7 @@ namespace PEBakery.Core.Commands
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 switch (kind)
-                { 
+                {
                     case RegistryValueKind.None:
                         return LogInfo.LogErrorMessage(logs, $"Cannot read empty value [{fullKeyPath}\\{valueName}]");
                     case RegistryValueKind.String:
@@ -341,7 +339,7 @@ namespace PEBakery.Core.Commands
                     }
                 }
             }
-            
+
             return logs;
         }
 

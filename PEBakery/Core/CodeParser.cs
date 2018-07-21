@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using Microsoft.Win32;
 
@@ -47,9 +46,8 @@ namespace PEBakery.Core
         #region ParseStatement, ParseStatements
         public static CodeCommand ParseStatement(string rawCode, SectionAddress addr)
         {
-            List<string> list = new List<string>();
             int idx = 0;
-            list.Add(rawCode);
+            List<string> list = new List<string> { rawCode };
 
             try
             {
@@ -57,49 +55,52 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                return new CodeCommand(rawCode.Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + idx + 1);
+                return new CodeCommand(rawCode.Trim(), addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + idx + 1);
             }
         }
 
         public static List<CodeCommand> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
-            errorLogs = new List<LogInfo>();
             List<CodeCommand> codeList = new List<CodeCommand>(32);
             for (int i = 0; i < lines.Count; i++)
             {
                 try
                 {
-                    codeList.Add(ParseCommand(lines, addr, ref i));
+                    CodeCommand cmd = ParseCommand(lines, addr, ref i);
+                    codeList.Add(cmd);
                 }
                 catch (InvalidCommandException e)
                 {
-                    CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
-                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
                 }
                 catch (Exception e)
                 {
-                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), addr.Section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
                     codeList.Add(error);
-                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
                 }
             }
 
-            List<CodeCommand> compiledList = codeList.Where(x => x.Type != CodeType.None).ToList();
+            errorLogs = codeList
+                .Where(x => x.Type == CodeType.Error)
+                .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
+                .ToList();
+
+            List<CodeCommand> foldedList = codeList.Where(x => x.Type != CodeType.None).ToList();
             try
             {
-                CompileBranchCodeBlock(compiledList, out compiledList);
+                FoldBranchCodeBlock(foldedList, out foldedList);
             }
             catch (InvalidCodeCommandException e)
             {
-                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{addr.Section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
             if (OptimizeCode)
-                return CodeOptimizer.Optimize(compiledList);
+                return CodeOptimizer.Optimize(foldedList);
             else
-                return compiledList;
+                return foldedList;
         }
         #endregion
 
@@ -184,11 +185,11 @@ namespace PEBakery.Core
             // Remove whitespace of rawCode's from start and end
             string rawCode = rawCodes[idx].Trim();
 
-            // Check if rawCode is Empty
-            if (rawCode.Length == 0 || rawCode.Equals(string.Empty, StringComparison.Ordinal))
+            // Check if rawCode is empty
+            if (rawCode.Length == 0)
                 return new CodeCommand(string.Empty, addr, CodeType.None, null, lineIdx);
 
-            // Comment Format : starts with '//' or '#', ';'
+            // Line Comment Identifier : '//', '#', ';'
             if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
                 return new CodeCommand(rawCode, addr, CodeType.Comment, null, lineIdx);
 
@@ -201,8 +202,8 @@ namespace PEBakery.Core
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
 
             // Check doublequote's occurence - must be 2n
-            if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be an even number");
+            if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
+                throw new InvalidCommandException("Doublequote's number should be an even number", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();
@@ -226,9 +227,9 @@ namespace PEBakery.Core
                     string nextRawCode = rawCodes[idx + 1].Trim();
 
                     // Check if nextRawCode is Empty / Comment
-                    if (nextRawCode.Length == 0 || 
+                    if (nextRawCode.Length == 0 ||
                         rawCode.StartsWith("//") ||
-                        rawCode.StartsWith("#") || 
+                        rawCode.StartsWith("#") ||
                         rawCode.StartsWith(";"))
                         throw new InvalidCommandException(@"Valid command should be placed after '\'", rawCode);
 
@@ -254,7 +255,7 @@ namespace PEBakery.Core
             return new CodeCommand(rawCode, addr, type, info, lineIdx);
 
             // [Process] <- LineIdx
-            // Echo,A <- if idx is 0, should point here -> so add 1
+            // Echo,A <- if idx is 0, should point here. Add 1 to solve this.
             // Echo,B
         }
 
@@ -297,12 +298,12 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
-            bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) || 
+            bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
                            !Enum.IsDefined(typeof(CodeType), type) ||
                            type == CodeType.None ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
-            
+
             if (isMacro)
             {
                 type = CodeType.Macro;
@@ -629,7 +630,7 @@ namespace PEBakery.Core
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
-                                {                                    
+                                {
                                     if (4 == cnt)
                                     { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
@@ -789,7 +790,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        
+
                         string fileName = args[0];
                         string line = args[1];
                         string mode;
@@ -838,8 +839,8 @@ namespace PEBakery.Core
                         return new CodeInfo_TXTDelEmptyLines(args[0]);
                     }
                 #endregion
-                #region 04 INI
-                case CodeType.INIRead:
+                #region 04 Ini
+                case CodeType.IniRead:
                     { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
@@ -851,7 +852,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
                     }
-                case CodeType.INIWrite:
+                case CodeType.IniWrite:
                     { // INIWrite,<FileName>,<Section>,<Key>,<Value>
                         const int argCount = 4;
                         if (args.Count != argCount)
@@ -859,7 +860,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniWrite(args[0], args[1], args[2], args[3]);
                     }
-                case CodeType.INIDelete:
+                case CodeType.IniDelete:
                     { // INIDelete,<FileName>,<Section>,<Key>
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -867,19 +868,38 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
-                case CodeType.INIReadSection:
+                case CodeType.IniReadSection:
                     { // INIReadSection,<FileName>,<Section>,<DestVar>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[2];
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
-                        return new CodeInfo_IniReadSection(args[0], args[1], args[2]);
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_IniReadSection(args[0], args[1], args[2], delim);
                     }
-                case CodeType.INIAddSection:
+                case CodeType.IniAddSection:
                     { // INIAddSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -887,7 +907,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniAddSection(args[0], args[1]);
                     }
-                case CodeType.INIDeleteSection:
+                case CodeType.IniDeleteSection:
                     { // INIDeleteSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -895,7 +915,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniDeleteSection(args[0], args[1]);
                     }
-                case CodeType.INIWriteTextLine:
+                case CodeType.IniWriteTextLine:
                     {  // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
@@ -913,7 +933,7 @@ namespace PEBakery.Core
 
                         return new CodeInfo_IniWriteTextLine(args[0], args[1], args[2], append);
                     }
-                case CodeType.INIMerge:
+                case CodeType.IniMerge:
                     { // INIMerge,<SrcFile>,<DestFile>
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -922,536 +942,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniMerge(args[0], args[1]);
                     }
                 #endregion
-                #region 05 Archive
-                case CodeType.Compress:
-                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Unicode]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        ArchiveCompressFormat format;
-                        string formatStr = args[0];
-                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveCompressFormat.Zip;
-                        else
-                            throw new InvalidCommandException($"[{formatStr}] is not a valid ArchiveCompressType", rawCode);
-
-                        ArchiveHelper.CompressLevel? compLevel = null;
-                        Encoding encoding = null;
-                        for (int i = minArgCount; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("STORE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (compLevel != null)
-                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Store;
-                            }
-                            else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (compLevel != null)
-                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Fastest;
-                            }
-                            else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (compLevel != null)
-                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Normal;
-                            }
-                            else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (compLevel != null)
-                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Best;
-                            }
-                            else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.UTF8;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.BigEndianUnicode;
-                            }
-                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Default;
-                            }
-                            else
-                            {
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                            }
-                        }
-
-                        return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
-                    }
-                case CodeType.Decompress:
-                    { // Decompress,<SrcArchive>,<DestDir>,[Unicode]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        Encoding encoding = null;
-                        for (int i = minArgCount; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.UTF8;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.BigEndianUnicode;
-                            }
-                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.ASCII;
-                            }
-                            else
-                            {
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                            }
-                        }
-
-                        return new CodeInfo_Decompress(args[0], args[1], encoding);
-                    }
-                case CodeType.Expand:
-                    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string srcCab = args[0];
-                        string destDir = args[1];
-                        string singleFile = null;
-                        bool preserve = false;
-                        bool noWarn = false;
-
-                        if (3 <= args.Count)
-                            singleFile = args[2];
-
-                        for (int i = 3; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (preserve)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                preserve = true;
-                            }
-                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (noWarn)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                noWarn = true;
-                            }
-                            else
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                        }
-
-                        return new CodeInfo_Expand(srcCab, destDir, singleFile, preserve, noWarn);
-                    }
-                case CodeType.CopyOrExpand:
-                    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string srcFile = args[0];
-                        string destPath = args[1];
-                        bool preserve = false;
-                        bool noWarn = false;
-
-                        for (int i = 2; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (preserve)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                preserve = true;
-                            }
-                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (noWarn)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                noWarn = true;
-                            }
-                            else
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                        }
-
-                        return new CodeInfo_CopyOrExpand(srcFile, destPath, preserve, noWarn);
-                    }
-                #endregion
-                #region 06 Network
-                // 06 Network
-                case CodeType.WebGet:
-                case CodeType.WebGetIfNotExist: // Will be deprecated
-                    { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 4; 
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        HashHelper.HashType hashType = HashHelper.HashType.None;
-                        string hashDigest = null;
-                        bool noErr = false;
-
-                        const string md5Key = "MD5=";
-                        const string sha1Key = "SHA1=";
-                        const string sha256Key = "SHA256=";
-                        const string sha384Key = "SHA384=";
-                        const string sha512Key = "SHA512=";
-                        for (int i = minArgCount; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.StartsWith(md5Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
-                                    throw new InvalidCommandException("Argument <MD5> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.MD5;
-                                hashDigest = arg.Substring(md5Key.Length);
-                            }
-                            else if (arg.StartsWith(sha1Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
-                                    throw new InvalidCommandException("Argument <SHA1> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA1;
-                                hashDigest = arg.Substring(sha1Key.Length);
-                            }
-                            else if (arg.StartsWith(sha256Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
-                                    throw new InvalidCommandException("Argument <SHA256> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA256;
-                                hashDigest = arg.Substring(sha256Key.Length);
-                            }
-                            else if (arg.StartsWith(sha384Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
-                                    throw new InvalidCommandException("Argument <SHA384> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA384;
-                                hashDigest = arg.Substring(sha384Key.Length);
-                            }
-                            else if (arg.StartsWith(sha512Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (hashType != HashHelper.HashType.None || hashDigest != null)
-                                    throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
-                                hashType = HashHelper.HashType.SHA512;
-                                hashDigest = arg.Substring(sha512Key.Length);
-                            }
-                            else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (noErr)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                noErr = true;
-                            }
-                            else
-                            {
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                            }
-                        }
-
-                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, noErr);
-                    }
-                #endregion
-                #region 07 Script
-                case CodeType.ExtractFile:
-                    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
-                        const int argCount = 4;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
-                    }
-                case CodeType.ExtractAndRun:
-                    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string _params = null;
-                        if (4 <= args.Count)
-                            _params = args[3];
-
-                        return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], _params);
-                    }
-                case CodeType.ExtractAllFiles:
-                    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
-                    }
-                case CodeType.Encode:
-                    { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string compression = null;
-                        if (3 < args.Count)
-                            compression = args[3];
-
-                        return new CodeInfo_Encode(args[0], args[1], args[2], compression);
-                    }
-                #endregion
-                #region 08 Interface
-                case CodeType.Visible:
-                    { // Visible,<%InterfaceKey%>,<Visiblity>
-                        // [,PERMANENT] - for compability of WB082
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string interfaceKey = Variables.TrimPercentMark(args[0]);
-                        if (interfaceKey == null)
-                            throw new InvalidCommandException($"Invalid InterfaceKey [{interfaceKey}]", rawCode);
-
-                        string visibility;
-                        if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
-                            args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
-                            visibility = args[1];
-                        else
-                            throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
-
-                        if (2 < args.Count)
-                        {
-                            if (!args[2].Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{args[2]}]", rawCode);
-                        }
-
-                        return new CodeInfo_Visible(interfaceKey, visibility);
-                    }
-                case CodeType.ReadInterface:
-                    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
-                        const int minArgCount = 5;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-
-                        InterfaceElement element = ParseInterfaceElement(args[0]);
-
-                        string destVar = args[4];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
-
-                        return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar);
-                    }
-                case CodeType.WriteInterface:
-                    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
-                        const int minArgCount = 5;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        InterfaceElement element = ParseInterfaceElement(args[0]);
-
-                        return new CodeInfo_WriteInterface(element, args[1], args[2], args[3], args[4]);
-                    }
-                case CodeType.Message:
-                    { // Message,<Message>[,ICON][,TIMEOUT]
-                        const int minArgCount = 1;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string message = args[0];
-                        CodeMessageAction action = CodeMessageAction.None;
-                        string timeout = null;
-
-                        if (args.Count > 1)
-                        {
-                            if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
-                                action = CodeMessageAction.Information;
-                            else if (args[1].Equals("Confirmation", StringComparison.OrdinalIgnoreCase))
-                                action = CodeMessageAction.Confirmation;
-                            else if (args[1].Equals("Error", StringComparison.OrdinalIgnoreCase))
-                                action = CodeMessageAction.Error;
-                            else if (args[1].Equals("Warning", StringComparison.OrdinalIgnoreCase))
-                                action = CodeMessageAction.Warning;
-                            else
-                                throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
-                         }
-
-                        if (args.Count == 3)
-                            timeout = args[2];
-
-                        return new CodeInfo_Message(message, action, timeout);
-                    }
-                case CodeType.Echo:
-                    { // Echo,<Message>,[WARN]
-                        const int minArgCount = 1;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        bool warn = false;
-                        if (args.Count == maxArgCount)
-                        {
-                            if (args[1].Equals("WARN", StringComparison.OrdinalIgnoreCase))
-                                warn = true;
-                        }
-
-                        return new CodeInfo_Echo(args[0], warn);
-                    }
-                case CodeType.EchoFile:
-                    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
-                        const int minArgCount = 1;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        bool warn = false;
-                        bool encode = false;
-                        for (int i = minArgCount; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("WARN", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (warn)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                warn = true;
-                            }
-                            else if (arg.Equals("ENCODE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encode)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                encode = true;
-                            }
-                            else
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                        }
-
-                        return new CodeInfo_EchoFile(args[0], warn, encode);
-                    }
-                case CodeType.UserInput:
-                    return ParseCodeInfoUserInput(rawCode, args);
-                case CodeType.AddInterface:
-                    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        return new CodeInfo_AddInterface(args[0], args[1], args[2]);
-                    }
-                case CodeType.Retrieve:
-                    { // Compability Shim for WinBuilder 082
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
-
-                        if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.Dir -> UserInput.DirPath
-                            type = CodeType.UserInput;
-                            args[0] = "DirPath";
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-                        else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.File -> UserInput.FilePath
-                            type = CodeType.UserInput;
-                            args[0] = "FilePath";
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-                        else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.FileSize -> FileSize
-                            type = CodeType.FileSize;
-                            args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-                        else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.FileVersion -> FileVersion
-                            type = CodeType.FileVersion;
-                            args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-                        else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.FolderSize -> DirSize
-                            type = CodeType.DirSize;
-                            args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-                        else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
-                        { // Retrieve.MD5 -> Hash.MD5
-                            type = CodeType.Hash;
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
-                        }
-
-                        throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
-                    }
-                #endregion
-                #region 09 Hash
-                case CodeType.Hash:
-                    { // Hash,<HashHelper.HashType>,<FilePath>,<DestVar>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
-
-                        return new CodeInfo_Hash(args[0], args[1], args[2]);
-                    }
-                #endregion
-                #region 10 String
-                case CodeType.StrFormat:
-                    return ParseCodeInfoStrFormat(rawCode, args);
-                #endregion
-                #region 11 Math
-                case CodeType.Math:
-                    return ParseCodeInfoMath(rawCode, args);
-                #endregion
-                #region 12 WIM
+                #region 05 Wim
                 case CodeType.WimMount:
                     { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
                         const int argCount = 4;
@@ -1542,7 +1033,7 @@ namespace PEBakery.Core
                             }
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                        }  
+                        }
 
                         return new CodeInfo_WimApply(args[0], args[1], args[2], split, check, noAcl, noAttrib);
                     }
@@ -2041,6 +1532,580 @@ namespace PEBakery.Core
                         return new CodeInfo_WimExport(args[0], args[1], args[2], imageName, imageDesc, split, recompress, boot, check);
                     }
                 #endregion
+                #region 06 Archive
+                case CodeType.Compress:
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Unicode]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        ArchiveCompressFormat format;
+                        string formatStr = args[0];
+                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveCompressFormat.Zip;
+                        else
+                            throw new InvalidCommandException($"[{formatStr}] is not a valid ArchiveCompressType", rawCode);
+
+                        ArchiveHelper.CompressLevel? compLevel = null;
+                        Encoding encoding = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("STORE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Store;
+                            }
+                            else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Fastest;
+                            }
+                            else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Normal;
+                            }
+                            else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Best;
+                            }
+                            else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.UTF8;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.BigEndianUnicode;
+                            }
+                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Default;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
+                    }
+                case CodeType.Decompress:
+                    { // Decompress,<SrcArchive>,<DestDir>,[Unicode]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        Encoding encoding = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.UTF8;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.BigEndianUnicode;
+                            }
+                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.ASCII;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_Decompress(args[0], args[1], encoding);
+                    }
+                case CodeType.Expand:
+                    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string srcCab = args[0];
+                        string destDir = args[1];
+                        string singleFile = null;
+                        bool preserve = false;
+                        bool noWarn = false;
+
+                        if (3 <= args.Count)
+                            singleFile = args[2];
+
+                        for (int i = 3; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                preserve = true;
+                            }
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noWarn = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_Expand(srcCab, destDir, singleFile, preserve, noWarn);
+                    }
+                case CodeType.CopyOrExpand:
+                    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string srcFile = args[0];
+                        string destPath = args[1];
+                        bool preserve = false;
+                        bool noWarn = false;
+
+                        for (int i = 2; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (preserve)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                preserve = true;
+                            }
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noWarn = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_CopyOrExpand(srcFile, destPath, preserve, noWarn);
+                    }
+                #endregion
+                #region 07 Network
+                case CodeType.WebGet:
+                case CodeType.WebGetIfNotExist: // Will be deprecated
+                    { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        HashHelper.HashType hashType = HashHelper.HashType.None;
+                        string hashDigest = null;
+                        bool noErr = false;
+
+                        const string md5Key = "MD5=";
+                        const string sha1Key = "SHA1=";
+                        const string sha256Key = "SHA256=";
+                        const string sha384Key = "SHA384=";
+                        const string sha512Key = "SHA512=";
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.StartsWith(md5Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <MD5> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.MD5;
+                                hashDigest = arg.Substring(md5Key.Length);
+                            }
+                            else if (arg.StartsWith(sha1Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA1> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA1;
+                                hashDigest = arg.Substring(sha1Key.Length);
+                            }
+                            else if (arg.StartsWith(sha256Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA256> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA256;
+                                hashDigest = arg.Substring(sha256Key.Length);
+                            }
+                            else if (arg.StartsWith(sha384Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA384> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA384;
+                                hashDigest = arg.Substring(sha384Key.Length);
+                            }
+                            else if (arg.StartsWith(sha512Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA512;
+                                hashDigest = arg.Substring(sha512Key.Length);
+                            }
+                            else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noErr)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noErr = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, noErr);
+                    }
+                #endregion
+                #region 08 Hash
+                case CodeType.Hash:
+                    { // Hash,<HashHelper.HashType>,<FilePath>,<DestVar>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_Hash(args[0], args[1], args[2]);
+                    }
+                #endregion
+                #region 09 Script
+                case CodeType.ExtractFile:
+                    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
+                    }
+                case CodeType.ExtractAndRun:
+                    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string _params = null;
+                        if (4 <= args.Count)
+                            _params = args[3];
+
+                        return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], _params);
+                    }
+                case CodeType.ExtractAllFiles:
+                    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
+                    }
+                case CodeType.Encode:
+                    { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string compression = null;
+                        if (3 < args.Count)
+                            compression = args[3];
+
+                        return new CodeInfo_Encode(args[0], args[1], args[2], compression);
+                    }
+                #endregion
+                #region 10 Interface
+                case CodeType.Visible:
+                    { // Visible,<%InterfaceKey%>,<Visiblity>
+                        // [,PERMANENT] - for compability of WB082
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string interfaceKey = Variables.TrimPercentMark(args[0]);
+                        if (interfaceKey == null)
+                            throw new InvalidCommandException($"Invalid InterfaceKey [{interfaceKey}]", rawCode);
+
+                        string visibility;
+                        if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                            args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
+                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
+                            visibility = args[1];
+                        else
+                            throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
+
+                        if (2 < args.Count)
+                        {
+                            if (!args[2].Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{args[2]}]", rawCode);
+                        }
+
+                        return new CodeInfo_Visible(interfaceKey, visibility);
+                    }
+                case CodeType.ReadInterface:
+                    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>,[Delim=<Str>]
+                        const int minArgCount = 5;
+                        const int maxArgCount = 6;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        InterfaceElement element = ParseInterfaceElement(args[0]);
+
+                        string destVar = args[4];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        if (delim != null && element != InterfaceElement.Items)
+                            throw new InvalidCommandException($"Argument [Delim] can be only used with [{element}]", rawCode);
+
+                        return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar, delim);
+                    }
+                case CodeType.WriteInterface:
+                    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
+                        const int minArgCount = 5;
+                        const int maxArgCount = 6;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        InterfaceElement element = ParseInterfaceElement(args[0]);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        if (delim != null && element != InterfaceElement.Items)
+                            throw new InvalidCommandException($"Argument [Delim] can be only used with [{element}]", rawCode);
+
+                        return new CodeInfo_WriteInterface(element, args[1], args[2], args[3], args[4], delim);
+                    }
+                case CodeType.Message:
+                    { // Message,<Message>[,ICON][,TIMEOUT]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string message = args[0];
+                        CodeMessageAction action = CodeMessageAction.None;
+                        string timeout = null;
+
+                        if (2 <= args.Count)
+                        {
+                            string arg = args[1];
+                            if (arg.Equals("Information", StringComparison.OrdinalIgnoreCase) || arg.Equals("Info", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Information;
+                            else if (arg.Equals("Confirmation", StringComparison.OrdinalIgnoreCase) || arg.Equals("Confirm", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Confirmation;
+                            else if (arg.Equals("Error", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Error;
+                            else if (arg.Equals("Warning", StringComparison.OrdinalIgnoreCase) || arg.Equals("Warn", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Warning;
+                            else
+                                throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
+                        }
+
+                        if (3 <= args.Count)
+                            timeout = args[2];
+
+                        return new CodeInfo_Message(message, action, timeout);
+                    }
+                case CodeType.Echo:
+                    { // Echo,<Message>,[WARN]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool warn = false;
+                        if (args.Count == maxArgCount)
+                        {
+                            if (args[1].Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                                warn = true;
+                        }
+
+                        return new CodeInfo_Echo(args[0], warn);
+                    }
+                case CodeType.EchoFile:
+                    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool warn = false;
+                        bool encode = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (warn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                warn = true;
+                            }
+                            else if (arg.Equals("ENCODE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encode)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                encode = true;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_EchoFile(args[0], warn, encode);
+                    }
+                case CodeType.UserInput:
+                    return ParseCodeInfoUserInput(rawCode, args);
+                case CodeType.AddInterface:
+                    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_AddInterface(args[0], args[1], args[2]);
+                    }
+                case CodeType.Retrieve:
+                    { // Compability Shim for WinBuilder 082
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
+
+                        if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.Dir -> UserInput.DirPath
+                            type = CodeType.UserInput;
+                            args[0] = "DirPath";
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+                        else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.File -> UserInput.FilePath
+                            type = CodeType.UserInput;
+                            args[0] = "FilePath";
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+                        else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FileSize -> FileSize
+                            type = CodeType.FileSize;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+                        else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FileVersion -> FileVersion
+                            type = CodeType.FileVersion;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+                        else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FolderSize -> DirSize
+                            type = CodeType.DirSize;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+                        else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.MD5 -> Hash.MD5
+                            type = CodeType.Hash;
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr, lineIdx);
+                        }
+
+                        throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
+                    }
+                #endregion
+                #region 20 String
+                case CodeType.StrFormat:
+                    return ParseCodeInfoStrFormat(rawCode, args);
+                #endregion
+                #region 21 Math
+                case CodeType.Math:
+                    return ParseCodeInfoMath(rawCode, args);
+                #endregion
+                #region 22 List
+                case CodeType.List:
+                    return ParseCodeInfoList(rawCode, args);
+                #endregion
                 #region 80 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
@@ -2358,7 +2423,7 @@ namespace PEBakery.Core
         {
             if (max == -1) // Unlimited argument count
                 return op.Count < min;
-             else
+            else
                 return op.Count < min || max < op.Count;
         }
         #endregion
@@ -2397,7 +2462,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) ||
                            !Enum.IsDefined(typeof(RegMultiType), type);
 
             if (invalid)
@@ -2413,7 +2478,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) || 
+            bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) ||
                            !Enum.IsDefined(typeof(InterfaceElement), e);
 
             if (invalid)
@@ -2466,7 +2531,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) ||
                            !Enum.IsDefined(typeof(UserInputType), type);
 
             if (invalid)
@@ -2831,9 +2896,9 @@ namespace PEBakery.Core
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
         private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
-        
+
         private static string StrFormat_Date_FormatString(string str)
-        { 
+        {
             // dd-mmm-yyyy-hh.nn
             // 02-11-2017-13.49
 
@@ -2951,7 +3016,7 @@ namespace PEBakery.Core
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
-                        
+
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
@@ -3208,8 +3273,358 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out MathType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out MathType type) ||
                            !Enum.IsDefined(typeof(MathType), type);
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid MathType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
+        #region ParseCodeInfoList, ParseListType
+        public static CodeInfo_List ParseCodeInfoList(string rawCode, List<string> args)
+        {
+            ListType type = ParseListType(args[0]);
+            ListInfo info;
+
+            // Remove MathType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case ListType.Get:
+                    {
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        // Check DestVar
+                        string destVar = args[2];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Get(listVar, args[1], destVar, delim);
+                    }
+                    break;
+                case ListType.Set:
+                    {
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Set(listVar, args[1], args[2], delim);
+                    }
+                    break;
+                case ListType.Append:
+                    {
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Append(listVar, args[1], delim);
+                    }
+                    break;
+                case ListType.Insert:
+                    {
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Insert(listVar, args[1], args[2], delim);
+                    }
+                    break;
+                case ListType.Remove:
+                case ListType.RemoveX:
+                    {
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Remove(listVar, args[1], delim);
+                    }
+                    break;
+                case ListType.RemoveAt:
+                    {
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_RemoveAt(listVar, args[1], delim);
+                    }
+                    break;
+                case ListType.Count:
+                    {
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        // Check DestVar
+                        string destVar = args[1];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Count(listVar, destVar, delim);
+                    }
+                    break;
+                case ListType.Pos:
+                case ListType.PosX:
+                case ListType.LastPos:
+                case ListType.LastPosX:
+                    {
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        // Check DestVar
+                        string destVar = args[2];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Pos(listVar, args[1], destVar, delim);
+                    }
+                    break;
+                case ListType.Sort:
+                case ListType.SortX:
+                case ListType.SortN:
+                case ListType.SortNX:
+                    { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check ListVar
+                        string listVar = args[0];
+                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
+
+                        string delim = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string delimKey = "Delim=";
+                            if (arg.StartsWith(delimKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (delim != null)
+                                    throw new InvalidCommandException("Argument <Delim> cannot be duplicated", rawCode);
+                                delim = arg.Substring(delimKey.Length);
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        info = new ListInfo_Sort(listVar, args[1], delim);
+                    }
+                    break;
+                default: // Error
+                    throw new InternalParserException($"Wrong ListType [{type}]");
+            }
+
+            return new CodeInfo_List(type, info);
+        }
+
+        public static ListType ParseListType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = !Enum.TryParse(typeStr, true, out ListType type) ||
+                           !Enum.IsDefined(typeof(ListType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid MathType [{typeStr}]");
@@ -3271,7 +3686,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        
+
                         info = new SystemInfo_GetFreeDrive(args[0]);
                     }
                     break;
@@ -3295,7 +3710,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        
+
                         info = new SystemInfo_IsAdmin(args[0]);
                     }
                     break;
@@ -3398,7 +3813,7 @@ namespace PEBakery.Core
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
-                        
+
                         info = new SystemInfo_RefreshScript(args[0], noRec);
                     }
                     break;
@@ -3409,10 +3824,11 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        if (args.Count == 1)
-                            info = new SystemInfo_SaveLog(args[0]);
-                        else
-                            info = new SystemInfo_SaveLog(args[0], args[1]);
+                        string logFormat = null;
+                        if (minArgCount < args.Count)
+                            logFormat = args[1];
+
+                        info = new SystemInfo_SaveLog(args[0], logFormat);
                     }
                     break;
                 case SystemType.SetLocal:
@@ -3470,7 +3886,7 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) || 
+            bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) ||
                            !Enum.IsDefined(typeof(SystemType), type);
 
             if (invalid)
@@ -3590,7 +4006,7 @@ namespace PEBakery.Core
                     embIdx = cIdx + 4;
                 }
                 else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
-                { 
+                {
                     cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
                     embIdx = cIdx + 5;
                 }
@@ -3704,7 +4120,7 @@ namespace PEBakery.Core
                         throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
                     }
                 }
-                    
+
                 embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), addr, lineIdx);
             }
 
@@ -3724,11 +4140,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region CompileBranchCodeBlock
-        public static void CompileBranchCodeBlock(List<CodeCommand> codeList, out List<CodeCommand> compiledList)
+        #region FoldBranchCodeBlock
+        public static void FoldBranchCodeBlock(List<CodeCommand> codeList, out List<CodeCommand> foldedList)
         {
             bool elseFlag = false;
-            compiledList = new List<CodeCommand>();
+            foldedList = new List<CodeCommand>();
 
             for (int i = 0; i < codeList.Count; i++)
             {
@@ -3739,13 +4155,13 @@ namespace PEBakery.Core
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (info.LinkParsed)
-                        compiledList.Add(cmd); 
+                        foldedList.Add(cmd);
                     else
-                        i = ParseNestedIf(cmd, codeList, i, compiledList);
+                        i = ParseNestedIf(cmd, codeList, i, foldedList);
 
                     elseFlag = true;
 
-                    CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
+                    FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                     info.Link = newLinkList;
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
@@ -3756,21 +4172,21 @@ namespace PEBakery.Core
                     if (elseFlag)
                     {
                         if (info.LinkParsed)
-                            compiledList.Add(cmd); 
+                            foldedList.Add(cmd);
                         else
-                            i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
+                            i = ParseNestedElse(cmd, codeList, i, foldedList, out elseFlag);
 
-                        CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
+                        FoldBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                         info.Link = newLinkList;
                     }
                     else
                         throw new InvalidCodeCommandException("[Else] must be used after [If]", cmd);
-                        
+
                 }
                 else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
                 {
                     elseFlag = false;
-                    compiledList.Add(cmd);
+                    foldedList.Add(cmd);
                 }
             }
         }

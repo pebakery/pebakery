@@ -34,25 +34,18 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
-using PEBakery.WPF.Controls;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
 {
     #region SettingWindow
+    // ReSharper disable once RedundantExtendsListEntry
     public partial class SettingWindow : Window
     {
         #region Field and Constructor
@@ -80,29 +73,29 @@ namespace PEBakery.WPF
 
         private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
         {
-            if (ScriptCache.dbLock == 0)
+            if (ScriptCache.DbLock == 0)
             {
-                Interlocked.Increment(ref ScriptCache.dbLock);
+                Interlocked.Increment(ref ScriptCache.DbLock);
                 try
                 {
-                    Model.ClearCacheDB();
+                    Model.ClearCacheDb();
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref ScriptCache.dbLock);
+                    Interlocked.Decrement(ref ScriptCache.DbLock);
                 }
             }
         }
 
         private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
         {
-            Model.ClearLogDB();
+            Model.ClearLogDb();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            Model.UpdateCacheDBState();
-            Model.UpdateLogDBState();
+            Model.UpdateCacheDbState();
+            Model.UpdateLogDbState();
             Model.UpdateProjectList();
         }
 
@@ -213,8 +206,8 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         private readonly string _settingFile;
-        public LogDatabase LogDB { get; set; }
-        public ScriptCache CacheDB { get; set; }
+        public LogDatabase LogDb { get; set; }
+        public ScriptCache CacheDb { get; set; }
         public ProjectCollection Projects { get; private set; }
 
         public SettingViewModel(string settingFile)
@@ -259,7 +252,7 @@ namespace PEBakery.WPF
             set
             {
                 project_SelectedIndex = value;
-                
+
                 if (0 <= value && value < Project_List.Count)
                 {
                     string fullPath = Projects[value].MainScript.RealPath;
@@ -290,7 +283,7 @@ namespace PEBakery.WPF
                                 Project_SourceDirectoryList.Add(dir);
                         }
                     }
-                    
+
                     if (0 < Project_SourceDirectoryList.Count)
                     {
                         project_SourceDirectoryIndex = 0;
@@ -302,7 +295,7 @@ namespace PEBakery.WPF
                         project_TargetDirectory = keys[1].Value;
                         OnPropertyUpdate(nameof(Project_TargetDirectory));
                     }
-                    
+
                     if (keys[2].Value != null)
                     {
                         project_ISOFile = keys[2].Value;
@@ -360,7 +353,7 @@ namespace PEBakery.WPF
                     }
                     Ini.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
-                
+
                 OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
             }
         }
@@ -479,7 +472,7 @@ namespace PEBakery.WPF
                 general_CustomUserAgent = value;
                 OnPropertyUpdate(nameof(General_CustomUserAgent));
             }
-        } 
+        }
         #endregion
 
         #region Property - Interface
@@ -676,28 +669,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_Macro;
-        public bool Log_Macro
-        {
-            get => log_Macro;
-            set
-            {
-                log_Macro = value;
-                OnPropertyUpdate(nameof(Log_Macro));
-            }
-        }
-
-        private bool log_Comment;
-        public bool Log_Comment
-        {
-            get => log_Comment;
-            set
-            {
-                log_Comment = value;
-                OnPropertyUpdate(nameof(Log_Comment));
-            }
-        }
-
         private bool log_DelayedLogging;
         public bool Log_DelayedLogging
         {
@@ -741,6 +712,17 @@ namespace PEBakery.WPF
             {
                 compat_FileRenameCanMoveDir = value;
                 OnPropertyUpdate(nameof(Compat_FileRenameCanMoveDir));
+            }
+        }
+
+        private bool compat_AllowLetterInLoop;
+        public bool Compat_AllowLetterInLoop
+        {
+            get => compat_AllowLetterInLoop;
+            set
+            {
+                compat_AllowLetterInLoop = value;
+                OnPropertyUpdate(nameof(Compat_AllowLetterInLoop));
             }
         }
 
@@ -847,7 +829,7 @@ namespace PEBakery.WPF
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteConOut = true;
             Interface_UseCustomEditor = false;
-            Interface_CustomEditorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+            Interface_CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
 
             // Script
             Script_EnableCache = true;
@@ -860,14 +842,13 @@ namespace PEBakery.WPF
 #else
             Log_DebugLevelIndex = 0;
 #endif
-            Log_Macro = true;
-            Log_Comment = true;
             Log_DelayedLogging = true;
 
             // Compatibility
             Compat_AsteriskBugDirCopy = true;
             Compat_AsteriskBugDirLink = false;
             Compat_FileRenameCanMoveDir = true;
+            Compat_AllowLetterInLoop = false;
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
             Compat_IgnoreWidthOfWebLabel = false;
@@ -892,7 +873,7 @@ namespace PEBakery.WPF
             const string compatStr = "Compat";
 
             // General_CustomUserAgent
-            IniKey[] keys = 
+            IniKey[] keys =
             {
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
@@ -912,22 +893,22 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             };
-            
+
             keys = Ini.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
+            #region Parse Helpers
             (string Section, string Key) SplitSectionKey(string varName)
             {
                 int sIdx = varName.IndexOf('_');
@@ -982,6 +963,7 @@ namespace PEBakery.WPF
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
                 return defaultValue;
             }
+            #endregion
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -1017,14 +999,13 @@ namespace PEBakery.WPF
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
-            Log_Macro = ParseBoolean(nameof(Log_Macro), Log_Macro);
-            Log_Comment = ParseBoolean(nameof(Log_Comment), Log_Comment);
             Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
 
             // Compatibility
             Compat_AsteriskBugDirCopy = ParseBoolean(nameof(Compat_AsteriskBugDirCopy), Compat_AsteriskBugDirCopy);
             Compat_AsteriskBugDirLink = ParseBoolean(nameof(Compat_AsteriskBugDirLink), Compat_AsteriskBugDirLink);
             Compat_FileRenameCanMoveDir = ParseBoolean(nameof(Compat_FileRenameCanMoveDir), Compat_FileRenameCanMoveDir);
+            Compat_AllowLetterInLoop = ParseBoolean(nameof(Compat_AllowLetterInLoop), Compat_AllowLetterInLoop);
             Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
             Compat_RegWriteLegacy = ParseBoolean(nameof(Compat_RegWriteLegacy), Compat_RegWriteLegacy);
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
@@ -1040,7 +1021,7 @@ namespace PEBakery.WPF
             const string logStr = "Log";
             const string compatStr = "Compat";
 
-            IniKey[] keys = 
+            IniKey[] keys =
             {
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr), General_EnableLongFilePath.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr), General_OptimizeCode.ToString()), // Boolean
@@ -1059,13 +1040,12 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr), Compat_AllowLetterInLoop.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr), Compat_RegWriteLegacy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
@@ -1082,42 +1062,47 @@ namespace PEBakery.WPF
         #endregion
 
         #region Database Operation
-        public void ClearLogDB()
+        public void ClearLogDb()
         {
-            LogDB.DeleteAll<DB_SystemLog>();
-            LogDB.DeleteAll<DB_BuildInfo>();
-            LogDB.DeleteAll<DB_Script>();
-            LogDB.DeleteAll<DB_Variable>();
-            LogDB.DeleteAll<DB_BuildLog>();
-
-            UpdateLogDBState();
+            LogDb.ClearTable(new LogDatabase.ClearTableOptions
+            {
+                SystemLog = true,
+                BuildInfo = true,
+                BuildLog = true,
+                Script = true,
+                Variable = true,
+            });
+            UpdateLogDbState();
         }
 
-        public void ClearCacheDB()
+        public void ClearCacheDb()
         {
-            if (CacheDB != null)
+            if (CacheDb != null)
             {
-                CacheDB.DeleteAll<DB_ScriptCache>();
-                UpdateCacheDBState();
+                CacheDb.ClearTable(new ScriptCache.ClearTableOptions
+                {
+                    ScriptCache = true,
+                });
+                UpdateCacheDbState();
             }
         }
 
-        public void UpdateLogDBState()
+        public void UpdateLogDbState()
         {
-            int systemLogCount = LogDB.Table<DB_SystemLog>().Count();
-            int codeLogCount = LogDB.Table<DB_BuildLog>().Count();
+            int systemLogCount = LogDb.Table<DB_SystemLog>().Count();
+            int codeLogCount = LogDb.Table<DB_BuildLog>().Count();
             Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 
-        public void UpdateCacheDBState()
+        public void UpdateCacheDbState()
         {
-            if (CacheDB == null)
+            if (CacheDb == null)
             {
                 Script_CacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = CacheDB.Table<DB_ScriptCache>().Count();
+                int cacheCount = CacheDb.Table<DB_ScriptCache>().Count();
                 Script_CacheState = $"{cacheCount} scripts cached";
             }
         }
@@ -1126,26 +1111,26 @@ namespace PEBakery.WPF
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (Application.Current.MainWindow is MainWindow w)
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+
+                Projects = w.Projects;
+
+                bool foundDefault = false;
+                List<string> projNameList = Projects.ProjectNames;
+                Project_List = new ObservableCollection<string>();
+                for (int i = 0; i < projNameList.Count; i++)
                 {
-                    Projects = w.Projects;
-
-                    bool foundDefault = false;
-                    List<string> projNameList = Projects.ProjectNames;
-                    Project_List = new ObservableCollection<string>();
-                    for (int i = 0; i < projNameList.Count; i++)
+                    Project_List.Add(projNameList[i]);
+                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
                     {
-                        Project_List.Add(projNameList[i]);
-                        if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foundDefault = true;
-                            Project_SelectedIndex = Project_DefaultIndex = i;
-                        }
+                        foundDefault = true;
+                        Project_SelectedIndex = Project_DefaultIndex = i;
                     }
-
-                    if (foundDefault == false)
-                        Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
                 }
+
+                if (foundDefault == false)
+                    Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
             });
         }
         #endregion

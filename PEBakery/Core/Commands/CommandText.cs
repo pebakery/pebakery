@@ -25,15 +25,13 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using PEBakery.Helper;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands
@@ -89,7 +87,7 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        long bomLen = FileHelper.TextBOMLength(fs);
+                        long bomLen = FileHelper.TextBomLength(fs);
                         byte[] lastChar = new byte[2];
                         if (2 + bomLen <= fs.Length)
                         {
@@ -175,7 +173,7 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        long bomLen = FileHelper.TextBOMLength(fs);
+                        long bomLen = FileHelper.TextBomLength(fs);
                         byte[] lastChar = new byte[2];
                         if (2 + bomLen <= fs.Length)
                         {
@@ -361,7 +359,7 @@ namespace PEBakery.Core.Commands
             }
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
-            
+
             int count = 0;
             string tempPath = Path.GetTempFileName();
             using (StreamReader r = new StreamReader(fileName, encoding))
@@ -382,7 +380,7 @@ namespace PEBakery.Core.Commands
                             break;
                         }
                     }
-                    
+
                     if (writeLine)
                         w.WriteLine(srcLine);
                 }
@@ -422,7 +420,7 @@ namespace PEBakery.Core.Commands
                 {
                     // WB082 delete spaces only if spaces are placed in front of line.
                     // Same with C#'s string.TrimStart().
-                    int count = StringHelper.CountOccurrences(srcLine, " ");
+                    int count = StringHelper.CountSubStr(srcLine, " ");
                     if (0 < count)
                     {
                         i++;

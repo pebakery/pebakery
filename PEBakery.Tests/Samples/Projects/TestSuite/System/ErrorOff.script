@@ -1,0 +1,32 @@
+[Main]
+Title=ErrorOff
+Author=ied206
+Description=UnitTest
+Version=001
+Level=5
+Selected=True
+Mandatory=False
+
+[Variables]
+ErrorEcho=Run,%ScriptFile%,ErrorSection
+
+[Process]
+// Should Success
+System,ErrorOff,3
+Run,%ScriptFile%,ErrorSection
+Run,%ScriptFile%,Depth1
+ErrorEcho
+// Should Success
+Set,%A%,True
+If,%A%,Equal,True,System,ErrorOff,3
+Run,%ScriptFile%,ErrorSection
+Run,%ScriptFile%,Depth1
+ErrorEcho
+
+[Depth1]
+System,ErrorOff
+Echo
+
+[ErrorSection]
+Echo
+

@@ -29,30 +29,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using Microsoft.Win32;
 using ManagedWimLib;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
 {
-    [SuppressMessage("ReSharper", "RedundantAssignment")]
     public static class CommandBranch
     {
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
-        {
-            RunExec(s, cmd, preserveCurParams, forceLog, false);
-        }
-
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
@@ -60,7 +51,7 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!sc.Sections.ContainsKey(sectionName))
@@ -78,16 +69,17 @@ namespace PEBakery.Core.Commands
                     paramDict[i + 1] = paramList[i];
             }
 
-            // Branch to new section
+            // Prepare to branch to a new section
             SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
 
+            // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
             Dictionary<string, string> fixedVars = null;
             Dictionary<string, CodeCommand> localMacros = null;
             if (cmd.Type == CodeType.Exec)
             {
-                // Backup Varaibles and Macros
+                // Backup Variables and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
                 localMacros = s.Macro.LocalDict;
@@ -103,10 +95,20 @@ namespace PEBakery.Core.Commands
                 s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 
-            // Run Section
+            // Backup EngineState values
             int depthBackup = s.CurDepth;
-            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
+            int realScriptIdBackup = s.RealScriptId;
+            if (!inCurrentScript)
+                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
 
+            // Run Section
+            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+            // Restore EngineState values
+            s.CurDepth = depthBackup;
+            s.RealScriptId = realScriptIdBackup;
+
+            // Restore Variables and Macros for Exec
             if (cmd.Type == CodeType.Exec)
             {
                 // Restore Variables
@@ -117,13 +119,13 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
-        }  
+        }
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+            CodeType type = cmd.Type;
 
             if (info.Break)
             {
@@ -155,7 +157,7 @@ namespace PEBakery.Core.Commands
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-                Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+                Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exists?
                 if (!sc.Sections.ContainsKey(sectionName))
@@ -169,14 +171,30 @@ namespace PEBakery.Core.Commands
                 long loopCount;
                 long startIdx = 0, endIdx = 0;
                 char startLetter = ' ', endLetter = ' ';
-                switch (cmd.Type)
+                switch (type)
                 {
                     case CodeType.Loop:
                         { // Integer Index
+                            bool startIdxError = false;
+                            bool endIdxError = false;
+
                             if (!NumberHelper.ParseInt64(startStr, out startIdx))
-                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                                startIdxError = true;
                             if (!NumberHelper.ParseInt64(endStr, out endIdx))
+                                endIdxError = true;
+
+                            if (s.CompatAllowLetterInLoop && startIdxError && endIdxError &&
+                                startStr.Length == 1 && StringHelper.IsAlphabet(startStr[0]) &&
+                                endStr.Length == 1 && StringHelper.IsAlphabet(endStr[0]))
+                            {
+                                type = CodeType.LoopLetter;
+                                goto case CodeType.LoopLetter;
+                            }
+                            else if (startIdxError)
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                            else if (endIdxError)
                                 throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
+
                             loopCount = endIdx - startIdx + 1;
                         }
                         break;
@@ -191,7 +209,7 @@ namespace PEBakery.Core.Commands
                             endLetter = char.ToUpper(endStr[0]);
 
                             if (endLetter < startLetter)
-                                throw new ExecuteException("StartLetter must be smaller than EndLetter in lexicographic order");
+                                throw new ExecuteException("<StartLetter> must be smaller than <EndLetter> in lexicographic order");
 
                             loopCount = endLetter - startLetter + 1;
                         }
@@ -203,7 +221,7 @@ namespace PEBakery.Core.Commands
                 // Log Messages
                 string logMessage;
                 if (inCurrentScript)
-                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
+                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times ({startStr} ~ {endStr})";
                 else
                     logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
@@ -211,7 +229,7 @@ namespace PEBakery.Core.Commands
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
                 int loopIdx = 1;
-                switch (cmd.Type)
+                switch (type)
                 {
                     case CodeType.Loop:
                         for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
@@ -219,13 +237,26 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
+                            // Backup EngineState values
                             int depthBackup = s.CurDepth;
+                            int realScriptIdBackup = s.RealScriptId;
+                            if (!inCurrentScript)
+                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+
+                            // Set s.LoopState
                             s.LoopState = LoopState.OnIndex;
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+
+                            // Run Loop Section
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+                            // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
                                 break;
                             s.LoopState = LoopState.Off;
+
+                            // Restore EngineState values
                             s.CurDepth = depthBackup;
+                            s.RealScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
@@ -237,13 +268,25 @@ namespace PEBakery.Core.Commands
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
+                            // Backup EngineState values
                             int depthBackup = s.CurDepth;
+                            int realScriptIdBackup = s.RealScriptId;
+                            if (!inCurrentScript)
+                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+
+                            // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+
+                            // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
                                 break;
                             s.LoopState = LoopState.Off;
+
+                            // Restore EngineState values
                             s.CurDepth = depthBackup;
+                            s.RealScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
@@ -262,7 +305,7 @@ namespace PEBakery.Core.Commands
         public static void If(EngineState s, CodeCommand cmd)
         {
             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
-            
+
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
@@ -284,7 +327,7 @@ namespace PEBakery.Core.Commands
         public static void Else(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
-            
+
             if (s.ElseFlag)
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
@@ -316,11 +359,12 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1, false);
+            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1);
             s.CurDepth = depthBackup;
         }
 
         #region BranchConditionCheck
+        [SuppressMessage("ReSharper", "RedundantAssignment")]
         public static bool CheckBranchCondition(EngineState s, BranchCondition c, out string logMessage)
         {
             bool match = false;
@@ -393,18 +437,19 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistFile:
                     {
                         string filePath = StringEscaper.Preprocess(s, c.Arg1);
+                        Debug.Assert(filePath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
                         // Check filePath contains wildcard
-                        bool containsWildcard = Path.GetFileName(filePath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
+                        bool containsWildcard = Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) != -1;
 
                         // Check if file exists
-                        if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        if (filePath.Length == 0)
                         {
                             match = false;
                         }
                         else if (containsWildcard)
                         {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
+                            if (!Directory.Exists(FileHelper.GetDirNameEx(filePath)))
                             {
                                 match = false;
                             }
@@ -434,18 +479,19 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistDir:
                     {
                         string dirPath = StringEscaper.Preprocess(s, c.Arg1);
+                        Debug.Assert(dirPath != null, "Internal Logic Error at CommandBranch.CheckBranchCondition");
 
                         // Check filePath contains wildcard
-                        bool containsWildcard = Path.GetFileName(dirPath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
+                        bool containsWildcard = Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) != -1;
 
                         // Check if directory exists
-                        if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        if (dirPath.Length == 0)
                         {
                             match = false;
                         }
                         else if (containsWildcard)
                         {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
+                            if (!Directory.Exists(FileHelper.GetDirNameEx(dirPath)))
                             {
                                 match = false;
                             }
@@ -495,7 +541,7 @@ namespace PEBakery.Core.Commands
 
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             match = regSubKey != null;
@@ -519,7 +565,7 @@ namespace PEBakery.Core.Commands
                         match = true;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
@@ -553,7 +599,7 @@ namespace PEBakery.Core.Commands
                         match = false;
                         RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
                         if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            throw new InvalidOperationException($"Invalid registry root key [{rootKey}]");
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
@@ -619,7 +665,7 @@ namespace PEBakery.Core.Commands
                 case BranchConditionType.ExistMacro:
                     {
                         string macroName = StringEscaper.Preprocess(s, c.Arg1);
-                        match = s.Macro.MacroDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
+                        match = s.Macro.GlobalDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
 
                         if (match)
                             logMessage = $"Macro [{macroName}] exists";
@@ -909,9 +955,9 @@ namespace PEBakery.Core.Commands
                         match = NetworkInterface.GetIsNetworkAvailable();
 
                         if (match)
-                            logMessage = "System is online";
+                            logMessage = "Network is online";
                         else
-                            logMessage = "System is offline";
+                            logMessage = "Network is offline";
 
                         if (c.NotFlag)
                             match = !match;

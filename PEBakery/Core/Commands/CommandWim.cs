@@ -25,10 +25,7 @@
     not derived from or based on this program. 
 */
 
-using ManagedWimLib;
-using Microsoft.Wim;
-using PEBakery.Exceptions;
-using PEBakery.Helper;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,6 +33,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PEBakery.Helper;
+using ManagedWimLib;
+using Microsoft.Wim;
 
 namespace PEBakery.Core.Commands
 {
@@ -847,7 +847,7 @@ namespace PEBakery.Core.Commands
                             wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractFlags);
                             wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
                         }
-                            
+
                         logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
                     }
                     finally
@@ -1270,7 +1270,7 @@ namespace PEBakery.Core.Commands
                 addFlags |= AddFlags.NO_ACLS;
             if (info.PreserveFlag)
                 addFlags |= AddFlags.NO_REPLACE;
-            
+
             try
             {
                 using (Wim wim = Wim.OpenWim(wimFile, openFlags))
@@ -1445,32 +1445,32 @@ namespace PEBakery.Core.Commands
             switch (firstCmd.Type)
             {
                 case CodeType.WimPathAdd:
-                {
-                    CodeInfo_WimPathAdd firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathAdd>();
-                    wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
-                    imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
-                    checkFlag = firstInfo.CheckFlag;
-                    rebuildFlag = firstInfo.RebuildFlag;
-                    break;
-                }
+                    {
+                        CodeInfo_WimPathAdd firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                        wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
+                        imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
+                        checkFlag = firstInfo.CheckFlag;
+                        rebuildFlag = firstInfo.RebuildFlag;
+                        break;
+                    }
                 case CodeType.WimPathDelete:
-                {
-                    CodeInfo_WimPathDelete firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathDelete>();
-                    wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
-                    imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
-                    checkFlag = firstInfo.CheckFlag;
-                    rebuildFlag = firstInfo.RebuildFlag;
-                    break;
-                }
+                    {
+                        CodeInfo_WimPathDelete firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                        wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
+                        imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
+                        checkFlag = firstInfo.CheckFlag;
+                        rebuildFlag = firstInfo.RebuildFlag;
+                        break;
+                    }
                 case CodeType.WimPathRename:
-                {
-                    CodeInfo_WimPathRename firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathRename>();
-                    wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
-                    imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
-                    checkFlag = firstInfo.CheckFlag;
-                    rebuildFlag = firstInfo.RebuildFlag;
-                    break;
-                }
+                    {
+                        CodeInfo_WimPathRename firstInfo = firstCmd.Info.Cast<CodeInfo_WimPathRename>();
+                        wimFile = StringEscaper.Preprocess(s, firstInfo.WimFile);
+                        imageIndexStr = StringEscaper.Preprocess(s, firstInfo.ImageIndex);
+                        checkFlag = firstInfo.CheckFlag;
+                        rebuildFlag = firstInfo.RebuildFlag;
+                        break;
+                    }
                 default:
                     throw new InternalException("Internal Logic Error at CommandWim.WimPathOp");
             }
@@ -1498,51 +1498,51 @@ namespace PEBakery.Core.Commands
                 switch (subCmd.Type)
                 {
                     case CodeType.WimPathAdd:
-                    {
-                        CodeInfo_WimPathAdd info = subCmd.Info.Cast<CodeInfo_WimPathAdd>();
+                        {
+                            CodeInfo_WimPathAdd info = subCmd.Info.Cast<CodeInfo_WimPathAdd>();
 
-                        string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
-                        string destPath = StringEscaper.Preprocess(s, info.DestPath);
+                            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+                            string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
-                        AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.VERBOSE | AddFlags.EXCLUDE_VERBOSE;
-                        if (info.NoAclFlag)
-                            addFlags |= AddFlags.NO_ACLS;
-                        if (info.PreserveFlag)
-                            addFlags |= AddFlags.NO_REPLACE;
+                            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.VERBOSE | AddFlags.EXCLUDE_VERBOSE;
+                            if (info.NoAclFlag)
+                                addFlags |= AddFlags.NO_ACLS;
+                            if (info.PreserveFlag)
+                                addFlags |= AddFlags.NO_REPLACE;
 
-                        UpdateCommand addCmd = UpdateCommand.SetAdd(srcPath, destPath, null, addFlags);
-                        wimUpdateCmds.Add(addCmd);
+                            UpdateCommand addCmd = UpdateCommand.SetAdd(srcPath, destPath, null, addFlags);
+                            wimUpdateCmds.Add(addCmd);
 
-                        wimLogs.Add(new LogInfo(LogState.Success, $"Added [{srcPath}] into [{wimFile}]", subCmd));
-                        break;
-                    }
+                            wimLogs.Add(new LogInfo(LogState.Success, $"Added [{srcPath}] into [{wimFile}]", subCmd));
+                            break;
+                        }
                     case CodeType.WimPathDelete:
-                    {
-                        CodeInfo_WimPathDelete info = subCmd.Info.Cast<CodeInfo_WimPathDelete>();
+                        {
+                            CodeInfo_WimPathDelete info = subCmd.Info.Cast<CodeInfo_WimPathDelete>();
 
-                        string path = StringEscaper.Preprocess(s, info.Path);
+                            string path = StringEscaper.Preprocess(s, info.Path);
 
-                        const DeleteFlags deleteFlags = DeleteFlags.RECURSIVE;
+                            const DeleteFlags deleteFlags = DeleteFlags.RECURSIVE;
 
-                        UpdateCommand deleteCmd = UpdateCommand.SetDelete(path, deleteFlags);
-                        wimUpdateCmds.Add(deleteCmd);
+                            UpdateCommand deleteCmd = UpdateCommand.SetDelete(path, deleteFlags);
+                            wimUpdateCmds.Add(deleteCmd);
 
-                        wimLogs.Add(new LogInfo(LogState.Success, $"[{path}] deleted from [{wimFile}]", subCmd));
-                        break;
-                    }
+                            wimLogs.Add(new LogInfo(LogState.Success, $"[{path}] deleted from [{wimFile}]", subCmd));
+                            break;
+                        }
                     case CodeType.WimPathRename:
-                    {
-                        CodeInfo_WimPathRename info = subCmd.Info.Cast<CodeInfo_WimPathRename>();
+                        {
+                            CodeInfo_WimPathRename info = subCmd.Info.Cast<CodeInfo_WimPathRename>();
 
-                        string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
-                        string destPath = StringEscaper.Preprocess(s, info.DestPath);
+                            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+                            string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
-                        UpdateCommand renCmd = UpdateCommand.SetRename(srcPath, destPath);
-                        wimUpdateCmds.Add(renCmd);
+                            UpdateCommand renCmd = UpdateCommand.SetRename(srcPath, destPath);
+                            wimUpdateCmds.Add(renCmd);
 
-                        wimLogs.Add(new LogInfo(LogState.Success, $"Renamed [{srcPath}] to [{destPath}] in [{wimFile}]", subCmd));
-                        break;
-                    }
+                            wimLogs.Add(new LogInfo(LogState.Success, $"Renamed [{srcPath}] to [{destPath}] in [{wimFile}]", subCmd));
+                            break;
+                        }
                     default:
                         throw new InternalException("Internal Logic Error at CommandWim.WimPathOp");
                 }
@@ -1690,7 +1690,7 @@ namespace PEBakery.Core.Commands
                     writeFlags |= WriteFlags.SOLID;
                     compType = CompressionType.LZMS;
                 }
-                else if (!recompStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase)) 
+                else if (!recompStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
                     return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{recompStr}].");
             }
 
@@ -1836,11 +1836,11 @@ namespace PEBakery.Core.Commands
                                 destWimCount = dwi.ImageCount;
 
                                 srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
-                                
+
                                 destWim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
                             }
 
-                            
+
                             logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into wim [{destWimPath}:{destWimCount + 1}]"));
                         }
                         else

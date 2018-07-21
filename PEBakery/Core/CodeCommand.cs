@@ -32,7 +32,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 
 // ReSharper disable InconsistentNaming
@@ -43,7 +42,7 @@ namespace PEBakery.Core
     public enum CodeType
     {
         // 00 Misc
-        None = 0, Comment, Error,
+        None = 0, Error, Comment,
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
@@ -54,31 +53,33 @@ namespace PEBakery.Core
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
-        // 04 INI
-        INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
-        // 05 Compress
-        Compress = 500, Decompress, Expand, CopyOrExpand,
-        // 06 Network
-        WebGet = 600,
-        WebGetIfNotExist = 699, // Will be deprecated
-        // 07 Attach
-        ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
-        // 08 Interface
-        Visible = 800, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
-        VisibleOp = 880, ReadInterfaceOp, WriteInterfaceOp,
-        Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
-        // 09 Hash
-        Hash = 900,
-        // 10 StringFormat
-        StrFormat = 1000,
-        // 11 Math
-        Math = 1100,
-        // 12 Wim
-        WimMount = 1200, WimUnmount,
+        // 04 Ini
+        IniWrite = 400, IniRead, IniDelete, IniReadSection, IniAddSection, IniDeleteSection, IniWriteTextLine, IniMerge,
+        IniWriteOp = 480, IniReadOp, IniDeleteOp, IniReadSectionOp, IniAddSectionOp, IniDeleteSectionOp, IniWriteTextLineOp,
+        // 05 Wim
+        WimMount = 500, WimUnmount,
         WimInfo, WimApply, WimExtract, WimExtractBulk, WimCapture, WimAppend, WimDelete,
         WimPathAdd, WimPathDelete, WimPathRename, WimOptimize, WimExport,
-        WimExtractOp = 1280, WimPathOp,
+        WimExtractOp = 580, WimPathOp,
+        // 06 Archive
+        Compress = 600, Decompress, Expand, CopyOrExpand,
+        // 07 Network
+        WebGet = 700,
+        WebGetIfNotExist = 799, // Will be deprecated
+        // 08 Hash
+        Hash = 800,
+        // 09 Script
+        ExtractFile = 900, ExtractAndRun, ExtractAllFiles, Encode,
+        // 10 Interface
+        Visible = 1000, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
+        VisibleOp = 1080, ReadInterfaceOp, WriteInterfaceOp,
+        Retrieve = 1099, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
+        // 20 String
+        StrFormat = 2000,
+        // 21 Math
+        Math = 2100,
+        // 22 List
+        List = 2200,
         // 80 Branch
         Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
@@ -177,11 +178,11 @@ namespace PEBakery.Core
         {
             CodeType.TXTAddLineOp,
             CodeType.TXTDelLineOp,
-            CodeType.INIReadOp,
-            CodeType.INIWriteOp,
-            CodeType.INIAddSectionOp,
-            CodeType.INIDeleteSectionOp,
-            CodeType.INIWriteTextLineOp,
+            CodeType.IniReadOp,
+            CodeType.IniWriteOp,
+            CodeType.IniAddSectionOp,
+            CodeType.IniDeleteSectionOp,
+            CodeType.IniWriteTextLineOp,
             CodeType.VisibleOp,
             CodeType.ReadInterfaceOp,
             CodeType.WriteInterfaceOp,
@@ -218,7 +219,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 00 - Error
+    #region CodeInfo 00 - Misc
     [Serializable]
     public class CodeInfo_Error : CodeInfo
     {
@@ -227,6 +228,11 @@ namespace PEBakery.Core
         public CodeInfo_Error(string errorMessage)
         {
             ErrorMessage = errorMessage;
+        }
+
+        public CodeInfo_Error(Exception e)
+        {
+            ErrorMessage = Logger.LogExceptionMessage(e);
         }
 
         public override string ToString()
@@ -964,7 +970,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 04 - INI
+    #region CodeInfo 04 - Ini
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
     { // IniRead,<FileName>,<Section>,<Key>,<%DestVar%>
@@ -1115,18 +1121,24 @@ namespace PEBakery.Core
         }
     }
 
+    /// <summary>
+    /// PEBakery script language does not support array, so this command is provided only for logging
+    /// TODO: Rework this command so it can be used in practical manner?
+    /// </summary>
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
-    { // IniReadSection,<FileName>,<Section>,<%DestVar%>
+    { // IniReadSection,<FileName>,<Section>,<%DestVar%>,[Delim=<Str>]
         public string FileName;
         public string Section;
         public string DestVar;
+        public string Delim;
 
-        public CodeInfo_IniReadSection(string fileName, string section, string destVar)
+        public CodeInfo_IniReadSection(string fileName, string section, string destVar, string delim)
         {
             FileName = fileName;
             Section = section;
             DestVar = destVar;
+            Delim = delim;
         }
 
         public new bool OptimizeCompare(CodeInfo cmpInfo)
@@ -1140,7 +1152,18 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{FileName},{Section},{DestVar}";
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",");
+                b.Append(Delim);
+            }
+            return b.ToString();
         }
     }
 
@@ -1313,1478 +1336,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 05 - Archive
-    public enum ArchiveCompressFormat
-    {
-        Zip = 1,
-    }
-
-    [Serializable]
-    public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Encoding]
-        public ArchiveCompressFormat Format;
-        public string SrcPath;
-        public string DestArchive;
-        public ArchiveHelper.CompressLevel? CompressLevel;
-        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
-
-        public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel, Encoding encoding)
-        {
-            Format = format;
-            SrcPath = srcDir;
-            DestArchive = destArchive;
-            CompressLevel = compressLevel;
-            Encoding = encoding;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            switch (Format)
-            {
-                case ArchiveCompressFormat.Zip:
-                    b.Append("Zip");
-                    break;
-                default:
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
-            }
-            b.Append(",");
-            b.Append(SrcPath);
-            b.Append(",");
-            b.Append(DestArchive);
-            if (CompressLevel != null)
-            {
-                b.Append(",");
-                b.Append(CompressLevel.ToString().ToUpper());
-            }
-            if (Encoding != null)
-            {
-                if (Encoding.Equals(Encoding.UTF8))
-                    b.Append(",UTF8");
-                else if (Encoding.Equals(Encoding.Unicode))
-                    b.Append(",UTF16");
-                else if (Encoding.Equals(Encoding.BigEndianUnicode))
-                    b.Append(",UTF16BE");
-                else if (Encoding.Equals(Encoding.Default))
-                    b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<SrcArchive>,<DestDir>,[Encoding]
-        public string SrcArchive;
-        public string DestDir;
-        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
-
-        public CodeInfo_Decompress(string srcArchive, string destArchive, Encoding encoding)
-        {
-            SrcArchive = srcArchive;
-            DestDir = destArchive;
-            Encoding = encoding;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcArchive);
-            b.Append(",");
-            b.Append(DestDir);
-            if (Encoding != null)
-            {
-                if (Encoding.Equals(Encoding.UTF8))
-                    b.Append(",UTF8");
-                else if (Encoding.Equals(Encoding.Unicode))
-                    b.Append(",UTF16");
-                else if (Encoding.Equals(Encoding.BigEndianUnicode))
-                    b.Append(",UTF16BE");
-                else if (Encoding.Equals(Encoding.Default))
-                    b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_Expand : CodeInfo
-    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
-        public string SrcCab;
-        public string DestDir;
-        public string SingleFile;
-        public bool Preserve; // Only enabled if SingleFile is set
-        public bool NoWarn; // Only enabled if SingleFile is set
-
-        public CodeInfo_Expand(string srcCab, string destDir, string singleFile, bool preserve, bool noWarn)
-        {
-            SrcCab = srcCab;
-            DestDir = destDir;
-            SingleFile = singleFile;
-            Preserve = preserve;
-            NoWarn = noWarn;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcCab);
-            b.Append(",");
-            b.Append(DestDir);
-            if (SingleFile != null)
-            {
-                b.Append(",");
-                b.Append(SingleFile);
-            }
-            if (Preserve)
-                b.Append(",PRESERVE");
-            if (NoWarn)
-                b.Append(",NOWARN");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_CopyOrExpand : CodeInfo
-    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
-        public string SrcFile;
-        public string DestPath;
-        public bool Preserve;
-        public bool NoWarn;
-
-        public CodeInfo_CopyOrExpand(string srcCab, string destDir, bool preserve, bool noWarn)
-        {
-            SrcFile = srcCab;
-            DestPath = destDir;
-            Preserve = preserve;
-            NoWarn = noWarn;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcFile);
-            b.Append(",");
-            b.Append(DestPath);
-            if (Preserve)
-                b.Append(",PRESERVE");
-            if (NoWarn)
-                b.Append(",NOWARN");
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 06 - Network
-    [Serializable]
-    public class CodeInfo_WebGet : CodeInfo
-    { // WebGet,<URL>,<DestPath>,[Hash=HashType,HashDigest],[NOERR]
-        // This command was rebuilt, and scraped WB082 spec.
-        public string URL;
-        public string DestPath;
-        public HashHelper.HashType HashType; // Optional Argument
-        public string HashDigest; // Optional Argument
-        public bool NoErrFlag; // Optional Flag
-
-        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, bool noErr)
-        {
-            URL = url;
-            DestPath = destPath;
-            HashType = hashType;
-            HashDigest = hashDigest;
-            NoErrFlag = noErr;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(URL);
-            b.Append(",");
-            b.Append(DestPath);
-            if (HashType != HashHelper.HashType.None && HashDigest != null)
-            {
-                b.Append(",");
-                b.Append(HashType);
-                b.Append(",");
-                b.Append(HashDigest);
-            }
-            if (NoErrFlag)
-                b.Append(",NOERR");
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 07 - Script
-    [Serializable]
-    public class CodeInfo_ExtractFile : CodeInfo
-    { // ExtractFile,<ScriptFile>,<DirName>,<FileName>,<DestDir>
-        public string ScriptFile;
-        public string DirName;
-        public string FileName;
-        public string DestDir;
-
-        public CodeInfo_ExtractFile(string scriptFile, string dirName, string fileName, string extractTo)
-        {
-            ScriptFile = scriptFile;
-            DirName = dirName;
-            FileName = fileName;
-            DestDir = extractTo;
-        }
-
-        public override string ToString()
-        {
-            return $"{ScriptFile},{DirName},{FileName},{DestDir}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_ExtractAndRun : CodeInfo
-    { // ExtractAndRun,<ScriptFile>,<DirName>,<FileName>,[Params]
-        public string ScriptFile;
-        public string DirName;
-        public string FileName;
-        public string Params;
-
-        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string parameters)
-        {
-            ScriptFile = scriptFile;
-            DirName = dirName;
-            FileName = fileName;
-            Params = parameters;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(ScriptFile);
-            b.Append(",");
-            b.Append(DirName);
-            b.Append(",");
-            b.Append(FileName);
-            if (Params != null)
-            {
-                b.Append(",");
-                b.Append(Params);
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_ExtractAllFiles : CodeInfo
-    { // ExtractAllFiles,<ScriptFile>,<DirName>,<DestDir>
-        public string ScriptFile;
-        public string DirName;
-        public string DestDir;
-
-        public CodeInfo_ExtractAllFiles(string scriptFile, string dirName, string extractTo)
-        {
-            ScriptFile = scriptFile;
-            DirName = dirName;
-            DestDir = extractTo;
-        }
-
-        public override string ToString()
-        {
-            return $"{ScriptFile},{DirName},{DestDir}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_Encode : CodeInfo
-    { // Encode,<ScriptFile>,<DirName>,<FileName>,[Compression]
-        public string ScriptFile;
-        public string DirName;
-        public string FilePath; // Can have Wildcard
-        public string Compression;
-
-        public CodeInfo_Encode(string scriptFile, string dirName, string filePath, string compression)
-        {
-            ScriptFile = scriptFile;
-            DirName = dirName;
-            FilePath = filePath;
-            Compression = compression;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(ScriptFile);
-            b.Append(',');
-            b.Append(DirName);
-            b.Append(',');
-            b.Append(FilePath);
-            if (Compression != null)
-            {
-                b.Append(',');
-                b.Append(Compression);
-            }
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 08 - Interface
-    [Serializable]
-    public class CodeInfo_Visible : CodeInfo
-    { // Visible,<%UIControlKey%>,<Visibility>
-        public string UIControlKey; // Must start and end with %
-        public string Visibility; // True or False
-
-        public CodeInfo_Visible(string uiCtrlKey, string visibility)
-        {
-            UIControlKey = uiCtrlKey;
-            Visibility = visibility;
-        }
-
-        public new bool OptimizeCompare(CodeInfo cmpInfo) => true;
-
-        public override string ToString()
-        {
-            return $"{UIControlKey},{Visibility}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_VisibleOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds;
-        public List<CodeInfo_Visible> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_Visible>()).ToList();
-
-        public CodeInfo_VisibleOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
-    public enum InterfaceElement
-    {
-        // General
-        Text, Visible, PosX, PosY, Width, Height, Value, ToolTip,
-        // TextLabel, Bevel 
-        FontSize, FontWeight, FontStyle,
-        // NumberBox
-        NumberMin, NumberMax, NumberTick,
-        // Image, WebLabel
-        Url,
-        // Items - ComboBox, RadioGroup
-        Items,
-        // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
-        SectionName, HideProgress
-    }
-
-    [Serializable]
-    public class CodeInfo_ReadInterface : CodeInfo
-    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<%DestVar%>
-        public InterfaceElement Element;
-        public string ScriptFile;
-        public string Section;
-        public string Key;
-        public string DestVar;
-
-        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar)
-        {
-            Element = element;
-            ScriptFile = scriptFile;
-            Section = section;
-            Key = key;
-            DestVar = destVar;
-        }
-
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
-        {
-            CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
-            if (info == null)
-                return false;
-
-            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
-                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override string ToString()
-        {
-            return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_ReadInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds;
-        public List<CodeInfo_ReadInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_ReadInterface>()).ToList();
-
-        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WriteInterface : CodeInfo
-    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
-        public InterfaceElement Element;
-        public string ScriptFile;
-        public string Section;
-        public string Key;
-        public string Value;
-
-        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value)
-        {
-            Element = element;
-            ScriptFile = scriptFile;
-            Section = section;
-            Key = key;
-            Value = value;
-        }
-
-        public new bool OptimizeCompare(CodeInfo cmpInfo)
-        {
-            CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
-            if (info == null)
-                return false;
-
-            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
-                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override string ToString()
-        {
-            return $"{Element},{ScriptFile},{Section},{Key},{Value}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WriteInterfaceOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds;
-        public List<CodeInfo_WriteInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_WriteInterface>()).ToList();
-
-        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
-        {
-            Cmds = new List<CodeCommand>(cmds);
-        }
-    }
-
-    public enum CodeMessageAction
-    {
-        None, Information, Confirmation, Error, Warning
-    }
-
-    [Serializable]
-    public class CodeInfo_Message : CodeInfo
-    { // Message,<Message>,[Icon],[TIMEOUT]
-        public string Message;
-        public CodeMessageAction Action; // Optional;
-        public string Timeout; // Optional, Its type should be int, but set to string because of variable system
-
-        public CodeInfo_Message(string message, CodeMessageAction action, string timeout)
-        {
-            Message = message;
-            Action = action;
-            Timeout = timeout;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(Message);
-            b.Append(",");
-            b.Append(Action);
-            if (Timeout != null)
-            {
-                b.Append(",");
-                b.Append(Timeout);
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_Echo : CodeInfo
-    { // Echo,<Message>,[WARN]
-        public string Message;
-        public bool Warn;
-
-        public CodeInfo_Echo(string message, bool warn)
-        {
-            Message = message;
-            Warn = warn;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(Message);
-            if (Warn)
-                b.Append(",WARN");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_EchoFile : CodeInfo
-    { // EchoFile,<SrcFile>,[WARN],[ENCODE]
-        public string SrcFile;
-        public bool Warn;
-        public bool Encode;
-
-        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
-        {
-            SrcFile = srcFile;
-            Warn = warn;
-            Encode = encode;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcFile);
-            if (Warn)
-                b.Append(",WARN");
-            if (Encode)
-                b.Append(",ENCODE");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_AddInterface : CodeInfo
-    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
-        public string ScriptFile;
-        public string Interface;
-        public string Prefix;
-
-        public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
-        {
-            ScriptFile = scriptFile;
-            Interface = interfaceSection;
-            Prefix = prefix;
-        }
-
-        public override string ToString()
-        {
-            return $"{ScriptFile},{Interface},{Prefix}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_UserInput : CodeInfo
-    { // UserInput, ...
-        public UserInputType Type;
-        public UserInputInfo SubInfo;
-
-        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
-        {
-            Type = type;
-            SubInfo = subInfo;
-        }
-
-        public override string ToString()
-        {
-            return $"{Type},{SubInfo}";
-        }
-    }
-
-    #region UserInputType, UserInputInfo
-    public enum UserInputType
-    {
-        DirPath,
-        FilePath,
-    }
-
-    [Serializable]
-    public class UserInputInfo : CodeInfo { }
-
-    [Serializable]
-    public class UserInputInfo_DirFile : UserInputInfo
-    {
-        // UserInput,File,<InitPath>,<%DestVar%>
-        // UserInput,Dir,<InitPath>,<%DestVar%>
-        public string InitPath;
-        public string DestVar;
-
-        public UserInputInfo_DirFile(string initPath, string destVar)
-        {
-            InitPath = initPath;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"{InitPath},{DestVar}";
-        }
-    }
-    #endregion
-    #endregion
-
-    #region CodeInfo 09 - Hash
-    [Serializable]
-    public class CodeInfo_Hash : CodeInfo
-    { // Hash,<HashType>,<FilePath>,<%DestVar%>
-        public string HashType;
-        public string FilePath;
-        public string DestVar;
-
-        public CodeInfo_Hash(string hashType, string filePath, string destVar)
-        {
-            HashType = hashType;
-            FilePath = filePath;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"{HashType},{FilePath},{DestVar}";
-        }
-    }
-    #endregion
-
-    #region StrFormatType, StrFormatInfo
-    public enum StrFormatType
-    {
-        IntToBytes, Bytes, // IntToBytes == Bytes
-        BytesToInt,
-        Hex,
-        Ceil, Floor, Round, // Round added in PEBakery 
-        Date,
-        FileName, DirPath, Path, Ext, // DirPath == Path
-        PathCombine,
-        Inc, Dec, Mult, Div, // 아니 왜 사칙연산이 StrFormat에 있지...
-        Left, Right,
-        SubStr, // Added in PEBakery
-        Len,
-        LTrim, RTrim, CTrim, NTrim,
-        UCase, LCase,
-        Pos, PosX,
-        Replace, ReplaceX,
-        ShortPath, LongPath,
-        Split,
-    }
-
-    [Serializable]
-    public class StrFormatInfo : CodeInfo { }
-
-    [Serializable]
-    public class StrFormatInfo_IntToBytes : StrFormatInfo
-    { // StrFormat,Bytes,<Integer>,<%DestVar%>
-        public string ByteSize;
-        public string DestVar;
-
-        public StrFormatInfo_IntToBytes(string byteSize, string destVar)
-        {
-            ByteSize = byteSize;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"{ByteSize},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_BytesToInt : StrFormatInfo
-    { // StrFormat,BytesToInt,<Bytes>,<%DestVar%>
-        public string HumanReadableByteSize;
-        public string DestVar;
-
-        public StrFormatInfo_BytesToInt(string byteSize, string destVar)
-        {
-            HumanReadableByteSize = byteSize;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"{HumanReadableByteSize},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Hex : StrFormatInfo
-    { // StrFormat,Hex,<Integer>,<%DestVar%>
-        public string Integer;
-        public string DestVar;
-
-        public StrFormatInfo_Hex(string integer, string destVar)
-        {
-            Integer = integer;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(Integer);
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_CeilFloorRound : StrFormatInfo
-    {
-        // StrFormat,Ceil,<%SizeVar%>,<CeilTo>
-        // StrFormat,Floor,<%SizeVar%>,<FloorTo>
-        // StrFormat,Round,<%SizeVar%>,<RoundTo>
-        // <RoundTo> can be [PositiveInteger], [K], [M], [G], [T], [P]
-
-        public string SizeVar;
-        public string RoundTo;
-
-        public StrFormatInfo_CeilFloorRound(string sizeVar, string roundTo)
-        {
-            SizeVar = sizeVar;
-            RoundTo = roundTo;
-        }
-
-        public override string ToString()
-        {
-            return $"{SizeVar},{RoundTo}";
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Date : StrFormatInfo
-    { // StrFormat,Date,<%DestVar%>,<FormatString>
-        public string DestVar;
-        public string FormatString;
-
-        public StrFormatInfo_Date(string destVar, string formatString)
-        {
-            DestVar = destVar;
-            FormatString = formatString;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(DestVar);
-            b.Append(",");
-            // This does not show original format string, but in .Net format string!
-            b.Append(StringEscaper.Doublequote(FormatString));
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Path : StrFormatInfo
-    {
-        // StrFormat,FileName,<FilePath>,<%DestVar%>
-        // StrFormat,DirPath,<FilePath>,<%DestVar%> -- Same with StrFormat,Path
-        // StrFormat,Ext,<FilePath>,<%DestVar%>
-        public string FilePath;
-        public string DestVar;
-
-        public StrFormatInfo_Path(string filePath, string destVar)
-        {
-            FilePath = filePath;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(FilePath));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_PathCombine : StrFormatInfo
-    { // StrFormat,PathCombine,<DirPath>,<FileName>,<%DestVar%>
-        public string DirPath;
-        public string FileName;
-        public string DestVar;
-
-        public StrFormatInfo_PathCombine(string dirPath, string fileName, string destVar)
-        {
-            DirPath = dirPath;
-            FileName = fileName;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(DirPath));
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(FileName));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Arithmetic : StrFormatInfo
-    {
-        // StrFormat,Inc,<%DestVar%>,<Integer>
-        // StrFormat,Dec,<%DestVar%>,<Integer>
-        // StrFormat,Mult,<%DestVar%>,<Integer>
-        // StrFormat,Div,<%DestVar%>,<Integer>
-
-        public string DestVar;
-        public string Integer; // These value's type must be integer, but set to string because of variables system
-
-        public StrFormatInfo_Arithmetic(string destVar, string integer)
-        {
-            DestVar = destVar;
-            Integer = integer;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(DestVar);
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(Integer));
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_LeftRight : StrFormatInfo
-    { // Note : Integer can be negative integer, not like WB082's limitation
-        // StrFormat,Left,<SrcStr>,<Count>,<%DestVar%>
-        // StrFormat,Right,<SrcStr>,<Count>,<%DestVar%>
-        public string SrcStr;
-        public string Count;
-        public string DestVar;
-
-        public StrFormatInfo_LeftRight(string srcStr, string count, string destVar)
-        {
-            SrcStr = srcStr;
-            Count = count;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(Count));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_SubStr : StrFormatInfo
-    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
-        public string SrcStr;
-        public string StartPos; // Index start from 1, not 0!
-        public string Length;
-        public string DestVar;
-
-        public StrFormatInfo_SubStr(string srcStr, string startPos, string length, string destVar)
-        {
-            SrcStr = srcStr;
-            StartPos = startPos;
-            Length = length;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(StartPos));
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(Length));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Len : StrFormatInfo
-    { // StrFormat,Len,<SrcStr>,<%DestVar%>
-        public string SrcStr;
-        public string DestVar;
-
-        public StrFormatInfo_Len(string srcString, string destVar)
-        {
-            SrcStr = srcString;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Trim : StrFormatInfo
-    {
-        // StrFormat,LTrim,<SrcStr>,<Integer>,<%DestVar%>
-        // StrFormat,RTrim,<SrcStr>,<Integer>,<%DestVar%>
-        // StrFormat,CTrim,<SrcStr>,<Chars>,<%DestVar%>
-
-        public string SrcStr;
-        public string ToTrim;
-        public string DestVarName;
-
-        public StrFormatInfo_Trim(string srcStr, string trimValue, string destVar)
-        {
-            SrcStr = srcStr;
-            ToTrim = trimValue;
-            DestVarName = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(StringEscaper.Doublequote(ToTrim));
-            b.Append(",");
-            b.Append(DestVarName);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_NTrim : StrFormatInfo
-    { // StrFormat,NTrim,<SrcStr>,<%DestVar%>
-        public string SrcStr;
-        public string DestVar;
-
-        public StrFormatInfo_NTrim(string srcStr, string destVar)
-        {
-            SrcStr = srcStr;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_ULCase : StrFormatInfo
-    {
-        // StrFormat,UCase,<SrcStr>,<%DestVar%>
-        // StrFormat,LCase,<SrcStr>,<%DestVar%>
-
-        public string SrcStr;
-        public string DestVar;
-
-        public StrFormatInfo_ULCase(string srcStr, string destVar)
-        {
-            SrcStr = srcStr;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcStr);
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Pos : StrFormatInfo
-    {
-        // StrFormat,Pos,<SrcStr>,<SubStr>,<%DestVar%>
-        // StrFormat,PosX,<SrcStr>,<SubStr>,<%DestVar%>
-
-        public string SrcStr;
-        public string SubStr;
-        public string DestVar;
-
-        public StrFormatInfo_Pos(string srcStr, string subStr, string destVar)
-        {
-            SrcStr = srcStr;
-            SubStr = subStr;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(SubStr));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Replace : StrFormatInfo
-    {
-        // StrFormat,Replace,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
-        // StrFormat,ReplaceX,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
-
-        public string SrcStr;
-        public string SearchStr;
-        public string ReplaceStr;
-        public string DestVar;
-
-        public StrFormatInfo_Replace(string srcStr, string searchStr, string replaceStr, string destVar)
-        {
-            SrcStr = srcStr;
-            SearchStr = searchStr;
-            ReplaceStr = replaceStr;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(SearchStr));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(ReplaceStr));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_ShortLongPath : StrFormatInfo
-    {
-        // StrFormat,ShortPath,<SrcStr>,<%DestVar%>
-        // StrFormat,LongPath,<SrcStr>,<%DestVar%>
-
-        public string SrcStr;
-        public string DestVar;
-
-        public StrFormatInfo_ShortLongPath(string srcStr, string destVar)
-        {
-            SrcStr = srcStr;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
-            b.Append(DestVar);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class StrFormatInfo_Split : StrFormatInfo
-    { // StrFormat,Split,<SrcStr>,<Delimiter>,<Index>,<%DestVar%>
-        public string SrcStr;
-        public string Delimiter;
-        public string Index;
-        public string DestVar;
-
-        public StrFormatInfo_Split(string srcString, string delimiter, string index, string destVar)
-        {
-            SrcStr = srcString;
-            Delimiter = delimiter;
-            Index = index;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcStr));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(Delimiter));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(Index));
-            b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(DestVar));
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 10 - String
-    [Serializable]
-    public class CodeInfo_StrFormat : CodeInfo
-    {
-        public StrFormatType Type;
-        public StrFormatInfo SubInfo;
-
-        public CodeInfo_StrFormat(StrFormatType type, StrFormatInfo subInfo)
-        {
-            Type = type;
-            SubInfo = subInfo;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(Type);
-            b.Append(",");
-            b.Append(SubInfo);
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region MathType, MathInfo
-    public enum MathType
-    {
-        Add, Sub, Mul, Div,
-        IntDiv,
-        Neg,
-        ToSign, ToUnsign,
-        BoolAnd, BoolOr, BoolXor,
-        BoolNot,
-        BitAnd, BitOr, BitXor,
-        BitNot,
-        BitShift,
-        Ceil, Floor, Round,
-        Abs,
-        Pow,
-        Hex,
-    }
-
-    [Serializable]
-    public class MathInfo : CodeInfo { }
-
-    [Serializable]
-    public class MathInfo_Arithmetic : MathInfo
-    {
-        // Math,Add,<%DestVar%>,<Src1>,<Src2>
-        // Math,Sub,<%DestVar%>,<Src1>,<Src2>
-        // Math,Mul,<%DestVar%>,<Src1>,<Src2>
-        // Math,Div,<%DestVar%>,<Src1>,<Src2>
-
-        public string DestVar;
-        public string Src1;
-        public string Src2;
-
-        public MathInfo_Arithmetic(string destVar, string src1, string src2)
-        {
-            DestVar = destVar;
-            Src1 = src1;
-            Src2 = src2;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src1},{Src2}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_IntDiv : MathInfo
-    { // Math,IntDiv,<%QuotientVar%>,<%RemainderVar%>,<Src1>,<Src2>
-        public string QuotientVar;
-        public string RemainderVar;
-        public string Src1;
-        public string Src2;
-
-        public MathInfo_IntDiv(string quotientVar, string remainderVar, string src1, string src2)
-        {
-            QuotientVar = quotientVar;
-            RemainderVar = remainderVar;
-            Src1 = src1;
-            Src2 = src2;
-        }
-
-        public override string ToString()
-        {
-            return $"{QuotientVar},{RemainderVar},{Src1},{Src2}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_Neg : MathInfo
-    { // Math,Neg,<%DestVar%>,<Src>
-        public string DestVar;
-        public string Src;
-
-        public MathInfo_Neg(string destVar, string src)
-        {
-            DestVar = destVar;
-            Src = src;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_IntegerSignedness : MathInfo
-    {
-        // Math,ToSign,<%DestVar%>,<Src>,[BitSize]
-        // Math,ToUnsign,<%DestVar%>,<Src>,[BitSize]
-
-        public string DestVar;
-        public string Src;
-        public uint BitSize; // [8|16|32|64]
-
-        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
-        {
-            DestVar = destVar;
-            Src = src;
-            BitSize = bitSize;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src},{BitSize}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_BoolLogicOper : MathInfo
-    {
-        // Math,BoolAnd,<%DestVar%>,<Src1>,<Src2>
-        // Math,BoolOr,<%DestVar%>,<Src1>,<Src2>
-        // Math,BoolXor,<%DestVar%>,<Src1>,<Src2>
-
-        public string DestVar;
-        public string Src1;
-        public string Src2;
-
-        public MathInfo_BoolLogicOper(string destVar, string src1, string src2)
-        {
-            DestVar = destVar;
-            Src1 = src1;
-            Src2 = src2;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src1},{Src2}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_BoolNot : MathInfo
-    { // Math,BoolNot,<%DestVar%>,<Src>
-        public string DestVar;
-        public string Src;
-
-        public MathInfo_BoolNot(string destVar, string src)
-        {
-            DestVar = destVar;
-            Src = src;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_BitLogicOper : MathInfo
-    {
-        // Math,BitAnd,<%DestVar%>,<Src1>,<Src2>
-        // Math,BitOr,<%DestVar%>,<Src1>,<Src2>
-        // Math,BitXor,<%DestVar%>,<Src1>,<Src2>
-
-        public string DestVar;
-        public string Src1; // Should be unsigned
-        public string Src2; // Should be unsigned
-
-        public MathInfo_BitLogicOper(string destVar, string src1, string src2)
-        {
-            DestVar = destVar;
-            Src1 = src1;
-            Src2 = src2;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src1},{Src2}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_BitNot : MathInfo
-    { // Math,BitNot,<%DestVar%>,<Src>,[BitSize]
-        public string DestVar;
-        public string Src; // Should be unsigned
-        public uint BitSize; // [8|16|32|64]
-
-        public MathInfo_BitNot(string destVar, string src, uint bitSize)
-        {
-            DestVar = destVar;
-            Src = src;
-            BitSize = bitSize;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src},{BitSize}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_BitShift : MathInfo
-    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,[BitSize],[UNSIGNED]
-        public string DestVar;
-        public string Src;
-        public string Direction;
-        public string Shift;
-        public uint BitSize; // Optional, [8|16|32|64]
-        public bool Unsigned; // Optional, UNSIGNED
-
-        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint botSoze, bool _unsigned)
-        {
-            DestVar = destVar;
-            Src = src;
-            Direction = direction;
-            Shift = shift;
-            BitSize = botSoze;
-            Unsigned = _unsigned;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src},{Direction},{Shift},{BitSize},{Unsigned}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_CeilFloorRound : MathInfo
-    {
-        // Math,Ceil,<%DestVar%>,<Src>,<Unit>
-        // Math,Floor,<%DestVar%>,<Src>,<Unit>
-        // Math,Round,<%DestVar%>,<Src>,<Unit>
-
-        public string DestVar;
-        public string Src;
-        public string Unit;
-
-        public MathInfo_CeilFloorRound(string destVar, string src, string unit)
-        {
-            DestVar = destVar;
-            Src = src;
-            Unit = unit;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src},{Unit}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_Abs : MathInfo
-    { // Math,Abs,<%DestVar%>,<Src>
-        public string DestVar;
-        public string Src;
-
-        public MathInfo_Abs(string destVar, string src)
-        {
-            DestVar = destVar;
-            Src = src;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Src}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_Pow : MathInfo
-    { // Math,Pow,<%DestVar%>,<Base>,<PowerOf>
-        public string DestVar;
-        public string Base;
-        public string Power;
-
-        public MathInfo_Pow(string destVar, string _base, string powerOf)
-        {
-            DestVar = destVar;
-            Base = _base;
-            Power = powerOf;
-        }
-
-        public override string ToString()
-        {
-            return $"{DestVar},{Base},{Power}";
-        }
-    }
-
-    [Serializable]
-    public class MathInfo_Hex : MathInfo
-    { // Math,Hex,<%DestVar%>,<Src>,[BitSize]
-        public string DestVar;
-        public string Src;
-        public uint BitSize; // Optional, [8|16|32|64]
-
-        public MathInfo_Hex(string destVar, string src, uint bitSize)
-        {
-            DestVar = destVar;
-            Src = src;
-            BitSize = bitSize;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(DestVar);
-            b.Append(",");
-            b.Append(Src);
-            b.Append(",");
-            b.Append(BitSize);
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 11 - Math
-    [Serializable]
-    public class CodeInfo_Math : CodeInfo
-    {
-        public MathType Type;
-        public MathInfo SubInfo;
-
-        public CodeInfo_Math(MathType type, MathInfo subInfo)
-        {
-            Type = type;
-            SubInfo = subInfo;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(Type);
-            b.Append(",");
-            b.Append(SubInfo);
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 12 - WIM
+    #region CodeInfo 05 - Wim
     [Serializable]
     public class CodeInfo_WimMount : CodeInfo
     { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<MountOption>
@@ -3508,12 +2060,7 @@ namespace PEBakery.Core
                 b.Append(Recompress);
             }
             if (CheckFlag != null)
-            {
-                if (CheckFlag == true)
-                    b.Append(",CHECK");
-                else
-                    b.Append(",NOCHECK");
-            }
+                b.Append(CheckFlag == true ? ",CHECK" : ",NOCHECK");
             return b.ToString();
         }
     }
@@ -3589,6 +2136,1824 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region CodeInfo 06 - Archive
+    public enum ArchiveCompressFormat
+    {
+        Zip = 1,
+    }
+
+    [Serializable]
+    public class CodeInfo_Compress : CodeInfo
+    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Encoding]
+        public ArchiveCompressFormat Format;
+        public string SrcPath;
+        public string DestArchive;
+        public ArchiveHelper.CompressLevel? CompressLevel;
+        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
+
+        public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel, Encoding encoding)
+        {
+            Format = format;
+            SrcPath = srcDir;
+            DestArchive = destArchive;
+            CompressLevel = compressLevel;
+            Encoding = encoding;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            switch (Format)
+            {
+                case ArchiveCompressFormat.Zip:
+                    b.Append("Zip");
+                    break;
+                default:
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
+            }
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestArchive);
+            if (CompressLevel != null)
+            {
+                b.Append(",");
+                b.Append(CompressLevel.ToString().ToUpper());
+            }
+            if (Encoding != null)
+            {
+                if (Encoding.Equals(Encoding.UTF8))
+                    b.Append(",UTF8");
+                else if (Encoding.Equals(Encoding.Unicode))
+                    b.Append(",UTF16");
+                else if (Encoding.Equals(Encoding.BigEndianUnicode))
+                    b.Append(",UTF16BE");
+                else if (Encoding.Equals(Encoding.Default))
+                    b.Append(",ANSI");
+                else
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Decompress : CodeInfo
+    { // Decompress,<SrcArchive>,<DestDir>,[Encoding]
+        public string SrcArchive;
+        public string DestDir;
+        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
+
+        public CodeInfo_Decompress(string srcArchive, string destArchive, Encoding encoding)
+        {
+            SrcArchive = srcArchive;
+            DestDir = destArchive;
+            Encoding = encoding;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcArchive);
+            b.Append(",");
+            b.Append(DestDir);
+            if (Encoding != null)
+            {
+                if (Encoding.Equals(Encoding.UTF8))
+                    b.Append(",UTF8");
+                else if (Encoding.Equals(Encoding.Unicode))
+                    b.Append(",UTF16");
+                else if (Encoding.Equals(Encoding.BigEndianUnicode))
+                    b.Append(",UTF16BE");
+                else if (Encoding.Equals(Encoding.Default))
+                    b.Append(",ANSI");
+                else
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Expand : CodeInfo
+    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
+        public string SrcCab;
+        public string DestDir;
+        public string SingleFile;
+        public bool Preserve; // Only enabled if SingleFile is set
+        public bool NoWarn; // Only enabled if SingleFile is set
+
+        public CodeInfo_Expand(string srcCab, string destDir, string singleFile, bool preserve, bool noWarn)
+        {
+            SrcCab = srcCab;
+            DestDir = destDir;
+            SingleFile = singleFile;
+            Preserve = preserve;
+            NoWarn = noWarn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcCab);
+            b.Append(",");
+            b.Append(DestDir);
+            if (SingleFile != null)
+            {
+                b.Append(",");
+                b.Append(SingleFile);
+            }
+            if (Preserve)
+                b.Append(",PRESERVE");
+            if (NoWarn)
+                b.Append(",NOWARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_CopyOrExpand : CodeInfo
+    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
+        public string SrcFile;
+        public string DestPath;
+        public bool Preserve;
+        public bool NoWarn;
+
+        public CodeInfo_CopyOrExpand(string srcCab, string destDir, bool preserve, bool noWarn)
+        {
+            SrcFile = srcCab;
+            DestPath = destDir;
+            Preserve = preserve;
+            NoWarn = noWarn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            b.Append(",");
+            b.Append(DestPath);
+            if (Preserve)
+                b.Append(",PRESERVE");
+            if (NoWarn)
+                b.Append(",NOWARN");
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 07 - Network
+    [Serializable]
+    public class CodeInfo_WebGet : CodeInfo
+    { // WebGet,<URL>,<DestPath>,[Hash=HashType,HashDigest],[NOERR]
+        // This command was rebuilt, and scraped WB082 spec.
+        public string URL;
+        public string DestPath;
+        public HashHelper.HashType HashType; // Optional Argument
+        public string HashDigest; // Optional Argument
+        public bool NoErrFlag; // Optional Flag
+
+        public CodeInfo_WebGet(string url, string destPath, HashHelper.HashType hashType, string hashDigest, bool noErr)
+        {
+            URL = url;
+            DestPath = destPath;
+            HashType = hashType;
+            HashDigest = hashDigest;
+            NoErrFlag = noErr;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(URL);
+            b.Append(",");
+            b.Append(DestPath);
+            if (HashType != HashHelper.HashType.None && HashDigest != null)
+            {
+                b.Append(",");
+                b.Append(HashType);
+                b.Append(",");
+                b.Append(HashDigest);
+            }
+            if (NoErrFlag)
+                b.Append(",NOERR");
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 08 - Hash
+    [Serializable]
+    public class CodeInfo_Hash : CodeInfo
+    { // Hash,<HashType>,<FilePath>,<%DestVar%>
+        public string HashType;
+        public string FilePath;
+        public string DestVar;
+
+        public CodeInfo_Hash(string hashType, string filePath, string destVar)
+        {
+            HashType = hashType;
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{HashType},{FilePath},{DestVar}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 09 - Script
+    [Serializable]
+    public class CodeInfo_ExtractFile : CodeInfo
+    { // ExtractFile,<ScriptFile>,<DirName>,<FileName>,<DestDir>
+        public string ScriptFile;
+        public string DirName;
+        public string FileName;
+        public string DestDir;
+
+        public CodeInfo_ExtractFile(string scriptFile, string dirName, string fileName, string extractTo)
+        {
+            ScriptFile = scriptFile;
+            DirName = dirName;
+            FileName = fileName;
+            DestDir = extractTo;
+        }
+
+        public override string ToString()
+        {
+            return $"{ScriptFile},{DirName},{FileName},{DestDir}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAndRun : CodeInfo
+    { // ExtractAndRun,<ScriptFile>,<DirName>,<FileName>,[Params]
+        public string ScriptFile;
+        public string DirName;
+        public string FileName;
+        public string Params;
+
+        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string parameters)
+        {
+            ScriptFile = scriptFile;
+            DirName = dirName;
+            FileName = fileName;
+            Params = parameters;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ScriptFile);
+            b.Append(",");
+            b.Append(DirName);
+            b.Append(",");
+            b.Append(FileName);
+            if (Params != null)
+            {
+                b.Append(",");
+                b.Append(Params);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAllFiles : CodeInfo
+    { // ExtractAllFiles,<ScriptFile>,<DirName>,<DestDir>
+        public string ScriptFile;
+        public string DirName;
+        public string DestDir;
+
+        public CodeInfo_ExtractAllFiles(string scriptFile, string dirName, string extractTo)
+        {
+            ScriptFile = scriptFile;
+            DirName = dirName;
+            DestDir = extractTo;
+        }
+
+        public override string ToString()
+        {
+            return $"{ScriptFile},{DirName},{DestDir}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Encode : CodeInfo
+    { // Encode,<ScriptFile>,<DirName>,<FileName>,[Compression]
+        public string ScriptFile;
+        public string DirName;
+        public string FilePath; // Can have Wildcard
+        public string Compression;
+
+        public CodeInfo_Encode(string scriptFile, string dirName, string filePath, string compression)
+        {
+            ScriptFile = scriptFile;
+            DirName = dirName;
+            FilePath = filePath;
+            Compression = compression;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ScriptFile);
+            b.Append(',');
+            b.Append(DirName);
+            b.Append(',');
+            b.Append(FilePath);
+            if (Compression != null)
+            {
+                b.Append(',');
+                b.Append(Compression);
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 10 - Interface
+    [Serializable]
+    public class CodeInfo_Visible : CodeInfo
+    { // Visible,<%UIControlKey%>,<Visibility>
+        public string UIControlKey; // Must start and end with %
+        public string Visibility; // True or False
+
+        public CodeInfo_Visible(string uiCtrlKey, string visibility)
+        {
+            UIControlKey = uiCtrlKey;
+            Visibility = visibility;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo) => true;
+
+        public override string ToString()
+        {
+            return $"{UIControlKey},{Visibility}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_VisibleOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_Visible> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_Visible>()).ToList();
+
+        public CodeInfo_VisibleOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
+        }
+    }
+
+    public enum InterfaceElement
+    {
+        // General
+        Text, Visible, PosX, PosY, Width, Height, Value, ToolTip,
+        // TextLabel, Bevel 
+        FontSize, FontWeight, FontStyle,
+        // NumberBox
+        NumberMin, NumberMax, NumberTick,
+        // Image, WebLabel
+        Url,
+        // Items - ComboBox, RadioGroup
+        Items,
+        // Run - CheckBox, ComboBox, Button, RadioButton, RadioGroup
+        SectionName, HideProgress
+    }
+
+    [Serializable]
+    public class CodeInfo_ReadInterface : CodeInfo
+    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<%DestVar%>,[Delim=<Str>]
+        public InterfaceElement Element;
+        public string ScriptFile;
+        public string Section;
+        public string Key;
+        public string DestVar;
+        public string Delim;
+
+        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar, string delim)
+        {
+            Element = element;
+            ScriptFile = scriptFile;
+            Section = section;
+            Key = key;
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_ReadInterface info = cmpInfo.Cast<CodeInfo_ReadInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Element);
+            b.Append(",");
+            b.Append(ScriptFile);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append("Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ReadInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_ReadInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_ReadInterface>()).ToList();
+
+        public CodeInfo_ReadInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WriteInterface : CodeInfo
+    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
+        public InterfaceElement Element;
+        public string ScriptFile;
+        public string Section;
+        public string Key;
+        public string Value;
+        public string Delim;
+
+        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value, string delim)
+        {
+            Element = element;
+            ScriptFile = scriptFile;
+            Section = section;
+            Key = key;
+            Value = value;
+            Delim = delim;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_WriteInterface info = cmpInfo.Cast<CodeInfo_WriteInterface>();
+            if (info == null)
+                return false;
+
+            return ScriptFile.Equals(info.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                   Section.Equals(info.Section, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Element);
+            b.Append(",");
+            b.Append(ScriptFile);
+            b.Append(",");
+            b.Append(Section);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(Value);
+            if (Delim != null)
+            {
+                b.Append("Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WriteInterfaceOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WriteInterface> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_WriteInterface>()).ToList();
+
+        public CodeInfo_WriteInterfaceOp(List<CodeCommand> cmds)
+        {
+            Cmds = new List<CodeCommand>(cmds);
+        }
+    }
+
+    public enum CodeMessageAction
+    {
+        None, Information, Confirmation, Error, Warning
+    }
+
+    [Serializable]
+    public class CodeInfo_Message : CodeInfo
+    { // Message,<Message>,[Icon],[TIMEOUT]
+        public string Message;
+        public CodeMessageAction Action; // Optional;
+        public string Timeout; // Optional, Its type should be int, but set to string because of variable system
+
+        public CodeInfo_Message(string message, CodeMessageAction action, string timeout)
+        {
+            Message = message;
+            Action = action;
+            Timeout = timeout;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Message);
+            b.Append(",");
+            b.Append(Action);
+            if (Timeout != null)
+            {
+                b.Append(",");
+                b.Append(Timeout);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Echo : CodeInfo
+    { // Echo,<Message>,[WARN]
+        public string Message;
+        public bool Warn;
+
+        public CodeInfo_Echo(string message, bool warn)
+        {
+            Message = message;
+            Warn = warn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Message);
+            if (Warn)
+                b.Append(",WARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_EchoFile : CodeInfo
+    { // EchoFile,<SrcFile>,[WARN],[ENCODE]
+        public string SrcFile;
+        public bool Warn;
+        public bool Encode;
+
+        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
+        {
+            SrcFile = srcFile;
+            Warn = warn;
+            Encode = encode;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            if (Warn)
+                b.Append(",WARN");
+            if (Encode)
+                b.Append(",ENCODE");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_AddInterface : CodeInfo
+    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
+        public string ScriptFile;
+        public string Interface;
+        public string Prefix;
+
+        public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
+        {
+            ScriptFile = scriptFile;
+            Interface = interfaceSection;
+            Prefix = prefix;
+        }
+
+        public override string ToString()
+        {
+            return $"{ScriptFile},{Interface},{Prefix}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_UserInput : CodeInfo
+    { // UserInput, ...
+        public UserInputType Type;
+        public UserInputInfo SubInfo;
+
+        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo}";
+        }
+    }
+
+    #region UserInputType, UserInputInfo
+    public enum UserInputType
+    {
+        DirPath,
+        FilePath,
+    }
+
+    [Serializable]
+    public class UserInputInfo : CodeInfo { }
+
+    [Serializable]
+    public class UserInputInfo_DirFile : UserInputInfo
+    {
+        // UserInput,File,<InitPath>,<%DestVar%>
+        // UserInput,Dir,<InitPath>,<%DestVar%>
+        public string InitPath;
+        public string DestVar;
+
+        public UserInputInfo_DirFile(string initPath, string destVar)
+        {
+            InitPath = initPath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{InitPath},{DestVar}";
+        }
+    }
+    #endregion
+    #endregion
+
+    #region StrFormatType, StrFormatInfo
+    public enum StrFormatType
+    {
+        IntToBytes = 10, Bytes, // IntToBytes == Bytes
+        BytesToInt,
+        Hex = 20,
+        Ceil = 30, Floor, Round, // Round added in PEBakery 
+        Date = 40,
+        FileName = 50, DirPath, Path, Ext, // DirPath == Path
+        PathCombine = 60,
+        Inc = 70, Dec, Mult, Div, // Use of Math Command is recommended
+        Left = 80, Right,
+        SubStr = 90, // Added in PEBakery
+        Len = 100,
+        LTrim = 110, RTrim, CTrim, NTrim,
+        UCase = 120, LCase,
+        Pos = 130, PosX,
+        Replace = 140, ReplaceX,
+        Split = 150,
+        ShortPath = 800, LongPath, // Will be deprecated
+    }
+
+    [Serializable]
+    public class StrFormatInfo : CodeInfo { }
+
+    [Serializable]
+    public class StrFormatInfo_IntToBytes : StrFormatInfo
+    { // StrFormat,Bytes,<Integer>,<%DestVar%>
+        public string ByteSize;
+        public string DestVar;
+
+        public StrFormatInfo_IntToBytes(string byteSize, string destVar)
+        {
+            ByteSize = byteSize;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{ByteSize},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_BytesToInt : StrFormatInfo
+    { // StrFormat,BytesToInt,<Bytes>,<%DestVar%>
+        public string HumanReadableByteSize;
+        public string DestVar;
+
+        public StrFormatInfo_BytesToInt(string byteSize, string destVar)
+        {
+            HumanReadableByteSize = byteSize;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{HumanReadableByteSize},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Hex : StrFormatInfo
+    { // StrFormat,Hex,<Integer>,<%DestVar%>
+        public string Integer;
+        public string DestVar;
+
+        public StrFormatInfo_Hex(string integer, string destVar)
+        {
+            Integer = integer;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Integer);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_CeilFloorRound : StrFormatInfo
+    {
+        // StrFormat,Ceil,<%SizeVar%>,<CeilTo>
+        // StrFormat,Floor,<%SizeVar%>,<FloorTo>
+        // StrFormat,Round,<%SizeVar%>,<RoundTo>
+        // <RoundTo> can be [PositiveInteger], [K], [M], [G], [T], [P]
+
+        public string SizeVar;
+        public string RoundTo;
+
+        public StrFormatInfo_CeilFloorRound(string sizeVar, string roundTo)
+        {
+            SizeVar = sizeVar;
+            RoundTo = roundTo;
+        }
+
+        public override string ToString()
+        {
+            return $"{SizeVar},{RoundTo}";
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Date : StrFormatInfo
+    { // StrFormat,Date,<%DestVar%>,<FormatString>
+        public string DestVar;
+        public string FormatString;
+
+        public StrFormatInfo_Date(string destVar, string formatString)
+        {
+            DestVar = destVar;
+            FormatString = formatString;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            b.Append(",");
+            // This does not show original format string, but in .Net format string!
+            b.Append(StringEscaper.Doublequote(FormatString));
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Path : StrFormatInfo
+    {
+        // StrFormat,FileName,<FilePath>,<%DestVar%>
+        // StrFormat,DirPath,<FilePath>,<%DestVar%> -- Same with StrFormat,Path
+        // StrFormat,Ext,<FilePath>,<%DestVar%>
+        public string FilePath;
+        public string DestVar;
+
+        public StrFormatInfo_Path(string filePath, string destVar)
+        {
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.Doublequote(FilePath));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_PathCombine : StrFormatInfo
+    { // StrFormat,PathCombine,<DirPath>,<FileName>,<%DestVar%>
+        public string DirPath;
+        public string FileName;
+        public string DestVar;
+
+        public StrFormatInfo_PathCombine(string dirPath, string fileName, string destVar)
+        {
+            DirPath = dirPath;
+            FileName = fileName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.Doublequote(DirPath));
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(FileName));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Arithmetic : StrFormatInfo
+    {
+        // StrFormat,Inc,<%DestVar%>,<Integer>
+        // StrFormat,Dec,<%DestVar%>,<Integer>
+        // StrFormat,Mult,<%DestVar%>,<Integer>
+        // StrFormat,Div,<%DestVar%>,<Integer>
+
+        public string DestVar;
+        public string Integer; // These value's type must be integer, but set to string because of variables system
+
+        public StrFormatInfo_Arithmetic(string destVar, string integer)
+        {
+            DestVar = destVar;
+            Integer = integer;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Integer));
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_LeftRight : StrFormatInfo
+    { // Note : Integer can be negative integer, not like WB082's limitation
+        // StrFormat,Left,<SrcStr>,<Count>,<%DestVar%>
+        // StrFormat,Right,<SrcStr>,<Count>,<%DestVar%>
+        public string SrcStr;
+        public string Count;
+        public string DestVar;
+
+        public StrFormatInfo_LeftRight(string srcStr, string count, string destVar)
+        {
+            SrcStr = srcStr;
+            Count = count;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Count));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_SubStr : StrFormatInfo
+    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<%DestVar%>
+        public string SrcStr;
+        public string StartPos; // Index start from 1, not 0!
+        public string Length;
+        public string DestVar;
+
+        public StrFormatInfo_SubStr(string srcStr, string startPos, string length, string destVar)
+        {
+            SrcStr = srcStr;
+            StartPos = startPos;
+            Length = length;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(StartPos));
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Length));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Len : StrFormatInfo
+    { // StrFormat,Len,<SrcStr>,<%DestVar%>
+        public string SrcStr;
+        public string DestVar;
+
+        public StrFormatInfo_Len(string srcString, string destVar)
+        {
+            SrcStr = srcString;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Trim : StrFormatInfo
+    {
+        // StrFormat,LTrim,<SrcStr>,<Integer>,<%DestVar%>
+        // StrFormat,RTrim,<SrcStr>,<Integer>,<%DestVar%>
+        // StrFormat,CTrim,<SrcStr>,<Chars>,<%DestVar%>
+
+        public string SrcStr;
+        public string ToTrim;
+        public string DestVarName;
+
+        public StrFormatInfo_Trim(string srcStr, string trimValue, string destVar)
+        {
+            SrcStr = srcStr;
+            ToTrim = trimValue;
+            DestVarName = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(ToTrim));
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_NTrim : StrFormatInfo
+    { // StrFormat,NTrim,<SrcStr>,<%DestVar%>
+        public string SrcStr;
+        public string DestVar;
+
+        public StrFormatInfo_NTrim(string srcStr, string destVar)
+        {
+            SrcStr = srcStr;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_ULCase : StrFormatInfo
+    {
+        // StrFormat,UCase,<SrcStr>,<%DestVar%>
+        // StrFormat,LCase,<SrcStr>,<%DestVar%>
+
+        public string SrcStr;
+        public string DestVar;
+
+        public StrFormatInfo_ULCase(string srcStr, string destVar)
+        {
+            SrcStr = srcStr;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Pos : StrFormatInfo
+    {
+        // StrFormat,Pos,<SrcStr>,<SubStr>,<%DestVar%>
+        // StrFormat,PosX,<SrcStr>,<SubStr>,<%DestVar%>
+
+        public string SrcStr;
+        public string SubStr;
+        public string DestVar;
+
+        public StrFormatInfo_Pos(string srcStr, string subStr, string destVar)
+        {
+            SrcStr = srcStr;
+            SubStr = subStr;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(SubStr));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Replace : StrFormatInfo
+    {
+        // StrFormat,Replace,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
+        // StrFormat,ReplaceX,<SrcStr>,<SearchStr>,<ReplaceStr>,<%DestVar%>
+
+        public string SrcStr;
+        public string SearchStr;
+        public string ReplaceStr;
+        public string DestVar;
+
+        public StrFormatInfo_Replace(string srcStr, string searchStr, string replaceStr, string destVar)
+        {
+            SrcStr = srcStr;
+            SearchStr = searchStr;
+            ReplaceStr = replaceStr;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(SearchStr));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(ReplaceStr));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_ShortLongPath : StrFormatInfo
+    {
+        // StrFormat,ShortPath,<SrcStr>,<%DestVar%>
+        // StrFormat,LongPath,<SrcStr>,<%DestVar%>
+
+        public string SrcStr;
+        public string DestVar;
+
+        public StrFormatInfo_ShortLongPath(string srcStr, string destVar)
+        {
+            SrcStr = srcStr;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Split : StrFormatInfo
+    { // StrFormat,Split,<SrcStr>,<Delimiter>,<Index>,<%DestVar%>
+        public string SrcStr;
+        public string Delimiter;
+        public string Index;
+        public string DestVar;
+
+        public StrFormatInfo_Split(string srcString, string delimiter, string index, string destVar)
+        {
+            SrcStr = srcString;
+            Delimiter = delimiter;
+            Index = index;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Delimiter));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Index));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(DestVar));
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 20 - String
+    [Serializable]
+    public class CodeInfo_StrFormat : CodeInfo
+    {
+        public StrFormatType Type;
+        public StrFormatInfo SubInfo;
+
+        public CodeInfo_StrFormat(StrFormatType type, StrFormatInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region MathType, MathInfo
+    public enum MathType
+    {
+        Add = 10, Sub, Mul, Div,
+        IntDiv,
+        Neg = 20,
+        ToSign = 30, ToUnsign,
+        BoolAnd = 40, BoolOr, BoolXor,
+        BoolNot,
+        BitAnd = 50, BitOr, BitXor,
+        BitNot,
+        BitShift = 60,
+        Ceil = 70, Floor, Round,
+        Abs = 80,
+        Pow = 90,
+        Hex = 100,
+    }
+
+    [Serializable]
+    public class MathInfo : CodeInfo { }
+
+    [Serializable]
+    public class MathInfo_Arithmetic : MathInfo
+    {
+        // Math,Add,<%DestVar%>,<Src1>,<Src2>
+        // Math,Sub,<%DestVar%>,<Src1>,<Src2>
+        // Math,Mul,<%DestVar%>,<Src1>,<Src2>
+        // Math,Div,<%DestVar%>,<Src1>,<Src2>
+
+        public string DestVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_Arithmetic(string destVar, string src1, string src2)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_IntDiv : MathInfo
+    { // Math,IntDiv,<%QuotientVar%>,<%RemainderVar%>,<Src1>,<Src2>
+        public string QuotientVar;
+        public string RemainderVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_IntDiv(string quotientVar, string remainderVar, string src1, string src2)
+        {
+            QuotientVar = quotientVar;
+            RemainderVar = remainderVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{QuotientVar},{RemainderVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Neg : MathInfo
+    { // Math,Neg,<%DestVar%>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_Neg(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_IntegerSignedness : MathInfo
+    {
+        // Math,ToSign,<%DestVar%>,<Src>,[BitSize]
+        // Math,ToUnsign,<%DestVar%>,<Src>,[BitSize]
+
+        public string DestVar;
+        public string Src;
+        public uint BitSize; // [8|16|32|64]
+
+        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
+        {
+            DestVar = destVar;
+            Src = src;
+            BitSize = bitSize;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{BitSize}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BoolLogicOper : MathInfo
+    {
+        // Math,BoolAnd,<%DestVar%>,<Src1>,<Src2>
+        // Math,BoolOr,<%DestVar%>,<Src1>,<Src2>
+        // Math,BoolXor,<%DestVar%>,<Src1>,<Src2>
+
+        public string DestVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_BoolLogicOper(string destVar, string src1, string src2)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BoolNot : MathInfo
+    { // Math,BoolNot,<%DestVar%>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_BoolNot(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitLogicOper : MathInfo
+    {
+        // Math,BitAnd,<%DestVar%>,<Src1>,<Src2>
+        // Math,BitOr,<%DestVar%>,<Src1>,<Src2>
+        // Math,BitXor,<%DestVar%>,<Src1>,<Src2>
+
+        public string DestVar;
+        public string Src1; // Should be unsigned
+        public string Src2; // Should be unsigned
+
+        public MathInfo_BitLogicOper(string destVar, string src1, string src2)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitNot : MathInfo
+    { // Math,BitNot,<%DestVar%>,<Src>,[BitSize]
+        public string DestVar;
+        public string Src; // Should be unsigned
+        public uint BitSize; // [8|16|32|64]
+
+        public MathInfo_BitNot(string destVar, string src, uint bitSize)
+        {
+            DestVar = destVar;
+            Src = src;
+            BitSize = bitSize;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{BitSize}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitShift : MathInfo
+    { // Math,BitShift,<%DestVar%>,<Src>,<Direction>,<Shift>,[BitSize],[UNSIGNED]
+        public string DestVar;
+        public string Src;
+        public string Direction;
+        public string Shift;
+        public uint BitSize; // Optional, [8|16|32|64]
+        public bool Unsigned; // Optional, UNSIGNED
+
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint botSoze, bool _unsigned)
+        {
+            DestVar = destVar;
+            Src = src;
+            Direction = direction;
+            Shift = shift;
+            BitSize = botSoze;
+            Unsigned = _unsigned;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Direction},{Shift},{BitSize},{Unsigned}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_CeilFloorRound : MathInfo
+    {
+        // Math,Ceil,<%DestVar%>,<Src>,<Unit>
+        // Math,Floor,<%DestVar%>,<Src>,<Unit>
+        // Math,Round,<%DestVar%>,<Src>,<Unit>
+
+        public string DestVar;
+        public string Src;
+        public string Unit;
+
+        public MathInfo_CeilFloorRound(string destVar, string src, string unit)
+        {
+            DestVar = destVar;
+            Src = src;
+            Unit = unit;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Unit}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Abs : MathInfo
+    { // Math,Abs,<%DestVar%>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_Abs(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Pow : MathInfo
+    { // Math,Pow,<%DestVar%>,<Base>,<PowerOf>
+        public string DestVar;
+        public string Base;
+        public string Power;
+
+        public MathInfo_Pow(string destVar, string _base, string powerOf)
+        {
+            DestVar = destVar;
+            Base = _base;
+            Power = powerOf;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Base},{Power}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Hex : MathInfo
+    { // Math,Hex,<%DestVar%>,<Src>,[BitSize]
+        public string DestVar;
+        public string Src;
+        public uint BitSize; // Optional, [8|16|32|64]
+
+        public MathInfo_Hex(string destVar, string src, uint bitSize)
+        {
+            DestVar = destVar;
+            Src = src;
+            BitSize = bitSize;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            b.Append(",");
+            b.Append(Src);
+            b.Append(",");
+            b.Append(BitSize);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 21 - Math
+    [Serializable]
+    public class CodeInfo_Math : CodeInfo
+    {
+        public MathType Type;
+        public MathInfo SubInfo;
+
+        public CodeInfo_Math(MathType type, MathInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region ListType, ListInfo
+    public enum ListType
+    {
+        Get = 10,
+        Set,
+        Append = 20,
+        Insert,
+        Remove = 30, RemoveX,
+        RemoveAt,
+        Count = 40,
+        Pos = 50, PosX, LastPos, LastPosX,
+        Sort = 60, SortX, SortN, SortNX,
+    }
+
+    [Serializable]
+    public class ListInfo : CodeInfo
+    {
+        public string ListVar;
+
+        public ListInfo(string listVar)
+        {
+            ListVar = listVar;
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Get : ListInfo
+    { // List,Get,<%ListVar%>,<Index>,<%DestVar%>,[Delim=<Str>]
+        public string Index;
+        public string DestVar;
+        public string Delim;
+
+        public ListInfo_Get(string listVar, string index, string destVar, string delim) : base(listVar)
+        {
+            Index = index;
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Index);
+            b.Append(',');
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Set : ListInfo
+    { // List,Set,<%ListVar%>,<Index>,<Item>,[Delim=<Str>]
+        public string Index;
+        public string Item;
+        public string Delim;
+
+        public ListInfo_Set(string listVar, string index, string item, string delim) : base(listVar)
+        {
+            Index = index;
+            Item = item;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Index);
+            b.Append(',');
+            b.Append(Item);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Append : ListInfo
+    { // List,Append,<%ListVar%>,<Item>,[Delim=<Str>]
+        public string Item;
+        public string Delim;
+
+        public ListInfo_Append(string listVar, string item, string delim) : base(listVar)
+        {
+            Item = item;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Item);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Insert : ListInfo
+    { // List,Insert,<%ListVar%>,<Index>,<Item>,[Delim=<Str>]
+        public string Index;
+        public string Item;
+        public string Delim;
+
+        public ListInfo_Insert(string listVar, string index, string item, string delim) : base(listVar)
+        {
+            Index = index;
+            Item = item;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Index);
+            b.Append(',');
+            b.Append(Item);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Remove : ListInfo
+    { // List,Remove,<%ListVar%>,<Item>,[Delim=<Str>]
+        public string Item;
+        public string Delim;
+
+        public ListInfo_Remove(string listVar, string item, string delim) : base(listVar)
+        {
+            Item = item;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Item);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_RemoveAt : ListInfo
+    { // List,RemoveAt,<%ListVar%>,<Index>,[Delim=<Str>]
+        public string Index;
+        public string Delim;
+
+        public ListInfo_RemoveAt(string listVar, string index, string delim) : base(listVar)
+        {
+            Index = index;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Index);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Count : ListInfo
+    { // List,Count,<%ListVar%>,<%DestVar%>,[Delim=<Str>]
+        public string DestVar;
+        public string Delim;
+
+        public ListInfo_Count(string listVar, string destVar, string delim) : base(listVar)
+        {
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Pos : ListInfo
+    {
+        // List,Pos,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
+        // List,PosX,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
+        // List,LastPos,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
+        // List,LastPosX,<%ListVar%>,<Item>,<%DestVar%>,[Delim=<Str>]
+        public string Item;
+        public string DestVar;
+        public string Delim;
+
+        public ListInfo_Pos(string listVar, string item, string destVar, string delim) : base(listVar)
+        {
+            Item = item;
+            DestVar = destVar;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Item);
+            b.Append(',');
+            b.Append(DestVar);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class ListInfo_Sort : ListInfo
+    { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+        public string Order;
+        public string Delim;
+
+        public ListInfo_Sort(string listVar, string order, string delim) : base(listVar)
+        {
+            Order = order;
+            Delim = delim;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(ListVar);
+            b.Append(',');
+            b.Append(Order);
+            if (Delim != null)
+            {
+                b.Append(",Delim=");
+                b.Append(Delim);
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 22 - List
+    [Serializable]
+    public class CodeInfo_List : CodeInfo
+    {
+        public ListType Type;
+        public ListInfo SubInfo;
+
+        public CodeInfo_List(ListType type, ListInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
     #region BranchCondition
     public enum BranchConditionType
     {
@@ -3649,7 +4014,7 @@ namespace PEBakery.Core
             NotFlag = notFlag;
             switch (type)
             {
-                case BranchConditionType.ExistFile: 
+                case BranchConditionType.ExistFile:
                 case BranchConditionType.ExistDir:
                 case BranchConditionType.ExistVar:
                 case BranchConditionType.ExistMacro:
@@ -4331,6 +4696,10 @@ namespace PEBakery.Core
     public class SystemInfo_LoadNewScript : SystemInfo
     { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
         public string SrcFilePath;
+        /// <summary>
+        /// DestTreeDir should not include project root directory.
+        /// Ex) ChrisPE\Core\IME.script -> Use 'Core' as DestTreeDir
+        /// </summary>
         public string DestTreeDir;
         public bool PreserveFlag;
         public bool NoWarnFlag;
@@ -4391,7 +4760,7 @@ namespace PEBakery.Core
         public string DestPath;
         public string LogFormat;
 
-        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        public SystemInfo_SaveLog(string destPath, string logFormat)
         {
             DestPath = destPath;
             LogFormat = logFormat;
@@ -4399,7 +4768,15 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"SaveLog,{DestPath},{LogFormat}";
+            StringBuilder b = new StringBuilder();
+            b.Append("SaveLog,");
+            b.Append(DestPath);
+            if (LogFormat == null)
+            {
+                b.Append(",");
+                b.Append(LogFormat);
+            }
+            return b.ToString();
         }
     }
     #endregion

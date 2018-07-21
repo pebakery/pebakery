@@ -105,8 +105,8 @@ namespace PEBakery.Core
                             dbBuild.EndTime = DateTime.UtcNow;
 
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
-                        _w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
-                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture)}");
                         TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
                         _w.WriteLine($"Took {t:h\\:mm\\:ss}");
                         _w.WriteLine();
@@ -115,7 +115,7 @@ namespace PEBakery.Core
                         _w.WriteLine("<Log Statistics>");
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
-                        { 
+                        {
                             int count = _db.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
                             _w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
                         }
@@ -129,7 +129,7 @@ namespace PEBakery.Core
                             _w.WriteLine("<Errors>");
 
                             int[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
-                            DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            var scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id));
                             foreach (DB_Script scLog in scLogs)
                             {
                                 DB_BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
@@ -173,14 +173,19 @@ namespace PEBakery.Core
                         }
 
                         // Script
-                        var scripts = _db.Table<DB_Script>()
+                        DB_Script[] scripts = _db.Table<DB_Script>()
                             .Where(x => x.BuildId == buildId)
-                            .OrderBy(x => x.Order);
+                            .ToArray();
+
+                        DB_Script[] processedScripts = scripts
+                            .Where(x => 0 < x.Order)
+                            .OrderBy(x => x.Order)
+                            .ToArray();
                         _w.WriteLine("<Scripts>");
                         {
-                            int count = scripts.Count();
+                            int count = processedScripts.Length;
                             int idx = 1;
-                            foreach (DB_Script sc in scripts)
+                            foreach (DB_Script sc in processedScripts)
                             {
                                 _w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
                                 idx++;
@@ -191,6 +196,7 @@ namespace PEBakery.Core
                             _w.WriteLine();
                         }
 
+                        // Variables
                         _w.WriteLine("<Variables>");
                         VarsType[] typeList = { VarsType.Fixed, VarsType.Global };
                         foreach (VarsType varsType in typeList)
@@ -207,7 +213,7 @@ namespace PEBakery.Core
 
                         _w.WriteLine("<Code Logs>");
                         {
-                            foreach (DB_Script scLog in scripts)
+                            foreach (DB_Script scLog in processedScripts)
                             {
                                 // Log codes
                                 var cLogs = _db.Table<DB_BuildLog>()
@@ -244,8 +250,8 @@ namespace PEBakery.Core
                         {
                             PEBakeryVersion = Properties.Resources.StringVersionFull,
                             BuildName = dbBuild.Name,
-                            BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
-                            BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
+                            BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
+                            BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.EndTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             LogStats = new List<LogStatHtmlModel>(),
                         };
@@ -321,7 +327,7 @@ namespace PEBakery.Core
 
                         // Scripts
                         var scripts = _db.Table<DB_Script>()
-                            .Where(x => x.BuildId == buildId)
+                            .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
                         m.Scripts = new List<ScriptHtmlModel>();
                         {
@@ -424,7 +430,7 @@ namespace PEBakery.Core
                                     }).ToArray();
 
                                 m.CodeLogs.Add(new Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>(pModel, logModel.ToArray(), localVarModel));
-                            }                            
+                            }
                         }
 
                         string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.BuildLogHtmlTemplate, "BuildLogHtmlTemplateKey", null, m);

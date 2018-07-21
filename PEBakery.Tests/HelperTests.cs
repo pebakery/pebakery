@@ -42,7 +42,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_DetectTextEncoding()
+        public void DetectTextEncoding()
         {
             string tempDir = Path.GetTempFileName();
             File.Delete(tempDir);
@@ -56,15 +56,15 @@ namespace PEBakery.Tests
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Default);
 
                 // UTF-16 LE
-                FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+                FileHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Unicode);
 
                 // UTF-16 BE
-                FileHelper.WriteTextBOM(tempFile, Encoding.BigEndianUnicode);
+                FileHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.BigEndianUnicode);
 
                 // UTF-8
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
                 Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.UTF8);
             }
             finally
@@ -78,7 +78,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_GetFilesEx()
+        public void GetFilesEx()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
 
@@ -99,7 +99,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_GetFilesExWithDir()
+        public void GetFilesExWithDir()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
 
@@ -156,7 +156,7 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
-        public void FileHelper_DirectoryCopy()
+        public void DirectoryCopy()
         {
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -218,11 +218,37 @@ namespace PEBakery.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("StringHelper")]
-        public void StringHelper_ReplaceEx()
+        public void SplitEx()
         {
-            string str;
+            List<string> strs = StringHelper.SplitEx(@"1|2|3|4|5", "|", StringComparison.Ordinal);
+            Assert.AreEqual(5, strs.Count);
+            Assert.IsTrue(strs[0].Equals("1", StringComparison.Ordinal));
+            Assert.IsTrue(strs[1].Equals("2", StringComparison.Ordinal));
+            Assert.IsTrue(strs[2].Equals("3", StringComparison.Ordinal));
+            Assert.IsTrue(strs[3].Equals("4", StringComparison.Ordinal));
+            Assert.IsTrue(strs[4].Equals("5", StringComparison.Ordinal));
 
-            str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
+            strs = StringHelper.SplitEx(@"1a2A3a4A5", "a", StringComparison.Ordinal);
+            Assert.AreEqual(3, strs.Count);
+            Assert.IsTrue(strs[0].Equals("1", StringComparison.Ordinal));
+            Assert.IsTrue(strs[1].Equals("2A3", StringComparison.Ordinal));
+            Assert.IsTrue(strs[2].Equals("4A5", StringComparison.Ordinal));
+
+            strs = StringHelper.SplitEx(@"1a2A3a4A5", "a", StringComparison.OrdinalIgnoreCase);
+            Assert.AreEqual(5, strs.Count);
+            Assert.IsTrue(strs[0].Equals("1", StringComparison.Ordinal));
+            Assert.IsTrue(strs[1].Equals("2", StringComparison.Ordinal));
+            Assert.IsTrue(strs[2].Equals("3", StringComparison.Ordinal));
+            Assert.IsTrue(strs[3].Equals("4", StringComparison.Ordinal));
+            Assert.IsTrue(strs[4].Equals("5", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("StringHelper")]
+        public void ReplaceEx()
+        {
+            string str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
             Assert.IsTrue(str.Equals("XYZCD", StringComparison.Ordinal));
 
             str = StringHelper.ReplaceEx(@"ABCD", "ab", "XYZ", StringComparison.Ordinal);

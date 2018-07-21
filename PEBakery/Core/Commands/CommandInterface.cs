@@ -25,18 +25,16 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PEBakery.WPF;
 using System.Windows;
 using System.Diagnostics;
-using PEBakery.WPF.Controls;
-using System.IO;
+using System.Collections.Generic;
 using PEBakery.Helper;
+using PEBakery.WPF;
+using PEBakery.WPF.Controls;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.Core.Commands
@@ -63,7 +61,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
             Script sc = cmd.Addr.Script;
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
@@ -80,8 +78,9 @@ namespace PEBakery.Core.Commands
                 // Re-render Script
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
+                    if (!(Application.Current.MainWindow is MainWindow w))
+                        return;
+                    if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
                         w.DrawScript(cmd.Addr.Script);
                 });
             }
@@ -98,12 +97,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
             Script sc = cmd.Addr.Script;
-            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
-            
+
             List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
@@ -125,7 +124,7 @@ namespace PEBakery.Core.Commands
                 UIControl uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                     return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSecName}]");
-                
+
                 uiCmd.Visibility = visibility;
                 uiCmds.Add(uiCmd);
             }
@@ -147,7 +146,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static (bool, string) InternalReadInterface(UIControl uiCtrl, InterfaceElement element)
+        private static (bool, string) InternalReadInterface(UIControl uiCtrl, InterfaceElement element, string delim)
         {
             string destStr;
             switch (element)
@@ -317,14 +316,14 @@ namespace PEBakery.Core.Commands
                                 {
                                     UIInfo_ComboBox subInfo = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                    destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             case UIControlType.RadioGroup:
                                 {
                                     UIInfo_RadioGroup subInfo = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
-                                    destStr = StringHelper.ConcatStrings(subInfo.Items, UIControl.ItemSeperatorStr);
+                                    destStr = StringEscaper.PackListStr(subInfo.Items, delim);
                                 }
                                 break;
                             default:
@@ -439,7 +438,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
@@ -447,12 +446,15 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
+            string delim = "|";
+            if (info.Delim != null)
+                delim = StringEscaper.Preprocess(s, info.Delim);
 
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
             Debug.Assert(key != null, $"{nameof(key)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
@@ -464,7 +466,7 @@ namespace PEBakery.Core.Commands
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
 
             // Read value from uiCtrl
-            (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element);
+            (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element, delim);
             if (!success) // Operation failed, destStr contains error message
                 return LogInfo.LogErrorMessage(logs, destStr);
 
@@ -476,7 +478,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> ReadInterfaceOp(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_ReadInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_ReadInterfaceOp>();
@@ -488,7 +490,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
@@ -515,7 +517,11 @@ namespace PEBakery.Core.Commands
             int successCount = 0;
             foreach ((UIControl uiCtrl, CodeInfo_ReadInterface info, CodeCommand subCmd) in targets)
             {
-                (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element);
+                string delim = "|";
+                if (info.Delim != null)
+                    delim = StringEscaper.Preprocess(s, info.Delim);
+
+                (bool success, string destStr) = InternalReadInterface(uiCtrl, info.Element, delim);
                 if (success)
                 {
                     List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, destStr, false, false, false);
@@ -531,14 +537,14 @@ namespace PEBakery.Core.Commands
             }
 
             if (1 < successCount)
-                logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from section [{section}] of [{scriptFile}]")); 
+                logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from section [{section}] of [{scriptFile}]"));
             else
                 logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] value from section [{section}] of [{scriptFile}]"));
             return logs;
         }
 
         // ReSharper disable once UnusedMethodReturnValue.Local
-        private static (bool, List<LogInfo>) InternalWriteInterface(UIControl uiCtrl, InterfaceElement element, string finalValue)
+        private static (bool, List<LogInfo>) InternalWriteInterface(UIControl uiCtrl, InterfaceElement element, string delim, string finalValue)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -769,7 +775,7 @@ namespace PEBakery.Core.Commands
                 #region Items - ComboBox, RadioGroup
                 case InterfaceElement.Items:
                     {
-                        string[] newItems = finalValue.Split(UIControl.ItemSeperatorChar);
+                        string[] newItems = finalValue.Split(new string[] { delim }, StringSplitOptions.None);
 
                         switch (uiCtrl.Type)
                         {
@@ -831,7 +837,7 @@ namespace PEBakery.Core.Commands
                                     UIInfo_Button subInfo = uiCtrl.Info.Cast<UIInfo_Button>();
 
                                     if (sectionName == null)
-                                        return ReturnErrorLog( "Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
+                                        return ReturnErrorLog("Cannot delete [SectionName] and [HideProgress] of [Button] UIControl");
 
                                     subInfo.SectionName = sectionName;
                                 }
@@ -940,7 +946,7 @@ namespace PEBakery.Core.Commands
                                 }
                                 break;
                             default:
-                                return ReturnErrorLog( $"Writing [{element}] to [{uiCtrl.Type}] is not supported");
+                                return ReturnErrorLog($"Writing [{element}] to [{uiCtrl.Type}] is not supported");
                         }
                     }
                     break;
@@ -956,7 +962,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
@@ -965,13 +971,16 @@ namespace PEBakery.Core.Commands
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
+            string delim = "|";
+            if (info.Delim != null)
+                delim = StringEscaper.Preprocess(s, info.Delim);
 
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
             Debug.Assert(key != null, $"{nameof(key)} != null");
             Debug.Assert(finalValue != null, $"{nameof(finalValue)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
@@ -984,7 +993,7 @@ namespace PEBakery.Core.Commands
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}] found in section [{section}] of [{scriptFile}]"));
 
             // Write value to uiCtrl
-            (_, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, finalValue);
+            (_, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, info.Element, delim, finalValue);
             logs.AddRange(resultLogs);
 
             // Update uiCtrl into file
@@ -1003,7 +1012,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterfaceOp(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_WriteInterfaceOp infoOp = cmd.Info.Cast<CodeInfo_WriteInterfaceOp>();
@@ -1015,20 +1024,23 @@ namespace PEBakery.Core.Commands
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
             Debug.Assert(section != null, $"{nameof(section)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
-            var targets = new List<(UIControl, InterfaceElement, string, CodeCommand)>(infoOp.Cmds.Count);
+            var targets = new List<(UIControl, InterfaceElement, string, string, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
             {
                 CodeInfo_WriteInterface info = subCmd.Info.Cast<CodeInfo_WriteInterface>();
 
                 string key = StringEscaper.Preprocess(s, info.Key);
                 string finalValue = StringEscaper.Preprocess(s, info.Value);
+                string delim = "|";
+                if (info.Delim != null)
+                    delim = StringEscaper.Preprocess(s, info.Delim);
 
                 UIControl uiCtrl = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCtrl == null)
@@ -1037,13 +1049,13 @@ namespace PEBakery.Core.Commands
                     continue;
                 }
 
-                targets.Add((uiCtrl, info.Element, finalValue, subCmd));
+                targets.Add((uiCtrl, info.Element, delim, finalValue, subCmd));
             }
 
             List<UIControl> updatedUICtrls = new List<UIControl>(targets.Count);
-            foreach ((UIControl uiCtrl, InterfaceElement element, string finalValue, CodeCommand subCmd) in targets)
+            foreach ((UIControl uiCtrl, InterfaceElement element, string delim, string finalValue, CodeCommand subCmd) in targets)
             {
-                (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, element, finalValue);
+                (bool success, List<LogInfo> resultLogs) = InternalWriteInterface(uiCtrl, element, delim, finalValue);
                 LogInfo.AddCommand(resultLogs, subCmd);
                 logs.AddRange(resultLogs);
 
@@ -1110,7 +1122,7 @@ namespace PEBakery.Core.Commands
             else
             {
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
-                
+
                 if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
                     return LogInfo.LogErrorMessage(logs, $"[{timeoutStr}] is not a valid positive integer");
                 if (timeout <= 0)
@@ -1136,28 +1148,23 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Echo(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_Echo info = cmd.Info.Cast<CodeInfo_Echo>();
-            
-            string message = StringEscaper.Preprocess(s, info.Message);
 
+            string message = StringEscaper.Preprocess(s, info.Message);
             Debug.Assert(message != null, $"{nameof(message)} != null");
 
             s.MainViewModel.BuildEchoMessage = message;
 
             logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, message, cmd));
-
             return logs;
         }
 
         public static List<LogInfo> EchoFile(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_EchoFile info = cmd.Info.Cast<CodeInfo_EchoFile>();
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
-
             Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
 
             if (!File.Exists(srcFile))
@@ -1172,7 +1179,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     // Create dummy script instance
-                    FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                    FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
                     Script sc = cmd.Addr.Project.LoadScript(tempFile, tempFile, true, false);
 
                     // Encode binary file into script instance
@@ -1275,22 +1282,17 @@ namespace PEBakery.Core.Commands
                             };
 
                             bool failure = false;
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            if (dialog.ShowDialog() == true)
                             {
-                                if (!(Application.Current.MainWindow is MainWindow w))
-                                    return;
+                                selectedPath = dialog.SelectedPath;
+                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
+                                failure = true;
+                            }
 
-                                if (dialog.ShowDialog(w) == true)
-                                {
-                                    selectedPath = dialog.SelectedPath;
-                                    logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
-                                }
-                                else
-                                {
-                                    logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
-                                    failure = true;
-                                }
-                            });
                             if (failure)
                                 return logs;
                         }
@@ -1302,7 +1304,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    throw new InvalidCodeCommandException($"Wrong UserInputType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandInterface.UserInput");
             }
 
             return logs;
@@ -1322,7 +1324,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(interfaceSection != null, $"{nameof(interfaceSection)} != null");
             Debug.Assert(prefix != null, $"{nameof(prefix)} != null");
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;

@@ -25,15 +25,14 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
 {
@@ -48,16 +47,17 @@ namespace PEBakery.Core
             try
             {
                 UIControl uiCtrl = ParseUIControl(new List<string> { line }, addr, ref idx);
+                if (uiCtrl == null)
+                    return null;
+
+                // Check uiCtrl.Type
                 if (uiCtrl.Type == UIControlType.None)
                 {
                     errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine})"));
                     return null;
                 }
+
                 return uiCtrl;
-            }
-            catch (InvalidUIControlException e)
-            {
-                errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine})"));
             }
             catch (InvalidCommandException e)
             {
@@ -78,36 +78,34 @@ namespace PEBakery.Core
             List<UIControl> uiCtrls = new List<UIControl>();
             for (int i = 0; i < lines.Count; i++)
             {
+                int lineIdx = addr.Section.LineIdx + 1 + i;
+
                 try
                 {
                     UIControl uiCtrl = ParseUIControl(lines, addr, ref i);
                     if (uiCtrl == null)
                         continue;
 
-                    // Check uICtrl.Type
+                    // Check uiCtrl.Type
                     if (uiCtrl.Type == UIControlType.None)
                     {
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine})"));
+                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine}) (Line {lineIdx})"));
                         continue;
                     }
 
                     // Check if interface control's key is duplicated
                     if (uiCtrls.Select(x => x.Key).Contains(uiCtrl.Key, StringComparer.OrdinalIgnoreCase))
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})")); 
+                        errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine}) (Line {lineIdx})"));
                     else
                         uiCtrls.Add(uiCtrl);
                 }
-                catch (InvalidUIControlException e)
-                {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine})"));
-                }
                 catch (InvalidCommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine})"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine}) (Line {lineIdx})"));
                 }
                 catch (Exception e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, e));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} (Line {addr.Section.LineIdx + 1 + i})"));
                 }
             }
 
@@ -121,12 +119,12 @@ namespace PEBakery.Core
             UIControlType type;
             string rawLine = rawLines[idx].Trim();
 
-            // Check if rawCode is Empty
-            if (rawLine.Equals(string.Empty))
+            // Check if rawLine is empty
+            if (rawLine.Length == 0)
                 return null;
 
-            // Comment Format : starts with '//' or '#', ';'
-            if (rawLine.StartsWith("//") || rawLine.StartsWith("#") || rawLine.StartsWith(";"))
+            // Line Comment Identifier : '//', '#', ';'
+            if (rawLine.StartsWith("//", StringComparison.Ordinal) || rawLine[0] == '#' || rawLine[0] == ';')
                 return null;
 
             // Find key of interface control
@@ -140,7 +138,7 @@ namespace PEBakery.Core
             }
             else
             {
-                throw new InvalidCommandException($"Interface control [{rawValue}] does not have a name defined", rawLine);
+                throw new InvalidCommandException($"Interface control [{rawValue}] must have a key", rawLine);
             }
 
             // Parse Arguments
@@ -158,8 +156,8 @@ namespace PEBakery.Core
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Check doublequote's occurence - must be 2n
-            if (StringHelper.CountOccurrences(rawValue, "\"") % 2 == 1)
-                throw new InvalidCommandException($"Interface control [{rawValue}]'s doublequotes mismatch", rawLine);
+            if (StringHelper.CountSubStr(rawValue, "\"") % 2 == 1)
+                throw new InvalidCommandException("Doublequote's number should be an even number", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
@@ -167,7 +165,7 @@ namespace PEBakery.Core
                 while (args.Last().Equals(@"\", StringComparison.OrdinalIgnoreCase))
                 { // Split next line and append to List<string> operands
                     if (rawLines.Count <= idx) // Section ended with \, invalid grammar!
-                        throw new InvalidCommandException($@"Last interface control [{rawValue}] cannot end with '\' ", rawLine);
+                        throw new InvalidCommandException(@"Last interface control cannot end with '\'", rawLine);
                     idx++;
                     args.AddRange(rawLines[idx].Trim().Split(','));
                 }
@@ -365,7 +363,7 @@ namespace PEBakery.Core
                             items.Add(args[i]);
 
                         int idx = items.IndexOf(fullArgs[0]);
-                        if (idx == -1) 
+                        if (idx == -1)
                             throw new InvalidCommandException($"[{type}] has wrong selected value [{fullArgs[0]}]");
 
                         return new UIInfo_ComboBox(toolTip, items, idx, sectionName, hideProgress);
@@ -517,7 +515,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
                             fontSize = fontSizeVal;
                         }
-                            
+
                         if (2 <= cnt)
                         {
                             weight = ParseUIFontWeight(args[1]);
@@ -567,7 +565,7 @@ namespace PEBakery.Core
                         if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             cnt -= 1;
 
-                        if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) && 
+                        if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[cnt - 1].StartsWith("_", StringComparison.Ordinal) &&
                             args[cnt - 1].EndsWith("_", StringComparison.Ordinal))
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
@@ -583,7 +581,7 @@ namespace PEBakery.Core
 
                         for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
-                        
+
                         if (!NumberHelper.ParseInt32(args[cnt], out int idx))
                             throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be an integer");
 
@@ -594,7 +592,7 @@ namespace PEBakery.Core
                 default:
                     Debug.Assert(false);
                     break;
-                #endregion
+                    #endregion
             }
 
             throw new InvalidCommandException($"Invalid interface control type [{type}]");

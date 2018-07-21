@@ -25,17 +25,13 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
-using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -93,7 +89,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
-                        
+
                         if (srcStr1.StartsWith("-", StringComparison.Ordinal) ||
                             srcStr2.StartsWith("-", StringComparison.Ordinal))
                         { // Signed
@@ -120,7 +116,7 @@ namespace PEBakery.Core.Commands
 
                             logs.AddRange(Variables.SetVariable(s, subInfo.QuotientVar, q.ToString()));
                             logs.AddRange(Variables.SetVariable(s, subInfo.RemainderVar, r.ToString()));
-                        } 
+                        }
                     }
                     break;
                 case MathType.Neg:
@@ -226,7 +222,7 @@ namespace PEBakery.Core.Commands
                             }
                         }
 
-                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));                        
+                        logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
                     }
                     break;
                 case MathType.BoolAnd:
@@ -551,7 +547,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    throw new InvalidCodeCommandException($"Wrong MathType [{type}]");
+                    throw new InternalException("Internal Logic Error at CommandMath.Math");
             }
 
             return logs;

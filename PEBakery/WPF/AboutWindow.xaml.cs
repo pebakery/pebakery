@@ -29,9 +29,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -45,19 +43,13 @@ using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
-    /// <summary>
-    /// AboutWindow.xaml에 대한 상호 작용 논리
-    /// </summary>
+    // ReSharper disable once RedundantExtendsListEntry
     public partial class AboutWindow : Window
     {
-        AboutViewModel m;
-
         public AboutWindow(FontHelper.WPFFont monoFont)
         {
-            m = new AboutViewModel(monoFont);
-
             InitializeComponent();
-            DataContext = m;
+            DataContext = new AboutViewModel(monoFont);
         }
 
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -70,7 +62,7 @@ namespace PEBakery.WPF
     public class AboutViewModel : INotifyPropertyChanged
     {
         #region Field, Property, Constructor
-        public FontHelper.WPFFont MonoFont { get; private set; }
+        public FontHelper.WPFFont MonoFont { get; }
         public FontFamily MonoFontFamily => MonoFont.FontFamily;
         public FontWeight MonoFontWeight => MonoFont.FontWeight;
         public double MonoFontSize => MonoFont.FontSizeInDIP;

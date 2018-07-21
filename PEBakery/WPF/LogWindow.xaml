@@ -30,6 +30,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
@@ -60,6 +61,7 @@
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="Background" Value="LightBlue"></Setter>
                 </Trigger>
+                
             </Style.Triggers>
         </Style>
     </Window.Resources>
@@ -75,8 +77,8 @@
                 <Grid>
                     <ListView Name="SystemLogListView"
                               HorizontalContentAlignment="Stretch"
-                              SelectedIndex="{Binding SystemLogListSelectedIndex}"
-                              ItemsSource="{Binding SystemLogListModel}"
+                              SelectedIndex="{Binding SystemLogsSelectedIndex}"
+                              ItemsSource="{Binding SystemLogs}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               AlternationCount="2">
                         <ListView.View>
@@ -112,9 +114,8 @@
                                    Text="Select Build">
                         </TextBlock>
                         <ComboBox Name="SelectBuildComboBox"
-                                  SelectedIndex="{Binding SelectBuildIndex}"
-                                  ItemsSource="{Binding SelectBuildEntries}"
-                                  AlternationCount="2">
+                                  SelectedIndex="{Binding SelectedBuildIndex}"
+                                  ItemsSource="{Binding BuildEntries}">
                              <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -132,9 +133,8 @@
                                    Text="Select Script">
                         </TextBlock>
                          <ComboBox Name="SelectScriptComboBox"
-                                   SelectedIndex="{Binding SelectScriptIndex}"
-                                   ItemsSource="{Binding SelectScriptEntries}"
-                                   AlternationCount="2">
+                                   SelectedIndex="{Binding SelectedScriptIndex}"
+                                   ItemsSource="{Binding ScriptEntries}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -147,7 +147,7 @@
                                 Grid.Row="2">
                         <TabItem Header="Statistics">
                             <ListView HorizontalContentAlignment="Stretch"
-                                      ItemsSource="{Binding LogStatModel}"
+                                      ItemsSource="{Binding LogStats}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
                                 <ListView.View>
@@ -162,11 +162,11 @@
                                 </ListView.View>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Log (Simple)">
+                        <TabItem Header="Simple Logs">
                             <ListView Name="BuildLogSimpleListView"
-                                      SelectedIndex="{Binding BuildLogSimpleSelectedIndex}"
+                                      SelectedIndex="{Binding SimpleBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
-                                      ItemsSource="{Binding BuildLogListModel}"
+                                      ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
                                  <ListBox.ItemTemplate>
@@ -174,28 +174,38 @@
                                         <TextBlock Text="{Binding Text}"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
+                                            <MenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Log (Detail)">
+                        <TabItem Header="Full Logs">
                             <ListView Name="BuildLogDetailListView"
-                                      SelectedIndex="{Binding BuildLogDetailSelectedIndex}"
+                                      SelectedIndex="{Binding FullBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
-                                      ItemsSource="{Binding BuildLogListModel}"
+                                      ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                      AlternationCount="2">
+                                      AlternationCount="2"
+                                      FontSize="11">
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn Header="Time"
-                                                        Width="150"
+                                                        Width="135"
                                                         DisplayMemberBinding="{Binding TimeStr}" />
                                         <GridViewColumn Header="Depth"
-                                                        Width="40"
+                                                        Width="35"
                                                         DisplayMemberBinding="{Binding Depth}" />
                                         <GridViewColumn Header="State"
-                                                        Width="60"
+                                                        Width="55"
                                                         DisplayMemberBinding="{Binding StateStr}" />
                                         <GridViewColumn Header="Line#"
-                                                        Width="45"
+                                                        Width="40"
                                                         DisplayMemberBinding="{Binding LineIdxStr}" />
                                         <GridViewColumn Header="Message"
                                                         Width="340" 
@@ -203,13 +213,26 @@
                                         <GridViewColumn Header="RawCode"
                                                         Width="175"
                                                         DisplayMemberBinding="{Binding RawCode}" />
+                                        <GridViewColumn Header="Macro"
+                                                        Width="35"
+                                                        DisplayMemberBinding="{Binding IsMacroChar}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                            <MenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Variable">
+                        <TabItem Header="Variables">
                             <ListView HorizontalContentAlignment="Stretch"
-                                      ItemsSource="{Binding VariableListModel}"
+                                      SelectedIndex="{Binding VariableLogSelectedIndex}"
+                                      ItemsSource="{Binding VariableLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
                                 <ListView.View>
@@ -225,38 +248,64 @@
                                                         DisplayMemberBinding="{Binding Value}" />
                                     </GridView>
                                 </ListView.View>
+                                <ListView.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
+                                            <MenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ListView.ContextMenu>
                             </ListView>
                         </TabItem>
                     </TabControl>
                 </Grid>
             </TabItem>
         </TabControl>
-        <Grid Grid.Row="1" Margin="15, 15, 15, 15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="115"/>
-                <ColumnDefinition Width="115"/>
-                <ColumnDefinition Width="115"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="100"/>
-            </Grid.ColumnDefinitions>
-
-            <Button Grid.Column="0"
-                    Margin="0, 0, 15, 0"
-                    Click="RefreshButton_Click"
-                    Content="Refresh"/>
-            <Button Grid.Column="1"
-                    Margin="0, 0, 15, 0"
-                    Click="ClearButton_Click"
-                    Content="Clear"/>
-            <Button Grid.Column="2"
-                    Margin="0, 0, 15, 0"
-                    Content="Export"
-                    Click="ExportButton_Click"/>
-            <Button Grid.Column="4"
+        <DockPanel Grid.Row="1" Margin="15">
+            <Button DockPanel.Dock="Right"
+                    Width="100"
+                    Margin="10, 0, 0, 0"
                     IsDefault="True"
                     IsCancel="True"
                     Click="CloseButton_Click"
                     Content="Close"/>
-        </Grid>
+            <Button DockPanel.Dock="Left"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Margin="0, 0, 10, 0"
+                    Click="RefreshButton_Click"
+                    Content="Refresh"/>
+            <Button DockPanel.Dock="Left"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Margin="0, 0, 10, 0"
+                    Click="ClearButton_Click"
+                    Content="Clear"/>
+            <Button DockPanel.Dock="Left"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Margin="0, 0, 10, 0"
+                    Click="ExportButton_Click"
+                    Content="Export"/>
+            <StackPanel Orientation="Horizontal" 
+                        Visibility="{Binding BuildLogSelected}">
+                <CheckBox DockPanel.Dock="Left"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          VerticalContentAlignment="Center"
+                          Margin="0, 0, 5, 0"
+                          IsChecked="{Binding BuildLogShowComments}"
+                          Content="Show Comments"/>
+                <CheckBox DockPanel.Dock="Left"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          VerticalContentAlignment="Center"
+                          Margin="0, 0, 5, 0"
+                          IsChecked="{Binding BuildLogShowMacros}"
+                          Content="Show Macros"/>
+            </StackPanel>
+        </DockPanel>
     </Grid>
 </Window>

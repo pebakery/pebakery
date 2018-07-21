@@ -29,7 +29,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Helper
 {
@@ -44,25 +43,18 @@ namespace PEBakery.Helper
 
         public static StringNumberType IsStringHexInteger(string str)
         {
-            int pCnt = StringHelper.CountOccurrences(str, ".");
+            int pCnt = StringHelper.CountSubStr(str, ".");
             if (1 < pCnt)
                 return StringNumberType.NotNumber;
 
+            // 0x
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            { // 0x
-                if (pCnt == 1)
-                    return StringNumberType.NotNumber;
-                else
-                    return StringNumberType.HexInteger;
-            }
+                return pCnt == 1 ? StringNumberType.NotNumber : StringNumberType.HexInteger;
 
             if (pCnt == 1)
                 return StringNumberType.Decimal;
 
-            if (str.StartsWith("-", StringComparison.Ordinal))
-                return StringNumberType.NegativeInteger;
-            else
-                return StringNumberType.PositiveInteger;
+            return str.StartsWith("-", StringComparison.Ordinal) ? StringNumberType.NegativeInteger : StringNumberType.PositiveInteger;
         }
         #endregion
 
