@@ -178,7 +178,12 @@
                                     <ContextMenu>
                                         <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
                                             <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
+                                                                            Width="Auto" Height="Auto" Margin="2"
+                                                                            HorizontalAlignment="Center"
+                                                                            HorizontalContentAlignment="Center"
+                                                                            VerticalAlignment="Center"
+                                                                            VerticalContentAlignment="Center"/>
                                             </MenuItem.Icon>
                                         </MenuItem>
                                     </ContextMenu>
@@ -222,7 +227,12 @@
                                     <ContextMenu>
                                         <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
                                             <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
+                                                                            Width="Auto" Height="Auto" Margin="2"
+                                                                            HorizontalAlignment="Center"
+                                                                            HorizontalContentAlignment="Center"
+                                                                            VerticalAlignment="Center"
+                                                                            VerticalContentAlignment="Center"/>
                                             </MenuItem.Icon>
                                         </MenuItem>
                                     </ContextMenu>
@@ -252,7 +262,12 @@
                                     <ContextMenu>
                                         <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
                                             <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
+                                                                            Width="Auto" Height="Auto" Margin="2"
+                                                                            HorizontalAlignment="Center"
+                                                                            HorizontalContentAlignment="Center"
+                                                                            VerticalAlignment="Center"
+                                                                            VerticalContentAlignment="Center"/>
                                             </MenuItem.Icon>
                                         </MenuItem>
                                     </ContextMenu>
