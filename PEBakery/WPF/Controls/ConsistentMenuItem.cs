@@ -14,20 +14,28 @@ namespace PEBakery.WPF.Controls
     {
         public CorrectMenuItem()
         {
-            Loaded += (object sender, RoutedEventArgs e) =>
-            {
-                if (!(Icon is FrameworkElement iconElement))
-                    return;
-                if (!(VisualTreeHelper.GetParent(iconElement) is ContentPresenter presenter))
-                    return;
+            if (!(Icon is FrameworkElement iconElement))
+                return;
+            if (!(VisualTreeHelper.GetParent(iconElement) is ContentPresenter presenter))
+                return;
 
-                App.Logger.SystemWrite(new LogInfo(LogState.Info, $"IconElement.Margin = {iconElement.Margin}"));
-                App.Logger.SystemWrite(new LogInfo(LogState.Info, $"Presenter.Margin   = {presenter.Margin}"));
-                iconElement.Width = Height;
-                iconElement.Height = Height;
-                iconElement.HorizontalAlignment = HorizontalAlignment.Center;
-                iconElement.VerticalAlignment = VerticalAlignment.Center;
-            };
+            const int presenterMargin = 2;
+            double maxMargin = presenterMargin;
+            Thickness margin = iconElement.Margin;
+            if (maxMargin < margin.Top)
+                maxMargin = margin.Top;
+            else if (maxMargin < margin.Bottom)
+                maxMargin = margin.Bottom;
+            else if (maxMargin < margin.Left)
+                maxMargin = margin.Left;
+            else if (maxMargin < margin.Right)
+                maxMargin = margin.Right;
+
+            iconElement.Width -= maxMargin;
+            iconElement.Height -= maxMargin;
+            iconElement.HorizontalAlignment = HorizontalAlignment.Center;
+            iconElement.VerticalAlignment = VerticalAlignment.Center;
+            presenter.Margin = new Thickness(presenterMargin);
         }
     }
 }

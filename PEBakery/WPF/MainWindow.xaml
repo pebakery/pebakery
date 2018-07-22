@@ -419,7 +419,7 @@
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Play" Margin="0"/>
+                                    <iconPacks:PackIconMaterial Kind="Play"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Refresh Script" 
@@ -427,7 +427,7 @@
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Refresh" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="Refresh"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Edit Script Properties" 
@@ -435,7 +435,7 @@
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Edit Script Source" 
@@ -443,7 +443,7 @@
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Update Script" 
@@ -451,7 +451,7 @@
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="Download"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Syntax Check"
@@ -459,7 +459,7 @@
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Magnify" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="Magnify"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
@@ -467,7 +467,7 @@
                                                 Click="ScriptOpenFolderButton_Click" 
                                                 Grid.IsSharedSizeScope="True" >
                                 <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Margin="1"/>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                         </ContextMenu>
@@ -682,12 +682,20 @@
                             <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
                             <Button.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Edit Script Properties"
-                                              ToolTip="Manage header, interface and attachments"
-                                              Click="ScriptInternalEditor_Click"/>
-                                    <MenuItem Header="Edit Script Source"
-                                              ToolTip="Edit script code"
-                                              Click="ScriptExternalEditor_Click"/>
+                                    <cc:CorrectMenuItem Header="Edit Script Properties"
+                                                        ToolTip="Manage header, interface and attachments"
+                                                        Click="ScriptInternalEditor_Click">
+                                        <cc:CorrectMenuItem.Icon>
+                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                        </cc:CorrectMenuItem.Icon>
+                                    </cc:CorrectMenuItem>
+                                    <cc:CorrectMenuItem Header="Edit Script Source"
+                                                        ToolTip="Edit script code"
+                                                        Click="ScriptExternalEditor_Click">
+                                        <cc:CorrectMenuItem.Icon>
+                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                        </cc:CorrectMenuItem.Icon>
+                                    </cc:CorrectMenuItem>
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
