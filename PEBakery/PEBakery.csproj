@@ -183,7 +183,7 @@
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView.cs" />
-    <Compile Include="WPF\Controls\ConsistentMenuItem.cs" />
+    <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox.cs" />
     <Compile Include="WPF\Controls\CustomMessageBoxWindow.xaml.cs">
