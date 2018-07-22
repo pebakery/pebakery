@@ -32,7 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         FontFamily="Segoe UI"
         Closed="Window_Closed"
@@ -82,7 +82,7 @@
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               AlternationCount="2">
                         <ListView.View>
-                            <custom:AutoSizedGridView>
+                            <cc:AutoSizedGridView>
                                 <GridViewColumn Header="Time"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding TimeStr}" />
@@ -92,7 +92,7 @@
                                 <GridViewColumn Header="Message"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding Message}" />
-                            </custom:AutoSizedGridView>
+                            </cc:AutoSizedGridView>
                         </ListView.View>
                     </ListView>
                 </Grid>
@@ -176,16 +176,11 @@
                                 </ListBox.ItemTemplate>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
-                                                                            Width="Auto" Height="Auto" Margin="2"
-                                                                            HorizontalAlignment="Center"
-                                                                            HorizontalContentAlignment="Center"
-                                                                            VerticalAlignment="Center"
-                                                                            VerticalContentAlignment="Center"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>
@@ -225,16 +220,11 @@
                                 </ListView.View>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
-                                                                            Width="Auto" Height="Auto" Margin="2"
-                                                                            HorizontalAlignment="Center"
-                                                                            HorizontalContentAlignment="Center"
-                                                                            VerticalAlignment="Center"
-                                                                            VerticalContentAlignment="Center"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>
@@ -260,16 +250,11 @@
                                 </ListView.View>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy"
-                                                                            Width="Auto" Height="Auto" Margin="2"
-                                                                            HorizontalAlignment="Center"
-                                                                            HorizontalContentAlignment="Center"
-                                                                            VerticalAlignment="Center"
-                                                                            VerticalContentAlignment="Center"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>

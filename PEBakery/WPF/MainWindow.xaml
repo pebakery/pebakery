@@ -32,7 +32,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
@@ -154,12 +154,12 @@
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+            <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                                  Grid.Column="1"
                                  Margin="10"
                                  HorizontalAlignment="Left"
                                  IsActive="{Binding WorkInProgress}">
-            </custom:ProgressRing>
+            </cc:ProgressRing>
             <Button Grid.Row="0" Grid.Column="2" 
                     Margin="4"
                     Style="{StaticResource BackgroundButton}"
@@ -315,12 +315,12 @@
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+            <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                                  Grid.Column="1"
                                  Margin="10"
                                  HorizontalAlignment="Left"
                                  IsActive="{Binding WorkInProgress}">
-            </custom:ProgressRing>
+            </cc:ProgressRing>
 
             <Button Grid.Row="0"
                     Grid.Column="2"
@@ -414,97 +414,62 @@
                           Tag="{Binding DataContext, ElementName=Main}">
                     <TreeView.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="Run Script" 
+                            <cc:CorrectMenuItem Header="Run Script" 
                                       Click="ScriptRunButton_Click" 
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Play"
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                             </MenuItem>
-                            <MenuItem Header="Refresh Script" 
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Play" Margin="0"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Refresh Script" 
                                       Click="ScriptRefreshButton_Click" 
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Refresh"
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Edit Script Properties" 
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Refresh" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Edit Script Properties" 
                                       Click="ScriptInternalEditor_Click"
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil"
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Edit Script Source" 
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Edit Script Source" 
                                       Click="ScriptExternalEditor_Click" 
                                       Grid.IsSharedSizeScope="True"
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="OpenInApp" 
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Update Script" 
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Update Script" 
                                       Click="ScriptUpdateButton"
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download" 
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Syntax Check"
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Syntax Check"
                                       Click="ScriptCheckButton_Click" 
                                       Grid.IsSharedSizeScope="True" 
                                       Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Magnify" 
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Magnify" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
                             <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
-                            <MenuItem Header="Open Script Folder"
-                                      Click="ScriptOpenFolderButton_Click" 
-                                      Grid.IsSharedSizeScope="True" >
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="FolderOpen" 
-                                                                Width="Auto" Height="Auto" Margin="2"
-                                                                HorizontalAlignment="Center"
-                                                                HorizontalContentAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                VerticalContentAlignment="Center"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
+                            <cc:CorrectMenuItem Header="Open Script Folder"
+                                                Click="ScriptOpenFolderButton_Click" 
+                                                Grid.IsSharedSizeScope="True" >
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Margin="1"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
@@ -853,3 +818,4 @@
         </TaskbarItemInfo>
     </Window.TaskbarItemInfo>
 </Window>
+
