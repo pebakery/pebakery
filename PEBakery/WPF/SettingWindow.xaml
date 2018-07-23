@@ -39,6 +39,7 @@
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
         Width="600" Height="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
         <Grid.RowDefinitions>

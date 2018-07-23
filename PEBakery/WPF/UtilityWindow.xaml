@@ -39,6 +39,7 @@
         Closed="Window_Closed"
         Width="800" Height="640"
         MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Save"

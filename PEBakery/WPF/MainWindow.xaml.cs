@@ -753,6 +753,7 @@ namespace PEBakery.WPF
             bool oldScriptEnableCache = Setting.Script_EnableCache;
 
             SettingWindow dialog = new SettingWindow(Setting);
+            dialog.Owner = this;
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
@@ -779,6 +780,7 @@ namespace PEBakery.WPF
                 return;
 
             UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont);
+            UtilityDialog.Owner = this;
             UtilityDialog.Show();
         }
 
@@ -787,6 +789,7 @@ namespace PEBakery.WPF
             if (LogWindow.Count == 0)
             {
                 LogDialog = new LogWindow();
+                LogDialog.Owner = this;
                 LogDialog.Show();
             }
         }
@@ -813,6 +816,7 @@ namespace PEBakery.WPF
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
             AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont);
+            dialog.Owner = this;
             dialog.ShowDialog();
         }
         #endregion
