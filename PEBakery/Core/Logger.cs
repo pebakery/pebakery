@@ -677,7 +677,7 @@ namespace PEBakery.Core
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
-        public int BuildReferenceScriptWrite(EngineState s, Script sc)
+        public int BuildRefScriptWrite(EngineState s, Script sc)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -751,7 +751,7 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RealScriptId = s.RealScriptId,
+                RefScriptId = s.RefScriptId,
                 Message = message,
                 IsMacro = s.InMacro,
             };
@@ -780,7 +780,7 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RealScriptId = s.RealScriptId,
+                RefScriptId = s.RefScriptId,
                 Depth = log.Depth,
                 State = state,
                 IsMacro = s.InMacro,
@@ -823,7 +823,7 @@ namespace PEBakery.Core
                     Time = DateTime.UtcNow,
                     BuildId = buildId,
                     ScriptId = 0,
-                    RealScriptId = 0,
+                    RefScriptId = 0,
                     Depth = log.Depth,
                     State = log.State,
                 };
@@ -1200,7 +1200,7 @@ namespace PEBakery.Core
         public int BuildId { get; set; }
         [Indexed]
         public int ScriptId { get; set; } // Where the command was called
-        public int RealScriptId { get; set; } // Where the command is written (Run/Exec). 0 if invalid.
+        public int RefScriptId { get; set; } // Where the command resides in (Run/Exec). 0 if invalid.
         public int Depth { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]

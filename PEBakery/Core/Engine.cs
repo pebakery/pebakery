@@ -83,7 +83,7 @@ namespace PEBakery.Core
             // Init Per-Script Log
             bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
             s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
-            s.RealScriptId = s.ScriptId;
+            s.RefScriptId = s.ScriptId;
 
             // Determine EntrySection
             string entrySection = Engine.GetEntrySection(s);
@@ -1057,7 +1057,7 @@ namespace PEBakery.Core
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
-        public int RealScriptId = 0; // Used in logging
+        public int RefScriptId = 0; // Used in logging
 
         // Options
         public bool CompatDirCopyBug = false; // Compatibility

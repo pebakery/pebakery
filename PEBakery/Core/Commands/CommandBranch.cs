@@ -97,16 +97,16 @@ namespace PEBakery.Core.Commands
 
             // Backup EngineState values
             int depthBackup = s.CurDepth;
-            int realScriptIdBackup = s.RealScriptId;
+            int realScriptIdBackup = s.RefScriptId;
             if (!inCurrentScript)
-                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
             // Run Section
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
 
             // Restore EngineState values
             s.CurDepth = depthBackup;
-            s.RealScriptId = realScriptIdBackup;
+            s.RefScriptId = realScriptIdBackup;
 
             // Restore Variables and Macros for Exec
             if (cmd.Type == CodeType.Exec)
@@ -239,9 +239,9 @@ namespace PEBakery.Core.Commands
 
                             // Backup EngineState values
                             int depthBackup = s.CurDepth;
-                            int realScriptIdBackup = s.RealScriptId;
+                            int realScriptIdBackup = s.RefScriptId;
                             if (!inCurrentScript)
-                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+                                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
                             // Set s.LoopState
                             s.LoopState = LoopState.OnIndex;
@@ -256,7 +256,7 @@ namespace PEBakery.Core.Commands
 
                             // Restore EngineState values
                             s.CurDepth = depthBackup;
-                            s.RealScriptId = realScriptIdBackup;
+                            s.RefScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
@@ -270,9 +270,9 @@ namespace PEBakery.Core.Commands
 
                             // Backup EngineState values
                             int depthBackup = s.CurDepth;
-                            int realScriptIdBackup = s.RealScriptId;
+                            int realScriptIdBackup = s.RefScriptId;
                             if (!inCurrentScript)
-                                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, sc);
+                                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
                             // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
@@ -286,7 +286,7 @@ namespace PEBakery.Core.Commands
 
                             // Restore EngineState values
                             s.CurDepth = depthBackup;
-                            s.RealScriptId = realScriptIdBackup;
+                            s.RefScriptId = realScriptIdBackup;
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;

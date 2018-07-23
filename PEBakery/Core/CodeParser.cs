@@ -62,32 +62,32 @@ namespace PEBakery.Core
         public static List<CodeCommand> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
-            List<CodeCommand> codeList = new List<CodeCommand>(32);
+            List<CodeCommand> cmds = new List<CodeCommand>(16);
             for (int i = 0; i < lines.Count; i++)
             {
                 try
                 {
                     CodeCommand cmd = ParseCommand(lines, addr, ref i);
-                    codeList.Add(cmd);
+                    cmds.Add(cmd);
                 }
                 catch (InvalidCommandException e)
                 {
                     CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
-                    codeList.Add(error);
+                    cmds.Add(error);
                 }
                 catch (Exception e)
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(e), addr.Section.LineIdx + i + 1);
-                    codeList.Add(error);
+                    cmds.Add(error);
                 }
             }
 
-            errorLogs = codeList
+            errorLogs = cmds
                 .Where(x => x.Type == CodeType.Error)
                 .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
                 .ToList();
 
-            List<CodeCommand> foldedList = codeList.Where(x => x.Type != CodeType.None).ToList();
+            List<CodeCommand> foldedList = cmds.Where(x => x.Type != CodeType.None).ToList();
             try
             {
                 FoldBranchCodeBlock(foldedList, out foldedList);
@@ -301,6 +301,8 @@ namespace PEBakery.Core
             bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) ||
                            !Enum.IsDefined(typeof(CodeType), type) ||
                            type == CodeType.None ||
+                           type == CodeType.Error ||
+                           type == CodeType.Comment ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 
