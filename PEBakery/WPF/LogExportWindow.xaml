@@ -35,6 +35,7 @@
         FontSize="13"
         Width="500" Height="280"
         FontFamily="Segoe UI"
+        WindowStartupLocation="CenterOwner"
         Title="Export Logs" 
         d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
     <Window.CommandBindings>

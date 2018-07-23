@@ -263,6 +263,7 @@ namespace PEBakery.WPF
                 exportModel.SetBuildLog(_m.SelectedBuildIndex, _m.BuildLogShowComments, _m.BuildLogShowMacros);
 
             LogExportWindow dialog = new LogExportWindow(exportModel);
+            dialog.Owner = this;
             dialog.ShowDialog();
         }
         #endregion
