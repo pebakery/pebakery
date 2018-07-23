@@ -52,29 +52,60 @@
         <StackPanel Grid.Row="0"
                     Orientation="Vertical"
                     Margin="5, 5, 5, 0">
-            <GroupBox Margin="0, 0, 0, 5"
-                      BorderBrush="Gray">
-                <GroupBox.Header>
-                    <TextBlock Text="Log Type"
-                               FontWeight="Bold"/>
-                </GroupBox.Header>
-                <StackPanel>
-                    <RadioButton Height="20"
-                                 VerticalAlignment="Top"
-                                 VerticalContentAlignment="Center"
-                                 GroupName="LogType"
-                                 IsChecked="{Binding ExportSystemLog}"
-                                 Content="System Log"/>
-                    <RadioButton Height="20"
-                                 VerticalAlignment="Top"
-                                 VerticalContentAlignment="Center"
-                                 GroupName="LogType"
-                                 IsEnabled="{Binding BuildLogRadioEnabled}"
-                                 IsChecked="{Binding ExportBuildLog}"
-                                 Content="Build Log"/>
-                </StackPanel>
-            </GroupBox>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
 
+                <GroupBox Grid.Column="0"
+                          Margin="0, 0, 3, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="Log Type"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsChecked="{Binding ExportSystemLog}"
+                                     Content="System Log"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsEnabled="{Binding BuildLogRadioEnabled}"
+                                     IsChecked="{Binding ExportBuildLog}"
+                                     Content="Build Log"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Grid.Column="1"
+                          Margin="3, 0, 0, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="File Format"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatText}"
+                                     Content="Text (.txt)"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatHtml}"
+                                     Content="HTML (.html)"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            
+            
             <GroupBox BorderBrush="Gray">
                 <GroupBox.Header>
                     <TextBlock Text="Build Log Export Options"

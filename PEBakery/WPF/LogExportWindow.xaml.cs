@@ -31,6 +31,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -82,8 +83,20 @@ namespace PEBakery.WPF
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "Choose Destination Path",
-                Filter = "Text Format (*.txt)|*.txt|HTML Format (*.html)|*.html",
             };
+
+            switch (_m.FileFormat)
+            {
+                case LogExportType.Text:
+                    dialog.Filter = "Text Format (*.txt)|*.txt";
+                    break;
+                case LogExportType.Html:
+                    dialog.Filter = "HTML Format (*.html)|*.html";
+                    break;
+                default:
+                    Debug.Assert(false, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
+                    break;
+            }
 
             string destFile = null;
             if (_m.ExportSystemLog)
@@ -91,12 +104,7 @@ namespace PEBakery.WPF
                 if (dialog.ShowDialog() == true)
                 {
                     destFile = dialog.FileName;
-                    string ext = System.IO.Path.GetExtension(destFile);
-                    LogExportType type = LogExportType.Text;
-                    if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                        type = LogExportType.Html;
-
-                    _m.Logger.ExportSystemLog(type, destFile);
+                    _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
                 }
             }
             else if (_m.ExportBuildLog)
@@ -104,14 +112,10 @@ namespace PEBakery.WPF
                 if (dialog.ShowDialog() == true)
                 {
                     destFile = dialog.FileName;
-                    string ext = System.IO.Path.GetExtension(destFile);
-                    LogExportType type = LogExportType.Text;
-                    if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                        type = LogExportType.Html;
 
                     Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                     int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
-                    _m.Logger.ExportBuildLog(type, destFile, buildId);
+                    _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId);
                 }
             }
             else
@@ -131,10 +135,10 @@ namespace PEBakery.WPF
                         return;
                     w.OpenTextFile(destFile);
                 });
-            }
 
-            // Close LogExportWindow
-            Close();
+                // Close LogExportWindow
+                Close();
+            }
         }
         #endregion
     }
@@ -187,6 +191,7 @@ namespace PEBakery.WPF
             {
                 _exportSystemLog = value;
                 OnPropertyUpdate(nameof(ExportSystemLog));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
             }
         }
 
@@ -198,6 +203,31 @@ namespace PEBakery.WPF
             {
                 _exportBuildLog = value;
                 OnPropertyUpdate(nameof(ExportBuildLog));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
+            }
+        }
+        #endregion
+
+        #region File Format
+        public LogExportType FileFormat = LogExportType.Text;
+
+        public bool FileFormatText
+        {
+            get => FileFormat == LogExportType.Text;
+            set
+            {
+                FileFormat = value ? LogExportType.Text : LogExportType.Html;
+                OnPropertyUpdate(nameof(FileFormatText));
+            }
+        }
+
+        public bool FileFormatHtml
+        {
+            get => FileFormat == LogExportType.Html;
+            set
+            {
+                FileFormat = value ? LogExportType.Html : LogExportType.Text;
+                OnPropertyUpdate(nameof(FileFormatHtml));
             }
         }
         #endregion
@@ -216,6 +246,8 @@ namespace PEBakery.WPF
             {
                 _buildEntries = value;
                 OnPropertyUpdate(nameof(BuildEntries));
+                OnPropertyUpdate(nameof(BuildLogRadioEnabled));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
             }
         }
 
