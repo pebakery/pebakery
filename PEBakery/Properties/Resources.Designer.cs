@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20180711과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20180728과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -83,7 +83,7 @@ namespace PEBakery.Properties {
         ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
         ///        &lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; [나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;link rel=&quot;styles[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildLogHtmlTemplate {
             get {
