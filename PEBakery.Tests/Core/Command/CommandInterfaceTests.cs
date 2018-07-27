@@ -175,7 +175,7 @@ namespace PEBakery.Tests.Core.Command
             SingleTemplate($@"ReadInterface,PosY,{scriptFile},Interface,pTextLabel1,%Dest%", @"50");
             SingleTemplate($@"ReadInterface,Width,{scriptFile},Interface,pTextLabel1,%Dest%", @"230");
             SingleTemplate($@"ReadInterface,Height,{scriptFile},Interface,pTextLabel1,%Dest%", @"18");
-            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pTextLabel1,%Dest%", null, ErrorCheck.Error);
+            SingleTemplate($@"ReadInterface,Value,{scriptFile},Interface,pTextLabel1,%Dest%", @"Display");
             SingleTemplate($@"ReadInterface,ToolTip,{scriptFile},Interface,pTextLabel1,%Dest%", string.Empty);
             SingleTemplate($@"ReadInterface,FontSize,{scriptFile},Interface,pTextLabel1,%Dest%", @"8");
             SingleTemplate($@"ReadInterface,FontWeight,{scriptFile},Interface,pTextLabel1,%Dest%", @"Normal");
@@ -413,8 +413,10 @@ namespace PEBakery.Tests.Core.Command
                 @"Display,1,0,20,20,200,21,PEBakery");
 
             // 1 - TextLabel
+            SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1",
+                @"PEBakery,1,1,20,50,230,18,8,Normal");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1",
-                null, ErrorCheck.Error);
+                @"PEBakery,1,1,20,50,230,18,8,Normal");
             SingleTemplate($@"WriteInterface,FontSize,{scriptFile},Interface,pTextLabel1,10", @"pTextLabel1",
                 @"Display,1,1,20,50,230,18,10,Normal");
             SingleTemplate($@"WriteInterface,FontWeight,{scriptFile},Interface,pTextLabel1,Bold", @"pTextLabel1",

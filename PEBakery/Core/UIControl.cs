@@ -246,6 +246,9 @@ namespace PEBakery.Core
             string value = null;
             switch (Type)
             {
+                case UIControlType.TextLabel:
+                    value = Text;
+                    break;
                 case UIControlType.TextBox:
                     {
                         UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
