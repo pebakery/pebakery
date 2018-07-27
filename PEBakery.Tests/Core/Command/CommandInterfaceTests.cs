@@ -600,6 +600,9 @@ namespace PEBakery.Tests.Core.Command
 
             SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,\"\"", new(string, string)[]
             {
+                ("pTextLabel1", "Display"),
+                ("pTextLabel2", "Hidden"),
+                ("pTextLabel3", "ToolTip"),
                 ("pNumberBox1", "3"),
                 ("pCheckBox1", "True"),
                 ("pComboBox1", "A"),
@@ -610,6 +613,9 @@ namespace PEBakery.Tests.Core.Command
             });
             SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,V", new(string, string)[]
             {
+                ("V_pTextLabel1", "Display"),
+                ("V_pTextLabel2", "Hidden"),
+                ("V_pTextLabel3", "ToolTip"),
                 ("V_pNumberBox1", "3"),
                 ("V_pCheckBox1", "True"),
                 ("V_pComboBox1", "A"),
