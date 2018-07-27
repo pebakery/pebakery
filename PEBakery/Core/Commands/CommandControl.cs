@@ -60,7 +60,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            // [WB082 Behavior]
+            // [WB082 Behavior] -> Enabled if s.CompatAllowSetModifyInterface == true
             // If PERMANENT was used but the key exists in interface command, the value will not be written to script.project but in interface.
             // Need to investigate where the logs are saved in this case.
             switch (info.Permanent)
@@ -72,30 +72,33 @@ namespace PEBakery.Core.Commands
                         if (Variables.DetermineType(info.VarKey) != Variables.VarKeyType.Variable)
                             goto case false;
 
+                        #region Set interface control's value (Compat)
                         string varKey = Variables.TrimPercentMark(info.VarKey);
                         string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
-                        #region Set UI
-                        Script sc = cmd.Addr.Script;
-                        ScriptSection iface = sc.GetInterfaceSection(out _);
-                        if (iface == null)
-                            goto case false;
-
-                        List<UIControl> uiCtrls = iface.GetUICtrls(true);
-                        UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
-                        if (uiCtrl == null)
-                            goto case false;
-
-                        bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
-                        logs.AddRange(varLogs);
-
-                        if (valid)
+                        if (s.CompatAllowSetModifyInterface)
                         {
-                            uiCtrl.Update();
+                            Script sc = cmd.Addr.Script;
+                            ScriptSection iface = sc.GetInterfaceSection(out _);
+                            if (iface == null)
+                                goto case false;
 
-                            // Also update variables
-                            logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
-                            return logs;
+                            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                            if (uiCtrl == null)
+                                goto case false;
+
+                            bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                            logs.AddRange(varLogs);
+
+                            if (valid)
+                            {
+                                uiCtrl.Update();
+
+                                // Also update variables
+                                logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
+                                return logs;
+                            }
                         }
 
                         goto case false;

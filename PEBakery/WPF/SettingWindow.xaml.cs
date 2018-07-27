@@ -34,12 +34,12 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
-using PEBakery.IniLib;
-using PEBakery.Core;
-using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
+using PEBakery.IniLib;
+using PEBakery.Core;
+using PEBakery.Helper;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
@@ -748,14 +748,36 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool compat_RegWriteLegacy;
-        public bool Compat_RegWriteLegacy
+        private bool compat_LegacyRegWrite;
+        public bool Compat_LegacyRegWrite
         {
-            get => compat_RegWriteLegacy;
+            get => compat_LegacyRegWrite;
             set
             {
-                compat_RegWriteLegacy = value;
-                OnPropertyUpdate(nameof(Compat_RegWriteLegacy));
+                compat_LegacyRegWrite = value;
+                OnPropertyUpdate(nameof(Compat_LegacyRegWrite));
+            }
+        }
+
+        private bool compat_AllowSetModifyInterface;
+        public bool Compat_AllowSetModifyInterface
+        {
+            get => compat_AllowSetModifyInterface;
+            set
+            {
+                compat_AllowSetModifyInterface = value;
+                OnPropertyUpdate(nameof(Compat_AllowSetModifyInterface));
+            }
+        }
+
+        private bool compat_LegacyInterfaceCommand;
+        public bool Compat_LegacyInterfaceCommand
+        {
+            get => compat_LegacyInterfaceCommand;
+            set
+            {
+                compat_LegacyInterfaceCommand = value;
+                OnPropertyUpdate(nameof(Compat_LegacyInterfaceCommand));
             }
         }
 
@@ -801,13 +823,13 @@ namespace PEBakery.WPF
             Logger.DebugLevel = Log_DebugLevel;
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
+            ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
-            CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
+            CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
             UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
-            ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
         }
         #endregion
 
@@ -863,7 +885,9 @@ namespace PEBakery.WPF
             Compat_FileRenameCanMoveDir = true;
             Compat_AllowLetterInLoop = false;
             Compat_LegacyBranchCondition = true;
-            Compat_RegWriteLegacy = true;
+            Compat_LegacyRegWrite = true;
+            Compat_AllowSetModifyInterface = true;
+            Compat_LegacyInterfaceCommand = true;
             Compat_IgnoreWidthOfWebLabel = false;
             Compat_OverridableFixedVariables = false;
             Compat_EnableEnvironmentVariables = false;
@@ -913,7 +937,9 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
@@ -1022,7 +1048,9 @@ namespace PEBakery.WPF
             Compat_FileRenameCanMoveDir = ParseBoolean(nameof(Compat_FileRenameCanMoveDir), Compat_FileRenameCanMoveDir);
             Compat_AllowLetterInLoop = ParseBoolean(nameof(Compat_AllowLetterInLoop), Compat_AllowLetterInLoop);
             Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
-            Compat_RegWriteLegacy = ParseBoolean(nameof(Compat_RegWriteLegacy), Compat_RegWriteLegacy);
+            Compat_LegacyRegWrite = ParseBoolean(nameof(Compat_LegacyRegWrite), Compat_LegacyRegWrite);
+            Compat_AllowSetModifyInterface = ParseBoolean(nameof(Compat_AllowSetModifyInterface), Compat_AllowSetModifyInterface);
+            Compat_LegacyInterfaceCommand = ParseBoolean(nameof(Compat_LegacyInterfaceCommand), Compat_LegacyInterfaceCommand);
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
             Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
             Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
@@ -1063,7 +1091,9 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr), Compat_AllowLetterInLoop.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr), Compat_RegWriteLegacy.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr), Compat_LegacyRegWrite.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr), Compat_AllowSetModifyInterface.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr), Compat_LegacyInterfaceCommand.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean

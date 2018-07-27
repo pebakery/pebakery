@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+#define USE_VALUE_OF_FILE
+
 using System;
 using System.IO;
 using System.Linq;
@@ -60,7 +62,8 @@ namespace PEBakery.Core.Commands
             else
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
-            Script sc = cmd.Addr.Script;
+            // Refresh is required to simulate WinBuilder 082 behavior
+            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
@@ -83,7 +86,7 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                // Re-render Script
+                // Re-render script
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
@@ -108,7 +111,8 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
-            Script sc = cmd.Addr.Script;
+            // Refresh is required to simulate WinBuilder 082 behavior
+            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
@@ -155,7 +159,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            // Re-render Script
+            // Rerender script
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (!(Application.Current.MainWindow is MainWindow w))

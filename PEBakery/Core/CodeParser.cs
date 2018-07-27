@@ -40,7 +40,8 @@ namespace PEBakery.Core
         #region Static Fields
         public static bool OptimizeCode = true;
         public static bool AllowLegacyBranchCondition = true;
-        public static bool AllowRegWriteLegacy = true;
+        public static bool AllowLegacyRegWrite = true;
+        public static bool AllowLegacyInterfaceCommand = true;
         #endregion
 
         #region ParseStatement, ParseStatements
@@ -303,6 +304,7 @@ namespace PEBakery.Core
                            type == CodeType.None ||
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
+                           !AllowLegacyInterfaceCommand && type == CodeType.Visible ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 
