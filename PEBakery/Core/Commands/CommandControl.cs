@@ -81,18 +81,19 @@ namespace PEBakery.Core.Commands
                         if (iface == null)
                             goto case false;
 
-                        List<UIControl> uiCmds = iface.GetUICtrls(true);
-                        UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
-                        if (uiCmd == null)
+                        List<UIControl> uiCtrls = iface.GetUICtrls(true);
+                        UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                        if (uiCtrl == null)
                             goto case false;
 
-                        bool match = uiCmd.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                        bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
                         logs.AddRange(varLogs);
 
-                        if (match)
+                        if (valid)
                         {
-                            uiCmd.Update();
+                            uiCtrl.Update();
 
+                            // Also update variables
                             logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
                             return logs;
                         }

@@ -386,7 +386,7 @@ namespace PEBakery.Core.Commands
 
                             // RefreshScript -> Update Project.AllScripts
                             Script sc = Engine.GetScriptInstance(s, cmd.Addr.Script.RealPath, scRealPath, out _);
-                            sc = s.Project.RefreshScript(sc);
+                            sc = s.Project.RefreshScript(sc, s);
                             if (sc == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));

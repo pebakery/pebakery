@@ -75,13 +75,25 @@ namespace PEBakery.Core.Commands
                 uiCtrl.Visibility = visibility;
                 uiCtrl.Update();
 
+                // Update script
+                sc = s.Project.RefreshScript(sc, s);
+                if (sc == null)
+                {
+                    logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                    return logs;
+                }
+
                 // Re-render Script
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
-                    if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
-                        w.DrawScript(cmd.Addr.Script);
+                    if (!w.CurMainTree.Script.Equals(sc))
+                        return;
+
+                    w.UpdateScriptTree(s.Project, false);
+                    w.CurMainTree.Script = sc;
+                    w.DrawScript(w.CurMainTree.Script);
                 });
             }
 
@@ -135,12 +147,25 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}]'s visibility set to [{visibility}]", subCmd));
             logs.Add(new LogInfo(LogState.Success, $"Total [{prepArgs.Count}] interface control set", cmd));
 
-            // Rerender Script
+            // Update script
+            sc = s.Project.RefreshScript(sc, s);
+            if (sc == null)
+            {
+                logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                return logs;
+            }
+
+            // Re-render Script
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
-                    w.DrawScript(cmd.Addr.Script);
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+                if (!w.CurMainTree.Script.Equals(sc))
+                    return;
+
+                w.UpdateScriptTree(s.Project, false);
+                w.CurMainTree.Script = sc;
+                w.DrawScript(w.CurMainTree.Script);
             });
 
             return logs;
