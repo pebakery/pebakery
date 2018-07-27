@@ -26,23 +26,17 @@
 */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using PEBakery.Core;
 
 namespace PEBakery.WPF
@@ -63,7 +57,11 @@ namespace PEBakery.WPF
         #region Commands
         private void ExportCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            if (_m.ExportSystemLog)
+            if (_m.InProgress)
+            {
+                e.CanExecute = false;
+            }
+            else if (_m.ExportSystemLog)
             {
                 e.CanExecute = true;
             }
@@ -78,7 +76,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
             {
@@ -98,47 +96,49 @@ namespace PEBakery.WPF
                     break;
             }
 
-            string destFile = null;
-            if (_m.ExportSystemLog)
+            bool? result = dialog.ShowDialog();
+            // If user cancelled SaveDialog, do nothing
+            if (result != true)
+                return;
+            string destFile = dialog.FileName;
+
+            _m.InProgress = true;
+            try
             {
-                if (dialog.ShowDialog() == true)
+                await InternalExportLog(destFile);
+            }
+            finally
+            {
+                _m.InProgress = false;
+            }
+
+            // Open log file
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+                w.OpenTextFile(destFile);
+            });
+
+            // Close LogExportWindow
+            Close();
+        }
+
+        private Task InternalExportLog(string destFile)
+        {
+            return Task.Run(() =>
+            {
+                if (_m.ExportSystemLog)
                 {
-                    destFile = dialog.FileName;
                     _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
                 }
-            }
-            else if (_m.ExportBuildLog)
-            {
-                if (dialog.ShowDialog() == true)
+                else if (_m.ExportBuildLog)
                 {
-                    destFile = dialog.FileName;
-
                     Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                     int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
                     _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId);
                 }
-            }
-            else
-            {
-                const string errMsg = "Internal Logic Error at LogExportWindow.ExportCommand_Executed";
-                _m.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show(errMsg, "Internal Logic Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Open log file
-            if (destFile != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
-                    w.OpenTextFile(destFile);
-                });
-
-                // Close LogExportWindow
-                Close();
-            }
+            });
         }
         #endregion
     }
@@ -285,6 +285,19 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Progress
+        private bool _inProgress = false;
+        public bool InProgress
+        {
+            get => _inProgress;
+            set
+            {
+                _inProgress = value;
+                OnPropertyUpdate(nameof(InProgress));
+            }
+        }
+        #endregion
+
         #region Utility
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
@@ -299,6 +312,27 @@ namespace PEBakery.WPF
     public static class LogExportCommands
     {
         public static readonly RoutedUICommand Export = new RoutedUICommand("Export", "Export", typeof(LogExportCommands));
+    }
+    #endregion
+
+    #region Converter
+    public class InvertBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(bool))
+                return null;
+
+            return !(bool)value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(bool))
+                return null;
+
+            return !(bool)value;
+        }
     }
     #endregion
 }
