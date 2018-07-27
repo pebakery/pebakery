@@ -40,10 +40,11 @@ namespace PEBakery.Core
         #region Fields and Constructors
         private readonly LogDatabase _db;
         private readonly LogExportType _exportType;
-        private readonly StreamWriter _w;
+        private readonly TextWriter _w;
 
-        public LogExporter(LogDatabase db, LogExportType type, StreamWriter writer)
+        public LogExporter(LogDatabase db, LogExportType type, TextWriter writer)
         {
+            // The responsibility of closing _db and _w goes to the caller of LogExporter
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _w = writer ?? throw new ArgumentNullException(nameof(writer));
             _exportType = type;

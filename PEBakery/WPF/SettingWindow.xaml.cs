@@ -25,8 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.IniLib;
-using PEBakery.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,6 +34,8 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
+using PEBakery.IniLib;
+using PEBakery.Core;
 using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
@@ -669,14 +669,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_DelayedLogging;
-        public bool Log_DelayedLogging
+        private bool log_DeferredLogging;
+        public bool Log_DeferredLogging
         {
-            get => log_DelayedLogging;
+            get => log_DeferredLogging;
             set
             {
-                log_DelayedLogging = value;
-                OnPropertyUpdate(nameof(Log_DelayedLogging));
+                log_DeferredLogging = value;
+                OnPropertyUpdate(nameof(Log_DeferredLogging));
+            }
+        }
+
+        private bool log_MinifyHtmlExport;
+        public bool Log_MinifyHtmlExport
+        {
+            get => log_MinifyHtmlExport;
+            set
+            {
+                log_MinifyHtmlExport = value;
+                OnPropertyUpdate(nameof(Log_MinifyHtmlExport));
             }
         }
         #endregion
@@ -788,6 +799,7 @@ namespace PEBakery.WPF
             CodeParser.OptimizeCode = General_OptimizeCode;
             Engine.StopBuildOnError = General_StopBuildOnError;
             Logger.DebugLevel = Log_DebugLevel;
+            Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
@@ -842,7 +854,8 @@ namespace PEBakery.WPF
 #else
             Log_DebugLevelIndex = 0;
 #endif
-            Log_DelayedLogging = true;
+            Log_DeferredLogging = true;
+            Log_MinifyHtmlExport = true;
 
             // Compatibility
             Compat_AsteriskBugDirCopy = true;
@@ -893,7 +906,8 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
@@ -999,7 +1013,8 @@ namespace PEBakery.WPF
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
-            Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
+            Log_DeferredLogging = ParseBoolean(nameof(Log_DeferredLogging), Log_DeferredLogging);
+            Log_MinifyHtmlExport = ParseBoolean(nameof(Log_MinifyHtmlExport), Log_MinifyHtmlExport);
 
             // Compatibility
             Compat_AsteriskBugDirCopy = ParseBoolean(nameof(Compat_AsteriskBugDirCopy), Compat_AsteriskBugDirCopy);
@@ -1040,7 +1055,8 @@ namespace PEBakery.WPF
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr), Log_DeferredLogging.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr), Log_MinifyHtmlExport.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean

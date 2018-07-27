@@ -349,7 +349,7 @@
                               IsChecked="{Binding Script_DeepInspectAttachedFile}"/>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Logging">
+            <TabItem Header="Log">
                 <StackPanel>
                     <Grid Margin="15, 15, 15, 0"
                           VerticalAlignment="Center">
@@ -383,9 +383,14 @@
                     </GroupBox>
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
-                              Content="Delayed Logging"
-                              ToolTip="Delayed logging vastly improves performance."
-                              IsChecked="{Binding Log_DelayedLogging}" />
+                              Content="Deferred Logging"
+                              ToolTip="Deferred logging vastly improves performance."
+                              IsChecked="{Binding Log_DeferredLogging}" />
+                    <CheckBox Margin="15, 15, 15, 0"
+                              VerticalContentAlignment="Center"
+                              Content="Compact Exported HTML Log"
+                              ToolTip="Compact the size of HTML at the expense of memory."
+                              IsChecked="{Binding Log_MinifyHtmlExport}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compatibility">

@@ -36,6 +36,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Windows;
+using NUglify;
 using SQLite;
 
 namespace PEBakery.Core
@@ -302,8 +303,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region DelayedLogging
-    public class DelayedLogging
+    #region DeferredLogging
+    public class DeferredLogging
     {
         public int CurrentScriptId;
         public DB_BuildInfo BuildInfo;
@@ -313,7 +314,7 @@ namespace PEBakery.Core
 
         private readonly Dictionary<int, int> _scriptIdMatchDict;
 
-        public DelayedLogging(bool fullDelayed)
+        public DeferredLogging(bool fullDelayed)
         {
             CurrentScriptId = 0;
             BuildInfo = null;
@@ -405,6 +406,7 @@ namespace PEBakery.Core
         public bool SuspendBuildLog = false;
 
         public static DebugLevel DebugLevel;
+        public static bool MinifyHtmlExport;
 
         private readonly ConcurrentDictionary<int, DB_BuildInfo> _buildDict = new ConcurrentDictionary<int, DB_BuildInfo>();
         private readonly ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>>();
@@ -420,13 +422,13 @@ namespace PEBakery.Core
         public const string LogSeperator = "--------------------------------------------------------------------------------";
 
         // DelayedLogging
-        private DelayedLogging _delayed;
-        public DelayedLogging Delayed
+        private DeferredLogging _deferred;
+        public DeferredLogging Deferred
         {
             get
             {
-                DelayedLogging ret = _delayed;
-                _delayed = null;
+                DeferredLogging ret = _deferred;
+                _deferred = null;
                 return ret;
             }
         }
@@ -471,11 +473,11 @@ namespace PEBakery.Core
             switch (s.LogMode)
             {
                 case LogMode.PartDelay:
-                    Db.InsertAll(_delayed.BuildLogPool);
-                    _delayed.BuildLogPool.Clear();
+                    Db.InsertAll(_deferred.BuildLogPool);
+                    _deferred.BuildLogPool.Clear();
                     break;
                 case LogMode.FullDelay:
-                    return _delayed.FlushFullDelayed(s);
+                    return _deferred.FlushFullDelayed(s);
             }
             return s.BuildId;
         }
@@ -497,13 +499,13 @@ namespace PEBakery.Core
             switch (s.LogMode)
             {
                 case LogMode.PartDelay:
-                    _delayed = new DelayedLogging(false);
+                    _deferred = new DeferredLogging(false);
                     break;
                 case LogMode.FullDelay:
-                    _delayed = new DelayedLogging(true);
+                    _deferred = new DeferredLogging(true);
 
                     dbBuild.Id = -1;
-                    _delayed.BuildInfo = dbBuild;
+                    _deferred.BuildInfo = dbBuild;
                     break;
             }
 
@@ -541,7 +543,7 @@ namespace PEBakery.Core
             }
 
             if (s.LogMode == LogMode.FullDelay)
-                _delayed.VariablePool.AddRange(varLogs);
+                _deferred.VariablePool.AddRange(varLogs);
             else
                 Db.InsertAll(varLogs);
 
@@ -601,9 +603,9 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.FullDelay)
             {
-                _delayed.CurrentScriptId -= 1;
-                dbScript.Id = _delayed.CurrentScriptId;
-                _delayed.ScriptLogPool.Add(dbScript);
+                _deferred.CurrentScriptId -= 1;
+                dbScript.Id = _deferred.CurrentScriptId;
+                _deferred.ScriptLogPool.Add(dbScript);
             }
             else
             {
@@ -626,8 +628,8 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.PartDelay)
             {
-                Db.InsertAll(_delayed.BuildLogPool);
-                _delayed.BuildLogPool.Clear();
+                Db.InsertAll(_deferred.BuildLogPool);
+                _deferred.BuildLogPool.Clear();
             }
 
             int buildId = s.BuildId;
@@ -664,7 +666,7 @@ namespace PEBakery.Core
                 }
 
                 if (s.LogMode == LogMode.FullDelay)
-                    _delayed.VariablePool.AddRange(varLogs);
+                    _deferred.VariablePool.AddRange(varLogs);
                 else
                     Db.InsertAll(varLogs);
             }
@@ -699,9 +701,9 @@ namespace PEBakery.Core
 
             if (s.LogMode == LogMode.FullDelay)
             {
-                _delayed.CurrentScriptId -= 1;
-                dbScript.Id = _delayed.CurrentScriptId;
-                _delayed.ScriptLogPool.Add(dbScript);
+                _deferred.CurrentScriptId -= 1;
+                dbScript.Id = _deferred.CurrentScriptId;
+                _deferred.ScriptLogPool.Add(dbScript);
             }
             else
             {
@@ -729,7 +731,7 @@ namespace PEBakery.Core
                 {
                     case LogMode.FullDelay:
                     case LogMode.PartDelay:
-                        _delayed.BuildLogPool.Add(dbCode);
+                        _deferred.BuildLogPool.Add(dbCode);
                         break;
                     case LogMode.NoDelay:
                         Db.Insert(dbCode);
@@ -1017,19 +1019,81 @@ namespace PEBakery.Core
 
         public void ExportSystemLog(LogExportType type, string exportFile)
         {
-            using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+            if (type == LogExportType.Html && MinifyHtmlExport)
             {
-                LogExporter exporter = new LogExporter(Db, type, w);
-                exporter.ExportSystemLog();
+                string rawHtml;
+                using (StringWriter w = new StringWriter())
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportSystemLog();
+                    rawHtml = w.ToString();
+                }
+
+                UglifyResult res = Uglify.Html(rawHtml);
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    if (res.HasErrors)
+                    {
+                        StringBuilder b = new StringBuilder($"{res.Errors.Count} error reported while minifying html");
+                        foreach (UglifyError err in res.Errors)
+                            b.AppendLine(err.ToString());
+
+                        SystemWrite(new LogInfo(LogState.Success, b.ToString()));
+                        w.Write(rawHtml);
+                    }
+                    else
+                    {
+                        w.Write(res.Code);
+                    }
+                }
+            }
+            else
+            {
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportSystemLog();
+                }
             }
         }
 
         public void ExportBuildLog(LogExportType type, string exportFile, int buildId)
         {
-            using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+            if (type == LogExportType.Html && MinifyHtmlExport)
             {
-                LogExporter exporter = new LogExporter(Db, type, w);
-                exporter.ExportBuildLog(buildId);
+                string rawHtml;
+                using (StringWriter w = new StringWriter())
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportBuildLog(buildId);
+                    rawHtml = w.ToString();
+                }
+
+                UglifyResult res = Uglify.Html(rawHtml);
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    if (res.HasErrors)
+                    {
+                        StringBuilder b = new StringBuilder($"{res.Errors.Count} error reported while minifying html");
+                        foreach (UglifyError err in res.Errors)
+                            b.AppendLine(err.ToString());
+
+                        SystemWrite(new LogInfo(LogState.Success, b.ToString()));
+                        w.Write(rawHtml);
+                    }
+                    else
+                    {
+                        w.Write(res.Code);
+                    }
+                }
+            }
+            else
+            {
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportBuildLog(buildId);
+                }
             }
         }
         #endregion

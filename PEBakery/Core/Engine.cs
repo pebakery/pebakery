@@ -1146,7 +1146,7 @@ namespace PEBakery.Core
         {
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
 
-            LogMode = m.Log_DelayedLogging ? LogMode.PartDelay : LogMode.NoDelay;
+            LogMode = m.Log_DeferredLogging ? LogMode.PartDelay : LogMode.NoDelay;
 
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;

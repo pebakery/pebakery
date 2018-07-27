@@ -1194,7 +1194,7 @@ namespace PEBakery.WPF
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDelay)
                 {
-                    DelayedLogging delayed = logger.Delayed;
+                    DeferredLogging delayed = logger.Deferred;
                     delayed.FlushFullDelayed(s);
                 }
 
