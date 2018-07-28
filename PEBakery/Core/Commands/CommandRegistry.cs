@@ -29,9 +29,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.IO;
 using Microsoft.Win32;
+using System.ComponentModel;
 using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
@@ -51,6 +51,9 @@ namespace PEBakery.Core.Commands
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
 
+            if (!File.Exists(hiveFile))
+                logs.Add(new LogInfo(LogState.Info, $"Hive file [{hiveFile}] does not exist and will be created."));
+
             if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
@@ -59,10 +62,14 @@ namespace PEBakery.Core.Commands
 
             int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
             if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+            {
                 logs.Add(new LogInfo(LogState.Success, $"Loaded [{hiveFile}] into [HKLM\\{keyPath}]"));
+            }
             else
-                logs.Add(new LogInfo(LogState.Success, $"Could not load [{hiveFile}] into [HKLM\\{keyPath}], error code = [{result}]"));
-
+            {
+                string errorMessage = new Win32Exception(result).Message;
+                logs.Add(new LogInfo(LogState.Error, $"Could not load [{hiveFile}] into [HKLM\\{keyPath}], error code = [{result} - {errorMessage}]"));
+            }
             return logs;
         }
 
@@ -82,9 +89,14 @@ namespace PEBakery.Core.Commands
 
             int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
             if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+            {
                 logs.Add(new LogInfo(LogState.Success, $"[HKLM\\{keyPath}] Unloaded"));
+            }
             else
-                logs.Add(new LogInfo(LogState.Success, $"Could not unload [HKLM\\{keyPath}], error code = [{result}]"));
+            {
+                string errorMessage = new Win32Exception(result).Message;
+                logs.Add(new LogInfo(LogState.Error, $"Could not unload [HKLM\\{keyPath}], error code = [{result} - {errorMessage}]"));
+            }
 
             return logs;
         }
