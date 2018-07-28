@@ -1195,7 +1195,7 @@ namespace PEBakery.WPF
                 if (s.LogMode == LogMode.FullDelay)
                 {
                     DeferredLogging delayed = logger.Deferred;
-                    delayed.FlushFullDelayed(s);
+                    delayed.FlushFullDeferred(s);
                 }
 
                 // Turn off ProgressRing

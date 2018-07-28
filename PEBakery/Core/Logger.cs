@@ -328,11 +328,11 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Flush FullDelayedLogging
+        /// Flush FullDeferrredLogging
         /// </summary>
         /// <param name="s">EngineState</param>
         /// <returns>Real BuildId after written to database</returns>
-        public int FlushFullDelayed(EngineState s)
+        public int FlushFullDeferred(EngineState s)
         {
             if (s.LogMode != LogMode.FullDelay)
                 return s.BuildId;
@@ -364,7 +364,7 @@ namespace PEBakery.Core
                 _scriptIdMatchDict[oldId] = log.Id;
             }
 
-            // [DelayedVariablePool]
+            // [DeferredVariablePool]
             // s.ScriptId is 0 -> fixed/global variables
             // s.ScriptId is -N -> local variables
 
@@ -383,6 +383,7 @@ namespace PEBakery.Core
             {
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
+                log.RefScriptId = _scriptIdMatchDict[log.RefScriptId];
             }
             s.Logger.Db.InsertAll(newBuildLogPool);
 
@@ -401,7 +402,6 @@ namespace PEBakery.Core
     public class Logger : IDisposable
     {
         #region Fields and Properties
-        // ReSharper disable once InconsistentNaming
         public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
@@ -477,7 +477,7 @@ namespace PEBakery.Core
                     _deferred.BuildLogPool.Clear();
                     break;
                 case LogMode.FullDelay:
-                    return _deferred.FlushFullDelayed(s);
+                    return _deferred.FlushFullDeferred(s);
             }
             return s.BuildId;
         }
