@@ -51,9 +51,6 @@ namespace PEBakery.Core.Commands
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
 
-            if (!File.Exists(hiveFile))
-                return LogInfo.LogErrorMessage(logs, $"Hive file [{hiveFile}] does not exist");
-
             if (!_privilegesEnabled)
             {
                 RegistryHelper.GetAdminPrivileges();
