@@ -755,7 +755,7 @@ namespace PEBakery.Core
                 ScriptId = s.ScriptId,
                 RefScriptId = s.RefScriptId,
                 Message = message,
-                IsMacro = s.InMacro,
+                Flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None,
             };
 
             InternalBuildWrite(s, dbCode);
@@ -785,20 +785,24 @@ namespace PEBakery.Core
                 RefScriptId = s.RefScriptId,
                 Depth = log.Depth,
                 State = state,
-                IsMacro = s.InMacro,
             };
 
+            DbBuildLogFlag flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None;
             if (log.Command == null)
             {
+                dbCode.Flags = flags;
                 dbCode.Message = log.Message;
             }
             else
             {
+                if (log.Command.Type == CodeType.Comment)
+                    flags |= DbBuildLogFlag.Comment;
+                dbCode.Flags = flags;
+
                 if (log.Message.Length == 0)
                     dbCode.Message = log.Command.Type.ToString();
                 else
                     dbCode.Message = $"{log.Command.Type} - {log.Message}";
-                dbCode.CodeType = log.Command.Type;
                 dbCode.RawCode = log.Command.RawCode;
                 dbCode.LineIdx = log.Command.LineIdx;
             }
@@ -832,15 +836,17 @@ namespace PEBakery.Core
 
                 if (log.Command == null)
                 {
+                    dbCode.Flags = DbBuildLogFlag.None;
                     dbCode.Message = log.Message;
                 }
                 else
                 {
+                    dbCode.Flags = log.Command.Type == CodeType.Comment ? DbBuildLogFlag.Comment : DbBuildLogFlag.None;
+
                     if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
-                    dbCode.CodeType = log.Command.Type;
                     dbCode.RawCode = log.Command.RawCode;
                     dbCode.LineIdx = log.Command.LineIdx;
                 }
@@ -1057,7 +1063,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void ExportBuildLog(LogExportType type, string exportFile, int buildId)
+        public void ExportBuildLog(LogExportType type, string exportFile, int buildId, LogExporter.BuildLogOptions opts)
         {
             if (type == LogExportType.Html && MinifyHtmlExport)
             {
@@ -1065,7 +1071,7 @@ namespace PEBakery.Core
                 using (StringWriter w = new StringWriter())
                 {
                     LogExporter exporter = new LogExporter(Db, type, w);
-                    exporter.ExportBuildLog(buildId);
+                    exporter.ExportBuildLog(buildId, opts);
                     rawHtml = w.ToString();
                 }
 
@@ -1092,7 +1098,7 @@ namespace PEBakery.Core
                 using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
                     LogExporter exporter = new LogExporter(Db, type, w);
-                    exporter.ExportBuildLog(buildId);
+                    exporter.ExportBuildLog(buildId, opts);
                 }
             }
         }
@@ -1255,6 +1261,14 @@ namespace PEBakery.Core
         }
     }
 
+    [Flags]
+    public enum DbBuildLogFlag
+    {
+        None = 0x00,
+        Comment = 0x01,
+        Macro = 0x02
+    }
+
     public class DB_BuildLog
     {
         [PrimaryKey, AutoIncrement]
@@ -1271,32 +1285,12 @@ namespace PEBakery.Core
         public string Message { get; set; }
         public int LineIdx { get; set; }
         [MaxLength(65535)]
-        public CodeType CodeType { get; set; }
         public string RawCode { get; set; }
-        public bool IsMacro { get; set; }
-
-        // Used in LogWindow
-        [Ignore]
-        public string StateStr => State == LogState.None ? string.Empty : State.ToString();
-        [Ignore]
-        public char IsMacroChar => IsMacro ? 'M' : ' ';
+        public DbBuildLogFlag Flags { get; set; }
 
         [Ignore]
-        public string TimeStr
-        {
-            get
-            {
-                if (Time == DateTime.MinValue)
-                    return string.Empty;
-                return Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-            }
-        }
-        [Ignore]
-        public string Text => Export(LogExportType.Text);
-        [Ignore]
-        public string LineIdxStr => LineIdx == 0 ? string.Empty : LineIdx.ToString();
-
-        public string Export(LogExportType type, bool logDepth = true)
+        public string Text => Export(LogExportType.Text, true);
+        public string Export(LogExportType type, bool logDepth)
         {
             string str = string.Empty;
             switch (type)

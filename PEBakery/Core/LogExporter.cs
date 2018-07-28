@@ -97,7 +97,14 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportBuildLog
-        public void ExportBuildLog(int buildId)
+
+        public struct BuildLogOptions
+        {
+            public bool IncludeComments;
+            public bool IncludeMacros;
+        }
+
+        public void ExportBuildLog(int buildId, BuildLogOptions opts)
         {
             switch (_exportType)
             {
@@ -243,10 +250,14 @@ namespace PEBakery.Core
                             {
                                 // Log codes
                                 var cLogs = _db.Table<DB_BuildLog>()
-                                    .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id)
-                                    .OrderBy(x => x.Id);
+                                    .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id);
+                                if (!opts.IncludeComments)
+                                    cLogs = cLogs.Where(x => (x.Flags & DbBuildLogFlag.Comment) != DbBuildLogFlag.Comment);
+                                if (!opts.IncludeMacros)
+                                    cLogs = cLogs.Where(x => (x.Flags & DbBuildLogFlag.Macro) != DbBuildLogFlag.Macro);
+                                cLogs = cLogs.OrderBy(x => x.Id);
                                 foreach (DB_BuildLog log in cLogs)
-                                    _w.WriteLine(log.Export(LogExportType.Text));
+                                    _w.WriteLine(log.Export(LogExportType.Text, true));
 
                                 // Log local variables
                                 var vLogs = _db.Table<DB_Variable>()
@@ -413,9 +424,12 @@ namespace PEBakery.Core
                                 pIdx += 1;
 
                                 // Log codes
-                                DB_BuildLog[] codeLogs = _db.Table<DB_BuildLog>()
-                                    .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id)
-                                    .OrderBy(x => x.Id).ToArray();
+                                var cLogs = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id);
+                                if (!opts.IncludeComments)
+                                    cLogs = cLogs.Where(x => (x.Flags & DbBuildLogFlag.Comment) != DbBuildLogFlag.Comment);
+                                if (!opts.IncludeMacros)
+                                    cLogs = cLogs.Where(x => (x.Flags & DbBuildLogFlag.Macro) != DbBuildLogFlag.Macro);
+                                DB_BuildLog[] codeLogs = cLogs.OrderBy(x => x.Id).OrderBy(x => x.Id).ToArray();
 
                                 ScriptHtmlModel pModel = new ScriptHtmlModel
                                 {
@@ -427,32 +441,18 @@ namespace PEBakery.Core
                                 List<CodeLogHtmlModel> logModel = new List<CodeLogHtmlModel>(codeLogs.Length);
                                 foreach (DB_BuildLog log in codeLogs)
                                 {
+                                    CodeLogHtmlModel item = new CodeLogHtmlModel
+                                    {
+                                        State = log.State,
+                                        Message = log.Export(LogExportType.Html, true),
+                                    };
+
                                     if (log.State == LogState.Error)
-                                    {
-                                        logModel.Add(new CodeLogHtmlModel
-                                        {
-                                            State = log.State,
-                                            Message = log.Export(LogExportType.Html),
-                                            Href = errIdx++,
-                                        });
-                                    }
+                                        item.Href = errIdx++;
                                     else if (log.State == LogState.Warning)
-                                    {
-                                        logModel.Add(new CodeLogHtmlModel
-                                        {
-                                            State = log.State,
-                                            Message = log.Export(LogExportType.Html),
-                                            Href = warnIdx++,
-                                        });
-                                    }
-                                    else
-                                    {
-                                        logModel.Add(new CodeLogHtmlModel
-                                        {
-                                            State = log.State,
-                                            Message = log.Export(LogExportType.Html),
-                                        });
-                                    }
+                                        item.Href = warnIdx++;
+
+                                    logModel.Add(item);
                                 }
 
                                 // Log local variables

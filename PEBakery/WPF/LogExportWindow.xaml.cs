@@ -105,7 +105,23 @@ namespace PEBakery.WPF
             _m.InProgress = true;
             try
             {
-                await InternalExportLog(destFile);
+                await Task.Run(() =>
+                {
+                    if (_m.ExportSystemLog)
+                    {
+                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
+                    }
+                    else if (_m.ExportBuildLog)
+                    {
+                        Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
+                        int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
+                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new LogExporter.BuildLogOptions
+                        {
+                            IncludeComments = _m.BuildLogIncludeComments,
+                            IncludeMacros = _m.BuildLogIncludeMacros,
+                        });
+                    }
+                });
             }
             finally
             {
@@ -122,23 +138,6 @@ namespace PEBakery.WPF
 
             // Close LogExportWindow
             Close();
-        }
-
-        private Task InternalExportLog(string destFile)
-        {
-            return Task.Run(() =>
-            {
-                if (_m.ExportSystemLog)
-                {
-                    _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
-                }
-                else if (_m.ExportBuildLog)
-                {
-                    Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
-                    int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
-                    _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId);
-                }
-            });
         }
         #endregion
     }

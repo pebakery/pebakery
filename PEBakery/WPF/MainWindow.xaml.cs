@@ -705,7 +705,11 @@ namespace PEBakery.WPF
                 int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
-                Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+                Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                {
+                    IncludeComments = true,
+                    IncludeMacros = true,
+                });
 #endif
 
                 // Turn off progress ring
@@ -752,8 +756,7 @@ namespace PEBakery.WPF
             double oldInterfaceScaleFactor = Setting.Interface_ScaleFactor;
             bool oldScriptEnableCache = Setting.Script_EnableCache;
 
-            SettingWindow dialog = new SettingWindow(Setting);
-            dialog.Owner = this;
+            SettingWindow dialog = new SettingWindow(Setting) {Owner = this};
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
@@ -779,8 +782,7 @@ namespace PEBakery.WPF
             if (0 < UtilityWindow.Count)
                 return;
 
-            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont);
-            UtilityDialog.Owner = this;
+            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont) {Owner = this};
             UtilityDialog.Show();
         }
 
@@ -788,8 +790,7 @@ namespace PEBakery.WPF
         {
             if (LogWindow.Count == 0)
             {
-                LogDialog = new LogWindow();
-                LogDialog.Owner = this;
+                LogDialog = new LogWindow {Owner = this};
                 LogDialog.Show();
             }
         }
@@ -815,8 +816,7 @@ namespace PEBakery.WPF
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont);
-            dialog.Owner = this;
+            AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont) {Owner = this};
             dialog.ShowDialog();
         }
         #endregion
@@ -854,7 +854,11 @@ namespace PEBakery.WPF
                     int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
-                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                    {
+                        IncludeComments = true,
+                        IncludeMacros = true,
+                    });
 #endif
 
                     // Build Ended, Switch to Normal View

@@ -448,7 +448,11 @@ namespace PEBakery.Core.Commands
                             int realBuildId = s.Logger.Flush(s);
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
-                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId); // Do not use s.BuildId, for case of FullDelayedLogging
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
+                            {
+                                IncludeComments = true,
+                                IncludeMacros = true,
+                            }); // Do not use s.BuildId, for case of FullDelayedLogging
                         }
                     }
                     break;

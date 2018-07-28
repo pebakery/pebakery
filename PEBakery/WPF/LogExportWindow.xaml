@@ -71,7 +71,7 @@
                         <TextBlock Text="Log Type"
                                    FontWeight="Bold"/>
                     </GroupBox.Header>
-                    <StackPanel>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
                         <RadioButton Height="20"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
@@ -95,7 +95,7 @@
                         <TextBlock Text="File Format"
                                    FontWeight="Bold"/>
                     </GroupBox.Header>
-                    <StackPanel>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
                         <RadioButton Height="20"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
@@ -118,7 +118,7 @@
                     <TextBlock Text="Build Log Export Options"
                                FontWeight="Bold"/>
                 </GroupBox.Header>
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
                     <TextBlock Height="20"
                                Margin="5, 0, 0, 0"
                                VerticalAlignment="Top"

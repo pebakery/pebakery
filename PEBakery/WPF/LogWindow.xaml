@@ -65,6 +65,10 @@
                 
             </Style.Triggers>
         </Style>
+        <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
+        <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
+        <local:LineIdxToStrConverter x:Key="LineIdxToStrConverter"/>
+        <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -198,25 +202,25 @@
                                     <GridView>
                                         <GridViewColumn Header="Time"
                                                         Width="135"
-                                                        DisplayMemberBinding="{Binding TimeStr}" />
+                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}" />
                                         <GridViewColumn Header="Depth"
                                                         Width="35"
                                                         DisplayMemberBinding="{Binding Depth}" />
                                         <GridViewColumn Header="State"
                                                         Width="55"
-                                                        DisplayMemberBinding="{Binding StateStr}" />
+                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}}" />
                                         <GridViewColumn Header="Line#"
                                                         Width="40"
-                                                        DisplayMemberBinding="{Binding LineIdxStr}" />
+                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}}" />
                                         <GridViewColumn Header="Message"
                                                         Width="340" 
                                                         DisplayMemberBinding="{Binding Message}" />
                                         <GridViewColumn Header="RawCode"
                                                         Width="175"
                                                         DisplayMemberBinding="{Binding RawCode}" />
-                                        <GridViewColumn Header="Macro"
+                                        <GridViewColumn Header="Flags"
                                                         Width="35"
-                                                        DisplayMemberBinding="{Binding IsMacroChar}" />
+                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}}" />
                                     </GridView>
                                 </ListView.View>
                                 <ListView.ContextMenu>
