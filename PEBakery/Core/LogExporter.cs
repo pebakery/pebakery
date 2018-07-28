@@ -156,7 +156,7 @@ namespace PEBakery.Core
                                 foreach (DB_BuildLog eLog in eLogs)
                                 {
                                     _w.WriteLine(eLog.Export(LogExportType.Text, false));
-                                    if (eLog.RefScriptId != 0)
+                                    if (eLog.RefScriptId != 0 && eLog.RefScriptId != eLog.ScriptId)
                                     {
                                         _w.Write("  ");
                                         _w.WriteLine(ExportRefScriptText(eLog, refScLogs));
@@ -193,7 +193,7 @@ namespace PEBakery.Core
                                 foreach (DB_BuildLog wLog in wLogs)
                                 {
                                     _w.WriteLine(wLog.Export(LogExportType.Text, false));
-                                    if (wLog.RefScriptId != 0)
+                                    if (wLog.RefScriptId != 0 && wLog.RefScriptId != wLog.ScriptId)
                                     {
                                         _w.Write("  ");
                                         _w.WriteLine(ExportRefScriptText(wLog, refScLogs));
@@ -482,7 +482,7 @@ namespace PEBakery.Core
         #region ExportRefScriptText
         private string ExportRefScriptText(DB_BuildLog bLog, DB_Script[] refScLogs)
         {
-            if (bLog.RefScriptId == 0)
+            if (bLog.RefScriptId == 0 || bLog.RefScriptId == bLog.ScriptId)
                 return null;
 
             DB_Script refScLog = refScLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
