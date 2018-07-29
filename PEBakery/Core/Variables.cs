@@ -169,6 +169,26 @@ namespace PEBakery.Core
                 // WindowsVersion
                 OperatingSystem sysVer = Environment.OSVersion;
                 logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
+
+                // Processor Type
+                switch (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture)
+                {
+                    case System.Runtime.InteropServices.Architecture.X86:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x86
+                        break;
+                    case System.Runtime.InteropServices.Architecture.X64:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x64
+                        break;
+                    case System.Runtime.InteropServices.Architecture.Arm:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm"));
+                        break;
+                    case System.Runtime.InteropServices.Architecture.Arm64:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm64"));
+                        break;
+                    default:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Unknown"));
+                        break;
+                }
             }
             #endregion
 
