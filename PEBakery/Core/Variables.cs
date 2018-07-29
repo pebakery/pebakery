@@ -34,7 +34,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static PEBakery.Core.Variables;
 
 namespace PEBakery.Core
 {
@@ -109,7 +108,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LoadDefaults
-        private List<LogInfo> LoadDefaultFixedVariables()
+        public List<LogInfo> LoadDefaultFixedVariables()
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 

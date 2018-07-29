@@ -1107,6 +1107,10 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region ShallowCopy
+        public SettingViewModel ShallowCopy() => MemberwiseClone() as SettingViewModel;
+        #endregion
+
         #region Database Operation
         public void ClearLogDb()
         {

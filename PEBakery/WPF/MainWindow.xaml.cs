@@ -39,6 +39,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -748,29 +749,47 @@ namespace PEBakery.WPF
             StartLoadWorker();
         }
 
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
             if (_loadWorker.IsBusy)
                 return;
 
-            double oldInterfaceScaleFactor = Setting.Interface_ScaleFactor;
-            bool oldScriptEnableCache = Setting.Script_EnableCache;
+            double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
+            bool old_Compat_AsteriskBugDirLink = Setting.Compat_AsteriskBugDirLink;
+            bool old_Compat_EnableEnvironmentVariables = Setting.Compat_EnableEnvironmentVariables;
+            bool old_Script_EnableCache = Setting.Script_EnableCache;
 
-            SettingWindow dialog = new SettingWindow(Setting) {Owner = this};
+            SettingWindow dialog = new SettingWindow(Setting) { Owner = this };
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
-                // Scale Factor
-                double newScaleFactor = Setting.Interface_ScaleFactor;
-                if (double.Epsilon < Math.Abs(newScaleFactor - oldInterfaceScaleFactor)) // Not Equal
-                    DrawScript(CurMainTree.Script);
-
-                // Script
-                if (!oldScriptEnableCache && Setting.Script_EnableCache)
-                    StartCacheWorker();
-
                 // Apply
                 Setting.ApplySetting();
+
+                // Refresh Project
+                if (old_Compat_AsteriskBugDirLink != Setting.Compat_AsteriskBugDirLink)
+                {
+                    StartLoadWorker();
+                }
+                else
+                {
+                    // Scale Factor
+                    double newScaleFactor = Setting.Interface_ScaleFactor;
+                    if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                        DrawScript(CurMainTree.Script);
+
+                    // Project
+                    if (old_Compat_EnableEnvironmentVariables != Setting.Compat_EnableEnvironmentVariables)
+                    { // Update project's envionrmnet variables
+                        foreach (Project p in Projects)
+                            p.Variables.LoadDefaultFixedVariables();
+                    }
+
+                    // Script
+                    if (!old_Script_EnableCache && Setting.Script_EnableCache)
+                        StartCacheWorker();
+                }
             }
         }
 
@@ -782,7 +801,7 @@ namespace PEBakery.WPF
             if (0 < UtilityWindow.Count)
                 return;
 
-            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont) {Owner = this};
+            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont) { Owner = this };
             UtilityDialog.Show();
         }
 
@@ -790,7 +809,7 @@ namespace PEBakery.WPF
         {
             if (LogWindow.Count == 0)
             {
-                LogDialog = new LogWindow {Owner = this};
+                LogDialog = new LogWindow { Owner = this };
                 LogDialog.Show();
             }
         }
@@ -816,7 +835,7 @@ namespace PEBakery.WPF
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont) {Owner = this};
+            AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont) { Owner = this };
             dialog.ShowDialog();
         }
         #endregion
@@ -1023,7 +1042,7 @@ namespace PEBakery.WPF
             // Build Ended, Switch to Normal View
             Model.SwitchNormalBuildInterface = true;
             DrawScript(CurMainTree.Script);
-            
+
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
@@ -1772,7 +1791,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(BuildScriptProgressBarValue));
             }
         }
-        
+
         private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
         public Visibility BuildScriptFullProgressVisibility
         {
@@ -1783,7 +1802,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(BuildScriptFullProgressVisibility));
             }
         }
-        
+
         private double _buildFullProgressBarMax = 100;
         public double BuildFullProgressBarMax
         {

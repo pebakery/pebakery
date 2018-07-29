@@ -26,6 +26,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,9 +45,9 @@ using PEBakery.IniLib;
 namespace PEBakery.Core
 {
     #region ProjectCollection
-    public class ProjectCollection
+    public class ProjectCollection : IReadOnlyCollection<Project>
     {
-        #region Static Field
+        #region Static Fields
         public static bool AsteriskBugDirLink = false;
         #endregion
 
@@ -421,6 +422,12 @@ namespace PEBakery.Core
 
             return logs;
         }
+        #endregion
+
+        #region GetEnumarator
+        public IEnumerator<Project> GetEnumerator() => _projectDict.OrderBy(x => x.Key).Select(x => x.Value).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
     }
     #endregion
