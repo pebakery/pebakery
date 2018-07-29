@@ -566,7 +566,6 @@ namespace PEBakery.Core.Commands
                 }
 
                 bool redirectStandardStream = false;
-                Stopwatch watch = Stopwatch.StartNew();
                 StringBuilder bConOut = new StringBuilder();
                 void ConsoleDataReceivedHandler(object sender, DataReceivedEventArgs e)
                 {
@@ -595,7 +594,6 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            // Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
                             Encoding cmdEncoding = Console.OutputEncoding;
 
                             proc.StartInfo.RedirectStandardOutput = true;
@@ -624,50 +622,45 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.UseShellExecute = true;
                     }
 
-                    // Register process instance in EngineState, and run it
+                    // Register process instance to EngineState
                     if (cmd.Type != CodeType.ShellExecuteEx)
-                    {
                         s.RunningSubProcess = proc;
-                        proc.Exited += (object sender, EventArgs e) =>
-                        {
-                            s.RunningSubProcess = null;
-                            if (redirectStandardStream)
-                            {
-                                s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
-                                watch.Stop();
-                            }
-                        };
-                    }
 
+                    Stopwatch watch = Stopwatch.StartNew();
                     proc.Start();
 
-                    if (redirectStandardStream)
+                    if (cmd.Type == CodeType.ShellExecuteEx)
                     {
-                        proc.BeginOutputReadLine();
-                        proc.BeginErrorReadLine();
+                        watch.Stop();
+                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
                     }
-
-                    long tookTime = (long)watch.Elapsed.TotalSeconds;
-                    switch (cmd.Type)
+                    else
                     {
-                        case CodeType.ShellExecute:
-                            proc.WaitForExit();
+                        if (redirectStandardStream)
+                        {
+                            proc.BeginOutputReadLine();
+                            proc.BeginErrorReadLine();
+                        }
+
+                        // Wait until exit
+                        proc.WaitForExit();
+
+                        // Unregister process instance from EngineState
+                        s.RunningSubProcess = null;
+
+                        watch.Stop();
+                        long tookTime = (long)watch.Elapsed.TotalSeconds;
+
+                        if (cmd.Type == CodeType.ShellExecute)
+                        {
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
-                            break;
-                        case CodeType.ShellExecuteEx:
-                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
-                            break;
-                        case CodeType.ShellExecuteDelete:
-                            proc.WaitForExit();
+                        }
+                        else if (cmd.Type == CodeType.ShellExecuteDelete)
+                        {
                             File.Delete(filePath);
                             logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
-                            break;
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
-                    }
+                        }
 
-                    if (cmd.Type != CodeType.ShellExecuteEx)
-                    {
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
                         string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
                         LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
@@ -679,6 +672,8 @@ namespace PEBakery.Core.Commands
                         if (redirectStandardStream)
                         {
                             string conout = bConOut.ToString().Trim();
+                            s.MainViewModel.BuildConOutRedirect = conout;
+
                             if (0 < conout.Length)
                             {
                                 if (conout.IndexOf('\n') == -1) // No NewLine
