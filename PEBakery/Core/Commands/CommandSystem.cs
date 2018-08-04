@@ -34,6 +34,7 @@ using System.Threading;
 using System.Windows;
 using System.Security.Principal;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using PEBakery.WPF;
 using PEBakery.Helper;
 
@@ -566,16 +567,29 @@ namespace PEBakery.Core.Commands
                 }
 
                 bool redirectStandardStream = false;
-                StringBuilder bConOut = new StringBuilder();
-                void ConsoleDataReceivedHandler(object sender, DataReceivedEventArgs e)
+                object bConOutLock = new object();
+                StringBuilder bStdOut = new StringBuilder();
+                StringBuilder bStdErr = new StringBuilder();
+                void StdOutDataReceivedHandler(object sender, DataReceivedEventArgs e)
                 {
                     if (e.Data == null)
                         return;
 
-                    lock (bConOut)
-                    { // Temp fix. TODO: Save stdout and stderr into different StringBuilder
-                        bConOut.AppendLine(e.Data);
-                        s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
+                    lock (bConOutLock)
+                    {
+                        bStdOut.AppendLine(e.Data);
+                        s.MainViewModel.BuildConOutRedirectTextLines.Add(new Tuple<string, bool>(e.Data, false));
+                    }
+                }
+                void StdErrDataReceivedHandler(object sender, DataReceivedEventArgs e)
+                {
+                    if (e.Data == null)
+                        return;
+
+                    lock (bConOutLock)
+                    {
+                        bStdErr.AppendLine(e.Data);
+                        s.MainViewModel.BuildConOutRedirectTextLines.Add(new Tuple<string, bool>(e.Data, true));
                     }
                 }
 
@@ -601,16 +615,17 @@ namespace PEBakery.Core.Commands
 
                             proc.StartInfo.RedirectStandardOutput = true;
                             proc.StartInfo.StandardOutputEncoding = cmdEncoding;
-                            proc.OutputDataReceived += ConsoleDataReceivedHandler;
+                            proc.OutputDataReceived += StdOutDataReceivedHandler;
 
                             proc.StartInfo.RedirectStandardError = true;
                             proc.StartInfo.StandardErrorEncoding = cmdEncoding;
-                            proc.ErrorDataReceived += ConsoleDataReceivedHandler;
+                            proc.ErrorDataReceived += StdErrDataReceivedHandler;
 
                             // Without this, XCOPY.exe of Windows 7 will not work properly.
                             // https://stackoverflow.com/questions/14218642/xcopy-does-not-work-with-useshellexecute-false
                             proc.StartInfo.RedirectStandardInput = true;
 
+                            s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                             s.MainViewModel.BuildConOutRedirectShow = true;
                         }
                     }
@@ -674,15 +689,28 @@ namespace PEBakery.Core.Commands
 
                         if (redirectStandardStream)
                         {
-                            string conout = bConOut.ToString().Trim();
-                            s.MainViewModel.BuildConOutRedirect = conout;
-
-                            if (0 < conout.Length)
+                            string stdOut;
+                            string stdErr;
+                            lock (bConOutLock)
                             {
-                                if (conout.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output] {conout}"));
+                                stdOut = bStdOut.ToString().Trim();
+                                stdErr = bStdErr.ToString().Trim();
+                            }
+
+                            if (0 < stdOut.Length)
+                            {
+                                if (stdOut.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdOut}"));
                                 else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output]\r\n{conout}\r\n"));
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdOut}\r\n"));
+                            }
+
+                            if (0 < stdErr.Length)
+                            {
+                                if (stdErr.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stdErr}"));
+                                else // With NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stdErr}\r\n"));
                             }
                         }
                     }
@@ -695,8 +723,8 @@ namespace PEBakery.Core.Commands
 
                     if (redirectStandardStream)
                     {
-                        s.MainViewModel.BuildConOutRedirect = string.Empty;
                         s.MainViewModel.BuildConOutRedirectShow = false;
+                        s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                     }
                 }
             }

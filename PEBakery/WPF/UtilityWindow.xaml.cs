@@ -104,10 +104,7 @@ namespace PEBakery.WPF
         private void UnescapeButton_Click(object sender, RoutedEventArgs e)
         {
             string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
-            if (m.Escaper_EscapePercent)
-                m.Escaper_ConvertedString = StringEscaper.UnescapePercent(str);
-            else
-                m.Escaper_ConvertedString = str;
+            m.Escaper_ConvertedString = m.Escaper_EscapePercent ? StringEscaper.UnescapePercent(str) : str;
         }
 
         private void EscapeSequenceLegend_Click(object sender, RoutedEventArgs e)

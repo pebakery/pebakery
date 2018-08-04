@@ -49,6 +49,7 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
 using MahApps.Metro.IconPacks;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.WPF
 {
@@ -92,6 +93,11 @@ namespace PEBakery.WPF
         {
             InitializeComponent();
             Model = DataContext as MainViewModel;
+            if (Model == null)
+            {
+                MessageBox.Show("MainViewModel is null", "Internal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(1);
+            }
 
             string[] args = App.Args;
             if (!int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version))
@@ -134,6 +140,7 @@ namespace PEBakery.WPF
 
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new SettingViewModel(settingFile);
+            Model.MonospaceFont = Setting.Interface_MonospaceFont;
 
             string dbDir = Path.Combine(BaseDir, "Database");
             if (!Directory.Exists(dbDir))
@@ -1288,7 +1295,7 @@ namespace PEBakery.WPF
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            TreeViewItem treeViewItem = VisualUpwardSearch(e.OriginalSource as DependencyObject);
+            TreeViewItem treeViewItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(e.OriginalSource as DependencyObject);
 
             if (treeViewItem != null)
             {
@@ -1296,14 +1303,6 @@ namespace PEBakery.WPF
                 treeViewItem.IsSelected = true;
                 e.Handled = true;
             }
-        }
-
-        static TreeViewItem VisualUpwardSearch(DependencyObject source)
-        {
-            while (source != null && !(source is TreeViewItem))
-                source = VisualTreeHelper.GetParent(source);
-
-            return source as TreeViewItem;
         }
         #endregion
 
@@ -1401,17 +1400,12 @@ namespace PEBakery.WPF
             Logger.Db.Close();
         }
 
-        private void BuildConOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            var focusedBackup = FocusManager.GetFocusedElement(this);
-
-            if (sender is TextBox textBox)
-            {
-                textBox.CaretIndex = textBox.Text.Length;
-                textBox.ScrollToEnd();
-            }
-
-            FocusManager.SetFocusedElement(this, focusedBackup);
+            if (!(sender is ListBox listBox))
+                return;
+            listBox.Items.MoveCurrentToLast();
+            listBox.ScrollIntoView(listBox.Items.CurrentItem);
         }
         #endregion
     }
@@ -1425,6 +1419,7 @@ namespace PEBakery.WPF
         {
             MainTree = new TreeViewModel(null, null);
             BuildTree = new TreeViewModel(null, null);
+            BuildConOutRedirectTextLines = new ObservableCollection<Tuple<string, bool>>();
 
             Canvas canvas = new Canvas
             {
@@ -1826,40 +1821,48 @@ namespace PEBakery.WPF
         }
 
         // ShellExecute Console Output
-        private string _buildConOutRedirect = string.Empty;
-        public string BuildConOutRedirect
+        private readonly object _buildConOutRedirectTextLinesLock = new object();
+        private ObservableCollection<Tuple<string, bool>> _buildConOutRedirectTextLines;
+        public ObservableCollection<Tuple<string, bool>> BuildConOutRedirectTextLines
         {
-            get => _buildConOutRedirect;
+            get => _buildConOutRedirectTextLines;
             set
             {
-                _buildConOutRedirect = value;
-                OnPropertyUpdate(nameof(BuildConOutRedirect));
+                _buildConOutRedirectTextLines = value;
+                BindingOperations.EnableCollectionSynchronization(_buildConOutRedirectTextLines, _buildConOutRedirectTextLinesLock);
+                OnPropertyUpdate(nameof(BuildConOutRedirectTextLines));
             }
         }
 
         public static bool DisplayShellExecuteConOut = true;
         private Visibility _buildConOutRedirectVisibility = Visibility.Collapsed;
-        public Visibility BuildConOutRedirectVisibility
-        {
-            get
-            {
-                if (DisplayShellExecuteConOut)
-                    return _buildConOutRedirectVisibility;
-                else
-                    return Visibility.Collapsed;
-            }
-        }
+        public Visibility BuildConOutRedirectVisibility => DisplayShellExecuteConOut ? _buildConOutRedirectVisibility : Visibility.Collapsed;
+
         public bool BuildConOutRedirectShow
         {
             set
             {
-                if (value)
-                    _buildConOutRedirectVisibility = Visibility.Visible;
-                else
-                    _buildConOutRedirectVisibility = Visibility.Collapsed;
+                _buildConOutRedirectVisibility = value ? Visibility.Visible : Visibility.Collapsed;
                 OnPropertyUpdate(nameof(BuildConOutRedirectVisibility));
             }
         }
+
+        private FontHelper.WPFFont _monospaceFont;
+        public FontHelper.WPFFont MonospaceFont
+        {
+            get => _monospaceFont;
+            set
+            {
+                _monospaceFont = value;
+                OnPropertyUpdate(nameof(MonospaceFont));
+                OnPropertyUpdate(nameof(MonospaceFontFamily));
+                OnPropertyUpdate(nameof(MonospaceFontWeight));
+                OnPropertyUpdate(nameof(MonospaceFontSize));
+            }
+        }
+        public FontFamily MonospaceFontFamily => _monospaceFont.FontFamily;
+        public FontWeight MonospaceFontWeight => _monospaceFont.FontWeight;
+        public double MonospaceFontSize => _monospaceFont.FontSizeInDIP;
 
         // Command Progress
         private string _buildCommandProgressTitle = string.Empty;
@@ -1906,16 +1909,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private Visibility _buildCommandProgressVisibility = Visibility.Collapsed;
-        public Visibility BuildCommandProgressVisibility => _buildCommandProgressVisibility;
+        public Visibility BuildCommandProgressVisibility { get; private set; } = Visibility.Collapsed;
         public bool BuildCommandProgressShow
         {
             set
             {
                 if (value)
-                    _buildCommandProgressVisibility = Visibility.Visible;
+                    BuildCommandProgressVisibility = Visibility.Visible;
                 else
-                    _buildCommandProgressVisibility = Visibility.Collapsed;
+                    BuildCommandProgressVisibility = Visibility.Collapsed;
                 OnPropertyUpdate(nameof(BuildCommandProgressVisibility));
             }
         }
@@ -2021,27 +2023,8 @@ namespace PEBakery.WPF
             }
         }
 
-        public FontWeight BuildFontWeight
-        {
-            get
-            {
-                if (_buildFocus)
-                    return FontWeights.Bold;
-                else
-                    return FontWeights.Normal;
-            }
-        }
-
-        public Brush BuildBrush
-        {
-            get
-            {
-                if (_buildFocus)
-                    return Brushes.Red;
-                else
-                    return Brushes.Black;
-            }
-        }
+        public FontWeight BuildFontWeight => _buildFocus ? FontWeights.Bold : FontWeights.Normal;
+        public Brush BuildBrush => _buildFocus ? Brushes.Red : Brushes.Black;
         #endregion
 
         public bool Checked
@@ -2248,6 +2231,21 @@ namespace PEBakery.WPF
     #endregion
 
     #region Converters
+    public class BuildConOutForegroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return Brushes.Black;
+            return (bool)value ? Brushes.Red : Brushes.Black;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class TaskbarProgressConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)

@@ -48,6 +48,7 @@
     </Window.DataContext>
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
+        <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
         <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -710,6 +711,7 @@
                 </Grid>
 
                 <DockPanel Grid.Row="1"
+                           Focusable="False"
                            HorizontalAlignment="Stretch"
                            Visibility="{Binding BuildInterfaceVisibility}">
                     <StackPanel DockPanel.Dock="Bottom"
@@ -765,20 +767,29 @@
                                        FontWeight="SemiBold"
                                        Visibility="{Binding BuildConOutRedirectVisibility}"
                                        Text="ShellExecute Console Output"/>
-                            <TextBox DockPanel.Dock="Top"
+                            <ListBox DockPanel.Dock="Top"
                                      Margin="10, 10, 10, 10"
+                                     x:Name="BuildConOutRedirectListBox"
+                                     MinHeight="20"
                                      Visibility="{Binding BuildConOutRedirectVisibility}"
-                                     TextAlignment="Left"
                                      VerticalAlignment="Top"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
                                      VerticalContentAlignment="Stretch"
+                                     FontSize="12"
+                                     FontFamily="{Binding MonospaceFontFamily}"
+                                     FontWeight="{Binding MonospaceFontWeight}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      ScrollViewer.CanContentScroll="True"
-                                     IsReadOnly="True"
-                                     TextChanged="BuildConOutRedirectTextBox_TextChanged"
-                                     Text="{Binding BuildConOutRedirect}"/>
+                                     ScrollViewer.ScrollChanged="BuildConOutRedirectListBox_ScrollChanged" 
+                                     ItemsSource="{Binding BuildConOutRedirectTextLines}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Foreground="{Binding Item2, Converter={StaticResource BuildConOutForegroundConverter}}"
+                                                   Text="{Binding Item1}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                             <!-- ProgressBar -->
                             <TextBlock DockPanel.Dock="Top"
                                        TextAlignment="Left"

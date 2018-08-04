@@ -175,6 +175,7 @@
     <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\FileUpdater.cs" />
     <Compile Include="Helper\ArchiveHelper.cs" />
+    <Compile Include="Helper\ControlsHelper.cs" />
     <Compile Include="Helper\FileHelper.cs" />
     <Compile Include="Helper\HashHelper.cs" />
     <Compile Include="Helper\ImageHelper.cs" />
