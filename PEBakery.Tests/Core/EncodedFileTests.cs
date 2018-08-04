@@ -770,7 +770,8 @@ namespace PEBakery.Tests.Core
 
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
-                    sc = EncodedFile.DeleteFile(sc, folderName, fileName, out string errMsg);
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.DeleteFile(sc, folderName, fileName);
                     if (errMsg != null)
                     {
                         Assert.IsFalse(result);
@@ -849,7 +850,8 @@ namespace PEBakery.Tests.Core
                         }
                     }
 
-                    sc = EncodedFile.DeleteFolder(sc, folderName, out string errMsg);
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.DeleteFolder(sc, folderName);
 
                     if (errMsg != null)
                     {
@@ -903,8 +905,9 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(testScriptPath, destScript, true);
 
+                    string errMsg;
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
-                    sc = EncodedFile.DeleteLogo(sc, out string errMsg);
+                    (sc, errMsg) = EncodedFile.DeleteLogo(sc);
 
                     if (errMsg != null)
                     {

@@ -546,7 +546,8 @@ namespace PEBakery.WPF
                 return;
             }
 
-            _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
+            string errorMsg;
+            (_sc, errorMsg) = EncodedFile.DeleteLogo(_sc);
             if (errorMsg == null)
             {
                 MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1239,7 +1240,8 @@ namespace PEBakery.WPF
                 return;
             }
 
-            _sc = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName, out string errorMsg);
+            string errorMsg;
+            (_sc, errorMsg) = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName);
             if (errorMsg == null)
             {
                 UIControl.ReplaceAddress(_render.UICtrls, _sc);
@@ -1418,7 +1420,8 @@ namespace PEBakery.WPF
             if (result == MessageBoxResult.No)
                 return;
 
-            _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFolder(_sc, item.Name);
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;
@@ -1579,7 +1582,8 @@ namespace PEBakery.WPF
             if (result == MessageBoxResult.No)
                 return;
 
-            _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName);
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;

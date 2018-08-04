@@ -41,6 +41,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using PEBakery.XZLib;
@@ -207,6 +208,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachFile, ContainsFile
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcFilePath, type));
+        }
+
         public static Script AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
@@ -223,6 +229,11 @@ namespace PEBakery.Core
             }
         }
 
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcStream, type));
+        }
+
         public static Script AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
@@ -234,6 +245,11 @@ namespace PEBakery.Core
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             return Encode(sc, folderName, fileName, srcStream, type, false);
+        }
+
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcBuffer, type));
         }
 
         public static Script AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
@@ -265,7 +281,7 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.DeleteFile");
+                    throw new InternalException("Internal Logic Error at EncodedFile.ContainsFile");
             }
 
             if (!fileDict.ContainsKey(fileName))
@@ -276,6 +292,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachInterface, ContainsInterface
+        public static Task<Script> AttachInterfaceAsync(Script sc, string fileName, string srcFilePath)
+        {
+            return Task.Run(() => AttachInterface(sc, fileName, srcFilePath));
+        }
+
         public static Script AttachInterface(Script sc, string fileName, string srcFilePath)
         {
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
@@ -298,6 +319,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachLogo, ContainsLogo
+
+        public static Task<Script> AttachLogoAsync(Script sc, string fileName, string srcFilePath)
+        {
+            return Task.Run(() => AttachLogo(sc, fileName, srcFilePath));
+        }
+
         public static Script AttachLogo(Script sc, string fileName, string srcFilePath)
         {
             if (sc == null)
@@ -317,7 +344,7 @@ namespace PEBakery.Core
             }
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -325,7 +352,7 @@ namespace PEBakery.Core
             return Encode(sc, dirName, fileName, srcStream, type, true);
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -351,6 +378,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AddFolder, ContainsFolder
+        public static Task<Script> AddFolderAsync(Script sc, string folderName, bool overwrite)
+        {
+            return Task.Run(() => AddFolder(sc, folderName, overwrite));
+        }
+
         public static Script AddFolder(Script sc, string folderName, bool overwrite)
         {
             if (sc == null)
@@ -412,6 +444,12 @@ namespace PEBakery.Core
         #endregion
 
         #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
+
+        public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream)
+        {
+            return Task.Run(() => ExtractFile(sc, folderName, fileName, outStream));
+        }
+
         public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream)
         {
             if (sc == null)
@@ -423,6 +461,11 @@ namespace PEBakery.Core
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded, outStream);
+        }
+
+        public static Task<MemoryStream> ExtractFileInMemAsync(Script sc, string folderName, string fileName)
+        {
+            return Task.Run(() => ExtractFileInMem(sc, folderName, fileName));
         }
 
         public static MemoryStream ExtractFileInMem(Script sc, string folderName, string fileName)
@@ -475,6 +518,11 @@ namespace PEBakery.Core
                     Decode(encoded, fs);
                 }
             }
+        }
+
+        public static Task<MemoryStream> ExtractLogoAsync(Script sc)
+        {
+            return Task.Run(() => ExtractLogo(sc, out _));
         }
 
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
@@ -537,6 +585,12 @@ namespace PEBakery.Core
         #endregion
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
+
+        public static Task<EncodedFileInfo> GetFileInfoAsync(Script sc, string dirName, string fileName, bool detail = false)
+        {
+            return Task.Run(() => GetFileInfo(sc, dirName, fileName, detail));
+        }
+
         public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
         {
             if (sc == null)
@@ -579,6 +633,11 @@ namespace PEBakery.Core
             return info;
         }
 
+        public static Task<EncodedFileInfo> GetLogoInfoAsync(Script sc, bool detail = false)
+        {
+            return Task.Run(() => GetLogoInfo(sc, detail));
+        }
+
         public static EncodedFileInfo GetLogoInfo(Script sc, bool detail = false)
         {
             if (sc == null)
@@ -611,6 +670,11 @@ namespace PEBakery.Core
             }
 
             return info;
+        }
+
+        public static Task<List<EncodedFileInfo>> GetFolderInfoAsync(Script sc, string dirName, bool detail = false)
+        {
+            return Task.Run(() => GetFolderInfo(sc, dirName, detail));
         }
 
         public static List<EncodedFileInfo> GetFolderInfo(Script sc, string dirName, bool detail = false)
@@ -659,6 +723,11 @@ namespace PEBakery.Core
             }
 
             return infos;
+        }
+
+        public static Task<Dictionary<string, List<EncodedFileInfo>>> GetAllFilesInfoAsync(Script sc, bool detail = false)
+        {
+            return Task.Run(() => GetAllFilesInfo(sc, detail));
         }
 
         public static Dictionary<string, List<EncodedFileInfo>> GetAllFilesInfo(Script sc, bool detail = false)
@@ -757,7 +826,12 @@ namespace PEBakery.Core
         #endregion
 
         #region DeleteFile, DeleteFolder, DeleteLogo
-        public static Script DeleteFile(Script sc, string folderName, string fileName, out string errorMsg)
+        public static Task<(Script, string)> DeleteFileAsync(Script sc, string folderName, string fileName)
+        {
+            return Task.Run(() => DeleteFile(sc, folderName, fileName));
+        }
+
+        public static (Script, string) DeleteFile(Script sc, string folderName, string fileName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -765,7 +839,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(folderName));
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-            errorMsg = null;
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
@@ -773,10 +847,7 @@ namespace PEBakery.Core
             try
             {
                 if (!sc.Sections.ContainsKey(folderName))
-                {
-                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                 // Get encoded file index
                 Dictionary<string, string> fileDict;
@@ -793,10 +864,7 @@ namespace PEBakery.Core
                 }
 
                 if (!fileDict.ContainsKey(fileName))
-                {
-                    errorMsg = $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]");
 
                 // Delete encoded file index
                 if (!Ini.DeleteKey(sc.RealPath, folderName, fileName))
@@ -818,16 +886,22 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
 
-        public static Script DeleteFolder(Script sc, string folderName, out string errorMsg)
+        public static Task<(Script, string)> DeleteFolderAsync(Script sc, string folderName)
+        {
+            return Task.Run(() => DeleteFolder(sc, folderName));
+        }
+
+        public static (Script, string) DeleteFolder(Script sc, string folderName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
             if (folderName == null)
                 throw new ArgumentNullException(nameof(folderName));
-            errorMsg = null;
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
@@ -838,34 +912,23 @@ namespace PEBakery.Core
                     !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!sc.Sections.ContainsKey(EncodedFolders))
-                    {
-                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     List<string> folders = Ini.FilterLines(sc.Sections[EncodedFolders].GetLines());
                     int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
-                    {
-                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     // Delete index of encoded folder
                     folders.RemoveAt(idx);
                     // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
                     if (!Ini.DeleteSection(sc.RealPath, EncodedFolders))
-                    {
-                        errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
+
                     foreach (IniKey key in folders.Select(x => new IniKey(EncodedFolders, x)))
                     {
                         if (!Ini.WriteRawLine(sc.RealPath, key))
-                        {
-                            errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
-                            return sc;
-                        }
+                            return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
                     }
                 }
 
@@ -920,27 +983,31 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
 
-        public static Script DeleteLogo(Script sc, out string errorMsg)
+        public static Task<(Script, string)> DeleteLogoAsync(Script sc)
+        {
+            return Task.Run(() => DeleteLogo(sc));
+        }
+
+        public static (Script, string) DeleteLogo(Script sc)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
+
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
-                errorMsg = null;
-
                 // Get encoded file index
                 if (!sc.Sections.ContainsKey(AuthorEncoded))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                
                 Dictionary<string, string> fileDict;
                 switch (sc.Sections[AuthorEncoded].DataType)
                 {
@@ -956,17 +1023,12 @@ namespace PEBakery.Core
 
                 // Get filename of logo
                 if (!fileDict.ContainsKey("Logo"))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                
                 string logoFile = fileDict["Logo"];
                 if (!fileDict.ContainsKey(logoFile))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
-
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                
                 // Delete encoded file section
                 if (!Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, logoFile)))
                     errorMsg = $"Encoded file [{logoFile}] not found in [{sc.RealPath}]";
@@ -987,7 +1049,8 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
         #endregion
 
