@@ -1030,7 +1030,7 @@ namespace PEBakery.Core
                 // Get encoded file index
                 if (!sc.Sections.ContainsKey(AuthorEncoded))
                     return (sc, $"Logo not found in [{sc.RealPath}]");
-                
+
                 Dictionary<string, string> fileDict;
                 switch (sc.Sections[AuthorEncoded].DataType)
                 {
@@ -1047,11 +1047,11 @@ namespace PEBakery.Core
                 // Get filename of logo
                 if (!fileDict.ContainsKey("Logo"))
                     return (sc, $"Logo not found in [{sc.RealPath}]");
-                
+
                 string logoFile = fileDict["Logo"];
                 if (!fileDict.ContainsKey(logoFile))
                     return (sc, $"Logo not found in [{sc.RealPath}]");
-                
+
                 // Delete encoded file section
                 if (!Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, logoFile)))
                     errorMsg = $"Encoded file [{logoFile}] not found in [{sc.RealPath}]";

@@ -730,7 +730,7 @@ namespace PEBakery.Core
         /// Return true if error
         /// </summary>
         public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
-        { 
+        {
             return LoadScriptRuntime(realPath, realPath, opts);
         }
 
