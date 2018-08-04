@@ -548,8 +548,16 @@ namespace PEBakery.Tests.Core
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
                 (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(testScript, detail);
-                Assert.IsNull(errMsg);
-                Assert.IsTrue(info.Equals(comp));
+                if (comp == null)
+                {
+                    Assert.IsNotNull(errMsg);
+                    Assert.IsNull(info);
+                }
+                else
+                {
+                    Assert.IsNull(errMsg);
+                    Assert.IsTrue(info.Equals(comp));
+                }
             }
 
             Template(logoScript, true, new EncodedFileInfo
