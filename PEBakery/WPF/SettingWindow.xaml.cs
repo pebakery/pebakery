@@ -586,17 +586,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Script_AutoSyntaxCheck));
             }
         }
-
-        private bool _scriptDeepInspectAttachedFile;
-        public bool Script_DeepInspectAttachedFile
-        {
-            get => _scriptDeepInspectAttachedFile;
-            set
-            {
-                _scriptDeepInspectAttachedFile = value;
-                OnPropertyUpdate(nameof(Script_DeepInspectAttachedFile));
-            }
-        }
         #endregion
 
         #region Property - Logging
@@ -823,7 +812,6 @@ namespace PEBakery.WPF
             Logger.DebugLevel = Log_DebugLevel;
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
-            ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
             CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
@@ -868,7 +856,6 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = true;
             Script_AutoSyntaxCheck = true;
-            Script_DeepInspectAttachedFile = false;
 
             // Log
 #if DEBUG
@@ -928,7 +915,6 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr)), // Boolean
@@ -1035,7 +1021,6 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
             Script_AutoSyntaxCheck = ParseBoolean(nameof(Script_AutoSyntaxCheck), Script_AutoSyntaxCheck);
-            Script_DeepInspectAttachedFile = ParseBoolean(nameof(Script_DeepInspectAttachedFile), Script_DeepInspectAttachedFile);
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
@@ -1081,7 +1066,6 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr), Log_DeferredLogging.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr), Log_MinifyHtmlExport.ToString()), // Boolean

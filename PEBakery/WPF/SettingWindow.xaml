@@ -342,11 +342,6 @@
                               VerticalContentAlignment="Center"
                               Content="Auto Check Syntax Error"
                               IsChecked="{Binding Script_AutoSyntaxCheck}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Inspect Compression Algorithm of Attached File (Slow)"
-                              ToolTip="May slow down Edit Script window."
-                              IsChecked="{Binding Script_DeepInspectAttachedFile}"/>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Log">

@@ -474,7 +474,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                EncodedFileInfo info = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                Assert.IsNull(errMsg);
                 Assert.IsTrue(comp.Equals(info));
             }
 
@@ -546,15 +547,9 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
-                try
-                {
-                    EncodedFileInfo info = EncodedFile.GetLogoInfo(testScript, detail);
-                    Assert.IsTrue(info.Equals(comp));
-                }
-                catch (InvalidOperationException)
-                {
-                    Assert.IsTrue(comp == null);
-                }
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(testScript, detail);
+                Assert.IsNull(errMsg);
+                Assert.IsTrue(info.Equals(comp));
             }
 
             Template(logoScript, true, new EncodedFileInfo
@@ -594,7 +589,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
-                List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                Assert.IsNull(errMsg);
                 Assert.AreEqual(comps.Count, infos.Count);
                 for (int i = 0; i < comps.Count; i++)
                     Assert.IsTrue(comps[i].Equals(infos[i]));
@@ -657,7 +653,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                Dictionary<string, List<EncodedFileInfo>> infoDict = EncodedFile.GetAllFilesInfo(sc, detail);
+                (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) = EncodedFile.GetAllFilesInfo(sc, detail);
+                Assert.IsNull(errMsg);
                 Assert.AreEqual(compDict.Count, infoDict.Count);
                 foreach (var kv in compDict)
                 {

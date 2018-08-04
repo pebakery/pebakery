@@ -1270,10 +1270,10 @@
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Margin="0, 5, 0, 0"
-                                            Orientation="Horizontal"
+                                <DockPanel Margin="5, 5, 0, 0"
                                             Visibility="{Binding AttachDetailFileVisiblity}">
                                     <Button x:Name="ExtractFileButton"
+                                            DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
@@ -1288,6 +1288,7 @@
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="DeleteFileButton"
+                                            DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
@@ -1301,7 +1302,22 @@
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
-                                </StackPanel>
+                                    <Button x:Name="InspectFileButton"
+                                            DockPanel.Dock="Right"
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Right"
+                                            Width="160" Height="25"
+                                            Click="InspectFileButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Magnify"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Inspect Compression"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DockPanel>
                             </StackPanel>
                             <!-- AddFolderButton -->
                             <GroupBox Header="Add Folder"
@@ -1433,7 +1449,7 @@
                                     </StackPanel>
                                 </GroupBox>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="0, 0, 5, 0"
+                                    <Button Margin="5, 0, 5, 0"
                                         x:Name="ExtractFolderButton"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"

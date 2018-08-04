@@ -38,5 +38,6 @@ namespace PEBakery.Tests.Core
     [TestClass]
     public class UIParserTests
     {
+        
     }
 }

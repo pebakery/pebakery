@@ -586,12 +586,12 @@ namespace PEBakery.Core
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
 
-        public static Task<EncodedFileInfo> GetFileInfoAsync(Script sc, string dirName, string fileName, bool detail = false)
+        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string dirName, string fileName, bool detail = false)
         {
             return Task.Run(() => GetFileInfo(sc, dirName, fileName, detail));
         }
 
-        public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
+        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -603,7 +603,7 @@ namespace PEBakery.Core
             };
 
             if (!sc.Sections.ContainsKey(dirName))
-                throw new InvalidOperationException($"Directory [{dirName}] does not exist");
+                return (null, $"Directory [{dirName}] does not exist");
 
             Dictionary<string, string> fileDict;
             switch (sc.Sections[dirName].DataType)
@@ -615,14 +615,18 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+                    return (null, "Internal Logic Error at EncodedFile.GetFileInfo");
             }
 
             if (!fileDict.ContainsKey(fileName))
-                throw new InvalidOperationException("File index does not exist");
+                return (null, $"File index of [{fileName}] does not exist");
 
             string fileIndex = fileDict[fileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+            if (info.RawSize == -1)
+                return (null, $"Unable to parse raw size of [{fileName}]");
+            if (info.EncodedSize == -1)
+                return (null, $"Unable to parse encoded size of [{fileName}]");
 
             if (detail)
             {
@@ -630,38 +634,38 @@ namespace PEBakery.Core
                 info.EncodeMode = GetEncodeMode(encoded);
             }
 
-            return info;
+            return (info, null);
         }
 
-        public static Task<EncodedFileInfo> GetLogoInfoAsync(Script sc, bool detail = false)
+        public static Task<(EncodedFileInfo info, string errMsg)> GetLogoInfoAsync(Script sc, bool detail = false)
         {
             return Task.Run(() => GetLogoInfo(sc, detail));
         }
 
-        public static EncodedFileInfo GetLogoInfo(Script sc, bool detail = false)
+        public static (EncodedFileInfo info, string errMsg) GetLogoInfo(Script sc, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo
-            {
-                DirName = AuthorEncoded,
-            };
+            EncodedFileInfo info = new EncodedFileInfo { DirName = AuthorEncoded };
 
             if (!sc.Sections.ContainsKey(AuthorEncoded))
-                throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
+                return (null, "Directory [AuthorEncoded] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].GetIniDict();
-
             if (!fileDict.ContainsKey("Logo"))
-                throw new InvalidOperationException("Logo does not exist");
+                return (null, "Logo does not exist");
 
             info.FileName = fileDict["Logo"];
             if (!fileDict.ContainsKey(info.FileName))
-                throw new InvalidOperationException("File index does not exist");
+                return (null, "File index of [Logo] does not exist");
 
             string fileIndex = fileDict[info.FileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+            if (info.RawSize == -1)
+                return (null, $"Unable to parse raw size of [{info.FileName}]");
+            if (info.EncodedSize == -1)
+                return (null, $"Unable to parse encoded size of [{info.FileName}]");
 
             if (detail)
             {
@@ -669,21 +673,21 @@ namespace PEBakery.Core
                 info.EncodeMode = GetEncodeModeInMem(encoded);
             }
 
-            return info;
+            return (info, null);
         }
 
-        public static Task<List<EncodedFileInfo>> GetFolderInfoAsync(Script sc, string dirName, bool detail = false)
+        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string dirName, bool detail = false)
         {
             return Task.Run(() => GetFolderInfo(sc, dirName, detail));
         }
 
-        public static List<EncodedFileInfo> GetFolderInfo(Script sc, string dirName, bool detail = false)
+        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string dirName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             if (!sc.Sections.ContainsKey(dirName))
-                throw new InvalidOperationException($"Directory [{dirName}] does not exist");
+                return (null, $"Directory [{dirName}] does not exist");
 
             Dictionary<string, string> fileDict;
             switch (sc.Sections[dirName].DataType)
@@ -695,7 +699,7 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.GetFolderInfo");
+                    return (null, "Internal Logic Error at EncodedFile.GetFolderInfo");
             }
 
             List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
@@ -708,10 +712,14 @@ namespace PEBakery.Core
                 };
 
                 if (!fileDict.ContainsKey(fileName))
-                    throw new InvalidOperationException("File index does not exist");
+                    return (null, $"File index of [{fileName}] does not exist");
 
                 string fileIndex = fileDict[fileName].Trim();
                 (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+                if (info.RawSize == -1)
+                    return (null, $"Unable to parse raw size of [{fileName}]");
+                if (info.EncodedSize == -1)
+                    return (null, $"Unable to parse encoded size of [{fileName}]");
 
                 if (detail)
                 {
@@ -722,23 +730,22 @@ namespace PEBakery.Core
                 infos.Add(info);
             }
 
-            return infos;
+            return (infos, null);
         }
 
-        public static Task<Dictionary<string, List<EncodedFileInfo>>> GetAllFilesInfoAsync(Script sc, bool detail = false)
+        public static Task<(Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg)> GetAllFilesInfoAsync(Script sc, bool detail = false)
         {
             return Task.Run(() => GetAllFilesInfo(sc, detail));
         }
 
-        public static Dictionary<string, List<EncodedFileInfo>> GetAllFilesInfo(Script sc, bool detail = false)
+        public static (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) GetAllFilesInfo(Script sc, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
-
             if (!sc.Sections.ContainsKey(EncodedFolders))
-                return infoDict;
+                return (infoDict, null); // Return empty dict
 
             List<string> dirNames = Ini.FilterLines(sc.Sections[EncodedFolders].GetLines());
             int aeIdx = dirNames.FindIndex(x => x.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase));
@@ -782,7 +789,7 @@ namespace PEBakery.Core
                         fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                         break;
                     default:
-                        throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+                        return (null, "Internal Logic Error at EncodedFile.GetAllFilesInfo");
                 }
 
                 foreach (var kv in fileDict)
@@ -795,7 +802,15 @@ namespace PEBakery.Core
                         DirName = dirName,
                         FileName = fileName,
                     };
+
+                    if (!fileDict.ContainsKey(fileName))
+                        return (null, $"File index of [{fileName}] does not exist");
+
                     (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+                    if (info.RawSize == -1)
+                        return (null, $"Unable to parse raw size of [{fileName}]");
+                    if (info.EncodedSize == -1)
+                        return (null, $"Unable to parse encoded size of [{fileName}]");
 
                     if (detail)
                     {
@@ -807,19 +822,27 @@ namespace PEBakery.Core
                 }
             }
 
-            return infoDict;
+            return (infoDict, null);
         }
 
+        /// <summary>
+        /// Parse file index
+        /// </summary>
+        /// <param name="fileIndex">String of file index Ex) "522,696"</param>
+        /// <returns>
+        /// If succeed, return (rawSize, encodedSize)
+        /// If failes, return (-1, -1)
+        /// </returns>
         private static (int rawSize, int encodedSize) ParseFileIndex(string fileIndex)
         {
             Match m = Regex.Match(fileIndex, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (!m.Success)
-                throw new InvalidOperationException("File index corrupted");
+                return (-1, -1);
 
             if (!NumberHelper.ParseInt32(m.Groups[1].Value, out int rawSize))
-                throw new InvalidOperationException("File index corrupted");
+                return (-1, 0);
             if (!NumberHelper.ParseInt32(m.Groups[2].Value, out int encodedSize))
-                throw new InvalidOperationException("File index corrupted");
+                return (rawSize, -1);
 
             return (rawSize, encodedSize);
         }
