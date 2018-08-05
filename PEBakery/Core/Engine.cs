@@ -307,6 +307,7 @@ namespace PEBakery.Core
             }
             s.RunningWebClient?.CancelAsync();
             s.UserHaltFlag = true;
+            s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
         }
 
         public Task ForceStopWait()
