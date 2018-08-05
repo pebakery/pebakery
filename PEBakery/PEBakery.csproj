@@ -82,7 +82,7 @@
       <HintPath>..\packages\ManagedWimLib.1.0.0\lib\net45\ManagedWimLib.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Wim, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7325a91af6f28c40, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Wim.1.2.3\lib\net40\Microsoft.Wim.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Wim.1.2.4\lib\net40\Microsoft.Wim.dll</HintPath>
     </Reference>
     <Reference Include="NaturalSort.Extension, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NaturalSort.Extension.1.0.2\lib\net47\NaturalSort.Extension.dll</HintPath>
