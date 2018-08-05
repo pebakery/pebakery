@@ -569,7 +569,7 @@ namespace PEBakery.WPF
                             using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
                                 sw.Write(b.ToString());
 
-                            OpenTextFile(tempFile, true);
+                            OpenTextFile(tempFile);
                         }
                     }
                 }
@@ -982,7 +982,7 @@ namespace PEBakery.WPF
             {
                 case ScriptType.Script:
                 case ScriptType.Link:
-                    OpenTextFile(sc.RealPath, false);
+                    OpenTextFile(sc.RealPath);
                     break;
                 default:
                     OpenFolder(sc.RealPath);
@@ -1311,7 +1311,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region OpenTextFile, OpenFolder
-        public void OpenTextFile(string filePath, bool deleteTextFile = false)
+        public void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))
             {
@@ -1319,7 +1319,6 @@ namespace PEBakery.WPF
                 return;
             }
 
-            Process proc = new Process();
             if (Setting.Interface_UseCustomEditor)
             {
                 string ext = Path.GetExtension(Setting.Interface_CustomEditorPath);
@@ -1335,21 +1334,19 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                proc.StartInfo = new ProcessStartInfo(Setting.Interface_CustomEditorPath)
+                ProcessStartInfo info = new ProcessStartInfo
                 {
-                    UseShellExecute = true,
+                    FileName = Setting.Interface_CustomEditorPath,
                     Arguments = StringEscaper.Doublequote(filePath),
                 };
+
+                try { UACHelper.UACHelper.StartWithShell(info); }
+                catch { Process.Start(info); }
             }
             else
             {
-                proc.StartInfo = new ProcessStartInfo(filePath);
+                FileHelper.OpenPath(filePath);
             }
-
-            if (deleteTextFile)
-                proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(filePath);
-
-            proc.Start();
         }
 
         public void OpenFolder(string filePath)

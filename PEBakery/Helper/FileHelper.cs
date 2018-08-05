@@ -494,7 +494,7 @@ namespace PEBakery.Helper
             root.Delete(true);
         }
 
-        public static void OpenUri(string uri)
+        public static Process OpenUri(string uri)
         {
             try
             {
@@ -502,7 +502,7 @@ namespace PEBakery.Helper
                 string exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
                 string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
 
-                UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
                     FileName = exePath,
                     Arguments = quoteUri,
@@ -512,6 +512,32 @@ namespace PEBakery.Helper
             {
                 Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
                 proc.Start();
+                return proc;
+            }
+        }
+
+        public static Process OpenPath(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            try
+            {
+                string ext = Path.GetExtension(path);
+                string exePath = RegistryHelper.GetDefaultExecutablePath(ext, true);
+                string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
+
+                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    Arguments = quotePath,
+                });
+            }
+            catch
+            {
+                Process proc = new Process { StartInfo = new ProcessStartInfo(path) };
+                proc.Start();
+                return proc;
             }
         }
 
