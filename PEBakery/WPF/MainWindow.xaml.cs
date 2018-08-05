@@ -1070,7 +1070,11 @@ namespace PEBakery.WPF
                 return;
 
             Script sc = CurMainTree.Script;
-            OpenFolder(Path.GetDirectoryName(sc.RealPath));
+            if (sc.Type == ScriptType.Directory)
+                OpenFolder(sc.RealPath);
+            else
+                OpenFolder(Path.GetDirectoryName(sc.RealPath));
+
         }
         #endregion
 
