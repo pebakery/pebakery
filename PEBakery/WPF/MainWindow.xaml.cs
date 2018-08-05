@@ -990,7 +990,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptUpdateButton(object sender, RoutedEventArgs e)
+        private void ScriptUpdateButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
@@ -1204,7 +1204,7 @@ namespace PEBakery.WPF
         {
             TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
             {
-                Script = sc
+                Script = sc,
             };
             treeParent.Children.Add(item);
             UpdateTreeViewIcon(item);
@@ -2017,15 +2017,12 @@ namespace PEBakery.WPF
             set
             {
                 _buildFocus = value;
-                _icon.Foreground = BuildBrush;
+                OnPropertyUpdate(nameof(Icon));
+                OnPropertyUpdate(nameof(BuildFocus));
                 OnPropertyUpdate(nameof(BuildFontWeight));
-                OnPropertyUpdate(nameof(BuildBrush));
-                OnPropertyUpdate("BuildIcon");
             }
         }
-
-        public FontWeight BuildFontWeight => _buildFocus ? FontWeights.Bold : FontWeights.Normal;
-        public Brush BuildBrush => _buildFocus ? Brushes.Red : Brushes.Black;
+        public FontWeight BuildFontWeight => _buildFocus ? FontWeights.SemiBold : FontWeights.Normal;
         #endregion
 
         public bool Checked
