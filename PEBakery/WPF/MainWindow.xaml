@@ -787,7 +787,7 @@
                                      FontSize="12"
                                      FontFamily="{Binding MonospaceFontFamily}"
                                      FontWeight="{Binding MonospaceFontWeight}"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      ScrollViewer.CanContentScroll="True"
                                      ScrollViewer.ScrollChanged="BuildConOutRedirectListBox_ScrollChanged" 
