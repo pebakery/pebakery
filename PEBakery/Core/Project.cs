@@ -659,7 +659,7 @@ namespace PEBakery.Core
                     if (x.Data.Type == ScriptType.Directory)
                     {
                         if (y.Data.Type == ScriptType.Directory)
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
                         else
                             return 1;
                     }
@@ -668,7 +668,7 @@ namespace PEBakery.Core
                         if (y.Data.Type == ScriptType.Directory)
                             return -1;
                         else
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
                     }
                 }
                 else
