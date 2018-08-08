@@ -585,6 +585,36 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region PadLeft
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        public void PadLeft()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            DestSuccessTemplate(s, @"StrFormat,PadLeft,A,3,0,%Dest%", "00A");
+            DestSuccessTemplate(s, @"StrFormat,PadLeft,장,3,張,%Dest%", "張張장");
+            DestSuccessTemplate(s, @"StrFormat,PadLeft,ABC,1,z,%Dest%", "ABC");
+            DestErrorTemplate(s, @"StrFormat,PadLeft,A,3,%Dest%", ErrorCheck.ParserError);
+        }
+        #endregion
+
+        #region PadRight
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        public void PadRight()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            DestSuccessTemplate(s, @"StrFormat,PadRight,A,3,0,%Dest%", "A00");
+            DestSuccessTemplate(s, @"StrFormat,PadRight,장,3,張,%Dest%", "장張張");
+            DestSuccessTemplate(s, @"StrFormat,PadRight,ABC,1,z,%Dest%", "ABC");
+            DestErrorTemplate(s, @"StrFormat,PadRight,A,3,%Dest%", ErrorCheck.ParserError);
+        }
+        #endregion
+
         #region Utility
         public void InitDestSuccessTemplate(EngineState s, string rawCode, string initStr, string destStr)
         {

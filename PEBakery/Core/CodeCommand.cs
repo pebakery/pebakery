@@ -2820,6 +2820,7 @@ namespace PEBakery.Core
         Pos = 130, PosX,
         Replace = 140, ReplaceX,
         Split = 150,
+        PadLeft = 160, PadRight,
         ShortPath = 800, LongPath, // Will be deprecated
     }
 
@@ -3278,6 +3279,38 @@ namespace PEBakery.Core
             b.Append(StringEscaper.QuoteEscape(Index));
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(DestVar));
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Pad : StrFormatInfo
+    {
+        // StrFormat,PadLeft,<SrcStr>,<Count>,<PadChar>,<%DestVar%>
+        // StrFormat,PadRight,<SrcStr>,<Count>,<PadChar>,<%DestVar%>
+        public string SrcStr;
+        public string TotalWidth; // Positive Integer
+        public string PadChar;
+        public string DestVar;
+
+        public StrFormatInfo_Pad(string srcStr, string totalWidth, string padChar, string destVar)
+        {
+            SrcStr = srcStr;
+            TotalWidth = totalWidth;
+            PadChar = padChar;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(TotalWidth));
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(PadChar));
+            b.Append(",");
+            b.Append(DestVar);
             return b.ToString();
         }
     }

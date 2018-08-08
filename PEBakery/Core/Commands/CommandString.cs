@@ -456,11 +456,7 @@ namespace PEBakery.Core.Commands
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
                         Match m = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-                        string destStr;
-                        if (m.Success)
-                            destStr = srcStr.Substring(0, m.Index);
-                        else
-                            destStr = srcStr;
+                        var destStr = m.Success ? srcStr.Substring(0, m.Index) : srcStr;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
@@ -583,6 +579,30 @@ namespace PEBakery.Core.Commands
                                 logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bounds [{slices.Length}]"));
                             }
                         }
+                    }
+                    break;
+                case StrFormatType.PadLeft:
+                case StrFormatType.PadRight:
+                    {
+                        StrFormatInfo_Pad subInfo = info.SubInfo.Cast<StrFormatInfo_Pad>();
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string totalWidthStr = StringEscaper.Preprocess(s, subInfo.TotalWidth);
+                        string padCharStr = StringEscaper.Preprocess(s, subInfo.PadChar);
+
+                        if (!NumberHelper.ParseInt32(totalWidthStr, out int totalWidth))
+                            return LogInfo.LogErrorMessage(logs, $"[{totalWidthStr}] is not a valid integer");
+                        if (totalWidth < 0)
+                            return LogInfo.LogErrorMessage(logs, $"[{totalWidth}] must be a positive integer");
+                        
+                        if (padCharStr.Length != 1)
+                            return LogInfo.LogErrorMessage(logs, $"Padding character [{padCharStr}] should be one character");
+                        char padChar = padCharStr[0];
+
+                        string destStr = type == StrFormatType.PadLeft ? srcStr.PadLeft(totalWidth, padChar) : srcStr.PadRight(totalWidth, padChar);
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
+                        logs.AddRange(varLogs);
                     }
                     break;
                 // Error

@@ -2836,6 +2836,22 @@ namespace PEBakery.Core
                         info = new StrFormatInfo_Split(args[0], args[1], args[2], args[3]);
                     }
                     break;
+                case StrFormatType.PadLeft:
+                case StrFormatType.PadRight:
+                    {
+                        // StrFormat,PadLeft,<SrcStr>,<Count>,<PadChar>,<%DestVar%>
+                        // StrFormat,PadRight,<SrcStr>,<Count>,<PadChar>,<%DestVar%>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        string destVar = args[3];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        info = new StrFormatInfo_Pad(args[0], args[1], args[2], destVar);
+                    }
+                    break;
                 // Error
                 default:
                     throw new InternalParserException($"Wrong StrFormatType [{type}]");
