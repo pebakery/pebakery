@@ -11,6 +11,18 @@ Mandatory=False
 Set,%Dest%,F
 Run,%ScriptFile%,SetTrue
 
+[Process-Run-InParam]
+Set,%Dest%,F
+Run,%ScriptFile%,SetParam,T
+
+[Process-RunEx-OutParam]
+Set,%Dest%,F
+RunEx,%ScriptFile%,SetOutParam,In=T,Out=%Dest%
+
+[Process-RunEx-OutParam-Error]
+Set,%Dest%,F
+RunEx,%ScriptFile%,SetOutParam,In=T
+
 [Process-Exec]
 Set,%Dest%,F
 Set,%ExecVar%,F
@@ -20,6 +32,12 @@ Set,%Dest%,#r
 [SetTrue]
 Set,%Dest%,T
 
+[SetParam]
+Set,%Dest%,#1
+
+[SetOutParam]
+Set,#o1,#1
+
 [Process-Loop01]
 Set,%Dest%,NIL
 Loop,%ScriptFile%,LoopTest,1,3,Z
@@ -27,6 +45,14 @@ Loop,%ScriptFile%,LoopTest,1,3,Z
 [Process-Loop02]
 Set,%Dest%,""
 Loop,%ScriptFile%,LoopBreak,1,4,Z,3
+
+[Process-LoopEx-OutParam]
+Set,%Dest%,NIL
+LoopEx,%ScriptFile%,LoopOutParam,1,3,In=Z,Out=%Dest%
+
+[Process-LoopEx-OutParam-Error]
+Set,%Dest%,""
+LoopEx,%ScriptFile%,LoopOutParam,1,3,In=Z
 
 [Process-LoopCompat01]
 Set,%Dest%,NIL
@@ -44,9 +70,21 @@ LoopLetter,%ScriptFile%,LoopTest,C,E,Z
 Set,%Dest%,""
 LoopLetter,%ScriptFile%,LoopBreak,C,F,Z,E
 
+[Process-LoopLetterEx-OutParam]
+Set,%Dest%,NIL
+LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z,Out=%Dest%
+
+[Process-LoopLetterEx-OutParam-Error]
+Set,%Dest%,""
+LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z
+
 [LoopTest]
 List,Append,%Dest%,#c
 List,Append,%Dest%,#1
+
+[LoopOutParam]
+List,Append,#o1,#c
+List,Append,#o1,#1
 
 [LoopBreak]
 List,Append,%Dest%,#c

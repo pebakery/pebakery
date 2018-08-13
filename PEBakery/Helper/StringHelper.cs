@@ -196,9 +196,12 @@ namespace PEBakery.Helper
             return b.ToString();
         }
 
-        public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
+        public static string ReplaceRegex(string str, string regex, string newValue, bool ignoreCase = false)
         {
-            MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            RegexOptions opts = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+            if (ignoreCase)
+                opts |= RegexOptions.IgnoreCase;
+            MatchCollection matches = Regex.Matches(str, regex, opts);
             if (matches.Count == 0)
                 return str;
 

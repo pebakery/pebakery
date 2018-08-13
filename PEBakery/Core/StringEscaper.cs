@@ -421,9 +421,8 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex regex = new Regex(@"(?<!#)(#[0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
-            MatchCollection matches = regex.Matches(str);
+            Regex inRegex = new Regex(@"(?<!#)(#[1-9][0-9]*)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            MatchCollection matches = inRegex.Matches(str);
             while (0 < matches.Count)
             {
                 StringBuilder b = new StringBuilder();
@@ -431,7 +430,7 @@ namespace PEBakery.Core
                 {
                     string pIdxStr = matches[x].Groups[1].ToString().Substring(1);
                     if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
-                        throw new InternalException("ExpandVariables failure");
+                        throw new InternalException("ExpandSectionParams failure");
 
                     if (x == 0)
                     {
@@ -445,9 +444,9 @@ namespace PEBakery.Core
                     }
 
                     string param;
-                    if (s.CurSectionParams.ContainsKey(pIdx))
+                    if (s.CurSectionInParams.ContainsKey(pIdx))
                     {
-                        param = s.CurSectionParams[pIdx];
+                        param = s.CurSectionInParams[pIdx];
                     }
                     else
                     {
@@ -465,25 +464,74 @@ namespace PEBakery.Core
                 }
                 str = b.ToString();
 
-                matches = regex.Matches(str);
+                matches = inRegex.Matches(str);
             }
 
-            // Escape #a (Current Argument Count)
-            if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#a)", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
+            // Escape #o1, #o2, ... (Section Out Parameter)
+            Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9][0-9]*)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            matches = outRegex.Matches(str);
+            while (0 < matches.Count)
+            {
+                StringBuilder b = new StringBuilder();
+                for (int x = 0; x < matches.Count; x++)
+                {
+                    string pIdxStr = matches[x].Groups[1].ToString().Substring(2);
+                    if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
+                        throw new InternalException("ExpandSectionParams failure");
+
+                    if (x == 0)
+                    {
+                        b.Append(str.Substring(0, matches[0].Index));
+                    }
+                    else
+                    {
+                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                        int endOffset = matches[x].Index - startOffset;
+                        b.Append(str.Substring(startOffset, endOffset));
+                    }
+
+                    string param;
+                    if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
+                    {
+                        string varKey = s.CurSectionOutParams[pIdx - 1];
+                        param = s.Variables.Expand(varKey);
+                    }
+                    else
+                    {
+                        param = string.Empty;
+                    }
+                    b.Append(param);
+
+                    if (x + 1 == matches.Count) // Last iteration
+                    {
+                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                    }
+                }
+                str = b.ToString();
+
+                matches = inRegex.Matches(str);
+            }
+
+            // Escape #a (Section In Params Count)
+            if (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1)
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[aA])", s.CurSectionInParamsCount.ToString());
+
+            // Escape #oa (Section Out Params Count)
+            if (str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1)
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[oO][aA])", s.CurSectionInParamsCount.ToString());
 
             // Escape #r (Return Value)
-            if (str.IndexOf("#r", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#r)", s.SectionReturnValue, StringComparison.Ordinal);
+            if (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1)
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.SectionReturnValue);
 
             // Escape #c (Loop Counter)
             switch (s.LoopState)
             {
                 case LoopState.OnIndex:
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopCounter.ToString(), StringComparison.Ordinal);
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", s.LoopCounter.ToString());
                     break;
                 case LoopState.OnDriveLetter:
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopLetter.ToString(), StringComparison.Ordinal);
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", s.LoopLetter.ToString());
                     break;
             }
 
@@ -709,27 +757,15 @@ namespace PEBakery.Core
             return StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase);
         }
 
-        public static string PackListStr(List<string> list, string seperator)
+        public static string PackListStr(IList<string> list, string seperator)
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < list.Count - 1; i++)
+            for (int i = 0; i < list.Count; i++)
             {
                 b.Append(list[i]);
-                b.Append(seperator);
+                if (i + 1 < list.Count)
+                    b.Append(seperator);
             }
-            b.Append(list[list.Count - 1]);
-            return b.ToString();
-        }
-
-        public static string PackListStr(string[] arr, string seperator)
-        {
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < arr.Length - 1; i++)
-            {
-                b.Append(arr[i]);
-                b.Append(seperator);
-            }
-            b.Append(arr[arr.Length - 1]);
             return b.ToString();
         }
         #endregion

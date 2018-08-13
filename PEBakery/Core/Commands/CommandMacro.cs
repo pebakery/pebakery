@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
             for (int i = 0; i < info.Args.Count; i++)
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
-            s.CurSectionParams = paramDict;
+            s.CurSectionInParams = paramDict;
             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing Command [{info.MacroType}]", cmd, s.CurDepth));
 
             // Backup and set EngineState values

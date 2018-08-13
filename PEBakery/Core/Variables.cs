@@ -718,21 +718,37 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string GetVariableName(EngineState s, string varName)
         {
-            if (varName.StartsWith("%") && varName.EndsWith("%"))
-            {
-                if (StringHelper.CountSubStr(varName, "%") == 2)
-                {
-                    string varKey = varName.Substring(1, varName.Length - 2);
-                    return StringEscaper.ExpandSectionParams(s, varKey);
-                }
+            if (!varName.StartsWith("%") || !varName.EndsWith("%"))
                 return null;
-            }
-            return null;
+            if (StringHelper.CountSubStr(varName, "%") != 2)
+                return null;
+            string varKey = varName.Substring(1, varName.Length - 2);
+            return StringEscaper.ExpandSectionParams(s, varKey);
         }
 
-        public static int GetSectionParamIndex(string secParam)
+        public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
+        public const string VarKeyRegexContainsSectionInParams = @"(#[1-9][0-9]*)";
+        public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9][0-9]*)";
+        public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
+        public const string VarKeyRegexSectionInParams = @"^" + VarKeyRegexContainsSectionInParams + @"$";
+        public const string VarKeyRegexSectionOutParams = @"^" + VarKeyRegexContainsSectionOutParams + @"$";
+        public enum VarKeyType { None, Variable, SectionInParams, SectionOutParams, ReturnValue }
+        public static VarKeyType DetectType(string key)
         {
-            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
+                return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
+            if (Regex.Match(key, VarKeyRegexSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
+                return VarKeyType.SectionInParams;
+            if (Regex.Match(key, VarKeyRegexSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #o1, #o2, #o3, ...
+                return VarKeyType.SectionOutParams;
+            if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
+                return VarKeyType.ReturnValue;
+            return VarKeyType.None;
+        }
+
+        public static int GetSectionInParamIndex(string secParam)
+        {
+            Match match = Regex.Match(secParam, VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
@@ -740,44 +756,88 @@ namespace PEBakery.Core
                 else
                     return 0; // Error
             }
-            else
-                return 0; // Error
+
+            return 0; // Error
         }
 
-        public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        public const string VarKeyRegexContainsSectionParams = @"(#[0-9]+)";
-        public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
-        public const string VarKeyRegexSectionParams = @"^" + VarKeyRegexContainsSectionParams + @"$";
-        public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
-        public static VarKeyType DetermineType(string key)
+        public static int GetSectionOutParamIndex(string secParam)
         {
-            if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
-                return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            else if (Regex.Match(key, VarKeyRegexSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
-                return VarKeyType.SectionParams;
-            else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
-                return VarKeyType.ReturnValue;
-            else
-                return VarKeyType.None;
+            Match match = Regex.Match(secParam, VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (match.Success)
+            {
+                if (NumberHelper.ParseInt32(secParam.Substring(2), out int paramIdx))
+                    return paramIdx;
+                else
+                    return 0; // Error
+            }
+
+            return 0; // Error
         }
 
-        public static LogInfo SetSectionParam(EngineState s, string key, string value)
+        public static string GetSectionOutParamVarKey(EngineState s, string secParam)
         {
-            int pIdx = GetSectionParamIndex(key);
-            return SetSectionParam(s, pIdx, value);
+            int soIdx = GetSectionOutParamIndex(secParam);
+            if (soIdx == 0)
+                return null; // Error
+            if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count < soIdx)
+                return null;
+
+            return s.CurSectionOutParams[soIdx - 1]; // %Dest%
         }
 
-        public static LogInfo SetSectionParam(EngineState s, int pIdx, string value)
+        public static LogInfo SetSectionInParam(EngineState s, string key, string value)
+        {
+            int pIdx = GetSectionInParamIndex(key);
+            return SetSectionInParam(s, pIdx, value);
+        }
+
+        public static LogInfo SetSectionInParam(EngineState s, int pIdx, string value)
         {
             if (pIdx <= 0)
-                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be a positive integer");
+                return new LogInfo(LogState.Error, $"Section parameter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
                 return new LogInfo(LogState.Error, "Section parameter cannot have a circular reference");
 
-            s.CurSectionParams[pIdx] = value;
+            s.CurSectionInParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }
 
+        public static LogInfo SetSectionOutParam(EngineState s, string key, string value)
+        {
+            int pIdx = GetSectionOutParamIndex(key);
+            return SetSectionOutParam(s, pIdx, value);
+        }
+
+        public static LogInfo SetSectionOutParam(EngineState s, int pIdx, string value)
+        { 
+            // pIdx starts from 1 
+            if (pIdx <= 0)
+                return new LogInfo(LogState.Error, $"Section out parameter's index [{pIdx}] must be a positive integer");
+            if (value.IndexOf($"#o{pIdx}", StringComparison.OrdinalIgnoreCase) != -1)
+                return new LogInfo(LogState.Error, "Section out parameter cannot have a circular reference");
+            if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count <= pIdx - 1)
+                return new LogInfo(LogState.Error, $"[#o{pIdx}] is not referencing any variables");
+            
+            // Write to varKey
+            string varKey = s.CurSectionOutParams[pIdx - 1]; // %Dest%
+            string key = GetVariableName(s, varKey); // %D%
+            if (key == null) // This must not happen, must check before calling this method
+                return new LogInfo(LogState.CriticalError, $"[#o{pIdx}] is referencing invalid variable");
+
+            s.Variables.SetValue(VarsType.Local, key, value);
+            return new LogInfo(LogState.Success, $"[{varKey}], reference of [#o{pIdx}], set to [{value}]");
+        }
+
+        /// <summary>
+        /// Public interface for variables write/delete operation 
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="varKey"></param>
+        /// <param name="varValue"></param>
+        /// <param name="global"></param>
+        /// <param name="permanent"></param>
+        /// <param name="expand"></param>
+        /// <returns></returns>
         public static List<LogInfo> SetVariable(EngineState s, string varKey, string varValue, bool global = false, bool permanent = false, bool expand = true)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -793,7 +853,7 @@ namespace PEBakery.Core
             else
                 finalValue = varValue;
 
-            VarKeyType type = DetermineType(varKey);
+            VarKeyType type = DetectType(varKey);
             if (finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
             { // Remove variable
                 // Determine varKey's type - %A% vs #1
@@ -831,9 +891,13 @@ namespace PEBakery.Core
                             logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }
                 }
-                else if (type == VarKeyType.SectionParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionInParams) // #1, #2, #3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    logs.Add(SetSectionParam(s, varKey, finalValue));
+                    logs.Add(SetSectionInParam(s, varKey, finalValue));
+                }
+                else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
+                { // WB082 does not remove section parameter, just set to string "NIL"
+                    logs.Add(SetSectionOutParam(s, varKey, finalValue));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 { // s.SectionReturnValue's defalt value is string.Empty
@@ -898,9 +962,13 @@ namespace PEBakery.Core
                         logs.Add(s.Variables.SetValue(VarsType.Local, key, finalValue));
                     }
                 }
-                else if (type == VarKeyType.SectionParams) // #1, #2, #3, ...
+                else if (type == VarKeyType.SectionInParams) // #1, #2, #3, ...
                 {
-                    logs.Add(SetSectionParam(s, varKey, finalValue));
+                    logs.Add(SetSectionInParam(s, varKey, finalValue));
+                }
+                else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
+                {
+                    logs.Add(SetSectionOutParam(s, varKey, finalValue));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 {
@@ -917,22 +985,26 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Check if key is stored in Variables|SectionParam|ReturnValue.
+        /// Check if key is stored in Variables|SectionInParam|SectionOutParam|ReturnValue.
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="key"></param>
+        /// <param name="varKey"></param>
         /// <returns>Return null at error</returns>
         public static bool? ContainsKey(EngineState s, string varKey)
         {
-            VarKeyType type = DetermineType(varKey);
+            string key;
+            VarKeyType type = DetectType(varKey);
             switch (type)
             {
                 case VarKeyType.Variable:
-                    string key = TrimPercentMark(varKey);
+                    key = TrimPercentMark(varKey);
                     return key != null && s.Variables.ContainsKey(key);
-                case VarKeyType.SectionParams:
-                    int sIdx = GetSectionParamIndex(varKey);
-                    return sIdx != 0 && s.CurSectionParams.ContainsKey(sIdx);
+                case VarKeyType.SectionInParams:
+                    int siIdx = GetSectionInParamIndex(varKey);
+                    return siIdx != 0 && s.CurSectionInParams.ContainsKey(siIdx);
+                case VarKeyType.SectionOutParams:
+                    varKey = GetSectionOutParamVarKey(s, varKey);
+                    goto case VarKeyType.Variable;
                 case VarKeyType.ReturnValue:
                     return true;
                 default:

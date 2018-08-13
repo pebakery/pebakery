@@ -81,7 +81,7 @@ namespace PEBakery.Core
         // 22 List
         List = 2200,
         // 80 Branch
-        Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
+        Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
         GetParam = 8198, PackParam = 8199, // Will be deprecated
@@ -4208,18 +4208,23 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
-        // Run,<ScriptFile%,<Section>,[Params]
-        // Exec,<ScriptFile%,<Section>,[Params]
+        // Run,<ScriptFile>,<Section>,[InParams]
+        // RunEx,<ScriptFile>,<Section>,[InOutParams]
+        // Exec,<ScriptFile>,<Section>,[InParams]
+        // Ex) Run,%ScriptFile%,Test,5,%D%
+        // Ex) RunEx,%ScriptFile%,Test,In=5,Out=%D%,In=8
 
         public string ScriptFile;
         public string SectionName;
-        public List<string> Parameters;
+        public List<string> InParams;
+        public List<string> OutParams;
 
-        public CodeInfo_RunExec(string scriptFile, string sectionName, List<string> parameters)
+        public CodeInfo_RunExec(string scriptFile, string sectionName, List<string> inParams, List<string> outParams)
         {
             ScriptFile = scriptFile;
             SectionName = sectionName;
-            Parameters = parameters;
+            InParams = inParams;
+            OutParams = outParams;
         }
 
         public override string ToString()
@@ -4228,10 +4233,18 @@ namespace PEBakery.Core
             b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
-            foreach (string param in Parameters)
+            foreach (string inParam in InParams)
             {
                 b.Append(",");
-                b.Append(param);
+                b.Append(inParam);
+            }
+            if (OutParams != null)
+            {
+                foreach (string outParam in OutParams)
+                {
+                    b.Append(",Out=");
+                    b.Append(outParam);
+                }
             }
             return b.ToString();
         }
@@ -4240,34 +4253,45 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
-        // Loop,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,Params]
+        // Loop,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,InParams]
         // Loop,BREAK
-        // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,Params]
+        // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InParams]
         // LoopLetter,BREAK
-        public bool Break;
+
+        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+        // LoopEx,BREAK
+        // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
+        // LoopLetterEx,BREAK
+
         public string ScriptFile;
         public string SectionName;
         public string StartIdx;
         public string EndIdx;
-        public List<string> Parameters;
+        public List<string> InParams;
+        public List<string> OutParams;
+        public bool Break;
 
-        public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
+        public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> inParams, List<string> outParams)
         {
             Break = false;
             ScriptFile = scriptFile;
             SectionName = sectionName;
-            Parameters = parameters;
             StartIdx = startIdx;
             EndIdx = endIdx;
+            InParams = inParams;
+            OutParams = outParams;
         }
 
-        public CodeInfo_Loop(bool _break)
+        public CodeInfo_Loop()
         {
-            Break = _break;
+            Break = true;
         }
 
         public override string ToString()
         {
+            if (Break)
+                return "BREAK";
+
             StringBuilder b = new StringBuilder();
             b.Append(ScriptFile);
             b.Append(",");
@@ -4276,10 +4300,18 @@ namespace PEBakery.Core
             b.Append(StartIdx);
             b.Append(",");
             b.Append(EndIdx);
-            foreach (string param in Parameters)
+            foreach (string inParam in InParams)
             {
                 b.Append(",");
-                b.Append(param);
+                b.Append(inParam);
+            }
+            if (OutParams != null)
+            {
+                foreach (string outParam in OutParams)
+                {
+                    b.Append(",Out=");
+                    b.Append(outParam);
+                }
             }
             return b.ToString();
         }

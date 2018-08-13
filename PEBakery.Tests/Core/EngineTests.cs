@@ -156,7 +156,7 @@ namespace PEBakery.Tests.Core
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+            return Engine.RunCommands(s, addr, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
         }
         #endregion
 
@@ -237,7 +237,7 @@ namespace PEBakery.Tests.Core
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, addr, cmds, s.CurSectionParams, s.CurDepth);
+            return Engine.RunCommands(s, addr, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
         }
         #endregion
 

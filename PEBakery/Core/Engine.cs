@@ -105,8 +105,9 @@ namespace PEBakery.Core
             s.Macro.ResetLocalMacros();
             s.Logger.BuildWrite(s, s.Macro.LoadLocalMacroDict(sc, false));
 
-            // Reset Current Section Parameter
-            s.CurSectionParams = new Dictionary<int, string>();
+            // Reset Current Section Parameters
+            s.CurSectionInParams = new Dictionary<int, string>();
+            s.CurSectionOutParams = null;
 
             // Clear Processed Section Hashes
             s.ProcessedSectionHashes.Clear();
@@ -183,7 +184,7 @@ namespace PEBakery.Core
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         SectionAddress addr = new SectionAddress(s.CurrentScript, mainSection);
                         s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
-                        Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), 1);
+                        Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), new List<string>(), 1);
                         s.Logger.LogEndOfSection(s, addr, 0, true, null);
                     }
 
@@ -318,16 +319,38 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth)
+        public static void RunSection(EngineState s, SectionAddress addr, List<string> inParams, List<string> outParams, int depth)
         {
-            Dictionary<int, string> paramDict = new Dictionary<int, string>();
-            for (int i = 0; i < sectionParams.Count; i++)
-                paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, sectionParams[i]);
+            List<CodeCommand> cmds;
+            try
+            {
+                cmds = addr.Section.GetCodes(true);
+            }
+            catch (InternalException)
+            {
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", depth));
+                return;
+            }
 
-            RunSection(s, addr, paramDict, depth);
+            // Set CurrentSection
+            s.CurrentSection = addr.Section;
+
+            // Set SectionReturnValue to empty string
+            s.SectionReturnValue = string.Empty;
+
+            Dictionary<int, string> inParamDict = new Dictionary<int, string>();
+            for (int i = 0; i < inParams.Count; i++)
+                inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
+
+            // Must copy ParamDict by value, not reference
+            RunCommands(s, addr, cmds, inParamDict, new List<string>(outParams), depth);
+
+            // Increase only if cmd resides in CurrentScript
+            if (s.CurrentScript.Equals(addr.Script))
+                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
 
-        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth)
+        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
             List<CodeCommand> cmds;
             try
@@ -347,7 +370,8 @@ namespace PEBakery.Core
             s.SectionReturnValue = string.Empty;
 
             // Must copy ParamDict by value, not reference
-            RunCommands(s, addr, cmds, new Dictionary<int, string>(paramDict), depth);
+            outParams = outParams == null ? new List<string>() : new List<string>(outParams);
+            RunCommands(s, addr, cmds, new Dictionary<int, string>(inParams), outParams, depth);
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(addr.Script))
@@ -357,7 +381,7 @@ namespace PEBakery.Core
 
         #region RunCommands
         // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> sectionParams, int depth)
+        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
             if (cmds.Count == 0)
             {
@@ -369,7 +393,8 @@ namespace PEBakery.Core
             foreach (CodeCommand cmd in cmds)
             {
                 s.CurDepth = depth;
-                s.CurSectionParams = sectionParams;
+                s.CurSectionInParams = inParams;
+                s.CurSectionOutParams = outParams;
 
                 List<LogInfo> logs = ExecuteCommand(s, cmd);
                 if (s.TestMode)
@@ -709,10 +734,13 @@ namespace PEBakery.Core
                     #region 80 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
+                    case CodeType.RunEx:
                         CommandBranch.RunExec(s, cmd);
                         break;
                     case CodeType.Loop:
                     case CodeType.LoopLetter:
+                    case CodeType.LoopEx:
+                    case CodeType.LoopLetterEx:
                         CommandBranch.Loop(s, cmd);
                         break;
                     case CodeType.If:
@@ -832,10 +860,10 @@ namespace PEBakery.Core
             {
                 CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
 
-                if (1 <= info.Parameters.Count)
-                    info.Parameters[0] = eventParam;
+                if (1 <= info.InParams.Count)
+                    info.InParams[0] = eventParam;
                 else
-                    info.Parameters.Add(eventParam);
+                    info.InParams.Add(eventParam);
 
                 CommandBranch.RunExec(s, cbCmd);
             }
@@ -1036,13 +1064,15 @@ namespace PEBakery.Core
         // Property
         public string BaseDir => Project.BaseDir;
         public Script MainScript => Project.MainScript;
-        public int CurSectionParamsCount => 0 < CurSectionParams.Count ? CurSectionParams.Keys.Max() : 0;
+        public int CurSectionInParamsCount => 0 < CurSectionInParams.Count ? CurSectionInParams.Keys.Max() : 0;
+        public int CurSectionOutParamsCount => CurSectionOutParams.Count;
 
-        // State of engine
+        // State of the engine
         public Script CurrentScript;
         public int CurrentScriptIdx;
         public ScriptSection CurrentSection;
-        public Dictionary<int, string> CurSectionParams;
+        public Dictionary<int, string> CurSectionInParams;
+        public List<string> CurSectionOutParams = null;
         public string SectionReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>();
         public int CurDepth = 1;
@@ -1138,7 +1168,7 @@ namespace PEBakery.Core
             }
 
             CurrentSection = null;
-            CurSectionParams = new Dictionary<int, string>();
+            CurSectionInParams = new Dictionary<int, string>();
             MainViewModel = mainModel;
         }
         #endregion
