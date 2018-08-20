@@ -42,6 +42,8 @@ namespace PEBakery.Core
         public static bool AllowLegacyBranchCondition = true;
         public static bool AllowLegacyRegWrite = true;
         public static bool AllowLegacyInterfaceCommand = true;
+        public static bool AllowLegacySectionParamCommand = true;
+        public static bool AllowExtendedSectionParams = true;
         #endregion
 
         #region ParseStatement, ParseStatements
@@ -191,9 +193,9 @@ namespace PEBakery.Core
                 return new CodeCommand(string.Empty, addr, CodeType.None, null, lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
-            if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
+            if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
                 return new CodeCommand(rawCode, addr, CodeType.Comment, null, lineIdx);
-
+            
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
             string codeTypeStr = tuple.Item1;
@@ -305,6 +307,8 @@ namespace PEBakery.Core
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
                            !AllowLegacyInterfaceCommand && type == CodeType.Visible ||
+                           !AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
+                           !AllowExtendedSectionParams && (type == CodeType.RunEx || type == CodeType.LoopEx || type == CodeType.LoopLetterEx) || 
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 

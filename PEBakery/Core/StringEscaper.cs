@@ -421,7 +421,9 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex inRegex = new Regex(@"(?<!#)(#[1-9][0-9]*)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            // string inParamRegex = s.CompatDisableExtendedSectionParams ? @"(?<!#)(#[1-9])" : @"(?<!#)(#[1-9][0-9]*)";
+            // Regex inRegex = new Regex(inParamRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            Regex inRegex = new Regex(@"(?<!#)(#[1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             MatchCollection matches = inRegex.Matches(str);
             while (0 < matches.Count)
             {
@@ -467,62 +469,67 @@ namespace PEBakery.Core
                 matches = inRegex.Matches(str);
             }
 
-            // Escape #o1, #o2, ... (Section Out Parameter)
-            Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9][0-9]*)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            matches = outRegex.Matches(str);
-            while (0 < matches.Count)
+            if (!s.CompatDisableExtendedSectionParams)
             {
-                StringBuilder b = new StringBuilder();
-                for (int x = 0; x < matches.Count; x++)
+                // Escape #o1, #o2, ... (Section Out Parameter)
+                // string outParamRegex = s.CompatDisableExtendedSectionParams ? @"(?<!#)(#[oO][1-9])" : @"(?<!#)(#[oO][1-9][0-9]*)";
+                // Regex outRegex = new Regex(outParamRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                Regex outRegex = new Regex(@"(?<!#)(#[oO][1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                matches = outRegex.Matches(str);
+                while (0 < matches.Count)
                 {
-                    string pIdxStr = matches[x].Groups[1].ToString().Substring(2);
-                    if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
-                        throw new InternalException("ExpandSectionParams failure");
+                    StringBuilder b = new StringBuilder();
+                    for (int x = 0; x < matches.Count; x++)
+                    {
+                        string pIdxStr = matches[x].Groups[1].ToString().Substring(2);
+                        if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
+                            throw new InternalException("ExpandSectionParams failure");
 
-                    if (x == 0)
-                    {
-                        b.Append(str.Substring(0, matches[0].Index));
-                    }
-                    else
-                    {
-                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
-                        int endOffset = matches[x].Index - startOffset;
-                        b.Append(str.Substring(startOffset, endOffset));
-                    }
+                        if (x == 0)
+                        {
+                            b.Append(str.Substring(0, matches[0].Index));
+                        }
+                        else
+                        {
+                            int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                            int endOffset = matches[x].Index - startOffset;
+                            b.Append(str.Substring(startOffset, endOffset));
+                        }
 
-                    string param;
-                    if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
-                    {
-                        string varKey = s.CurSectionOutParams[pIdx - 1];
-                        param = s.Variables.Expand(varKey);
-                    }
-                    else
-                    {
-                        param = string.Empty;
-                    }
-                    b.Append(param);
+                        string param;
+                        if (1 <= pIdx && pIdx <= s.CurSectionOutParams.Count)
+                        {
+                            string varKey = s.CurSectionOutParams[pIdx - 1];
+                            param = s.Variables.Expand(varKey);
+                        }
+                        else
+                        {
+                            param = string.Empty;
+                        }
+                        b.Append(param);
 
-                    if (x + 1 == matches.Count) // Last iteration
-                    {
-                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                        if (x + 1 == matches.Count) // Last iteration
+                        {
+                            b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                        }
                     }
+                    str = b.ToString();
+
+                    matches = inRegex.Matches(str);
                 }
-                str = b.ToString();
 
-                matches = inRegex.Matches(str);
+                // Escape #a (Section In Params Count)
+                if (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1)
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[aA])", s.CurSectionInParamsCount.ToString());
+
+                // Escape #oa (Section Out Params Count)
+                if (str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1)
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[oO][aA])", s.CurSectionInParamsCount.ToString());
+
+                // Escape #r (Return Value)
+                if (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1)
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.SectionReturnValue);
             }
-
-            // Escape #a (Section In Params Count)
-            if (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1)
-                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[aA])", s.CurSectionInParamsCount.ToString());
-
-            // Escape #oa (Section Out Params Count)
-            if (str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1)
-                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[oO][aA])", s.CurSectionInParamsCount.ToString());
-
-            // Escape #r (Return Value)
-            if (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1)
-                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.SectionReturnValue);
 
             // Escape #c (Loop Counter)
             switch (s.LoopState)

@@ -451,13 +451,11 @@ namespace PEBakery.Core
         public bool Delete(VarsType type, string key)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            if (vars.ContainsKey(key))
-            {
-                vars.Remove(key);
-                return true;
-            }
+            if (!vars.ContainsKey(key))
+                return false;
 
-            return false;
+            vars.Remove(key);
+            return true;
         }
 
         public bool ContainsKey(string key)
@@ -476,10 +474,10 @@ namespace PEBakery.Core
             return _localVars.ContainsValue(val) || _globalVars.ContainsValue(val) || _fixedVars.ContainsValue(val);
         }
 
-        public bool ContainsValue(VarsType type, string _val)
+        public bool ContainsValue(VarsType type, string val)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            return vars.ContainsValue(_val);
+            return vars.ContainsValue(val);
         }
 
         public override string ToString()
@@ -727,8 +725,10 @@ namespace PEBakery.Core
         }
 
         public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        public const string VarKeyRegexContainsSectionInParams = @"(#[1-9][0-9]*)";
-        public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9][0-9]*)";
+        // public const string VarKeyRegexContainsSectionInParams = @"(#[1-9][0-9]*)";
+        // public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9][0-9]*)";
+        public const string VarKeyRegexContainsSectionInParams = @"(#[1-9])";
+        public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9])";
         public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
         public const string VarKeyRegexSectionInParams = @"^" + VarKeyRegexContainsSectionInParams + @"$";
         public const string VarKeyRegexSectionOutParams = @"^" + VarKeyRegexContainsSectionOutParams + @"$";

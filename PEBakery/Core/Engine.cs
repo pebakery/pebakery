@@ -1095,6 +1095,7 @@ namespace PEBakery.Core
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool CompatAllowLetterInLoop = false; // Compatibility
         public bool CompatAllowSetModifyInterface = false; // Compatibility
+        public bool CompatDisableExtendedSectionParams = false; // Compatibility
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
@@ -1184,6 +1185,7 @@ namespace PEBakery.Core
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
             CompatAllowLetterInLoop = m.Compat_AllowLetterInLoop;
             CompatAllowSetModifyInterface = m.Compat_AllowSetModifyInterface;
+            CompatDisableExtendedSectionParams = m.Compat_DisableExtendedSectionParams;
         }
         #endregion
 
