@@ -529,6 +529,7 @@ namespace PEBakery.Helper
 
                 return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
+                    UseShellExecute = false,
                     FileName = exePath,
                     Arguments = quotePath,
                 });

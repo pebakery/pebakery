@@ -737,11 +737,10 @@ namespace PEBakery.Core
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
                     return paramIdx;
-                else
-                    return 0; // Error
-            }
-            else
                 return 0; // Error
+            }
+
+            return 0; // Error
         }
 
         public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";

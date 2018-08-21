@@ -1336,6 +1336,7 @@ namespace PEBakery.WPF
 
                 ProcessStartInfo info = new ProcessStartInfo
                 {
+                    UseShellExecute = false,
                     FileName = Setting.Interface_CustomEditorPath,
                     Arguments = StringEscaper.Doublequote(filePath),
                 };
