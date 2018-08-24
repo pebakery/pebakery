@@ -38,31 +38,37 @@ namespace CompBench
         public Dictionary<string, byte[]> SrcFiles = new Dictionary<string, byte[]>(StringComparer.Ordinal);
 
         // Levels
-        [Params(0, 1, 2)]
-        public int Level { get; set; }
+        [ParamsSource(nameof(Levels))]
+        public string Level { get; set; }
+        public string[] Levels { get; set; } = new string[3]
+        {
+            "Fastest",
+            "Default",
+            "Best",
+        };
 
         // ZLibCompLevel
-        public ZLibCompLevel[] ZLibLevels => new ZLibCompLevel[]
+        public Dictionary<string, ZLibCompLevel> ZLibLevelDict = new Dictionary<string, ZLibCompLevel>(StringComparer.Ordinal)
         {
-            ZLibCompLevel.BestSpeed,
-            ZLibCompLevel.Default,
-            ZLibCompLevel.BestCompression,
+            ["Fastest"] = ZLibCompLevel.BestSpeed,
+            ["Default"] = ZLibCompLevel.Default,
+            ["Best"] = ZLibCompLevel.BestCompression,
         };
 
         // XZPreset
-        public uint[] XZPresets => new uint[]
+        public Dictionary<string, uint> XZPresetDict = new Dictionary<string, uint>(StringComparer.Ordinal)
         {
-            XZStream.MinimumPreset,
-            XZStream.DefaultPreset,
-            XZStream.MaximumPreset,
+            ["Fastest"] = XZStream.MinimumPreset,
+            ["Default"] = XZStream.DefaultPreset,
+            ["Best"] = XZStream.MaximumPreset,
         };
 
         // LZ4CompLevel
-        public LZ4CompLevel[] LZ4Levels => new LZ4CompLevel[]
+        public Dictionary<string, LZ4CompLevel> LZ4LevelDict = new Dictionary<string, LZ4CompLevel>(StringComparer.Ordinal)
         {
-            LZ4CompLevel.Fast,
-            LZ4CompLevel.High,
-            LZ4CompLevel.VeryHigh, // LZ4-HC
+            ["Fastest"] = LZ4CompLevel.Fast,
+            ["Default"] = LZ4CompLevel.High,
+            ["Best"] = LZ4CompLevel.VeryHigh, // LZ4-HC
         };
 
         [GlobalSetup]
@@ -101,6 +107,27 @@ namespace CompBench
         }
 
         [Benchmark]
+        public double LZ4()
+        {
+            long compLen;
+            byte[] rawData = SrcFiles[SrcFileName];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(rawData))
+                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, LZ4LevelDict[Level], true))
+                {
+                    rms.CopyTo(lzs);
+                }
+
+                ms.Flush();
+                compLen = ms.Position;
+            }
+
+            CompRatio = (double)compLen / rawData.Length;
+            return CompRatio;
+        }
+
+        [Benchmark]
         public double ZLib()
         {
             long compLen;
@@ -108,7 +135,7 @@ namespace CompBench
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(rawData))
-                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, ZLibLevels[Level], true))
+                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, ZLibLevelDict[Level], true))
                 {
                     rms.CopyTo(zs);
                 }
@@ -129,30 +156,9 @@ namespace CompBench
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(rawData))
-                using (XZStream xzs = new XZStream(ms, LzmaMode.Compress, XZPresets[Level], true))
+                using (XZStream xzs = new XZStream(ms, LzmaMode.Compress, XZPresetDict[Level], true))
                 {
                     rms.CopyTo(xzs);
-                }
-
-                ms.Flush();
-                compLen = ms.Position;
-            }
-
-            CompRatio = (double)compLen / rawData.Length;
-            return CompRatio;
-        }
-
-        [Benchmark]
-        public double LZ4()
-        {
-            long compLen;
-            byte[] rawData = SrcFiles[SrcFileName];
-            using (MemoryStream ms = new MemoryStream())
-            {
-                using (MemoryStream rms = new MemoryStream(rawData))
-                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, LZ4Levels[Level], true))
-                {
-                    rms.CopyTo(lzs);
                 }
 
                 ms.Flush();
@@ -193,8 +199,6 @@ namespace CompBench
             "Default",
             "Best",
         };
-
-
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -238,6 +242,23 @@ namespace CompBench
         }
 
         [Benchmark]
+        public long LZ4()
+        {
+            byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.lz4"];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(compData))
+                using (LZ4FrameStream zs = new LZ4FrameStream(rms, LZ4Mode.Decompress))
+                {
+                    zs.CopyTo(ms);
+                }
+
+                ms.Flush();
+                return ms.Length;
+            }
+        }
+
+        [Benchmark]
         public long ZLib()
         {
             byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.zz"];
@@ -270,23 +291,6 @@ namespace CompBench
                 return ms.Length;
             }
         }
-
-        [Benchmark]
-        public long LZ4()
-        {
-            byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.lz4"];
-            using (MemoryStream ms = new MemoryStream())
-            {
-                using (MemoryStream rms = new MemoryStream(compData))
-                using (LZ4FrameStream zs = new LZ4FrameStream(rms, LZ4Mode.Decompress))
-                {
-                    zs.CopyTo(ms);
-                }
-
-                ms.Flush();
-                return ms.Length;
-            }
-        }
     }
     #endregion
 
@@ -300,7 +304,7 @@ namespace CompBench
 
             string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
-            string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.1.dll");
+            string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.2.dll");
 
             Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath, 64 * 1024);
             PEBakery.XZLib.XZStream.GlobalInit(xzDllPath, 64 * 1024);

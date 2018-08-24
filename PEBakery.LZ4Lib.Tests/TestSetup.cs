@@ -47,7 +47,7 @@ namespace PEBakery.LZ4Lib.Tests
             BaseDir = Path.GetFullPath(Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", ".."));
             SampleDir = Path.Combine(BaseDir, "Samples");
 
-            string dllPath = Path.Combine(IntPtr.Size == 8 ? "x64" : "x86", "liblz4.so.1.8.1.dll");
+            string dllPath = Path.Combine(IntPtr.Size == 8 ? "x64" : "x86", "liblz4.so.1.8.2.dll");
             LZ4FrameStream.GlobalInit(dllPath);
         }
 
