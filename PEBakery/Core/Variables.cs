@@ -725,8 +725,6 @@ namespace PEBakery.Core
         }
 
         public const string VarKeyRegexContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
-        // public const string VarKeyRegexContainsSectionInParams = @"(#[1-9][0-9]*)";
-        // public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9][0-9]*)";
         public const string VarKeyRegexContainsSectionInParams = @"(#[1-9])";
         public const string VarKeyRegexContainsSectionOutParams = @"(#[oO][1-9])";
         public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
@@ -897,12 +895,22 @@ namespace PEBakery.Core
                 }
                 else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
                 { // WB082 does not remove section parameter, just set to string "NIL"
-                    logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    if (!s.CompatDisableExtendedSectionParams)
+                        logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    else
+                        logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 { // s.SectionReturnValue's defalt value is string.Empty
-                    s.SectionReturnValue = string.Empty;
-                    logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.SectionReturnValue = string.Empty;
+                        logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Ignore, "ReturnValue [#r] is disabled by the compatibility option"));
+                    }
                 }
                 else
                 {
@@ -968,12 +976,22 @@ namespace PEBakery.Core
                 }
                 else if (type == VarKeyType.SectionOutParams) // #o1, #o2, #o3, ...
                 {
-                    logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    if (!s.CompatDisableExtendedSectionParams)
+                        logs.Add(SetSectionOutParam(s, varKey, finalValue));
+                    else
+                        logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
                 {
-                    s.SectionReturnValue = finalValue;
-                    logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.SectionReturnValue = finalValue;
+                        logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
+                    }
                 }
                 else
                 {

@@ -297,7 +297,7 @@ namespace PEBakery.Core
         {
             macroType = null;
 
-            // There must be no number in yypeStr
+            // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
@@ -308,7 +308,6 @@ namespace PEBakery.Core
                            type == CodeType.Comment ||
                            !AllowLegacyInterfaceCommand && type == CodeType.Visible ||
                            !AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
-                           !AllowExtendedSectionParams && (type == CodeType.RunEx || type == CodeType.LoopEx || type == CodeType.LoopLetterEx) || 
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 

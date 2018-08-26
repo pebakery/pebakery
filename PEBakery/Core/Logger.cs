@@ -1011,10 +1011,10 @@ namespace PEBakery.Core
             }
 
             // Write Section Out Parameters
-            if (outParams != null && 0 < outParams.Count)
+            if (outParams != null && 0 < outParams.Count && !s.CompatDisableExtendedSectionParams)
             {
                 StringBuilder b = new StringBuilder();
-                b.Append("Params = { ");
+                b.Append("OutParams = { ");
                 for (int i = 0; i < outParams.Count; i++)
                 {
                     b.Append($"#o{i}:[{outParams[i]}]");

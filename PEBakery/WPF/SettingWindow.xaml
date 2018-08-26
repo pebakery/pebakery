@@ -462,7 +462,7 @@
                                       IsChecked="{Binding Compat_EnableEnvironmentVariables}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Disable extended section parameters (e.g. #a, #r, RunEx)"
+                                      Content="Disable extended section parameters (e.g. #a, #r)"
                                       IsChecked="{Binding Compat_DisableExtendedSectionParams}" />
                         </StackPanel>
                     </GroupBox>
