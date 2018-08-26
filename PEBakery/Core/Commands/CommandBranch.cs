@@ -47,9 +47,12 @@ namespace PEBakery.Core.Commands
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
+            Debug.Assert((cmd.Type == CodeType.Run || cmd.Type == CodeType.Exec) && info.OutParams == null ||
+                         cmd.Type == CodeType.RunEx && info.OutParams != null);
+
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
-            List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
+            List<string> inParams = StringEscaper.Preprocess(s, info.InParams);
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
@@ -58,20 +61,20 @@ namespace PEBakery.Core.Commands
                 throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
             // Section Parameter
-            Dictionary<int, string> paramDict = new Dictionary<int, string>();
+            Dictionary<int, string> newInParams = new Dictionary<int, string>();
             if (preserveCurParams)
             {
-                paramDict = s.CurSectionParams;
+                newInParams = s.CurSectionInParams;
             }
             else
             {
-                for (int i = 0; i < paramList.Count; i++)
-                    paramDict[i + 1] = paramList[i];
+                for (int i = 0; i < inParams.Count; i++)
+                    newInParams[i + 1] = inParams[i];
             }
 
             // Prepare to branch to a new section
             SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, forceLog);
 
             // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
@@ -102,7 +105,7 @@ namespace PEBakery.Core.Commands
                 s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
             // Run Section
-            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
 
             // Restore EngineState values
             s.CurDepth = depthBackup;
@@ -155,18 +158,18 @@ namespace PEBakery.Core.Commands
                 // Prepare Loop
                 string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
-                List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
+                List<string> inParams = StringEscaper.Preprocess(s, info.InParams);
 
                 Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
-                // Does section exists?
+                // Does section exist?
                 if (!sc.Sections.ContainsKey(sectionName))
                     throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
-                // Section Parameter
-                Dictionary<int, string> paramDict = new Dictionary<int, string>();
-                for (int i = 0; i < paramList.Count; i++)
-                    paramDict[i + 1] = paramList[i];
+                // Section In Parameter
+                Dictionary<int, string> newInParams = new Dictionary<int, string>();
+                for (int i = 0; i < inParams.Count; i++)
+                    newInParams[i + 1] = inParams[i];
 
                 long loopCount;
                 long startIdx = 0, endIdx = 0;
@@ -174,6 +177,7 @@ namespace PEBakery.Core.Commands
                 switch (type)
                 {
                     case CodeType.Loop:
+                    case CodeType.LoopEx:
                         { // Integer Index
                             bool startIdxError = false;
                             bool endIdxError = false;
@@ -199,6 +203,7 @@ namespace PEBakery.Core.Commands
                         }
                         break;
                     case CodeType.LoopLetter:
+                    case CodeType.LoopLetterEx:
                         { // Drive Letter
                             if (!(startStr.Length == 1 && StringHelper.IsAlphabet(startStr[0])))
                                 throw new ExecuteException($"Argument [{startStr}] is not a valid drive letter");
@@ -232,10 +237,11 @@ namespace PEBakery.Core.Commands
                 switch (type)
                 {
                     case CodeType.Loop:
+                    case CodeType.LoopEx:
                         for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                         { // Counter Variable is [#c]
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
-                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
+                            s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
 
                             // Backup EngineState values
                             int depthBackup = s.CurDepth;
@@ -247,7 +253,7 @@ namespace PEBakery.Core.Commands
                             s.LoopState = LoopState.OnIndex;
 
                             // Run Loop Section
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+                            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
 
                             // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
@@ -263,10 +269,11 @@ namespace PEBakery.Core.Commands
                         }
                         break;
                     case CodeType.LoopLetter:
+                    case CodeType.LoopLetterEx:
                         for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
                         { // Counter Variable is [#c]
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
-                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
+                            s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
 
                             // Backup EngineState values
                             int depthBackup = s.CurDepth;
@@ -277,7 +284,7 @@ namespace PEBakery.Core.Commands
                             // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
 
-                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1);
+                            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
 
                             // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
@@ -359,7 +366,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1);
+            Engine.RunCommands(s, addr, link, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth + 1);
             s.CurDepth = depthBackup;
         }
 
@@ -643,7 +650,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case BranchConditionType.ExistVar:
                     {
-                        Variables.VarKeyType type = Variables.DetermineType(c.Arg1);
+                        Variables.VarKeyType type = Variables.DetectType(c.Arg1);
                         if (type == Variables.VarKeyType.Variable)
                         {
                             match = s.Variables.ContainsKey(Variables.TrimPercentMark(c.Arg1));

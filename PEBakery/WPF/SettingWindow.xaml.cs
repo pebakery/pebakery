@@ -770,6 +770,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool compat_LegacySectionParamCommand;
+        public bool Compat_LegacySectionParamCommand
+        {
+            get => compat_LegacySectionParamCommand;
+            set
+            {
+                compat_LegacySectionParamCommand = value;
+                OnPropertyUpdate(nameof(Compat_LegacySectionParamCommand));
+            }
+        }
+
         private bool compat_IgnoreWidthOfWebLabel;
         public bool Compat_IgnoreWidthOfWebLabel
         {
@@ -802,6 +813,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Compat_EnableEnvironmentVariables));
             }
         }
+
+        private bool compat_DisableExtendedSectionParams;
+        public bool Compat_DisableExtendedSectionParams
+        {
+            get => compat_DisableExtendedSectionParams;
+            set
+            {
+                compat_DisableExtendedSectionParams = value;
+                OnPropertyUpdate(nameof(Compat_DisableExtendedSectionParams));
+            }
+        }
         #endregion
 
         #region ApplySetting
@@ -815,6 +837,8 @@ namespace PEBakery.WPF
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
             CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
+            CodeParser.AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand;
+            CodeParser.AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams;
             UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
@@ -878,6 +902,8 @@ namespace PEBakery.WPF
             Compat_IgnoreWidthOfWebLabel = false;
             Compat_OverridableFixedVariables = false;
             Compat_EnableEnvironmentVariables = false;
+            Compat_DisableExtendedSectionParams = false;
+            Compat_LegacySectionParamCommand = false;
         }
         #endregion
 
@@ -929,6 +955,8 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
             };
 
             keys = Ini.ReadKeys(_settingFile, keys);
@@ -1039,6 +1067,8 @@ namespace PEBakery.WPF
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
             Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
             Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
+            Compat_DisableExtendedSectionParams = ParseBoolean(nameof(Compat_DisableExtendedSectionParams), Compat_DisableExtendedSectionParams);
+            Compat_LegacySectionParamCommand = ParseBoolean(nameof(Compat_LegacySectionParamCommand), Compat_LegacySectionParamCommand);
         }
 
         public void WriteToFile()
@@ -1081,6 +1111,8 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
             };
             Ini.WriteKeys(_settingFile, keys);
         }

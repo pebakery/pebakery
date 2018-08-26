@@ -520,7 +520,7 @@ namespace PEBakery.Core.Commands
                                 return logs;
                             }
 
-                            if (Variables.DetermineType(info.Arg2) == Variables.VarKeyType.None)
+                            if (Variables.DetectType(info.Arg2) == Variables.VarKeyType.None)
                                 return LogInfo.LogErrorMessage(logs, $"[{info.Arg2}] is not a valid variable name");
 
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));

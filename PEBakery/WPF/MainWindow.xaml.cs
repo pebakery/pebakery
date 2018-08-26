@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-
 using System;
 using System.IO;
 using System.Linq;
@@ -725,6 +724,7 @@ namespace PEBakery.WPF
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
+                Model.BuildTree.Children.Clear();
                 DrawScript(CurMainTree.Script);
 
                 watch.Stop();

@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
         {
             CodeInfo_Set info = cmd.Info.Cast<CodeInfo_Set>();
 
-            Variables.VarKeyType varType = Variables.DetermineType(info.VarKey);
+            Variables.VarKeyType varType = Variables.DetectType(info.VarKey);
             if (varType == Variables.VarKeyType.None)
             {
                 // Check Macro
@@ -69,7 +69,7 @@ namespace PEBakery.Core.Commands
                     { // Check if interface contains VarKey
                         List<LogInfo> logs = new List<LogInfo>();
 
-                        if (Variables.DetermineType(info.VarKey) != Variables.VarKeyType.Variable)
+                        if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
                             goto case false;
 
                         #region Set interface control's value (Compat)
@@ -253,9 +253,9 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            if (s.CurSectionParams.ContainsKey(index) && index <= s.CurSectionParamsCount)
+            if (s.CurSectionInParams.ContainsKey(index) && index <= s.CurSectionInParamsCount)
             {
-                string parameter = StringEscaper.Escape(s.CurSectionParams[index], true, false);
+                string parameter = StringEscaper.Escape(s.CurSectionInParams[index], true, false);
                 List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, parameter, false, false);
                 logs.AddRange(varLogs);
             }
@@ -282,15 +282,15 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            int varCount = s.CurSectionParamsCount;
+            int varCount = s.CurSectionInParamsCount;
             if (startIndex <= varCount)
             {
                 StringBuilder b = new StringBuilder();
                 for (int i = 1; i <= varCount; i++)
                 {
                     b.Append('"');
-                    if (s.CurSectionParams.ContainsKey(i))
-                        b.Append(StringEscaper.Escape(s.CurSectionParams[i], true, false));
+                    if (s.CurSectionInParams.ContainsKey(i))
+                        b.Append(StringEscaper.Escape(s.CurSectionInParams[i], true, false));
                     b.Append('"');
                     if (i + 1 <= varCount)
                         b.Append(',');

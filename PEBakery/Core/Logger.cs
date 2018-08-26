@@ -902,19 +902,19 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> sectionParam, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
             if (logScriptName)
-                LogStartOfSection(s, addr.Section.Name, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Section.Name, depth, inParams, outParams, cmd);
             else
-                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -926,10 +926,10 @@ namespace PEBakery.Core
             else
                 BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            LogSectionParameter(s, depth, paramDict, cmd);
+            LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -941,7 +941,7 @@ namespace PEBakery.Core
             else
                 BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            LogSectionParameter(s, depth, paramDict, cmd);
+            LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
         public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
@@ -984,23 +984,42 @@ namespace PEBakery.Core
         #endregion
 
         #region LogSectionParameter
-        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             if (s.DisableLogger)
                 return;
 
-            // Write Section Parameters
-            if (paramDict != null && 0 < paramDict.Count)
+            // Write Section In Parameters
+            if (inParams != null && 0 < inParams.Count)
             {
                 int cnt = 0;
                 StringBuilder b = new StringBuilder();
-                b.Append("Params = { ");
-                foreach (var kv in paramDict)
+                b.Append("InParams = { ");
+                foreach (var kv in inParams)
                 {
                     b.Append($"#{kv.Key}:[{kv.Value}]");
-                    if (cnt + 1 < paramDict.Count)
+                    if (cnt + 1 < inParams.Count)
                         b.Append(", ");
                     cnt++;
+                }
+                b.Append(" }");
+
+                if (cmd == null)
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                else
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+            }
+
+            // Write Section Out Parameters
+            if (outParams != null && 0 < outParams.Count && !s.CompatDisableExtendedSectionParams)
+            {
+                StringBuilder b = new StringBuilder();
+                b.Append("OutParams = { ");
+                for (int i = 0; i < outParams.Count; i++)
+                {
+                    b.Append($"#o{i}:[{outParams[i]}]");
+                    if (i + 1 < outParams.Count)
+                        b.Append(", ");
                 }
                 b.Append(" }");
 

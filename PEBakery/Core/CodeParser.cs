@@ -42,6 +42,8 @@ namespace PEBakery.Core
         public static bool AllowLegacyBranchCondition = true;
         public static bool AllowLegacyRegWrite = true;
         public static bool AllowLegacyInterfaceCommand = true;
+        public static bool AllowLegacySectionParamCommand = true;
+        public static bool AllowExtendedSectionParams = true;
         #endregion
 
         #region ParseStatement, ParseStatements
@@ -191,9 +193,9 @@ namespace PEBakery.Core
                 return new CodeCommand(string.Empty, addr, CodeType.None, null, lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
-            if (rawCode.StartsWith("//", StringComparison.Ordinal) || rawCode[0] == '#' || rawCode[0] == ';')
+            if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
                 return new CodeCommand(rawCode, addr, CodeType.Comment, null, lineIdx);
-
+            
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
             string codeTypeStr = tuple.Item1;
@@ -295,7 +297,7 @@ namespace PEBakery.Core
         {
             macroType = null;
 
-            // There must be no number in yypeStr
+            // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
@@ -305,6 +307,7 @@ namespace PEBakery.Core
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
                            !AllowLegacyInterfaceCommand && type == CodeType.Visible ||
+                           !AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 
@@ -482,7 +485,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         return new CodeInfo_FileSize(args[0], args[1]);
@@ -493,7 +496,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         return new CodeInfo_FileVersion(args[0], args[1]);
@@ -537,7 +540,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         return new CodeInfo_DirSize(args[0], args[1]);
@@ -577,7 +580,7 @@ namespace PEBakery.Core
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
 
                         string destVar = args[3];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
@@ -800,7 +803,7 @@ namespace PEBakery.Core
                         string mode;
                         if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase) ||
                             args[2].Equals("Append", StringComparison.OrdinalIgnoreCase) ||
-                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
+                            Variables.DetectType(args[1]) != Variables.VarKeyType.None)
                             mode = args[2];
                         else
                             throw new InvalidCommandException("Mode must be one of Prepend, Append, or variable.", rawCode);
@@ -851,7 +854,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         string destVar = args[3];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
@@ -880,7 +883,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[2];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -972,7 +975,7 @@ namespace PEBakery.Core
 
                         // Check DestVar
                         string destVar = args[3];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         bool noErr = false;
@@ -1816,7 +1819,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
 
                         return new CodeInfo_Hash(args[0], args[1], args[2]);
@@ -1882,7 +1885,7 @@ namespace PEBakery.Core
                         string visibility;
                         if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
                             args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                            Variables.DetermineType(args[1]) != Variables.VarKeyType.None)
+                            Variables.DetectType(args[1]) != Variables.VarKeyType.None)
                             visibility = args[1];
                         else
                             throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
@@ -1905,7 +1908,7 @@ namespace PEBakery.Core
                         InterfaceElement element = ParseInterfaceElement(args[0]);
 
                         string destVar = args[4];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -2056,7 +2059,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
 
                         if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
@@ -2113,7 +2116,9 @@ namespace PEBakery.Core
                 #region 80 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
-                    { // Run,%ScriptFile%,<Section>[,PARAMS]
+                    {
+                        // Run,<ScriptFile>,<Section>,[Params]
+                        // Exec,<ScriptFile>,<Section>,[Params]
                         const int minArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
@@ -2121,12 +2126,44 @@ namespace PEBakery.Core
                         string scriptFile = args[0];
                         string sectionName = args[1];
 
-                        // Get parameters 
-                        List<string> parameters = new List<string>();
+                        // Get inParams
+                        List<string> inParams = new List<string>();
                         if (minArgCount < args.Count)
-                            parameters.AddRange(args.Skip(minArgCount));
+                            inParams.AddRange(args.Skip(minArgCount));
 
-                        return new CodeInfo_RunExec(scriptFile, sectionName, parameters);
+                        return new CodeInfo_RunExec(scriptFile, sectionName, inParams, null);
+                    }
+                case CodeType.RunEx:
+                    { // RunEx,<ScriptFile>,<Section>,[InOutParams]
+                        const int minArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        string scriptFile = args[0];
+                        string sectionName = args[1];
+
+                        // Get parameters
+                        const string inKey = "In=";
+                        const string outKey = "Out=";
+                        List<string> inParams = new List<string>();
+                        List<string> outParams = new List<string>();
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
+                                inParams.Add(arg.Substring(inKey.Length));
+                            else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                string varKey = arg.Substring(outKey.Length);
+                                if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                outParams.Add(varKey);
+                            }
+                            else
+                                throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                        }
+
+                        return new CodeInfo_RunExec(scriptFile, sectionName, inParams, outParams);
                     }
                 case CodeType.Loop:
                 case CodeType.LoopLetter:
@@ -2134,22 +2171,67 @@ namespace PEBakery.Core
                         if (args.Count == 1)
                         { // Loop,BREAK
                             if (args[0].Equals("BREAK", StringComparison.OrdinalIgnoreCase))
-                                return new CodeInfo_Loop(true);
+                                return new CodeInfo_Loop();
 
-                            throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
+                            throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
                         }
                         else
                         { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
                             const int minArgCount = 4;
                             if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
-                                throw new InvalidCommandException($"Command [Loop] must have at least [{minArgCount}] arguments", rawCode);
+                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                             // Get parameters 
-                            List<string> parameters = new List<string>();
+                            List<string> inParams = new List<string>();
                             if (minArgCount < args.Count)
-                                parameters.AddRange(args.Skip(minArgCount));
+                                inParams.AddRange(args.Skip(minArgCount));
 
-                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], parameters);
+                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, null);
+                        }
+                    }
+                case CodeType.LoopEx:
+                case CodeType.LoopLetterEx:
+                    {
+                        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+                        // LoopEx,BREAK
+                        // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
+                        // LoopLetterEx,BREAK
+
+                        if (args.Count == 1)
+                        { // LoopEx,BREAK
+                            if (args[0].Equals("BREAK", StringComparison.OrdinalIgnoreCase))
+                                return new CodeInfo_Loop();
+
+                            throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
+                        }
+                        else
+                        { // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                            const int minArgCount = 4;
+                            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                            // Get parameters
+                            const string inKey = "In=";
+                            const string outKey = "Out=";
+                            List<string> inParams = new List<string>();
+                            List<string> outParams = new List<string>();
+                            for (int i = minArgCount; i < args.Count; i++)
+                            {
+                                string arg = args[i];
+                                if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
+                                    inParams.Add(arg.Substring(inKey.Length));
+                                else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string varKey = arg.Substring(outKey.Length);
+                                    if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
+                                        throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                    outParams.Add(varKey);
+                                }
+                                else
+                                    throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                            }
+
+                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
                         }
                     }
                 case CodeType.If:
@@ -2313,12 +2395,12 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        Variables.VarKeyType varKeyType = Variables.DetermineType(args[1]);
+                        Variables.VarKeyType varKeyType = Variables.DetectType(args[1]);
                         switch (varKeyType)
                         {
                             case Variables.VarKeyType.Variable:
                                 break;
-                            case Variables.VarKeyType.SectionParams:
+                            case Variables.VarKeyType.SectionInParams:
                                 throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
                             default:
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
@@ -2333,12 +2415,12 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        Variables.VarKeyType varKeyType = Variables.DetermineType(args[1]);
+                        Variables.VarKeyType varKeyType = Variables.DetectType(args[1]);
                         switch (varKeyType)
                         {
                             case Variables.VarKeyType.Variable:
                                 break;
-                            case Variables.VarKeyType.SectionParams:
+                            case Variables.VarKeyType.SectionInParams:
                                 throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
                             default:
                                 throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
@@ -2347,13 +2429,13 @@ namespace PEBakery.Core
                         string varCount = null;
                         if (args.Count == 3)
                         {
-                            varKeyType = Variables.DetermineType(args[2]);
+                            varKeyType = Variables.DetectType(args[2]);
                             switch (varKeyType)
                             {
                                 case Variables.VarKeyType.Variable:
                                     varCount = args[2];
                                     break;
-                                case Variables.VarKeyType.SectionParams:
+                                case Variables.VarKeyType.SectionInParams:
                                     throw new InvalidCommandException($"Section parameter [{args[2]}] cannot be used in GetParam", rawCode);
                                 default:
                                     throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
@@ -2516,7 +2598,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [UserInput,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
                         else
                             info = new UserInputInfo_DirFile(args[0], args[1]);
@@ -2574,7 +2656,7 @@ namespace PEBakery.Core
                         if (args.Count == 2)
                             destVar = args[1];
 
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_IntToBytes(args[0], destVar);
@@ -2586,7 +2668,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
                         else
                             info = new StrFormatInfo_BytesToInt(args[0], args[1]);
@@ -2598,7 +2680,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Hex(args[0], args[1]);
@@ -2616,7 +2698,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
                         else
                             info = new StrFormatInfo_CeilFloorRound(args[0], args[1]);
@@ -2629,7 +2711,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
                         string destVar = args[0];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         // Convert WB Date Format String to .Net Date Format String
@@ -2654,7 +2736,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
                         string destVar = args[1];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Path(args[0], destVar);
@@ -2667,7 +2749,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
                         string destVar = args[2];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_PathCombine(args[0], args[1], destVar);
@@ -2687,7 +2769,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Arithmetic(args[0], args[1]);
@@ -2703,7 +2785,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_LeftRight(args[0], args[1], args[2]);
@@ -2715,7 +2797,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[3]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[3]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[3]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_SubStr(args[0], args[1], args[2], args[3]);
@@ -2727,7 +2809,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Len(args[0], args[1]);
@@ -2745,7 +2827,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Trim(args[0], args[1], args[2]);
@@ -2757,7 +2839,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_NTrim(args[0], args[1]);
@@ -2773,7 +2855,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_ULCase(args[0], args[1]);
@@ -2786,7 +2868,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Pos(args[0], args[1], args[2]);
@@ -2802,7 +2884,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[3]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[3]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[3]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Replace(args[0], args[1], args[2], args[3]);
@@ -2818,7 +2900,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_ShortLongPath(args[0], args[1]);
@@ -2830,7 +2912,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[3]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[3]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[3]}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Split(args[0], args[1], args[2], args[3]);
@@ -2846,7 +2928,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
                         string destVar = args[3];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         info = new StrFormatInfo_Pad(args[0], args[1], args[2], destVar);
@@ -3025,7 +3107,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_Arithmetic(args[0], args[1], args[2]);
@@ -3038,9 +3120,9 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_IntDiv(args[0], args[1], args[2], args[3]);
@@ -3053,7 +3135,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_Neg(args[0], args[1]);
@@ -3071,7 +3153,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         uint bitSize = 32;
@@ -3106,7 +3188,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_BoolLogicOper(args[0], args[1], args[2]);
@@ -3119,7 +3201,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_BoolNot(args[0], args[1]);
@@ -3138,7 +3220,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new MathInfo_BitLogicOper(args[0], args[1], args[2]);
@@ -3152,7 +3234,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         uint bitSize = 32;
@@ -3182,7 +3264,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         uint size = 32;
@@ -3219,7 +3301,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
                         else
                             info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
@@ -3231,7 +3313,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
                         else
                             info = new MathInfo_Abs(args[0], args[1]);
@@ -3243,7 +3325,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
                         else
                             info = new MathInfo_Pow(args[0], args[1], args[2]);
@@ -3257,7 +3339,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[0];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         uint bitSize = 32;
@@ -3323,12 +3405,12 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         // Check DestVar
                         string destVar = args[2];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3361,7 +3443,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3394,7 +3476,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3427,7 +3509,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3460,7 +3542,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3492,7 +3574,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3524,12 +3606,12 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         // Check DestVar
                         string destVar = args[1];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3565,12 +3647,12 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         // Check DestVar
                         string destVar = args[2];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3606,7 +3688,7 @@ namespace PEBakery.Core
 
                         // Check ListVar
                         string listVar = args[0];
-                        if (Variables.DetermineType(listVar) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(listVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{listVar}] is not a valid variable name", rawCode);
 
                         string delim = null;
@@ -3692,7 +3774,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new SystemInfo_GetEnv(args[0], args[1]);
@@ -3704,7 +3786,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new SystemInfo_GetFreeDrive(args[0]);
@@ -3716,7 +3798,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
 
                         info = new SystemInfo_GetFreeSpace(args[0], args[1]);
@@ -3728,7 +3810,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new SystemInfo_IsAdmin(args[0]);
@@ -3878,7 +3960,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                        if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
                         info = new SystemInfo_HasUAC(args[0]);
@@ -3920,12 +4002,18 @@ namespace PEBakery.Core
         public static bool StringContainsVariable(string str)
         {
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegexContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
-            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            bool sectionInParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionInParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
+            bool sectionOutParamMatch = Regex.IsMatch(str, Variables.VarKeyRegexContainsSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
             bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
-            bool sectionParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
+            bool sectionInParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
+            bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
             bool sectionReturnValueMatch = str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1; // #r
 
-            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch || sectionReturnValueMatch)
+            if (0 < matches.Count || 
+                sectionInParamMatch || sectionOutParamMatch || 
+                sectionLoopMatch || 
+                sectionInParamCountMatch || sectionOutParamCountMatch || 
+                sectionReturnValueMatch)
                 return true;
             else
                 return false;
