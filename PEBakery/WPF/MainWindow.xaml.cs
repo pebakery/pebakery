@@ -672,6 +672,8 @@ namespace PEBakery.WPF
                 // Turn on progress ring
                 Model.WorkInProgress = true;
 
+                // Set StatusBar Text
+                Model.StatusBarText = $"Building {p.ProjectName}...";
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run
