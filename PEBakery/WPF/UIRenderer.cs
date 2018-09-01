@@ -1175,8 +1175,8 @@ namespace PEBakery.WPF
 
                 EngineState s = new EngineState(addr.Script.Project, logger, mainModel, EngineMode.RunMainAndOne, addr.Script, addr.Section.Name);
                 s.SetOptions(setting);
-                if (s.LogMode == LogMode.PartDelay)
-                    s.LogMode = LogMode.FullDelay;
+                if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
+                    s.LogMode = LogMode.FullDefer;
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -1192,10 +1192,10 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = true;
 
                 // Flush FullDelayedLogs
-                if (s.LogMode == LogMode.FullDelay)
+                if (s.LogMode == LogMode.FullDefer)
                 {
-                    DeferredLogging delayed = logger.Deferred;
-                    delayed.FlushFullDeferred(s);
+                    DeferredLogging deferred = logger.Deferred;
+                    deferred.FlushFullDeferred(s);
                 }
 
                 // Turn off ProgressRing

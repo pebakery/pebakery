@@ -334,7 +334,7 @@ namespace PEBakery.Core
         /// <returns>Real BuildId after written to database</returns>
         public int FlushFullDeferred(EngineState s)
         {
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
                 return s.BuildId;
 
             Debug.Assert(BuildInfo != null, "Internal Logic Error at DelayedLogging");
@@ -472,11 +472,11 @@ namespace PEBakery.Core
         {
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
+                case LogMode.PartDefer:
                     Db.InsertAll(_deferred.BuildLogPool);
                     _deferred.BuildLogPool.Clear();
                     break;
-                case LogMode.FullDelay:
+                case LogMode.FullDefer:
                     return _deferred.FlushFullDeferred(s);
             }
             return s.BuildId;
@@ -498,10 +498,10 @@ namespace PEBakery.Core
 
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
+                case LogMode.PartDefer:
                     _deferred = new DeferredLogging(false);
                     break;
-                case LogMode.FullDelay:
+                case LogMode.FullDefer:
                     _deferred = new DeferredLogging(true);
 
                     dbBuild.Id = -1;
@@ -509,7 +509,7 @@ namespace PEBakery.Core
                     break;
             }
 
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
             {
                 Db.Insert(dbBuild);
 
@@ -537,12 +537,12 @@ namespace PEBakery.Core
                     varLogs.Add(dbVar);
 
                     // Fire Event
-                    if (s.LogMode != LogMode.FullDelay)
+                    if (s.LogMode != LogMode.FullDefer)
                         VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
             }
 
-            if (s.LogMode == LogMode.FullDelay)
+            if (s.LogMode == LogMode.FullDefer)
                 _deferred.VariablePool.AddRange(varLogs);
             else
                 Db.InsertAll(varLogs);
@@ -566,7 +566,7 @@ namespace PEBakery.Core
 
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
+                case LogMode.PartDefer:
                     Flush(s);
                     Db.Update(dbBuild);
                     break;
@@ -601,7 +601,7 @@ namespace PEBakery.Core
                 dbScript.Version = "0";
             }
 
-            if (s.LogMode == LogMode.FullDelay)
+            if (s.LogMode == LogMode.FullDefer)
             {
                 _deferred.CurrentScriptId -= 1;
                 dbScript.Id = _deferred.CurrentScriptId;
@@ -626,7 +626,7 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            if (s.LogMode == LogMode.PartDelay)
+            if (s.LogMode == LogMode.PartDefer)
             {
                 Db.InsertAll(_deferred.BuildLogPool);
                 _deferred.BuildLogPool.Clear();
@@ -661,21 +661,21 @@ namespace PEBakery.Core
                     varLogs.Add(dbVar);
 
                     // Fire Event
-                    if (s.LogMode != LogMode.FullDelay)
+                    if (s.LogMode != LogMode.FullDefer)
                         VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
 
-                if (s.LogMode == LogMode.FullDelay)
+                if (s.LogMode == LogMode.FullDefer)
                     _deferred.VariablePool.AddRange(varLogs);
                 else
                     Db.InsertAll(varLogs);
             }
 
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
                 Db.Update(dbScript);
 
             // Fire Event
-            if (s.LogMode == LogMode.PartDelay)
+            if (s.LogMode == LogMode.PartDefer)
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
@@ -699,7 +699,7 @@ namespace PEBakery.Core
                 ElapsedMilliSec = 0,
             };
 
-            if (s.LogMode == LogMode.FullDelay)
+            if (s.LogMode == LogMode.FullDefer)
             {
                 _deferred.CurrentScriptId -= 1;
                 dbScript.Id = _deferred.CurrentScriptId;
@@ -729,8 +729,8 @@ namespace PEBakery.Core
             {
                 switch (s.LogMode)
                 {
-                    case LogMode.FullDelay:
-                    case LogMode.PartDelay:
+                    case LogMode.FullDefer:
+                    case LogMode.PartDefer:
                         _deferred.BuildLogPool.Add(dbCode);
                         break;
                     case LogMode.NoDelay:

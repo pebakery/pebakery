@@ -35,6 +35,7 @@ using System.Windows;
 using System.Security.Principal;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using PEBakery.WPF;
 using PEBakery.Helper;
 
@@ -214,13 +215,11 @@ namespace PEBakery.Core.Commands
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = Application.Current.MainWindow as MainWindow;
-                            resetEvent = w?.StartRefreshScriptWorker();
+                            w?.StartRefreshScript().Wait();
                         });
-                        resetEvent?.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
                     }
@@ -231,13 +230,14 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        AutoResetEvent resetEvent = null;
+                        Task scriptLoadTask = Task.CompletedTask;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            resetEvent = w?.StartLoadWorker(true);
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+                            scriptLoadTask = w.StartLoadingProjects(true);
                         });
-                        resetEvent?.WaitOne();
+                        scriptLoadTask.Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
                     }

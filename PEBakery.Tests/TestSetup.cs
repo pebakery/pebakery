@@ -20,7 +20,7 @@ namespace PEBakery.Tests
             projects.Load(null);
 
             // Should be only one project named TestSuite
-            EngineTests.Project = projects.Projects[0];
+            EngineTests.Project = projects.ProjectList[0];
 
             // Init NativeAssembly
             NativeGlobalInit();

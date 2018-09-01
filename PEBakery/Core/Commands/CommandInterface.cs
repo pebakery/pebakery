@@ -125,10 +125,16 @@ namespace PEBakery.Core.Commands
                 CodeInfo_Visible info = subCmd.Info.Cast<CodeInfo_Visible>();
 
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-                bool visibility = false;
-                if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
+
+                bool visibility;
+                if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
+                    visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                     visibility = true;
-                else if (!visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                else if (visibilityStr.Equals("0", StringComparison.Ordinal) ||
+                         visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    visibility = false;
+                else
                     return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
                 prepArgs.Add((info.UIControlKey, visibility, subCmd));

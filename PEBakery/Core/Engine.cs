@@ -1034,14 +1034,14 @@ namespace PEBakery.Core
         /// - Medium performance impact
         /// - Write to database when script is finised
         /// </summary>
-        PartDelay,
+        PartDefer,
         /// <summary>
         /// For interface button
         /// - Minimize performance impact
         /// - Disable trivial LogWindow event
         /// - Write to database after bulid is finished
         /// </summary>
-        FullDelay,
+        FullDefer,
     }
     #endregion
 
@@ -1177,7 +1177,7 @@ namespace PEBakery.Core
         {
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
 
-            LogMode = m.Log_DeferredLogging ? LogMode.PartDelay : LogMode.NoDelay;
+            LogMode = m.Log_DeferredLogging ? LogMode.PartDefer : LogMode.NoDelay;
 
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;

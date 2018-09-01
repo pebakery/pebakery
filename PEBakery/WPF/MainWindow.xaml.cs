@@ -64,10 +64,10 @@ namespace PEBakery.WPF
         public ProjectCollection Projects { get; private set; }
         public string BaseDir { get; }
 
-        private BackgroundWorker _loadWorker = new BackgroundWorker();
-        private BackgroundWorker _refreshWorker = new BackgroundWorker();
-        private BackgroundWorker _cacheWorker = new BackgroundWorker();
-        private BackgroundWorker _syntaxCheckWorker = new BackgroundWorker();
+        // private BackgroundWorker _loadWorker = new BackgroundWorker();
+        private int _projectsLoading = 0;
+        private int _scriptRefreshing = 0;
+        private int _syntaxChecking = 0;
 
         public TreeViewModel CurMainTree { get; private set; }
         public TreeViewModel CurBuildTree { get; set; }
@@ -182,401 +182,368 @@ namespace PEBakery.WPF
                 Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
 
-            StartLoadWorker();
+            // Load Projects
+            StartLoadingProjects();
         }
         #endregion
 
-        #region Background Workers
-        public AutoResetEvent StartLoadWorker(bool quiet = false)
+        #region Background Workers and Tasks
+        public Task StartLoadingProjects(bool quiet = false)
         {
-            AutoResetEvent resetEvent = new AutoResetEvent(false);
-            Stopwatch watch = Stopwatch.StartNew();
+            if (_projectsLoading != 0)
+                return Task.CompletedTask;
 
-            // Load CommentProcessing Icon
-            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
-
-            // Prepare PEBakery Loading Information
-            if (!quiet)
+            return Task.Run(() =>
             {
-                Model.ScriptTitleText = "PEBakery loading...";
-                Model.ScriptDescriptionText = string.Empty;
-            }
-            Logger.SystemWrite(new LogInfo(LogState.Info, $@"Loading from [{BaseDir}]"));
-            MainCanvas.Children.Clear();
-            (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
-
-            int stage2LinksCount = 0;
-            int loadedScriptCount = 0;
-            int stage1CachedCount = 0;
-            int stage2LoadedCount = 0;
-            int stage2CachedCount = 0;
-
-            Model.BottomProgressBarMinimum = 0;
-            Model.BottomProgressBarMaximum = 100;
-            Model.BottomProgressBarValue = 0;
-            if (!quiet)
-                Model.WorkInProgress = true;
-            Model.SwitchStatusProgressBar = false; // Show Progress Bar
-
-            _loadWorker = new BackgroundWorker();
-            _loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-            {
-                string baseDir = (string)e.Argument;
-                BackgroundWorker worker = sender as BackgroundWorker;
-
-                // Init ProjectCollection
-                if (Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
-                {
-                    if (_scriptCache.IsGlobalCacheValid(baseDir))
-                        Projects = new ProjectCollection(baseDir, _scriptCache);
-                    else // Cache is invalid
-                        Projects = new ProjectCollection(baseDir, null);
-                }
-                else // Do not use ScriptCache
-                {
-                    Projects = new ProjectCollection(baseDir, null);
-                }
-
-                _allScriptCount = Projects.PrepareLoad(out stage2LinksCount);
-                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = _allScriptCount + stage2LinksCount; });
-
-                // Load scripts in parallel
-                List<LogInfo> errorLogs = Projects.Load(worker);
-                Logger.SystemWrite(errorLogs);
-                Setting.UpdateProjectList();
-
-                if (0 < Projects.ProjectNames.Count)
-                { // Load Success
-                    // Populate TreeView
-                    Dispatcher.Invoke(() =>
-                    {
-                        foreach (Project project in Projects.Projects)
-                            ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree);
-
-                        int pIdx = Setting.Project_DefaultIndex;
-                        CurMainTree = Model.MainTree.Children[pIdx];
-                        CurMainTree.IsExpanded = true;
-                        if (Projects[pIdx] != null)
-                            DrawScript(Projects[pIdx].MainScript);
-                    });
-
-                    e.Result = true;
-                }
-                else
-                {
-                    e.Result = false;
-                }
-            };
-            _loadWorker.WorkerReportsProgress = true;
-            _loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
-            {
-                Interlocked.Increment(ref loadedScriptCount);
-                Model.BottomProgressBarValue = loadedScriptCount;
-                string msg = string.Empty;
-                switch (e.ProgressPercentage)
-                {
-                    case -1: // Loading Cache
-                        msg = "Loading script cache";
-                        break;
-                    case 0:  // Stage 1
-                        msg = e.UserState == null ? "Error" : $"{e.UserState}";
-                        break;
-                    case 1:  // Stage 1, Cached
-                        Interlocked.Increment(ref stage1CachedCount);
-                        msg = e.UserState == null ? "Cached - Error" : $"Cached - {e.UserState}";
-                        break;
-                    case 2:  // Stage 2
-                        Interlocked.Increment(ref stage2LoadedCount);
-                        msg = e.UserState == null ? "Error" : $"{e.UserState}";
-                        break;
-                    case 3:  // Stage 2, Cached
-                        Interlocked.Increment(ref stage2LoadedCount);
-                        Interlocked.Increment(ref stage2CachedCount);
-                        msg = e.UserState == null ? "Cached - Error" : $"Cached - {e.UserState}";
-                        break;
-                }
-
-                if (0 <= e.ProgressPercentage)
-                {
-                    int stage = e.ProgressPercentage / 2 + 1;
-                    if (stage == 1)
-                        msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount}) \r\n{msg}";
-                    else
-                        msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
-                }
-
-                Model.ScriptDescriptionText = msg;
-            };
-            _loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-            {
-                if ((bool)e.Result)
-                { // Load Success
-                    StringBuilder b = new StringBuilder();
-                    b.Append("Projects [");
-                    List<Project> projList = Projects.Projects;
-                    for (int i = 0; i < projList.Count; i++)
-                    {
-                        b.Append(projList[i].ProjectName);
-                        if (i + 1 < projList.Count)
-                            b.Append(", ");
-                    }
-                    b.Append("] loaded");
-                    Logger.SystemWrite(new LogInfo(LogState.Info, b.ToString()));
-
-                    watch.Stop();
-                    double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                    string msg;
-                    if (Setting.Script_EnableCache)
-                    {
-                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (_allScriptCount + stage2LinksCount);
-                        msg = $"{_allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
-                        Model.StatusBarText = msg;
-                    }
-                    else
-                    {
-                        msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
-                        Model.StatusBarText = msg;
-                    }
-                    if (!quiet)
-                        Model.WorkInProgress = false;
-                    Model.SwitchStatusProgressBar = true; // Show Status Bar
-
-                    Logger.SystemWrite(new LogInfo(LogState.Info, msg));
-                    Logger.SystemWrite(Logger.LogSeperator);
-
-                    // If script cache is enabled, generate cache.
-                    if (Setting.Script_EnableCache)
-                        StartCacheWorker();
-                }
-                else
-                {
-                    Model.ScriptTitleText = "Unable to find project.";
-                    Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
-
-                    if (!quiet)
-                        Model.WorkInProgress = false;
-                    Model.SwitchStatusProgressBar = true; // Show Status Bar
-                    Model.StatusBarText = "Unable to find project.";
-                }
-
-                resetEvent.Set();
-            };
-
-            _loadWorker.RunWorkerAsync(BaseDir);
-
-            return resetEvent;
-        }
-
-        private void StartCacheWorker()
-        {
-            if (ScriptCache.DbLock == 0)
-            {
-                Interlocked.Increment(ref ScriptCache.DbLock);
+                Interlocked.Increment(ref _projectsLoading);
+                if (!quiet)
+                    Model.WorkInProgress = true;
+                Model.SwitchStatusProgressBar = false; // Show Progress Bar
                 try
                 {
-                    Stopwatch watch = new Stopwatch();
-                    _cacheWorker = new BackgroundWorker();
+                    Stopwatch watch = Stopwatch.StartNew();
 
-                    Model.WorkInProgress = true;
-                    int updatedCount = 0;
-                    int cachedCount = 0;
-                    _cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                    // Prepare PEBakery Loading Information
+                    if (!quiet)
                     {
-                        BackgroundWorker worker = sender as BackgroundWorker;
+                        Model.ScriptTitleText = "PEBakery loading...";
+                        Model.ScriptDescriptionText = string.Empty;
+                    }
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{BaseDir}]"));
 
-                        watch = Stopwatch.StartNew();
-                        _scriptCache.CacheScripts(Projects, BaseDir, worker);
-                    };
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // Load CommentProcessing Icon
+                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
+                        MainCanvas.Children.Clear();
+                        (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
+                    });
 
-                    _cacheWorker.WorkerReportsProgress = true;
-                    _cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+                    Model.BottomProgressBarMinimum = 0;
+                    Model.BottomProgressBarMaximum = 100;
+                    Model.BottomProgressBarValue = 0;
+
+                    // Init ProjectCollection
+                    if (Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
                     {
-                        Interlocked.Increment(ref cachedCount);
-                        if (e.ProgressPercentage == 1)
-                            Interlocked.Increment(ref updatedCount);
-                    };
-                    _cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                        if (_scriptCache.IsGlobalCacheValid(BaseDir))
+                            Projects = new ProjectCollection(BaseDir, _scriptCache);
+                        else // Cache is invalid
+                            Projects = new ProjectCollection(BaseDir, null);
+                    }
+                    else // Do not use ScriptCache
                     {
+                        Projects = new ProjectCollection(BaseDir, null);
+                    }
+
+                    // Prepare by getting script paths
+                    _allScriptCount = Projects.PrepareLoad(out int stage2LinkCount);
+                    Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = _allScriptCount + stage2LinkCount; });
+
+                    // Progress handler
+                    int loadedScriptCount = 0;
+                    int stage1CachedCount = 0;
+                    int stage2LoadedCount = 0;
+                    int stage2CachedCount = 0;
+                    var progress = new Progress<(ProjectCollection.LoadReport Type, string Path)>(x =>
+                    {
+                        Interlocked.Increment(ref loadedScriptCount);
+                        Model.BottomProgressBarValue = loadedScriptCount;
+
+                        int stage = 0;
+                        string msg = string.Empty;
+                        switch (x.Type)
+                        {
+                            case ProjectCollection.LoadReport.LoadingCache:
+                                msg = "Loading script cache";
+                                break;
+                            case ProjectCollection.LoadReport.Stage1:
+                                stage = 1;
+                                msg = x.Path == null ? "Error" : $"{x.Path}";
+                                break;
+                            case ProjectCollection.LoadReport.Stage1Cached:
+                                stage = 1;
+                                Interlocked.Increment(ref stage1CachedCount);
+                                msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                                break;
+                            case ProjectCollection.LoadReport.Stage2:
+                                stage = 2;
+                                Interlocked.Increment(ref stage2LoadedCount);
+                                msg = x.Path == null ? "Error" : $"{x.Path}";
+                                break;
+                            case ProjectCollection.LoadReport.Stage2Cached:
+                                stage = 2;
+                                Interlocked.Increment(ref stage2LoadedCount);
+                                Interlocked.Increment(ref stage2CachedCount);
+                                msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                                break;
+                        }
+
+                        if (0 < stage)
+                        {
+                            if (stage == 1)
+                                msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount}) \r\n{msg}";
+                            else
+                                msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount}) \r\n{msg}";
+                        }
+
+                        Model.ScriptDescriptionText = msg;
+                    });
+
+                    // Load scripts in parallel
+                    List<LogInfo> errorLogs = Projects.Load(progress);
+                    Logger.SystemWrite(errorLogs);
+                    Setting.UpdateProjectList();
+
+                    if (0 < Projects.ProjectNames.Count)
+                    { // Load success
+                        // Populate TreeView
+                        Dispatcher.Invoke(() =>
+                        {
+                            foreach (Project project in Projects.ProjectList)
+                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree);
+
+                            int pIdx = Setting.Project_DefaultIndex;
+                            CurMainTree = Model.MainTree.Children[pIdx];
+                            CurMainTree.IsExpanded = true;
+                            if (Projects[pIdx] != null)
+                                DrawScript(Projects[pIdx].MainScript);
+                        });
+
+                        Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
+
                         watch.Stop();
-
-                        double cachePercent = (double)updatedCount * 100 / _allScriptCount;
-
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                        string msg = $"{_allScriptCount} scripts cached ({t:0.###}s), {cachePercent:0.#}% updated";
+                        string msg;
+                        if (Setting.Script_EnableCache)
+                        {
+                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (_allScriptCount + stage2LinkCount);
+                            msg = $"{_allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                            Model.StatusBarText = msg;
+                        }
+                        else
+                        {
+                            msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
+                            Model.StatusBarText = msg;
+                        }
+                        if (!quiet)
+                            Model.WorkInProgress = false;
+                        Model.SwitchStatusProgressBar = true; // Show Status Bar
+
                         Logger.SystemWrite(new LogInfo(LogState.Info, msg));
                         Logger.SystemWrite(Logger.LogSeperator);
 
-                        Model.WorkInProgress = false;
-                    };
-                    _cacheWorker.RunWorkerAsync();
+                        // If script cache is enabled, update cache.
+                        if (Setting.Script_EnableCache)
+                            StartScriptCaching();
+                    }
+                    else
+                    { // Load failure
+                        Model.ScriptTitleText = "Unable to find project.";
+                        Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
+
+                        if (!quiet)
+                            Model.WorkInProgress = false;
+                        Model.SwitchStatusProgressBar = true; // Show Status Bar
+                        Model.StatusBarText = "Unable to find project.";
+                    }
                 }
                 finally
                 {
+                    Interlocked.Decrement(ref _projectsLoading);
+                }
+            });
+        }
+
+        private Task StartScriptCaching()
+        {
+            if (ScriptCache.DbLock != 0)
+                return Task.CompletedTask;
+
+            return Task.Run(() =>
+            {
+                Interlocked.Increment(ref ScriptCache.DbLock);
+                Model.WorkInProgress = true;
+                try
+                {
+                    Stopwatch watch = Stopwatch.StartNew();
+                    (int updatedCount, _) = _scriptCache.CacheScripts(Projects, BaseDir);
+                    watch.Stop();
+
+                    double cachedPercent = (double)updatedCount * 100 / _allScriptCount;
+                    double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                    string msg = $"{_allScriptCount} scripts cached ({t:0.###}s), {cachedPercent:0.#}% updated";
+                    Logger.SystemWrite(new LogInfo(LogState.Info, msg));
+                    Logger.SystemWrite(Logger.LogSeperator);
+
+                }
+                finally
+                {
+                    Model.WorkInProgress = false;
                     Interlocked.Decrement(ref ScriptCache.DbLock);
                 }
-            }
+            });
         }
 
-        public AutoResetEvent StartRefreshScriptWorker()
+        public Task StartRefreshScript()
         {
             if (CurMainTree?.Script == null)
-                return null;
-            if (_refreshWorker.IsBusy)
-                return null;
+                return Task.CompletedTask;
             if (CurMainTree.Script.Type == ScriptType.Directory)
-                return null;
+                return Task.CompletedTask;
+            if (_scriptRefreshing != 0)
+                return Task.CompletedTask;
 
-            AutoResetEvent resetEvent = new AutoResetEvent(false);
-
-            Stopwatch watch = new Stopwatch();
-
-            Model.WorkInProgress = true;
-            _refreshWorker = new BackgroundWorker();
-            _refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            TreeViewModel node = CurMainTree;
+            return Task.Run(() =>
             {
-                watch.Start();
-                Script sc = CurMainTree.Script;
-                if (sc.Type != ScriptType.Directory)
-                    e.Result = sc.Project.RefreshScript(CurMainTree.Script);
-            };
-            _refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-            {
-                if (e.Result is Script sc)
-                    PostRefreshScript(sc);
+                Interlocked.Increment(ref _scriptRefreshing);
+                Model.WorkInProgress = true;
+                try
+                {
+                    Stopwatch watch = Stopwatch.StartNew();
 
-                Model.WorkInProgress = false;
-                watch.Stop();
-                double sec = watch.Elapsed.TotalSeconds;
-                if (e.Result is Script)
-                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reloaded. ({sec:0.000}s)";
-                else
-                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reload failed. ({sec:0.000}s)";
+                    Script sc = node.Script;
+                    if (sc.Type != ScriptType.Directory)
+                        sc = sc.Project.RefreshScript(node.Script);
 
-                resetEvent.Set();
-            };
-            _refreshWorker.RunWorkerAsync();
+                    watch.Stop();
+                    double t = watch.Elapsed.TotalSeconds;
 
-            return resetEvent;
+                    if (sc == null)
+                    {
+                        PostRefreshScript(node, sc);
+                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)";
+                    }
+                    else
+                    {
+                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reloaded. ({t:0.000}s)";
+                    }
+                }
+                finally
+                {
+                    Model.WorkInProgress = false;
+                    Interlocked.Decrement(ref _scriptRefreshing);
+                }
+            });
         }
 
-        private void PostRefreshScript(Script sc)
+        private void PostRefreshScript(TreeViewModel node, Script sc)
         {
-            CurMainTree.Script = sc;
-            CurMainTree.ParentCheckedPropagation();
-            UpdateTreeViewIcon(CurMainTree);
-            DrawScript(CurMainTree.Script);
+            node.Script = sc;
+            node.ParentCheckedPropagation();
+            UpdateTreeViewIcon(node);
+            DrawScript(node.Script);
         }
 
-        private void StartSyntaxCheckWorker(bool quiet)
+        private Task StartSyntaxCheck(bool quiet)
         {
             if (CurMainTree?.Script == null)
-                return;
-
-            if (_syntaxCheckWorker.IsBusy)
-                return;
+                return Task.CompletedTask;
+            if (_syntaxChecking != 0)
+                return Task.CompletedTask;
 
             Script sc = CurMainTree.Script;
             if (sc.Type == ScriptType.Directory)
-                return;
+                return Task.CompletedTask;
 
             if (!quiet)
                 Model.WorkInProgress = true;
 
-            _syntaxCheckWorker = new BackgroundWorker();
-            _syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            return Task.Run(() =>
             {
-                CodeValidator v = new CodeValidator(sc);
-                v.Validate();
-
-                e.Result = v;
-            };
-            _syntaxCheckWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-            {
-                if (!(e.Result is CodeValidator v))
-                    return;
-
-                LogInfo[] logs = v.LogInfos;
-                LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
-                LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
-
-                int errorWarns = 0;
-                StringBuilder b = new StringBuilder();
-                if (0 < errorLogs.Length)
+                Interlocked.Increment(ref _syntaxChecking);
+                try
                 {
-                    errorWarns += errorLogs.Length;
+                    CodeValidator v = new CodeValidator(sc);
+                    v.Validate();
 
-                    if (!quiet)
+                    LogInfo[] logs = v.LogInfos;
+                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+
+                    int errorWarns = 0;
+                    StringBuilder b = new StringBuilder();
+                    if (0 < errorLogs.Length)
                     {
-                        b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
-                        b.AppendLine();
-                        for (int i = 0; i < errorLogs.Length; i++)
+                        errorWarns += errorLogs.Length;
+
+                        if (!quiet)
                         {
-                            LogInfo log = errorLogs[i];
-                            if (log.Command != null)
-                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command}) (Line {log.Command.LineIdx})");
-                            else
-                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                            b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
+                            b.AppendLine();
+                            for (int i = 0; i < errorLogs.Length; i++)
+                            {
+                                LogInfo log = errorLogs[i];
+                                if (log.Command != null)
+                                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command}) (Line {log.Command.LineIdx})");
+                                else
+                                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                            }
+                            b.AppendLine();
                         }
-                        b.AppendLine();
                     }
-                }
 
-                if (0 < warnLogs.Length)
-                {
-                    errorWarns += warnLogs.Length;
-
-                    if (!quiet)
+                    if (0 < warnLogs.Length)
                     {
-                        b.AppendLine($"{errorLogs.Length} syntax warning detected");
-                        b.AppendLine();
-                        for (int i = 0; i < warnLogs.Length; i++)
+                        errorWarns += warnLogs.Length;
+
+                        if (!quiet)
                         {
-                            LogInfo log = warnLogs[i];
-                            b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                            b.AppendLine($"{errorLogs.Length} syntax warning detected");
+                            b.AppendLine();
+                            for (int i = 0; i < warnLogs.Length; i++)
+                            {
+                                LogInfo log = warnLogs[i];
+                                b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                            }
+                            b.AppendLine();
                         }
-                        b.AppendLine();
                     }
-                }
 
-                if (errorWarns == 0)
-                {
-                    Model.ScriptCheckResult = true;
-
-                    if (!quiet)
+                    if (errorWarns == 0)
                     {
-                        b.AppendLine("No syntax error detected");
-                        b.AppendLine();
-                        b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                        Model.ScriptCheckResult = true;
 
-                        MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
-                else
-                {
-                    Model.ScriptCheckResult = false;
-
-                    if (!quiet)
-                    {
-                        MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
-                        if (result == MessageBoxResult.OK)
+                        if (!quiet)
                         {
+                            b.AppendLine("No syntax error detected");
+                            b.AppendLine();
                             b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
 
-                            string tempFile = Path.GetTempFileName();
-                            File.Delete(tempFile);
-                            tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                            using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
-                                sw.Write(b.ToString());
-
-                            OpenTextFile(tempFile);
+                            MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                     }
-                }
+                    else
+                    {
+                        Model.ScriptCheckResult = false;
 
-                if (!quiet)
-                    Model.WorkInProgress = false;
-            };
-            _syntaxCheckWorker.RunWorkerAsync();
+                        if (!quiet)
+                        {
+                            MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                            if (result == MessageBoxResult.OK)
+                            {
+                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                                string tempFile = Path.GetTempFileName();
+                                File.Delete(tempFile);
+                                tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                    sw.Write(b.ToString());
+
+                                OpenTextFile(tempFile);
+                            }
+                        }
+                    }
+
+                    if (!quiet)
+                        Model.WorkInProgress = false;
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _syntaxChecking);
+                }
+            });
         }
         #endregion
 
@@ -627,8 +594,9 @@ namespace PEBakery.WPF
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
 
+                // Do not use await, let it run in background
                 if (Setting.Script_AutoSyntaxCheck)
-                    StartSyntaxCheckWorker(true);
+                    StartSyntaxCheck(true);
             }
 
             Model.IsTreeEntryFile = sc.Type != ScriptType.Directory;
@@ -748,18 +716,18 @@ namespace PEBakery.WPF
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_loadWorker.IsBusy)
+            if (_projectsLoading != 0)
                 return;
 
             (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
 
-            StartLoadWorker();
+            StartLoadingProjects();
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_loadWorker.IsBusy)
+            if (_projectsLoading != 0)
                 return;
 
             double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
@@ -777,7 +745,7 @@ namespace PEBakery.WPF
                 // Refresh Project
                 if (old_Compat_AsteriskBugDirLink != Setting.Compat_AsteriskBugDirLink)
                 {
-                    StartLoadWorker();
+                    StartLoadingProjects();
                 }
                 else
                 {
@@ -795,16 +763,15 @@ namespace PEBakery.WPF
 
                     // Script
                     if (!old_Script_EnableCache && Setting.Script_EnableCache)
-                        StartCacheWorker();
+                        StartScriptCaching();
                 }
             }
         }
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_loadWorker.IsBusy)
+            if (_projectsLoading != 0)
                 return;
-
             if (0 < UtilityWindow.Count)
                 return;
 
@@ -918,7 +885,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            StartRefreshScriptWorker();
+            StartRefreshScript();
         }
 
         private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
@@ -1032,7 +999,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                PostRefreshScript(newScript);
+                PostRefreshScript(CurMainTree, newScript);
 
                 MessageBox.Show(msg, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 App.Logger.SystemWrite(new LogInfo(LogState.Success, msg));
@@ -1059,7 +1026,8 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            StartSyntaxCheckWorker(false);
+            // Do not use await, let it run in background
+            StartSyntaxCheck(false);
         }
 
         private void ScriptOpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -1391,11 +1359,11 @@ namespace PEBakery.WPF
             }
 
             // TODO: Do this in more cleaner way
-            while (_refreshWorker.IsBusy)
+            while (_scriptRefreshing != 0)
                 await Task.Delay(500);
-            while (_cacheWorker.IsBusy)
+            while (ScriptCache.DbLock != 0)
                 await Task.Delay(500);
-            while (_loadWorker.IsBusy)
+            if (_projectsLoading != 0)
                 await Task.Delay(500);
 
             _scriptCache?.WaitClose();
@@ -1512,6 +1480,9 @@ namespace PEBakery.WPF
         public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
 
         private bool? _scriptCheckResult = null;
+        /// <summary>
+        /// true -> has issue, false -> no issue, null -> not checked
+        /// </summary>
         public bool? ScriptCheckResult
         {
             get => _scriptCheckResult;
@@ -1990,6 +1961,7 @@ namespace PEBakery.WPF
     #region TreeViewModel
     public class TreeViewModel : INotifyPropertyChanged
     {
+        #region Basic Property and Constructor
         public TreeViewModel Root { get; }
         public TreeViewModel Parent { get; }
 
@@ -1998,7 +1970,9 @@ namespace PEBakery.WPF
             Root = root ?? this;
             Parent = parent;
         }
+        #endregion
 
+        #region Shared Property
         private bool _isExpanded = false;
         public bool IsExpanded
         {
@@ -2009,6 +1983,46 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsExpanded));
             }
         }
+
+        public string Text => _script.Title;
+
+        private Script _script;
+        public Script Script
+        {
+            get => _script;
+            set
+            {
+                _script = value;
+                OnPropertyUpdate(nameof(Script));
+                OnPropertyUpdate(nameof(Checked));
+                OnPropertyUpdate(nameof(CheckBoxVisible));
+                OnPropertyUpdate(nameof(Text));
+                OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
+            }
+        }
+
+        private Control _icon;
+        public Control Icon
+        {
+            get => _icon;
+            set
+            {
+                _icon = value;
+                OnPropertyUpdate(nameof(Icon));
+            }
+        }
+
+        public ObservableCollection<TreeViewModel> Children { get; private set; } = new ObservableCollection<TreeViewModel>();
+
+        public void SortChildren()
+        {
+            IOrderedEnumerable<TreeViewModel> sorted = Children
+                .OrderBy(x => x.Script.Level)
+                .ThenBy(x => x.Script.Type)
+                .ThenBy(x => x.Script.RealPath);
+            Children = new ObservableCollection<TreeViewModel>(sorted);
+        }
+        #endregion
 
         #region Build Mode Property
         private bool _buildFocus = false;
@@ -2026,6 +2040,7 @@ namespace PEBakery.WPF
         public FontWeight BuildFontWeight => _buildFocus ? FontWeights.SemiBold : FontWeights.Normal;
         #endregion
 
+        #region Enabled CheckBox
         public bool Checked
         {
             get
@@ -2128,78 +2143,6 @@ namespace PEBakery.WPF
             }
         }
 
-        public string Text => _script.Title;
-
-        private Script _script;
-        public Script Script
-        {
-            get => _script;
-            set
-            {
-                _script = value;
-                OnPropertyUpdate(nameof(Script));
-                OnPropertyUpdate(nameof(Checked));
-                OnPropertyUpdate(nameof(CheckBoxVisible));
-                OnPropertyUpdate(nameof(Text));
-                OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
-            }
-        }
-
-        private Control _icon;
-        public Control Icon
-        {
-            get => _icon;
-            set
-            {
-                _icon = value;
-                OnPropertyUpdate(nameof(Icon));
-            }
-        }
-
-        public ObservableCollection<TreeViewModel> Children { get; private set; } = new ObservableCollection<TreeViewModel>();
-
-        public void SortChildren()
-        {
-            IOrderedEnumerable<TreeViewModel> sorted = Children
-                .OrderBy(x => x.Script.Level)
-                .ThenBy(x => x.Script.Type)
-                .ThenBy(x => x.Script.RealPath);
-            Children = new ObservableCollection<TreeViewModel>(sorted);
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public TreeViewModel FindScriptByFullPath(string fullPath)
-        {
-            return RecursiveFindScriptByFullPath(Root, fullPath);
-        }
-
-        private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)
-        {
-            if (cur.Script != null)
-            {
-                if (fullPath.Equals(cur.Script.RealPath, StringComparison.OrdinalIgnoreCase))
-                    return cur;
-            }
-
-            if (0 < cur.Children.Count)
-            {
-                foreach (TreeViewModel next in cur.Children)
-                {
-                    TreeViewModel found = RecursiveFindScriptByFullPath(next, fullPath);
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            // Not found in this path
-            return null;
-        }
-
         private List<LogInfo> DisableScripts(TreeViewModel root, Script sc)
         {
             if (root == null || sc == null)
@@ -2226,6 +2169,51 @@ namespace PEBakery.WPF
 
             return errorLogs;
         }
+        #endregion
+
+        #region Find Script
+        public TreeViewModel FindScriptByFullPath(string fullPath)
+        {
+            return RecursiveFindScriptByFullPath(Root, fullPath);
+        }
+
+        private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)
+        {
+            if (cur.Script != null)
+            {
+                if (fullPath.Equals(cur.Script.RealPath, StringComparison.OrdinalIgnoreCase))
+                    return cur;
+            }
+
+            if (0 < cur.Children.Count)
+            {
+                foreach (TreeViewModel next in cur.Children)
+                {
+                    TreeViewModel found = RecursiveFindScriptByFullPath(next, fullPath);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            // Not found in this path
+            return null;
+        }
+        #endregion
+
+        #region OnProperetyUpdate
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyUpdate(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
+
+        #region ToString
+        public override string ToString()
+        {
+            return Text;
+        }
+        #endregion
     }
     #endregion
 

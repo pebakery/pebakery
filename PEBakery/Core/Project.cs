@@ -65,9 +65,9 @@ namespace PEBakery.Core
 
         #region Properties
         public string ProjectRoot { get; }
-        public List<Project> Projects => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
+        public List<Project> ProjectList => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
         public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
-        public Project this[int i] => Projects[i];
+        public Project this[int i] => ProjectList[i];
         public int Count => _projectDict.Count;
         #endregion
 
@@ -271,7 +271,17 @@ namespace PEBakery.Core
         #endregion
 
         #region Load, LoadLinks
-        public List<LogInfo> Load(BackgroundWorker worker)
+        public enum LoadReport
+        {
+            None,
+            LoadingCache,
+            Stage1,
+            Stage1Cached,
+            Stage2,
+            Stage2Cached,
+        }
+
+        public List<LogInfo> Load(IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             try
@@ -281,7 +291,7 @@ namespace PEBakery.Core
                     Project project = new Project(_baseDir, key);
 
                     // Load scripts
-                    List<LogInfo> projLogs = project.Load(_scriptPathDict[key], _dirLinkPathDict[key], _scriptCache, worker);
+                    List<LogInfo> projLogs = project.Load(_scriptPathDict[key], _dirLinkPathDict[key], _scriptCache, progress);
                     logs.AddRange(projLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -291,7 +301,7 @@ namespace PEBakery.Core
                 }
 
                 // Populate *.link scripts
-                List<LogInfo> linkLogs = LoadLinks(worker);
+                List<LogInfo> linkLogs = LoadLinks(progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
@@ -310,7 +320,7 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(BackgroundWorker worker)
+        private List<LogInfo> LoadLinks(IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
@@ -319,7 +329,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (_scriptCache != null)
             {
-                worker?.ReportProgress(-1);
+                progress?.Report((LoadReport.LoadingCache, null));
                 cacheDb = _scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -330,7 +340,7 @@ namespace PEBakery.Core
             {
                 Script link = null;
                 bool valid = false;
-                int cached = 2;
+                LoadReport cached = LoadReport.Stage2;
                 try
                 {
                     do
@@ -366,7 +376,7 @@ namespace PEBakery.Core
                                     {
                                         link.Project = sc.Project;
                                         link.IsDirLink = false;
-                                        cached = 3;
+                                        cached = LoadReport.Stage2Cached;
                                     }
                                 }
                                 catch { link = null; }
@@ -405,13 +415,13 @@ namespace PEBakery.Core
                 {
                     sc.LinkLoaded = true;
                     sc.Link = link;
-                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                    progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 else // Error
                 {
                     int idx = _allProjectScripts.IndexOf(sc);
                     removeIdxs.Add(idx);
-                    worker?.ReportProgress(cached);
+                    progress?.Report((cached, null));
                 }
             });
 
@@ -488,7 +498,7 @@ namespace PEBakery.Core
             List<(string Path, bool IsDir)> allScriptPathList,
             List<(string RealPath, string TreePath, bool IsDir)> allDirLinkPathList,
             ScriptCache scriptCache,
-            BackgroundWorker worker)
+            IProgress<(ProjectCollection.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -499,7 +509,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (scriptCache != null)
             {
-                worker?.ReportProgress(-1);
+                progress?.Report((ProjectCollection.LoadReport.LoadingCache, null));
                 cacheDb = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -515,7 +525,7 @@ namespace PEBakery.Core
                 Debug.Assert(spi.RealPath != null, "Internal Logic Error at Project.Load");
                 Debug.Assert(spi.TreePath != null, "Internal Logic Error at Project.Load");
 
-                int cached = 0;
+                ProjectCollection.LoadReport cached = ProjectCollection.LoadReport.Stage1;
                 Script sc = null;
                 try
                 {
@@ -545,7 +555,7 @@ namespace PEBakery.Core
                                 {
                                     sc.Project = this;
                                     sc.IsDirLink = spi.IsDirLink;
-                                    cached = 1;
+                                    cached = ProjectCollection.LoadReport.Stage1Cached;
                                 }
                             }
                             catch { sc = null; } // Cache Error
@@ -579,12 +589,12 @@ namespace PEBakery.Core
                         listLock.ExitWriteLock();
                     }
 
-                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                    progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 catch (Exception e)
                 {
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
-                    worker?.ReportProgress(cached);
+                    progress?.Report((cached, null));
                 }
             });
 

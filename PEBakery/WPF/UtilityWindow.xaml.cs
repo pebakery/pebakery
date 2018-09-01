@@ -69,7 +69,7 @@ namespace PEBakery.WPF
                 MainWindow w = Application.Current.MainWindow as MainWindow;
                 Debug.Assert(w != null, "MainWindow != null");
 
-                List<Project> projList = w.Projects.Projects;
+                List<Project> projList = w.Projects.ProjectList;
                 for (int i = 0; i < projList.Count; i++)
                 {
                     Project proj = projList[i];
