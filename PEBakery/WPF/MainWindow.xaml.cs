@@ -64,7 +64,6 @@ namespace PEBakery.WPF
         public ProjectCollection Projects { get; private set; }
         public string BaseDir { get; }
 
-        // private BackgroundWorker _loadWorker = new BackgroundWorker();
         private int _projectsLoading = 0;
         private int _scriptRefreshing = 0;
         private int _syntaxChecking = 0;
@@ -245,7 +244,7 @@ namespace PEBakery.WPF
                     int stage1CachedCount = 0;
                     int stage2LoadedCount = 0;
                     int stage2CachedCount = 0;
-                    var progress = new Progress<(ProjectCollection.LoadReport Type, string Path)>(x =>
+                    var progress = new Progress<(Project.LoadReport Type, string Path)>(x =>
                     {
                         Interlocked.Increment(ref loadedScriptCount);
                         Model.BottomProgressBarValue = loadedScriptCount;
@@ -254,24 +253,24 @@ namespace PEBakery.WPF
                         string msg = string.Empty;
                         switch (x.Type)
                         {
-                            case ProjectCollection.LoadReport.LoadingCache:
+                            case Project.LoadReport.LoadingCache:
                                 msg = "Loading script cache";
                                 break;
-                            case ProjectCollection.LoadReport.Stage1:
+                            case Project.LoadReport.Stage1:
                                 stage = 1;
                                 msg = x.Path == null ? "Error" : $"{x.Path}";
                                 break;
-                            case ProjectCollection.LoadReport.Stage1Cached:
+                            case Project.LoadReport.Stage1Cached:
                                 stage = 1;
                                 Interlocked.Increment(ref stage1CachedCount);
                                 msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
                                 break;
-                            case ProjectCollection.LoadReport.Stage2:
+                            case Project.LoadReport.Stage2:
                                 stage = 2;
                                 Interlocked.Increment(ref stage2LoadedCount);
                                 msg = x.Path == null ? "Error" : $"{x.Path}";
                                 break;
-                            case ProjectCollection.LoadReport.Stage2Cached:
+                            case Project.LoadReport.Stage2Cached:
                                 stage = 2;
                                 Interlocked.Increment(ref stage2LoadedCount);
                                 Interlocked.Increment(ref stage2CachedCount);
@@ -282,9 +281,9 @@ namespace PEBakery.WPF
                         if (0 < stage)
                         {
                             if (stage == 1)
-                                msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount}) \r\n{msg}";
+                                msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount})\r\n{msg}";
                             else
-                                msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount}) \r\n{msg}";
+                                msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
                         }
 
                         Model.ScriptDescriptionText = msg;
@@ -326,10 +325,7 @@ namespace PEBakery.WPF
                             msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
                             Model.StatusBarText = msg;
                         }
-                        if (!quiet)
-                            Model.WorkInProgress = false;
-                        Model.SwitchStatusProgressBar = true; // Show Status Bar
-
+                        
                         Logger.SystemWrite(new LogInfo(LogState.Info, msg));
                         Logger.SystemWrite(Logger.LogSeperator);
 
@@ -342,14 +338,14 @@ namespace PEBakery.WPF
                         Model.ScriptTitleText = "Unable to find project.";
                         Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
 
-                        if (!quiet)
-                            Model.WorkInProgress = false;
-                        Model.SwitchStatusProgressBar = true; // Show Status Bar
                         Model.StatusBarText = "Unable to find project.";
                     }
                 }
                 finally
                 {
+                    if (!quiet)
+                        Model.WorkInProgress = false;
+                    Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Interlocked.Decrement(ref _projectsLoading);
                 }
             });

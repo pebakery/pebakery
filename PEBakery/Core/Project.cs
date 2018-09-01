@@ -271,17 +271,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Load, LoadLinks
-        public enum LoadReport
-        {
-            None,
-            LoadingCache,
-            Stage1,
-            Stage1Cached,
-            Stage2,
-            Stage2Cached,
-        }
-
-        public List<LogInfo> Load(IProgress<(LoadReport Type, string Path)> progress)
+        public List<LogInfo> Load(IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             try
@@ -320,7 +310,7 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(IProgress<(LoadReport Type, string Path)> progress)
+        private List<LogInfo> LoadLinks(IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
@@ -329,7 +319,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (_scriptCache != null)
             {
-                progress?.Report((LoadReport.LoadingCache, null));
+                progress?.Report((Project.LoadReport.LoadingCache, null));
                 cacheDb = _scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -340,7 +330,7 @@ namespace PEBakery.Core
             {
                 Script link = null;
                 bool valid = false;
-                LoadReport cached = LoadReport.Stage2;
+                Project.LoadReport cached = Project.LoadReport.Stage2;
                 try
                 {
                     do
@@ -376,7 +366,7 @@ namespace PEBakery.Core
                                     {
                                         link.Project = sc.Project;
                                         link.IsDirLink = false;
-                                        cached = LoadReport.Stage2Cached;
+                                        cached = Project.LoadReport.Stage2Cached;
                                     }
                                 }
                                 catch { link = null; }
@@ -494,11 +484,21 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Scripts
+        public enum LoadReport
+        {
+            None,
+            LoadingCache,
+            Stage1,
+            Stage1Cached,
+            Stage2,
+            Stage2Cached,
+        }
+
         public List<LogInfo> Load(
             List<(string Path, bool IsDir)> allScriptPathList,
             List<(string RealPath, string TreePath, bool IsDir)> allDirLinkPathList,
             ScriptCache scriptCache,
-            IProgress<(ProjectCollection.LoadReport Type, string Path)> progress)
+            IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -509,7 +509,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (scriptCache != null)
             {
-                progress?.Report((ProjectCollection.LoadReport.LoadingCache, null));
+                progress?.Report((LoadReport.LoadingCache, null));
                 cacheDb = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -525,7 +525,7 @@ namespace PEBakery.Core
                 Debug.Assert(spi.RealPath != null, "Internal Logic Error at Project.Load");
                 Debug.Assert(spi.TreePath != null, "Internal Logic Error at Project.Load");
 
-                ProjectCollection.LoadReport cached = ProjectCollection.LoadReport.Stage1;
+                LoadReport cached = LoadReport.Stage1;
                 Script sc = null;
                 try
                 {
@@ -555,7 +555,7 @@ namespace PEBakery.Core
                                 {
                                     sc.Project = this;
                                     sc.IsDirLink = spi.IsDirLink;
-                                    cached = ProjectCollection.LoadReport.Stage1Cached;
+                                    cached = LoadReport.Stage1Cached;
                                 }
                             }
                             catch { sc = null; } // Cache Error
