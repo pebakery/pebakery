@@ -596,12 +596,14 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ContentPresenter Name="ScriptLogo"
+                    <ContentPresenter x:Name="ScriptLogoPresenter"
+                                      Content="{Binding ScriptLogo, Mode=TwoWay}"
                                       Grid.Row="0" Grid.Column="0"
                                       Margin="10"
                                       VerticalAlignment="Center"
                                       HorizontalAlignment="Center"
-                                      UseLayoutRounding="True"/>
+                                      UseLayoutRounding="True">
+                    </ContentPresenter>
                     <Grid Grid.Row="0" Grid.Column="1"
                           Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>

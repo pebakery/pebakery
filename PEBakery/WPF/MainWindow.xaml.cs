@@ -213,7 +213,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         // Load CommentProcessing Icon
-                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
+                        Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
                         MainCanvas.Children.Clear();
                         (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
                     });
@@ -289,7 +289,7 @@ namespace PEBakery.WPF
                         Model.ScriptDescriptionText = msg;
                     });
 
-                    // Load scripts in parallel
+                    // Load projects in parallel
                     List<LogInfo> errorLogs = Projects.Load(progress);
                     Logger.SystemWrite(errorLogs);
                     Setting.UpdateProjectList();
@@ -325,7 +325,7 @@ namespace PEBakery.WPF
                             msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
                             Model.StatusBarText = msg;
                         }
-                        
+
                         Logger.SystemWrite(new LogInfo(LogState.Info, msg));
                         Logger.SystemWrite(Logger.LogSeperator);
 
@@ -601,38 +601,40 @@ namespace PEBakery.WPF
 
         public void DrawScriptLogo(Script sc)
         {
-            double size = ScriptLogo.ActualWidth * MaxDpiScale;
             if (sc.Type == ScriptType.Directory)
             {
                 if (sc.IsDirLink)
-                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 10);
+                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 10);
                 else
-                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 10);
+                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 10);
             }
             else
             {
                 try
                 {
-                    Image image = EncodedFile.ExtractLogoImage(sc, size);
+                    const double svgSize = 100 * MaxDpiScale;
+                    Image image = EncodedFile.ExtractLogoImage(sc, svgSize);
 
                     Grid grid = new Grid();
                     grid.Children.Add(image);
 
-                    ScriptLogo.Content = grid;
+                    Model.ScriptLogo = grid;
                 }
                 catch
                 { // No logo file - use default
+                    PackIconMaterialKind iconKind = PackIconMaterialKind.None;
                     if (sc.Type == ScriptType.Script)
                     {
                         if (sc.IsDirLink)
-                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 10);
+                            iconKind = PackIconMaterialKind.FileSend;
                         else
-                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 10);
+                            iconKind = PackIconMaterialKind.FileDocument;
                     }
                     else if (sc.Type == ScriptType.Link)
                     {
-                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 10);
+                        iconKind = PackIconMaterialKind.FileSend;
                     }
+                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(iconKind, 10);
                 }
             }
         }
@@ -1456,6 +1458,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private object _scriptLogo;
+        public object ScriptLogo
+        {
+            get => _scriptLogo;
+            set
+            {
+                _scriptLogo = value;
+                OnPropertyUpdate(nameof(ScriptLogo));
+            }
+        }
+
         private bool _isTreeEntryFile = true;
         public bool IsTreeEntryFile
         {
@@ -1598,13 +1611,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private double bottomProgressBarValue = 0;
+        private double _bottomProgressBarValue = 0;
         public double BottomProgressBarValue
         {
-            get => bottomProgressBarValue;
+            get => _bottomProgressBarValue;
             set
             {
-                bottomProgressBarValue = value;
+                _bottomProgressBarValue = value;
                 OnPropertyUpdate(nameof(BottomProgressBarValue));
             }
         }
