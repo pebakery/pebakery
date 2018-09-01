@@ -241,13 +241,14 @@ namespace PEBakery.Core
         #endregion
 
         #region GetValue, SetValue
-        public string GetValue()
+        public string GetValue(bool strict)
         {
             string value = null;
             switch (Type)
             {
                 case UIControlType.TextLabel:
-                    value = Text;
+                    if (strict)
+                        value = Text;
                     break;
                 case UIControlType.TextBox:
                     {

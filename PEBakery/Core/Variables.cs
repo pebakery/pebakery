@@ -299,7 +299,7 @@ namespace PEBakery.Core
             {
                 List<UIControl> uiCtrls = null;
                 try { uiCtrls = sc.Sections[ifaceSecName].GetUICtrls(true); }
-                catch { /* No [Interface] section, or unable to get List<UIControl */ }
+                catch { /* No [Interface] section, or unable to get List<UIControl> */ }
 
                 if (uiCtrls != null)
                 {
@@ -325,7 +325,7 @@ namespace PEBakery.Core
             if (!string.IsNullOrEmpty(prefix))
                 destVar = $"{prefix}_{uiCmd.Key}";
 
-            string value = uiCmd.GetValue();
+            string value = uiCmd.GetValue(true);
             if (value != null)
                 return SetValue(VarsType.Local, destVar, value);
             return null;

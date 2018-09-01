@@ -677,7 +677,7 @@ namespace PEBakery.Core
                     continue;
                 }
                     
-                string val = newCtrl.GetValue();
+                string val = newCtrl.GetValue(false);
                 if (val == null)
                 { // This ctrl does not have 'value'. Keep oldCtrl.
                     updatedCtrls.Add(oldCtrl);

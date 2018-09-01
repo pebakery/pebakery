@@ -200,7 +200,7 @@ namespace PEBakery.Core.Commands
                     destStr = ((int)uiCtrl.Rect.Height).ToString();
                     break;
                 case InterfaceElement.Value:
-                    destStr = uiCtrl.GetValue();
+                    destStr = uiCtrl.GetValue(true);
                     if (destStr == null)
                         return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
                     break;

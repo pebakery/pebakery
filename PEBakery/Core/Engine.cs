@@ -219,8 +219,6 @@ namespace PEBakery.Core
                     switch (s.RunMode)
                     {
                         case EngineMode.RunMainAndOne when s.CurrentScriptIdx != 0:
-                            runOneScriptExit = true;
-                            break;
                         case EngineMode.RunOne:
                             runOneScriptExit = true;
                             break;

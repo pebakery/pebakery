@@ -73,11 +73,11 @@ namespace PEBakery.Core.Commands
                             goto case false;
 
                         #region Set interface control's value (Compat)
-                        string varKey = Variables.TrimPercentMark(info.VarKey);
-                        string finalValue = StringEscaper.Preprocess(s, info.VarValue);
-
                         if (s.CompatAllowSetModifyInterface)
                         {
+                            string varKey = Variables.TrimPercentMark(info.VarKey);
+                            string finalValue = StringEscaper.Preprocess(s, info.VarValue);
+
                             Script sc = cmd.Addr.Script;
                             ScriptSection iface = sc.GetInterfaceSection(out _);
                             if (iface == null)

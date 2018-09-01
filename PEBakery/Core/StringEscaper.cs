@@ -764,16 +764,10 @@ namespace PEBakery.Core
             return StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string PackListStr(IList<string> list, string seperator)
         {
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < list.Count; i++)
-            {
-                b.Append(list[i]);
-                if (i + 1 < list.Count)
-                    b.Append(seperator);
-            }
-            return b.ToString();
+            return string.Join(seperator, list);
         }
         #endregion
     }

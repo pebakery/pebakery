@@ -70,7 +70,7 @@ namespace PEBakery.Core
         #endregion
 
         #region UpdateScript, UpdateScripts
-        public static (Script newScript, string message) UpdateScript(Project p, Script sc, FileUpdaterOptions opts)
+        public static (Script newScript, string msg) UpdateScript(Project p, Script sc, FileUpdaterOptions opts)
         {
             if (!sc.Sections.ContainsKey(UpdateSection))
                 return (null, "Unable to find script update information");
@@ -86,7 +86,7 @@ namespace PEBakery.Core
             // Get ScriptUrl
             if (!scUpdateDict.ContainsKey(ScriptUrlKey))
                 return (null, "Unable to find script server url");
-            string url = scUpdateDict[ScriptUrlKey].TrimStart('\\');
+            string url = scUpdateDict[ScriptUrlKey].TrimStart('/');
 
             if (scType == ScriptUpdateType.Project)
             {
@@ -96,14 +96,13 @@ namespace PEBakery.Core
                 Dictionary<string, string> pUpdateDict = Ini.ParseIniLinesIniStyle(p.MainScript.Sections[UpdateSection].GetLines());
                 if (!pUpdateDict.ContainsKey(BaseUrlKey))
                     return (null, "Unable to find project update base url");
-                string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('\\');
+                string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('/');
 
                 url = $"{url}\\{pBaseUrl}";
             }
 
             string tempFile = FileHelper.GetTempFileNameEx();
             opts.Model?.SetBuildCommandProgress("Download Progress");
-
             try
             {
                 (bool result, string errorMsg) = DownloadFile(url, tempFile, opts);
@@ -202,6 +201,69 @@ namespace PEBakery.Core
 
             return logs;
             */
+        }
+        #endregion
+
+        #region {Backup,Restore}Interface
+
+        private struct InterfaceSectionBackup
+        {
+            public string SectionName;
+            public List<UIControl> ValueCtrls;
+
+            public InterfaceSectionBackup(string sectionName, List<UIControl> valueCtrls)
+            {
+                SectionName = sectionName;
+                ValueCtrls = valueCtrls;
+            }
+        }
+
+        private static InterfaceSectionBackup BackupInterface(Script sc)
+        {
+            List<UIControl> uiCtrls = sc.GetInterfaceControls(out string ifaceSectionName);
+
+            // Collect uiCtrls which have value
+            List<UIControl> valueCtrls = new List<UIControl>();
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                string value = uiCtrl.GetValue(false);
+                if (value != null)
+                    valueCtrls.Add(uiCtrl);
+            }
+
+            return new InterfaceSectionBackup(ifaceSectionName, valueCtrls);
+        }
+
+        private static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
+        {
+            List<UIControl> uiCtrls = sc.GetInterfaceControls(out string ifaceSectionName);
+
+            if (!ifaceSectionName.Equals(backup.SectionName, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            List<UIControl> bakCtrls = backup.ValueCtrls;
+            List<UIControl> newCtrls = new List<UIControl>(uiCtrls.Count);
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                // Get old uiCtrl, equaility identified by Key and Type.
+                UIControl bakCtrl = bakCtrls.FirstOrDefault(bak =>
+                    bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase) && bak.Type == uiCtrl.Type);
+                if (bakCtrl == null)
+                    continue;
+
+                // Get old value
+                string bakValue = bakCtrl.GetValue(false);
+                Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+
+                // Add to newCtrls only if apply was successful
+                if (uiCtrl.SetValue(bakValue, false, out _))
+                    newCtrls.Add(uiCtrl);
+            }
+
+            // Write to file
+            UIControl.Update(newCtrls);
+            sc = sc.Project.RefreshScript(sc);
+            return true;
         }
         #endregion
 
