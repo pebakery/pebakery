@@ -94,7 +94,6 @@ namespace PEBakery.Core.Commands
                     if (!w.CurMainTree.Script.Equals(sc))
                         return;
 
-                    w.UpdateScriptTree(s.Project, false);
                     w.CurMainTree.Script = sc;
                     w.DrawScript(w.CurMainTree.Script);
                 });
@@ -164,7 +163,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
                 return logs;
             }
-
+            
             // Rerender script
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -173,7 +172,6 @@ namespace PEBakery.Core.Commands
                 if (!w.CurMainTree.Script.Equals(sc))
                     return;
 
-                w.UpdateScriptTree(s.Project, false);
                 w.CurMainTree.Script = sc;
                 w.DrawScript(w.CurMainTree.Script);
             });

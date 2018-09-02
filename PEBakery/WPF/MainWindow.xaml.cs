@@ -643,7 +643,6 @@ namespace PEBakery.WPF
         #region Main Buttons
         private async void BuildButton_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Exact Locking without Race Condition
             if (Engine.WorkingLock == 0)  // Start Build
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
@@ -679,7 +678,7 @@ namespace PEBakery.WPF
                 // Run
                 int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
-#if DEBUG  // TODO: Remove this later, this line is for Debug
+#if DEBUG
                 Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
                 {
                     IncludeComments = true,
@@ -907,7 +906,6 @@ namespace PEBakery.WPF
             { // Open Folder
                 ScriptExternalEditor_Click(sender, e);
             }
-
 
             e.Handled = true;
         }
@@ -1153,18 +1151,21 @@ namespace PEBakery.WPF
             return final;
         }
 
-        public void UpdateScriptTree(Project project, bool redrawScript, bool assertDirExist = true)
+        public void UpdateScriptTree(Project project, bool redrawProject, bool assertDirExist = true)
         {
             TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
-            projectRoot?.Children.Clear();
+            if (projectRoot == null)
+                return; // Unable to continue
+
+            projectRoot.Children.Clear();
 
             ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, Model.MainTree, projectRoot);
 
-            if (redrawScript && projectRoot != null)
+            if (redrawProject)
             {
                 CurMainTree = projectRoot;
                 CurMainTree.IsExpanded = true;
-                DrawScript(projectRoot.Script);
+                DrawScript(CurMainTree.Script);
             }
         }
 
@@ -2169,7 +2170,7 @@ namespace PEBakery.WPF
                 if (exist == 1)
                 {
                     Ini.WriteKey(path, "Main", "Selected", "False");
-                    TreeViewModel found = FindScriptByFullPath(path);
+                    TreeViewModel found = FindScriptByRealPath(path);
                     if (found != null)
                     {
                         if (sc.Type != ScriptType.Directory && sc.Mandatory == false && sc.Selected != SelectedState.None)
@@ -2183,12 +2184,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region Find Script
-        public TreeViewModel FindScriptByFullPath(string fullPath)
+        public TreeViewModel FindScriptByRealPath(string realPath)
         {
-            return RecursiveFindScriptByFullPath(Root, fullPath);
+            return RecursiveFindScriptByRealPath(Root, realPath);
         }
 
-        private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)
+        private static TreeViewModel RecursiveFindScriptByRealPath(TreeViewModel cur, string fullPath)
         {
             if (cur.Script != null)
             {
@@ -2200,7 +2201,7 @@ namespace PEBakery.WPF
             {
                 foreach (TreeViewModel next in cur.Children)
                 {
-                    TreeViewModel found = RecursiveFindScriptByFullPath(next, fullPath);
+                    TreeViewModel found = RecursiveFindScriptByRealPath(next, fullPath);
                     if (found != null)
                         return found;
                 }

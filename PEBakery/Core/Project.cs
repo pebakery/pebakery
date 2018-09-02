@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 using System.Windows;
@@ -705,7 +706,8 @@ namespace PEBakery.Core
         #region RefreshScript
         public Script RefreshScript(Script sc, EngineState s = null)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
             if (sc.Type == ScriptType.Directory)
                 return null;
 
@@ -726,6 +728,7 @@ namespace PEBakery.Core
                 // Investigate EngineState to update it on build list
                 if (s == null)
                     return sc;
+
                 int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
                 if (sIdx != -1)
                     s.Scripts[sIdx] = sc;
@@ -739,6 +742,7 @@ namespace PEBakery.Core
         /// Load scripts into project while running
         /// Return true if error
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
         {
             return LoadScriptRuntime(realPath, realPath, opts);

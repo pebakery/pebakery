@@ -145,7 +145,7 @@ namespace PEBakery.Core
 
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = false;
-                    w.CurBuildTree = s.MainViewModel.BuildTree.FindScriptByFullPath(s.CurrentScript.RealPath);
+                    w.CurBuildTree = s.MainViewModel.BuildTree.FindScriptByRealPath(s.CurrentScript.RealPath);
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = true;
                 }));
