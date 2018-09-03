@@ -25,30 +25,29 @@
     not derived from or based on this program. 
 */
 
+using MahApps.Metro.IconPacks;
+using PEBakery.Core;
+using PEBakery.Helper;
+using PEBakery.IniLib;
+using SQLite;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Windows;
-using System.Windows.Data;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shell;
-using SQLite;
-using PEBakery.Helper;
-using PEBakery.IniLib;
-using PEBakery.Core;
-using MahApps.Metro.IconPacks;
-using PEBakery.WPF.Controls;
 
 namespace PEBakery.WPF
 {
@@ -406,7 +405,7 @@ namespace PEBakery.WPF
                     watch.Stop();
                     double t = watch.Elapsed.TotalSeconds;
 
-                    if (sc == null)
+                    if (sc != null)
                     {
                         PostRefreshScript(node, sc);
                         Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)";
@@ -428,8 +427,11 @@ namespace PEBakery.WPF
         {
             node.Script = sc;
             node.ParentCheckedPropagation();
-            UpdateTreeViewIcon(node);
-            DrawScript(node.Script);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdateTreeViewIcon(node);
+                DrawScript(node.Script);
+            });
         }
 
         private Task StartSyntaxCheck(bool quiet)
@@ -1996,7 +1998,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public string Text => _script.Title;
+        public string Text => StringEscaper.Unescape(_script.Title);
 
         private Script _script;
         public Script Script

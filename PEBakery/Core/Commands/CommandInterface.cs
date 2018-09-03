@@ -163,7 +163,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
                 return logs;
             }
-            
+
             // Rerender script
             Application.Current?.Dispatcher.Invoke(() =>
             {
