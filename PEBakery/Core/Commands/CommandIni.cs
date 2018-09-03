@@ -26,12 +26,9 @@
 */
 
 using PEBakery.IniLib;
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 
 namespace PEBakery.Core.Commands
 {

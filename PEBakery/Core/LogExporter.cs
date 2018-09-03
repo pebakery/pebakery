@@ -25,13 +25,13 @@
     not derived from or based on this program. 
 */
 
+using RazorEngine.Templating;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using RazorEngine.Templating;
 
 namespace PEBakery.Core
 {
@@ -244,6 +244,7 @@ namespace PEBakery.Core
                         }
                         _w.WriteLine();
 
+                        // Code Logs
                         _w.WriteLine("<Code Logs>");
                         {
                             foreach (DB_Script scLog in processedScripts)
@@ -480,7 +481,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportRefScriptText
-        private string ExportRefScriptText(DB_BuildLog bLog, DB_Script[] refScLogs)
+        private static string ExportRefScriptText(DB_BuildLog bLog, DB_Script[] refScLogs)
         {
             if (bLog.RefScriptId == 0 || bLog.RefScriptId == bLog.ScriptId)
                 return null;

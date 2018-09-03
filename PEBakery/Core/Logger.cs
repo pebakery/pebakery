@@ -25,19 +25,18 @@
    not derived from or based on this program. 
 */
 
+using NUglify;
 using PEBakery.Helper;
+using SQLite;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Windows;
-using NUglify;
-using SQLite;
+using NUglify.Html;
 
 namespace PEBakery.Core
 {
@@ -398,7 +397,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Logger Class
+    #region Logger
     public class Logger : IDisposable
     {
         #region Fields and Properties
@@ -1054,7 +1053,13 @@ namespace PEBakery.Core
                     rawHtml = w.ToString();
                 }
 
-                UglifyResult res = Uglify.Html(rawHtml);
+                // Ignore CRLF in td, th
+                HtmlSettings uglifySettings = new HtmlSettings
+                {
+                    RemoveOptionalTags = false,
+                };
+                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
                 using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
                     if (res.HasErrors)
@@ -1094,7 +1099,13 @@ namespace PEBakery.Core
                     rawHtml = w.ToString();
                 }
 
-                UglifyResult res = Uglify.Html(rawHtml);
+                // Ignore CRLF in td, th
+                HtmlSettings uglifySettings = new HtmlSettings
+                {
+                    RemoveOptionalTags = false,
+                };
+                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
                 using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
                 {
                     if (res.HasErrors)

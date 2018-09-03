@@ -26,6 +26,9 @@
 */
 
 
+using ManagedWimLib;
+using Microsoft.Wim;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -33,9 +36,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using PEBakery.Helper;
-using ManagedWimLib;
-using Microsoft.Wim;
 
 namespace PEBakery.Core.Commands
 {
@@ -775,12 +775,14 @@ namespace PEBakery.Core.Commands
                 List<string> extractNormalPaths = new List<string>();
                 List<string> extractGlobPaths = new List<string>();
 
+                // Read listfile
                 Encoding encoding = FileHelper.DetectTextEncoding(listFilePath);
                 using (StreamReader r = new StreamReader(listFilePath, encoding, false))
                 {
                     var extractPaths = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim());
                     foreach (string path in extractPaths)
                     {
+                        Debug.Assert(0 < path.Length, "Internal Logic Error at CommandWim.WimExtractBulk"); // It should be, because of string.IsNullOrWhiteSpace()
                         if (path[0] == ';' || path[0] == '#')
                             continue;
 
@@ -823,6 +825,35 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
+                    // Log ListFile
+                    string globPaths = string.Empty;
+                    string normalPaths = string.Empty;
+                    if (0 < extractGlobPaths.Count)
+                        globPaths = string.Join(Environment.NewLine, extractGlobPaths);
+                    if (0 < extractNormalPaths.Count)
+                        normalPaths = string.Join(Environment.NewLine, extractNormalPaths);
+
+                    string listFileContent;
+                    if (0 < globPaths.Length)
+                    {
+                        if (0 < normalPaths.Length) // GlobPaths - O, NormalPath - O
+                            listFileContent = globPaths + Environment.NewLine + normalPaths;
+                        else // GlobPaths - O, NormalPath - X
+                            listFileContent = globPaths;
+                    }
+                    else
+                    {
+                        if (0 < normalPaths.Length) // GlobPaths - X, NormalPath - O
+                            listFileContent = normalPaths;
+                        else // GlobPaths - X, NormalPath - X
+                            listFileContent = string.Empty;
+                    }
+
+                    if (0 == listFileContent.Length)
+                        logs.Add(new LogInfo(info.NoWarnFlag ? LogState.Ignore : LogState.Warning, $"Listfile [{listFilePath}] is empty"));
+                    else
+                        logs.Add(new LogInfo(LogState.Info, $"Extract files based on listfile [{listFilePath}] :\r\n{listFileContent}"));
+
                     // Extract file(s)
                     s.MainViewModel.BuildCommandProgressTitle = "WimExtractBulk Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
@@ -845,7 +876,7 @@ namespace PEBakery.Core.Commands
                             wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
                         }
 
-                        logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}]"));
                     }
                     finally
                     { // Finalize Command Progress Report
