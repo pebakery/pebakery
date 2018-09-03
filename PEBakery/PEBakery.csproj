@@ -347,10 +347,6 @@
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.IniLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PEBakery.LZ4Lib\PEBakery.LZ4Lib.csproj">
-      <Project>{9c3609be-51b8-418e-9081-84ef5ece5746}</Project>
-      <Name>PEBakery.LZ4Lib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PEBakery.TreeLib\PEBakery.TreeLib.csproj">
       <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>
       <Name>PEBakery.TreeLib</Name>
