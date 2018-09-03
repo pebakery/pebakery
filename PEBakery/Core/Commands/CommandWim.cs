@@ -791,9 +791,6 @@ namespace PEBakery.Core.Commands
                     }
                 }
 
-                // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE ListFile)
-                // FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
-
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
                     ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
@@ -827,7 +824,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Extract file(s)
-                    s.MainViewModel.BuildCommandProgressTitle = "WimExtractList Progress";
+                    s.MainViewModel.BuildCommandProgressTitle = "WimExtractBulk Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
                     s.MainViewModel.BuildCommandProgressMax = 100;
                     s.MainViewModel.BuildCommandProgressShow = true;
