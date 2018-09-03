@@ -215,11 +215,14 @@ namespace PEBakery.Core.Commands
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
+                        Task refreshTask = Task.CompletedTask;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w?.StartRefreshScript().Wait();
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+                            refreshTask = w.StartRefreshScript();
                         });
+                        refreshTask.Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
                     }
