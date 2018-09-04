@@ -802,15 +802,10 @@ namespace PEBakery.WPF
             /*
             Model.WorkInProgress = true;
 
-            using (WebClient c = new WebClient())
-            {
-                // string str = c.DownloadData();
-            }
-
             Model.WorkInProgress = false;
             */
 
-            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
@@ -969,6 +964,8 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
+            MessageBox.Show("To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            /*
             Script sc = CurMainTree.Script;
             Project p = CurMainTree.Script.Project;
 
@@ -1021,7 +1018,7 @@ namespace PEBakery.WPF
             // Build Ended, Switch to Normal View
             Model.SwitchNormalBuildInterface = true;
             DrawScript(CurMainTree.Script);
-
+            */
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
