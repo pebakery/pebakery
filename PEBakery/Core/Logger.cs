@@ -1053,7 +1053,7 @@ namespace PEBakery.Core
                     rawHtml = w.ToString();
                 }
 
-                // Ignore CRLF in td, th
+                // Do not collapse CRLF in td, th
                 HtmlSettings uglifySettings = new HtmlSettings
                 {
                     RemoveOptionalTags = false,
@@ -1099,7 +1099,7 @@ namespace PEBakery.Core
                     rawHtml = w.ToString();
                 }
 
-                // Ignore CRLF in td, th
+                // Do not collapse CRLF in td, th
                 HtmlSettings uglifySettings = new HtmlSettings
                 {
                     RemoveOptionalTags = false,

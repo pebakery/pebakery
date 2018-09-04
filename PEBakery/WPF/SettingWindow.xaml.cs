@@ -891,14 +891,14 @@ namespace PEBakery.WPF
             Log_MinifyHtmlExport = true;
 
             // Compatibility
-            Compat_AsteriskBugDirCopy = true;
+            Compat_AsteriskBugDirCopy = false;
             Compat_AsteriskBugDirLink = false;
-            Compat_FileRenameCanMoveDir = true;
+            Compat_FileRenameCanMoveDir = false;
             Compat_AllowLetterInLoop = false;
-            Compat_LegacyBranchCondition = true;
-            Compat_LegacyRegWrite = true;
-            Compat_AllowSetModifyInterface = true;
-            Compat_LegacyInterfaceCommand = true;
+            Compat_LegacyBranchCondition = false;
+            Compat_LegacyRegWrite = false;
+            Compat_AllowSetModifyInterface = false;
+            Compat_LegacyInterfaceCommand = false;
             Compat_IgnoreWidthOfWebLabel = false;
             Compat_OverridableFixedVariables = false;
             Compat_EnableEnvironmentVariables = false;
