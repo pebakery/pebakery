@@ -66,7 +66,7 @@ namespace PEBakery.Core
         }
 
         #region Cache Script or Scripts
-        public (int cached, int updated) CacheScripts(ProjectCollection projects, string baseDir)
+        public (int CachedCount, int UpdatedCount) CacheScripts(ProjectCollection projects, string baseDir)
         {
             try
             {
@@ -158,7 +158,7 @@ namespace PEBakery.Core
                 }
             }
             else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                     (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) || scCache.FileSize != f.Length))
+                     (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())

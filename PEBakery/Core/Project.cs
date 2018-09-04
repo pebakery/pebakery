@@ -82,15 +82,15 @@ namespace PEBakery.Core
         #endregion
 
         #region PrepareLoad
-        public int PrepareLoad(out int processCount)
+        public (int TotalCount, int LinkCount) PrepareLoad()
         {
             // Ex) projNameList = { "ChrisPE", "MistyPE", "Win10PESE" }
             // Ex) scriptPathDict = [script paths of ChrisPE, script paths of MistyPE, ... ]
             List<string> projNameList = GetProjectNameList();
-            GetScriptPaths(projNameList, out processCount);
+            (_, int linkCount) = GetScriptPaths(projNameList);
 
-            // Return count of all scripts
-            return _allScriptPaths.Count + _allDirLinkPaths.Count;
+            // Return count of all scripts (all .script + dir link)
+            return (_allScriptPaths.Count + _allDirLinkPaths.Count, linkCount);
         }
         #endregion
 
@@ -129,10 +129,10 @@ namespace PEBakery.Core
         /// <summary>
         /// Get scriptPathDict and allScriptPathList
         /// </summary>
-        public int GetScriptPaths(List<string> projNameList, out int linkCount)
+        public (int AllCount, int LinkCount) GetScriptPaths(List<string> projNameList)
         {
             int allCount = 0;
-            linkCount = 0;
+            int linkCount = 0;
             foreach (string projName in projNameList)
             {
                 string projectDir = Path.Combine(ProjectRoot, projName);
@@ -160,7 +160,7 @@ namespace PEBakery.Core
                 _dirLinkPathDict[projName] = dirLinkPathList;
                 _allDirLinkPaths.AddRange(dirLinkPathList);
             }
-            return allCount;
+            return (allCount, linkCount);
         }
         #endregion
 

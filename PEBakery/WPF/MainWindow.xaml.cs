@@ -74,7 +74,6 @@ namespace PEBakery.WPF
         private readonly ScriptCache _scriptCache;
 
         public const int MaxDpiScale = 4;
-        private int _allScriptCount = 0;
         public SettingViewModel Setting { get; }
 
         public MainViewModel Model { get; }
@@ -235,8 +234,8 @@ namespace PEBakery.WPF
                     }
 
                     // Prepare by getting script paths
-                    _allScriptCount = Projects.PrepareLoad(out int stage2LinkCount);
-                    Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = _allScriptCount + stage2LinkCount; });
+                    (int totalScriptCount, int stage2LinkCount) = Projects.PrepareLoad();
+                    Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = totalScriptCount + stage2LinkCount; });
 
                     // Progress handler
                     int loadedScriptCount = 0;
@@ -280,7 +279,7 @@ namespace PEBakery.WPF
                         if (0 < stage)
                         {
                             if (stage == 1)
-                                msg = $"Stage {stage} ({loadedScriptCount} / {_allScriptCount})\r\n{msg}";
+                                msg = $"Stage {stage} ({loadedScriptCount} / {totalScriptCount})\r\n{msg}";
                             else
                                 msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
                         }
@@ -315,13 +314,13 @@ namespace PEBakery.WPF
                         string msg;
                         if (Setting.Script_EnableCache)
                         {
-                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (_allScriptCount + stage2LinkCount);
-                            msg = $"{_allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (totalScriptCount + stage2LinkCount);
+                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                             Model.StatusBarText = msg;
                         }
                         else
                         {
-                            msg = $"{_allScriptCount} scripts loaded ({t:0.#}s)";
+                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s)";
                             Model.StatusBarText = msg;
                         }
 
@@ -362,12 +361,12 @@ namespace PEBakery.WPF
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
-                    (int updatedCount, _) = _scriptCache.CacheScripts(Projects, BaseDir);
+                    (int cachedCount, int updatedCount) = _scriptCache.CacheScripts(Projects, BaseDir);
                     watch.Stop();
 
-                    double cachedPercent = (double)updatedCount * 100 / _allScriptCount;
+                    double cachedPercent = (double)updatedCount * 100 / cachedCount;
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                    string msg = $"{_allScriptCount} scripts cached ({t:0.###}s), {cachedPercent:0.#}% updated";
+                    string msg = $"{cachedCount} scripts cached ({t:0.###}s), {cachedPercent:0.#}% updated";
                     Logger.SystemWrite(new LogInfo(LogState.Info, msg));
                     Logger.SystemWrite(Logger.LogSeperator);
 
