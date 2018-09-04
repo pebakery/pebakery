@@ -49,7 +49,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Documentation
 
-Go to [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
+Please read [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
 
 ## Progress and TODO
 
