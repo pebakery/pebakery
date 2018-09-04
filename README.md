@@ -4,7 +4,7 @@
     <img src="./Image/Banner.svg" height="140">
 </div>
 
-PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment.
+PEBakery is a builder specialized in customizing Windows Preinstalled Environment.
 
 | Branch    | Build Status   |
 |-----------|----------------|
@@ -15,16 +15,15 @@ PEBakery is backward compatible with WinBuilder 082.
 
 ## Disclaimer
 
-- All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
-- Even though I did not experience data corruption, it is highly recommended to backup your files.
-- I do not provide any warranty, use at your own risk.
+- All implementation is only backed by documentation and black box testing, without violating WinBuilder 082's EULA.
+- I do not provide any warranty, use at your own risk. Backup is highly recommended.
 - Windows Preinstalled Environment is a registered trademark of Microsoft.
 
 ## Download
 
-Official release version is recommended for normal use.
+The official release version is recommended for normal use.
 
-Nightly build is provided for testing purpose.
+A nightly build is provided for the testing purpose.
 
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
@@ -33,7 +32,7 @@ Nightly build is provided for testing purpose.
 
 PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
 
-Some parts of PEBakery is licensed under MIT License and others.
+Some parts of PEBakery is licensed under the MIT License and others.
 
 ## Build
 
@@ -58,6 +57,6 @@ See [here](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 
-### PEBakery Beta 4
+### PEBakery Beta 5
 
-![ChrisPE with PEBakery Beta 4](./Image/PEBakery-ChrisPE.png)
+![ChrisPE with PEBakery Beta 5](./Image/PEBakery-ChrisPE.png)
