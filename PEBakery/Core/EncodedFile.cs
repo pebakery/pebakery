@@ -26,7 +26,6 @@
 */
 
 // #define DEBUG_MIDDLE_FILE
-// #define ENABLE_LZ4
 
 using Joveler.ZLibWrapper;
 using PEBakery.Helper;
@@ -41,12 +40,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using PEBakery.XZLib;
-#if ENABLE_LZ4
-using PEBakery.LZ4Lib;
-#endif
 
 namespace PEBakery.Core
 {
@@ -128,9 +125,6 @@ namespace PEBakery.Core
             ZLib = 0x00, // Type 1
             Raw = 0x01, // Type 2
             XZ = 0x02, // Type 3 (PEBakery Only)
-#if ENABLE_LZ4
-            LZ4 = 0x03, // Type 4 (PEBakery Only)
-#endif
         }
 
         public static EncodeMode ParseEncodeMode(string str)
@@ -142,10 +136,6 @@ namespace PEBakery.Core
                 mode = EncodeMode.Raw;
             else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase) || str.Equals("LZMA2", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.XZ;
-#if ENABLE_LZ4
-            else if (str.Equals("LZ4", StringComparison.OrdinalIgnoreCase))
-                mode = EncodeMode.LZ4;
-#endif
             else
                 throw new ArgumentException($"Wrong EncodeMode [{str}]");
 
@@ -170,10 +160,6 @@ namespace PEBakery.Core
                     return "None";
                 case EncodeMode.XZ:
                     return "LZMA2";
-#if ENABLE_LZ4
-                case EncodeMode.LZ4:
-                    return "LZ4";
-#endif
                 default:
                     throw new ArgumentException($"Wrong EncodeMode [{mode}]");
             }
@@ -207,6 +193,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachFile, ContainsFile
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcFilePath, type));
+        }
+
         public static Script AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
@@ -223,6 +214,11 @@ namespace PEBakery.Core
             }
         }
 
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcStream, type));
+        }
+
         public static Script AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null)
@@ -234,6 +230,11 @@ namespace PEBakery.Core
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
             return Encode(sc, folderName, fileName, srcStream, type, false);
+        }
+
+        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        {
+            return Task.Run(() => AttachFile(sc, folderName, fileName, srcBuffer, type));
         }
 
         public static Script AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
@@ -265,7 +266,7 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.DeleteFile");
+                    throw new InternalException("Internal Logic Error at EncodedFile.ContainsFile");
             }
 
             if (!fileDict.ContainsKey(fileName))
@@ -276,6 +277,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachInterface, ContainsInterface
+        public static Task<Script> AttachInterfaceAsync(Script sc, string fileName, string srcFilePath)
+        {
+            return Task.Run(() => AttachInterface(sc, fileName, srcFilePath));
+        }
+
         public static Script AttachInterface(Script sc, string fileName, string srcFilePath)
         {
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
@@ -298,6 +304,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachLogo, ContainsLogo
+
+        public static Task<Script> AttachLogoAsync(Script sc, string fileName, string srcFilePath)
+        {
+            return Task.Run(() => AttachLogo(sc, fileName, srcFilePath));
+        }
+
         public static Script AttachLogo(Script sc, string fileName, string srcFilePath)
         {
             if (sc == null)
@@ -317,7 +329,7 @@ namespace PEBakery.Core
             }
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -325,7 +337,7 @@ namespace PEBakery.Core
             return Encode(sc, dirName, fileName, srcStream, type, true);
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -351,6 +363,11 @@ namespace PEBakery.Core
         #endregion
 
         #region AddFolder, ContainsFolder
+        public static Task<Script> AddFolderAsync(Script sc, string folderName, bool overwrite)
+        {
+            return Task.Run(() => AddFolder(sc, folderName, overwrite));
+        }
+
         public static Script AddFolder(Script sc, string folderName, bool overwrite)
         {
             if (sc == null)
@@ -412,6 +429,12 @@ namespace PEBakery.Core
         #endregion
 
         #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
+
+        public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream)
+        {
+            return Task.Run(() => ExtractFile(sc, folderName, fileName, outStream));
+        }
+
         public static long ExtractFile(Script sc, string folderName, string fileName, Stream outStream)
         {
             if (sc == null)
@@ -423,6 +446,11 @@ namespace PEBakery.Core
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded, outStream);
+        }
+
+        public static Task<MemoryStream> ExtractFileInMemAsync(Script sc, string folderName, string fileName)
+        {
+            return Task.Run(() => ExtractFileInMem(sc, folderName, fileName));
         }
 
         public static MemoryStream ExtractFileInMem(Script sc, string folderName, string fileName)
@@ -477,6 +505,11 @@ namespace PEBakery.Core
             }
         }
 
+        public static Task<MemoryStream> ExtractLogoAsync(Script sc)
+        {
+            return Task.Run(() => ExtractLogo(sc, out _));
+        }
+
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
         {
             if (sc == null)
@@ -498,7 +531,7 @@ namespace PEBakery.Core
             return DecodeInMemory(encoded);
         }
 
-        public static Image ExtractLogoImage(Script sc, double? svgSize = null)
+        public static ImageSource ExtractLogoImageSource(Script sc, double? svgSize = null)
         {
             ImageSource imageSource;
             using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
@@ -515,14 +548,7 @@ namespace PEBakery.Core
                     imageSource = ImageHelper.ImageToBitmapImage(mem);
                 }
             }
-
-            return new Image
-            {
-                StretchDirection = StretchDirection.DownOnly,
-                Stretch = Stretch.Uniform,
-                UseLayoutRounding = true, // To prevent blurry image rendering
-                Source = imageSource
-            };
+            return imageSource;
         }
 
         public static MemoryStream ExtractInterface(Script sc, string fileName)
@@ -537,7 +563,13 @@ namespace PEBakery.Core
         #endregion
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
-        public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
+
+        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string dirName, string fileName, bool detail = false)
+        {
+            return Task.Run(() => GetFileInfo(sc, dirName, fileName, detail));
+        }
+
+        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -549,7 +581,7 @@ namespace PEBakery.Core
             };
 
             if (!sc.Sections.ContainsKey(dirName))
-                throw new InvalidOperationException($"Directory [{dirName}] does not exist");
+                return (null, $"Directory [{dirName}] does not exist");
 
             Dictionary<string, string> fileDict;
             switch (sc.Sections[dirName].DataType)
@@ -561,14 +593,18 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+                    return (null, "Internal Logic Error at EncodedFile.GetFileInfo");
             }
 
             if (!fileDict.ContainsKey(fileName))
-                throw new InvalidOperationException("File index does not exist");
+                return (null, $"File index of [{fileName}] does not exist");
 
             string fileIndex = fileDict[fileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+            if (info.RawSize == -1)
+                return (null, $"Unable to parse raw size of [{fileName}]");
+            if (info.EncodedSize == -1)
+                return (null, $"Unable to parse encoded size of [{fileName}]");
 
             if (detail)
             {
@@ -576,33 +612,38 @@ namespace PEBakery.Core
                 info.EncodeMode = GetEncodeMode(encoded);
             }
 
-            return info;
+            return (info, null);
         }
 
-        public static EncodedFileInfo GetLogoInfo(Script sc, bool detail = false)
+        public static Task<(EncodedFileInfo info, string errMsg)> GetLogoInfoAsync(Script sc, bool detail = false)
+        {
+            return Task.Run(() => GetLogoInfo(sc, detail));
+        }
+
+        public static (EncodedFileInfo info, string errMsg) GetLogoInfo(Script sc, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo
-            {
-                DirName = AuthorEncoded,
-            };
+            EncodedFileInfo info = new EncodedFileInfo { DirName = AuthorEncoded };
 
             if (!sc.Sections.ContainsKey(AuthorEncoded))
-                throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
+                return (null, "Directory [AuthorEncoded] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].GetIniDict();
-
             if (!fileDict.ContainsKey("Logo"))
-                throw new InvalidOperationException("Logo does not exist");
+                return (null, "Logo does not exist");
 
             info.FileName = fileDict["Logo"];
             if (!fileDict.ContainsKey(info.FileName))
-                throw new InvalidOperationException("File index does not exist");
+                return (null, "File index of [Logo] does not exist");
 
             string fileIndex = fileDict[info.FileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+            if (info.RawSize == -1)
+                return (null, $"Unable to parse raw size of [{info.FileName}]");
+            if (info.EncodedSize == -1)
+                return (null, $"Unable to parse encoded size of [{info.FileName}]");
 
             if (detail)
             {
@@ -610,16 +651,21 @@ namespace PEBakery.Core
                 info.EncodeMode = GetEncodeModeInMem(encoded);
             }
 
-            return info;
+            return (info, null);
         }
 
-        public static List<EncodedFileInfo> GetFolderInfo(Script sc, string dirName, bool detail = false)
+        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string dirName, bool detail = false)
+        {
+            return Task.Run(() => GetFolderInfo(sc, dirName, detail));
+        }
+
+        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string dirName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             if (!sc.Sections.ContainsKey(dirName))
-                throw new InvalidOperationException($"Directory [{dirName}] does not exist");
+                return (null, $"Directory [{dirName}] does not exist");
 
             Dictionary<string, string> fileDict;
             switch (sc.Sections[dirName].DataType)
@@ -631,7 +677,7 @@ namespace PEBakery.Core
                     fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                     break;
                 default:
-                    throw new InternalException("Internal Logic Error at EncodedFile.GetFolderInfo");
+                    return (null, "Internal Logic Error at EncodedFile.GetFolderInfo");
             }
 
             List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
@@ -644,10 +690,14 @@ namespace PEBakery.Core
                 };
 
                 if (!fileDict.ContainsKey(fileName))
-                    throw new InvalidOperationException("File index does not exist");
+                    return (null, $"File index of [{fileName}] does not exist");
 
                 string fileIndex = fileDict[fileName].Trim();
                 (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+                if (info.RawSize == -1)
+                    return (null, $"Unable to parse raw size of [{fileName}]");
+                if (info.EncodedSize == -1)
+                    return (null, $"Unable to parse encoded size of [{fileName}]");
 
                 if (detail)
                 {
@@ -658,18 +708,22 @@ namespace PEBakery.Core
                 infos.Add(info);
             }
 
-            return infos;
+            return (infos, null);
         }
 
-        public static Dictionary<string, List<EncodedFileInfo>> GetAllFilesInfo(Script sc, bool detail = false)
+        public static Task<(Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg)> GetAllFilesInfoAsync(Script sc, bool detail = false)
+        {
+            return Task.Run(() => GetAllFilesInfo(sc, detail));
+        }
+
+        public static (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) GetAllFilesInfo(Script sc, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
-
             if (!sc.Sections.ContainsKey(EncodedFolders))
-                return infoDict;
+                return (infoDict, null); // Return empty dict
 
             List<string> dirNames = Ini.FilterLines(sc.Sections[EncodedFolders].GetLines());
             int aeIdx = dirNames.FindIndex(x => x.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase));
@@ -713,7 +767,7 @@ namespace PEBakery.Core
                         fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
                         break;
                     default:
-                        throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+                        return (null, "Internal Logic Error at EncodedFile.GetAllFilesInfo");
                 }
 
                 foreach (var kv in fileDict)
@@ -726,7 +780,15 @@ namespace PEBakery.Core
                         DirName = dirName,
                         FileName = fileName,
                     };
+
+                    if (!fileDict.ContainsKey(fileName))
+                        return (null, $"File index of [{fileName}] does not exist");
+
                     (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
+                    if (info.RawSize == -1)
+                        return (null, $"Unable to parse raw size of [{fileName}]");
+                    if (info.EncodedSize == -1)
+                        return (null, $"Unable to parse encoded size of [{fileName}]");
 
                     if (detail)
                     {
@@ -738,26 +800,39 @@ namespace PEBakery.Core
                 }
             }
 
-            return infoDict;
+            return (infoDict, null);
         }
 
+        /// <summary>
+        /// Parse file index
+        /// </summary>
+        /// <param name="fileIndex">String of file index Ex) "522,696"</param>
+        /// <returns>
+        /// If succeed, return (rawSize, encodedSize)
+        /// If failes, return (-1, -1)
+        /// </returns>
         private static (int rawSize, int encodedSize) ParseFileIndex(string fileIndex)
         {
             Match m = Regex.Match(fileIndex, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (!m.Success)
-                throw new InvalidOperationException("File index corrupted");
+                return (-1, -1);
 
             if (!NumberHelper.ParseInt32(m.Groups[1].Value, out int rawSize))
-                throw new InvalidOperationException("File index corrupted");
+                return (-1, 0);
             if (!NumberHelper.ParseInt32(m.Groups[2].Value, out int encodedSize))
-                throw new InvalidOperationException("File index corrupted");
+                return (rawSize, -1);
 
             return (rawSize, encodedSize);
         }
         #endregion
 
         #region DeleteFile, DeleteFolder, DeleteLogo
-        public static Script DeleteFile(Script sc, string folderName, string fileName, out string errorMsg)
+        public static Task<(Script, string)> DeleteFileAsync(Script sc, string folderName, string fileName)
+        {
+            return Task.Run(() => DeleteFile(sc, folderName, fileName));
+        }
+
+        public static (Script, string) DeleteFile(Script sc, string folderName, string fileName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -765,7 +840,7 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(folderName));
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-            errorMsg = null;
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
@@ -773,10 +848,7 @@ namespace PEBakery.Core
             try
             {
                 if (!sc.Sections.ContainsKey(folderName))
-                {
-                    errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                 // Get encoded file index
                 Dictionary<string, string> fileDict;
@@ -793,10 +865,7 @@ namespace PEBakery.Core
                 }
 
                 if (!fileDict.ContainsKey(fileName))
-                {
-                    errorMsg = $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]");
 
                 // Delete encoded file index
                 if (!Ini.DeleteKey(sc.RealPath, folderName, fileName))
@@ -818,16 +887,22 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
 
-        public static Script DeleteFolder(Script sc, string folderName, out string errorMsg)
+        public static Task<(Script, string)> DeleteFolderAsync(Script sc, string folderName)
+        {
+            return Task.Run(() => DeleteFolder(sc, folderName));
+        }
+
+        public static (Script, string) DeleteFolder(Script sc, string folderName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
             if (folderName == null)
                 throw new ArgumentNullException(nameof(folderName));
-            errorMsg = null;
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
@@ -838,34 +913,23 @@ namespace PEBakery.Core
                     !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!sc.Sections.ContainsKey(EncodedFolders))
-                    {
-                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     List<string> folders = Ini.FilterLines(sc.Sections[EncodedFolders].GetLines());
                     int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
-                    {
-                        errorMsg = $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     // Delete index of encoded folder
                     folders.RemoveAt(idx);
                     // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
                     if (!Ini.DeleteSection(sc.RealPath, EncodedFolders))
-                    {
-                        errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
-                        return sc;
-                    }
+                        return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
+
                     foreach (IniKey key in folders.Select(x => new IniKey(EncodedFolders, x)))
                     {
                         if (!Ini.WriteRawLine(sc.RealPath, key))
-                        {
-                            errorMsg = $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]";
-                            return sc;
-                        }
+                            return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
                     }
                 }
 
@@ -920,27 +984,31 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
 
-        public static Script DeleteLogo(Script sc, out string errorMsg)
+        public static Task<(Script, string)> DeleteLogoAsync(Script sc)
+        {
+            return Task.Run(() => DeleteLogo(sc));
+        }
+
+        public static (Script, string) DeleteLogo(Script sc)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
+
+            string errorMsg = null;
 
             // Backup
             string backupFile = Path.GetTempFileName();
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
-                errorMsg = null;
-
                 // Get encoded file index
                 if (!sc.Sections.ContainsKey(AuthorEncoded))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
+
                 Dictionary<string, string> fileDict;
                 switch (sc.Sections[AuthorEncoded].DataType)
                 {
@@ -956,16 +1024,11 @@ namespace PEBakery.Core
 
                 // Get filename of logo
                 if (!fileDict.ContainsKey("Logo"))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
+
                 string logoFile = fileDict["Logo"];
                 if (!fileDict.ContainsKey(logoFile))
-                {
-                    errorMsg = $"Logo not found in [{sc.RealPath}]";
-                    return sc;
-                }
+                    return (sc, $"Logo not found in [{sc.RealPath}]");
 
                 // Delete encoded file section
                 if (!Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, logoFile)))
@@ -987,7 +1050,8 @@ namespace PEBakery.Core
             }
 
             // Return refreshed script
-            return sc.Project.RefreshScript(sc);
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
         }
         #endregion
 
@@ -1072,18 +1136,6 @@ namespace PEBakery.Core
                                 }
                             }
                             break;
-#if ENABLE_LZ4
-                        case EncodeMode.LZ4:
-                            using (LZ4FrameStream xzs = new LZ4FrameStream(encodeStream, LZ4Mode.Compress, LZ4CompLevel.VeryHigh, true))
-                            {
-                                while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
-                                {
-                                    crc32.Append(buffer, 0, readByte);
-                                    xzs.Write(buffer, 0, readByte);
-                                }
-                            }
-                            break;
-#endif
                         default:
                             throw new InternalException($"Wrong EncodeMode [{mode}]");
                     }
@@ -1134,11 +1186,6 @@ namespace PEBakery.Core
                             case EncodeMode.XZ: // Type 3
                                 rawFooter[0x225] = (byte)XZStream.DefaultPreset;
                                 break;
-#if ENABLE_LZ4
-                            case EncodeMode.LZ4: // Type 4
-                                rawFooter[0x225] = (byte)LZ4CompLevel.VeryHigh;
-                                break;
-#endif
                             default:
                                 throw new InternalException($"Wrong EncodeMode [{mode}]");
                         }
@@ -1337,16 +1384,6 @@ namespace PEBakery.Core
                             if (compLevel < 1 || 9 < compLevel)
                                 throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
-#if ENABLE_LZ4
-                        case EncodeMode.LZ4: // Type 4, LZ4
-                            if (compressedBodyLen2 == 0 ||
-                                compressedBodyLen2 != compressedBodyLen)
-                                throw new InvalidOperationException("Encoded file is corrupted: compMode");
-                            if (12 < compLevel)
-                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
-                            break;
-#endif
-
                         default:
                             throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     }
@@ -1450,38 +1487,6 @@ namespace PEBakery.Core
                                 }
                             }
                             break;
-#if ENABLE_LZ4
-                        case EncodeMode.LZ4: // Type 3, LZ4
-                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
-                            {
-                                StreamSubCopy(decodeStream, compStream, 0, compressedBodyLen);
-
-#if DEBUG_MIDDLE_FILE
-                                compStream.Flush();
-                                compStream.Position = 0;
-                                string debugDir = Path.Combine(App.BaseDir, "Debug");
-                                Directory.CreateDirectory(debugDir);
-                                string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".lz4");
-                                using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                                {
-                                    compStream.CopyTo(debug);
-                                }
-#endif
-
-                                compStream.Flush();
-                                compStream.Position = 0;
-                                using (LZ4FrameStream lzs = new LZ4FrameStream(compStream, LZ4Mode.Decompress))
-                                {
-                                    while ((readByte = lzs.Read(buffer, 0, buffer.Length)) != 0)
-                                    {
-                                        crc32.Append(buffer, 0, readByte);
-                                        outStream.Write(buffer, 0, readByte);
-                                    }
-                                }
-                            }
-                            break;
-#endif
-
                         default:
                             throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     }
@@ -1577,15 +1582,6 @@ namespace PEBakery.Core
                     if (9 < compLevel)
                         throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
-#if ENABLE_LZ4
-                case EncodeMode.LZ4: // Type 4, LZ4
-                    if (compressedBodyLen2 == 0 ||
-                        compressedBodyLen2 != compressedBodyLen)
-                        throw new InvalidOperationException("Encoded file is corrupted: compMode");
-                    if (12 < compLevel)
-                        throw new InvalidOperationException("Encoded file is corrupted: compLevel");
-                    break;
-#endif
                 default:
                     throw new InvalidOperationException("Encoded file is corrupted: compMode");
             }
@@ -1647,27 +1643,6 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-#if ENABLE_LZ4
-                case EncodeMode.LZ4: // Type 3, LZ4
-                {
-#if DEBUG_MIDDLE_FILE
-                    string debugDir = Path.Combine(App.BaseDir, "Debug");
-                    Directory.CreateDirectory(debugDir);
-                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".lz4");
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                    {
-                        ms.CopyTo(debug);
-                    }
-#endif
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Decompress))
-                    {
-                        lzs.CopyTo(rawBodyStream);
-                    }
-                    break;
-                }    
-#endif
                 default:
                     throw new InvalidOperationException("Encoded file is corrupted: compMode");
             }
@@ -1758,12 +1733,6 @@ namespace PEBakery.Core
                             if (9 < compLevel)
                                 throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
-#if ENABLE_LZ4
-                        case EncodeMode.LZ4: // Type 4, LZ4
-                            if (12 < compLevel)
-                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
-                            break;
-#endif
                         default:
                             throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     }
@@ -1837,12 +1806,6 @@ namespace PEBakery.Core
                     if (9 < compLevel)
                         throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
-#if ENABLE_LZ4
-                case EncodeMode.LZ4: // Type 4, LZ4
-                    if (12 < compLevel)
-                        throw new InvalidOperationException("Encoded file is corrupted: compLevel");
-                    break;
-#endif
                 default:
                     throw new InvalidOperationException("Encoded file is corrupted: compMode");
             }

@@ -11,39 +11,48 @@
         <title>@Model.BuildName</title>
 
         <!-- Bootstrap CSS -->
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css" integrity="sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B" crossorigin="anonymous">
 
         <!-- Custom CSS -->
         <style>
             .pb-table-content {
                 font-family: monospace;
             }
+
             table.pb-table-content td {
                 padding: .15rem;
             }
+
             table.pb-table-content th {
                 padding: .15rem;
             }
+
             .pb-table-codes {
                 font-family: monospace;
                 font-size: 14px;
             }
+
             table.pb-table-codes td {
                 padding: .10rem;
             }
+
             table.pb-table-codes th {
                 padding: .10rem;
             }
+
             .pb-whitespace {
                 white-space: pre-wrap;
             }
+
             .pb-monospace {
                 font-family: monospace;
             }
+
             .pb-footer {
                 font-family: 'D2Coding', monospace;
                 text-align: center;
             }
+
             .text-overwrite {
                 color: #ff6600;
             }
@@ -55,7 +64,7 @@
         </style>
 
         <!-- Font Awesome -->
-        <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.1/css/all.css" integrity="sha384-O8whS3fhG2OnA5Kas0Y9l3cfpmYjapjI0E4theH4iuMD+pLhbf6JI0jIMfYcK3yZ" crossorigin="anonymous">
     </head>
     <body id="page-top" data-spy="scroll">
         <h1 class="container mt-2 text-center">PEBakery Build &lt;@Model.BuildName&gt;</h1>
@@ -102,19 +111,26 @@
                 <tbody>
                     @foreach (var item in @Model.LogStats)
                     {
-                    <tr>
-                        <th class="text-nowrap">
-                            @if (@item.State == LogState.Success) { <i class="fas fa-fw fa-check text-success"></i> }
-                            else if (@item.State == LogState.Warning) { <i class="fas fa-fw fa-exclamation-triangle text-warning"></i> }
-                            else if (@item.State == LogState.Overwrite) { <i class="fas fa-fw fa-copy text-overwrite"></i> }
-                            else if (@item.State == LogState.Error) { <i class="fas fa-fw fa-times text-danger"></i> }
-                            else if (@item.State == LogState.Info) { <i class="fas fa-fw fa-info-circle text-info"></i> }
-                            else if (@item.State == LogState.Ignore) { <i class="fas fa-fw fa-file text-muted"></i> }
-                            else if (@item.State == LogState.Muted) { <i class="fas fa-fw fa-lock text-muted"></i> }
-                            @item.State
-                        </th>
-                        <td class="text-center">@item.Count</td>
-                    </tr>
+                        <tr>
+                            <th class="text-nowrap">
+                                @if (@item.State == LogState.Success)
+                                {<i class="fas fa-fw fa-check text-success"></i> }
+                                else if (@item.State == LogState.Warning)
+                                { <i class="fas fa-fw fa-exclamation-triangle text-warning"></i> }
+                                else if (@item.State == LogState.Overwrite)
+                                { <i class="fas fa-fw fa-copy text-overwrite"></i> }
+                                else if (@item.State == LogState.Error)
+                                { <i class="fas fa-fw fa-times text-danger"></i> }
+                                else if (@item.State == LogState.Info)
+                                { <i class="fas fa-fw fa-info-circle text-info"></i> }
+                                else if (@item.State == LogState.Ignore)
+                                { <i class="fas fa-fw fa-file text-muted"></i> }
+                                else if (@item.State == LogState.Muted)
+                                { <i class="fas fa-fw fa-lock text-muted"></i>}
+                                @item.State
+                            </th>
+                            <td class="text-center">@item.Count</td>
+                        </tr>
                     }
                 </tbody>
             </table>
@@ -127,7 +143,7 @@
                 <h2 class="mt-2">Errors</h2>
                 @foreach (var kv in @Model.ErrorCodeDicts)
                 {
-                    <span class="pb-monospace">@kv.Value.Length Error in Script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
+                    <span class="pb-monospace">@kv.Value.Length Error in script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
                     <div class="table-responsive">
                         <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
                             <thead class="thead-dark text-center">
@@ -141,11 +157,18 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap bg-danger">
-                                            <a class="text-dark" href='@string.Format("#error_{0}", @item.Href)'>
-                                                <i class="fas fa-fw fa-times"></i>@item.State
+                                            <a class="text-dark" href='@string.Format("#error_{0}", @item.Item1.Href)'>
+                                                <i class="fas fa-fw fa-times"></i>@item.Item1.State
                                             </a>
                                         </td>
-                                        <td class="pb-whitespace">@item.Message</td>
+                                        @if (@item.Item2 != null)
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message<br>@item.Item2</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message</td>
+                                        }
                                     </tr>
                                 }
                             </tbody>
@@ -159,7 +182,7 @@
         @if (0 < @Model.WarnCodeDicts.Count)
         {
             <section id="warn_summary" class="container-fluid mt-2">
-                <h2 class="mt-2">Errors</h2>
+                <h2 class="mt-2">Warnings</h2>
                 @foreach (var kv in @Model.WarnCodeDicts)
                 {
                     <span class="pb-monospace">@kv.Value.Length Warning in Script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
@@ -176,11 +199,18 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap bg-warning">
-                                            <a class="text-dark" href='@string.Format("#warn_{0}", @item.Href)'>
-                                                <i class="fas fa-fw fa-exclamation-triangle"></i>@item.State
+                                            <a class="text-dark" href='@string.Format("#warn_{0}", @item.Item1.Href)'>
+                                                <i class="fas fa-fw fa-exclamation-triangle"></i>@item.Item1.State
                                             </a>
                                         </td>
-                                        <td class="pb-whitespace">@item.Message</td>
+                                        @if (@item.Item2 != null)
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message<br>@item.Item2</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message</td>
+                                        }
                                     </tr>
                                 }
                             </tbody>
@@ -206,12 +236,12 @@
                     <tbody>
                         @foreach (var item in @Model.Scripts)
                         {
-                        <tr class="py-1">
-                            <td>@item.Index</td>
-                            <td class="text-left"><a href="#script-@item.Index">@item.Name</a></td>
-                            <td>@item.Version</td>
-                            <td>@item.TimeStr</td>
-                        </tr>
+                            <tr class="py-1">
+                                <td>@item.Index</td>
+                                <td class="text-left"><a href="#script-@item.Index">@item.Name</a></td>
+                                <td>@item.Version</td>
+                                <td>@item.TimeStr</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -233,27 +263,27 @@
                     <tbody>
                         @foreach (var item in @Model.Vars)
                         {
-                        <tr>
-                            @if (@item.Type == VarsType.Fixed)
-                            {
-                            <td class="text-nowrap text-primary">
-                                <i class="fas fa-fw fa-lock"></i>@item.Type
-                            </td>
-                            }
-                            else if (@item.Type == VarsType.Global)
-                            {
-                            <td class="text-nowrap text-success">
-                                <i class="fas fa-fw fa-globe"></i>@item.Type
-                            </td>
-                            }
-                            <td>@item.Key</td>
-                            <td>@item.Value</td>
-                        </tr>
+                            <tr>
+                                @if (@item.Type == VarsType.Fixed)
+                                {
+                                    <td class="text-nowrap text-primary">
+                                        <i class="fas fa-fw fa-lock"></i>@item.Type
+                                    </td>
+                                }
+                                else if (@item.Type == VarsType.Global)
+                                {
+                                    <td class="text-nowrap text-success">
+                                        <i class="fas fa-fw fa-globe"></i>@item.Type
+                                    </td>
+                                }
+                                <td>@item.Key</td>
+                                <td>@item.Value</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
-            
+
         </section>
 
         <!-- Code Logs -->
@@ -275,65 +305,65 @@
                             {
                                 if (@item.State == LogState.Success)
                                 {
-                                <tr>
-                                    <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr>
+                                        <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else if (@item.State == LogState.Warning)
                                 {
-                                <tr class="table-warning" id='@string.Format("warn_{0}", @item.Href)'>
-                                    <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr class="table-warning" id='@string.Format("warn_{0}", @item.Href)'>
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
-                                else if (@item.State == LogState.Overwrite) 
-                                { 
-                                <tr>
-                                    <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                else if (@item.State == LogState.Overwrite)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else if (@item.State == LogState.Error)
                                 {
-                                <tr class="table-danger" id='@string.Format("error_{0}", @item.Href)'>
-                                    <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr class="table-danger" id='@string.Format("error_{0}", @item.Href)'>
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else if (@item.State == LogState.Info)
                                 {
-                                <tr>
-                                    <td class="text-nowrap text-info"><i class="fas fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr>
+                                        <td class="text-nowrap text-info"><i class="fas fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else if (@item.State == LogState.Ignore)
                                 {
-                                <tr class="text-muted">
-                                    <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr class="text-muted">
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else if (@item.State == LogState.Muted)
                                 {
-                                <tr class="text-muted">
-                                    <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr class="text-muted">
+                                        <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                                 else
                                 {
-                                <tr>
-                                    <td class="text-nowrap"></td>
-                                    <td class="pb-whitespace">@item.Message</td>
-                                </tr>
+                                    <tr>
+                                        <td class="text-nowrap"></td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
                                 }
                             }
                         </tbody>
                     </table>
                 </div>
-                
+
                 @if (0 < @tup.Item3.Length)
                 {
                     <span class="pb-monospace">Local Variables of Script &#91;@tup.Item1.Name&#93;</span>
@@ -349,18 +379,18 @@
                             <tbody>
                                 @foreach (var item in @tup.Item3)
                                 {
-                                <tr>
-                                    <td class="text-nowrap text-info"><i class="fas fa-fw fa-cube"></i>Local</td>
-                                    <td>@item.Key</td>
-                                    <td>@item.Value</td>
-                                </tr>
+                                    <tr>
+                                        <td class="text-nowrap text-info"><i class="fas fa-fw fa-cube"></i>Local</td>
+                                        <td>@item.Key</td>
+                                        <td>@item.Value</td>
+                                    </tr>
                                 }
                             </tbody>
                         </table>
                     </div>
                 }
-			<a class="float-right" href="#page-top">[ Top ]</a>
-			<div class="clearfix"></div>
+                <a class="float-right" href="#page-top">[ Top ]</a>
+                <div class="clearfix"></div>
             </div>
         }
 
@@ -373,8 +403,8 @@
         <br>
 
         <!-- jQuery, Bootstrap JS, Popper -->
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js" integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em" crossorigin="anonymous"></script>
     </body>
 </html>

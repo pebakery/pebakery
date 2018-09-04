@@ -30,12 +30,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace PEBakery.WPF
@@ -262,7 +264,7 @@ namespace PEBakery.WPF
             else // Export Build Logs
                 exportModel.SetBuildLog(_m.SelectedBuildIndex, _m.BuildLogShowComments, _m.BuildLogShowMacros);
 
-            LogExportWindow dialog = new LogExportWindow(exportModel);
+            LogExportWindow dialog = new LogExportWindow(exportModel) { Owner = this };
             dialog.ShowDialog();
         }
         #endregion
@@ -406,9 +408,9 @@ namespace PEBakery.WPF
                     var builds = LogDb.Table<DB_BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
                     if (!BuildLogShowComments)
-                        builds = builds.Where(x => x.CodeType != CodeType.Comment);
+                        builds = builds.Where(x => (x.Flags & DbBuildLogFlag.Comment) != DbBuildLogFlag.Comment);
                     if (!BuildLogShowMacros)
-                        builds = builds.Where(x => !x.IsMacro);
+                        builds = builds.Where(x => (x.Flags & DbBuildLogFlag.Macro) != DbBuildLogFlag.Macro);
                     _allBuildLogs = new List<DB_BuildLog>(builds);
                     BuildLogs = new ObservableCollection<DB_BuildLog>(_allBuildLogs);
 
@@ -650,6 +652,95 @@ namespace PEBakery.WPF
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
+    }
+    #endregion
+
+    #region Converter
+    public class LocalTimeToStrConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+
+            DateTime time = (DateTime)value;
+            return time == DateTime.MinValue ? string.Empty : time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is string str))
+                return DateTime.Now;
+            return DateTime.TryParse(str, out DateTime time) ? time : DateTime.Now;
+        }
+    }
+
+    public class LogStateToStrConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+
+            LogState state = (LogState)value;
+            return state == LogState.None ? string.Empty : state.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Not Implemented
+            return LogState.None;
+        }
+    }
+
+    public class LineIdxToStrConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+
+            int lineIdx = (int)value;
+            return lineIdx == 0 ? string.Empty : lineIdx.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Not Implemented
+            return LogState.None;
+        }
+    }
+
+    public class BuildLogFlagToStrConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+
+            DbBuildLogFlag flags = (DbBuildLogFlag)value;
+            string result = string.Empty;
+            if ((flags & DbBuildLogFlag.Comment) == DbBuildLogFlag.Comment)
+                result += 'C';
+            if ((flags & DbBuildLogFlag.Macro) == DbBuildLogFlag.Macro)
+                result += 'M';
+            return result;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+            if (!(value is string str))
+                return null;
+
+            DbBuildLogFlag flags = DbBuildLogFlag.None;
+            if (str.Contains('C'))
+                flags |= DbBuildLogFlag.Comment;
+            if (str.Contains('M'))
+                flags |= DbBuildLogFlag.Macro;
+            return flags;
+        }
     }
     #endregion
 }

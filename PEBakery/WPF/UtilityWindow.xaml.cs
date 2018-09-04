@@ -69,7 +69,7 @@ namespace PEBakery.WPF
                 MainWindow w = Application.Current.MainWindow as MainWindow;
                 Debug.Assert(w != null, "MainWindow != null");
 
-                List<Project> projList = w.Projects.Projects;
+                List<Project> projList = w.Projects.ProjectList;
                 for (int i = 0; i < projList.Count; i++)
                 {
                     Project proj = projList[i];
@@ -104,10 +104,7 @@ namespace PEBakery.WPF
         private void UnescapeButton_Click(object sender, RoutedEventArgs e)
         {
             string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
-            if (m.Escaper_EscapePercent)
-                m.Escaper_ConvertedString = StringEscaper.UnescapePercent(str);
-            else
-                m.Escaper_ConvertedString = str;
+            m.Escaper_ConvertedString = m.Escaper_EscapePercent ? StringEscaper.UnescapePercent(str) : str;
         }
 
         private void EscapeSequenceLegend_Click(object sender, RoutedEventArgs e)
@@ -160,6 +157,7 @@ namespace PEBakery.WPF
                     mainModel = w.Model;
                 });
 
+                mainModel.BuildTree.Children.Clear();
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
@@ -172,6 +170,7 @@ namespace PEBakery.WPF
 
                 mainModel.WorkInProgress = false;
                 mainModel.SwitchNormalBuildInterface = true;
+                mainModel.BuildTree.Children.Clear();
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -219,20 +218,19 @@ namespace PEBakery.WPF
 
             // Check Macros
             Macro macro = new Macro(project, project.Variables, out _);
-
             if (macro.MacroEnabled)
             {
                 foreach (CodeCommand cmd in cmds)
                 {
-                    if (cmd.Type == CodeType.Macro)
-                    {
-                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
-                        CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
-                        Debug.Assert(info != null, "Invalid CodeInfo");
+                    if (cmd.Type != CodeType.Macro)
+                        continue;
 
-                        if (!macro.GlobalDict.ContainsKey(info.MacroType))
-                            errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
-                    }
+                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
+                    CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+                    Debug.Assert(info != null, "Invalid CodeInfo");
+
+                    if (!macro.GlobalDict.ContainsKey(info.MacroType))
+                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
                 }
             }
 

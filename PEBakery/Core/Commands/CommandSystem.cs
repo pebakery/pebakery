@@ -34,6 +34,8 @@ using System.Threading;
 using System.Windows;
 using System.Security.Principal;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using PEBakery.WPF;
 using PEBakery.Helper;
 
@@ -213,13 +215,14 @@ namespace PEBakery.Core.Commands
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        AutoResetEvent resetEvent = null;
+                        Task refreshTask = Task.CompletedTask;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            resetEvent = w?.StartRefreshScriptWorker();
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+                            refreshTask = w.StartRefreshScript();
                         });
-                        resetEvent?.WaitOne();
+                        refreshTask.Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
                     }
@@ -230,13 +233,14 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        AutoResetEvent resetEvent = null;
+                        Task scriptLoadTask = Task.CompletedTask;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            resetEvent = w?.StartLoadWorker(true);
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+                            scriptLoadTask = w.StartLoadingProjects(true);
                         });
-                        resetEvent?.WaitOne();
+                        scriptLoadTask.Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
                     }
@@ -386,7 +390,7 @@ namespace PEBakery.Core.Commands
 
                             // RefreshScript -> Update Project.AllScripts
                             Script sc = Engine.GetScriptInstance(s, cmd.Addr.Script.RealPath, scRealPath, out _);
-                            sc = s.Project.RefreshScript(sc);
+                            sc = s.Project.RefreshScript(sc, s);
                             if (sc == null)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
@@ -448,7 +452,11 @@ namespace PEBakery.Core.Commands
                             int realBuildId = s.Logger.Flush(s);
 
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
-                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId); // Do not use s.BuildId, for case of FullDelayedLogging
+                            s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
+                            {
+                                IncludeComments = true,
+                                IncludeMacros = true,
+                            }); // Do not use s.BuildId, for case of FullDelayedLogging
                         }
                     }
                     break;
@@ -562,15 +570,30 @@ namespace PEBakery.Core.Commands
                 }
 
                 bool redirectStandardStream = false;
-                Stopwatch watch = Stopwatch.StartNew();
-                StringBuilder bConOut = new StringBuilder();
-                void ConsoleDataReceivedHandler(object sender, DataReceivedEventArgs e)
+                object bConOutLock = new object();
+                StringBuilder bStdOut = new StringBuilder();
+                StringBuilder bStdErr = new StringBuilder();
+                void StdOutDataReceivedHandler(object sender, DataReceivedEventArgs e)
                 {
                     if (e.Data == null)
                         return;
 
-                    bConOut.AppendLine(e.Data);
-                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
+                    lock (bConOutLock)
+                    {
+                        bStdOut.AppendLine(e.Data);
+                        s.MainViewModel.BuildConOutRedirectTextLines.Add(new Tuple<string, bool>(e.Data, false));
+                    }
+                }
+                void StdErrDataReceivedHandler(object sender, DataReceivedEventArgs e)
+                {
+                    if (e.Data == null)
+                        return;
+
+                    lock (bConOutLock)
+                    {
+                        bStdErr.AppendLine(e.Data);
+                        s.MainViewModel.BuildConOutRedirectTextLines.Add(new Tuple<string, bool>(e.Data, true));
+                    }
                 }
 
                 try
@@ -591,21 +614,21 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            // Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
                             Encoding cmdEncoding = Console.OutputEncoding;
 
                             proc.StartInfo.RedirectStandardOutput = true;
                             proc.StartInfo.StandardOutputEncoding = cmdEncoding;
-                            proc.OutputDataReceived += ConsoleDataReceivedHandler;
+                            proc.OutputDataReceived += StdOutDataReceivedHandler;
 
                             proc.StartInfo.RedirectStandardError = true;
                             proc.StartInfo.StandardErrorEncoding = cmdEncoding;
-                            proc.ErrorDataReceived += ConsoleDataReceivedHandler;
+                            proc.ErrorDataReceived += StdErrDataReceivedHandler;
 
                             // Without this, XCOPY.exe of Windows 7 will not work properly.
                             // https://stackoverflow.com/questions/14218642/xcopy-does-not-work-with-useshellexecute-false
                             proc.StartInfo.RedirectStandardInput = true;
 
+                            s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                             s.MainViewModel.BuildConOutRedirectShow = true;
                         }
                     }
@@ -620,50 +643,45 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.UseShellExecute = true;
                     }
 
-                    // Register process instance in EngineState, and run it
+                    // Register process instance to EngineState
                     if (cmd.Type != CodeType.ShellExecuteEx)
-                    {
                         s.RunningSubProcess = proc;
-                        proc.Exited += (object sender, EventArgs e) =>
-                        {
-                            s.RunningSubProcess = null;
-                            if (redirectStandardStream)
-                            {
-                                s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
-                                watch.Stop();
-                            }
-                        };
-                    }
 
+                    Stopwatch watch = Stopwatch.StartNew();
                     proc.Start();
 
-                    if (redirectStandardStream)
+                    if (cmd.Type == CodeType.ShellExecuteEx)
                     {
-                        proc.BeginOutputReadLine();
-                        proc.BeginErrorReadLine();
+                        watch.Stop();
+                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
                     }
-
-                    long tookTime = (long)watch.Elapsed.TotalSeconds;
-                    switch (cmd.Type)
+                    else
                     {
-                        case CodeType.ShellExecute:
-                            proc.WaitForExit();
+                        if (redirectStandardStream)
+                        {
+                            proc.BeginOutputReadLine();
+                            proc.BeginErrorReadLine();
+                        }
+
+                        // Wait until exit
+                        proc.WaitForExit();
+
+                        // Unregister process instance from EngineState
+                        s.RunningSubProcess = null;
+
+                        watch.Stop();
+                        long tookTime = (long)watch.Elapsed.TotalSeconds;
+
+                        if (cmd.Type == CodeType.ShellExecute)
+                        {
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
-                            break;
-                        case CodeType.ShellExecuteEx:
-                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
-                            break;
-                        case CodeType.ShellExecuteDelete:
-                            proc.WaitForExit();
+                        }
+                        else if (cmd.Type == CodeType.ShellExecuteDelete)
+                        {
                             File.Delete(filePath);
                             logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
-                            break;
-                        default:
-                            return LogInfo.LogErrorMessage(logs, $"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
-                    }
+                        }
 
-                    if (cmd.Type != CodeType.ShellExecuteEx)
-                    {
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
                         string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
                         LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
@@ -674,13 +692,28 @@ namespace PEBakery.Core.Commands
 
                         if (redirectStandardStream)
                         {
-                            string conout = bConOut.ToString().Trim();
-                            if (0 < conout.Length)
+                            string stdOut;
+                            string stdErr;
+                            lock (bConOutLock)
                             {
-                                if (conout.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output] {conout}"));
+                                stdOut = bStdOut.ToString().Trim();
+                                stdErr = bStdErr.ToString().Trim();
+                            }
+
+                            if (0 < stdOut.Length)
+                            {
+                                if (stdOut.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdOut}"));
                                 else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output]\r\n{conout}\r\n"));
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdOut}\r\n"));
+                            }
+
+                            if (0 < stdErr.Length)
+                            {
+                                if (stdErr.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stdErr}"));
+                                else // With NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stdErr}\r\n"));
                             }
                         }
                     }
@@ -693,8 +726,8 @@ namespace PEBakery.Core.Commands
 
                     if (redirectStandardStream)
                     {
-                        s.MainViewModel.BuildConOutRedirect = string.Empty;
                         s.MainViewModel.BuildConOutRedirectShow = false;
+                        s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                     }
                 }
             }

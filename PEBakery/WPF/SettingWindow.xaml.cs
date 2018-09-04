@@ -25,8 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.IniLib;
-using PEBakery.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,10 +34,12 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
-using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
+using PEBakery.IniLib;
+using PEBakery.Core;
+using PEBakery.Helper;
 using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
@@ -586,17 +586,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Script_AutoSyntaxCheck));
             }
         }
-
-        private bool _scriptDeepInspectAttachedFile;
-        public bool Script_DeepInspectAttachedFile
-        {
-            get => _scriptDeepInspectAttachedFile;
-            set
-            {
-                _scriptDeepInspectAttachedFile = value;
-                OnPropertyUpdate(nameof(Script_DeepInspectAttachedFile));
-            }
-        }
         #endregion
 
         #region Property - Logging
@@ -669,14 +658,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_DelayedLogging;
-        public bool Log_DelayedLogging
+        private bool log_DeferredLogging;
+        public bool Log_DeferredLogging
         {
-            get => log_DelayedLogging;
+            get => log_DeferredLogging;
             set
             {
-                log_DelayedLogging = value;
-                OnPropertyUpdate(nameof(Log_DelayedLogging));
+                log_DeferredLogging = value;
+                OnPropertyUpdate(nameof(Log_DeferredLogging));
+            }
+        }
+
+        private bool log_MinifyHtmlExport;
+        public bool Log_MinifyHtmlExport
+        {
+            get => log_MinifyHtmlExport;
+            set
+            {
+                log_MinifyHtmlExport = value;
+                OnPropertyUpdate(nameof(Log_MinifyHtmlExport));
             }
         }
         #endregion
@@ -737,14 +737,47 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool compat_RegWriteLegacy;
-        public bool Compat_RegWriteLegacy
+        private bool compat_LegacyRegWrite;
+        public bool Compat_LegacyRegWrite
         {
-            get => compat_RegWriteLegacy;
+            get => compat_LegacyRegWrite;
             set
             {
-                compat_RegWriteLegacy = value;
-                OnPropertyUpdate(nameof(Compat_RegWriteLegacy));
+                compat_LegacyRegWrite = value;
+                OnPropertyUpdate(nameof(Compat_LegacyRegWrite));
+            }
+        }
+
+        private bool compat_AllowSetModifyInterface;
+        public bool Compat_AllowSetModifyInterface
+        {
+            get => compat_AllowSetModifyInterface;
+            set
+            {
+                compat_AllowSetModifyInterface = value;
+                OnPropertyUpdate(nameof(Compat_AllowSetModifyInterface));
+            }
+        }
+
+        private bool compat_LegacyInterfaceCommand;
+        public bool Compat_LegacyInterfaceCommand
+        {
+            get => compat_LegacyInterfaceCommand;
+            set
+            {
+                compat_LegacyInterfaceCommand = value;
+                OnPropertyUpdate(nameof(Compat_LegacyInterfaceCommand));
+            }
+        }
+
+        private bool compat_LegacySectionParamCommand;
+        public bool Compat_LegacySectionParamCommand
+        {
+            get => compat_LegacySectionParamCommand;
+            set
+            {
+                compat_LegacySectionParamCommand = value;
+                OnPropertyUpdate(nameof(Compat_LegacySectionParamCommand));
             }
         }
 
@@ -780,6 +813,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Compat_EnableEnvironmentVariables));
             }
         }
+
+        private bool compat_DisableExtendedSectionParams;
+        public bool Compat_DisableExtendedSectionParams
+        {
+            get => compat_DisableExtendedSectionParams;
+            set
+            {
+                compat_DisableExtendedSectionParams = value;
+                OnPropertyUpdate(nameof(Compat_DisableExtendedSectionParams));
+            }
+        }
         #endregion
 
         #region ApplySetting
@@ -788,14 +832,16 @@ namespace PEBakery.WPF
             CodeParser.OptimizeCode = General_OptimizeCode;
             Engine.StopBuildOnError = General_StopBuildOnError;
             Logger.DebugLevel = Log_DebugLevel;
+            Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
-            CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
+            CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
+            CodeParser.AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand;
+            CodeParser.AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams;
             UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
-            ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
         }
         #endregion
 
@@ -834,7 +880,6 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = true;
             Script_AutoSyntaxCheck = true;
-            Script_DeepInspectAttachedFile = false;
 
             // Log
 #if DEBUG
@@ -842,18 +887,23 @@ namespace PEBakery.WPF
 #else
             Log_DebugLevelIndex = 0;
 #endif
-            Log_DelayedLogging = true;
+            Log_DeferredLogging = true;
+            Log_MinifyHtmlExport = true;
 
             // Compatibility
-            Compat_AsteriskBugDirCopy = true;
+            Compat_AsteriskBugDirCopy = false;
             Compat_AsteriskBugDirLink = false;
-            Compat_FileRenameCanMoveDir = true;
+            Compat_FileRenameCanMoveDir = false;
             Compat_AllowLetterInLoop = false;
-            Compat_LegacyBranchCondition = true;
-            Compat_RegWriteLegacy = true;
+            Compat_LegacyBranchCondition = false;
+            Compat_LegacyRegWrite = false;
+            Compat_AllowSetModifyInterface = false;
+            Compat_LegacyInterfaceCommand = false;
             Compat_IgnoreWidthOfWebLabel = false;
             Compat_OverridableFixedVariables = false;
             Compat_EnableEnvironmentVariables = false;
+            Compat_DisableExtendedSectionParams = false;
+            Compat_LegacySectionParamCommand = false;
         }
         #endregion
 
@@ -891,18 +941,22 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
             };
 
             keys = Ini.ReadKeys(_settingFile, keys);
@@ -995,11 +1049,11 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
             Script_AutoSyntaxCheck = ParseBoolean(nameof(Script_AutoSyntaxCheck), Script_AutoSyntaxCheck);
-            Script_DeepInspectAttachedFile = ParseBoolean(nameof(Script_DeepInspectAttachedFile), Script_DeepInspectAttachedFile);
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
-            Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
+            Log_DeferredLogging = ParseBoolean(nameof(Log_DeferredLogging), Log_DeferredLogging);
+            Log_MinifyHtmlExport = ParseBoolean(nameof(Log_MinifyHtmlExport), Log_MinifyHtmlExport);
 
             // Compatibility
             Compat_AsteriskBugDirCopy = ParseBoolean(nameof(Compat_AsteriskBugDirCopy), Compat_AsteriskBugDirCopy);
@@ -1007,10 +1061,14 @@ namespace PEBakery.WPF
             Compat_FileRenameCanMoveDir = ParseBoolean(nameof(Compat_FileRenameCanMoveDir), Compat_FileRenameCanMoveDir);
             Compat_AllowLetterInLoop = ParseBoolean(nameof(Compat_AllowLetterInLoop), Compat_AllowLetterInLoop);
             Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
-            Compat_RegWriteLegacy = ParseBoolean(nameof(Compat_RegWriteLegacy), Compat_RegWriteLegacy);
+            Compat_LegacyRegWrite = ParseBoolean(nameof(Compat_LegacyRegWrite), Compat_LegacyRegWrite);
+            Compat_AllowSetModifyInterface = ParseBoolean(nameof(Compat_AllowSetModifyInterface), Compat_AllowSetModifyInterface);
+            Compat_LegacyInterfaceCommand = ParseBoolean(nameof(Compat_LegacyInterfaceCommand), Compat_LegacyInterfaceCommand);
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
             Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
             Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
+            Compat_DisableExtendedSectionParams = ParseBoolean(nameof(Compat_DisableExtendedSectionParams), Compat_DisableExtendedSectionParams);
+            Compat_LegacySectionParamCommand = ParseBoolean(nameof(Compat_LegacySectionParamCommand), Compat_LegacySectionParamCommand);
         }
 
         public void WriteToFile()
@@ -1038,19 +1096,23 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr), Log_DeferredLogging.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr), Log_MinifyHtmlExport.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr), Compat_AllowLetterInLoop.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr), Compat_RegWriteLegacy.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr), Compat_LegacyRegWrite.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr), Compat_AllowSetModifyInterface.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr), Compat_LegacyInterfaceCommand.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
             };
             Ini.WriteKeys(_settingFile, keys);
         }
@@ -1059,6 +1121,10 @@ namespace PEBakery.WPF
         {
             return str.Substring(section.Length + 1);
         }
+        #endregion
+
+        #region ShallowCopy
+        public SettingViewModel ShallowCopy() => MemberwiseClone() as SettingViewModel;
         #endregion
 
         #region Database Operation

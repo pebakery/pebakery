@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+#define USE_VALUE_OF_FILE
+
 using System;
 using System.IO;
 using System.Linq;
@@ -60,7 +62,8 @@ namespace PEBakery.Core.Commands
             else
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
-            Script sc = cmd.Addr.Script;
+            // Refresh is required to simulate WinBuilder 082 behavior
+            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
@@ -75,13 +78,24 @@ namespace PEBakery.Core.Commands
                 uiCtrl.Visibility = visibility;
                 uiCtrl.Update();
 
-                // Re-render Script
+                // Update script
+                sc = s.Project.RefreshScript(sc, s);
+                if (sc == null)
+                {
+                    logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                    return logs;
+                }
+
+                // Re-render script
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
-                    if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
-                        w.DrawScript(cmd.Addr.Script);
+                    if (!w.CurMainTree.Script.Equals(sc))
+                        return;
+
+                    w.CurMainTree.Script = sc;
+                    w.DrawScript(w.CurMainTree.Script);
                 });
             }
 
@@ -96,7 +110,8 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
-            Script sc = cmd.Addr.Script;
+            // Refresh is required to simulate WinBuilder 082 behavior
+            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
@@ -109,10 +124,16 @@ namespace PEBakery.Core.Commands
                 CodeInfo_Visible info = subCmd.Info.Cast<CodeInfo_Visible>();
 
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-                bool visibility = false;
-                if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
+
+                bool visibility;
+                if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
+                    visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                     visibility = true;
-                else if (!visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                else if (visibilityStr.Equals("0", StringComparison.Ordinal) ||
+                         visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    visibility = false;
+                else
                     return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
                 prepArgs.Add((info.UIControlKey, visibility, subCmd));
@@ -135,12 +156,24 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}]'s visibility set to [{visibility}]", subCmd));
             logs.Add(new LogInfo(LogState.Success, $"Total [{prepArgs.Count}] interface control set", cmd));
 
-            // Rerender Script
+            // Update script
+            sc = s.Project.RefreshScript(sc, s);
+            if (sc == null)
+            {
+                logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at CommandInterface.SystemCmd"));
+                return logs;
+            }
+
+            // Rerender script
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
-                    w.DrawScript(cmd.Addr.Script);
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+                if (!w.CurMainTree.Script.Equals(sc))
+                    return;
+
+                w.CurMainTree.Script = sc;
+                w.DrawScript(w.CurMainTree.Script);
             });
 
             return logs;
@@ -171,7 +204,7 @@ namespace PEBakery.Core.Commands
                     destStr = ((int)uiCtrl.Rect.Height).ToString();
                     break;
                 case InterfaceElement.Value:
-                    destStr = uiCtrl.GetValue();
+                    destStr = uiCtrl.GetValue(true);
                     if (destStr == null)
                         return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
                     break;

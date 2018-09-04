@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
         {
             CodeInfo_Set info = cmd.Info.Cast<CodeInfo_Set>();
 
-            Variables.VarKeyType varType = Variables.DetermineType(info.VarKey);
+            Variables.VarKeyType varType = Variables.DetectType(info.VarKey);
             if (varType == Variables.VarKeyType.None)
             {
                 // Check Macro
@@ -60,7 +60,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            // [WB082 Behavior]
+            // [WB082 Behavior] -> Enabled if s.CompatAllowSetModifyInterface == true
             // If PERMANENT was used but the key exists in interface command, the value will not be written to script.project but in interface.
             // Need to investigate where the logs are saved in this case.
             switch (info.Permanent)
@@ -69,32 +69,36 @@ namespace PEBakery.Core.Commands
                     { // Check if interface contains VarKey
                         List<LogInfo> logs = new List<LogInfo>();
 
-                        if (Variables.DetermineType(info.VarKey) != Variables.VarKeyType.Variable)
+                        if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
                             goto case false;
 
-                        string varKey = Variables.TrimPercentMark(info.VarKey);
-                        string finalValue = StringEscaper.Preprocess(s, info.VarValue);
-
-                        #region Set UI
-                        Script sc = cmd.Addr.Script;
-                        ScriptSection iface = sc.GetInterfaceSection(out _);
-                        if (iface == null)
-                            goto case false;
-
-                        List<UIControl> uiCmds = iface.GetUICtrls(true);
-                        UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
-                        if (uiCmd == null)
-                            goto case false;
-
-                        bool match = uiCmd.SetValue(finalValue, false, out List<LogInfo> varLogs);
-                        logs.AddRange(varLogs);
-
-                        if (match)
+                        #region Set interface control's value (Compat)
+                        if (s.CompatAllowSetModifyInterface)
                         {
-                            uiCmd.Update();
+                            string varKey = Variables.TrimPercentMark(info.VarKey);
+                            string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
-                            logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
-                            return logs;
+                            Script sc = cmd.Addr.Script;
+                            ScriptSection iface = sc.GetInterfaceSection(out _);
+                            if (iface == null)
+                                goto case false;
+
+                            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                            if (uiCtrl == null)
+                                goto case false;
+
+                            bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                            logs.AddRange(varLogs);
+
+                            if (valid)
+                            {
+                                uiCtrl.Update();
+
+                                // Also update variables
+                                logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
+                                return logs;
+                            }
                         }
 
                         goto case false;
@@ -249,9 +253,9 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            if (s.CurSectionParams.ContainsKey(index) && index <= s.CurSectionParamsCount)
+            if (s.CurSectionInParams.ContainsKey(index) && index <= s.CurSectionInParamsCount)
             {
-                string parameter = StringEscaper.Escape(s.CurSectionParams[index], true, false);
+                string parameter = StringEscaper.Escape(s.CurSectionInParams[index], true, false);
                 List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, parameter, false, false);
                 logs.AddRange(varLogs);
             }
@@ -278,15 +282,15 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            int varCount = s.CurSectionParamsCount;
+            int varCount = s.CurSectionInParamsCount;
             if (startIndex <= varCount)
             {
                 StringBuilder b = new StringBuilder();
                 for (int i = 1; i <= varCount; i++)
                 {
                     b.Append('"');
-                    if (s.CurSectionParams.ContainsKey(i))
-                        b.Append(StringEscaper.Escape(s.CurSectionParams[i], true, false));
+                    if (s.CurSectionInParams.ContainsKey(i))
+                        b.Append(StringEscaper.Escape(s.CurSectionInParams[i], true, false));
                     b.Append('"');
                     if (i + 1 <= varCount)
                         b.Append(',');

@@ -32,7 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         FontFamily="Segoe UI"
         Closed="Window_Closed"
@@ -40,6 +40,7 @@
         Title="PEBakery Log Viewer"
         Width="900" Height="640"
         MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
     <Window.Resources>
         <Style TargetType="ListViewItem">
@@ -64,6 +65,10 @@
                 
             </Style.Triggers>
         </Style>
+        <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
+        <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
+        <local:LineIdxToStrConverter x:Key="LineIdxToStrConverter"/>
+        <local:BuildLogFlagToStrConverter x:Key="BuildLogFlagToStrConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -82,7 +87,7 @@
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               AlternationCount="2">
                         <ListView.View>
-                            <custom:AutoSizedGridView>
+                            <cc:AutoSizedGridView>
                                 <GridViewColumn Header="Time"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding TimeStr}" />
@@ -92,7 +97,7 @@
                                 <GridViewColumn Header="Message"
                                                 Width="Auto"
                                                 DisplayMemberBinding="{Binding Message}" />
-                            </custom:AutoSizedGridView>
+                            </cc:AutoSizedGridView>
                         </ListView.View>
                     </ListView>
                 </Grid>
@@ -176,11 +181,11 @@
                                 </ListBox.ItemTemplate>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SimpleLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>
@@ -197,34 +202,34 @@
                                     <GridView>
                                         <GridViewColumn Header="Time"
                                                         Width="135"
-                                                        DisplayMemberBinding="{Binding TimeStr}" />
+                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}" />
                                         <GridViewColumn Header="Depth"
                                                         Width="35"
                                                         DisplayMemberBinding="{Binding Depth}" />
                                         <GridViewColumn Header="State"
                                                         Width="55"
-                                                        DisplayMemberBinding="{Binding StateStr}" />
+                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}}" />
                                         <GridViewColumn Header="Line#"
                                                         Width="40"
-                                                        DisplayMemberBinding="{Binding LineIdxStr}" />
+                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}}" />
                                         <GridViewColumn Header="Message"
                                                         Width="340" 
                                                         DisplayMemberBinding="{Binding Message}" />
                                         <GridViewColumn Header="RawCode"
                                                         Width="175"
                                                         DisplayMemberBinding="{Binding RawCode}" />
-                                        <GridViewColumn Header="Macro"
+                                        <GridViewColumn Header="Flags"
                                                         Width="35"
-                                                        DisplayMemberBinding="{Binding IsMacroChar}" />
+                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}}" />
                                     </GridView>
                                 </ListView.View>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>
@@ -250,11 +255,11 @@
                                 </ListView.View>
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
-                                            <MenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy" Width="Auto" Height="Auto" Margin="1"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
+                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="VariableLogViewCopy_Click">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                             </ListView>

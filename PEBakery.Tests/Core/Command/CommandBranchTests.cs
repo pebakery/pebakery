@@ -51,12 +51,18 @@ namespace PEBakery.Tests.Core.Command
             void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, entrySection);
-                string destStr = s.Variables["Dest"];
-                Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destStr = s.Variables["Dest"];
+                    Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+                }
             }
 
             ScriptTemplate(scPath, "Process-Run");
+            ScriptTemplate(scPath, "Process-Run-InParam");
+            ScriptTemplate(scPath, "Process-RunEx-OutParam");
             ScriptTemplate(scPath, "Process-Exec");
+            ScriptTemplate(scPath, "Process-RunEx-OutParam-Error", ErrorCheck.Error);
         }
         #endregion
 
@@ -79,8 +85,12 @@ namespace PEBakery.Tests.Core.Command
 
             ScriptTemplate(scPath, "Process-Loop01", "1|Z|2|Z|3|Z", false);
             ScriptTemplate(scPath, "Process-Loop02", "1|Z|2|Z|3|Z", false);
+            ScriptTemplate(scPath, "Process-LoopEx-OutParam", "1|Z|2|Z|3|Z", false);
+            ScriptTemplate(scPath, "Process-LoopEx-OutParam-Error", string.Empty, false, ErrorCheck.Error);
             ScriptTemplate(scPath, "Process-LoopLetter01", "C|Z|D|Z|E|Z", false);
             ScriptTemplate(scPath, "Process-LoopLetter02", "C|Z|D|Z|E|Z", false);
+            ScriptTemplate(scPath, "Process-LoopLetterEx-OutParam", "C|Z|D|Z|E|Z", false);
+            ScriptTemplate(scPath, "Process-LoopLetterEx-OutParam-Error", string.Empty, false, ErrorCheck.Error);
 
             ScriptTemplate(scPath, "Process-LoopCompat01", "C|Z|D|Z|E|Z", true);
             ScriptTemplate(scPath, "Process-LoopCompat02", "C|Z|D|Z|E|Z", true);

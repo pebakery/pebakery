@@ -82,13 +82,16 @@
       <HintPath>..\packages\ManagedWimLib.1.0.0\lib\net45\ManagedWimLib.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Wim, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7325a91af6f28c40, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Wim.1.2.3\lib\net40\Microsoft.Wim.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Wim.1.2.4\lib\net40\Microsoft.Wim.dll</HintPath>
     </Reference>
     <Reference Include="NaturalSort.Extension, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NaturalSort.Extension.1.0.2\lib\net47\NaturalSort.Extension.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="NUglify, Version=1.5.11.0, Culture=neutral, PublicKeyToken=15bc7810aec21b5e, processorArchitecture=MSIL">
+      <HintPath>..\packages\NUglify.1.5.11\lib\net40\NUglify.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.10.0.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <HintPath>..\packages\RazorEngine.3.10.0\lib\net45\RazorEngine.dll</HintPath>
@@ -172,6 +175,7 @@
     <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\FileUpdater.cs" />
     <Compile Include="Helper\ArchiveHelper.cs" />
+    <Compile Include="Helper\ControlsHelper.cs" />
     <Compile Include="Helper\FileHelper.cs" />
     <Compile Include="Helper\HashHelper.cs" />
     <Compile Include="Helper\ImageHelper.cs" />
@@ -183,6 +187,8 @@
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView.cs" />
+    <Compile Include="WPF\Controls\BringIntoViewBehavior.cs" />
+    <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox.cs" />
     <Compile Include="WPF\Controls\CustomMessageBoxWindow.xaml.cs">
@@ -340,10 +346,6 @@
     <ProjectReference Include="..\PEBakery.IniLib\PEBakery.IniLib.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.IniLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.LZ4Lib\PEBakery.LZ4Lib.csproj">
-      <Project>{9c3609be-51b8-418e-9081-84ef5ece5746}</Project>
-      <Name>PEBakery.LZ4Lib</Name>
     </ProjectReference>
     <ProjectReference Include="..\PEBakery.TreeLib\PEBakery.TreeLib.csproj">
       <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>

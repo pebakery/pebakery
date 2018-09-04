@@ -216,7 +216,7 @@ namespace PEBakery.Helper
                 Kind = kind,
                 Width = double.NaN,
                 Height = double.NaN,
-                Margin = new Thickness(margin, margin, margin, margin),
+                Margin = new Thickness(margin),
             };
         }
     }

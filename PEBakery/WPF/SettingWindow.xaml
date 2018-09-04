@@ -39,6 +39,7 @@
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
         Width="600" Height="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
         <Grid.RowDefinitions>
@@ -341,14 +342,9 @@
                               VerticalContentAlignment="Center"
                               Content="Auto Check Syntax Error"
                               IsChecked="{Binding Script_AutoSyntaxCheck}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Inspect Compression Algorithm of Attached File (Slow)"
-                              ToolTip="May slow down Edit Script window."
-                              IsChecked="{Binding Script_DeepInspectAttachedFile}"/>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Logging">
+            <TabItem Header="Log">
                 <StackPanel>
                     <Grid Margin="15, 15, 15, 0"
                           VerticalAlignment="Center">
@@ -382,71 +378,92 @@
                     </GroupBox>
                     <CheckBox Margin="15, 15, 15, 0"
                               VerticalContentAlignment="Center"
-                              Content="Delayed Logging"
-                              ToolTip="Delayed logging vastly improves performance."
-                              IsChecked="{Binding Log_DelayedLogging}" />
+                              Content="Deferred Logging"
+                              ToolTip="Deferred logging vastly improves performance."
+                              IsChecked="{Binding Log_DeferredLogging}" />
+                    <CheckBox Margin="15, 15, 15, 0"
+                              VerticalContentAlignment="Center"
+                              Content="Compact Exported HTML Log"
+                              ToolTip="Compact the size of HTML at the expense of memory."
+                              IsChecked="{Binding Log_MinifyHtmlExport}" />
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Compatibility">
-                <StackPanel>
+            <TabItem Header="Compat">
+                <StackPanel CanVerticallyScroll="True">
                     <GroupBox Header="Asterisk Bug"
-                              Margin="5, 5, 5, 0"
+                              Margin="5, 3, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Simulate WinBuilder's *.* bug in DirCopy"
                                       IsChecked="{Binding Compat_AsteriskBugDirCopy}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Simulate WinBuilder's *.* bug in folder.project"
                                       IsChecked="{Binding Compat_AsteriskBugDirLink}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Command"
-                              Margin="5, 5, 5, 0"
+                              Margin="5, 3, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0" >
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="FileRename and DirMove work like PathMove"
                                       IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Allow Letter in Loop's Argument"
+                                      Content="Allow letter in Loop"
                                       IsChecked="{Binding Compat_AllowLetterInLoop}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Allow Deprecated Legacy Branch Condition"
+                                      Content="Enable deprecated legacy branch conditions"
                                       IsChecked="{Binding Compat_LegacyBranchCondition}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
-                                      IsChecked="{Binding Compat_RegWriteLegacy}" />
+                                      Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
+                                      IsChecked="{Binding Compat_LegacyRegWrite}" />
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Allow Set to modifiy interface controls"
+                                      IsChecked="{Binding Compat_AllowSetModifyInterface}" />
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Enable legacy interface commands (e.g. Visible)"
+                                      IsChecked="{Binding Compat_LegacyInterfaceCommand}" />
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Enable legacy setcion parameter commands (e.g. GetParam, PackParam)"
+                                      IsChecked="{Binding Compat_LegacySectionParamCommand}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Script Interface"
-                              Margin="5, 5, 5, 0"
+                              Margin="5, 3, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Ignore Width of WebLabel"
+                                      Content="Ignore width of WebLabel"
                                       IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Variable"
-                              Margin="5, 5, 5, 0"
+                              Margin="5, 3, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Overridable Fixed Variables"
+                                      Content="Overridable fixed variables"
                                       IsChecked="{Binding Compat_OverridableFixedVariables}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Enable Environment Variables"
+                                      Content="Enable environment variables"
                                       IsChecked="{Binding Compat_EnableEnvironmentVariables}" />
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Disable extended section parameters (e.g. #a, #r)"
+                                      IsChecked="{Binding Compat_DisableExtendedSectionParams}" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

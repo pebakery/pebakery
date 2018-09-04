@@ -136,12 +136,20 @@ namespace PEBakery.WPF
             // General
             if (EncodedFile.ContainsLogo(_sc))
             {
-                m.ScriptLogoImage = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
-                m.ScriptLogoInfo = EncodedFile.GetLogoInfo(_sc, true);
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(_sc, true);
+                if (errMsg != null)
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                m.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(_sc, 100 * MainWindow.MaxDpiScale);
+                m.ScriptLogoInfo = info;
             }
             else
             {
-                m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
+                m.ScriptLogoImage = null;
                 m.ScriptLogoInfo = null;
             }
 
@@ -197,7 +205,14 @@ namespace PEBakery.WPF
             // Attachment
             m.AttachedFiles.Clear();
 
-            Dictionary<string, List<EncodedFileInfo>> fileDict = EncodedFile.GetAllFilesInfo(_sc, ScriptEditViewModel.DeepInspectAttachedFile);
+            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(_sc, false);
+            if (errMsg != null)
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             foreach (var kv in fileDict)
             {
                 string dirName = kv.Key;
@@ -546,8 +561,9 @@ namespace PEBakery.WPF
                 return;
             }
 
-            _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
-            if (errorMsg == null)
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteLogo(_sc);
+            if (errMsg == null)
             {
                 MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -556,8 +572,8 @@ namespace PEBakery.WPF
             }
             else
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -1040,7 +1056,14 @@ namespace PEBakery.WPF
             string srcFileName = Path.GetFileName(srcFilePath);
             if (EncodedFile.ContainsInterface(_sc, srcFileName))
             {
-                List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
+                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
+                if (errMsg != null)
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
             }
 
@@ -1239,8 +1262,9 @@ namespace PEBakery.WPF
                 return;
             }
 
-            _sc = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName, out string errorMsg);
-            if (errorMsg == null)
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName);
+            if (errMsg == null)
             {
                 UIControl.ReplaceAddress(_render.UICtrls, _sc);
 
@@ -1265,8 +1289,8 @@ namespace PEBakery.WPF
             }
             else
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -1317,7 +1341,7 @@ namespace PEBakery.WPF
             catch (Exception ex)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             m.ScriptAttachUpdated = true;
@@ -1336,12 +1360,17 @@ namespace PEBakery.WPF
             Debug.Assert(item.Detail == null);
 
             VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
-
             if (dialog.ShowDialog(this) == true)
             {
                 string destDir = dialog.SelectedPath;
 
-                List<EncodedFileInfo> fileInfos = EncodedFile.GetFolderInfo(_sc, item.Name, false);
+                (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(_sc, item.Name, false);
+                if (errMsg != null)
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 StringBuilder b = new StringBuilder();
                 bool fileOverwrited = false;
@@ -1371,7 +1400,7 @@ namespace PEBakery.WPF
                     if (owResult == MessageBoxResult.Yes)
                         proceedExtract = true;
                     else if (owResult != MessageBoxResult.No)
-                        throw new InternalException("Internal Logic Error at ScriptEditWindow.ExtractFileButton_Click");
+                        throw new InternalException("Internal Logic Error at ScriptEditWindow.ExtractFolderButton_Click");
                 }
                 else
                 {
@@ -1396,7 +1425,7 @@ namespace PEBakery.WPF
                     catch (Exception ex)
                     {
                         App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -1418,7 +1447,8 @@ namespace PEBakery.WPF
             if (result == MessageBoxResult.No)
                 return;
 
-            _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFolder(_sc, item.Name);
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;
@@ -1520,7 +1550,7 @@ namespace PEBakery.WPF
             catch (Exception ex)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -1558,7 +1588,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -1579,7 +1609,8 @@ namespace PEBakery.WPF
             if (result == MessageBoxResult.No)
                 return;
 
-            _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName);
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;
@@ -1591,7 +1622,32 @@ namespace PEBakery.WPF
             else // Failure
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void InspectFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
+                return;
+
+            Debug.Assert(item.Detail != null);
+            EncodedFileInfo info = item.Detail;
+            string dirName = info.DirName;
+            string fileName = info.FileName;
+
+            string errMsg;
+            (info, errMsg) = EncodedFile.GetFileInfo(_sc, dirName, fileName, true);
+            if (errMsg == null)
+            {
+                item.Detail = info;
+                m.UpdateAttachFileDetail();
+            }
+            else // Failure
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -1627,8 +1683,6 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel()
         {
-            ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
-
             EditCanvas canvas = new EditCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -1820,17 +1874,33 @@ namespace PEBakery.WPF
         #region Property - General - Script Logo
         public bool ScriptLogoUpdated { get; set; } = false;
 
-        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone, 10);
-        private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
-        public FrameworkElement ScriptLogoImage
+        #region ScriptLogo
+        private bool _scriptLogoToggle;
+        public bool ScriptLogoToggle
+        {
+            get => _scriptLogoToggle;
+            set
+            {
+                _scriptLogoToggle = value;
+                OnPropertyUpdate(nameof(ScriptLogoImageVisible));
+                OnPropertyUpdate(nameof(ScriptLogoNoneIconVisible));
+            }
+        }
+
+        public Visibility ScriptLogoImageVisible => !ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        public Visibility ScriptLogoNoneIconVisible => ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        private ImageSource _scriptLogoImage;
+        public ImageSource ScriptLogoImage
         {
             get => _scriptLogoImage;
             set
             {
                 _scriptLogoImage = value;
+                ScriptLogoToggle = value == null;
                 OnPropertyUpdate(nameof(ScriptLogoImage));
             }
         }
+        #endregion
 
         private EncodedFileInfo _scriptLogoInfo;
         public EncodedFileInfo ScriptLogoInfo
@@ -2736,8 +2806,6 @@ namespace PEBakery.WPF
 
         #region Property - Attachment
         public bool ScriptAttachUpdated { get; set; } = false;
-
-        public static bool DeepInspectAttachedFile = false;
 
         public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();
 

@@ -203,14 +203,27 @@
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
 
-                            <ContentPresenter x:Name="ScriptLogo"
-                                              Grid.Row="0" Grid.Column="0"
-                                              Margin="10"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Center"
-                                              UseLayoutRounding="True"
-                                              Content="{Binding ScriptLogoImage}"
-                                              ToolTip="Recommended image size : 80x80"/>
+                            <Image x:Name="ScriptLogoImage"
+                                   Grid.Row="0" Grid.Column="0"
+                                   Width="90" Height="90"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   StretchDirection="DownOnly"
+                                   Stretch="Uniform"
+                                   UseLayoutRounding="True"
+                                   Visibility="{Binding ScriptLogoImageVisible}"
+                                   Source="{Binding ScriptLogoImage}"
+                                   ToolTip="Recommended image size : 80x80"/>
+                            <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
+                                                        Grid.Row="0" Grid.Column="0"
+                                                        Width="60" Height="60"
+                                                        Foreground="#60000000"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center"
+                                                        UseLayoutRounding="True"
+                                                        Visibility="{Binding ScriptLogoNoneIconVisible}"
+                                                        Kind="BorderNone"
+                                                        ToolTip="Recommended image size : 80x80"/>
                             <Grid Grid.Row="0" Grid.Column="1"
                                   Height="80"
                                   Visibility="{Binding ScriptLogoInfoVisibility}">
@@ -1270,10 +1283,10 @@
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Margin="0, 5, 0, 0"
-                                            Orientation="Horizontal"
+                                <DockPanel Margin="5, 5, 0, 0"
                                             Visibility="{Binding AttachDetailFileVisiblity}">
                                     <Button x:Name="ExtractFileButton"
+                                            DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
@@ -1288,6 +1301,7 @@
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="DeleteFileButton"
+                                            DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
@@ -1301,7 +1315,22 @@
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
-                                </StackPanel>
+                                    <Button x:Name="InspectFileButton"
+                                            DockPanel.Dock="Right"
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Right"
+                                            Width="160" Height="25"
+                                            Click="InspectFileButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="Magnify"
+                                                                        Width="Auto"
+                                                                        Height="Auto"
+                                                                        Margin="0, 5, 5, 5"/>
+                                            <TextBlock Text="Inspect Compression"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DockPanel>
                             </StackPanel>
                             <!-- AddFolderButton -->
                             <GroupBox Header="Add Folder"
@@ -1433,7 +1462,7 @@
                                     </StackPanel>
                                 </GroupBox>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="0, 0, 5, 0"
+                                    <Button Margin="5, 0, 5, 0"
                                         x:Name="ExtractFolderButton"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"

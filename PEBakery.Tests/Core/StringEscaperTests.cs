@@ -374,7 +374,7 @@ namespace PEBakery.Tests.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "World";
+            s.CurSectionInParams[1] = "World";
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
@@ -385,7 +385,7 @@ namespace PEBakery.Tests.Core
         public void ExpandVariables_2()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurSectionParams[1] = "World";
+            s.CurSectionInParams[1] = "World";
 
             const string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
@@ -421,7 +421,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
-            s.CurSectionParams[2] = "WPF";
+            s.CurSectionInParams[2] = "WPF";
 
             string[] srcs =
             {
@@ -452,7 +452,7 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            s.CurSectionParams[1] = "#2";
+            s.CurSectionInParams[1] = "#2";
 
             const string src = "%A% #1";
             try { StringEscaper.ExpandVariables(s, src); }

@@ -37,7 +37,8 @@
         FontFamily="Segoe UI"
         ResizeMode="NoResize"
         Title="About PEBakery"
-        Width="600" Height="480">
+        Width="600" Height="480"
+        WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>

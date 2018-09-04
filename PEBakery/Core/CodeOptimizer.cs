@@ -536,7 +536,7 @@ namespace PEBakery.Core
                 else // if (cmds.Count <= 0)
                     return;
 
-                Debug.Assert(opCmd != null, "Internal Logic Error in CodeOptimizer.Optimize"); 
+                Debug.Assert(opCmd != null, "Internal Logic Error in CodeOptimizer.Optimize");
                 optimized.Add(opCmd);
 
                 cmdSeq.Clear();

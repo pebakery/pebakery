@@ -24,7 +24,7 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
 <Window x:Name="Main"
         x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -32,7 +32,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
@@ -48,6 +48,7 @@
     </Window.DataContext>
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
+        <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
         <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -136,7 +137,7 @@
                 <ColumnDefinition Width="60"/>
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
-            
+
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
@@ -154,12 +155,12 @@
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+            <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                                  Grid.Column="1"
                                  Margin="10"
                                  HorizontalAlignment="Left"
                                  IsActive="{Binding WorkInProgress}">
-            </custom:ProgressRing>
+            </cc:ProgressRing>
             <Button Grid.Row="0" Grid.Column="2" 
                     Margin="4"
                     Style="{StaticResource BackgroundButton}"
@@ -297,7 +298,7 @@
                 <ColumnDefinition Width="60"/>
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
-            
+
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
@@ -315,12 +316,12 @@
                 </TextBlock>
             </StackPanel>
 
-            <custom:ProgressRing Grid.Row="0" Grid.RowSpan="2"
+            <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                                  Grid.Column="1"
                                  Margin="10"
                                  HorizontalAlignment="Left"
                                  IsActive="{Binding WorkInProgress}">
-            </custom:ProgressRing>
+            </cc:ProgressRing>
 
             <Button Grid.Row="0"
                     Grid.Column="2"
@@ -414,42 +415,62 @@
                           Tag="{Binding DataContext, ElementName=Main}">
                     <TreeView.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="Run Script" Click="ScriptRunButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Play" Width="15" Height="15" Margin="4"/>
-                                </MenuItem.Icon>
-                             </MenuItem>
-                            <MenuItem Header="Refresh Script" Click="ScriptRefreshButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Edit Script Properties" Click="ScriptInternalEditor_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Edit Script Source" Click="ScriptExternalEditor_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="OpenInApp" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Update Script" Click="ScriptUpdateButton" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem Header="Syntax Check" Click="ScriptCheckButton_Click" Grid.IsSharedSizeScope="True" Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Magnify" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
+                            <cc:CorrectMenuItem Header="Run Script" 
+                                      Click="ScriptRunButton_Click" 
+                                      Grid.IsSharedSizeScope="True"
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Play"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Refresh Script" 
+                                      Click="ScriptRefreshButton_Click" 
+                                      Grid.IsSharedSizeScope="True" 
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Refresh"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Edit Script Properties" 
+                                      Click="ScriptInternalEditor_Click"
+                                      Grid.IsSharedSizeScope="True"
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Edit Script Source" 
+                                      Click="ScriptExternalEditor_Click" 
+                                      Grid.IsSharedSizeScope="True"
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Update Script" 
+                                      Click="ScriptUpdateButton_Click"
+                                      Grid.IsSharedSizeScope="True" 
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Syntax Check"
+                                      Click="ScriptCheckButton_Click" 
+                                      Grid.IsSharedSizeScope="True" 
+                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Magnify"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
                             <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
-                            <MenuItem Header="Open Script Folder" Click="ScriptOpenFolderButton_Click" Grid.IsSharedSizeScope="True" >
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="FolderOpen" Width="Auto" Height="Auto" Margin="4"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
+                            <cc:CorrectMenuItem Header="Open Script Folder"
+                                                Click="ScriptOpenFolderButton_Click" 
+                                                Grid.IsSharedSizeScope="True" >
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="FolderOpen"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
@@ -521,9 +542,8 @@
                                 </ContentPresenter>
                                 <TextBlock Grid.Row="0" Grid.Column="1"
                                            VerticalAlignment="Center"
-                                           Text="{Binding Text}"
                                            FontWeight="{Binding BuildFontWeight}"
-                                           Foreground="{Binding BuildBrush}">
+                                           Text="{Binding Text}">
                                 </TextBlock>
                             </Grid>
                         </HierarchicalDataTemplate>
@@ -532,6 +552,17 @@
                         <Style TargetType="TreeViewItem">
                             <Setter Property="Focusable" Value="False" />
                             <Setter Property="IsExpanded" Value="True" />
+                            <Setter Property="cc:BringIntoViewBehavior.BringIntoView" Value="True"  />
+                            <Setter Property="IsSelected" Value="{Binding BuildFocus, Mode=OneWay}" />
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Foreground" Value="Red"/>
+                                </Trigger>
+                            </Style.Triggers>
+                            <Style.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent" />
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent" />
+                            </Style.Resources>
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
@@ -565,12 +596,24 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ContentPresenter Name="ScriptLogo"
-                                      Grid.Row="0" Grid.Column="0"
-                                      Margin="10"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"
-                                      UseLayoutRounding="True"/>
+                    <Image x:Name="ScriptLogoImage"
+                           Grid.Row="0" Grid.Column="0"
+                           Width="90" Height="90"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           StretchDirection="DownOnly"
+                           Stretch="Uniform"
+                           UseLayoutRounding="True"
+                           Visibility="{Binding ScriptLogoImageVisible}"
+                           Source="{Binding ScriptLogoImage}"/>
+                    <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
+                                                Grid.Row="0" Grid.Column="0"
+                                                Width="60" Height="60"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                UseLayoutRounding="True"
+                                                Visibility="{Binding ScriptLogoIconVisible}"
+                                                Kind="{Binding ScriptLogoIcon}"/>
                     <Grid Grid.Row="0" Grid.Column="1"
                           Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>
@@ -662,18 +705,26 @@
                             <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
                             <Button.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Edit Script Properties"
-                                              ToolTip="Manage header, interface and attachments"
-                                              Click="ScriptInternalEditor_Click"/>
-                                    <MenuItem Header="Edit Script Source"
-                                              ToolTip="Edit script code"
-                                              Click="ScriptExternalEditor_Click"/>
+                                    <cc:CorrectMenuItem Header="Edit Script Properties"
+                                                        ToolTip="Manage header, interface and attachments"
+                                                        Click="ScriptInternalEditor_Click">
+                                        <cc:CorrectMenuItem.Icon>
+                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                        </cc:CorrectMenuItem.Icon>
+                                    </cc:CorrectMenuItem>
+                                    <cc:CorrectMenuItem Header="Edit Script Source"
+                                                        ToolTip="Edit script code"
+                                                        Click="ScriptExternalEditor_Click">
+                                        <cc:CorrectMenuItem.Icon>
+                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                        </cc:CorrectMenuItem.Icon>
+                                    </cc:CorrectMenuItem>
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
                         <Button Grid.Row="3"
                                 Grid.Column="0"
-                                Click="ScriptUpdateButton"
+                                Click="ScriptUpdateButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="{Binding ScriptUpdateButtonToolTip}">
                             <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
@@ -682,6 +733,7 @@
                 </Grid>
 
                 <DockPanel Grid.Row="1"
+                           Focusable="False"
                            HorizontalAlignment="Stretch"
                            Visibility="{Binding BuildInterfaceVisibility}">
                     <StackPanel DockPanel.Dock="Bottom"
@@ -737,20 +789,29 @@
                                        FontWeight="SemiBold"
                                        Visibility="{Binding BuildConOutRedirectVisibility}"
                                        Text="ShellExecute Console Output"/>
-                            <TextBox DockPanel.Dock="Top"
+                            <ListBox DockPanel.Dock="Top"
                                      Margin="10, 10, 10, 10"
+                                     x:Name="BuildConOutRedirectListBox"
+                                     MinHeight="20"
                                      Visibility="{Binding BuildConOutRedirectVisibility}"
-                                     TextAlignment="Left"
                                      VerticalAlignment="Top"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
                                      VerticalContentAlignment="Stretch"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     FontSize="12"
+                                     FontFamily="{Binding MonospaceFontFamily}"
+                                     FontWeight="{Binding MonospaceFontWeight}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      ScrollViewer.CanContentScroll="True"
-                                     IsReadOnly="True"
-                                     TextChanged="BuildConOutRedirectTextBox_TextChanged"
-                                     Text="{Binding BuildConOutRedirect}"/>
+                                     ScrollViewer.ScrollChanged="BuildConOutRedirectListBox_ScrollChanged" 
+                                     ItemsSource="{Binding BuildConOutRedirectTextLines}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap"
+                                                   Foreground="{Binding Item2, Converter={StaticResource BuildConOutForegroundConverter}}"
+                                                   Text="{Binding Item1}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                             <!-- ProgressBar -->
                             <TextBlock DockPanel.Dock="Top"
                                        TextAlignment="Left"
@@ -798,3 +859,4 @@
         </TaskbarItemInfo>
     </Window.TaskbarItemInfo>
 </Window>
+

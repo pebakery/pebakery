@@ -45,7 +45,6 @@ namespace PEBakery.Core
     public class ScriptCache : SQLiteConnection
     {
         public static int DbLock = 0;
-        private ReaderWriterLockSlim _listLock;
 
         public ScriptCache(string path) : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
@@ -67,7 +66,7 @@ namespace PEBakery.Core
         }
 
         #region Cache Script or Scripts
-        public void CacheScripts(ProjectCollection projects, string baseDir, BackgroundWorker worker)
+        public (int CachedCount, int UpdatedCount) CacheScripts(ProjectCollection projects, string baseDir)
         {
             try
             {
@@ -79,28 +78,33 @@ namespace PEBakery.Core
                 };
                 InsertOrReplaceAll(infos);
 
-                foreach (Project project in projects.Projects)
+                int cachedCount = 0;
+                int updatedCount = 0;
+                foreach (Project project in projects.ProjectList)
                 {
                     // Remove duplicate
                     // Exclude directory links because treePath is inconsistent
-                    var scUniqueList = project.AllScripts
+                    // TODO: Include directory link
+                    Script[] uniqueScripts = project.AllScripts
                         .Where(x => x.Type != ScriptType.Directory && !x.IsDirLink)
                         .GroupBy(x => x.DirectRealPath)
-                        .Select(x => x.First());
-
-                    _listLock = new ReaderWriterLockSlim();
+                        .Select(x => x.First())
+                        .ToArray();
 
                     DB_ScriptCache[] memDb = Table<DB_ScriptCache>().ToArray();
                     List<DB_ScriptCache> updateDb = new List<DB_ScriptCache>();
-
-                    Parallel.ForEach(scUniqueList, sc =>
+                    Parallel.ForEach(uniqueScripts, sc =>
                     {
                         bool updated = CacheScript(sc, memDb, updateDb);
-                        worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
+                        if (updated)
+                            Interlocked.Increment(ref updatedCount);
                     });
 
+                    cachedCount += uniqueScripts.Length;
                     InsertOrReplaceAll(updateDb);
                 }
+
+                return (cachedCount, updatedCount);
             }
             catch (SQLiteException e)
             { // Update failure
@@ -108,13 +112,17 @@ namespace PEBakery.Core
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
+
+            return (0, 0);
         }
 
         /// <returns>Return true if cache is updated</returns>
         private bool CacheScript(Script sc, DB_ScriptCache[] memDb, List<DB_ScriptCache> updateDb)
         {
-            if (memDb == null) throw new ArgumentNullException(nameof(memDb));
-            if (updateDb == null) throw new ArgumentNullException(nameof(updateDb));
+            if (memDb == null)
+                throw new ArgumentNullException(nameof(memDb));
+            if (updateDb == null)
+                throw new ArgumentNullException(nameof(updateDb));
             Debug.Assert(sc.Type != ScriptType.Directory);
 
             // Does cache exist?
@@ -143,19 +151,14 @@ namespace PEBakery.Core
                     scCache.Serialized = ms.ToArray();
                 }
 
-                _listLock.EnterWriteLock();
-                try
+                lock (updateDb)
                 {
                     updateDb.Add(scCache);
                     updated = true;
                 }
-                finally
-                {
-                    _listLock.ExitWriteLock();
-                }
             }
-            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) &&
-                (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) || scCache.FileSize != f.Length))
+            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
+                     (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
@@ -166,15 +169,10 @@ namespace PEBakery.Core
                     scCache.FileSize = f.Length;
                 }
 
-                _listLock.EnterWriteLock();
-                try
+                lock (updateDb)
                 {
                     updateDb.Add(scCache);
                     updated = true;
-                }
-                finally
-                {
-                    _listLock.ExitWriteLock();
                 }
             }
 

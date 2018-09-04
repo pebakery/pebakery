@@ -31,7 +31,7 @@
     <PEBakeryLZ4LibExcludePrecompiled Condition="'$(PEBakeryLZ4LibExcludePrecompiled)' != 'true' And 
                                   '$(MSBuildThisFileDirectory)' != '' And
                                    HasTrailingSlash('$(MSBuildThisFileDirectory)')"
-                        Include="$(MSBuildThisFileDirectory)Precompiled\**\liblz4.so.1.8.1.dll" />
+                        Include="$(MSBuildThisFileDirectory)Precompiled\**\liblz4.so.1.8.2.dll" />
   </ItemGroup>
 
   <!--

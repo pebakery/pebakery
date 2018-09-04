@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.LZ4Lib.Tests", "PE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.LZ4Lib", "PEBakery.LZ4Lib\PEBakery.LZ4Lib.csproj", "{9C3609BE-51B8-418E-9081-84EF5ECE5746}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompBench", "CompBench\CompBench.csproj", "{922268D6-936F-4BC7-97AC-5295F4BCDF5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -207,6 +209,18 @@ Global
 		{9C3609BE-51B8-418E-9081-84EF5ECE5746}.Release|x64.Build.0 = Release|Any CPU
 		{9C3609BE-51B8-418E-9081-84EF5ECE5746}.Release|x86.ActiveCfg = Release|Any CPU
 		{9C3609BE-51B8-418E-9081-84EF5ECE5746}.Release|x86.Build.0 = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|x64.Build.0 = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Debug|x86.Build.0 = Debug|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|x64.ActiveCfg = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|x64.Build.0 = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|x86.ActiveCfg = Release|Any CPU
+		{922268D6-936F-4BC7-97AC-5295F4BCDF5F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

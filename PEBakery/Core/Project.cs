@@ -26,6 +26,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,6 +35,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 using System.Windows;
@@ -44,9 +46,9 @@ using PEBakery.IniLib;
 namespace PEBakery.Core
 {
     #region ProjectCollection
-    public class ProjectCollection
+    public class ProjectCollection : IReadOnlyCollection<Project>
     {
-        #region Static Field
+        #region Static Fields
         public static bool AsteriskBugDirLink = false;
         #endregion
 
@@ -64,9 +66,9 @@ namespace PEBakery.Core
 
         #region Properties
         public string ProjectRoot { get; }
-        public List<Project> Projects => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
+        public List<Project> ProjectList => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
         public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
-        public Project this[int i] => Projects[i];
+        public Project this[int i] => ProjectList[i];
         public int Count => _projectDict.Count;
         #endregion
 
@@ -80,15 +82,15 @@ namespace PEBakery.Core
         #endregion
 
         #region PrepareLoad
-        public int PrepareLoad(out int processCount)
+        public (int TotalCount, int LinkCount) PrepareLoad()
         {
             // Ex) projNameList = { "ChrisPE", "MistyPE", "Win10PESE" }
             // Ex) scriptPathDict = [script paths of ChrisPE, script paths of MistyPE, ... ]
             List<string> projNameList = GetProjectNameList();
-            GetScriptPaths(projNameList, out processCount);
+            (_, int linkCount) = GetScriptPaths(projNameList);
 
-            // Return count of all scripts
-            return _allScriptPaths.Count + _allDirLinkPaths.Count;
+            // Return count of all scripts (all .script + dir link)
+            return (_allScriptPaths.Count + _allDirLinkPaths.Count, linkCount);
         }
         #endregion
 
@@ -127,10 +129,10 @@ namespace PEBakery.Core
         /// <summary>
         /// Get scriptPathDict and allScriptPathList
         /// </summary>
-        public int GetScriptPaths(List<string> projNameList, out int linkCount)
+        public (int AllCount, int LinkCount) GetScriptPaths(List<string> projNameList)
         {
             int allCount = 0;
-            linkCount = 0;
+            int linkCount = 0;
             foreach (string projName in projNameList)
             {
                 string projectDir = Path.Combine(ProjectRoot, projName);
@@ -158,7 +160,7 @@ namespace PEBakery.Core
                 _dirLinkPathDict[projName] = dirLinkPathList;
                 _allDirLinkPaths.AddRange(dirLinkPathList);
             }
-            return allCount;
+            return (allCount, linkCount);
         }
         #endregion
 
@@ -270,7 +272,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Load, LoadLinks
-        public List<LogInfo> Load(BackgroundWorker worker)
+        public List<LogInfo> Load(IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             try
@@ -280,7 +282,7 @@ namespace PEBakery.Core
                     Project project = new Project(_baseDir, key);
 
                     // Load scripts
-                    List<LogInfo> projLogs = project.Load(_scriptPathDict[key], _dirLinkPathDict[key], _scriptCache, worker);
+                    List<LogInfo> projLogs = project.Load(_scriptPathDict[key], _dirLinkPathDict[key], _scriptCache, progress);
                     logs.AddRange(projLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -290,7 +292,7 @@ namespace PEBakery.Core
                 }
 
                 // Populate *.link scripts
-                List<LogInfo> linkLogs = LoadLinks(worker);
+                List<LogInfo> linkLogs = LoadLinks(progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
@@ -309,7 +311,7 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(BackgroundWorker worker)
+        private List<LogInfo> LoadLinks(IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
@@ -318,7 +320,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (_scriptCache != null)
             {
-                worker?.ReportProgress(-1);
+                progress?.Report((Project.LoadReport.LoadingCache, null));
                 cacheDb = _scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -329,7 +331,7 @@ namespace PEBakery.Core
             {
                 Script link = null;
                 bool valid = false;
-                int cached = 2;
+                Project.LoadReport cached = Project.LoadReport.Stage2;
                 try
                 {
                     do
@@ -365,7 +367,7 @@ namespace PEBakery.Core
                                     {
                                         link.Project = sc.Project;
                                         link.IsDirLink = false;
-                                        cached = 3;
+                                        cached = Project.LoadReport.Stage2Cached;
                                     }
                                 }
                                 catch { link = null; }
@@ -404,13 +406,13 @@ namespace PEBakery.Core
                 {
                     sc.LinkLoaded = true;
                     sc.Link = link;
-                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                    progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 else // Error
                 {
                     int idx = _allProjectScripts.IndexOf(sc);
                     removeIdxs.Add(idx);
-                    worker?.ReportProgress(cached);
+                    progress?.Report((cached, null));
                 }
             });
 
@@ -421,6 +423,12 @@ namespace PEBakery.Core
 
             return logs;
         }
+        #endregion
+
+        #region GetEnumarator
+        public IEnumerator<Project> GetEnumerator() => _projectDict.OrderBy(x => x.Key).Select(x => x.Value).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
     }
     #endregion
@@ -477,11 +485,22 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Scripts
+        public enum LoadReport
+        {
+            None,
+            FindingScript,
+            LoadingCache,
+            Stage1,
+            Stage1Cached,
+            Stage2,
+            Stage2Cached,
+        }
+
         public List<LogInfo> Load(
             List<(string Path, bool IsDir)> allScriptPathList,
             List<(string RealPath, string TreePath, bool IsDir)> allDirLinkPathList,
             ScriptCache scriptCache,
-            BackgroundWorker worker)
+            IProgress<(LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -492,7 +511,7 @@ namespace PEBakery.Core
             DB_ScriptCache[] cacheDb = null;
             if (scriptCache != null)
             {
-                worker?.ReportProgress(-1);
+                progress?.Report((LoadReport.LoadingCache, null));
                 cacheDb = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
@@ -508,7 +527,7 @@ namespace PEBakery.Core
                 Debug.Assert(spi.RealPath != null, "Internal Logic Error at Project.Load");
                 Debug.Assert(spi.TreePath != null, "Internal Logic Error at Project.Load");
 
-                int cached = 0;
+                LoadReport cached = LoadReport.Stage1;
                 Script sc = null;
                 try
                 {
@@ -538,7 +557,7 @@ namespace PEBakery.Core
                                 {
                                     sc.Project = this;
                                     sc.IsDirLink = spi.IsDirLink;
-                                    cached = 1;
+                                    cached = LoadReport.Stage1Cached;
                                 }
                             }
                             catch { sc = null; } // Cache Error
@@ -572,12 +591,12 @@ namespace PEBakery.Core
                         listLock.ExitWriteLock();
                     }
 
-                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                    progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
                 catch (Exception e)
                 {
                     logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
-                    worker?.ReportProgress(cached);
+                    progress?.Report((cached, null));
                 }
             });
 
@@ -652,7 +671,7 @@ namespace PEBakery.Core
                     if (x.Data.Type == ScriptType.Directory)
                     {
                         if (y.Data.Type == ScriptType.Directory)
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
                         else
                             return 1;
                     }
@@ -661,7 +680,7 @@ namespace PEBakery.Core
                         if (y.Data.Type == ScriptType.Directory)
                             return -1;
                         else
-                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.OrdinalIgnoreCase);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.InvariantCultureIgnoreCase);
                     }
                 }
                 else
@@ -688,7 +707,8 @@ namespace PEBakery.Core
         #region RefreshScript
         public Script RefreshScript(Script sc, EngineState s = null)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
             if (sc.Type == ScriptType.Directory)
                 return null;
 
@@ -709,6 +729,7 @@ namespace PEBakery.Core
                 // Investigate EngineState to update it on build list
                 if (s == null)
                     return sc;
+
                 int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
                 if (sIdx != -1)
                     s.Scripts[sIdx] = sc;
@@ -722,8 +743,9 @@ namespace PEBakery.Core
         /// Load scripts into project while running
         /// Return true if error
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
-        { 
+        {
             return LoadScriptRuntime(realPath, realPath, opts);
         }
 

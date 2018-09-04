@@ -24,7 +24,7 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
 <Window x:Class="PEBakery.WPF.LogExportWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -33,8 +33,10 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
         FontSize="13"
-        Width="500" Height="280"
+        Width="500" Height="300"
         FontFamily="Segoe UI"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
         Title="Export Logs" 
         d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
     <Window.CommandBindings>
@@ -42,45 +44,81 @@
                         CanExecute="ExportCommand_CanExecute"
                         Executed="ExportCommand_Executed"/>
     </Window.CommandBindings>
+    <Window.Resources>
+        <local:InvertBoolConverter x:Key="InvertBoolConverter"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
-            <RowDefinition Height="45"/>
+            <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0"
                     Orientation="Vertical"
                     Margin="5, 5, 5, 0">
-            <GroupBox Margin="0, 0, 0, 5"
-                      BorderBrush="Gray">
-                <GroupBox.Header>
-                    <TextBlock Text="Log Type"
-                               FontWeight="Bold"/>
-                </GroupBox.Header>
-                <StackPanel>
-                    <RadioButton Height="20"
-                                 VerticalAlignment="Top"
-                                 VerticalContentAlignment="Center"
-                                 GroupName="LogType"
-                                 IsChecked="{Binding ExportSystemLog}"
-                                 Content="System Log"/>
-                    <RadioButton Height="20"
-                                 VerticalAlignment="Top"
-                                 VerticalContentAlignment="Center"
-                                 GroupName="LogType"
-                                 IsEnabled="{Binding BuildLogRadioEnabled}"
-                                 IsChecked="{Binding ExportBuildLog}"
-                                 Content="Build Log"/>
-                </StackPanel>
-            </GroupBox>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
 
-            <GroupBox BorderBrush="Gray">
+                <GroupBox Grid.Column="0"
+                          Height="65"
+                          Margin="0, 0, 3, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="Log Type"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsChecked="{Binding ExportSystemLog}"
+                                     Content="System Log"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="LogType"
+                                     IsEnabled="{Binding BuildLogRadioEnabled}"
+                                     IsChecked="{Binding ExportBuildLog}"
+                                     Content="Build Log"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Grid.Column="1"
+                          Height="65"
+                          Margin="3, 0, 0, 5"
+                          BorderBrush="Gray">
+                    <GroupBox.Header>
+                        <TextBlock Text="File Format"
+                                   FontWeight="Bold"/>
+                    </GroupBox.Header>
+                    <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatText}"
+                                     Content="Text (.txt)"/>
+                        <RadioButton Height="20"
+                                     VerticalAlignment="Top"
+                                     VerticalContentAlignment="Center"
+                                     GroupName="FileFormat"
+                                     IsChecked="{Binding FileFormatHtml}"
+                                     Content="HTML (.html)"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            <GroupBox Height="120"
+                      Margin="0, 0, 0, 5"
+                      BorderBrush="Gray" >
                 <GroupBox.Header>
                     <TextBlock Text="Build Log Export Options"
                                FontWeight="Bold"/>
                 </GroupBox.Header>
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}">
                     <TextBlock Height="20"
                                Margin="5, 0, 0, 0"
                                VerticalAlignment="Top"
@@ -113,22 +151,23 @@
                               Content="Include Macro Commands"/>
                 </StackPanel>
             </GroupBox>
+            <ProgressBar Height="20"
+                         IsIndeterminate="{Binding InProgress}"/>
         </StackPanel>
         <StackPanel Grid.Row="1"
-                    Margin="0, 10, 0, 0"
+                    Margin="0, 5, 5, 5"
+                    Height="25"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
-            <Button HorizontalAlignment="Right"
-                    Margin="0, 0, 10, 10"
-                    Width="80"
+            <Button Width="80"
+                    Margin="0, 0, 5, 0"
                     IsDefault="True"
                     x:Name="ExportButton"
                     Command="local:LogExportCommands.Export"
                     Content="Export"/>
-            <Button HorizontalAlignment="Right"
-                    Margin="0, 0, 10, 10"
-                    Width="80"
+            <Button Width="80"
                     IsCancel="True"
+                    IsEnabled="{Binding InProgress, Converter={StaticResource InvertBoolConverter}}"
                     Content="Cancel"/>
         </StackPanel>
     </Grid>

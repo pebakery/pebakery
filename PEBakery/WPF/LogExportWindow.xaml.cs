@@ -26,22 +26,17 @@
 */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using PEBakery.Core;
 
 namespace PEBakery.WPF
@@ -62,7 +57,11 @@ namespace PEBakery.WPF
         #region Commands
         private void ExportCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            if (_m.ExportSystemLog)
+            if (_m.InProgress)
+            {
+                e.CanExecute = false;
+            }
+            else if (_m.ExportSystemLog)
             {
                 e.CanExecute = true;
             }
@@ -77,61 +76,65 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "Choose Destination Path",
-                Filter = "Text Format (*.txt)|*.txt|HTML Format (*.html)|*.html",
             };
 
-            string destFile = null;
-            if (_m.ExportSystemLog)
+            switch (_m.FileFormat)
             {
-                if (dialog.ShowDialog() == true)
-                {
-                    destFile = dialog.FileName;
-                    string ext = System.IO.Path.GetExtension(destFile);
-                    LogExportType type = LogExportType.Text;
-                    if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                        type = LogExportType.Html;
-
-                    _m.Logger.ExportSystemLog(type, destFile);
-                }
+                case LogExportType.Text:
+                    dialog.Filter = "Text Format (*.txt)|*.txt";
+                    break;
+                case LogExportType.Html:
+                    dialog.Filter = "HTML Format (*.html)|*.html";
+                    break;
+                default:
+                    Debug.Assert(false, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
+                    break;
             }
-            else if (_m.ExportBuildLog)
-            {
-                if (dialog.ShowDialog() == true)
-                {
-                    destFile = dialog.FileName;
-                    string ext = System.IO.Path.GetExtension(destFile);
-                    LogExportType type = LogExportType.Text;
-                    if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
-                        type = LogExportType.Html;
 
-                    Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
-                    int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
-                    _m.Logger.ExportBuildLog(type, destFile, buildId);
-                }
-            }
-            else
-            {
-                const string errMsg = "Internal Logic Error at LogExportWindow.ExportCommand_Executed";
-                _m.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show(errMsg, "Internal Logic Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            bool? result = dialog.ShowDialog();
+            // If user cancelled SaveDialog, do nothing
+            if (result != true)
                 return;
+            string destFile = dialog.FileName;
+
+            _m.InProgress = true;
+            try
+            {
+                await Task.Run(() =>
+                {
+                    if (_m.ExportSystemLog)
+                    {
+                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
+                    }
+                    else if (_m.ExportBuildLog)
+                    {
+                        Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
+                        int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
+                        _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new LogExporter.BuildLogOptions
+                        {
+                            IncludeComments = _m.BuildLogIncludeComments,
+                            IncludeMacros = _m.BuildLogIncludeMacros,
+                        });
+                    }
+                });
+            }
+            finally
+            {
+                _m.InProgress = false;
             }
 
             // Open log file
-            if (destFile != null)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
-                    w.OpenTextFile(destFile);
-                });
-            }
+                if (!(Application.Current.MainWindow is MainWindow w))
+                    return;
+                w.OpenTextFile(destFile);
+            });
 
             // Close LogExportWindow
             Close();
@@ -187,6 +190,7 @@ namespace PEBakery.WPF
             {
                 _exportSystemLog = value;
                 OnPropertyUpdate(nameof(ExportSystemLog));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
             }
         }
 
@@ -198,6 +202,31 @@ namespace PEBakery.WPF
             {
                 _exportBuildLog = value;
                 OnPropertyUpdate(nameof(ExportBuildLog));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
+            }
+        }
+        #endregion
+
+        #region File Format
+        public LogExportType FileFormat = LogExportType.Text;
+
+        public bool FileFormatText
+        {
+            get => FileFormat == LogExportType.Text;
+            set
+            {
+                FileFormat = value ? LogExportType.Text : LogExportType.Html;
+                OnPropertyUpdate(nameof(FileFormatText));
+            }
+        }
+
+        public bool FileFormatHtml
+        {
+            get => FileFormat == LogExportType.Html;
+            set
+            {
+                FileFormat = value ? LogExportType.Html : LogExportType.Text;
+                OnPropertyUpdate(nameof(FileFormatHtml));
             }
         }
         #endregion
@@ -216,6 +245,8 @@ namespace PEBakery.WPF
             {
                 _buildEntries = value;
                 OnPropertyUpdate(nameof(BuildEntries));
+                OnPropertyUpdate(nameof(BuildLogRadioEnabled));
+                OnPropertyUpdate(nameof(BuildLogOptionEnabled));
             }
         }
 
@@ -253,6 +284,19 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Progress
+        private bool _inProgress = false;
+        public bool InProgress
+        {
+            get => _inProgress;
+            set
+            {
+                _inProgress = value;
+                OnPropertyUpdate(nameof(InProgress));
+            }
+        }
+        #endregion
+
         #region Utility
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
@@ -267,6 +311,27 @@ namespace PEBakery.WPF
     public static class LogExportCommands
     {
         public static readonly RoutedUICommand Export = new RoutedUICommand("Export", "Export", typeof(LogExportCommands));
+    }
+    #endregion
+
+    #region Converter
+    public class InvertBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(bool))
+                return null;
+
+            return !(bool)value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(bool))
+                return null;
+
+            return !(bool)value;
+        }
     }
     #endregion
 }

@@ -136,7 +136,7 @@ namespace PEBakery.LZ4Lib
     #endregion
 
     #region NativeMethods
-    internal static class NativeMethods
+    internal static unsafe class NativeMethods
     {
         #region Const
         public const string MsgInitFirstError = "Please call LZ4Stream.GlobalInit() first!";
@@ -288,7 +288,7 @@ namespace PEBakery.LZ4Lib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate UIntPtr LZ4F_compressBegin(
             IntPtr cctx,
-            IntPtr dstBuffer,
+            byte* dstBuffer,
             UIntPtr dstCapacity, // size_t
             FramePreferences prefsPtr);
         internal static LZ4F_compressBegin FrameCompressionBegin;
@@ -318,9 +318,9 @@ namespace PEBakery.LZ4Lib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate UIntPtr LZ4F_compressUpdate(
             IntPtr cctx,
-            IntPtr dstBuffer,
+            byte* dstBuffer,
             UIntPtr dstCapacity, // size_t
-            IntPtr srcBuffer,
+            byte* srcBuffer,
             UIntPtr srcSize, // size_t
             FrameCompressOptions cOptPtr);
         internal static LZ4F_compressUpdate FrameCompressionUpdate;
@@ -338,7 +338,7 @@ namespace PEBakery.LZ4Lib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate UIntPtr LZ4F_flush(
             IntPtr cctx,
-            IntPtr dstBuffer,
+            byte* dstBuffer,
             UIntPtr dstCapacity, // size_t
             FrameCompressOptions cOptPtr);
         internal static LZ4F_flush FrameFlush;
@@ -357,7 +357,7 @@ namespace PEBakery.LZ4Lib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate UIntPtr LZ4F_compressEnd(
             IntPtr cctx,
-            IntPtr dstBuffer,
+            byte* dstBuffer,
             UIntPtr dstCapacity, // size_t
             FrameCompressOptions cOptPtr);
         internal static LZ4F_compressEnd FrameCompressionEnd;
@@ -451,9 +451,9 @@ namespace PEBakery.LZ4Lib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate UIntPtr LZ4F_decompress(
             IntPtr dctx,
-            IntPtr dstBuffer,
+            byte* dstBuffer,
             ref UIntPtr dstSizePtr, // size_t
-            IntPtr srcBuffer,
+            byte* srcBuffer,
             ref UIntPtr srcSizePtr, // size_t
             FrameDecompressOptions dOptPtr);
         internal static LZ4F_decompress FrameDecompress;

@@ -265,9 +265,65 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region GetDefaultWebBrowserPath
+        #region GetDefaultExecutablePath, GetDefaultWebBrowserPath
         private static readonly Dictionary<string, string> DefaultWebBrowsers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> DefaultExecutables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> DefaultOpenCommands = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public static string GetDefaultExecutablePath(string ext, bool onlyExePath)
+        {
+            const string exePathKeyTemplate = @"{0}\shell\open\command";
+
+            if (onlyExePath)
+            {
+                if (DefaultExecutables.ContainsKey(ext))
+                    return DefaultExecutables[ext];
+            }
+            else
+            {
+                if (DefaultOpenCommands.ContainsKey(ext))
+                    return DefaultOpenCommands[ext];
+            }
+
+            RegistryKey extSubKey = null;
+            RegistryKey exePathSubKey = null;
+            try
+            {
+                extSubKey = Registry.ClassesRoot.OpenSubKey(ext, false);
+                if (extSubKey == null)
+                    return null;
+
+                if (!(extSubKey.GetValue(null, null) is string progId))
+                    return null;
+
+                string exePathKey = string.Format(exePathKeyTemplate, progId);
+                exePathSubKey = Registry.ClassesRoot.OpenSubKey(exePathKey, false);
+                if (exePathSubKey == null)
+                    return null;
+
+                if (!(exePathSubKey.GetValue(null, null) is string exePath))
+                    return null;
+
+                if (onlyExePath)
+                {
+                    int idx = exePath.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
+                    exePath = exePath.Substring(0, idx).Trim().Trim('\"').Trim();
+                    DefaultExecutables[ext] = exePath;
+                    return exePath;
+                }
+                else
+                {
+                    DefaultOpenCommands[ext] = exePath;
+                    return exePath;
+                }
+            }
+            finally
+            {
+                extSubKey?.Close();
+                exePathSubKey?.Close();
+            }
+        }
+
         public static string GetDefaultWebBrowserPath(string protocol, bool onlyExePath)
         {
             const string progIdKey = "ProgId";
@@ -282,7 +338,7 @@ namespace PEBakery.Helper
             else
             {
                 if (DefaultOpenCommands.ContainsKey(protocol))
-                    return DefaultWebBrowsers[protocol];
+                    return DefaultOpenCommands[protocol];
             }
 
             RegistryKey httpsSubKey = null;

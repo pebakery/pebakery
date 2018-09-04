@@ -25,18 +25,18 @@
    not derived from or based on this program. 
 */
 
+using NUglify;
 using PEBakery.Helper;
+using SQLite;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Windows;
-using SQLite;
+using NUglify.Html;
 
 namespace PEBakery.Core
 {
@@ -302,8 +302,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region DelayedLogging
-    public class DelayedLogging
+    #region DeferredLogging
+    public class DeferredLogging
     {
         public int CurrentScriptId;
         public DB_BuildInfo BuildInfo;
@@ -313,7 +313,7 @@ namespace PEBakery.Core
 
         private readonly Dictionary<int, int> _scriptIdMatchDict;
 
-        public DelayedLogging(bool fullDelayed)
+        public DeferredLogging(bool fullDelayed)
         {
             CurrentScriptId = 0;
             BuildInfo = null;
@@ -327,13 +327,13 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Flush FullDelayedLogging
+        /// Flush FullDeferrredLogging
         /// </summary>
         /// <param name="s">EngineState</param>
         /// <returns>Real BuildId after written to database</returns>
-        public int FlushFullDelayed(EngineState s)
+        public int FlushFullDeferred(EngineState s)
         {
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
                 return s.BuildId;
 
             Debug.Assert(BuildInfo != null, "Internal Logic Error at DelayedLogging");
@@ -363,7 +363,7 @@ namespace PEBakery.Core
                 _scriptIdMatchDict[oldId] = log.Id;
             }
 
-            // [DelayedVariablePool]
+            // [DeferredVariablePool]
             // s.ScriptId is 0 -> fixed/global variables
             // s.ScriptId is -N -> local variables
 
@@ -382,6 +382,7 @@ namespace PEBakery.Core
             {
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
+                log.RefScriptId = _scriptIdMatchDict[log.RefScriptId];
             }
             s.Logger.Db.InsertAll(newBuildLogPool);
 
@@ -396,15 +397,15 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Logger Class
+    #region Logger
     public class Logger : IDisposable
     {
         #region Fields and Properties
-        // ReSharper disable once InconsistentNaming
         public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
         public static DebugLevel DebugLevel;
+        public static bool MinifyHtmlExport;
 
         private readonly ConcurrentDictionary<int, DB_BuildInfo> _buildDict = new ConcurrentDictionary<int, DB_BuildInfo>();
         private readonly ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>>();
@@ -420,13 +421,13 @@ namespace PEBakery.Core
         public const string LogSeperator = "--------------------------------------------------------------------------------";
 
         // DelayedLogging
-        private DelayedLogging _delayed;
-        public DelayedLogging Delayed
+        private DeferredLogging _deferred;
+        public DeferredLogging Deferred
         {
             get
             {
-                DelayedLogging ret = _delayed;
-                _delayed = null;
+                DeferredLogging ret = _deferred;
+                _deferred = null;
                 return ret;
             }
         }
@@ -470,12 +471,12 @@ namespace PEBakery.Core
         {
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
-                    Db.InsertAll(_delayed.BuildLogPool);
-                    _delayed.BuildLogPool.Clear();
+                case LogMode.PartDefer:
+                    Db.InsertAll(_deferred.BuildLogPool);
+                    _deferred.BuildLogPool.Clear();
                     break;
-                case LogMode.FullDelay:
-                    return _delayed.FlushFullDelayed(s);
+                case LogMode.FullDefer:
+                    return _deferred.FlushFullDeferred(s);
             }
             return s.BuildId;
         }
@@ -496,18 +497,18 @@ namespace PEBakery.Core
 
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
-                    _delayed = new DelayedLogging(false);
+                case LogMode.PartDefer:
+                    _deferred = new DeferredLogging(false);
                     break;
-                case LogMode.FullDelay:
-                    _delayed = new DelayedLogging(true);
+                case LogMode.FullDefer:
+                    _deferred = new DeferredLogging(true);
 
                     dbBuild.Id = -1;
-                    _delayed.BuildInfo = dbBuild;
+                    _deferred.BuildInfo = dbBuild;
                     break;
             }
 
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
             {
                 Db.Insert(dbBuild);
 
@@ -535,13 +536,13 @@ namespace PEBakery.Core
                     varLogs.Add(dbVar);
 
                     // Fire Event
-                    if (s.LogMode != LogMode.FullDelay)
+                    if (s.LogMode != LogMode.FullDefer)
                         VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
             }
 
-            if (s.LogMode == LogMode.FullDelay)
-                _delayed.VariablePool.AddRange(varLogs);
+            if (s.LogMode == LogMode.FullDefer)
+                _deferred.VariablePool.AddRange(varLogs);
             else
                 Db.InsertAll(varLogs);
 
@@ -564,7 +565,7 @@ namespace PEBakery.Core
 
             switch (s.LogMode)
             {
-                case LogMode.PartDelay:
+                case LogMode.PartDefer:
                     Flush(s);
                     Db.Update(dbBuild);
                     break;
@@ -599,11 +600,11 @@ namespace PEBakery.Core
                 dbScript.Version = "0";
             }
 
-            if (s.LogMode == LogMode.FullDelay)
+            if (s.LogMode == LogMode.FullDefer)
             {
-                _delayed.CurrentScriptId -= 1;
-                dbScript.Id = _delayed.CurrentScriptId;
-                _delayed.ScriptLogPool.Add(dbScript);
+                _deferred.CurrentScriptId -= 1;
+                dbScript.Id = _deferred.CurrentScriptId;
+                _deferred.ScriptLogPool.Add(dbScript);
             }
             else
             {
@@ -624,10 +625,10 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            if (s.LogMode == LogMode.PartDelay)
+            if (s.LogMode == LogMode.PartDefer)
             {
-                Db.InsertAll(_delayed.BuildLogPool);
-                _delayed.BuildLogPool.Clear();
+                Db.InsertAll(_deferred.BuildLogPool);
+                _deferred.BuildLogPool.Clear();
             }
 
             int buildId = s.BuildId;
@@ -659,25 +660,25 @@ namespace PEBakery.Core
                     varLogs.Add(dbVar);
 
                     // Fire Event
-                    if (s.LogMode != LogMode.FullDelay)
+                    if (s.LogMode != LogMode.FullDefer)
                         VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
 
-                if (s.LogMode == LogMode.FullDelay)
-                    _delayed.VariablePool.AddRange(varLogs);
+                if (s.LogMode == LogMode.FullDefer)
+                    _deferred.VariablePool.AddRange(varLogs);
                 else
                     Db.InsertAll(varLogs);
             }
 
-            if (s.LogMode != LogMode.FullDelay)
+            if (s.LogMode != LogMode.FullDefer)
                 Db.Update(dbScript);
 
             // Fire Event
-            if (s.LogMode == LogMode.PartDelay)
+            if (s.LogMode == LogMode.PartDefer)
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
-        public int BuildReferenceScriptWrite(EngineState s, Script sc)
+        public int BuildRefScriptWrite(EngineState s, Script sc)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -697,11 +698,11 @@ namespace PEBakery.Core
                 ElapsedMilliSec = 0,
             };
 
-            if (s.LogMode == LogMode.FullDelay)
+            if (s.LogMode == LogMode.FullDefer)
             {
-                _delayed.CurrentScriptId -= 1;
-                dbScript.Id = _delayed.CurrentScriptId;
-                _delayed.ScriptLogPool.Add(dbScript);
+                _deferred.CurrentScriptId -= 1;
+                dbScript.Id = _deferred.CurrentScriptId;
+                _deferred.ScriptLogPool.Add(dbScript);
             }
             else
             {
@@ -727,9 +728,9 @@ namespace PEBakery.Core
             {
                 switch (s.LogMode)
                 {
-                    case LogMode.FullDelay:
-                    case LogMode.PartDelay:
-                        _delayed.BuildLogPool.Add(dbCode);
+                    case LogMode.FullDefer:
+                    case LogMode.PartDefer:
+                        _deferred.BuildLogPool.Add(dbCode);
                         break;
                     case LogMode.NoDelay:
                         Db.Insert(dbCode);
@@ -751,9 +752,9 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RealScriptId = s.RealScriptId,
+                RefScriptId = s.RefScriptId,
                 Message = message,
-                IsMacro = s.InMacro,
+                Flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None,
             };
 
             InternalBuildWrite(s, dbCode);
@@ -780,23 +781,27 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RealScriptId = s.RealScriptId,
+                RefScriptId = s.RefScriptId,
                 Depth = log.Depth,
                 State = state,
-                IsMacro = s.InMacro,
             };
 
+            DbBuildLogFlag flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None;
             if (log.Command == null)
             {
+                dbCode.Flags = flags;
                 dbCode.Message = log.Message;
             }
             else
             {
+                if (log.Command.Type == CodeType.Comment)
+                    flags |= DbBuildLogFlag.Comment;
+                dbCode.Flags = flags;
+
                 if (log.Message.Length == 0)
                     dbCode.Message = log.Command.Type.ToString();
                 else
                     dbCode.Message = $"{log.Command.Type} - {log.Message}";
-                dbCode.CodeType = log.Command.Type;
                 dbCode.RawCode = log.Command.RawCode;
                 dbCode.LineIdx = log.Command.LineIdx;
             }
@@ -823,22 +828,24 @@ namespace PEBakery.Core
                     Time = DateTime.UtcNow,
                     BuildId = buildId,
                     ScriptId = 0,
-                    RealScriptId = 0,
+                    RefScriptId = 0,
                     Depth = log.Depth,
                     State = log.State,
                 };
 
                 if (log.Command == null)
                 {
+                    dbCode.Flags = DbBuildLogFlag.None;
                     dbCode.Message = log.Message;
                 }
                 else
                 {
+                    dbCode.Flags = log.Command.Type == CodeType.Comment ? DbBuildLogFlag.Comment : DbBuildLogFlag.None;
+
                     if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
-                    dbCode.CodeType = log.Command.Type;
                     dbCode.RawCode = log.Command.RawCode;
                     dbCode.LineIdx = log.Command.LineIdx;
                 }
@@ -894,19 +901,19 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> sectionParam, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
             if (logScriptName)
-                LogStartOfSection(s, addr.Section.Name, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Section.Name, depth, inParams, outParams, cmd);
             else
-                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -918,10 +925,10 @@ namespace PEBakery.Core
             else
                 BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            LogSectionParameter(s, depth, paramDict, cmd);
+            LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -933,7 +940,7 @@ namespace PEBakery.Core
             else
                 BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            LogSectionParameter(s, depth, paramDict, cmd);
+            LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
         public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
@@ -976,23 +983,42 @@ namespace PEBakery.Core
         #endregion
 
         #region LogSectionParameter
-        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
         {
             if (s.DisableLogger)
                 return;
 
-            // Write Section Parameters
-            if (paramDict != null && 0 < paramDict.Count)
+            // Write Section In Parameters
+            if (inParams != null && 0 < inParams.Count)
             {
                 int cnt = 0;
                 StringBuilder b = new StringBuilder();
-                b.Append("Params = { ");
-                foreach (var kv in paramDict)
+                b.Append("InParams = { ");
+                foreach (var kv in inParams)
                 {
                     b.Append($"#{kv.Key}:[{kv.Value}]");
-                    if (cnt + 1 < paramDict.Count)
+                    if (cnt + 1 < inParams.Count)
                         b.Append(", ");
                     cnt++;
+                }
+                b.Append(" }");
+
+                if (cmd == null)
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                else
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+            }
+
+            // Write Section Out Parameters
+            if (outParams != null && 0 < outParams.Count && !s.CompatDisableExtendedSectionParams)
+            {
+                StringBuilder b = new StringBuilder();
+                b.Append("OutParams = { ");
+                for (int i = 0; i < outParams.Count; i++)
+                {
+                    b.Append($"#o{i}:[{outParams[i]}]");
+                    if (i + 1 < outParams.Count)
+                        b.Append(", ");
                 }
                 b.Append(" }");
 
@@ -1017,19 +1043,93 @@ namespace PEBakery.Core
 
         public void ExportSystemLog(LogExportType type, string exportFile)
         {
-            using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+            if (type == LogExportType.Html && MinifyHtmlExport)
             {
-                LogExporter exporter = new LogExporter(Db, type, w);
-                exporter.ExportSystemLog();
+                string rawHtml;
+                using (StringWriter w = new StringWriter())
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportSystemLog();
+                    rawHtml = w.ToString();
+                }
+
+                // Do not collapse CRLF in td, th
+                HtmlSettings uglifySettings = new HtmlSettings
+                {
+                    RemoveOptionalTags = false,
+                };
+                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    if (res.HasErrors)
+                    {
+                        StringBuilder b = new StringBuilder($"{res.Errors.Count} error reported while minifying html");
+                        foreach (UglifyError err in res.Errors)
+                            b.AppendLine(err.ToString());
+
+                        SystemWrite(new LogInfo(LogState.Success, b.ToString()));
+                        w.Write(rawHtml);
+                    }
+                    else
+                    {
+                        w.Write(res.Code);
+                    }
+                }
+            }
+            else
+            {
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportSystemLog();
+                }
             }
         }
 
-        public void ExportBuildLog(LogExportType type, string exportFile, int buildId)
+        public void ExportBuildLog(LogExportType type, string exportFile, int buildId, LogExporter.BuildLogOptions opts)
         {
-            using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+            if (type == LogExportType.Html && MinifyHtmlExport)
             {
-                LogExporter exporter = new LogExporter(Db, type, w);
-                exporter.ExportBuildLog(buildId);
+                string rawHtml;
+                using (StringWriter w = new StringWriter())
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportBuildLog(buildId, opts);
+                    rawHtml = w.ToString();
+                }
+
+                // Do not collapse CRLF in td, th
+                HtmlSettings uglifySettings = new HtmlSettings
+                {
+                    RemoveOptionalTags = false,
+                };
+                uglifySettings.TagsWithNonCollapsableWhitespaces["td"] = true;
+                UglifyResult res = Uglify.Html(rawHtml, uglifySettings);
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    if (res.HasErrors)
+                    {
+                        StringBuilder b = new StringBuilder($"{res.Errors.Count} error reported while minifying html");
+                        foreach (UglifyError err in res.Errors)
+                            b.AppendLine(err.ToString());
+
+                        SystemWrite(new LogInfo(LogState.Success, b.ToString()));
+                        w.Write(rawHtml);
+                    }
+                    else
+                    {
+                        w.Write(res.Code);
+                    }
+                }
+            }
+            else
+            {
+                using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                {
+                    LogExporter exporter = new LogExporter(Db, type, w);
+                    exporter.ExportBuildLog(buildId, opts);
+                }
             }
         }
         #endregion
@@ -1191,6 +1291,14 @@ namespace PEBakery.Core
         }
     }
 
+    [Flags]
+    public enum DbBuildLogFlag
+    {
+        None = 0x00,
+        Comment = 0x01,
+        Macro = 0x02
+    }
+
     public class DB_BuildLog
     {
         [PrimaryKey, AutoIncrement]
@@ -1200,39 +1308,19 @@ namespace PEBakery.Core
         public int BuildId { get; set; }
         [Indexed]
         public int ScriptId { get; set; } // Where the command was called
-        public int RealScriptId { get; set; } // Where the command is written (Run/Exec). 0 if invalid.
+        public int RefScriptId { get; set; } // Where the command resides in (Run/Exec). 0 if invalid.
         public int Depth { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]
         public string Message { get; set; }
         public int LineIdx { get; set; }
         [MaxLength(65535)]
-        public CodeType CodeType { get; set; }
         public string RawCode { get; set; }
-        public bool IsMacro { get; set; }
-
-        // Used in LogWindow
-        [Ignore]
-        public string StateStr => State == LogState.None ? string.Empty : State.ToString();
-        [Ignore]
-        public char IsMacroChar => IsMacro ? 'M' : ' ';
+        public DbBuildLogFlag Flags { get; set; }
 
         [Ignore]
-        public string TimeStr
-        {
-            get
-            {
-                if (Time == DateTime.MinValue)
-                    return string.Empty;
-                return Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-            }
-        }
-        [Ignore]
-        public string Text => Export(LogExportType.Text);
-        [Ignore]
-        public string LineIdxStr => LineIdx == 0 ? string.Empty : LineIdx.ToString();
-
-        public string Export(LogExportType type, bool logDepth = true)
+        public string Text => Export(LogExportType.Text, true);
+        public string Export(LogExportType type, bool logDepth)
         {
             string str = string.Empty;
             switch (type)

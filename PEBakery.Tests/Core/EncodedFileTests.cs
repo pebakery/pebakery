@@ -474,7 +474,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                EncodedFileInfo info = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                Assert.IsNull(errMsg);
                 Assert.IsTrue(comp.Equals(info));
             }
 
@@ -546,14 +547,16 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
-                try
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(testScript, detail);
+                if (comp == null)
                 {
-                    EncodedFileInfo info = EncodedFile.GetLogoInfo(testScript, detail);
-                    Assert.IsTrue(info.Equals(comp));
+                    Assert.IsNotNull(errMsg);
+                    Assert.IsNull(info);
                 }
-                catch (InvalidOperationException)
+                else
                 {
-                    Assert.IsTrue(comp == null);
+                    Assert.IsNull(errMsg);
+                    Assert.IsTrue(info.Equals(comp));
                 }
             }
 
@@ -594,7 +597,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
-                List<EncodedFileInfo> infos = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                Assert.IsNull(errMsg);
                 Assert.AreEqual(comps.Count, infos.Count);
                 for (int i = 0; i < comps.Count; i++)
                     Assert.IsTrue(comps[i].Equals(infos[i]));
@@ -657,7 +661,8 @@ namespace PEBakery.Tests.Core
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                Dictionary<string, List<EncodedFileInfo>> infoDict = EncodedFile.GetAllFilesInfo(sc, detail);
+                (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) = EncodedFile.GetAllFilesInfo(sc, detail);
+                Assert.IsNull(errMsg);
                 Assert.AreEqual(compDict.Count, infoDict.Count);
                 foreach (var kv in compDict)
                 {
@@ -770,7 +775,8 @@ namespace PEBakery.Tests.Core
 
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
-                    sc = EncodedFile.DeleteFile(sc, folderName, fileName, out string errMsg);
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.DeleteFile(sc, folderName, fileName);
                     if (errMsg != null)
                     {
                         Assert.IsFalse(result);
@@ -849,7 +855,8 @@ namespace PEBakery.Tests.Core
                         }
                     }
 
-                    sc = EncodedFile.DeleteFolder(sc, folderName, out string errMsg);
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.DeleteFolder(sc, folderName);
 
                     if (errMsg != null)
                     {
@@ -903,8 +910,9 @@ namespace PEBakery.Tests.Core
                 {
                     File.Copy(testScriptPath, destScript, true);
 
+                    string errMsg;
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
-                    sc = EncodedFile.DeleteLogo(sc, out string errMsg);
+                    (sc, errMsg) = EncodedFile.DeleteLogo(sc);
 
                     if (errMsg != null)
                     {
@@ -1057,245 +1065,6 @@ namespace PEBakery.Tests.Core
             Template("Type3.pdf", "Type3Enc4090.txt", false);
             Template("Type3.pdf", "Type3Enc1024.txt", true);
             Template("Type3.pdf", "Type3Enc1024.txt", false);
-        }
-        #endregion
-
-        #region Benchmark
-        /// <summary>
-        /// Benchmark compression ratio and speed of compression libraries
-        /// </summary>
-        [TestMethod]
-        [TestCategory("EncodedFile")]
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        public void Benchmark()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-
-            void Template(string fileName)
-            {
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-                Directory.CreateDirectory(destDir);
-                try
-                {
-                    string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
-                    string rawFile = Path.Combine(workDir, fileName);
-
-                    byte[] rawFileData;
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        using (FileStream fs = new FileStream(rawFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        {
-                            fs.CopyTo(ms);
-                        }
-
-                        rawFileData = ms.ToArray();
-                    }
-
-                    // Compression
-                    {
-                        // RawFile
-                        long rawFileLen = new FileInfo(rawFile).Length;
-
-                        // zlib
-                        (long, TimeSpan) ZLibBenchmarkCompress(ZLibCompLevel compLevel)
-                        {
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(rawFileData))
-                                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, compLevel, true))
-                                {
-                                    rms.CopyTo(zs);
-                                }
-
-                                ms.Flush();
-                                return (ms.Position, watch.Elapsed);
-                            }
-                        }
-                        (long zlibFastestLen, TimeSpan zlibFastestTime) = ZLibBenchmarkCompress(ZLibCompLevel.BestSpeed);
-                        (long zlibDefaultLen, TimeSpan zlibDefaultTime) = ZLibBenchmarkCompress(ZLibCompLevel.Default);
-                        (long zlibBestLen, TimeSpan zlibBestTime) = ZLibBenchmarkCompress(ZLibCompLevel.BestCompression);
-
-                        // xz
-                        (long, TimeSpan) XZBenchmarkCompress(uint preset)
-                        {
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(rawFileData))
-                                using (XZStream xzs = new XZStream(ms, LzmaMode.Compress, preset, true))
-                                {
-                                    rms.CopyTo(xzs);
-                                }
-
-                                ms.Flush();
-                                return (ms.Position, watch.Elapsed);
-                            }
-                        }
-                        (long xzFastestLen, TimeSpan xzFastestTime) = XZBenchmarkCompress(XZStream.MinimumPreset);
-                        (long xzDefaultLen, TimeSpan xzDefaultTime) = XZBenchmarkCompress(XZStream.DefaultPreset);
-                        (long xzBestLen, TimeSpan xzBestTime) = XZBenchmarkCompress(XZStream.MaximumPreset);
-
-                        // lz4
-                        (long, TimeSpan) LZ4BenchmarkCompress(LZ4CompLevel compLevel)
-                        {
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(rawFileData))
-                                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, compLevel, true))
-                                {
-                                    rms.CopyTo(lzs);
-                                }
-
-                                ms.Flush();
-                                return (ms.Position, watch.Elapsed);
-                            }
-                        }
-                        (long lz4FastestLen, TimeSpan lz4FastestTime) = LZ4BenchmarkCompress(LZ4CompLevel.Fast);
-                        (long lz4DefaultLen, TimeSpan lz4DefaultTime) = LZ4BenchmarkCompress(LZ4CompLevel.High);
-                        (long lz4BestLen, TimeSpan lz4BestTime) = LZ4BenchmarkCompress(LZ4CompLevel.VeryHigh); // Toggle lz4-hc mode
-
-                        StringBuilder b = new StringBuilder();
-                        b.AppendLine($"[{fileName} - Compress]");
-                        b.AppendLine($"raw            : 100%, {rawFileLen}");
-                        b.AppendLine($"zlib (Fastest) : {Math.Round(zlibFastestLen * 100.0 / rawFileLen, 0):##0}%, {zlibFastestTime.TotalMilliseconds}ms ({zlibFastestLen}B)");
-                        b.AppendLine($"zlib (Default) : {Math.Round(zlibDefaultLen * 100.0 / rawFileLen, 0):##0}%, {zlibDefaultTime.TotalMilliseconds}ms ({zlibDefaultLen}B)");
-                        b.AppendLine($"zlib (Best)    : {Math.Round(zlibBestLen * 100.0 / rawFileLen, 0):##0}%, {zlibBestTime.TotalMilliseconds}ms ({zlibBestLen}B)");
-                        b.AppendLine($"xz   (Fastest) : {Math.Round(xzFastestLen * 100.0 / rawFileLen, 0):##0}%, {xzFastestTime.TotalMilliseconds}ms ({xzFastestLen}B)");
-                        b.AppendLine($"xz   (Default) : {Math.Round(xzDefaultLen * 100.0 / rawFileLen, 0):##0}%, {xzDefaultTime.TotalMilliseconds}ms ({xzDefaultLen}B)");
-                        b.AppendLine($"xz   (Best)    : {Math.Round(xzBestLen * 100.0 / rawFileLen, 0):##0}%, {xzBestTime.TotalMilliseconds}ms ({xzBestLen}B)");
-                        b.AppendLine($"lz4  (Fastest) : {Math.Round(lz4FastestLen * 100.0 / rawFileLen, 0):##0}%, {lz4FastestTime.TotalMilliseconds}ms ({lz4FastestLen}B)");
-                        b.AppendLine($"lz4  (Default) : {Math.Round(lz4DefaultLen * 100.0 / rawFileLen, 0):##0}%, {lz4DefaultTime.TotalMilliseconds}ms ({lz4DefaultLen}B)");
-                        b.AppendLine($"lz4  (Best)    : {Math.Round(lz4BestLen * 100.0 / rawFileLen, 0):##0}%, {lz4BestTime.TotalMilliseconds}ms ({lz4BestLen}B)");
-                        Console.WriteLine(b.ToString());
-                    }
-
-                    // Decompression
-                    {
-                        // zlib
-                        TimeSpan ZLibBenchmarkDecompress(string dirName)
-                        {
-                            string zlibFile = Path.Combine(workDir, "Benchmark", dirName, fileName + ".zz");
-                            byte[] zlibData;
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                using (FileStream fs = new FileStream(zlibFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                                {
-                                    fs.CopyTo(ms);
-                                }
-
-                                zlibData = ms.ToArray();
-                            }
-
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(zlibData))
-                                using (ZLibStream zs = new ZLibStream(rms, ZLibMode.Decompress))
-                                {
-                                    zs.CopyTo(ms);
-                                }
-
-                                ms.Flush();
-                                return watch.Elapsed;
-                            }
-                        }
-                        TimeSpan zlibFastestTime = ZLibBenchmarkDecompress("Fastest");
-                        TimeSpan zlibDefaultTime = ZLibBenchmarkDecompress("Default");
-                        TimeSpan zlibBestTime = ZLibBenchmarkDecompress("Best");
-
-                        // xz
-                        TimeSpan XZBenchmarkDecompress(string dirName)
-                        {
-                            string xzFile = Path.Combine(workDir, "Benchmark", dirName, fileName + ".xz");
-                            byte[] xzData;
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                using (FileStream fs = new FileStream(xzFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                                {
-                                    fs.CopyTo(ms);
-                                }
-
-                                xzData = ms.ToArray();
-                            }
-
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(xzData))
-                                using (XZStream xzs = new XZStream(rms, LzmaMode.Decompress))
-                                {
-                                    xzs.CopyTo(ms);
-                                }
-
-                                ms.Flush();
-                                return watch.Elapsed;
-                            }
-                        }
-                        TimeSpan xzFastestTime = XZBenchmarkDecompress("Fastest");
-                        TimeSpan xzDefaultTime = XZBenchmarkDecompress("Default");
-                        TimeSpan xzBestTime = XZBenchmarkDecompress("Best");
-
-                        // lz4
-                        TimeSpan LZ4BenchmarkDecompress(string dirName)
-                        {
-                            string lz4File = Path.Combine(workDir, "Benchmark", dirName, fileName + ".lz4");
-                            byte[] lz4Data;
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                using (FileStream fs = new FileStream(lz4File, FileMode.Open, FileAccess.Read, FileShare.Read))
-                                {
-                                    fs.CopyTo(ms);
-                                }
-
-                                lz4Data = ms.ToArray();
-                            }
-
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                Stopwatch watch = Stopwatch.StartNew();
-                                using (MemoryStream rms = new MemoryStream(lz4Data))
-                                using (LZ4FrameStream lzs = new LZ4FrameStream(rms, LZ4Mode.Decompress))
-                                {
-                                    lzs.CopyTo(ms);
-                                }
-
-                                ms.Flush();
-                                return watch.Elapsed;
-                            }
-                        }
-                        TimeSpan lz4FastestTime = LZ4BenchmarkDecompress("Fastest");
-                        TimeSpan lz4DefaultTime = LZ4BenchmarkDecompress("Default");
-                        TimeSpan lz4BestTime = LZ4BenchmarkDecompress("Best"); // Toggle lz4-hc mode
-
-                        StringBuilder b = new StringBuilder();
-                        b.AppendLine($"[{fileName} - Decompress]");
-                        b.AppendLine($"zlib (Fastest) : {zlibFastestTime.TotalMilliseconds}ms");
-                        b.AppendLine($"zlib (Default) : {zlibDefaultTime.TotalMilliseconds}ms");
-                        b.AppendLine($"zlib (Best)    : {zlibBestTime.TotalMilliseconds}ms");
-                        b.AppendLine($"xz   (Fastest) : {xzFastestTime.TotalMilliseconds}ms");
-                        b.AppendLine($"xz   (Default) : {xzDefaultTime.TotalMilliseconds}ms");
-                        b.AppendLine($"xz   (Best)    : {xzBestTime.TotalMilliseconds}m");
-                        b.AppendLine($"lz4  (Fastest) : {lz4FastestTime.TotalMilliseconds}ms");
-                        b.AppendLine($"lz4  (Default) : {lz4DefaultTime.TotalMilliseconds}ms");
-                        b.AppendLine($"lz4  (Best)    : {lz4BestTime.TotalMilliseconds}ms");
-                        Console.WriteLine(b.ToString());
-                    }
-
-                }
-                finally
-                {
-                    if (Directory.Exists(destDir))
-                        Directory.Delete(destDir, true);
-                }
-
-                
-            }
-
-            Template("Type4.txt");
-            Template("Banner.svg");
-            Template("Banner.bmp");            
         }
         #endregion
     }

@@ -241,11 +241,15 @@ namespace PEBakery.Core
         #endregion
 
         #region GetValue, SetValue
-        public string GetValue()
+        public string GetValue(bool strict)
         {
             string value = null;
             switch (Type)
             {
+                case UIControlType.TextLabel:
+                    if (strict)
+                        value = Text;
+                    break;
                 case UIControlType.TextBox:
                     {
                         UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
@@ -293,6 +297,12 @@ namespace PEBakery.Core
             bool success = false;
             switch (Type)
             {
+                case UIControlType.TextLabel:
+                    Text = newValue;
+
+                    logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
+                    success = true;
+                    break;
                 case UIControlType.TextBox:
                     {
                         UIInfo_TextBox uiInfo = Info.Cast<UIInfo_TextBox>();
@@ -396,12 +406,10 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.FileBox:
-                    {
-                        Text = newValue;
+                    Text = newValue;
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface Control [{Key}] set to [{newValue}]"));
-                        success = true;
-                    }
+                    logs.Add(new LogInfo(LogState.Success, $"Interface Control [{Key}] set to [{newValue}]"));
+                    success = true;
                     break;
                 case UIControlType.RadioGroup:
                     {

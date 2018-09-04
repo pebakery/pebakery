@@ -61,19 +61,19 @@ namespace PEBakery.Core.Commands
             for (int i = 0; i < info.Args.Count; i++)
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
-            s.CurSectionParams = paramDict;
+            s.CurSectionInParams = paramDict;
             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing Command [{info.MacroType}]", cmd, s.CurDepth));
 
             // Backup and set EngineState values
-            int realScriptIdBackup = s.RealScriptId;
+            int realScriptIdBackup = s.RefScriptId;
             if (isGlobal)
-                s.RealScriptId = s.Logger.BuildReferenceScriptWrite(s, macroCmd.Addr.Script);
+                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, macroCmd.Addr.Script);
             s.InMacro = true;
 
             CommandBranch.RunExec(s, macroCmd, true);
 
             // Restore and reset EngineState values
-            s.RealScriptId = realScriptIdBackup;
+            s.RefScriptId = realScriptIdBackup;
             s.InMacro = false;
         }
     }

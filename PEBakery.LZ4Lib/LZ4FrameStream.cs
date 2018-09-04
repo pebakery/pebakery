@@ -33,6 +33,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,8 +56,7 @@ namespace PEBakery.LZ4Lib
         private readonly byte[] _workBuf;
 
         // Compression
-        private const int SrcBufSizeMax = 4 * 1024 * 1024; // 4MB
-        // private const int SrcBufSizeMax = 64 * 1024; // 64K
+        private const int SrcBufSizeMax = 64 * 1024; // 64K
         private readonly uint _destBufSize; 
 
         // Decompression
@@ -87,7 +87,7 @@ namespace PEBakery.LZ4Lib
         public LZ4FrameStream(Stream stream, LZ4Mode mode, bool leaveOpen)
             : this(stream, mode, 0, leaveOpen) { }
 
-        public LZ4FrameStream(Stream stream, LZ4Mode mode, LZ4CompLevel compressionLevel, bool leaveOpen)
+        public unsafe LZ4FrameStream(Stream stream, LZ4Mode mode, LZ4CompLevel compressionLevel, bool leaveOpen)
         {
             if (!NativeMethods.Loaded)
                 throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
@@ -129,17 +129,19 @@ namespace PEBakery.LZ4Lib
                         _destBufSize = frameSize;
 
                     _workBuf = new byte[_destBufSize];
-                    using (PinnedArray dstBufPin = new PinnedArray(_workBuf))
+
+                    UIntPtr headerSizeVal;
+                    fixed (byte* dest = &_workBuf[0])
                     {
-                        UIntPtr headerSizeVal = NativeMethods.FrameCompressionBegin(_cctx, dstBufPin, (UIntPtr)SrcBufSizeMax, prefs);
-                        LZ4FrameException.CheckLZ4Error(headerSizeVal);
-
-                        Debug.Assert(headerSizeVal.ToUInt64() < int.MaxValue);
-
-                        int headerSize = (int)headerSizeVal.ToUInt32();
-                        _baseStream.Write(_workBuf, 0, headerSize);
-                        TotalOut += headerSize;
+                        headerSizeVal = NativeMethods.FrameCompressionBegin(_cctx, dest, (UIntPtr)SrcBufSizeMax, prefs);
                     }
+                    LZ4FrameException.CheckLZ4Error(headerSizeVal);
+                    Debug.Assert(headerSizeVal.ToUInt64() < int.MaxValue);
+
+                    int headerSize = (int)headerSizeVal.ToUInt32();
+                    _baseStream.Write(_workBuf, 0, headerSize);
+                    TotalOut += headerSize;
+
                     break;
                 }
                 case LZ4Mode.Decompress:
@@ -299,7 +301,7 @@ namespace PEBakery.LZ4Lib
         /// <summary>
         /// For Decompress
         /// </summary>
-        public override int Read(byte[] buffer, int offset, int count)
+        public override unsafe int Read(byte[] buffer, int offset, int count)
         {
             if (_mode != LZ4Mode.Decompress)
                 throw new NotSupportedException("Read() not supported on compression");
@@ -318,69 +320,77 @@ namespace PEBakery.LZ4Lib
             int destCount = count;
             int destEndIdx = offset + count;
 
-            using (PinnedArray pinSrc = new PinnedArray(_workBuf))
-            using (PinnedArray pinDest = new PinnedArray(buffer))
+            // Reached end of stream
+            if (_decompSrcIdx == DecompDone)
+                return 0;
+            
+            if (_firstRead)
             {
-                if (_firstRead)
+                // Write FrameMagicNumber into LZ4F_decompress
+                UIntPtr headerSizeVal = (UIntPtr)4;
+                UIntPtr destCountVal = (UIntPtr)destCount;
+
+                UIntPtr ret;
+                fixed (byte* header = &FrameMagicNumber[0])
+                fixed (byte* dest = &buffer[destIdx])
                 {
-                    using (PinnedArray pinHeader = new PinnedArray(FrameMagicNumber))
-                    { // Write FrameMagicNumber into LZ4F_decompress
-                        UIntPtr headerSizeVal = (UIntPtr)4;
-                        UIntPtr destCountVal = (UIntPtr)destCount;
-
-                        UIntPtr ret = NativeMethods.FrameDecompress(_dctx, pinDest[destIdx], ref destCountVal, pinHeader, ref headerSizeVal, null);
-                        LZ4FrameException.CheckLZ4Error(ret);
-
-                        Debug.Assert(headerSizeVal.ToUInt64() <= int.MaxValue);
-                        Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
-
-                        if (headerSizeVal.ToUInt32() != 4u)
-                            throw new InvalidOperationException("Not enough dest buffer");
-                        int destWritten = (int)destCountVal.ToUInt32();
-
-                        destIdx += destWritten;
-                        TotalOut += destWritten;
-                    }
-
-                    _firstRead = false;
+                    ret = NativeMethods.FrameDecompress(_dctx, dest, ref destCountVal, header, ref headerSizeVal, null);
                 }
+                LZ4FrameException.CheckLZ4Error(ret);
 
-                while (destIdx < destEndIdx)
+                Debug.Assert(headerSizeVal.ToUInt64() <= int.MaxValue);
+                Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
+
+                if (headerSizeVal.ToUInt32() != 4u)
+                    throw new InvalidOperationException("Not enough dest buffer");
+                int destWritten = (int)destCountVal.ToUInt32();
+
+                destIdx += destWritten;
+                TotalOut += destWritten;
+
+                _firstRead = false;
+            }
+
+            while (destIdx < destEndIdx)
+            {
+                if (_decompSrcIdx == _decompSrcCount)
                 {
-                    if (_decompSrcIdx == _decompSrcCount)
+                    // Read from _baseStream
+                    _decompSrcIdx = 0;
+                    _decompSrcCount = _baseStream.Read(_workBuf, 0, _workBuf.Length);
+                    TotalIn += _decompSrcCount;
+
+                    // _baseStream reached its end
+                    if (_decompSrcCount == 0)
                     {
-                        // Read from _baseStream
-                        _decompSrcIdx = 0;
-                        _decompSrcCount = _baseStream.Read(_workBuf, 0, _workBuf.Length);
-                        TotalIn += _decompSrcCount;
-
-                        // _baseStream reached its end
-                        if (_decompSrcCount == 0)
-                        {
-                            _decompSrcIdx = DecompDone;
-                            break;
-                        }
+                        _decompSrcIdx = DecompDone;
+                        break;
                     }
-
-                    UIntPtr srcCountVal = (UIntPtr)(_decompSrcCount - _decompSrcIdx);
-                    UIntPtr destCountVal = (UIntPtr)destCount;
-
-                    UIntPtr ret = NativeMethods.FrameDecompress(_dctx, pinDest[destIdx], ref destCountVal, pinSrc[_decompSrcIdx], ref srcCountVal, null);
-                    LZ4FrameException.CheckLZ4Error(ret);
-
-                    // The number of bytes consumed from srcBuffer will be written into *srcSizePtr (necessarily <= original value).
-                    Debug.Assert(srcCountVal.ToUInt64() <= int.MaxValue);
-                    int srcConsumed = (int)srcCountVal.ToUInt32();
-                    _decompSrcIdx += srcConsumed;
-                    Debug.Assert(_decompSrcIdx <= _decompSrcCount);
-
-                    // The number of bytes decompressed into dstBuffer will be written into *dstSizePtr (necessarily <= original value).
-                    Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
-                    int destWritten = (int)destCountVal.ToUInt32();
-                    destIdx += destWritten;
-                    TotalOut += destWritten;
-                    readSize += destWritten;
                 }
+
+                UIntPtr srcCountVal = (UIntPtr)(_decompSrcCount - _decompSrcIdx);
+                UIntPtr destCountVal = (UIntPtr)(destEndIdx - destIdx);
+
+                UIntPtr ret;
+                fixed (byte* src = &_workBuf[_decompSrcIdx])
+                fixed (byte* dest = &buffer[destIdx])
+                {
+                    ret = NativeMethods.FrameDecompress(_dctx, dest, ref destCountVal, src, ref srcCountVal, null);
+                }
+                LZ4FrameException.CheckLZ4Error(ret);
+
+                // The number of bytes consumed from srcBuffer will be written into *srcSizePtr (necessarily <= original value).
+                Debug.Assert(srcCountVal.ToUInt64() <= int.MaxValue);
+                int srcConsumed = (int)srcCountVal.ToUInt32();
+                _decompSrcIdx += srcConsumed;
+                Debug.Assert(_decompSrcIdx <= _decompSrcCount);
+
+                // The number of bytes decompressed into dstBuffer will be written into *dstSizePtr (necessarily <= original value).
+                Debug.Assert(destCountVal.ToUInt64() <= int.MaxValue);
+                int destWritten = (int)destCountVal.ToUInt32();
+                destIdx += destWritten;
+                TotalOut += destWritten;
+                readSize += destWritten;
             }
 
             return readSize;
@@ -389,7 +399,7 @@ namespace PEBakery.LZ4Lib
         /// <summary>
         /// For Compress
         /// </summary>
-        public override void Write(byte[] buffer, int offset, int count)
+        public override unsafe void Write(byte[] buffer, int offset, int count)
         {
             if (_mode != LZ4Mode.Compress)
                 throw new NotSupportedException("Write() not supported on decompression");
@@ -404,44 +414,48 @@ namespace PEBakery.LZ4Lib
 
             TotalIn += count;
 
-            using (PinnedArray pinSrc = new PinnedArray(buffer))
-            using (PinnedArray pinDest = new PinnedArray(_workBuf))
+            while (0 < count)
             {
-                while (0 < count)
+                int srcWorkSize = SrcBufSizeMax < count ? SrcBufSizeMax : count;
+
+                UIntPtr outSizeVal;
+                fixed (byte* dest = &_workBuf[0])
+                fixed (byte* src = &buffer[offset])
                 {
-                    int srcWorkSize = SrcBufSizeMax < count ? SrcBufSizeMax : count;
-
-                    UIntPtr outSizeVal = NativeMethods.FrameCompressionUpdate(_cctx, pinDest, (UIntPtr)_destBufSize, pinSrc[offset], (UIntPtr)srcWorkSize, null);
-                    LZ4FrameException.CheckLZ4Error(outSizeVal);
-
-                    Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
-                    int outSize = (int) outSizeVal.ToUInt64();
-
-                    _baseStream.Write(_workBuf, 0, outSize);
-                    TotalOut += outSize;
-
-                    offset += srcWorkSize;
-                    count -= srcWorkSize;
-                    Debug.Assert(0 <= count, $"0 <= {count}");
+                    outSizeVal = NativeMethods.FrameCompressionUpdate(_cctx, dest, (UIntPtr)_destBufSize, src, (UIntPtr)srcWorkSize, null);
                 }
-            }
-        }
 
-        private void FinishWrite()
-        {
-            Debug.Assert(_mode == LZ4Mode.Compress, "FinishWrite() must not be called in decompression");
-
-            using (PinnedArray pinDest = new PinnedArray(_workBuf))
-            {
-                UIntPtr outSizeVal = NativeMethods.FrameCompressionEnd(_cctx, pinDest, (UIntPtr)_destBufSize, null);
                 LZ4FrameException.CheckLZ4Error(outSizeVal);
 
                 Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
-                int outSize = (int)outSizeVal.ToUInt64();
+                int outSize = (int) outSizeVal.ToUInt64();
 
                 _baseStream.Write(_workBuf, 0, outSize);
                 TotalOut += outSize;
+
+                offset += srcWorkSize;
+                count -= srcWorkSize;
+                Debug.Assert(0 <= count, $"0 <= {count}");
             }
+            
+        }
+
+        private unsafe void FinishWrite()
+        {
+            Debug.Assert(_mode == LZ4Mode.Compress, "FinishWrite() must not be called in decompression");
+
+            UIntPtr outSizeVal;
+            fixed (byte* dest = &_workBuf[0])
+            {
+                outSizeVal = NativeMethods.FrameCompressionEnd(_cctx, dest, (UIntPtr)_destBufSize, null);
+            }
+            LZ4FrameException.CheckLZ4Error(outSizeVal);
+
+            Debug.Assert(outSizeVal.ToUInt64() < int.MaxValue, "BufferSize should be <2GB");
+            int outSize = (int)outSizeVal.ToUInt64();
+
+            _baseStream.Write(_workBuf, 0, outSize);
+            TotalOut += outSize;
         }
 
         public override void Flush()
