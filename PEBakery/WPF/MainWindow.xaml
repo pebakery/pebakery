@@ -596,14 +596,24 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ContentPresenter x:Name="ScriptLogoPresenter"
-                                      Content="{Binding ScriptLogo, Mode=TwoWay}"
-                                      Grid.Row="0" Grid.Column="0"
-                                      Margin="10"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"
-                                      UseLayoutRounding="True">
-                    </ContentPresenter>
+                    <Image x:Name="ScriptLogoImage"
+                           Grid.Row="0" Grid.Column="0"
+                           Width="90" Height="90"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           StretchDirection="DownOnly"
+                           Stretch="Uniform"
+                           UseLayoutRounding="True"
+                           Visibility="{Binding ScriptLogoImageVisible}"
+                           Source="{Binding ScriptLogoImage}"/>
+                    <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
+                                                Grid.Row="0" Grid.Column="0"
+                                                Width="60" Height="60"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                UseLayoutRounding="True"
+                                                Visibility="{Binding ScriptLogoIconVisible}"
+                                                Kind="{Binding ScriptLogoIcon}"/>
                     <Grid Grid.Row="0" Grid.Column="1"
                           Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>

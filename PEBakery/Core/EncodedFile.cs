@@ -531,7 +531,7 @@ namespace PEBakery.Core
             return DecodeInMemory(encoded);
         }
 
-        public static Image ExtractLogoImage(Script sc, double? svgSize = null)
+        public static ImageSource ExtractLogoImageSource(Script sc, double? svgSize = null)
         {
             ImageSource imageSource;
             using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
@@ -548,14 +548,7 @@ namespace PEBakery.Core
                     imageSource = ImageHelper.ImageToBitmapImage(mem);
                 }
             }
-
-            return new Image
-            {
-                StretchDirection = StretchDirection.DownOnly,
-                Stretch = Stretch.Uniform,
-                UseLayoutRounding = true, // To prevent blurry image rendering
-                Source = imageSource
-            };
+            return imageSource;
         }
 
         public static MemoryStream ExtractInterface(Script sc, string fileName)

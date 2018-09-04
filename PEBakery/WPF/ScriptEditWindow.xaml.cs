@@ -144,12 +144,12 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                m.ScriptLogoImage = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
+                m.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(_sc, 100 * MainWindow.MaxDpiScale);
                 m.ScriptLogoInfo = info;
             }
             else
             {
-                m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
+                m.ScriptLogoImage = null;
                 m.ScriptLogoInfo = null;
             }
 
@@ -1683,8 +1683,6 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel()
         {
-            ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
-
             EditCanvas canvas = new EditCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -1876,17 +1874,33 @@ namespace PEBakery.WPF
         #region Property - General - Script Logo
         public bool ScriptLogoUpdated { get; set; } = false;
 
-        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone, 10);
-        private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
-        public FrameworkElement ScriptLogoImage
+        #region ScriptLogo
+        private bool _scriptLogoToggle;
+        public bool ScriptLogoToggle
+        {
+            get => _scriptLogoToggle;
+            set
+            {
+                _scriptLogoToggle = value;
+                OnPropertyUpdate(nameof(ScriptLogoImageVisible));
+                OnPropertyUpdate(nameof(ScriptLogoNoneIconVisible));
+            }
+        }
+
+        public Visibility ScriptLogoImageVisible => !ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        public Visibility ScriptLogoNoneIconVisible => ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        private ImageSource _scriptLogoImage;
+        public ImageSource ScriptLogoImage
         {
             get => _scriptLogoImage;
             set
             {
                 _scriptLogoImage = value;
+                ScriptLogoToggle = value == null;
                 OnPropertyUpdate(nameof(ScriptLogoImage));
             }
         }
+        #endregion
 
         private EncodedFileInfo _scriptLogoInfo;
         public EncodedFileInfo ScriptLogoInfo

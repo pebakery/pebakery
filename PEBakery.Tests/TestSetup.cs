@@ -16,7 +16,7 @@ namespace PEBakery.Tests
         {
             EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(EngineTests.BaseDir, null);
-            projects.PrepareLoad(out _);
+            projects.PrepareLoad();
             projects.Load(null);
 
             // Should be only one project named TestSuite

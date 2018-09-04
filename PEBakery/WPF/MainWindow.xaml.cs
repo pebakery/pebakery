@@ -77,7 +77,6 @@ namespace PEBakery.WPF
         public SettingViewModel Setting { get; }
 
         public MainViewModel Model { get; }
-        public Canvas MainCanvas => Model.MainCanvas;
 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
@@ -265,12 +264,18 @@ namespace PEBakery.WPF
                     }
                     Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{BaseDir}]"));
 
+                    Model.ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
+                    /*
+                    Model.MainCanvas.Children.Clear();
+                    Model.MainTree.Children.Clear();
+                    */
+                    
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         // Load CommentProcessing Icon
-                        Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
-                        MainCanvas.Children.Clear();
-                        (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
+                        Model.MainCanvas.Children.Clear();
+                        Model.MainTree.Children.Clear();
+                        // (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
                     });
 
                     Model.BottomProgressBarMinimum = 0;
@@ -558,7 +563,7 @@ namespace PEBakery.WPF
 
             if (sc.Type == ScriptType.Directory)
             {
-                MainCanvas.Children.Clear();
+                Model.MainCanvas.Children.Clear();
 
                 Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 Model.ScriptDescriptionText = string.Empty;
@@ -592,8 +597,8 @@ namespace PEBakery.WPF
                     scale = new ScaleTransform(1, 1);
                 else
                     scale = new ScaleTransform(scaleFactor, scaleFactor);
-                UIRenderer render = new UIRenderer(MainCanvas, this, sc, scaleFactor, true);
-                MainCanvas.LayoutTransform = scale;
+                UIRenderer render = new UIRenderer(Model.MainCanvas, this, sc, scaleFactor, true);
+                Model.MainCanvas.LayoutTransform = scale;
                 render.Render();
 
                 // Do not use await, let it run in background
@@ -610,21 +615,16 @@ namespace PEBakery.WPF
             if (sc.Type == ScriptType.Directory)
             {
                 if (sc.IsDirLink)
-                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 10);
+                    Model.ScriptLogoIcon = PackIconMaterialKind.FolderMove;
                 else
-                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 10);
+                    Model.ScriptLogoIcon = PackIconMaterialKind.Folder;
             }
             else
             {
                 try
                 {
                     const double svgSize = 100 * MaxDpiScale;
-                    Image image = EncodedFile.ExtractLogoImage(sc, svgSize);
-
-                    Grid grid = new Grid();
-                    grid.Children.Add(image);
-
-                    Model.ScriptLogo = grid;
+                    Model.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(sc, svgSize);
                 }
                 catch
                 { // No logo file - use default
@@ -640,7 +640,8 @@ namespace PEBakery.WPF
                     {
                         iconKind = PackIconMaterialKind.FileSend;
                     }
-                    Model.ScriptLogo = ImageHelper.GetMaterialIcon(iconKind, 10);
+
+                    Model.ScriptLogoIcon = iconKind;
                 }
             }
         }
@@ -1467,16 +1468,45 @@ namespace PEBakery.WPF
             }
         }
 
-        private object _scriptLogo;
-        public object ScriptLogo
+        #region ScriptLogo
+        private bool _scriptLogoToggle;
+        public bool ScriptLogoToggle
         {
-            get => _scriptLogo;
+            get => _scriptLogoToggle;
             set
             {
-                _scriptLogo = value;
-                OnPropertyUpdate(nameof(ScriptLogo));
+                _scriptLogoToggle = value;
+                OnPropertyUpdate(nameof(ScriptLogoImageVisible));
+                OnPropertyUpdate(nameof(ScriptLogoIconVisible));
             }
         }
+
+        public Visibility ScriptLogoImageVisible => !ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        private ImageSource _scriptLogoImage;
+        public ImageSource ScriptLogoImage
+        {
+            get => _scriptLogoImage;
+            set
+            {
+                _scriptLogoImage = value;
+                ScriptLogoToggle = false;
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+            }
+        }
+
+        public Visibility ScriptLogoIconVisible => ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
+        private PackIconMaterialKind _scriptLogoIcon;
+        public PackIconMaterialKind ScriptLogoIcon
+        {
+            get => _scriptLogoIcon;
+            set
+            {
+                _scriptLogoIcon = value;
+                ScriptLogoToggle = true;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
+            }
+        }
+        #endregion
 
         private bool _isTreeEntryFile = true;
         public bool IsTreeEntryFile
