@@ -190,6 +190,63 @@ namespace PEBakery.WPF
             if (_projectsLoading != 0)
                 return Task.CompletedTask;
 
+            // Number of total scripts
+            int totalScriptCount = 0;
+            int stage2LinkCount = 0;
+            int ifaceUpdateFreq = 1;
+
+            // Progress handler
+            int loadedScriptCount = 0;
+            int stage1CachedCount = 0;
+            int stage2LoadedCount = 0;
+            int stage2CachedCount = 0;
+            IProgress<(Project.LoadReport Type, string Path)> progress = new Progress<(Project.LoadReport Type, string Path)>(x =>
+            {
+                Interlocked.Increment(ref loadedScriptCount);
+                Model.BottomProgressBarValue = loadedScriptCount;
+
+                int stage = 0;
+                string msg = string.Empty;
+                switch (x.Type)
+                {
+                    case Project.LoadReport.FindingScript:
+                        Model.ScriptDescriptionText = "Finding script files";
+                        return;
+                    case Project.LoadReport.LoadingCache:
+                        Model.ScriptDescriptionText = "Loading script cache";
+                        return;
+                    case Project.LoadReport.Stage1:
+                        stage = 1;
+                        msg = x.Path == null ? "Error" : $"{x.Path}";
+                        break;
+                    case Project.LoadReport.Stage1Cached:
+                        stage = 1;
+                        Interlocked.Increment(ref stage1CachedCount);
+                        msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                        break;
+                    case Project.LoadReport.Stage2:
+                        stage = 2;
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        msg = x.Path == null ? "Error" : $"{x.Path}";
+                        break;
+                    case Project.LoadReport.Stage2Cached:
+                        stage = 2;
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        Interlocked.Increment(ref stage2CachedCount);
+                        msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                        break;
+                }
+
+                if (loadedScriptCount % ifaceUpdateFreq == 0)
+                {
+                    if (stage == 1)
+                        msg = $"Stage {stage} ({loadedScriptCount} / {totalScriptCount})\r\n{msg}";
+                    else
+                        msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
+                    Model.ScriptDescriptionText = msg;
+                }
+            });
+
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref _projectsLoading);
@@ -234,58 +291,10 @@ namespace PEBakery.WPF
                     }
 
                     // Prepare by getting script paths
-                    (int totalScriptCount, int stage2LinkCount) = Projects.PrepareLoad();
-                    Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = totalScriptCount + stage2LinkCount; });
-
-                    // Progress handler
-                    int loadedScriptCount = 0;
-                    int stage1CachedCount = 0;
-                    int stage2LoadedCount = 0;
-                    int stage2CachedCount = 0;
-                    var progress = new Progress<(Project.LoadReport Type, string Path)>(x =>
-                    {
-                        Interlocked.Increment(ref loadedScriptCount);
-                        Model.BottomProgressBarValue = loadedScriptCount;
-
-                        int stage = 0;
-                        string msg = string.Empty;
-                        switch (x.Type)
-                        {
-                            case Project.LoadReport.LoadingCache:
-                                msg = "Loading script cache";
-                                break;
-                            case Project.LoadReport.Stage1:
-                                stage = 1;
-                                msg = x.Path == null ? "Error" : $"{x.Path}";
-                                break;
-                            case Project.LoadReport.Stage1Cached:
-                                stage = 1;
-                                Interlocked.Increment(ref stage1CachedCount);
-                                msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
-                                break;
-                            case Project.LoadReport.Stage2:
-                                stage = 2;
-                                Interlocked.Increment(ref stage2LoadedCount);
-                                msg = x.Path == null ? "Error" : $"{x.Path}";
-                                break;
-                            case Project.LoadReport.Stage2Cached:
-                                stage = 2;
-                                Interlocked.Increment(ref stage2LoadedCount);
-                                Interlocked.Increment(ref stage2CachedCount);
-                                msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
-                                break;
-                        }
-
-                        if (0 < stage)
-                        {
-                            if (stage == 1)
-                                msg = $"Stage {stage} ({loadedScriptCount} / {totalScriptCount})\r\n{msg}";
-                            else
-                                msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
-                        }
-
-                        Model.ScriptDescriptionText = msg;
-                    });
+                    progress.Report((Project.LoadReport.FindingScript, null));
+                    (totalScriptCount, stage2LinkCount) = Projects.PrepareLoad();
+                    ifaceUpdateFreq = totalScriptCount / 64 + 1;
+                    Model.BottomProgressBarMaximum = totalScriptCount + stage2LinkCount;
 
                     // Load projects in parallel
                     List<LogInfo> errorLogs = Projects.Load(progress);
@@ -335,7 +344,6 @@ namespace PEBakery.WPF
                     { // Load failure
                         Model.ScriptTitleText = "Unable to find project.";
                         Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
-
                         Model.StatusBarText = "Unable to find project.";
                     }
                 }
@@ -361,15 +369,12 @@ namespace PEBakery.WPF
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
-                    (int cachedCount, int updatedCount) = _scriptCache.CacheScripts(Projects, BaseDir);
+                    (_, int updatedCount) = _scriptCache.CacheScripts(Projects, BaseDir);
                     watch.Stop();
 
-                    double cachedPercent = (double)updatedCount * 100 / cachedCount;
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                    string msg = $"{cachedCount} scripts cached ({t:0.###}s), {cachedPercent:0.#}% updated";
-                    Logger.SystemWrite(new LogInfo(LogState.Info, msg));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"{updatedCount} script cache updated ({t:0.###}s)"));
                     Logger.SystemWrite(Logger.LogSeperator);
-
                 }
                 finally
                 {

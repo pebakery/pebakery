@@ -488,6 +488,7 @@ namespace PEBakery.Core
         public enum LoadReport
         {
             None,
+            FindingScript,
             LoadingCache,
             Stage1,
             Stage1Cached,
