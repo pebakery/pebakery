@@ -42,6 +42,9 @@
         Width="900" Height="720"
         MinWidth="640" MinHeight="480"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
+    <Window.Resources>
+        <local:IndexToBooleanConverter x:Key="IndexToBooleanConverter" />
+    </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Save"
                         Executed="ScriptMain_Executed"
@@ -395,7 +398,8 @@
                                 <Button Grid.Row="2" Grid.Column="1"
                                         Margin="0, 5, 0, 0"
                                         x:Name="UICtrlAddButton"
-                                        Click="UICtrlAddButton_Click">
+                                        Click="UICtrlAddButton_Click"
+                                        IsEnabled="{Binding ElementName=UICtrlAddType, Path=SelectedIndex, Converter={StaticResource IndexToBooleanConverter}}">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus"
                                                                     Width="Auto"
