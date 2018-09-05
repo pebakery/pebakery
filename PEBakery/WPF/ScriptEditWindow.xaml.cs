@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using MahApps.Metro.IconPacks;
@@ -660,15 +661,22 @@ namespace PEBakery.WPF
         private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
+            if (type == UIControlType.None)
+                return;
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
         }
 
         private void UICtrlAddButton_Click(object sender, RoutedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
+            if (type == UIControlType.None)
+            {
+                MessageBox.Show("Please select interface control's type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(m.UICtrlAddName))
             {
-                MessageBox.Show("New UIControl name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("New interface control's name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             string key = m.UICtrlAddName.Trim();
@@ -2967,7 +2975,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region OnPropertyChnaged
+        #region OnPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
@@ -3044,6 +3052,21 @@ namespace PEBakery.WPF
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
+    }
+    #endregion
+
+    #region Converters
+    public class IndexToBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+           return ((int)value > (int)UIControlType.None) ? true : false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
     #endregion
 }
