@@ -465,6 +465,7 @@ namespace PEBakery.Core
         public static ReadOnlyDictionary<int, UIControlType> UIControlZeroBasedDict = new ReadOnlyDictionary<int, UIControlType>(
             new Dictionary<int, UIControlType>
             {
+                [-1] = UIControlType.None,
                 [0] = UIControlType.TextBox,
                 [1] = UIControlType.TextLabel,
                 [2] = UIControlType.NumberBox,
