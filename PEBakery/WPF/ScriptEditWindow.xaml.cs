@@ -3060,7 +3060,7 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-           return ((int)value > 0) ? true : false;
+           return ((int)value > (int)UIControlType.None) ? true : false;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
