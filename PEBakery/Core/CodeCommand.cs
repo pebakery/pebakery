@@ -3937,7 +3937,11 @@ namespace PEBakery.Core
 
     [Serializable]
     public class ListInfo_Sort : ListInfo
-    { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+    {
+        // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+        // List,SortX,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+        // List,SortN,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
+        // List,SortNX,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
         public string Order;
         public string Delim;
 
