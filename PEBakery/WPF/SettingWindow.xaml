@@ -38,7 +38,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
-        Width="600" Height="480"
+        Width="600" Height="500"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
@@ -434,7 +434,7 @@
                                       IsChecked="{Binding Compat_LegacyInterfaceCommand}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Enable legacy setcion parameter commands (e.g. GetParam, PackParam)"
+                                      Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
                                       IsChecked="{Binding Compat_LegacySectionParamCommand}" />
                         </StackPanel>
                     </GroupBox>
