@@ -315,10 +315,17 @@ namespace PEBakery.WPF
                                 ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree);
 
                             int pIdx = Setting.Project_DefaultIndex;
-                            CurMainTree = Model.MainTree.Children[pIdx];
-                            CurMainTree.IsExpanded = true;
-                            if (Projects[pIdx] != null)
-                                DrawScript(Projects[pIdx].MainScript);
+                            if (0 <= pIdx && pIdx < Model.MainTree.Children.Count)
+                            {
+                                CurMainTree = Model.MainTree.Children[pIdx];
+                                CurMainTree.IsExpanded = true;
+                                if (Projects[pIdx] != null)
+                                    DrawScript(Projects[pIdx].MainScript);
+                            }
+                            else
+                            {
+                                CurMainTree = null;
+                            }
                         });
 
                         Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
