@@ -221,7 +221,16 @@ namespace PEBakery.WPF
 
         #region Property - Project
         private string Project_DefaultStr;
-        public string Project_Default => Project_List[project_DefaultIndex];
+        public string Project_Default
+        {
+            get
+            {
+                if (0 <= project_DefaultIndex && project_DefaultIndex < Project_List.Count)
+                    return Project_List[project_DefaultIndex];
+                else
+                    return string.Empty;
+            }
+        }
 
         private ObservableCollection<string> project_List;
         public ObservableCollection<string> Project_List
@@ -1195,7 +1204,7 @@ namespace PEBakery.WPF
                     }
                 }
 
-                if (foundDefault == false)
+                if (!foundDefault)
                     Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
             });
         }
