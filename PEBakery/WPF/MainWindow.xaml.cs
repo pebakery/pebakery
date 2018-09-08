@@ -417,11 +417,11 @@ namespace PEBakery.WPF
                     if (sc != null)
                     {
                         PostRefreshScript(node, sc);
-                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)";
+                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reloaded. ({t:0.000}s)";
                     }
                     else
                     {
-                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reloaded. ({t:0.000}s)";
+                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)"; 
                     }
                 }
                 finally
