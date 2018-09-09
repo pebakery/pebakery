@@ -65,6 +65,11 @@
                 
             </Style.Triggers>
         </Style>
+        <Style x:Key="ListItemFocusColorOverride">
+            <Style.Resources> <!-- For Windows 7 Classic Theme -->
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
+            </Style.Resources>
+        </Style>
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
         <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
         <local:LineIdxToStrConverter x:Key="LineIdxToStrConverter"/>
@@ -85,6 +90,7 @@
                               SelectedIndex="{Binding SystemLogsSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
@@ -152,6 +158,7 @@
                                 Grid.Row="2">
                         <TabItem Header="Statistics">
                             <ListView HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding LogStats}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
@@ -171,6 +178,7 @@
                             <ListView Name="BuildLogSimpleListView"
                                       SelectedIndex="{Binding SimpleBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
@@ -194,6 +202,7 @@
                             <ListView Name="BuildLogDetailListView"
                                       SelectedIndex="{Binding FullBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2"
@@ -237,6 +246,7 @@
                         <TabItem Header="Variables">
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding VariableLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
