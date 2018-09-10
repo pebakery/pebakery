@@ -32,7 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         Title="Edit Script"
         FontFamily="Segoe UI"
@@ -157,7 +157,7 @@
                                            VerticalAlignment="Center"
                                            FontWeight="Bold"
                                            Text="Level"/>
-                                <custom:NumberBox Grid.Row="2" Grid.Column="3"
+                                <cc:NumberBox Grid.Row="2" Grid.Column="3"
                                                       x:Name="ScriptLevel"
                                                       VerticalAlignment="Center"
                                                       Minimum="-256"
@@ -448,7 +448,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="X" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -457,7 +457,7 @@
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Y"/>
-                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -466,7 +466,7 @@
                                         <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Width"/>
-                                        <custom:NumberBox Grid.Row="4" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="4" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -475,7 +475,7 @@
                                         <TextBlock Grid.Row="5" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Height" />
-                                        <custom:NumberBox Grid.Row="5" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="5" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -537,7 +537,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -583,7 +583,7 @@
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
-                                        <custom:NumberBox Grid.Row="0" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="0" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -591,7 +591,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Min" />
-                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -599,7 +599,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Max" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -607,7 +607,7 @@
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Tick" />
-                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           Minimum="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -915,7 +915,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                               Minimum="0"
                                                               IncrementUnit="1"
                                                               IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
@@ -1150,8 +1150,7 @@
                                     x:Name="InterfaceReloadButton"
                                     Command="local:ScriptEditCommands.UICtrlReload"
                                     HorizontalAlignment="Right"
-                                    VerticalAlignment="Bottom">
-                            </Button>
+                                    VerticalAlignment="Bottom"/>
                             <Button Grid.Column="2"
                                     Margin="0, 0, 0, 3"
                                     Width="100"  Height="25"
@@ -1159,8 +1158,7 @@
                                     x:Name="InterfaceSaveButton"
                                     Command="local:ScriptEditCommands.Save"
                                     HorizontalAlignment="Right"
-                                    VerticalAlignment="Bottom">
-                            </Button>
+                                    VerticalAlignment="Bottom"/>
                         </Grid>
 
                         <Border Grid.Row="1"

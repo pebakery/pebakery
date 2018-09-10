@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using PEBakery.Core;
+using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows;
-using PEBakery.Core;
 
 namespace PEBakery
 {
@@ -16,6 +15,7 @@ namespace PEBakery
         public static int Version = 0;
         public static Logger Logger;
         public static string BaseDir;
+        public static DateTime BuildDate;
 
         internal void App_Startup(object sender, StartupEventArgs e)
         {
@@ -30,6 +30,7 @@ namespace PEBakery
 
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.EngineVersion;
+            BuildDate = BuildTimestamp.ReadDateTime();
         }
 
         public static void NativeGlobalInit(string baseDir)
@@ -50,6 +51,28 @@ namespace PEBakery
             Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
             PEBakery.XZLib.XZStream.GlobalCleanup();
+        }
+    }
+
+    public static class BuildTimestamp
+    {
+        public static string ReadString()
+        {
+            var attr = Assembly.GetExecutingAssembly()
+                .GetCustomAttributesData()
+                .First(x => x.AttributeType.Name.Equals("TimestampAttribute", StringComparison.Ordinal));
+
+            return attr.ConstructorArguments.First().Value as string;
+        }
+
+        public static DateTime ReadDateTime()
+        {
+            var attr = Assembly.GetExecutingAssembly()
+                .GetCustomAttributesData()
+                .First(x => x.AttributeType.Name.Equals("TimestampAttribute", StringComparison.Ordinal));
+
+            string timestampStr = attr.ConstructorArguments.First().Value as string;
+            return DateTime.ParseExact(timestampStr, "yyyy-MM-ddTHH:mm:ss.fffZ", null, DateTimeStyles.AssumeUniversal).ToUniversalTime();
         }
     }
 }

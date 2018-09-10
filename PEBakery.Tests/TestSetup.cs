@@ -32,6 +32,7 @@ namespace PEBakery.Tests
 
             App.Logger = EngineTests.Logger;
             App.BaseDir = EngineTests.BaseDir;
+            App.BuildDate = BuildTimestamp.ReadDateTime();
 
             CodeParser.OptimizeCode = true;
         }

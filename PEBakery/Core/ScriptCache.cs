@@ -73,7 +73,6 @@ namespace PEBakery.Core
                 DB_CacheInfo[] infos =
                 {
                     new DB_CacheInfo { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
-                    new DB_CacheInfo { Key = "BuildDate", Value = Properties.Resources.BuildDate },
                     new DB_CacheInfo { Key = "BaseDir", Value = baseDir },
                 };
                 InsertOrReplaceAll(infos);
@@ -194,15 +193,11 @@ namespace PEBakery.Core
             // Does key exist?
             if (!infoDict.ContainsKey("EngineVersion"))
                 return false;
-            if (!infoDict.ContainsKey("BuildDate"))
-                return false;
             if (!infoDict.ContainsKey("BaseDir"))
                 return false;
 
             // Does value match?
             if (!infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
-                return false;
-            if (!infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal))
                 return false;
             if (!infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal))
                 return false;

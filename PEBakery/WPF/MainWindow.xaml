@@ -540,8 +540,7 @@
                                            Margin="2, 0, 0, 0"
                                            VerticalAlignment="Center"
                                            FontWeight="{Binding BuildFontWeight}"
-                                           Text="{Binding Text}">
-                                </TextBlock>
+                                           Text="{Binding Text}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
