@@ -67,8 +67,8 @@ namespace PEBakery.WPF
         private int _scriptRefreshing = 0;
         private int _syntaxChecking = 0;
 
-        public TreeViewModel CurMainTree { get; private set; }
-        public TreeViewModel CurBuildTree { get; set; }
+        public ProjectTreeItemModel CurMainTree { get; private set; }
+        public ProjectTreeItemModel CurBuildTree { get; set; }
 
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
@@ -274,7 +274,7 @@ namespace PEBakery.WPF
                     {
                         // Load CommentProcessing Icon
                         Model.MainCanvas.Children.Clear();
-                        Model.MainTree.Children.Clear();
+                        Model.MainTreeItems.Clear();
                         // (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
                     });
 
@@ -311,13 +311,23 @@ namespace PEBakery.WPF
                         // Populate TreeView
                         Dispatcher.Invoke(() =>
                         {
+                            /*
                             foreach (Project project in Projects.ProjectList)
-                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree);
+                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTreeItems);
+                                */
+                            // ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTreeItems);
+
+                            foreach (Project project in Projects.ProjectList)
+                            {
+                                ProjectTreeItemModel projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
+                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, projectRoot);
+                                Model.MainTreeItems.Add(projectRoot);
+                            }
 
                             int pIdx = Setting.Project_DefaultIndex;
-                            if (0 <= pIdx && pIdx < Model.MainTree.Children.Count)
+                            if (0 <= pIdx && pIdx < Model.MainTreeItems.Count)
                             {
-                                CurMainTree = Model.MainTree.Children[pIdx];
+                                CurMainTree = Model.MainTreeItems[pIdx];
                                 CurMainTree.IsExpanded = true;
                                 if (Projects[pIdx] != null)
                                     DrawScript(Projects[pIdx].MainScript);
@@ -405,7 +415,7 @@ namespace PEBakery.WPF
             if (_scriptRefreshing != 0)
                 return Task.CompletedTask;
 
-            TreeViewModel node = CurMainTree;
+            ProjectTreeItemModel node = CurMainTree;
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref _scriptRefreshing);
@@ -439,7 +449,7 @@ namespace PEBakery.WPF
             });
         }
 
-        private void PostRefreshScript(TreeViewModel node, Script sc)
+        private void PostRefreshScript(ProjectTreeItemModel node, Script sc)
         {
             node.Script = sc;
             node.ParentCheckedPropagation();
@@ -670,8 +680,10 @@ namespace PEBakery.WPF
                 // Determine current project
                 Project p = CurMainTree.Script.Project;
 
-                Model.BuildTree.Children.Clear();
-                ScriptListToTreeViewModel(p, p.ActiveScripts, false, Model.BuildTree, null);
+                Model.BuildTreeItems.Clear();
+                ProjectTreeItemModel treeRoot = PopulateOneTreeItem(p.MainScript, null, null);
+                ScriptListToTreeViewModel(p, p.ActiveScripts, false, treeRoot);
+                Model.BuildTreeItems.Add(treeRoot);
                 CurBuildTree = null;
 
                 EngineState s = new EngineState(p, Logger, Model);
@@ -705,7 +717,7 @@ namespace PEBakery.WPF
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
-                Model.BuildTree.Children.Clear();
+                Model.BuildTreeItems.Clear();
                 DrawScript(CurMainTree.Script);
 
                 watch.Stop();
@@ -732,7 +744,7 @@ namespace PEBakery.WPF
             if (_projectsLoading != 0)
                 return;
 
-            (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
+            (MainTreeView.DataContext as ProjectTreeItemModel)?.Children.Clear();
 
             StartLoadingProjects();
         }
@@ -839,8 +851,9 @@ namespace PEBakery.WPF
                     Interlocked.Increment(ref Engine.WorkingLock);
 
                     // Populate BuildTree
-                    Model.BuildTree.Children.Clear();
-                    PopulateOneTreeView(sc, Model.BuildTree, Model.BuildTree);
+                    Model.BuildTreeItems.Clear();
+                    ProjectTreeItemModel rootItem = PopulateOneTreeItem(sc, null, null);
+                    Model.BuildTreeItems.Add(rootItem);
                     CurBuildTree = null;
 
                     EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
@@ -864,6 +877,7 @@ namespace PEBakery.WPF
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
+                    Model.BuildTreeItems.Clear();
                     DrawScript(CurMainTree.Script);
 
                     if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
@@ -1056,15 +1070,13 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void ScriptListToTreeViewModel(
-            Project project, List<Script> scList, bool assertDirExist,
-            TreeViewModel treeRoot, TreeViewModel projectRoot = null)
+        private void ScriptListToTreeViewModel(Project project, List<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
         {
-            Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
 
             // Populate MainScript
             if (projectRoot == null)
-                projectRoot = PopulateOneTreeView(project.MainScript, treeRoot, treeRoot);
+                projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
 
             foreach (Script sc in scList.Where(x => x.Type != ScriptType.Directory))
             {
@@ -1074,7 +1086,7 @@ namespace PEBakery.WPF
                     continue;
 
                 // Current Parent
-                TreeViewModel treeParent = projectRoot;
+                ProjectTreeItemModel treeParent = projectRoot;
 
                 int idx = sc.TreePath.IndexOf('\\');
                 if (idx == -1)
@@ -1111,22 +1123,22 @@ namespace PEBakery.WPF
                             dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                         }
 
-                        treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
+                        treeParent = PopulateOneTreeItem(dirScript, projectRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
                 }
 
-                PopulateOneTreeView(sc, treeRoot, treeParent);
+                PopulateOneTreeItem(sc, projectRoot, treeParent);
             }
 
             // Reflect Directory's Selected value
-            RecursiveDecideDirectorySelectedValue(treeRoot, 0);
+            RecursiveDecideDirectorySelectedValue(projectRoot, 0);
         }
 
-        private static SelectedState RecursiveDecideDirectorySelectedValue(TreeViewModel parent, int depth)
+        private static SelectedState RecursiveDecideDirectorySelectedValue(ProjectTreeItemModel parent, int depth)
         {
             SelectedState final = SelectedState.None;
-            foreach (TreeViewModel item in parent.Children)
+            foreach (ProjectTreeItemModel item in parent.Children)
             {
                 if (0 < item.Children.Count)
                 { // Has child scripts
@@ -1164,13 +1176,14 @@ namespace PEBakery.WPF
 
         public void UpdateScriptTree(Project project, bool redrawProject, bool assertDirExist = true)
         {
-            TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
+            ProjectTreeItemModel projectRoot = Model.MainTreeItems.FirstOrDefault(x => x.Script.Project.Equals(project));
             if (projectRoot == null)
                 return; // Unable to continue
 
             projectRoot.Children.Clear();
 
-            ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, Model.MainTree, projectRoot);
+            // ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, Model.MainTreeItems, projectRoot);
+            ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, projectRoot);
 
             if (redrawProject)
             {
@@ -1180,19 +1193,19 @@ namespace PEBakery.WPF
             }
         }
 
-        public TreeViewModel PopulateOneTreeView(Script sc, TreeViewModel treeRoot, TreeViewModel treeParent)
+        public ProjectTreeItemModel PopulateOneTreeItem(Script sc, ProjectTreeItemModel projectRoot, ProjectTreeItemModel parent)
         {
-            TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
+            ProjectTreeItemModel item = new ProjectTreeItemModel(projectRoot, parent)
             {
                 Script = sc,
             };
-            treeParent.Children.Add(item);
             UpdateTreeViewIcon(item);
+            parent?.Children.Add(item);
 
             return item;
         }
 
-        public static TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
+        public static ProjectTreeItemModel UpdateTreeViewIcon(ProjectTreeItemModel item)
         {
             Script sc = item.Script;
 
@@ -1249,7 +1262,7 @@ namespace PEBakery.WPF
             {
                 if (Keyboard.FocusedElement is FrameworkElement focusedElement)
                 {
-                    if (focusedElement.DataContext is TreeViewModel node)
+                    if (focusedElement.DataContext is ProjectTreeItemModel node)
                     {
                         node.Checked = !node.Checked;
                         e.Handled = true;
@@ -1260,9 +1273,9 @@ namespace PEBakery.WPF
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (sender is TreeView tree && tree.SelectedItem is TreeViewModel model)
+            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel model)
             {
-                TreeViewModel item = CurMainTree = model;
+                ProjectTreeItemModel item = CurMainTree = model;
 
                 Dispatcher.Invoke(() =>
                 {
@@ -1399,8 +1412,8 @@ namespace PEBakery.WPF
         #region Constructor
         public MainViewModel()
         {
-            MainTree = new TreeViewModel(null, null);
-            BuildTree = new TreeViewModel(null, null);
+            MainTreeItems = new ObservableCollection<ProjectTreeItemModel>();
+            BuildTreeItems = new ObservableCollection<ProjectTreeItemModel>();
             BuildConOutRedirectTextLines = new ObservableCollection<Tuple<string, bool>>();
 
             Canvas canvas = new Canvas
@@ -1732,14 +1745,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private TreeViewModel _mainTree;
-        public TreeViewModel MainTree
+        private ObservableCollection<ProjectTreeItemModel> _mainTree;
+        public ObservableCollection<ProjectTreeItemModel> MainTreeItems
         {
             get => _mainTree;
             set
             {
                 _mainTree = value;
-                OnPropertyUpdate(nameof(MainTree));
+                OnPropertyUpdate(nameof(MainTreeItems));
             }
         }
 
@@ -1756,14 +1769,14 @@ namespace PEBakery.WPF
         #endregion
 
         #region Build Interface Properties
-        private TreeViewModel _buildTree;
-        public TreeViewModel BuildTree
+        private ObservableCollection<ProjectTreeItemModel> _buildTreeItems;
+        public ObservableCollection<ProjectTreeItemModel> BuildTreeItems
         {
-            get => _buildTree;
+            get => _buildTreeItems;
             set
             {
-                _buildTree = value;
-                OnPropertyUpdate(nameof(BuildTree));
+                _buildTreeItems = value;
+                OnPropertyUpdate(nameof(BuildTreeItems));
             }
         }
 
@@ -2011,15 +2024,15 @@ namespace PEBakery.WPF
     #endregion
 
     #region TreeViewModel
-    public class TreeViewModel : INotifyPropertyChanged
+    public class ProjectTreeItemModel : INotifyPropertyChanged
     {
         #region Basic Property and Constructor
-        public TreeViewModel Root { get; }
-        public TreeViewModel Parent { get; }
+        public ProjectTreeItemModel ProjectRoot { get; }
+        public ProjectTreeItemModel Parent { get; }
 
-        public TreeViewModel(TreeViewModel root, TreeViewModel parent)
+        public ProjectTreeItemModel(ProjectTreeItemModel root, ProjectTreeItemModel parent)
         {
-            Root = root ?? this;
+            ProjectRoot = root ?? this;
             Parent = parent;
         }
         #endregion
@@ -2064,15 +2077,15 @@ namespace PEBakery.WPF
             }
         }
 
-        public ObservableCollection<TreeViewModel> Children { get; private set; } = new ObservableCollection<TreeViewModel>();
+        public ObservableCollection<ProjectTreeItemModel> Children { get; private set; } = new ObservableCollection<ProjectTreeItemModel>();
 
         public void SortChildren()
         {
-            IOrderedEnumerable<TreeViewModel> sorted = Children
+            IOrderedEnumerable<ProjectTreeItemModel> sorted = Children
                 .OrderBy(x => x.Script.Level)
                 .ThenBy(x => x.Script.Type)
                 .ThenBy(x => x.Script.RealPath);
-            Children = new ObservableCollection<TreeViewModel>(sorted);
+            Children = new ObservableCollection<ProjectTreeItemModel>(sorted);
         }
         #endregion
 
@@ -2120,7 +2133,7 @@ namespace PEBakery.WPF
                             try
                             {
                                 // Run 'Disable' directive
-                                List<LogInfo> errorLogs = DisableScripts(Root, _script);
+                                List<LogInfo> errorLogs = DisableScripts(ProjectRoot, _script);
                                 w.Logger.SystemWrite(errorLogs);
                             }
                             catch (Exception e)
@@ -2137,7 +2150,7 @@ namespace PEBakery.WPF
                         {
                             if (0 < Children.Count)
                             { // Set child scripts, too -> Top-down propagation
-                                foreach (TreeViewModel childModel in Children)
+                                foreach (ProjectTreeItemModel childModel in Children)
                                     childModel.Checked = value;
                             }
 
@@ -2158,7 +2171,7 @@ namespace PEBakery.WPF
 
             bool setParentChecked = false;
 
-            foreach (TreeViewModel sibling in Parent.Children)
+            foreach (ProjectTreeItemModel sibling in Parent.Children)
             { // Siblings
                 if (sibling.Checked)
                     setParentChecked = true;
@@ -2195,7 +2208,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private List<LogInfo> DisableScripts(TreeViewModel root, Script sc)
+        private List<LogInfo> DisableScripts(ProjectTreeItemModel root, Script sc)
         {
             if (root == null || sc == null)
                 return new List<LogInfo>();
@@ -2210,7 +2223,7 @@ namespace PEBakery.WPF
                 if (exist == 1)
                 {
                     Ini.WriteKey(path, "Main", "Selected", "False");
-                    TreeViewModel found = FindScriptByRealPath(path);
+                    ProjectTreeItemModel found = FindScriptByRealPath(path);
                     if (found != null)
                     {
                         if (sc.Type != ScriptType.Directory && sc.Mandatory == false && sc.Selected != SelectedState.None)
@@ -2224,12 +2237,17 @@ namespace PEBakery.WPF
         #endregion
 
         #region Find Script
-        public TreeViewModel FindScriptByRealPath(string realPath)
+        public ProjectTreeItemModel FindScriptByRealPath(string realPath)
         {
-            return RecursiveFindScriptByRealPath(Root, realPath);
+            return RecursiveFindScriptByRealPath(ProjectRoot, realPath);
         }
 
-        private static TreeViewModel RecursiveFindScriptByRealPath(TreeViewModel cur, string fullPath)
+        public static ProjectTreeItemModel FindScriptByRealPath(ProjectTreeItemModel root, string realPath)
+        {
+            return RecursiveFindScriptByRealPath(root, realPath);
+        }
+
+        private static ProjectTreeItemModel RecursiveFindScriptByRealPath(ProjectTreeItemModel cur, string fullPath)
         {
             if (cur.Script != null)
             {
@@ -2239,9 +2257,9 @@ namespace PEBakery.WPF
 
             if (0 < cur.Children.Count)
             {
-                foreach (TreeViewModel next in cur.Children)
+                foreach (ProjectTreeItemModel next in cur.Children)
                 {
-                    TreeViewModel found = RecursiveFindScriptByRealPath(next, fullPath);
+                    ProjectTreeItemModel found = RecursiveFindScriptByRealPath(next, fullPath);
                     if (found != null)
                         return found;
                 }

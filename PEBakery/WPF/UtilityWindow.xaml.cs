@@ -157,7 +157,7 @@ namespace PEBakery.WPF
                     mainModel = w.Model;
                 });
 
-                mainModel.BuildTree.Children.Clear();
+                mainModel.BuildTreeItems.Clear();
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
@@ -170,7 +170,7 @@ namespace PEBakery.WPF
 
                 mainModel.WorkInProgress = false;
                 mainModel.SwitchNormalBuildInterface = true;
-                mainModel.BuildTree.Children.Clear();
+                mainModel.BuildTreeItems.Clear();
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {

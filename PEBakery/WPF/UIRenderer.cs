@@ -1165,8 +1165,9 @@ namespace PEBakery.WPF
                     // Populate BuildTree
                     if (!hideProgress)
                     {
-                        w.Model.BuildTree.Children.Clear();
-                        w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
+                        w.Model.BuildTreeItems.Clear();
+                        ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(addr.Script, null, null);
+                        w.Model.BuildTreeItems.Add(itemRoot);
                         w.CurBuildTree = null;
                     }
                 });
@@ -1199,6 +1200,7 @@ namespace PEBakery.WPF
                 }
 
                 // Turn off ProgressRing
+                mainModel.BuildTreeItems.Clear();
                 mainModel.WorkInProgress = false;
 
                 Engine.WorkingEngine = null;
