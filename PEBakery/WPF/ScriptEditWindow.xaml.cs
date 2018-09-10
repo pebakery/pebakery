@@ -648,16 +648,6 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
-        private void InterfaceReloadButton_Click(object sender, RoutedEventArgs e)
-        {
-            ReadScriptInterface();
-        }
-
-        private void InterfaceSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            WriteScriptInterface();
-        }
-
         private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
@@ -666,7 +656,7 @@ namespace PEBakery.WPF
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
         }
 
-        private void UICtrlAdd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void UICtrlAddCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             if (m == null)
             {
@@ -678,7 +668,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlAdd_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void UICtrlAddCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
             if (type == UIControlType.None)
@@ -723,8 +713,13 @@ namespace PEBakery.WPF
             m.InterfaceNotSaved = true;
             m.InterfaceUpdated = true;
         }
-      
-        private void UICtrlDeleteButton_Click(object sender, RoutedEventArgs e)
+
+        private void UICtrlDeleteCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = m != null && m.UICtrlEditEnabled;
+        }
+
+        private void UICtrlDeleteCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             if (m.SelectedUICtrl == null)
                 return;
@@ -741,6 +736,52 @@ namespace PEBakery.WPF
 
             m.InterfaceNotSaved = true;
             m.InterfaceUpdated = true;
+        }
+
+        private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (m == null)
+            {
+                e.CanExecute = false;
+            }
+            else
+            {
+                // Only in Tab [General] or [Interface]
+                e.CanExecute = m.TabIndex == 0 || m.TabIndex == 1;
+            }
+        }
+
+        private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            switch (m.TabIndex)
+            {
+                case 0:
+                    // Changing focus is required to make sure changes in UI updated to ViewModel
+                    MainSaveButton.Focus();
+                    WriteScriptGeneral();
+                    break;
+                case 1:
+                    WriteScriptInterface();
+                    break;
+            }
+        }
+
+        private void UICtrlReloadCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (m == null)
+            {
+                e.CanExecute = false;
+            }
+            else
+            {
+                // Only in Tab [Interface]
+                e.CanExecute = m.TabIndex == 1;
+            }
+        }
+
+        private void UICtrlReloadCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ReadScriptInterface();
         }
         #endregion
         #region For Image
@@ -1671,28 +1712,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        #endregion
 
-        #region ShortCut Command Handler
-        private void ScriptMain_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            if (e.Command is RoutedCommand rCmd)
-            {
-                if (rCmd.Name.Equals("Save", StringComparison.Ordinal))
-                {
-                    // Changing focus is required to make sure changes in UI updated to ViewModel
-                    MainSaveButton.Focus();
-
-                    WriteScriptGeneral();
-                }
-            }
-        }
-
-        private void ScriptMain_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            // Only in Tab [General]
-            e.CanExecute = m.TabIndex == 0;
-        }
         #endregion
     }
     #endregion
@@ -3011,7 +3031,7 @@ namespace PEBakery.WPF
             IsFolder = isFolder;
             Name = name;
             Detail = detail;
-            Icon = ImageHelper.GetMaterialIcon(isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File, 0);
+            Icon = isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File;
 
             Children = new ObservableCollection<AttachedFileItem>();
         }
@@ -3045,8 +3065,8 @@ namespace PEBakery.WPF
 
         public ObservableCollection<AttachedFileItem> Children { get; private set; }
 
-        private Control _icon;
-        public Control Icon
+        private PackIconMaterialKind _icon;
+        public PackIconMaterialKind Icon
         {
             get => _icon;
             set
@@ -3070,7 +3090,16 @@ namespace PEBakery.WPF
     #region ScriptEditCommands
     public static class ScriptEditCommands
     {
-        public static readonly RoutedUICommand UICtrlAdd = new RoutedUICommand("UICtrlAdd", "UICtrlAdd", typeof(ScriptEditCommands));
+        public static readonly RoutedUICommand Save = new RoutedUICommand(nameof(Save), nameof(Save), typeof(ScriptEditCommands), new InputGestureCollection
+        {
+            new KeyGesture(Key.S, ModifierKeys.Control),
+        });
+        public static readonly RoutedUICommand UICtrlReload = new RoutedUICommand(nameof(UICtrlReload), nameof(UICtrlReload), typeof(ScriptEditCommands), new InputGestureCollection
+        {
+            new KeyGesture(Key.R, ModifierKeys.Control),
+        });
+        public static readonly RoutedUICommand UICtrlAdd = new RoutedUICommand(nameof(UICtrlAdd), nameof(UICtrlAdd), typeof(ScriptEditCommands));
+        public static readonly RoutedUICommand UICtrlDelete = new RoutedUICommand(nameof(UICtrlDelete), nameof(UICtrlDelete), typeof(ScriptEditCommands));
     }
     #endregion
 }

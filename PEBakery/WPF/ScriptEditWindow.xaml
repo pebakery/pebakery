@@ -43,12 +43,18 @@
         MinWidth="640" MinHeight="480"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
     <Window.CommandBindings>
-        <CommandBinding Command="ApplicationCommands.Save"
-                        Executed="ScriptMain_Executed"
-                        CanExecute="ScriptMain_CanExecute"/>
+        <CommandBinding Command="local:ScriptEditCommands.Save"
+                        CanExecute="SaveCommand_CanExecute"
+                        Executed="SaveCommand_Executed"/>
+        <CommandBinding Command="local:ScriptEditCommands.UICtrlReload"
+                        CanExecute="UICtrlReloadCommand_CanExecute"
+                        Executed="UICtrlReloadCommand_Executed"/>
         <CommandBinding Command="local:ScriptEditCommands.UICtrlAdd"
-                        CanExecute="UICtrlAdd_CanExecute"
-                        Executed="UICtrlAdd_Executed"/>
+                        CanExecute="UICtrlAddCommand_CanExecute"
+                        Executed="UICtrlAddCommand_Executed"/>
+        <CommandBinding Command="local:ScriptEditCommands.UICtrlDelete"
+                        CanExecute="UICtrlDeleteCommand_CanExecute"
+                        Executed="UICtrlDeleteCommand_Executed"/>
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -185,14 +191,8 @@
                                     Width="100"
                                     Content="Save"
                                     x:Name="MainSaveButton"
-                                    Click="MainSaveButton_Click"
-                                    HorizontalAlignment="Right">
-                                <Button.InputBindings>
-                                    <KeyBinding Key="S"
-                                                Modifiers="Ctrl" 
-                                                Command="ApplicationCommands.Save" />
-                                </Button.InputBindings>
-                            </Button>
+                                    Command="local:ScriptEditCommands.Save"
+                                    HorizontalAlignment="Right"/>
                         </Grid>
                     </GroupBox>
                     <GroupBox Header="Logo"
@@ -1083,8 +1083,7 @@
                                             Margin="0, 10, 0, 0"
                                             HorizontalAlignment="Right"
                                             x:Name="UICtrlDeleteButton"
-                                            Click="UICtrlDeleteButton_Click"
-                                            IsEnabled="{Binding UICtrlEditEnabled}"
+                                            Command="local:ScriptEditCommands.UICtrlDelete"
                                             ToolTip="Delete UIControl">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Close"
@@ -1149,7 +1148,7 @@
                                     Width="100" Height="25"
                                     Content="Reload"
                                     x:Name="InterfaceReloadButton"
-                                    Click="InterfaceReloadButton_Click"
+                                    Command="local:ScriptEditCommands.UICtrlReload"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom">
                             </Button>
@@ -1158,7 +1157,7 @@
                                     Width="100"  Height="25"
                                     Content="Save"
                                     x:Name="InterfaceSaveButton"
-                                    Click="InterfaceSaveButton_Click"
+                                    Command="local:ScriptEditCommands.Save"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom">
                             </Button>
@@ -1208,13 +1207,15 @@
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
 
-                                    <ContentPresenter Content="{Binding Icon}"
-                                                      Grid.Row="0" Grid.Column="0"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Center"
-                                                      Margin="3,2,3,2"/>
+                                    <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                                VerticalAlignment="Center"
+                                                                HorizontalAlignment="Center"
+                                                                UseLayoutRounding="True"
+                                                                Margin="2"
+                                                                Kind="{Binding Icon}"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1"
                                                VerticalAlignment="Center"
+                                               Margin="2, 0, 0, 0"
                                                Text="{Binding Name}"/>
                                 </Grid>
                             </HierarchicalDataTemplate>
