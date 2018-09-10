@@ -143,11 +143,14 @@ namespace PEBakery.Core
 
                     w.DrawScriptLogo(sc);
 
-                    if (w.CurBuildTree != null)
-                        w.CurBuildTree.BuildFocus = false;
-                    w.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
-                    if (w.CurBuildTree != null)
-                        w.CurBuildTree.BuildFocus = true;
+                    if (0 < s.MainViewModel.BuildTreeItems.Count)
+                    {
+                        if (w.CurBuildTree != null)
+                            w.CurBuildTree.BuildFocus = false;
+                        w.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
+                        if (w.CurBuildTree != null)
+                            w.CurBuildTree.BuildFocus = true;
+                    }    
                 }));
             }
         }

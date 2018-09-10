@@ -42,6 +42,7 @@ using MahApps.Metro.IconPacks;
 using System.Threading;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using Ookii.Dialogs.Wpf;
 
@@ -1185,12 +1186,32 @@ namespace PEBakery.WPF
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = false;
 
+                // Set StatusBar Text
+                Stopwatch watch = Stopwatch.StartNew();
+                Task printStatus = Task.CompletedTask;
+                CancellationTokenSource ct = new CancellationTokenSource();
+                if (!hideProgress)
+                {
+                    printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, mainModel, watch, ct.Token);
+                }
+                
                 // Run
                 await Engine.WorkingEngine.Run(logMsg);
 
-                // Build Ended, Switch to Normal View
                 if (!hideProgress)
+                {
+                    // Cancel and Wait until PrintBuildElapsedStatus stops
+                    ct.Cancel();
+                    await printStatus;
+
+                    // Report elapsed build time
+                    watch.Stop();
+                    TimeSpan t = watch.Elapsed;
+                    mainModel.StatusBarText = $"{logMsg} took {t:h\\:mm\\:ss}";
+
+                    // Build Ended, Switch to Normal View
                     mainModel.SwitchNormalBuildInterface = true;
+                }
 
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)

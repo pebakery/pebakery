@@ -698,8 +698,9 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = true;
 
                 // Set StatusBar Text
-                Model.StatusBarText = $"Building {p.ProjectName}...";
                 Stopwatch watch = Stopwatch.StartNew();
+                CancellationTokenSource ct = new CancellationTokenSource();
+                Task printStatus = PrintBuildElapsedStatus($"Building {p.ProjectName}...", Model, watch, ct.Token);
 
                 // Run
                 int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
@@ -712,6 +713,10 @@ namespace PEBakery.WPF
                 });
 #endif
 
+                // Cancel and Wait until PrintBuildElapsedStatus stops
+                ct.Cancel();
+                await printStatus;
+
                 // Turn off progress ring
                 Model.WorkInProgress = false;
 
@@ -720,6 +725,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Clear();
                 DrawScript(CurMainTree.Script);
 
+                // Report elapsed time
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
                 Model.StatusBarText = $"{p.ProjectName} build done ({t:h\\:mm\\:ss})";
@@ -863,6 +869,9 @@ namespace PEBakery.WPF
 
                     // Switch to Build View
                     Model.SwitchNormalBuildInterface = false;
+                    Stopwatch watch = Stopwatch.StartNew();
+                    CancellationTokenSource ct = new CancellationTokenSource();
+                    Task printStatus = PrintBuildElapsedStatus($"Running {sc.Title}...", Model, watch, ct.Token);
 
                     // Run
                     int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
@@ -875,10 +884,19 @@ namespace PEBakery.WPF
                     });
 #endif
 
+                    // Cancel and Wait until PrintBuildElapsedStatus stops
+                    ct.Cancel();
+                    await printStatus;
+
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
                     Model.BuildTreeItems.Clear();
                     DrawScript(CurMainTree.Script);
+
+                    // Report elapsed time
+                    watch.Stop();
+                    TimeSpan t = watch.Elapsed;
+                    Model.StatusBarText = $"{sc.Title} took {t:h\\:mm\\:ss}";
 
                     if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -1181,8 +1199,6 @@ namespace PEBakery.WPF
                 return; // Unable to continue
 
             projectRoot.Children.Clear();
-
-            // ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, Model.MainTreeItems, projectRoot);
             ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, projectRoot);
 
             if (redrawProject)
@@ -1356,6 +1372,24 @@ namespace PEBakery.WPF
                 StartInfo = new ProcessStartInfo(filePath)
             };
             proc.Start();
+        }
+        #endregion
+
+        #region StatusTextBuildElapsed
+        public static Task PrintBuildElapsedStatus(string msg, MainViewModel m, Stopwatch watch, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                while (true)
+                {
+                    TimeSpan t = watch.Elapsed;
+                    m.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+
+                    if (token.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(500);
+                }
+            }, token);
         }
         #endregion
 

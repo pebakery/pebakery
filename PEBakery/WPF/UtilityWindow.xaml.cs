@@ -36,6 +36,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -161,7 +162,21 @@ namespace PEBakery.WPF
 
                 Engine.WorkingEngine = new Engine(s);
 
+                // Set StatusBar Text
+                Stopwatch watch = Stopwatch.StartNew();
+                CancellationTokenSource ct = new CancellationTokenSource();
+                Task printStatus = MainWindow.PrintBuildElapsedStatus("Running CodeBox...", mainModel, watch, ct.Token);
+
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+
+                // Cancel and Wait until PrintBuildElapsedStatus stops
+                ct.Cancel();
+                await printStatus;
+
+                // Report elapsed build time
+                watch.Stop();
+                TimeSpan t = watch.Elapsed;
+                mainModel.StatusBarText = $"CodeBox took {t:h\\:mm\\:ss}";
 
                 mainModel.WorkInProgress = false;
                 mainModel.SwitchNormalBuildInterface = true;
