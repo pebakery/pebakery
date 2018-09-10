@@ -42,13 +42,13 @@
         Width="900" Height="720"
         MinWidth="640" MinHeight="480"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
-    <Window.Resources>
-        <local:IndexToBooleanConverter x:Key="IndexToBooleanConverter" />
-    </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Save"
                         Executed="ScriptMain_Executed"
                         CanExecute="ScriptMain_CanExecute"/>
+        <CommandBinding Command="local:ScriptEditCommands.UICtrlAdd"
+                        CanExecute="UICtrlAdd_CanExecute"
+                        Executed="UICtrlAdd_Executed"/>
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -401,8 +401,7 @@
                                 <Button Grid.Row="2" Grid.Column="1"
                                         Margin="0, 5, 0, 0"
                                         x:Name="UICtrlAddButton"
-                                        Click="UICtrlAddButton_Click"
-                                        IsEnabled="{Binding ElementName=UICtrlAddType, Path=SelectedIndex, Converter={StaticResource IndexToBooleanConverter}}">
+                                        Command="local:ScriptEditCommands.UICtrlAdd">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus"
                                                                     Width="Auto"
@@ -430,7 +429,6 @@
                                             <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <!-- <RowDefinition Height="20" /> -->
                                             <RowDefinition Height="0" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
@@ -440,15 +438,6 @@
                                             <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
 
-                                        <!--
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
-                                                   FontWeight="Bold"
-                                                   Text="Key" />
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 IsEnabled="{Binding UICtrlEditEnabled}"
-                                                 Text="{Binding UICtrlKey}"/>
-                                        -->
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Visible" />

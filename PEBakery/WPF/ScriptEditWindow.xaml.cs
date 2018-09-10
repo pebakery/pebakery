@@ -666,7 +666,19 @@ namespace PEBakery.WPF
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
         }
 
-        private void UICtrlAddButton_Click(object sender, RoutedEventArgs e)
+        private void UICtrlAdd_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (m == null)
+            {
+                e.CanExecute = false;
+            }
+            else
+            {
+                e.CanExecute = (int)UIControlType.None < m.UICtrlAddTypeIndex;
+            }
+        }
+
+        private void UICtrlAdd_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
             if (type == UIControlType.None)
@@ -711,7 +723,7 @@ namespace PEBakery.WPF
             m.InterfaceNotSaved = true;
             m.InterfaceUpdated = true;
         }
-
+      
         private void UICtrlDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (m.SelectedUICtrl == null)
@@ -3055,18 +3067,10 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region Converters
-    public class IndexToBooleanConverter : IValueConverter
+    #region ScriptEditCommands
+    public static class ScriptEditCommands
     {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-           return ((int)value > (int)UIControlType.None) ? true : false;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public static readonly RoutedUICommand UICtrlAdd = new RoutedUICommand("UICtrlAdd", "UICtrlAdd", typeof(ScriptEditCommands));
     }
     #endregion
 }
