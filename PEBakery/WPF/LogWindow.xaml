@@ -49,20 +49,19 @@
         <Style x:Key="AlternativeListViewColor" TargetType="{x:Type ListViewItem}">
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
-                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
-                    <Setter Property="Background" Value="White"></Setter>
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="White"/>
                 </Trigger>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
-                    <Setter Property="Background" Value="#f2f2f2"></Setter>
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="#f2f2f2"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="LightBlue"/>
                 </Trigger>
                 <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="Background" Value="LightBlue"></Setter>
+                    <Setter Property="Background" Value="LightBlue"/>
                 </Trigger>
-                
             </Style.Triggers>
         </Style>
         <Style x:Key="ListItemFocusColorOverride">

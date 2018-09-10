@@ -1199,36 +1199,36 @@ namespace PEBakery.WPF
             if (sc.Type == ScriptType.Directory)
             {
                 if (sc.IsDirLink)
-                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
+                    item.Icon = PackIconMaterialKind.FolderMove;
                 else
-                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                    item.Icon = PackIconMaterialKind.Folder;
             }
             else if (sc.Type == ScriptType.Script)
             {
                 if (sc.IsMainScript)
-                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0);
+                    item.Icon = PackIconMaterialKind.Settings;
                 else
                 {
                     if (sc.IsDirLink)
                     {
                         if (sc.Mandatory)
-                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
+                            item.Icon = PackIconMaterialKind.LockOutline;
                         else
-                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                            item.Icon = PackIconMaterialKind.OpenInNew;
                     }
                     else
                     {
                         if (sc.Mandatory)
-                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
+                            item.Icon = PackIconMaterialKind.LockOutline;
                         else
-                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
+                            item.Icon = PackIconMaterialKind.File;
                     }
                 }
             }
             else if (sc.Type == ScriptType.Link)
-                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                item.Icon = PackIconMaterialKind.OpenInNew;
             else // Error
-                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.WindowClose, 0);
+                item.Icon = PackIconMaterialKind.WindowClose;
 
             return item;
         }
@@ -2053,8 +2053,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private Control _icon;
-        public Control Icon
+        private PackIconMaterialKind _icon;
+        public PackIconMaterialKind Icon
         {
             get => _icon;
             set

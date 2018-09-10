@@ -490,18 +490,17 @@
                                           VerticalAlignment="Center"
                                           Visibility="{Binding CheckBoxVisible}"
                                           IsChecked="{Binding Checked, Mode=TwoWay}"
-                                          Focusable="False">
-                                </CheckBox>
-                                <ContentPresenter Content="{Binding Icon}"
-                                                  Grid.Row="0" Grid.Column="1"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Center"
-                                                  Margin="3,2,3,2">
-                                </ContentPresenter>
+                                          Focusable="False"/>
+                                <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="1"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"
+                                                            UseLayoutRounding="True"
+                                                            Margin="2"
+                                                            Kind="{Binding Icon}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="2"
                                            VerticalAlignment="Center"
-                                           Text="{Binding Text}">
-                                </TextBlock>
+                                           Margin="1, 0, 0, 0"
+                                           Text="{Binding Text}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
