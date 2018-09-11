@@ -1187,31 +1187,20 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = false;
 
                 // Set StatusBar Text
-                Stopwatch watch = Stopwatch.StartNew();
-                Task printStatus = Task.CompletedTask;
                 CancellationTokenSource ct = new CancellationTokenSource();
-                if (!hideProgress)
-                {
-                    printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, mainModel, watch, ct.Token);
-                }
-                
+                Task printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, mainModel, s.Watch, ct.Token);
+
                 // Run
                 await Engine.WorkingEngine.Run(logMsg);
 
+                // Cancel and Wait until PrintBuildElapsedStatus stops
+                ct.Cancel();
+                await printStatus;
+                mainModel.StatusBarText = $"{logMsg} took {s.Watch.Elapsed:h\\:mm\\:ss}";
+
+                // Build Ended, Switch to Normal View
                 if (!hideProgress)
-                {
-                    // Cancel and Wait until PrintBuildElapsedStatus stops
-                    ct.Cancel();
-                    await printStatus;
-
-                    // Report elapsed build time
-                    watch.Stop();
-                    TimeSpan t = watch.Elapsed;
-                    mainModel.StatusBarText = $"{logMsg} took {t:h\\:mm\\:ss}";
-
-                    // Build Ended, Switch to Normal View
                     mainModel.SwitchNormalBuildInterface = true;
-                }
 
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)

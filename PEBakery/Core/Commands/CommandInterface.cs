@@ -1150,7 +1150,9 @@ namespace PEBakery.Core.Commands
 
             if (info.Timeout == null)
             {
+                s.Watch.Stop();
                 MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
+                s.Watch.Start();
             }
             else
             {
@@ -1163,7 +1165,9 @@ namespace PEBakery.Core.Commands
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
+                    s.Watch.Stop();
                     CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
+                    s.Watch.Start();
                 });
             }
 
@@ -1296,7 +1300,11 @@ namespace PEBakery.Core.Commands
                                 InitialDirectory = initDir,
                             };
 
-                            if (dialog.ShowDialog() == true)
+                            s.Watch.Stop();
+                            bool? result = dialog.ShowDialog();
+                            s.Watch.Start();
+
+                            if (result == true)
                             {
                                 selectedPath = dialog.FileName;
                                 logs.Add(new LogInfo(LogState.Success, $"File path [{selectedPath}] was chosen by user"));
@@ -1314,8 +1322,12 @@ namespace PEBakery.Core.Commands
                                 SelectedPath = initPath,
                             };
 
+                            s.Watch.Stop();
+                            bool? result = dialog.ShowDialog();
+                            s.Watch.Start();
+
                             bool failure = false;
-                            if (dialog.ShowDialog() == true)
+                            if (result == true)
                             {
                                 selectedPath = dialog.SelectedPath;
                                 logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));

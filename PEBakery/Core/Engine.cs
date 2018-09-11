@@ -169,6 +169,7 @@ namespace PEBakery.Core
         {
             _task = Task.Run(() =>
             {
+                s.Watch.Start();
                 s.BuildId = s.Logger.BuildInit(s, runName);
 
                 s.MainViewModel.BuildFullProgressBarMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
@@ -288,6 +289,7 @@ namespace PEBakery.Core
                     s.PassCurrentScriptFlag = false;
                 }
 
+                s.Watch.Stop();
                 s.Logger.BuildFinish(s);
 
                 return s.BuildId;
@@ -1090,6 +1092,7 @@ namespace PEBakery.Core
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
         public int RefScriptId = 0; // Used in logging
+        public Stopwatch Watch = new Stopwatch();
 
         // Options
         public bool CompatDirCopyBug = false; // Compatibility

@@ -264,18 +264,15 @@ namespace PEBakery.WPF
                     }
                     Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{BaseDir}]"));
 
+                    // Load CommentProcessing Icon
                     Model.ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
-                    /*
-                    Model.MainCanvas.Children.Clear();
-                    Model.MainTree.Children.Clear();
-                    */
-                    
+                    Model.MainTreeItems.Clear();
+                    Model.BuildTreeItems.Clear();
+                    // Model.MainCanvas.Children.Clear();
+
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        // Load CommentProcessing Icon
                         Model.MainCanvas.Children.Clear();
-                        Model.MainTreeItems.Clear();
-                        // (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
                     });
 
                     Model.BottomProgressBarMinimum = 0;
@@ -311,12 +308,6 @@ namespace PEBakery.WPF
                         // Populate TreeView
                         Dispatcher.Invoke(() =>
                         {
-                            /*
-                            foreach (Project project in Projects.ProjectList)
-                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTreeItems);
-                                */
-                            // ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTreeItems);
-
                             foreach (Project project in Projects.ProjectList)
                             {
                                 ProjectTreeItemModel projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
@@ -698,9 +689,8 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = true;
 
                 // Set StatusBar Text
-                Stopwatch watch = Stopwatch.StartNew();
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = PrintBuildElapsedStatus($"Building {p.ProjectName}...", Model, watch, ct.Token);
+                Task printStatus = PrintBuildElapsedStatus($"Building {p.ProjectName}...", Model, s.Watch, ct.Token);
 
                 // Run
                 int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
@@ -714,8 +704,10 @@ namespace PEBakery.WPF
 #endif
 
                 // Cancel and Wait until PrintBuildElapsedStatus stops
+                // Report elapsed time
                 ct.Cancel();
                 await printStatus;
+                Model.StatusBarText = $"{p.ProjectName} build done ({s.Watch.Elapsed:h\\:mm\\:ss})";
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;
@@ -724,11 +716,6 @@ namespace PEBakery.WPF
                 Model.SwitchNormalBuildInterface = true;
                 Model.BuildTreeItems.Clear();
                 DrawScript(CurMainTree.Script);
-
-                // Report elapsed time
-                watch.Stop();
-                TimeSpan t = watch.Elapsed;
-                Model.StatusBarText = $"{p.ProjectName} build done ({t:h\\:mm\\:ss})";
 
                 if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
@@ -869,9 +856,8 @@ namespace PEBakery.WPF
 
                     // Switch to Build View
                     Model.SwitchNormalBuildInterface = false;
-                    Stopwatch watch = Stopwatch.StartNew();
                     CancellationTokenSource ct = new CancellationTokenSource();
-                    Task printStatus = PrintBuildElapsedStatus($"Running {sc.Title}...", Model, watch, ct.Token);
+                    Task printStatus = PrintBuildElapsedStatus($"Running {sc.Title}...", Model, s.Watch, ct.Token);
 
                     // Run
                     int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
@@ -885,18 +871,17 @@ namespace PEBakery.WPF
 #endif
 
                     // Cancel and Wait until PrintBuildElapsedStatus stops
+                    // Report elapsed time
+                    TimeSpan t = s.Watch.Elapsed;
+
                     ct.Cancel();
                     await printStatus;
+                    Model.StatusBarText = $"{sc.Title} took {t:h\\:mm\\:ss}";
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
                     Model.BuildTreeItems.Clear();
                     DrawScript(CurMainTree.Script);
-
-                    // Report elapsed time
-                    watch.Stop();
-                    TimeSpan t = watch.Elapsed;
-                    Model.StatusBarText = $"{sc.Title} took {t:h\\:mm\\:ss}";
 
                     if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -1779,13 +1764,15 @@ namespace PEBakery.WPF
             }
         }
 
-        private ObservableCollection<ProjectTreeItemModel> _mainTree;
+        private readonly object _mainTreeItemsLock = new object();
+        private ObservableCollection<ProjectTreeItemModel> _mainTreeItems;
         public ObservableCollection<ProjectTreeItemModel> MainTreeItems
         {
-            get => _mainTree;
+            get => _mainTreeItems;
             set
             {
-                _mainTree = value;
+                _mainTreeItems = value;
+                BindingOperations.EnableCollectionSynchronization(_mainTreeItems, _mainTreeItemsLock);
                 OnPropertyUpdate(nameof(MainTreeItems));
             }
         }
@@ -1803,6 +1790,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Build Interface Properties
+        private readonly object _buildTreeItemsLock = new object();
         private ObservableCollection<ProjectTreeItemModel> _buildTreeItems;
         public ObservableCollection<ProjectTreeItemModel> BuildTreeItems
         {
@@ -1810,6 +1798,7 @@ namespace PEBakery.WPF
             set
             {
                 _buildTreeItems = value;
+                BindingOperations.EnableCollectionSynchronization(_buildTreeItems, _buildTreeItemsLock);
                 OnPropertyUpdate(nameof(BuildTreeItems));
             }
         }
