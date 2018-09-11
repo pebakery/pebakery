@@ -830,8 +830,11 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.Gray,
             };
 
-            if (!r.ViewMode) // Focus is given when clicked
-                bevel.IsHitTestVisible = true;
+            if (!r.ViewMode)
+            {
+                bevel.IsHitTestVisible = true; // Focus is given when clicked
+                Panel.SetZIndex(bevel, -1); // Should have lowest z-index
+            }
 
             SetToolTip(bevel, info.ToolTip);
 

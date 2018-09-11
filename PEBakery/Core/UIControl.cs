@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,8 +35,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
-using PEBakery.Helper;
-using PEBakery.IniLib;
 
 // ReSharper disable InconsistentNaming
 
@@ -69,42 +69,43 @@ namespace PEBakery.Core
     Type : UIControlType 0 ~ 14 (Except 7, 9)
 
     <Text>
-    TextBox     = Caption
-    TextLabel   = Caption 
-    NumberBox   = <ControlName> 
-    CheckBox    = Caption 
-    ComboBox    = <SelectedItem> // no number, name of item
-    Image       = <FileName> // "none" if image is not set
-    TextFile    = <FileName> // "none" if text file is not set
-    Button      = Caption 
-    WebLabel    = Caption 
-    RadioButton = Caption 
-    Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatibility with scripts built in WB editor)
-    FileBox     = <Path>  // It can be file or directory
-    RadioGroup  = Caption 
+     0 TextBox     = Caption
+     1 TextLabel   = Caption 
+     2 NumberBox   = <ControlName> 
+     3 CheckBox    = Caption 
+     4 ComboBox    = <SelectedItem> // no number, name of item
+     5 Image       = <FileName> // "none" if image is not set
+     6 TextFile    = <FileName> // "none" if text file is not set
+     8 Button      = Caption 
+    10 WebLabel    = Caption 
+    11 RadioButton = Caption 
+    12 Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatibility with scripts built in WB editor)
+    13 FileBox     = <Path>  // It can be file or directory
+    14 RadioGroup  = Caption 
 
     <OptionalValues>
-    TextBox     = <StringValue>
-    TextLabel   = <FontSize>,<FontWeight>,[FontStyle] 
-                  <FontSize>   : Default 8
-                  <FontWeight> : Normal, Bold (Compatible with WB082)
-                  [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
-    NumberBox   = <IntegerValue>,<Min>,<Max>,<Tick>
-    CheckBox    = <BooleanValue>  +[RunOptional]
-    ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
-    Image       = [Url]
-    Button      = <SectionName>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
-                  [Picture] - 0 if no picture, or encoded file's name.
-                  [RunOptional] - ignored
-    WebLabel    = <StringValue> // URL
-    RadioButton = <BooleanValue> +[RunOptional]
-    Bevel       = [FontSize],[FontWeight],[FontStyle]
-                  [FontSize]   : Default 8 (Added in PEBakery) 
-                  [FontWeight] : Normal, Bold (Added in PEBakery) 
-                  [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
-    FileBox     = [file|dir]
-    RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
-                  // IntegerIndex : selected index, starting from 0
+     0 TextBox     = <StringValue>
+     1 TextLabel   = <FontSize>,<FontWeight>,[FontStyle] 
+                     <FontSize>   : Default 8
+                     <FontWeight> : Normal, Bold (Compatible with WB082)
+                     [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
+     2 NumberBox   = <IntegerValue>,<Min>,<Max>,<Tick>
+     3 CheckBox    = <BooleanValue>  +[RunOptional]
+     4 ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
+     5 Image       = [Url]
+     8 Button      = <SectionName>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
+                     [Picture] - 0 if no picture, or encoded file's name.
+                     [UnknownBoolean] - ignored
+                     [RunOptional] - ignored
+    10 WebLabel    = <StringValue> // URL
+    11 RadioButton = <BooleanValue> +[RunOptional]
+    12 Bevel       = [FontSize],[FontWeight],[FontStyle]
+                     [FontSize]   : Default 8 (Added in PEBakery) 
+                     [FontWeight] : Normal, Bold (Added in PEBakery) 
+                     [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
+    13 FileBox     = [file|dir]
+    14 RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
+                     // IntegerIndex : selected index, starting from 0
 
     [RunOptional]
     For CheckBox, ComboBox, RadioButton, RadioGroup

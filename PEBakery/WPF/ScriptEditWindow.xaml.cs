@@ -1,4 +1,11 @@
-﻿using System;
+﻿using MahApps.Metro.IconPacks;
+using Microsoft.Win32;
+using Ookii.Dialogs.Wpf;
+using PEBakery.Core;
+using PEBakery.Helper;
+using PEBakery.IniLib;
+using PEBakery.WPF.Controls;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,16 +17,8 @@ using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using MahApps.Metro.IconPacks;
-using Microsoft.Win32;
-using Ookii.Dialogs.Wpf;
-using PEBakery.Core;
-using PEBakery.Helper;
-using PEBakery.IniLib;
-using PEBakery.WPF.Controls;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF

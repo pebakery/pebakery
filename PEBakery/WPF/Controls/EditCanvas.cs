@@ -129,17 +129,21 @@ namespace PEBakery.WPF.Controls
 
             _selectedElement = element;
             if (_selectedElement.Tag is UIControl uiCtrl)
-            {
-                // Set Z Index to top
-                Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
-
+            {                 
                 _selectedBorder = new Border
                 {
                     Opacity = 0.75,
                     BorderBrush = Brushes.Red,
                     BorderThickness = new Thickness(2),
                 };
-                Canvas.SetZIndex(_selectedBorder, MaxZIndex + 1);
+
+                // Set Z Index to top
+                if (uiCtrl.Type != UIControlType.Bevel)
+                {
+                    Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
+                    Canvas.SetZIndex(_selectedBorder, MaxZIndex + 1);
+                }
+
                 UIRenderer.DrawToCanvas(this, _selectedBorder, uiCtrl.Rect);
 
                 UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
