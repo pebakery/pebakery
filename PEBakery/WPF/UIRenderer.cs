@@ -25,26 +25,26 @@
     not derived from or based on this program. 
 */
 
+using MahApps.Metro.IconPacks;
+using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Navigation;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using MahApps.Metro.IconPacks;
-using System.Threading;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
-using Ookii.Dialogs.Wpf;
+using System.Windows.Navigation;
 
 namespace PEBakery.WPF
 {
@@ -446,7 +446,7 @@ namespace PEBakery.WPF
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-            if (uiCtrl.Text.Equals(UIInfo_Image.NoImage, StringComparison.OrdinalIgnoreCase))
+            if (uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
             { // Empty image
                 PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
                 noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
@@ -456,7 +456,7 @@ namespace PEBakery.WPF
                 return;
             }
 
-            if (!EncodedFile.ContainsFile(uiCtrl.Addr.Script, EncodedFile.InterfaceEncoded, uiCtrl.Text))
+            if (!EncodedFile.ContainsInterface(uiCtrl.Addr.Script, uiCtrl.Text))
             { // Wrong encoded image
                 PackIconMaterial alertImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Alert);
                 alertImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
@@ -581,9 +581,9 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
             };
 
-            if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoImage, StringComparison.OrdinalIgnoreCase))
+            if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
-                if (!EncodedFile.ContainsFile(uiCtrl.Addr.Script, EncodedFile.InterfaceEncoded, uiCtrl.Text))
+                if (!EncodedFile.ContainsInterface(uiCtrl.Addr.Script, uiCtrl.Text))
                 { // Wrong encoded text
                     string errMsg = $"Unable to find encoded text [{uiCtrl.Text}]";
                     textBox.Text = errMsg;
@@ -639,7 +639,9 @@ namespace PEBakery.WPF
                 };
             }
 
-            if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey(EncodedFile.GetSectionName(EncodedFile.InterfaceEncoded, info.Picture)))
+            if (info.Picture != null &&
+                !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
+                EncodedFile.ContainsInterface(uiCtrl.Addr.Script, info.Picture))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
@@ -666,14 +668,14 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Button has text
-                    StackPanel panel = new StackPanel()
+                    StackPanel panel = new StackPanel
                     {
                         HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center,
                         Orientation = Orientation.Horizontal,
                     };
 
-                    TextBlock text = new TextBlock()
+                    TextBlock text = new TextBlock
                     {
                         Text = uiCtrl.Text,
                         FontSize = CalcFontPointScale(),

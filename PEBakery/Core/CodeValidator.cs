@@ -27,10 +27,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -48,18 +45,17 @@ namespace PEBakery.Core
             {
                 if (CodeSectionCount == 0)
                     return 0;
-                else
-                    return (double) VisitedSectionCount / CodeSectionCount;
+                return (double)VisitedSectionCount / CodeSectionCount;
             }
         }
 
-        private readonly List<LogInfo> logInfos = new List<LogInfo>();
+        private readonly List<LogInfo> _logInfos = new List<LogInfo>();
         public LogInfo[] LogInfos
         {
             get
             { // Call .ToArray to get logInfo's copy 
-                LogInfo[] list = logInfos.ToArray();
-                logInfos.Clear();
+                LogInfo[] list = _logInfos.ToArray();
+                _logInfos.Clear();
                 return list;
             }
         }
@@ -68,7 +64,7 @@ namespace PEBakery.Core
         #region Constructor
         public CodeValidator(Script sc)
         {
-            this._sc = sc ?? throw new ArgumentNullException(nameof(sc));
+            _sc = sc ?? throw new ArgumentNullException(nameof(sc));
         }
         #endregion
 
@@ -77,17 +73,17 @@ namespace PEBakery.Core
         {
             // Codes
             if (_sc.Sections.ContainsKey("Process"))
-                logInfos.AddRange(ValidateCodeSection(_sc.Sections["Process"]));
+                _logInfos.AddRange(ValidateCodeSection(_sc.Sections["Process"]));
 
             // UICtrls
             if (_sc.Sections.ContainsKey("Interface"))
-                logInfos.AddRange(ValidateUISection(_sc.Sections["Interface"]));
+                _logInfos.AddRange(ValidateInterfaceSection(_sc.Sections["Interface"]));
 
             if (_sc.MainInfo.ContainsKey("Interface"))
             {
                 string ifaceSection = _sc.MainInfo["Interface"];
                 if (_sc.Sections.ContainsKey(ifaceSection))
-                    logInfos.AddRange(ValidateUISection(_sc.Sections[ifaceSection]));
+                    _logInfos.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
             }
         }
 
@@ -135,9 +131,9 @@ namespace PEBakery.Core
                             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
 
                             if (info.Condition.Type == BranchConditionType.ExistSection)
-                            { 
-                                // Exception Handling for Win10PESE's 1-files.script
-                                // If,ExistSection,%ScriptFile%,Cache_Delete_B,Run,%ScriptFile%,Cache_Delete_B
+                            {
+                                // For recursive section call
+                                // Ex) If,ExistSection,%ScriptFile%,DoWork,Run,%ScriptFile%,DoWork
                                 if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                 {
                                     if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
@@ -201,7 +197,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ValidateUISection
-        private List<LogInfo> ValidateUISection(ScriptSection section)
+        private List<LogInfo> ValidateInterfaceSection(ScriptSection section)
         {
             // Force parsing of code, bypassing caching by section.GetUICtrls()
             List<string> lines;
@@ -216,43 +212,61 @@ namespace PEBakery.Core
             SectionAddress addr = new SectionAddress(_sc, section);
             List<UIControl> uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logs);
 
-            foreach (UIControl uiCmd in uiCtrls)
+            foreach (UIControl uiCtrl in uiCtrls)
             {
-                switch (uiCmd.Type)
+                switch (uiCtrl.Type)
                 {
                     case UIControlType.CheckBox:
                         {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
-                            UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
+                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCmd.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
                             }
                         }
                         break;
+                    case UIControlType.Image:
+                        if (!uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
+                            !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
+                            logs.Add(new LogInfo(LogState.Error, $"Image resource [{uiCtrl.Text}] does not exist ({uiCtrl.RawLine})"));
+                        break;
+                    case UIControlType.TextFile:
+                        if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase) &&
+                            !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
+                            logs.Add(new LogInfo(LogState.Error, $"Text resource [{uiCtrl.Text}] does not exist ({uiCtrl.RawLine})"));
+                        break;
                     case UIControlType.Button:
                         {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Button));
-                            UIInfo_Button info = uiCmd.Info as UIInfo_Button;
+                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+
+                            if (info.Picture != null && 
+                                !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.Ordinal) &&
+                                !EncodedFile.ContainsInterface(_sc, info.Picture))
+                                logs.Add(new LogInfo(LogState.Error, $"Image resource [{info.Picture}] does not exist ({uiCtrl.RawLine})"));
 
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCmd.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
                             }
                         }
                         break;
                     case UIControlType.RadioButton:
                         {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
-                            UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
+                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCmd.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                else
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
                             }
                         }
                         break;

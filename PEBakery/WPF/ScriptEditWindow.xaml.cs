@@ -1305,11 +1305,11 @@ namespace PEBakery.WPF
                 switch (selectedType)
                 {
                     case UIControlType.Image:
-                        m.SelectedUICtrl.Text = UIInfo_Image.NoImage;
+                        m.SelectedUICtrl.Text = UIInfo_Image.NoResource;
                         m.UICtrlImageSet = false;
                         break;
                     case UIControlType.TextFile:
-                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoImage;
+                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
                         m.UICtrlTextFileSet = false;
                         break;
                     case UIControlType.Button:
@@ -1332,11 +1332,11 @@ namespace PEBakery.WPF
                 switch (selectedType)
                 {
                     case UIControlType.Image:
-                        m.SelectedUICtrl.Text = UIInfo_Image.NoImage;
+                        m.SelectedUICtrl.Text = UIInfo_Image.NoResource;
                         m.UICtrlImageSet = false;
                         break;
                     case UIControlType.TextFile:
-                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoImage;
+                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
                         m.UICtrlTextFileSet = false;
                         break;
                     case UIControlType.Button:

@@ -79,16 +79,16 @@ namespace PEBakery.Core
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
-    Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatability with scripts built in wb editor. )
-    FileBox     = <Path> // It can be file or directory
+    Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatibility with scripts built in WB editor)
+    FileBox     = <Path>  // It can be file or directory
     RadioGroup  = Caption 
 
     <OptionalValues>
     TextBox     = <StringValue>
-    TextLabel   = <FontSize>,<FontWeight>
-                  <FontSize> : Default 8
+    TextLabel   = <FontSize>,<FontWeight>,[FontStyle] 
+                  <FontSize>   : Default 8
                   <FontWeight> : Normal, Bold (Compatible with WB082)
-                                 Italic, Underline, Strike (Added in PEBakery) 
+                  [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
     NumberBox   = <IntegerValue>,<Min>,<Max>,<Tick>
     CheckBox    = <BooleanValue>  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
@@ -98,9 +98,10 @@ namespace PEBakery.Core
                   [RunOptional] - ignored
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    Bevel       = [<FontSize>,<FontWeight>] (Added in PEBakery)
-                  <FontSize> : Default 8
-                  <FontWeight> : Normal, Bold
+    Bevel       = [FontSize],[FontWeight],[FontStyle]
+                  [FontSize]   : Default 8 (Added in PEBakery) 
+                  [FontWeight] : Normal, Bold (Added in PEBakery) 
+                  [FontStyle]  : Italic, Underline, Strike (Added in PEBakery) 
     FileBox     = [file|dir]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
@@ -554,7 +555,7 @@ namespace PEBakery.Core
 
         #region ForgeRawLine, ToString
         /// <summary>
-        /// This function should only be called from child Class
+        /// This function should only be called from child class
         /// Note : this function includes first ','
         /// </summary>
         /// <returns></returns>
@@ -773,8 +774,11 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(",");
-            b.Append(Url);
+            if (Url != null)
+            {
+                b.Append(",");
+                b.Append(Url);
+            }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
@@ -784,7 +788,7 @@ namespace PEBakery.Core
         public new static string Template(string key) => $"{key}=none,1,5,10,10,100,100";
 
         #region Const None
-        public const string NoImage = "none";
+        public const string NoResource = "none";
         #endregion
     }
 
@@ -802,7 +806,7 @@ namespace PEBakery.Core
         public new static string Template(string key) => $"{key}=none,1,6,10,10,200,200";
 
         #region Const None
-        public const string NoImage = "none";
+        public const string NoResource = "none";
         #endregion
     }
 
@@ -836,6 +840,10 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
+
+        #region Const 0
+        public const string NoPicture = "0";
+        #endregion
     }
 
     [Serializable]

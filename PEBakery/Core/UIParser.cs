@@ -202,7 +202,7 @@ namespace PEBakery.Core
             intParse &= NumberHelper.ParseInt32(args[3], out int y);
             intParse &= NumberHelper.ParseInt32(args[4], out int width);
             intParse &= NumberHelper.ParseInt32(args[5], out int height);
-            if (intParse == false)
+            if (!intParse)
                 throw new InvalidCommandException($"Invalid integers in [{rawValue}]", rawLine);
 
             Rect rect = new Rect(x, y, width, height);
