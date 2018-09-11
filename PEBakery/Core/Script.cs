@@ -1020,8 +1020,7 @@ namespace PEBakery.Core
 
         public void ConvertLineToUICtrlSection(List<string> lines)
         {
-            if ((Type == SectionType.Interface || Type == SectionType.Code) &&
-                DataType == SectionDataType.Lines)
+            if ((Type == SectionType.Interface || Type == SectionType.Code) && DataType == SectionDataType.Lines)
             {
                 SectionAddress addr = new SectionAddress(Script, this);
                 _uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logList);
@@ -1082,11 +1081,8 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<CodeCommand> GetCodes(bool convert)
         {
-            if (DataType == SectionDataType.Lines &&
-                _convDataType == SectionDataConverted.Codes)
-            {
+            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Codes)
                 return Codes; // Codes for Load()
-            }
 
             if (convert && DataType == SectionDataType.Lines)
             {
@@ -1114,8 +1110,7 @@ namespace PEBakery.Core
 
         public List<UIControl> GetUICtrls()
         {
-            if (DataType == SectionDataType.Lines &&
-                _convDataType == SectionDataConverted.Interfaces)
+            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Interfaces)
                 return UICtrls; // UICtrls for Load()
 
             throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
@@ -1128,8 +1123,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<UIControl> GetUICtrls(bool convert)
         {
-            if (DataType == SectionDataType.Lines &&
-                _convDataType == SectionDataConverted.Interfaces)
+            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Interfaces)
                 return UICtrls; // UICtrls for Load()
 
             if (convert && DataType == SectionDataType.Lines)
@@ -1138,7 +1132,7 @@ namespace PEBakery.Core
                 return _uiCtrls;
             }
 
-            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
+            throw new InternalException("GetUICtrls must be used with SectionDataConverted.Interfaces");
         }
         #endregion
 

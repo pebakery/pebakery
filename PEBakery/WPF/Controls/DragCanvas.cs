@@ -23,59 +23,38 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using PEBakery.Core;
+
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF.Controls
 {
-    public class DragCanvas : Canvas
+    public class DragCanvas : EditCanvas
     {
         #region Fields
-        private Point _dragStartCursorPos;
-        private Point _dragStartElementPos;
-        private bool _isBeingDragged;
-        private UIElement _selectedElement;
-        #endregion
-
-        #region Properties
-
-        private int MaxZIndex
-        {
-            get
-            {
-                int max = Canvas.GetZIndex(this);
-                foreach (UIElement element in Children)
-                {
-                    int z = Canvas.GetZIndex(element);
-                    if (max < z)
-                        max = z;
-                }
-                return max;
-            }
-        }
+        protected Point _dragStartCursorPos;
+        protected Point _dragStartElementPos;
+        protected bool _isBeingDragged;
         #endregion
 
         #region Events
-        public class UIElementDragEventArgs : EventArgs
+        public class UIControlDraggedEventArgs : EventArgs
         {
-            public UIElement Element { get; set; }
-            public UIElementDragEventArgs(UIElement element)
+            public FrameworkElement Element { get; set; }
+            public UIControl UIControl { get; set; }
+            public UIControlDraggedEventArgs(FrameworkElement element, UIControl uiCtrl)
             {
                 Element = element;
+                UIControl = uiCtrl;
             }
         }
-        public delegate void UIElementDragEventHandler(object sender, UIElementDragEventArgs e);
-#pragma warning disable 67
-        public event UIElementDragEventHandler UIElementDragEvent;
-#pragma warning restore 67
+        public delegate void UIControlDraggedEventHandler(object sender, UIControlDraggedEventArgs e);
+        public event UIControlDraggedEventHandler UIControlDragged;
         #endregion
 
         #region Event Handler
@@ -84,21 +63,31 @@ namespace PEBakery.WPF.Controls
             if (_isBeingDragged)
                 return;
 
-            if (e.Source is DependencyObject dObj)
-            {
-                _selectedElement = FindTargetUIElement(dObj);
-                if (_selectedElement == null)
-                    return;
-            }
+            base.OnPreviewMouseLeftButtonDown(e);
 
-            double x = Canvas.GetLeft(_selectedElement);
-            double y = Canvas.GetTop(_selectedElement);
+            double x = GetLeft(_selectedElement);
+            double y = GetTop(_selectedElement);
             _dragStartCursorPos = e.GetPosition(this);
             _dragStartElementPos = new Point(x, y);
+            _selectedElement.CaptureMouse();
 
-            Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
             _isBeingDragged = true;
             e.Handled = true;
+        }
+
+        protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            if (_isBeingDragged && _selectedElement != null)
+            {
+                _selectedElement.ReleaseMouseCapture();
+
+                if (!(_selectedElement.Tag is UIControl uiCtrl))
+                    return;
+                UIControlDragged?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl));
+
+                _isBeingDragged = false;
+                _selectedElement = null;
+            }
         }
 
         protected override void OnPreviewMouseMove(MouseEventArgs e)
@@ -107,7 +96,6 @@ namespace PEBakery.WPF.Controls
                 return;
 
             Point nowCursorPoint = e.GetPosition(this);
-
             Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
             {
                 double x = cursorNow.X - cursorStart.X + elementStart.X;
@@ -116,40 +104,22 @@ namespace PEBakery.WPF.Controls
                 // Do not check ActualWidth and ActualHeight here, or canvas cannot be expanded
                 if (x < 0)
                     x = 0;
+                //else if (Width - _selectedElement.Width < x)
+                //    x = Width - _selectedElement.Width;
                 if (y < 0)
                     y = 0;
+                //else if (Height - _selectedElement.Height < y)
+                //    y = Height - _selectedElement.Height;
 
                 return new Point(x, y);
             }
 
             Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
 
-            Canvas.SetLeft(_selectedElement, newElementPos.X);
-            Canvas.SetTop(_selectedElement, newElementPos.Y);
-        }
-
-        protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
-        {
-            if (_isBeingDragged || _selectedElement != null)
-            {               
-                _isBeingDragged = false;
-                _selectedElement = null;
-            }
-        }
-
-        public UIElement FindTargetUIElement(DependencyObject dObj)
-        {
-            while (dObj != null)
-            {
-                if (dObj is UIElement element && Children.Contains(element))
-                    return element;
-
-                if (dObj is Visual || dObj is Visual3D)
-                    dObj = VisualTreeHelper.GetParent(dObj);
-                else
-                    dObj = LogicalTreeHelper.GetParent(dObj);
-            }
-            return null;
+            SetLeft(_selectedElement, newElementPos.X);
+            SetTop(_selectedElement, newElementPos.Y);
+            SetLeft(_selectedBorder, newElementPos.X);
+            SetTop(_selectedBorder, newElementPos.Y);
         }
         #endregion
     }

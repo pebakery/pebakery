@@ -48,6 +48,7 @@ namespace PEBakery.WPF
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
+                m.InterfaceCanvas.UIControlDragged += InterfaceCanvas_UIControlDragged;
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 ReadScriptGeneral();
@@ -82,6 +83,8 @@ namespace PEBakery.WPF
                         }
                         break;
                     case MessageBoxResult.No:
+                        // Cancel updated changes
+                        m.ScriptHeaderUpdated = false;
                         break;
                     default:
                         throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
@@ -98,6 +101,8 @@ namespace PEBakery.WPF
                             scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
+                        // Cancel updated changes
+                        m.InterfaceUpdated = false;
                         break;
                     default:
                         throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
@@ -119,11 +124,6 @@ namespace PEBakery.WPF
             m.UIControlModified -= ViewModel_UIControlModified;
 
             Interlocked.Decrement(ref Count);
-        }
-
-        private void MainSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            WriteScriptGeneral();
         }
         #endregion
 
@@ -171,7 +171,7 @@ namespace PEBakery.WPF
             _ifaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
 
             // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc, false);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)
@@ -629,6 +629,21 @@ namespace PEBakery.WPF
             int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
             m.InterfaceUICtrlIndex = idx;
+        }
+
+        private void InterfaceCanvas_UIControlDragged(object sender, DragCanvas.UIControlDraggedEventArgs e)
+        {
+            if (e.UIControl == null)
+                return;
+
+            // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
+            if (m.SelectedUICtrl != e.UIControl)
+                return;
+
+            m.SelectedUICtrl.Rect.X = Canvas.GetLeft(e.Element);
+            m.SelectedUICtrl.Rect.Y = Canvas.GetTop(e.Element);
+
+            m.InvokeUIControlEvent(true);
         }
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
@@ -1722,7 +1737,7 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel()
         {
-            EditCanvas canvas = new EditCanvas
+            DragCanvas canvas = new DragCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -2003,8 +2018,10 @@ namespace PEBakery.WPF
         public bool InterfaceUpdated { get; set; } = false;
 
         // Canvas
-        private EditCanvas _interfaceCanvas;
-        public EditCanvas InterfaceCanvas
+        // private EditCanvas _interfaceCanvas;
+        // public EditCanvas InterfaceCanvas
+        private DragCanvas _interfaceCanvas;
+        public DragCanvas InterfaceCanvas
         {
             get => _interfaceCanvas;
             set
