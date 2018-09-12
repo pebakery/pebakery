@@ -85,6 +85,14 @@ namespace PEBakery.WPF.Controls
 
                 if (!(_selectedElement.Tag is UIControl uiCtrl))
                     return;
+
+                Point nowCursorPoint = e.GetPosition(this);
+                Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.Rect.X, uiCtrl.Rect.Y));
+
+                // UIControl should have position/size of int
+                uiCtrl.Rect.X = (int)newCtrlPos.X;
+                uiCtrl.Rect.Y = (int)newCtrlPos.Y;
+
                 UIControlDragged?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl));
 
                 _isBeingDragged = false;
@@ -98,24 +106,6 @@ namespace PEBakery.WPF.Controls
                 return;
 
             Point nowCursorPoint = e.GetPosition(this);
-            Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
-            {
-                double x = cursorNow.X - cursorStart.X + elementStart.X;
-                double y = cursorNow.Y - cursorStart.Y + elementStart.Y;
-
-                // Do not check ActualWidth and ActualHeight here, or canvas cannot be expanded
-                if (x < 0)
-                    x = 0;
-                //else if (Width - _selectedElement.Width < x)
-                //    x = Width - _selectedElement.Width;
-                if (y < 0)
-                    y = 0;
-                //else if (Height - _selectedElement.Height < y)
-                //    y = Height - _selectedElement.Height;
-
-                return new Point(x, y);
-            }
-
             Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
 
             SetLeft(_selectedElement, newElementPos.X);
@@ -125,6 +115,24 @@ namespace PEBakery.WPF.Controls
                 SetLeft(_selectedBorder, newElementPos.X);
                 SetTop(_selectedBorder, newElementPos.Y);
             }
+        }
+
+        public Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
+        {
+            double x = cursorNow.X - cursorStart.X + elementStart.X;
+            double y = cursorNow.Y - cursorStart.Y + elementStart.Y;
+
+            // Do not check Width and Height here, or canvas cannot be expanded
+            if (x < 0)
+                x = 0;
+            //else if (Width - _selectedElement.Width < x)
+            //    x = Width - _selectedElement.Width;
+            if (y < 0)
+                y = 0;
+            //else if (Height - _selectedElement.Height < y)
+            //    y = Height - _selectedElement.Height;
+
+            return new Point(x, y);
         }
         #endregion
     }

@@ -494,11 +494,13 @@
                                                             VerticalAlignment="Center"
                                                             HorizontalAlignment="Center"
                                                             UseLayoutRounding="True"
+                                                            Width="Auto"
+                                                            Height="Auto"
                                                             Margin="2"
                                                             Kind="{Binding Icon}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="2"
                                            VerticalAlignment="Center"
-                                           Margin="2, 0, 0, 0"
+                                           Margin="1, 0, 0, 0"
                                            Text="{Binding Text}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
@@ -534,10 +536,12 @@
                                                             VerticalAlignment="Center"
                                                             HorizontalAlignment="Center"
                                                             UseLayoutRounding="True"
+                                                            Width="Auto"
+                                                            Height="Auto"
                                                             Margin="2"
                                                             Kind="{Binding Icon}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1"
-                                           Margin="2, 0, 0, 0"
+                                           Margin="1, 0, 0, 0"
                                            VerticalAlignment="Center"
                                            FontWeight="{Binding BuildFontWeight}"
                                            Text="{Binding Text}"/>

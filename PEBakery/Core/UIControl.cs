@@ -608,6 +608,10 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}=Caption,1,0,10,10,200,21,Content";
+
+        #region Const
+        public const double AddWidth = UIControl.PointToDeviceIndependentPixel * UIControl.DefaultFontPoint * 1.2;
+        #endregion
     }
 
     [Serializable]

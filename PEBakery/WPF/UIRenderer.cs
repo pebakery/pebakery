@@ -227,6 +227,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox
             {
                 Text = info.Value,
+                Height = uiCtrl.Rect.Height,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
@@ -241,26 +242,40 @@ namespace PEBakery.WPF
                     info.Value = tBox.Text;
                     uiCtrl.Update();
                 };
+            }            
+
+            if (uiCtrl.Text.Length == 0)
+            { // No caption
+                SetToolTip(box, info.ToolTip);
+                SetEditModeProperties(r, box, uiCtrl);
+                DrawToCanvas(r, box, uiCtrl.Rect);
             }
-
-            SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(r, box, uiCtrl);
-            DrawToCanvas(r, box, uiCtrl.Rect);
-
-            if (0 < uiCtrl.Text.Length)
-            {
+            else
+            { // Print caption
                 TextBlock block = new TextBlock
                 {
                     Text = uiCtrl.Text,
+                    VerticalAlignment = VerticalAlignment.Top,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                     LineHeight = CalcFontPointScale(),
                     FontSize = CalcFontPointScale(),
                 };
-                SetToolTip(block, info.ToolTip);
-                SetEditModeProperties(r, block, uiCtrl);
-                const double margin = UIControl.PointToDeviceIndependentPixel * UIControl.DefaultFontPoint * 1.2;
-                Rect blockRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - margin, uiCtrl.Rect.Width, uiCtrl.Rect.Height);
-                DrawToCanvas(r, block, blockRect);
+
+                // Render to canvas
+                Grid grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(UIInfo_TextBox.AddWidth) });
+                grid.RowDefinitions.Add(new RowDefinition());
+
+                Grid.SetRow(block, 0);
+                grid.Children.Add(block);
+                Grid.SetRow(box, 1);
+                grid.Children.Add(box);
+
+                SetToolTip(grid, info.ToolTip);
+                SetEditModeProperties(r, grid, uiCtrl);
+
+                Rect gridRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - UIInfo_TextBox.AddWidth, uiCtrl.Rect.Width, uiCtrl.Rect.Height + UIInfo_TextBox.AddWidth);
+                DrawToCanvas(r, grid, gridRect);
             }
         }
 
@@ -745,8 +760,7 @@ namespace PEBakery.WPF
 
             if (IgnoreWidthOfWebLabel && r.ViewMode)
             { // Disable this in edit mode to encourage script developer address this issue
-                Rect rect = uiCtrl.Rect;
-                rect.Width = block.Width;
+                Rect rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, block.Width, uiCtrl.Rect.Height);
                 DrawToCanvas(r, block, rect);
             }
             else
@@ -847,11 +861,12 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(bevel, info.ToolTip);
-
-            SetEditModeProperties(r, bevel, uiCtrl);
-            DrawToCanvas(r, bevel, uiCtrl.Rect);
-
-            if (info.FontSize != null)
+            if (info.FontSize == null)
+            { // No caption (WinBuilder compatible)
+                SetEditModeProperties(r, bevel, uiCtrl);
+                DrawToCanvas(r, bevel, uiCtrl.Rect);
+            }
+            else
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 int fontSize = info.FontSize ?? UIControl.DefaultFontPoint;
 
@@ -893,16 +908,17 @@ namespace PEBakery.WPF
                         break;
                 }
 
-                Rect blockRect = new Rect
-                {
-                    X = uiCtrl.Rect.X + CalcFontPointScale(fontSize) / 3,
-                    Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
-                    Width = double.NaN,
-                    Height = double.NaN,
-                };
-
-                SetEditModeProperties(r, textBorder, uiCtrl);
-                DrawToCanvas(r, textBorder, blockRect);
+                Canvas subCanvas = new Canvas();
+                Canvas.SetLeft(bevel, 0);
+                Canvas.SetTop(bevel, 0);
+                bevel.Width = uiCtrl.Rect.Width;
+                bevel.Height = uiCtrl.Rect.Height;
+                subCanvas.Children.Add(bevel);
+                Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
+                Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
+                subCanvas.Children.Add(textBorder);
+                SetEditModeProperties(r, subCanvas, uiCtrl);
+                DrawToCanvas(r, subCanvas, uiCtrl.Rect);
             }
         }
 
@@ -919,6 +935,7 @@ namespace PEBakery.WPF
             {
                 Text = uiCtrl.Text,
                 FontSize = CalcFontPointScale(),
+                Margin = new Thickness(0, 0, 5, 0),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
@@ -933,18 +950,13 @@ namespace PEBakery.WPF
                     uiCtrl.Update();
                 };
             }
-
-            SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(r, box, uiCtrl);
-
+            
             Button button = new Button
             {
                 FontSize = CalcFontPointScale(),
-                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen, 0),
+                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen),
             };
-            SetToolTip(button, info.ToolTip);
-            SetEditModeProperties(r, button, uiCtrl);
-
+            
             if (r.ViewMode)
             {
                 button.Click += (object sender, RoutedEventArgs e) =>
@@ -991,11 +1003,18 @@ namespace PEBakery.WPF
                 };
             }
 
-            const double margin = 5;
-            Rect boxRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, uiCtrl.Rect.Width - (uiCtrl.Rect.Height + margin), uiCtrl.Rect.Height);
-            Rect btnRect = new Rect(boxRect.Right + margin, uiCtrl.Rect.Top, uiCtrl.Rect.Height, uiCtrl.Rect.Height);
-            DrawToCanvas(r, box, boxRect);
-            DrawToCanvas(r, button, btnRect);
+            Grid grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(uiCtrl.Rect.Height) });
+
+            Grid.SetColumn(box, 0);
+            grid.Children.Add(box);
+            Grid.SetColumn(button, 1);
+            grid.Children.Add(button);
+
+            SetToolTip(grid, info.ToolTip);
+            SetEditModeProperties(r, grid, uiCtrl);
+            DrawToCanvas(r, grid, uiCtrl.Rect);
         }
 
         /// <summary>

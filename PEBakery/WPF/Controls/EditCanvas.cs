@@ -123,7 +123,14 @@ namespace PEBakery.WPF.Controls
                     SetZIndex(_selectedBorder, MaxZIndex + 1);
                 }
 
-                UIRenderer.DrawToCanvas(this, _selectedBorder, uiCtrl.Rect);
+                Rect rect = new Rect
+                {
+                    X = Canvas.GetLeft(_selectedElement),
+                    Y = Canvas.GetTop(_selectedElement),
+                    Width = _selectedElement.Width,
+                    Height = _selectedElement.Height,
+                };
+                UIRenderer.DrawToCanvas(this, _selectedBorder, rect);
 
                 UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
             }

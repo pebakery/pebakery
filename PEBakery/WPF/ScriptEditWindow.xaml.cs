@@ -640,9 +640,6 @@ namespace PEBakery.WPF
             if (m.SelectedUICtrl != e.UIControl)
                 return;
 
-            m.SelectedUICtrl.Rect.X = Canvas.GetLeft(e.Element);
-            m.SelectedUICtrl.Rect.Y = Canvas.GetTop(e.Element);
-
             m.InvokeUIControlEvent(true);
         }
 
