@@ -113,6 +113,7 @@ namespace PEBakery.WPF.Controls
                     Opacity = 0.75,
                     BorderBrush = Brushes.Red,
                     BorderThickness = new Thickness(2),
+                    Focusable = false,
                 };
 
                 // Set Z Index to top

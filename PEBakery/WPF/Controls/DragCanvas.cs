@@ -64,6 +64,8 @@ namespace PEBakery.WPF.Controls
                 return;
 
             base.OnPreviewMouseLeftButtonDown(e);
+            if (_selectedElement == null)
+                return;
 
             double x = GetLeft(_selectedElement);
             double y = GetTop(_selectedElement);
@@ -118,8 +120,11 @@ namespace PEBakery.WPF.Controls
 
             SetLeft(_selectedElement, newElementPos.X);
             SetTop(_selectedElement, newElementPos.Y);
-            SetLeft(_selectedBorder, newElementPos.X);
-            SetTop(_selectedBorder, newElementPos.Y);
+            if (_selectedBorder != null)
+            {
+                SetLeft(_selectedBorder, newElementPos.X);
+                SetTop(_selectedBorder, newElementPos.Y);
+            }
         }
         #endregion
     }
