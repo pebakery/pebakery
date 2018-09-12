@@ -1150,9 +1150,7 @@ namespace PEBakery.Core.Commands
 
             if (info.Timeout == null)
             {
-                s.Watch.Stop();
                 MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
-                s.Watch.Start();
             }
             else
             {
@@ -1165,9 +1163,7 @@ namespace PEBakery.Core.Commands
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    s.Watch.Stop();
                     CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
-                    s.Watch.Start();
                 });
             }
 
@@ -1300,9 +1296,7 @@ namespace PEBakery.Core.Commands
                                 InitialDirectory = initDir,
                             };
 
-                            s.Watch.Stop();
                             bool? result = dialog.ShowDialog();
-                            s.Watch.Start();
 
                             if (result == true)
                             {
@@ -1322,9 +1316,7 @@ namespace PEBakery.Core.Commands
                                 SelectedPath = initPath,
                             };
 
-                            s.Watch.Stop();
                             bool? result = dialog.ShowDialog();
-                            s.Watch.Start();
 
                             bool failure = false;
                             if (result == true)
