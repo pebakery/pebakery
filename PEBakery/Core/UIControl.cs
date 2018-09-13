@@ -93,9 +93,9 @@ namespace PEBakery.Core
      3 CheckBox    = <BooleanValue>  +[RunOptional]
      4 ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>  +[RunOptional]
      5 Image       = [Url]
-     8 Button      = <SectionName>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
+     8 Button      = <SectionName>,<Picture>,[HideProgress]  +[OldToolTip]  +[RunOptional]
                      [Picture] - 0 if no picture, or encoded file's name.
-                     [UnknownBoolean] - ignored
+                     [OldToolTip] - ignored, originally used by WB077b2 ~ WB078
                      [RunOptional] - ignored
     10 WebLabel    = <StringValue> // URL
     11 RadioButton = <BooleanValue> +[RunOptional]
