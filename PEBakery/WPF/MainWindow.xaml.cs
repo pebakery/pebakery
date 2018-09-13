@@ -1135,28 +1135,29 @@ namespace PEBakery.WPF
             }
 
             // Reflect Directory's Selected value
-            RecursiveDecideDirectorySelectedValue(projectRoot, 0);
+            RecursiveDecideDirectorySelectedValue(projectRoot);
         }
 
-        private static SelectedState RecursiveDecideDirectorySelectedValue(ProjectTreeItemModel parent, int depth)
+        private static SelectedState RecursiveDecideDirectorySelectedValue(ProjectTreeItemModel parent)
         {
             SelectedState final = SelectedState.None;
             foreach (ProjectTreeItemModel item in parent.Children)
             {
                 if (0 < item.Children.Count)
-                { // Has child scripts
-                    SelectedState state = RecursiveDecideDirectorySelectedValue(item, depth + 1);
-                    if (depth != 0)
+                {
+                    // Has child scripts
+                    SelectedState state = RecursiveDecideDirectorySelectedValue(item);
+                    switch (state)
                     {
-                        if (state == SelectedState.True)
+                        case SelectedState.True:
                             final = item.Script.Selected = SelectedState.True;
-                        else if (state == SelectedState.False)
-                        {
+                            break;
+                        case SelectedState.False:
                             if (final != SelectedState.True)
                                 final = SelectedState.False;
                             if (item.Script.Selected != SelectedState.True)
                                 item.Script.Selected = SelectedState.False;
-                        }
+                            break;
                     }
                 }
                 else // Does not have child script
@@ -1173,7 +1174,7 @@ namespace PEBakery.WPF
                     }
                 }
             }
-
+            
             return final;
         }
 
@@ -2226,8 +2227,7 @@ namespace PEBakery.WPF
             {
                 if (_script.Selected == SelectedState.None)
                     return Visibility.Collapsed;
-                else
-                    return Visibility.Visible;
+                return Visibility.Visible;
             }
         }
 
