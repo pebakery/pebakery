@@ -82,13 +82,20 @@ namespace PEBakery.Core
                 foreach (Project project in projects.ProjectList)
                 {
                     // Remove duplicate
-                    // Exclude directory links because treePath is inconsistent
+                    Script[] uniqueScripts = project.AllScripts
+                        .Where(x => x.Type != ScriptType.Directory)
+                        .GroupBy(x => x.DirectRealPath)
+                        .Select(x => x.First())
+                        .ToArray();
+                    /*
+                     // Exclude directory links because treePath is inconsistent
                     // TODO: Include directory link
                     Script[] uniqueScripts = project.AllScripts
                         .Where(x => x.Type != ScriptType.Directory && !x.IsDirLink)
                         .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First())
                         .ToArray();
+                        */
 
                     DB_ScriptCache[] memDb = Table<DB_ScriptCache>().ToArray();
                     List<DB_ScriptCache> updateDb = new List<DB_ScriptCache>();
@@ -138,7 +145,7 @@ namespace PEBakery.Core
                 scCache = new DB_ScriptCache
                 {
                     Hash = sPath.GetHashCode(),
-                    Path = sPath,
+                    TreePath = sPath,
                     LastWriteTimeUtc = f.LastWriteTimeUtc,
                     FileSize = f.Length,
                 };
@@ -156,7 +163,7 @@ namespace PEBakery.Core
                     updated = true;
                 }
             }
-            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
+            else if (scCache.TreePath.Equals(sPath, StringComparison.Ordinal) && 
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -258,14 +265,14 @@ namespace PEBakery.Core
         [PrimaryKey]
         public int Hash { get; set; }
         [MaxLength(32768)]
-        public string Path { get; set; } // TreePath (== Without BaseDir)
+        public string TreePath { get; set; } // Without BaseDir
         public DateTime LastWriteTimeUtc { get; set; }
         public long FileSize { get; set; }
         public byte[] Serialized { get; set; }
 
         public override string ToString()
         {
-            return $"{Hash} = [{Path}] Cache";
+            return $"{Hash} = [{TreePath}] Cache";
         }
     }
     #endregion
