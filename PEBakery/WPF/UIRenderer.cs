@@ -45,6 +45,8 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Windows.Shapes;
+using Path = System.IO.Path;
 
 namespace PEBakery.WPF
 {
@@ -473,21 +475,51 @@ namespace PEBakery.WPF
 
             if (uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
             { // Empty image
-                PackIconMaterial noImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
-                noImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
-                SetToolTip(noImage, info.ToolTip);
-                SetEditModeProperties(r, noImage, uiCtrl);
-                DrawToCanvas(r, noImage, uiCtrl.Rect);
+                PackIconMaterial noImage = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.BorderNone,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                    Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0))
+                };
+                Border border = new Border
+                {
+                    Focusable = true,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                    Background = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
+                    BorderThickness = new Thickness(0),
+                    Child = noImage,
+                };
+                SetToolTip(border, info.ToolTip);
+                SetEditModeProperties(r, border, uiCtrl);
+                DrawToCanvas(r, border, uiCtrl.Rect);
                 return;
             }
 
             if (!EncodedFile.ContainsInterface(uiCtrl.Addr.Script, uiCtrl.Text))
             { // Wrong encoded image
-                PackIconMaterial alertImage = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Alert);
-                alertImage.Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0));
-                SetToolTip(alertImage, info.ToolTip);
-                SetEditModeProperties(r, alertImage, uiCtrl);
-                DrawToCanvas(r, alertImage, uiCtrl.Rect);
+                PackIconMaterial alertImage = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.Alert,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                    Foreground = new SolidColorBrush(Color.FromArgb(96, 0, 0, 0)),
+                };
+                Border border = new Border
+                {
+                    Focusable = true,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                    Background = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(0, 255, 255, 255)),
+                    BorderThickness = new Thickness(0),
+                    Child = alertImage,
+                };
+                SetToolTip(border, info.ToolTip);
+                SetEditModeProperties(r, border, uiCtrl);
+                DrawToCanvas(r, border, uiCtrl.Rect);
 
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
                 return;
@@ -954,7 +986,12 @@ namespace PEBakery.WPF
             Button button = new Button
             {
                 FontSize = CalcFontPointScale(),
-                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen),
+                Content = new PackIconMaterial
+                {
+                    Kind = PackIconMaterialKind.FolderOpen,
+                    Width = double.NaN,
+                    Height = double.NaN,
+                },
             };
             
             if (r.ViewMode)

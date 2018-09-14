@@ -208,17 +208,6 @@ namespace PEBakery.Helper
         {
             return new ImageBrush { ImageSource = bitmap };
         }
-
-        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin = 0)
-        {
-            return new PackIconMaterial
-            {
-                Kind = kind,
-                Width = double.NaN,
-                Height = double.NaN,
-                Margin = new Thickness(margin),
-            };
-        }
     }
     #endregion
 }
