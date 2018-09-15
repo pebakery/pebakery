@@ -25,25 +25,33 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
 using PEBakery.Helper;
 using PEBakery.IniLib;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace PEBakery.Core
 {
+    #region Internals Documentation
+    /*
+    RealPath : Where can script found in the disk.
+    TreePath : Where should script be put in build tree
+               Can be obtained by stripping "%BaseDir%\Project\" from RealPath.
+    */
+    #endregion
+
     #region Script
     [Serializable]
     public class Script : IEquatable<Script>
     {
         #region Fields
-        private readonly string _realPath;
-        private readonly string _treePath;
+        private readonly string _realPath; // Real path of script
+        private readonly string _treePath; // StrippePd" %BaseDir%\Projects" from _realPath
         private bool _fullyParsed;
         private readonly bool _isMainScript;
         private readonly Dictionary<string, ScriptSection> _sections;
@@ -676,7 +684,7 @@ namespace PEBakery.Core
                     updatedCtrls.Add(oldCtrl);
                     continue;
                 }
-                    
+
                 string val = newCtrl.GetValue(false);
                 if (val == null)
                 { // This ctrl does not have 'value'. Keep oldCtrl.
@@ -705,7 +713,16 @@ namespace PEBakery.Core
         #region Virtual, Interface Methods
         public override string ToString()
         {
-            return _type == ScriptType.Link ? _sections["Main"].IniDict["Link"] : _title;
+            switch (_type)
+            {
+                case ScriptType.Script:
+                    return _title;
+                case ScriptType.Link:
+                    return $"[L] {_sections["Main"].IniDict["Link"]}";
+                case ScriptType.Directory:
+                    return $"[D] {_title}";
+            }
+            return _title;
         }
 
         public override bool Equals(object obj)
@@ -773,6 +790,23 @@ namespace PEBakery.Core
         None = 0,
         Codes = 1, // List<Command>
         Interfaces = 2, // List<UIControl>
+    }
+    #endregion
+
+    #region Comaparer
+    public class ScriptComparer : IEqualityComparer<Script>
+    {
+        public bool Equals(Script x, Script y)
+        {
+            Debug.Assert(x != null, "Script must not be null");
+            Debug.Assert(y != null, "Script must not be null");
+            return x.Equals(y);
+        }
+
+        public int GetHashCode(Script x)
+        {
+            return x.GetHashCode();
+        }
     }
     #endregion
 
@@ -1162,6 +1196,34 @@ namespace PEBakery.Core
             return Name;
         }
         #endregion
+    }
+    #endregion
+
+    #region Struct ScriptParseInfo
+    public struct ScriptParseInfo
+    {
+        public string RealPath;
+        public string TreePath;
+        public bool IsDir;
+        public bool IsDirLink;
+
+        public override string ToString() => IsDir ? $"[D] {TreePath}" : TreePath;
+    }
+
+    public class ScriptParseInfoComparer : IEqualityComparer<ScriptParseInfo>
+    {
+        public bool Equals(ScriptParseInfo x, ScriptParseInfo y)
+        {
+            return x.RealPath.Equals(y.RealPath, StringComparison.OrdinalIgnoreCase) &&
+                   x.TreePath.Equals(y.TreePath, StringComparison.OrdinalIgnoreCase) &&
+                   x.IsDir == y.IsDir &&
+                   x.IsDirLink == y.IsDirLink;
+        }
+
+        public int GetHashCode(ScriptParseInfo x)
+        {
+            return x.RealPath.GetHashCode() ^ x.TreePath.GetHashCode() ^ x.IsDir.GetHashCode() ^ x.IsDirLink.GetHashCode();
+        }
     }
     #endregion
 }

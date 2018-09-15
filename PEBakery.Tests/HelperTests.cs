@@ -83,15 +83,21 @@ namespace PEBakery.Tests
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
 
             // Test 1
-            {
-                string[] srcFiles = FileHelper.GetFilesEx(srcDir, "*.txt", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == 5);
-            }
+            string[] srcFiles = FileHelper.GetFilesEx(srcDir, "*.txt", SearchOption.AllDirectories);
+            Assert.IsTrue(srcFiles.Length == 6);
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "A.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "B.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "C.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "Y", "U", "V.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "Z", "X.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "Za", "W.txt"), StringComparer.Ordinal));
+
             // Test 2
-            {
-                string[] srcFiles = FileHelper.GetFilesEx(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
-                Assert.IsTrue(srcFiles.Length == 3);
-            }
+            srcFiles = FileHelper.GetFilesEx(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "A.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "B.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Contains(Path.Combine(srcDir, "C.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(srcFiles.Length == 3);
         }
         #endregion
 
@@ -108,16 +114,19 @@ namespace PEBakery.Tests
                 (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
-                Assert.IsTrue(dirs.Length == 3);
+                Assert.IsTrue(dirs.Length == 5);
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir), StringComparer.Ordinal));
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Z"), StringComparer.Ordinal));
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Za"), StringComparer.Ordinal));
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Y"), StringComparer.Ordinal));
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Y", "U"), StringComparer.Ordinal));
 
                 string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
-                Assert.IsTrue(files.Length == 5);
+                Assert.IsTrue(files.Length == 6);
                 Assert.IsTrue(files.Contains(Path.Combine(srcDir, "A.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(srcDir, "B.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(srcDir, "C.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Y", "U", "V.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Z", "X.txt"), StringComparer.Ordinal));
                 Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Za", "W.txt"), StringComparer.Ordinal));
             }
@@ -161,51 +170,72 @@ namespace PEBakery.Tests
             string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
+            void Template(Action action)
+            {
+                Directory.CreateDirectory(destDir);
+                try
+                {
+                    action.Invoke();
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
             // Test 1
-            FileHelper_DirectoryCopy_Template(destDir, () =>
+            Template(() =>
             {
                 FileHelper.DirectoryCopy(srcDir, destDir, true, true);
-                string[] srcFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == 7);
+                string[] files = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
+                Assert.IsTrue(files.Length == 8);
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "D.ini"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Y", "U", "V.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Z", "X.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Z", "Y.ini"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Za", "W.txt"), StringComparer.Ordinal));
             });
 
             // Test 2
-            FileHelper_DirectoryCopy_Template(destDir, () =>
+            Template(() =>
             {
                 FileHelper.DirectoryCopy(srcDir, destDir, false, true);
-                string[] srcFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == 4);
+                string[] files = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
+                Assert.IsTrue(files.Length == 4);
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "D.ini"), StringComparer.Ordinal));
             });
 
             // Test 3
-            FileHelper_DirectoryCopy_Template(destDir, () =>
+            Template(() =>
             {
                 FileHelper.DirectoryCopy(srcDir, destDir, true, true, "*.txt");
-                string[] srcFiles = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == 5);
+                string[] files = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
+                Assert.IsTrue(files.Length == 6);
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Y", "U", "V.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Z", "X.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "Za", "W.txt"), StringComparer.Ordinal));
             });
 
             // Test 4
-            FileHelper_DirectoryCopy_Template(destDir, () =>
+            Template(() =>
             {
                 FileHelper.DirectoryCopy(srcDir, destDir, false, true, "*.txt");
-                string[] srcFiles = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == 3);
+                string[] files = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
+                Assert.IsTrue(files.Length == 3);
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(destDir, "C.txt"), StringComparer.Ordinal));
             });
-        }
-
-        public void FileHelper_DirectoryCopy_Template(string destDir, Action action)
-        {
-            Directory.CreateDirectory(destDir);
-            try
-            {
-                action.Invoke();
-            }
-            finally
-            {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
-            }
         }
         #endregion
     }

@@ -433,43 +433,45 @@ namespace PEBakery.Helper
                 throw new DirectoryNotFoundException($"Directory [{dirPath}] does not exist");
 
             List<(string Path, bool IsDir)> foundPaths = new List<(string Path, bool IsDir)>();
-            List<(string Path, bool IsDir)> InternalGetFilesExWithDirs(DirectoryInfo subDir)
+            bool InternalGetFilesExWithDirs(DirectoryInfo subDir)
             {
-                bool dirAdded = false;
+                bool fileFound = false;
                 if (subDir == null) throw new ArgumentNullException(nameof(subDir));
                 if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
-                // Get the files in the directory and copy them to the new location.
+                // Get files
                 try
                 {
                     var fileInfos = subDir.EnumerateFiles(searchPattern);
                     var files = fileInfos.Select(file => (Path: file.FullName, IsDir: false)).ToArray();
                     if (0 < files.Length)
                     {
-                        foundPaths.Add((Path: subDir.FullName, IsDir: true));
-                        dirAdded = true;
+                        fileFound = true;
                         foundPaths.AddRange(files);
                     }
                 }
                 catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
-                // If copying subdirectories, copy them and their contents to new location.
+                // Get subdirectories
                 if (searchOption == SearchOption.AllDirectories)
                 {
-                    DirectoryInfo[] dirs;
-                    try { dirs = subDir.GetDirectories(); }
-                    catch (UnauthorizedAccessException) { return foundPaths; } // Ignore UnauthorizedAccessException
-
-                    if (0 < dirs.Length && !dirAdded)
-                        foundPaths.Add((Path: subDir.FullName, IsDir: true));
-
-                    foreach (DirectoryInfo dir in dirs)
-                        InternalGetFilesExWithDirs(dir);
+                    try
+                    {
+                        DirectoryInfo[] dirs = subDir.GetDirectories();
+                        foreach (DirectoryInfo dir in dirs)
+                            fileFound |= InternalGetFilesExWithDirs(dir);
+                    }
+                    catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
                 }
 
-                return foundPaths;
+                if (fileFound)
+                    foundPaths.Add((Path: subDir.FullName, IsDir: true));
+                
+                return fileFound;
             }
-            return InternalGetFilesExWithDirs(dirInfo).ToArray();
+
+            InternalGetFilesExWithDirs(dirInfo);
+            return foundPaths.ToArray();
         }
 
         public static void DirectoryDeleteEx(string path)

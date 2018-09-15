@@ -282,7 +282,7 @@ namespace PEBakery.WPF
                     // Init ProjectCollection
                     if (Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
                     {
-                        if (_scriptCache.IsGlobalCacheValid(BaseDir))
+                        if (_scriptCache.CheckCacheRevision(BaseDir))
                             Projects = new ProjectCollection(BaseDir, _scriptCache);
                         else // Cache is invalid
                             Projects = new ProjectCollection(BaseDir, null);
@@ -429,7 +429,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)"; 
+                        Model.StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)";
                     }
                 }
                 finally
@@ -1174,7 +1174,7 @@ namespace PEBakery.WPF
                     }
                 }
             }
-            
+
             return final;
         }
 
