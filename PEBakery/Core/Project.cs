@@ -915,7 +915,7 @@ namespace PEBakery.Core
         #endregion
 
         #region PathKeyGenerator
-        internal static string PathKeyGenerator(string[] paths, int last)
+        public static string PathKeyGenerator(string[] paths, int last)
         { // last - start entry is 0
             StringBuilder b = new StringBuilder();
             b.Append(paths[0]);
