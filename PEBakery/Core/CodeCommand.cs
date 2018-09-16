@@ -2692,19 +2692,19 @@ namespace PEBakery.Core
     public class CodeInfo_AddInterface : CodeInfo
     { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
         public string ScriptFile;
-        public string Interface;
+        public string Section;
         public string Prefix;
 
-        public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
+        public CodeInfo_AddInterface(string scriptFile, string ifaceSection, string prefix)
         {
             ScriptFile = scriptFile;
-            Interface = interfaceSection;
+            Section = ifaceSection;
             Prefix = prefix;
         }
 
         public override string ToString()
         {
-            return $"{ScriptFile},{Interface},{Prefix}";
+            return $"{ScriptFile},{Section},{Prefix}";
         }
     }
 

@@ -1380,7 +1380,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region StatusTextBuildElapsed
+        #region PrintBuildElapsedStatus
         public static Task PrintBuildElapsedStatus(string msg, MainViewModel m, Stopwatch watch, CancellationToken token)
         {
             return Task.Run(() =>
@@ -1572,7 +1572,7 @@ namespace PEBakery.WPF
             {
                 _isTreeEntryFile = value;
                 OnPropertyUpdate(nameof(IsTreeEntryFile));
-                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
+                OnPropertyUpdate(nameof(ScriptCheckVisibility));
                 OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
@@ -1595,7 +1595,7 @@ namespace PEBakery.WPF
                 _scriptCheckResult = value;
                 OnPropertyUpdate(nameof(ScriptCheckIcon));
                 OnPropertyUpdate(nameof(ScriptCheckColor));
-                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
+                OnPropertyUpdate(nameof(ScriptCheckVisibility));
             }
         }
 
@@ -1631,7 +1631,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public Visibility ScriptCheckVisiblility
+        public Visibility ScriptCheckVisibility
         {
             get
             {
@@ -1768,7 +1768,7 @@ namespace PEBakery.WPF
             {
                 _normalInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(NormalInterfaceVisibility));
-                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
+                OnPropertyUpdate(nameof(ScriptCheckVisibility));
             }
         }
 
@@ -1780,7 +1780,7 @@ namespace PEBakery.WPF
             {
                 _buildInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(BuildInterfaceVisibility));
-                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
+                OnPropertyUpdate(nameof(ScriptCheckVisibility));
             }
         }
 

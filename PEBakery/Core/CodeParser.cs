@@ -4010,14 +4010,11 @@ namespace PEBakery.Core
             bool sectionOutParamCountMatch = str.IndexOf("#oa", StringComparison.OrdinalIgnoreCase) != -1; // #oa
             bool sectionReturnValueMatch = str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1; // #r
 
-            if (0 < matches.Count ||
-                sectionInParamMatch || sectionOutParamMatch ||
-                sectionLoopMatch ||
-                sectionInParamCountMatch || sectionOutParamCountMatch ||
-                sectionReturnValueMatch)
-                return true;
-            else
-                return false;
+            return 0 < matches.Count ||
+                   sectionInParamMatch || sectionOutParamMatch ||
+                   sectionLoopMatch ||
+                   sectionInParamCountMatch || sectionOutParamCountMatch ||
+                   sectionReturnValueMatch;
         }
 
         public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, ScriptSection section, int lineIdx)

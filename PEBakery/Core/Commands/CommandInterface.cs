@@ -1354,7 +1354,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
-            string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
+            string interfaceSection = StringEscaper.Preprocess(s, info.Section);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
             Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");

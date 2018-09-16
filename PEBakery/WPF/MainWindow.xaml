@@ -654,7 +654,7 @@
                                     VerticalAlignment="Bottom"
                                     Click="ScriptCheckButton_Click"
                                     IsEnabled="{Binding IsTreeEntryFile}"
-                                    Visibility="{Binding ScriptCheckVisiblility}"
+                                    Visibility="{Binding ScriptCheckVisibility}"
                                     BorderThickness="0"
                                     Background="Transparent"
                                     Foreground="{Binding ScriptCheckColor}"
