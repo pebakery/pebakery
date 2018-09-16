@@ -25,13 +25,13 @@
     not derived from or based on this program. 
 */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.IniLib;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Diagnostics;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -256,8 +256,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
         {
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
             Assert.IsTrue(info.Type == beepType);

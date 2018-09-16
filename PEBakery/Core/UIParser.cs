@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Windows;
 // ReSharper disable InconsistentNaming
 
@@ -39,14 +38,14 @@ namespace PEBakery.Core
     public static class UIParser
     {
         #region ParseStatement, ParseStatements
-        public static UIControl ParseStatement(string line, SectionAddress addr, out List<LogInfo> errorLogs)
+        public static UIControl ParseStatement(string line, ScriptSection section, out List<LogInfo> errorLogs)
         {
             int idx = 0;
 
             errorLogs = new List<LogInfo>();
             try
             {
-                UIControl uiCtrl = ParseUIControl(new List<string> { line }, addr, ref idx);
+                UIControl uiCtrl = ParseUIControl(new List<string> { line }, section, ref idx);
                 if (uiCtrl == null)
                     return null;
 
@@ -71,18 +70,18 @@ namespace PEBakery.Core
             return null;
         }
 
-        public static List<UIControl> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
+        public static List<UIControl> ParseStatements(List<string> lines, ScriptSection section, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
             errorLogs = new List<LogInfo>();
             List<UIControl> uiCtrls = new List<UIControl>();
             for (int i = 0; i < lines.Count; i++)
             {
-                int lineIdx = addr.Section.LineIdx + 1 + i;
+                int lineIdx = section.LineIdx + 1 + i;
 
                 try
                 {
-                    UIControl uiCtrl = ParseUIControl(lines, addr, ref i);
+                    UIControl uiCtrl = ParseUIControl(lines, section, ref i);
                     if (uiCtrl == null)
                         continue;
 
@@ -105,7 +104,7 @@ namespace PEBakery.Core
                 }
                 catch (Exception e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} (Line {addr.Section.LineIdx + 1 + i})"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} (Line {section.LineIdx + 1 + i})"));
                 }
             }
 
@@ -114,10 +113,10 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseUIControl
-        public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
+        public static UIControl ParseUIControl(List<string> rawLines, ScriptSection section, ref int idx)
         {
             // UICommand's line number in physical file
-            int lineIdx = addr.Section.LineIdx + 1 + idx;
+            int lineIdx = section.LineIdx + 1 + idx;
 
             // Get rawLine
             string rawLine = rawLines[idx].Trim();
@@ -213,7 +212,7 @@ namespace PEBakery.Core
             UIInfo info;
             try { info = ParseUIControlInfo(type, args); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
-            return new UIControl(rawLine, addr, key, text, visibility, type, rect, info, lineIdx);
+            return new UIControl(rawLine, section, key, text, visibility, type, rect, info, lineIdx);
         }
 
         public static UIControlType ParseControlTypeVal(string typeStr)

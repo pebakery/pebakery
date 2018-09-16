@@ -942,16 +942,16 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
             if (logScriptName)
-                LogStartOfSection(s, addr.Section.Name, depth, inParams, outParams, cmd);
+                LogStartOfSection(s, section.Name, depth, inParams, outParams, cmd);
             else
-                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, inParams, outParams, cmd);
+                LogStartOfSection(s, section.Script.TreePath, section.Name, depth, inParams, outParams, cmd);
         }
 
         public void LogStartOfSection(EngineState s, string sectionName, int depth, Dictionary<int, string> inParams = null, List<string> outParams = null, CodeCommand cmd = null)
@@ -984,16 +984,16 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
             if (logScriptName)
-                LogEndOfSection(s, addr.Section.Name, depth, cmd);
+                LogEndOfSection(s, section.Name, depth, cmd);
             else
-                LogEndOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, cmd);
+                LogEndOfSection(s, section.Script.TreePath, section.Name, depth, cmd);
         }
 
         public void LogEndOfSection(EngineState s, string sectionName, int depth, CodeCommand cmd = null)

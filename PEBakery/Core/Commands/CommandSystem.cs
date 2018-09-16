@@ -96,7 +96,7 @@ namespace PEBakery.Core.Commands
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
                             ErrorOffState newState = new ErrorOffState
                             {
-                                Section = cmd.Addr.Section,
+                                Section = cmd.Section,
                                 SectionDepth = s.CurDepth,
                                 StartLineIdx = cmd.LineIdx,
                                 LineCount = lines,
@@ -222,7 +222,7 @@ namespace PEBakery.Core.Commands
                         });
                         refreshTask.Wait();
 
-                        logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Section.Script.Title}]"));
                     }
                     break;
                 case SystemType.RescanScripts:
@@ -240,7 +240,7 @@ namespace PEBakery.Core.Commands
                         });
                         scriptLoadTask.Wait();
 
-                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }
                     break;
                 case SystemType.LoadNewScript:
@@ -387,7 +387,7 @@ namespace PEBakery.Core.Commands
                             }
 
                             // RefreshScript -> Update Project.AllScripts
-                            Script sc = Engine.GetScriptInstance(s, cmd.Addr.Script.RealPath, scRealPath, out _);
+                            Script sc = Engine.GetScriptInstance(s, cmd.Section.Script.RealPath, scRealPath, out _);
                             sc = s.Project.RefreshScript(sc, s);
                             if (sc == null)
                             {
@@ -462,7 +462,7 @@ namespace PEBakery.Core.Commands
                     { // SetLocal
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        Engine.EnableSetLocal(s, cmd.Addr.Section);
+                        Engine.EnableSetLocal(s, cmd.Section);
 
                         logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count}) enabled"));
                     }
@@ -472,7 +472,7 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        if (Engine.DisableSetLocal(s, cmd.Addr.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
+                        if (Engine.DisableSetLocal(s, cmd.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
                             logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count + 1}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
@@ -507,12 +507,12 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         // Load Per-Script Variables
-                        varLogs = s.Variables.LoadDefaultScriptVariables(cmd.Addr.Script);
+                        varLogs = s.Variables.LoadDefaultScriptVariables(cmd.Section.Script);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         // Load Per-Script Macro
                         s.Macro.ResetLocalMacros();
-                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Script, false);
+                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Section.Script, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, "Variables are reset to their default state"));

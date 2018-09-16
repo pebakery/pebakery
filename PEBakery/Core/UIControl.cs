@@ -125,7 +125,7 @@ namespace PEBakery.Core
     {
         #region Fields
         public string RawLine;
-        public SectionAddress Addr;
+        public ScriptSection Section;
 
         public string Key;
         public string Text;
@@ -137,10 +137,10 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructors
-        public UIControl(string rawLine, SectionAddress addr, string key)
+        public UIControl(string rawLine, ScriptSection section, string key)
         {
             RawLine = rawLine;
-            Addr = addr;
+            Section = section;
 
             Key = key;
             Text = string.Empty;
@@ -149,10 +149,10 @@ namespace PEBakery.Core
             Rect = new Rect(0, 0, 0, 0);
         }
 
-        public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info, int lineIdx)
+        public UIControl(string rawLine, ScriptSection section, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info, int lineIdx)
         {
             RawLine = rawLine;
-            Addr = addr;
+            Section = section;
 
             Key = key;
             Text = text;
@@ -199,7 +199,7 @@ namespace PEBakery.Core
         #region Update
         public bool Update()
         {
-            return Ini.WriteKey(Addr.Script.RealPath, Addr.Section.Name, Key, ForgeRawLine(false));
+            return Ini.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
         public static bool Update(List<UIControl> uiCtrls)
@@ -207,13 +207,13 @@ namespace PEBakery.Core
             if (uiCtrls.Count == 0)
                 return true;
 
-            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            string fullPath = uiCtrls[0].Section.Script.RealPath;
             List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(fullPath.Equals(uiCtrl.Section.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
-                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
+                keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
             }
 
             return Ini.WriteKeys(fullPath, keys);
@@ -223,7 +223,7 @@ namespace PEBakery.Core
         #region Delete
         public bool Delete()
         {
-            return Ini.DeleteKey(Addr.Script.RealPath, Addr.Section.Name, Key);
+            return Ini.DeleteKey(Section.Script.RealPath, Section.Name, Key);
         }
 
         public static bool Delete(List<UIControl> uiCtrls)
@@ -231,13 +231,13 @@ namespace PEBakery.Core
             if (uiCtrls.Count == 0)
                 return true;
 
-            string fullPath = uiCtrls[0].Addr.Script.RealPath;
+            string fullPath = uiCtrls[0].Section.Script.RealPath;
             List<IniKey> keys = new List<IniKey>(uiCtrls.Count);
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                Debug.Assert(fullPath.Equals(uiCtrl.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(fullPath.Equals(uiCtrl.Section.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
-                keys.Add(new IniKey(uiCtrl.Addr.Section.Name, uiCtrl.Key));
+                keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key));
             }
 
             return Ini.DeleteKeys(fullPath, keys).Any(x => x);
@@ -451,11 +451,10 @@ namespace PEBakery.Core
         #region ReplaceScript
         public bool ReplaceScript(Script sc)
         {
-            if (!sc.Sections.ContainsKey(Addr.Section.Name))
+            if (!sc.Sections.ContainsKey(Section.Name))
                 return false;
 
-            ScriptSection newSection = sc.Sections[Addr.Section.Name];
-            Addr = new SectionAddress(sc, newSection);
+            Section = sc.Sections[Section.Name];
             return true;
         }
 

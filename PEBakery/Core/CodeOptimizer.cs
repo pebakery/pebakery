@@ -621,7 +621,7 @@ namespace PEBakery.Core
                     throw new InternalException("Internal Logic Error at CodeOptimizer.InternalOptimize");
             }
 
-            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, packType, packInfo, cmds[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Section, packType, packInfo, cmds[0].LineIdx);
         }
 
         private static string MergeRawCodes(List<CodeCommand> cmds)

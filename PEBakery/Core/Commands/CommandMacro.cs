@@ -67,7 +67,7 @@ namespace PEBakery.Core.Commands
             // Backup and set EngineState values
             int realScriptIdBackup = s.RefScriptId;
             if (isGlobal)
-                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, macroCmd.Addr.Script);
+                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script);
             s.InMacro = true;
 
             CommandBranch.RunExec(s, macroCmd, true);

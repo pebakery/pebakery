@@ -25,17 +25,17 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.Commands;
+using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
-using System.Windows;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 using System.Net;
-using PEBakery.WPF;
-using PEBakery.Core.Commands;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -150,7 +150,7 @@ namespace PEBakery.Core
                         w.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
                         if (w.CurBuildTree != null)
                             w.CurBuildTree.BuildFocus = true;
-                    }    
+                    }
                 }));
             }
         }
@@ -186,10 +186,9 @@ namespace PEBakery.Core
                     if (s.CurrentScript.Sections.ContainsKey(entrySection))
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
-                        SectionAddress addr = new SectionAddress(s.CurrentScript, mainSection);
-                        s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
-                        Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), new List<string>(), 1);
-                        s.Logger.LogEndOfSection(s, addr, 0, true, null);
+                        s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
+                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), 1);
+                        s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
                     // End of Script
@@ -322,21 +321,21 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, SectionAddress addr, List<string> inParams, List<string> outParams, int depth)
+        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, int depth)
         {
             List<CodeCommand> cmds;
             try
             {
-                cmds = addr.Section.GetCodes(true);
+                cmds = section.GetCodes(true);
             }
             catch (InternalException)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid code section", depth));
                 return;
             }
 
             // Set CurrentSection
-            s.CurrentSection = addr.Section;
+            s.CurrentSection = section;
 
             // Set SectionReturnValue to empty string
             s.SectionReturnValue = string.Empty;
@@ -346,49 +345,49 @@ namespace PEBakery.Core
                 inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
 
             // Must copy ParamDict by value, not reference
-            RunCommands(s, addr, cmds, inParamDict, new List<string>(outParams), depth);
+            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), depth);
 
             // Increase only if cmd resides in CurrentScript
-            if (s.CurrentScript.Equals(addr.Script))
-                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
+            if (s.CurrentScript.Equals(section.Script))
+                s.ProcessedSectionHashes.Add(section.GetHashCode());
         }
 
-        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
             List<CodeCommand> cmds;
             try
             {
-                cmds = addr.Section.GetCodes(true);
+                cmds = section.GetCodes(true);
             }
             catch (InternalException)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid code section", depth));
                 return;
             }
 
             // Set CurrentSection
-            s.CurrentSection = addr.Section;
+            s.CurrentSection = section;
 
             // Set SectionReturnValue to empty string
             s.SectionReturnValue = string.Empty;
 
             // Must copy ParamDict by value, not reference
             outParams = outParams == null ? new List<string>() : new List<string>(outParams);
-            RunCommands(s, addr, cmds, new Dictionary<int, string>(inParams), outParams, depth);
+            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, depth);
 
             // Increase only if cmd resides in CurrentScript
-            if (s.CurrentScript.Equals(addr.Script))
-                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
+            if (s.CurrentScript.Equals(section.Script))
+                s.ProcessedSectionHashes.Add(section.GetHashCode());
         }
         #endregion
 
         #region RunCommands
         // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, List<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
             if (cmds.Count == 0)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{addr.Script.TreePath}]'s section [{addr.Section.Name}]", s.CurDepth + 1));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.CurDepth + 1));
                 return null;
             }
 
@@ -407,14 +406,14 @@ namespace PEBakery.Core
                     break;
             }
 
-            if (Engine.DisableSetLocal(s, addr.Section))
+            if (Engine.DisableSetLocal(s, section))
             {
                 int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.CurDepth));
             }
 
-            DisableErrorOff(s, addr.Section, depth, ErrorOffState.ForceDisable);
+            DisableErrorOff(s, section, depth, ErrorOffState.ForceDisable);
             return s.TestMode ? allLogs : null;
         }
         #endregion
@@ -826,7 +825,7 @@ namespace PEBakery.Core
             }
 
             // Mute LogState.{Error|Warning} if ErrorOff is enabled, and disable ErrorOff when necessary
-            ProcessErrorOff(s, cmd.Addr.Section, curDepth, cmd.LineIdx, logs);
+            ProcessErrorOff(s, cmd.Section, curDepth, cmd.LineIdx, logs);
 
             // Stop build on error
             if (StopBuildOnError)
@@ -839,7 +838,7 @@ namespace PEBakery.Core
 
             // Increase only if cmd resides in CurrentScript.
             // So if a setion is from Macro, it will not be count.
-            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Addr.Script))
+            if (!s.ProcessedSectionHashes.Contains(cmd.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Section.Script))
                 s.MainViewModel.BuildScriptProgressBarValue += 1;
 
             // Return logs, used in unit test
@@ -856,7 +855,7 @@ namespace PEBakery.Core
             s.Logger.BuildWrite(s, $"Processing callback of event [{eventName}]");
 
             if (changeCurrentScript)
-                s.CurrentScript = cbCmd.Addr.Script;
+                s.CurrentScript = cbCmd.Section.Script;
 
             s.CurDepth = 0;
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)

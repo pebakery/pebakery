@@ -29,8 +29,6 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Media;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -55,7 +53,7 @@ namespace PEBakery.Core.Commands
                     if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                         macroCommand = null;
 
-                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent, false);
+                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Section, info.Permanent, false);
                     return new List<LogInfo>(1) { log };
                 }
             }
@@ -78,7 +76,7 @@ namespace PEBakery.Core.Commands
                             string varKey = Variables.TrimPercentMark(info.VarKey);
                             string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
-                            Script sc = cmd.Addr.Script;
+                            Script sc = cmd.Section.Script;
                             ScriptSection iface = sc.GetInterfaceSection(out _);
                             if (iface == null)
                                 goto case false;
@@ -119,7 +117,7 @@ namespace PEBakery.Core.Commands
             if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                 macroCommand = null;
 
-            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Global, info.Permanent);
+            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Section, info.Global, info.Permanent);
             return new List<LogInfo>(1) { log };
         }
 
@@ -146,8 +144,8 @@ namespace PEBakery.Core.Commands
             List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
 
             // Add Macros
-            SectionAddress addr = new SectionAddress(sc, sc.Sections[sectionName]);
-            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(addr, lines, true);
+            ScriptSection localSection = sc.Sections[sectionName];
+            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(localSection, lines, true);
             varLogs.AddRange(macroLogs);
 
             if (varLogs.Count == 0) // No variables

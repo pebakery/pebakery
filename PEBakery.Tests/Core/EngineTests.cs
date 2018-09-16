@@ -25,13 +25,11 @@
     not derived from or based on this program. 
 */
 
-using SQLite;
-using System;
-using System.IO;
-using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.WPF;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -86,34 +84,32 @@ namespace PEBakery.Tests.Core
             return s;
         }
 
-        public static SectionAddress DummySectionAddress()
+        public static ScriptSection DummySection()
         {
-            return new SectionAddress(Project.MainScript, Project.MainScript.Sections["Process"]);
+            return Project.MainScript.Sections["Process"];
         }
         #endregion
 
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            SectionAddress addr = DummySectionAddress();
-            return Eval(s, addr, rawCode, type, check, out _);
+            return Eval(s, DummySection(), rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            SectionAddress addr = DummySectionAddress();
-            return Eval(s, addr, rawCode, type, check, out cmd);
+            return Eval(s, DummySection(), rawCode, type, check, out cmd);
         }
 
-        public static List<LogInfo> Eval(EngineState s, SectionAddress addr, string rawCode, CodeType type, ErrorCheck check)
+        public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, addr, rawCode, type, check, out _);
+            return Eval(s, section, rawCode, type, check, out _);
         }
 
-        public static List<LogInfo> Eval(EngineState s, SectionAddress addr, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
             // Create CodeCommand
-            cmd = CodeParser.ParseStatement(rawCode, addr);
+            cmd = CodeParser.ParseStatement(rawCode, section);
             if (cmd.Type == CodeType.Error)
             {
                 CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
@@ -144,19 +140,19 @@ namespace PEBakery.Tests.Core
         public static List<LogInfo> EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
             // Create CodeCommand
-            SectionAddress addr = DummySectionAddress();
-            cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
+            ScriptSection dummySection = DummySection();
+            cmds = CodeParser.ParseStatements(rawCodes, dummySection, out List<LogInfo> errorLogs);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
                 Assert.AreEqual(ErrorCheck.ParserError, check);
                 return new List<LogInfo>();
             }
-            
+
             // Reset halt flags
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, addr, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
         }
         #endregion
 
@@ -171,8 +167,7 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            SectionAddress addr = DummySectionAddress();
-            return EvalOptLines(s, addr, opType, rawCodes, check, out _);
+            return EvalOptLines(s, DummySection(), opType, rawCodes, check, out _);
         }
 
         /// <summary>
@@ -185,37 +180,36 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
-            SectionAddress addr = DummySectionAddress();
-            return EvalOptLines(s, addr, opType, rawCodes, check, out cmds);
+            return EvalOptLines(s, DummySection(), opType, rawCodes, check, out cmds);
         }
 
         /// <summary>
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="addr"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="section"></param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <returns></returns>
-        public static List<LogInfo> EvalOptLines(EngineState s, SectionAddress addr, CodeType? opType, List<string> rawCodes, ErrorCheck check)
+        public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            return EvalOptLines(s, addr, opType, rawCodes, check, out _);
+            return EvalOptLines(s, section, opType, rawCodes, check, out _);
         }
 
         /// <summary>
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="addr"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="section"></param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <returns></returns>
-        public static List<LogInfo> EvalOptLines(EngineState s, SectionAddress addr, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
         {
             // Parse CodeCommand
-            cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
+            cmds = CodeParser.ParseStatements(rawCodes, section, out List<LogInfo> errorLogs);
 
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
@@ -237,7 +231,7 @@ namespace PEBakery.Tests.Core
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, addr, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
         }
         #endregion
 

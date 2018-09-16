@@ -45,8 +45,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
-using Path = System.IO.Path;
 
 namespace PEBakery.WPF
 {
@@ -122,7 +120,7 @@ namespace PEBakery.WPF
                     else
                     {
                         List<string> lines = ifaceSection.GetLines();
-                        List<UIControl> uiCtrls = UIParser.ParseStatements(lines, new SectionAddress(sc, ifaceSection), out List<LogInfo> logInfos);
+                        List<UIControl> uiCtrls = UIParser.ParseStatements(lines, ifaceSection, out List<LogInfo> logInfos);
                         return (uiCtrls, logInfos);
                     }
                 }
@@ -244,7 +242,7 @@ namespace PEBakery.WPF
                     info.Value = tBox.Text;
                     uiCtrl.Update();
                 };
-            }            
+            }
 
             if (uiCtrl.Text.Length == 0)
             { // No caption
@@ -381,8 +379,8 @@ namespace PEBakery.WPF
                 {
                     if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
+                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
+                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -449,8 +447,8 @@ namespace PEBakery.WPF
                 {
                     if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
+                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
+                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -498,7 +496,7 @@ namespace PEBakery.WPF
                 return;
             }
 
-            if (!EncodedFile.ContainsInterface(uiCtrl.Addr.Script, uiCtrl.Text))
+            if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
             { // Wrong encoded image
                 PackIconMaterial alertImage = new PackIconMaterial
                 {
@@ -526,7 +524,7 @@ namespace PEBakery.WPF
             }
 
             BitmapImage bitmap;
-            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
+            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
@@ -585,7 +583,7 @@ namespace PEBakery.WPF
 
                         string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
 
-                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
+                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
                         using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
                         {
                             ms.Position = 0;
@@ -640,7 +638,7 @@ namespace PEBakery.WPF
 
             if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
-                if (!EncodedFile.ContainsInterface(uiCtrl.Addr.Script, uiCtrl.Text))
+                if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
                 { // Wrong encoded text
                     string errMsg = $"Unable to find encoded text [{uiCtrl.Text}]";
                     textBox.Text = errMsg;
@@ -648,7 +646,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, uiCtrl.Text))
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
                     using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
                     {
                         textBox.Text = sr.ReadToEnd();
@@ -686,8 +684,8 @@ namespace PEBakery.WPF
                 {
                     if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.HideProgress);
+                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
+                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -698,7 +696,7 @@ namespace PEBakery.WPF
 
             if (info.Picture != null &&
                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
-                EncodedFile.ContainsInterface(uiCtrl.Addr.Script, info.Picture))
+                EncodedFile.ContainsInterface(uiCtrl.Section.Script, info.Picture))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
@@ -711,7 +709,7 @@ namespace PEBakery.WPF
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Addr.Script, info.Picture))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, info.Picture))
                 {
                     if (type == ImageHelper.ImageType.Svg)
                         image.Source = ImageHelper.SvgToBitmapImage(ms);
@@ -827,8 +825,8 @@ namespace PEBakery.WPF
                 {
                     if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - RadioButton [{uiCtrl.Key}]", info.HideProgress);
+                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
+                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - RadioButton [{uiCtrl.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -982,7 +980,7 @@ namespace PEBakery.WPF
                     uiCtrl.Update();
                 };
             }
-            
+
             Button button = new Button
             {
                 FontSize = CalcFontPointScale(),
@@ -993,7 +991,7 @@ namespace PEBakery.WPF
                     Height = double.NaN,
                 },
             };
-            
+
             if (r.ViewMode)
             {
                 button.Click += (object sender, RoutedEventArgs e) =>
@@ -1107,8 +1105,8 @@ namespace PEBakery.WPF
                     {
                         if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                         {
-                            SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
-                            UIRenderer.RunOneSection(addr, $"{r.Script.Title} - RadioGroup [{uiCtrl.Key}]", info.HideProgress);
+                            ScriptSection targetSection = r.Script.Sections[info.SectionName];
+                            UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - RadioGroup [{uiCtrl.Key}]", info.HideProgress);
                         }
                         else
                         {
@@ -1215,7 +1213,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region RunOneSection
-        private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)
+        private static async void RunOneSection(ScriptSection section, string logMsg, bool hideProgress)
         {
             if (Engine.WorkingLock == 0)
             {
@@ -1238,7 +1236,7 @@ namespace PEBakery.WPF
                     if (!hideProgress)
                     {
                         w.Model.BuildTreeItems.Clear();
-                        ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(addr.Script, null, null);
+                        ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(section.Script, null, null);
                         w.Model.BuildTreeItems.Add(itemRoot);
                         w.CurBuildTree = null;
                     }
@@ -1246,7 +1244,7 @@ namespace PEBakery.WPF
 
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(addr.Script.Project, logger, mainModel, EngineMode.RunMainAndOne, addr.Script, addr.Section.Name);
+                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
                 s.SetOptions(setting);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
                     s.LogMode = LogMode.FullDefer;

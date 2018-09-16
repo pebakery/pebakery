@@ -820,6 +820,7 @@ namespace PEBakery.Core
         private SectionDataConverted _convDataType = SectionDataConverted.None;
 
         public Script Script { get; }
+        public Project Project => Script.Project;
         public string Name { get; }
         public SectionType Type { get; set; }
         public SectionDataType DataType { get; set; }
@@ -988,15 +989,13 @@ namespace PEBakery.Core
                     {
                         case SectionDataConverted.Codes:
                             {
-                                SectionAddress addr = new SectionAddress(Script, this);
-                                _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                                _codes = CodeParser.ParseStatements(_lines, this, out List<LogInfo> logList);
                                 _logInfos.AddRange(logList);
                                 break;
                             }
                         case SectionDataConverted.Interfaces:
                             {
-                                SectionAddress addr = new SectionAddress(Script, this);
-                                _uiCtrls = UIParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                                _uiCtrls = UIParser.ParseStatements(_lines, this, out List<LogInfo> logList);
                                 _logInfos.AddRange(logList);
                                 break;
                             }
@@ -1040,8 +1039,7 @@ namespace PEBakery.Core
         {
             if (Type == SectionType.Code && DataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(Script, this);
-                _codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
+                _codes = CodeParser.ParseStatements(lines, this, out List<LogInfo> logList);
                 _logInfos.AddRange(logList);
 
                 _convDataType = SectionDataConverted.Codes;
@@ -1056,8 +1054,7 @@ namespace PEBakery.Core
         {
             if ((Type == SectionType.Interface || Type == SectionType.Code) && DataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(Script, this);
-                _uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logList);
+                _uiCtrls = UIParser.ParseStatements(lines, this, out List<LogInfo> logList);
                 _logInfos.AddRange(logList);
 
                 _convDataType = SectionDataConverted.Interfaces;

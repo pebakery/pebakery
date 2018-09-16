@@ -25,19 +25,19 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.IO;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Net.NetworkInformation;
-using Microsoft.Win32;
 using ManagedWimLib;
+using Microsoft.Win32;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System.Windows;
 
 namespace PEBakery.Core.Commands
 {
@@ -73,8 +73,8 @@ namespace PEBakery.Core.Commands
             }
 
             // Prepare to branch to a new section
-            SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, forceLog);
+            ScriptSection targetSection = sc.Sections[sectionName];
+            s.Logger.LogStartOfSection(s, targetSection, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, forceLog);
 
             // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
@@ -105,7 +105,7 @@ namespace PEBakery.Core.Commands
                 s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
             // Run Section
-            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
+            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
 
             // Restore EngineState values
             s.CurDepth = depthBackup;
@@ -122,7 +122,7 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
+            s.Logger.LogEndOfSection(s, targetSection, s.CurDepth, inCurrentScript, cmd, forceLog);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
@@ -232,7 +232,7 @@ namespace PEBakery.Core.Commands
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
                 // Loop it
-                SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
+                ScriptSection targetSection = sc.Sections[sectionName];
                 int loopIdx = 1;
                 switch (type)
                 {
@@ -253,7 +253,7 @@ namespace PEBakery.Core.Commands
                             s.LoopState = LoopState.OnIndex;
 
                             // Run Loop Section
-                            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
 
                             // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
@@ -284,7 +284,7 @@ namespace PEBakery.Core.Commands
                             // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
 
-                            Engine.RunSection(s, nextAddr, newInParams, info.OutParams, s.CurDepth + 1);
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
 
                             // Reset s.LoopState
                             if (s.LoopState == LoopState.Off) // Loop,Break
@@ -317,7 +317,7 @@ namespace PEBakery.Core.Commands
             { // Condition matched, run it
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
-                RunBranchLink(s, cmd.Addr, info.Link);
+                RunBranchLink(s, cmd.Section, info.Link);
 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
@@ -339,7 +339,7 @@ namespace PEBakery.Core.Commands
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
-                RunBranchLink(s, cmd.Addr, info.Link);
+                RunBranchLink(s, cmd.Section, info.Link);
 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
@@ -351,7 +351,7 @@ namespace PEBakery.Core.Commands
             }
         }
 
-        private static void RunBranchLink(EngineState s, SectionAddress addr, List<CodeCommand> link)
+        private static void RunBranchLink(EngineState s, ScriptSection section, List<CodeCommand> link)
         {
             int depthBackup = s.CurDepth;
             if (link.Count == 1)
@@ -366,7 +366,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            Engine.RunCommands(s, addr, link, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth + 1);
+            Engine.RunCommands(s, section, link, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth + 1);
             s.CurDepth = depthBackup;
         }
 

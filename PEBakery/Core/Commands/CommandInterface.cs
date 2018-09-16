@@ -63,10 +63,10 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
             // Refresh is required to simulate WinBuilder 082 behavior
-            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
+            Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
-                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.UIControlKey, StringComparison.OrdinalIgnoreCase));
@@ -111,10 +111,10 @@ namespace PEBakery.Core.Commands
             CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
             // Refresh is required to simulate WinBuilder 082 behavior
-            Script sc = s.Project.RefreshScript(cmd.Addr.Script, s);
+            Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
             ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
             if (iface == null)
-                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
@@ -1037,8 +1037,8 @@ namespace PEBakery.Core.Commands
             { // Application.Current is null in unit test
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
-                    w.DrawScript(cmd.Addr.Script);
+                if (w.CurMainTree.Script.Equals(cmd.Section.Script))
+                    w.DrawScript(cmd.Section.Script);
             });
 
             return logs;
@@ -1104,8 +1104,8 @@ namespace PEBakery.Core.Commands
             { // Application.Current is null in unit test
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                if (w.CurMainTree.Script.Equals(cmd.Addr.Script))
-                    w.DrawScript(cmd.Addr.Script);
+                if (w.CurMainTree.Script.Equals(cmd.Section.Script))
+                    w.DrawScript(cmd.Section.Script);
             });
 
             if (1 < updatedUICtrls.Count)
@@ -1150,7 +1150,7 @@ namespace PEBakery.Core.Commands
 
             if (info.Timeout == null)
             {
-                MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
+                MessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image);
             }
             else
             {
@@ -1163,7 +1163,7 @@ namespace PEBakery.Core.Commands
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
+                    CustomMessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
                 });
             }
 
@@ -1213,7 +1213,7 @@ namespace PEBakery.Core.Commands
                 {
                     // Create dummy script instance
                     FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                    Script sc = cmd.Addr.Project.LoadScript(tempFile, tempFile, true, false);
+                    Script sc = cmd.Section.Project.LoadScript(tempFile, tempFile, true, false);
 
                     // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);

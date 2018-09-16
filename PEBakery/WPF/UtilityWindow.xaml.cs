@@ -217,10 +217,9 @@ namespace PEBakery.WPF
                 section = sc.Sections["Process"];
             else
                 section = new ScriptSection(sc, "Process", SectionType.Code, new List<string>(), 1);
-            SectionAddress addr = new SectionAddress(sc, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);
+            List<CodeCommand> cmds = CodeParser.ParseStatements(lines, section, out List<LogInfo> errorLogs);
 
             // Check Macros
             Macro macro = new Macro(project, project.Variables, out _);

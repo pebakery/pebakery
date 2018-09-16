@@ -31,7 +31,6 @@ using PEBakery.Core.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
@@ -385,8 +384,8 @@ namespace PEBakery.Tests.Core.Command
             const BranchConditionType type = BranchConditionType.ExistMacro;
 
             // Test if Unicode can be used in macro name
-            s.Macro.GlobalDict["대한"] = CodeParser.ParseStatement("Echo,054-790-6641", EngineTests.DummySectionAddress());
-            s.Macro.LocalDict["Sonic"] = CodeParser.ParseStatement("Echo,Tails", EngineTests.DummySectionAddress());
+            s.Macro.GlobalDict["대한"] = CodeParser.ParseStatement("Echo,054-790-6641", EngineTests.DummySection());
+            s.Macro.LocalDict["Sonic"] = CodeParser.ParseStatement("Echo,Tails", EngineTests.DummySection());
             s.Variables.SetValue(VarsType.Local, "Tails", "Sonic");
 
             BranchCondition cond = new BranchCondition(type, false, "대한");

@@ -111,8 +111,7 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
 
-            SectionAddress addr = new SectionAddress(_sc, section);
-            List<CodeCommand> codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logs);
+            List<CodeCommand> codes = CodeParser.ParseStatements(lines, section, out List<LogInfo> logs);
 
             _visitedSections.Add(section);
             InternalValidateCodes(codes, logs);
@@ -215,8 +214,7 @@ namespace PEBakery.Core
 
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
-            SectionAddress addr = new SectionAddress(_sc, section);
-            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logs);
+            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, section, out List<LogInfo> logs);
 
             foreach (UIControl uiCtrl in uiCtrls)
             {
@@ -249,7 +247,7 @@ namespace PEBakery.Core
                         {
                             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                            if (info.Picture != null && 
+                            if (info.Picture != null &&
                                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.Ordinal) &&
                                 !EncodedFile.ContainsInterface(_sc, info.Picture))
                                 logs.Add(new LogInfo(LogState.Error, $"Image resource [{info.Picture}] does not exist", uiCtrl));

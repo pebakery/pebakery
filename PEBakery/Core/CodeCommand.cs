@@ -25,14 +25,14 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Text;
-using System.Linq;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Microsoft.Win32;
 using PEBakery.Helper;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 // ReSharper disable InconsistentNaming
 
@@ -92,55 +92,12 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region SectionAddress
-    [Serializable]
-    public struct SectionAddress
-    {
-        public readonly Script Script;
-        public readonly ScriptSection Section;
-
-        public Project Project => Script.Project;
-
-        public SectionAddress(Script script, ScriptSection section)
-        {
-            Script = script;
-            Section = section;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is SectionAddress addr)
-            {
-                bool result = Script == addr.Script && Section == addr.Section;
-                return result;
-            }
-
-            return false;
-        }
-
-        public static bool operator ==(SectionAddress c1, SectionAddress c2)
-        {
-            return c1.Equals(c2);
-        }
-
-        public static bool operator !=(SectionAddress c1, SectionAddress c2)
-        {
-            return !c1.Equals(c2);
-        }
-
-        public override int GetHashCode()
-        {
-            return Script.RealPath.GetHashCode() ^ Section.Name.GetHashCode();
-        }
-    }
-    #endregion
-
     #region CodeCommand
     [Serializable]
     public class CodeCommand
     {
         public string RawCode;
-        public SectionAddress Addr;
+        public ScriptSection Section;
         public CodeType Type;
         public CodeInfo Info;
         public int LineIdx;
@@ -153,10 +110,10 @@ namespace PEBakery.Core
             LineIdx = lineIdx;
         }
 
-        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info, int lineIdx)
+        public CodeCommand(string rawCode, ScriptSection section, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
-            Addr = addr;
+            Section = section;
             Type = type;
             Info = info;
             LineIdx = lineIdx;

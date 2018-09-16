@@ -294,7 +294,7 @@ namespace PEBakery.Core.Commands
                 args.Add("NOWARN");
 
             CodeType newType = CodeType.RegWrite;
-            CodeInfo newInfo = CodeParser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.Addr, cmd.LineIdx);
+            CodeInfo newInfo = CodeParser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.Section, cmd.LineIdx);
             CodeCommand newCmd = new CodeCommand(cmd.RawCode, CodeType.RegWrite, newInfo, cmd.LineIdx);
             return CommandRegistry.RegWrite(s, newCmd);
         }

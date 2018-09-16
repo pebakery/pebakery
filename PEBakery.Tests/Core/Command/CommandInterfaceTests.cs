@@ -25,13 +25,12 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.IniLib;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.IO;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
@@ -60,10 +59,10 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
+                    ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
                     try
                     {
-                        EngineTests.Eval(s, addr, rawCode, CodeType.Visible, check);
+                        EngineTests.Eval(s, ifaceSection, rawCode, CodeType.Visible, check);
                         if (check == ErrorCheck.Success)
                         {
                             string dest = Ini.ReadKey(scriptFile, "Interface", key);
@@ -82,11 +81,11 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    SectionAddress addr = new SectionAddress(sc, sc.GetInterfaceSection(out _));
+                    ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
                     try
                     {
                         CodeType? opType = optSuccess ? (CodeType?)CodeType.VisibleOp : null;
-                        EngineTests.EvalOptLines(s, addr, opType, rawCodes, check);
+                        EngineTests.EvalOptLines(s, ifaceSection, opType, rawCodes, check);
                         if (check == ErrorCheck.Success)
                         {
                             foreach ((string key, string value) in compTuples)
@@ -110,7 +109,7 @@ namespace PEBakery.Tests.Core.Command
                     @"Visible,%pTextBox1%,False",
                     @"Visible,%pNumberBox1%,False",
                     @"Visible,%pCheckBox1%,False",
-                }, new(string, string)[]
+                }, new (string, string)[]
                 {
                     ("pTextBox1", @"Display,0,0,20,20,200,21,StringValue"),
                     ("pNumberBox1", @"pNumberBox1,0,2,20,70,40,22,3,0,100,1"),
@@ -536,7 +535,7 @@ namespace PEBakery.Tests.Core.Command
                 $@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2",
                 $@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z",
                 $@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery",
-            }, new(string, string)[]
+            }, new (string, string)[]
             {
                 ("pRadioGroup1",  @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2"),
                 (@"pComboBox1", @"X,1,4,20,130,150,21,X,Y,Z"),
@@ -598,7 +597,7 @@ namespace PEBakery.Tests.Core.Command
                 }
             }
 
-            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,\"\"", new(string, string)[]
+            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,\"\"", new (string, string)[]
             {
                 ("pTextLabel1", "Display"),
                 ("pTextLabel2", "Hidden"),
@@ -611,7 +610,7 @@ namespace PEBakery.Tests.Core.Command
                 ("pFileBox1", @"C:\Windows\notepad.exe"),
                 ("pFileBox2", @"E:\WinPE\"),
             });
-            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,V", new(string, string)[]
+            SingleTemplate($"AddInterface,{scriptFile},VerboseInterface,V", new (string, string)[]
             {
                 ("V_pTextLabel1", "Display"),
                 ("V_pTextLabel2", "Hidden"),

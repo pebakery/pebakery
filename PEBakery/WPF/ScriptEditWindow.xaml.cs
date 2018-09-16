@@ -705,10 +705,10 @@ namespace PEBakery.WPF
                 _sc = _sc.Project.RefreshScript(_sc);
             }
 
-            SectionAddress addr = new SectionAddress(_sc, _sc.Sections[_ifaceSectionName]);
+            ScriptSection ifaceSection = _sc.Sections[_ifaceSectionName];
             string line = UIControl.GetUIControlTemplate(type, key);
 
-            UIControl uiCtrl = UIParser.ParseStatement(line, addr, out List<LogInfo> errorLogs);
+            UIControl uiCtrl = UIParser.ParseStatement(line, ifaceSection, out List<LogInfo> errorLogs);
             Debug.Assert(uiCtrl != null, "Internal Logic Error at UICtrlAddButton_Click");
             Debug.Assert(errorLogs.Count == 0, "Internal Logic Error at UICtrlAddButton_Click");
 

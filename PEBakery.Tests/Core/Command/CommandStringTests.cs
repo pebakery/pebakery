@@ -25,10 +25,9 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Linq;
-using PEBakery.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
+using System;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -165,8 +164,7 @@ namespace PEBakery.Tests.Core.Command
         public void StrFormat_Date_1()
         {
             const string rawCode = "StrFormat,Date,%Dest%,yyyy-mm-dd_hh:nn:ss.zzz";
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
             StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
@@ -177,8 +175,7 @@ namespace PEBakery.Tests.Core.Command
         public void StrFormat_Date_2()
         {
             const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
             StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
@@ -189,8 +186,7 @@ namespace PEBakery.Tests.Core.Command
         public void StrFormat_Date_3()
         {
             const string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             // Successfully induced error
             if (cmd.Type == CodeType.Error) return;
@@ -201,8 +197,7 @@ namespace PEBakery.Tests.Core.Command
         public void StrFormat_Date_4()
         {
             const string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             // Successfully induced error
             if (cmd.Type == CodeType.Error) return;
@@ -213,8 +208,7 @@ namespace PEBakery.Tests.Core.Command
         public void StrFormat_Date_5()
         {
             const string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, EngineTests.DummySection());
 
             CodeInfo_StrFormat info = cmd.Info.Cast<CodeInfo_StrFormat>();
             StrFormatInfo_Date subInfo = info.SubInfo.Cast<StrFormatInfo_Date>();
