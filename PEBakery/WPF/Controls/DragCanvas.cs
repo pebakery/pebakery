@@ -22,13 +22,10 @@
 	SOFTWARE.
 */
 
+using PEBakery.Core;
 using System;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
-using PEBakery.Core;
 
 // ReSharper disable InconsistentNaming
 
@@ -122,15 +119,15 @@ namespace PEBakery.WPF.Controls
             double x = cursorNow.X - cursorStart.X + elementStart.X;
             double y = cursorNow.Y - cursorStart.Y + elementStart.Y;
 
-            // Do not check Width and Height here, or canvas cannot be expanded
+            // Do not use Width and Height here, or canvas cannot be expanded
             if (x < 0)
                 x = 0;
-            //else if (Width - _selectedElement.Width < x)
-            //    x = Width - _selectedElement.Width;
+            else if (600 < x)
+                x = 600;
             if (y < 0)
                 y = 0;
-            //else if (Height - _selectedElement.Height < y)
-            //    y = Height - _selectedElement.Height;
+            else if (600 < y)
+                y = 600;
 
             return new Point(x, y);
         }

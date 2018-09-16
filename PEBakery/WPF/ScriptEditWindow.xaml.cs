@@ -19,6 +19,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF
