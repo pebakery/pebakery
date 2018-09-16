@@ -23,17 +23,16 @@
     SOFTWARE.
 */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using PEBakery.CabLib;
 using SevenZipExtractor;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using SharpCompress.Writers;
 using SharpCompress.Writers.Zip;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace PEBakery.Helper
 {

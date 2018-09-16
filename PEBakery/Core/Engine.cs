@@ -837,7 +837,7 @@ namespace PEBakery.Core
             s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
             // Increase only if cmd resides in CurrentScript.
-            // So if a setion is from Macro, it will not be count.
+            // So if a section is from Macro, it will not be count.
             if (!s.ProcessedSectionHashes.Contains(cmd.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Section.Script))
                 s.MainViewModel.BuildScriptProgressBarValue += 1;
 
@@ -1060,14 +1060,14 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
-        public LogMode LogMode = LogMode.NoDelay; // For performance (delayed logging)
+        public LogMode LogMode = LogMode.NoDelay; // For performance (deferred logging)
         public MainViewModel MainViewModel;
 
         // Property
         public string BaseDir => Project.BaseDir;
         public Script MainScript => Project.MainScript;
         public int CurSectionInParamsCount => 0 < CurSectionInParams.Count ? CurSectionInParams.Keys.Max() : 0;
-        public int CurSectionOutParamsCount => CurSectionOutParams.Count;
+        public int CurSectionOutParamsCount => CurSectionOutParams?.Count ?? 0;
 
         // State of the engine
         public Script CurrentScript;

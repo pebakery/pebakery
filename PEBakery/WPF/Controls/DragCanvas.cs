@@ -26,7 +26,6 @@ using PEBakery.Core;
 using System;
 using System.Windows;
 using System.Windows.Input;
-
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF.Controls

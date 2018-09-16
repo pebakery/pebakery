@@ -466,7 +466,7 @@ namespace PEBakery.Helper
 
                 if (fileFound)
                     foundPaths.Add((Path: subDir.FullName, IsDir: true));
-                
+
                 return fileFound;
             }
 

@@ -24,9 +24,8 @@
 */
 
 using System;
-using System.Linq;
-using System.Windows;
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Interop;
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
