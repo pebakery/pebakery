@@ -547,7 +547,6 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
-            ReaderWriterLockSlim listLock = new ReaderWriterLockSlim();
             string mainScriptPath = Path.Combine(ProjectDir, "script.project");
             AllScripts = new List<Script>();
 
@@ -560,6 +559,7 @@ namespace PEBakery.Core
 
             // Load scripts from disk or cache
             bool cacheValid = true;
+            object listLock = new object();
             Parallel.ForEach(spis, spi =>
             {
                 Debug.Assert(spi.RealPath != null, "Internal Logic Error at Project.Load");
@@ -597,15 +597,8 @@ namespace PEBakery.Core
                         Debug.Assert(sc != null);
                     }
 
-                    listLock.EnterWriteLock();
-                    try
-                    {
+                    lock (listLock)
                         AllScripts.Add(sc);
-                    }
-                    finally
-                    {
-                        listLock.ExitWriteLock();
-                    }
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
