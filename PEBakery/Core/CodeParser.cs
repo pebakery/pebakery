@@ -183,6 +183,7 @@ namespace PEBakery.Core
         #region ParseCommand, ParseCommandFromSlicedArgs, ParseCodeType, ParseArguments
         private static CodeCommand ParseCommand(List<string> rawCodes, SectionAddress addr, ref int idx)
         {
+            // Command's line number in physical file
             int lineIdx = addr.Section.LineIdx + 1 + idx;
 
             // Remove whitespace of rawCode's from start and end
@@ -201,12 +202,12 @@ namespace PEBakery.Core
             string codeTypeStr = tuple.Item1;
             string remainder = tuple.Item2;
 
-            // Parse opcode
+            // Parse CodeType
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
 
             // Check doublequote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be an even number", rawCode);
+                throw new InvalidCommandException("Doublequote's number should be even", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();

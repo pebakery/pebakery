@@ -88,7 +88,7 @@ namespace PEBakery.Core
         }
 
         #region ValidateCodeSection
-        private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null)
+        private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
             // Already processed, so skip
             if (_visitedSections.Contains(section))
@@ -102,11 +102,11 @@ namespace PEBakery.Core
             }
             catch (InternalException)
             {
-                string msg;
-                if (rawLine == null)
-                    msg = $"Section [{section.Name}] is not a valid code section";
-                else
-                    msg = $"Section [{section.Name}] is not a valid code section ({rawLine})";
+                string msg = $"Section [{section.Name}] is not a valid code section";
+                if (rawLine != null)
+                    msg += $" ({rawLine})";
+                if (0 < lineIdx)
+                    msg += $" (Line {lineIdx})";
 
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
@@ -168,7 +168,7 @@ namespace PEBakery.Core
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode, cmd.LineIdx));
                                 else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
@@ -185,7 +185,7 @@ namespace PEBakery.Core
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode, cmd.LineIdx));
                                 else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
@@ -197,7 +197,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ValidateUISection
-        private List<LogInfo> ValidateInterfaceSection(ScriptSection section)
+        private List<LogInfo> ValidateInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
             // Force parsing of code, bypassing caching by section.GetUICtrls()
             List<string> lines;
@@ -207,7 +207,13 @@ namespace PEBakery.Core
             }
             catch (InternalException)
             {
-                return new List<LogInfo> { new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid interface section") };
+                string msg = $"Section [{section.Name}] is not a valid interface section";
+                if (rawLine != null)
+                    msg += $" ({rawLine})";
+                if (0 < lineIdx)
+                    msg += $" (Line {lineIdx})";
+
+                return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
             SectionAddress addr = new SectionAddress(_sc, section);
             List<UIControl> uiCtrls = UIParser.ParseStatements(lines, addr, out List<LogInfo> logs);
@@ -223,21 +229,21 @@ namespace PEBakery.Core
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
                         }
                         break;
                     case UIControlType.Image:
                         if (!uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
                             !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Error, $"Image resource [{uiCtrl.Text}] does not exist ({uiCtrl.RawLine})"));
+                            logs.Add(new LogInfo(LogState.Error, $"Image resource [{uiCtrl.Text}] does not exist", uiCtrl));
                         break;
                     case UIControlType.TextFile:
                         if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase) &&
                             !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Error, $"Text resource [{uiCtrl.Text}] does not exist ({uiCtrl.RawLine})"));
+                            logs.Add(new LogInfo(LogState.Error, $"Text resource [{uiCtrl.Text}] does not exist", uiCtrl));
                         break;
                     case UIControlType.Button:
                         {
@@ -246,14 +252,14 @@ namespace PEBakery.Core
                             if (info.Picture != null && 
                                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.Ordinal) &&
                                 !EncodedFile.ContainsInterface(_sc, info.Picture))
-                                logs.Add(new LogInfo(LogState.Error, $"Image resource [{info.Picture}] does not exist ({uiCtrl.RawLine})"));
+                                logs.Add(new LogInfo(LogState.Error, $"Image resource [{info.Picture}] does not exist", uiCtrl));
 
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
                         }
                         break;
@@ -264,9 +270,9 @@ namespace PEBakery.Core
                             if (info.SectionName != null)
                             {
                                 if (_sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine));
+                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], uiCtrl.RawLine, uiCtrl.LineIdx));
                                 else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist ({uiCtrl.RawLine})"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
                         }
                         break;

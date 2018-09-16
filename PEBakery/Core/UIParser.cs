@@ -116,7 +116,10 @@ namespace PEBakery.Core
         #region ParseUIControl
         public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
         {
-            UIControlType type;
+            // UICommand's line number in physical file
+            int lineIdx = addr.Section.LineIdx + 1 + idx;
+
+            // Get rawLine
             string rawLine = rawLines[idx].Trim();
 
             // Check if rawLine is empty
@@ -157,7 +160,7 @@ namespace PEBakery.Core
 
             // Check doublequote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawValue, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be an even number", rawLine);
+                throw new InvalidCommandException("Doublequote's number should be even", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
@@ -176,7 +179,8 @@ namespace PEBakery.Core
             if (args.Count < 7)
                 throw new InvalidCommandException($"Interface control [{rawValue}] must have at least 7 arguments", rawLine);
 
-            // Parse opcode
+            // Parse UIControlType
+            UIControlType type;
             try { type = UIParser.ParseControlTypeVal(args[2]); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
@@ -209,7 +213,7 @@ namespace PEBakery.Core
             UIInfo info;
             try { info = ParseUIControlInfo(type, args); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
-            return new UIControl(rawLine, addr, key, text, visibility, type, rect, info);
+            return new UIControl(rawLine, addr, key, text, visibility, type, rect, info, lineIdx);
         }
 
         public static UIControlType ParseControlTypeVal(string typeStr)

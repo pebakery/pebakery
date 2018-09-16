@@ -133,6 +133,7 @@ namespace PEBakery.Core
         public UIControlType Type;
         public Rect Rect;
         public UIInfo Info;
+        public int LineIdx;
         #endregion
 
         #region Constructors
@@ -148,7 +149,7 @@ namespace PEBakery.Core
             Rect = new Rect(0, 0, 0, 0);
         }
 
-        public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
+        public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info, int lineIdx)
         {
             RawLine = rawLine;
             Addr = addr;
@@ -159,6 +160,7 @@ namespace PEBakery.Core
             Type = type;
             Rect = rect;
             Info = info;
+            LineIdx = lineIdx;
         }
         #endregion
 

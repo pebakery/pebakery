@@ -26,6 +26,7 @@
 */
 
 using NUglify;
+using NUglify.Html;
 using PEBakery.Helper;
 using SQLite;
 using System;
@@ -36,7 +37,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using NUglify.Html;
 
 namespace PEBakery.Core
 {
@@ -61,6 +61,7 @@ namespace PEBakery.Core
         public LogState State;
         public string Message;
         public CodeCommand Command;
+        public UIControl UIControl;
         public int Depth;
         #endregion
 
@@ -70,6 +71,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = null;
+            UIControl = null;
             Depth = 0;
         }
 
@@ -78,6 +80,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = command;
+            UIControl = null;
             Depth = 0;
         }
 
@@ -86,6 +89,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = null;
+            UIControl = null;
             Depth = depth;
         }
 
@@ -94,6 +98,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = command;
+            UIControl = null;
             Depth = depth;
         }
         #endregion
@@ -104,6 +109,7 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = null;
+            UIControl = null;
             Depth = 0;
         }
 
@@ -112,6 +118,7 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = command;
+            UIControl = null;
             Depth = 0;
         }
 
@@ -120,6 +127,7 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = null;
+            UIControl = null;
             Depth = depth;
         }
 
@@ -128,7 +136,28 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = command;
+            UIControl = null;
             Depth = depth;
+        }
+        #endregion
+
+        #region Constructor - LogState, UIControl
+        public LogInfo(LogState state, string message, UIControl uiCtrl)
+        {
+            State = state;
+            Message = message;
+            Command = null;
+            UIControl = uiCtrl;
+            Depth = 0;
+        }
+
+        public LogInfo(LogState state, Exception e, UIControl uiCtrl)
+        {
+            State = state;
+            Message = Logger.LogExceptionMessage(e);
+            Command = null;
+            UIControl = uiCtrl;
+            Depth = 0;
         }
         #endregion
 
@@ -138,6 +167,7 @@ namespace PEBakery.Core
             State = buildLog.State;
             Message = buildLog.Message;
             Command = null;
+            UIControl = null;
             Depth = buildLog.Depth;
         }
         #endregion
@@ -221,13 +251,24 @@ namespace PEBakery.Core
         #region ToString
         public override string ToString()
         {
-            if (Command == null)
-                return $"[{State}] {Message}";
-
-            if (0 < Command.LineIdx)
-                return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
+            if (Command != null)
+            {
+                if (0 < Command.LineIdx)
+                    return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
+                else
+                    return $"[{State}] {Message} ({Command.RawCode})";
+            }
+            else if (UIControl != null)
+            {
+                if (0 < UIControl.LineIdx)
+                    return $"[{State}] {Message} ({UIControl.RawLine}) (Line {UIControl.LineIdx})";
+                else
+                    return $"[{State}] {Message} ({UIControl.RawLine})";
+            }
             else
-                return $"[{State}] {Message} ({Command.RawCode})";
+            {
+                return $"[{State}] {Message}";
+            }
         }
         #endregion
     }

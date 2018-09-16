@@ -477,12 +477,10 @@ namespace PEBakery.WPF
                     LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
                     LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
 
-                    int errorWarns = 0;
+                    int errorWarns = errorLogs.Length + warnLogs.Length;
                     StringBuilder b = new StringBuilder();
                     if (0 < errorLogs.Length)
                     {
-                        errorWarns += errorLogs.Length;
-
                         if (!quiet)
                         {
                             b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
@@ -490,10 +488,20 @@ namespace PEBakery.WPF
                             for (int i = 0; i < errorLogs.Length; i++)
                             {
                                 LogInfo log = errorLogs[i];
+                                b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
                                 if (log.Command != null)
-                                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command}) (Line {log.Command.LineIdx})");
-                                else
-                                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                                {
+                                    b.Append($" ({log.Command})");
+                                    if (0 < log.Command.LineIdx)
+                                        b.Append($" (Line {log.Command.LineIdx})");
+                                }
+                                else if (log.UIControl != null)
+                                {
+                                    b.Append($" ({log.UIControl})");
+                                    if (0 < log.UIControl.LineIdx)
+                                        b.Append($" (Line {log.UIControl.LineIdx})");
+                                }
+                                b.AppendLine();
                             }
                             b.AppendLine();
                         }
@@ -501,16 +509,27 @@ namespace PEBakery.WPF
 
                     if (0 < warnLogs.Length)
                     {
-                        errorWarns += warnLogs.Length;
-
                         if (!quiet)
                         {
-                            b.AppendLine($"{errorLogs.Length} syntax warning detected");
+                            b.AppendLine($"{warnLogs.Length} syntax warning detected at [{sc.TreePath}]");
                             b.AppendLine();
                             for (int i = 0; i < warnLogs.Length; i++)
                             {
                                 LogInfo log = warnLogs[i];
-                                b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                                b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
+                                if (log.Command != null)
+                                {
+                                    b.Append($" ({log.Command})");
+                                    if (0 < log.Command.LineIdx)
+                                        b.Append($" (Line {log.Command.LineIdx})");
+                                }
+                                else if (log.UIControl != null)
+                                {
+                                    b.Append($" ({log.UIControl})");
+                                    if (0 < log.UIControl.LineIdx)
+                                        b.Append($" (Line {log.UIControl.LineIdx})");
+                                }
+                                b.AppendLine();
                             }
                             b.AppendLine();
                         }
