@@ -833,7 +833,8 @@ namespace PEBakery.WPF
                 else
                     (width, height) = ImageHelper.GetImageSize(ms);
 
-                uiCtrl.Rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, width, height);
+                uiCtrl.Width = width;
+                uiCtrl.Height = height;
                 m.InvokeUIControlEvent(false);
                 WriteScriptInterface(false);
             }
@@ -2188,7 +2189,7 @@ namespace PEBakery.WPF
                 if (_selectedUICtrl == null)
                     return;
 
-                _selectedUICtrl.Rect.X = value;
+                _selectedUICtrl.X = value;
                 InvokeUIControlEvent(true);
             }
         }
@@ -2200,7 +2201,7 @@ namespace PEBakery.WPF
                 if (_selectedUICtrl == null)
                     return;
 
-                _selectedUICtrl.Rect.Y = value;
+                _selectedUICtrl.Y = value;
                 InvokeUIControlEvent(true);
             }
         }
@@ -2212,7 +2213,7 @@ namespace PEBakery.WPF
                 if (_selectedUICtrl == null)
                     return;
 
-                _selectedUICtrl.Rect.Width = value;
+                _selectedUICtrl.Width = value;
                 InvokeUIControlEvent(true);
             }
         }
@@ -2224,7 +2225,7 @@ namespace PEBakery.WPF
                 if (_selectedUICtrl == null)
                     return;
 
-                _selectedUICtrl.Rect.Height = value;
+                _selectedUICtrl.Height = value;
                 InvokeUIControlEvent(true);
             }
         }

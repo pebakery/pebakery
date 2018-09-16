@@ -208,11 +208,10 @@ namespace PEBakery.Core
             if (!intParse)
                 throw new InvalidCommandException($"Invalid integers in [{rawValue}]", rawLine);
 
-            Rect rect = new Rect(x, y, width, height);
             UIInfo info;
             try { info = ParseUIControlInfo(type, args); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
-            return new UIControl(rawLine, section, key, text, visibility, type, rect, info, lineIdx);
+            return new UIControl(rawLine, section, key, text, visibility, type, x, y, width, height, info, lineIdx);
         }
 
         public static UIControlType ParseControlTypeVal(string typeStr)

@@ -87,11 +87,11 @@ namespace PEBakery.WPF.Controls
                     return;
 
                 Point nowCursorPoint = e.GetPosition(this);
-                Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.Rect.X, uiCtrl.Rect.Y));
+                Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.X, uiCtrl.Y));
 
                 // UIControl should have position/size of int
-                uiCtrl.Rect.X = (int)newCtrlPos.X;
-                uiCtrl.Rect.Y = (int)newCtrlPos.Y;
+                uiCtrl.X = (int)newCtrlPos.X;
+                uiCtrl.Y = (int)newCtrlPos.Y;
 
                 UIControlDragged?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl));
 

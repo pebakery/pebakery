@@ -227,7 +227,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox
             {
                 Text = info.Value,
-                Height = uiCtrl.Rect.Height,
+                Height = uiCtrl.Height,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
@@ -274,7 +274,7 @@ namespace PEBakery.WPF
                 SetToolTip(grid, info.ToolTip);
                 SetEditModeProperties(r, grid, uiCtrl);
 
-                Rect gridRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - UIInfo_TextBox.AddWidth, uiCtrl.Rect.Width, uiCtrl.Rect.Height + UIInfo_TextBox.AddWidth);
+                Rect gridRect = new Rect(uiCtrl.X, uiCtrl.Y - UIInfo_TextBox.AddWidth, uiCtrl.Width, uiCtrl.Height + UIInfo_TextBox.AddWidth);
                 DrawToCanvas(r, grid, gridRect);
             }
         }
@@ -790,7 +790,7 @@ namespace PEBakery.WPF
 
             if (IgnoreWidthOfWebLabel && r.ViewMode)
             { // Disable this in edit mode to encourage script developer address this issue
-                Rect rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, block.Width, uiCtrl.Rect.Height);
+                Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, block.Width, uiCtrl.Height);
                 DrawToCanvas(r, block, rect);
             }
             else
@@ -1040,7 +1040,7 @@ namespace PEBakery.WPF
 
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(uiCtrl.Rect.Height) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(uiCtrl.Height) });
 
             Grid.SetColumn(box, 0);
             grid.Children.Add(box);
@@ -1126,7 +1126,7 @@ namespace PEBakery.WPF
                 grid.Children.Add(radio);
             }
 
-            Rect rect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top, uiCtrl.Rect.Width, uiCtrl.Rect.Height);
+            Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, uiCtrl.Width, uiCtrl.Height);
             DrawToCanvas(r, box, rect);
         }
         #endregion
@@ -1140,23 +1140,23 @@ namespace PEBakery.WPF
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord)
+        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect rect)
         {
-            DrawToCanvas(r.Canvas, element, coord);
+            DrawToCanvas(r.Canvas, element, rect);
         }
 
-        public static void DrawToCanvas(Canvas canvas, FrameworkElement element, Rect coord)
+        public static void DrawToCanvas(Canvas canvas, FrameworkElement element, Rect rect)
         {
-            Canvas.SetLeft(element, coord.Left);
-            Canvas.SetTop(element, coord.Top);
-            element.Width = coord.Width;
-            element.Height = coord.Height;
+            Canvas.SetLeft(element, rect.X);
+            Canvas.SetTop(element, rect.Y);
+            element.Width = rect.Width;
+            element.Height = rect.Height;
 
             canvas.Children.Add(element);
-            if (double.IsNaN(canvas.Width) || canvas.Width < coord.Left + coord.Width)
-                canvas.Width = coord.Left + coord.Width;
-            if (double.IsNaN(canvas.Height) || canvas.Height < coord.Top + coord.Height)
-                canvas.Height = coord.Top + coord.Height;
+            if (double.IsNaN(canvas.Width) || canvas.Width < rect.X + rect.Width)
+                canvas.Width = rect.X + rect.Width;
+            if (double.IsNaN(canvas.Height) || canvas.Height < rect.Y + rect.Height)
+                canvas.Height = rect.Y + rect.Height;
         }
 
         public static void RemoveFromCanvas(Canvas canvas, FrameworkElement element)

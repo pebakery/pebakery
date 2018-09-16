@@ -27,17 +27,17 @@
 
 #define USE_VALUE_OF_FILE
 
+using Ookii.Dialogs.Wpf;
+using PEBakery.Helper;
+using PEBakery.WPF;
+using PEBakery.WPF.Controls;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Diagnostics;
-using System.Collections.Generic;
-using PEBakery.Helper;
-using PEBakery.WPF;
-using PEBakery.WPF.Controls;
-using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.Core.Commands
 {
@@ -192,16 +192,16 @@ namespace PEBakery.Core.Commands
                     destStr = uiCtrl.Visibility.ToString();
                     break;
                 case InterfaceElement.PosX:
-                    destStr = ((int)uiCtrl.Rect.X).ToString();
+                    destStr = uiCtrl.X.ToString();
                     break;
                 case InterfaceElement.PosY:
-                    destStr = ((int)uiCtrl.Rect.Y).ToString();
+                    destStr = uiCtrl.Y.ToString();
                     break;
                 case InterfaceElement.Width:
-                    destStr = ((int)uiCtrl.Rect.Width).ToString();
+                    destStr = uiCtrl.Width.ToString();
                     break;
                 case InterfaceElement.Height:
-                    destStr = ((int)uiCtrl.Rect.Height).ToString();
+                    destStr = uiCtrl.Height.ToString();
                     break;
                 case InterfaceElement.Value:
                     destStr = uiCtrl.GetValue(true);
@@ -613,7 +613,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int x))
                             return ReturnErrorLog($"[{finalValue}] is not a valid integer");
 
-                        uiCtrl.Rect.X = x;
+                        uiCtrl.X = x;
                     }
                     break;
                 case InterfaceElement.PosY:
@@ -621,7 +621,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int y))
                             return ReturnErrorLog($"[{finalValue}] is not a valid integer");
 
-                        uiCtrl.Rect.Y = y;
+                        uiCtrl.Y = y;
                     }
                     break;
                 case InterfaceElement.Width:
@@ -629,7 +629,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int width) || width < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        uiCtrl.Rect.Width = width;
+                        uiCtrl.Width = width;
                     }
                     break;
                 case InterfaceElement.Height:
@@ -637,7 +637,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(finalValue, out int height) || height < 0)
                             return ReturnErrorLog($"[{finalValue}] is not a valid positive integer");
 
-                        uiCtrl.Rect.Height = height;
+                        uiCtrl.Height = height;
                     }
                     break;
                 case InterfaceElement.Value:

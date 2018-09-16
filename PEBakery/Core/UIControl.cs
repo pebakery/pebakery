@@ -131,9 +131,16 @@ namespace PEBakery.Core
         public string Text;
         public bool Visibility;
         public UIControlType Type;
-        public Rect Rect;
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
         public UIInfo Info;
         public int LineIdx;
+        #endregion
+
+        #region Properties
+        public Rect Rect => new Rect(X, Y, Width, Height);
         #endregion
 
         #region Constructors
@@ -146,10 +153,15 @@ namespace PEBakery.Core
             Text = string.Empty;
             Visibility = false;
             Type = UIControlType.None;
-            Rect = new Rect(0, 0, 0, 0);
+            X = 0;
+            Y = 0;
+            Width = 0;
+            Height = 0;
+            Info = null;
+            LineIdx = 0;
         }
 
-        public UIControl(string rawLine, ScriptSection section, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info, int lineIdx)
+        public UIControl(string rawLine, ScriptSection section, string key, string text, bool visibility, UIControlType type, int x, int y, int width, int height, UIInfo info, int lineIdx)
         {
             RawLine = rawLine;
             Section = section;
@@ -158,7 +170,10 @@ namespace PEBakery.Core
             Text = text;
             Visibility = visibility;
             Type = type;
-            Rect = rect;
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
             Info = info;
             LineIdx = lineIdx;
         }
@@ -184,13 +199,13 @@ namespace PEBakery.Core
             b.Append(Visibility ? "1," : "0,");
             b.Append((int)Type);
             b.Append(",");
-            b.Append(Rect.Left);
+            b.Append(X);
             b.Append(",");
-            b.Append(Rect.Top);
+            b.Append(Y);
             b.Append(",");
-            b.Append(Rect.Width);
+            b.Append(Width);
             b.Append(",");
-            b.Append(Rect.Height);
+            b.Append(Height);
             b.Append(Info.ForgeRawLine());
             return b.ToString();
         }
