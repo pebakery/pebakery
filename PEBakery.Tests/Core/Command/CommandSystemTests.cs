@@ -117,9 +117,13 @@ namespace PEBakery.Tests.Core.Command
                 {
                     foreach (string destTreePath in destTreePaths)
                     {
+                        // Root is a mainScript, so not a directory
                         string destTreeDir = Path.GetDirectoryName(destTreePath);
-                        Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreeDir));
-                        Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreePath));
+                        if (!destTreeDir.Equals("TestSuite", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreeDir));
+                            Assert.IsTrue(s.Project.ContainsScriptByTreePath(destTreePath));
+                        }
                     }
                 }
             }

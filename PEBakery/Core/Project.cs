@@ -643,7 +643,7 @@ namespace PEBakery.Core
 
             int rootId = scTree.AddNode(0, MainScript); // Root is script.project
 
-            foreach (Script sc in scripts)
+            foreach (Script sc in scripts.Where(x => x.Type != ScriptType.Directory))
             {
                 Debug.Assert(sc != null, "Internal Logic Error at InternalSortScripts");
 
