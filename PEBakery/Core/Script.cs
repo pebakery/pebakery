@@ -716,11 +716,11 @@ namespace PEBakery.Core
             switch (_type)
             {
                 case ScriptType.Script:
-                    return $"[S] ({_level}) {_title}";
+                    return $"[S_{_level}] {_title}";
                 case ScriptType.Link:
-                    return $"[L] ({_level}) {_sections["Main"].IniDict["Link"]}";
+                    return $"[L_{_level}] {MainInfo["Link"]}";
                 case ScriptType.Directory:
-                    return $"[D] ({_level}) {_title}";
+                    return $"[D_{_level}] {_title}";
             }
             return _title;
         }

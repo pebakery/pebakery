@@ -531,7 +531,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Load Scripts
+        #region Load
         public enum LoadReport
         {
             None,
@@ -587,7 +587,7 @@ namespace PEBakery.Core
                         // TODO : Lazy loading of link, takes too much time at start
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
-                        if (spi.IsDir) // level information is empty
+                        if (spi.IsDir) // level information is empty, will be modified in InternalSortScripts
                             sc = new Script(ScriptType.Directory, spi.RealPath, spi.TreePath, this, ProjectRoot, null, false, false, spi.IsDirLink);
                         else if (Path.GetExtension(spi.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
                             sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, ProjectRoot, null, isMainScript, false, false);
@@ -799,15 +799,15 @@ namespace PEBakery.Core
                             .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                         for (int i = 0; i < paths.Length - 1; i++)
                         {
-                            string pathKey = Project.PathKeyGenerator(paths, i);
+                            string pathKey = PathKeyGenerator(paths, i);
                             Script ts = AllScripts.FirstOrDefault(x =>
                                 x.Level == sc.Level &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
                             {
-                                string fullTreePath = Path.Combine(ProjectRoot, ProjectName, pathKey);
-                                string fullRealPath = Path.GetDirectoryName(realPath);
-                                Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                                string dirTreePath = Path.Combine(ProjectRoot, ProjectName, pathKey);
+                                string dirRealPath = Path.GetDirectoryName(realPath);
+                                Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                                 AllScripts.Add(dirScript);
                             }
                         }

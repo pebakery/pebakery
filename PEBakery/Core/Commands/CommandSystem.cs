@@ -25,19 +25,17 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
+using PEBakery.WPF;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Windows;
 using System.Security.Principal;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Text;
 using System.Threading.Tasks;
-using PEBakery.WPF;
-using PEBakery.Helper;
+using System.Windows;
 
 namespace PEBakery.Core.Commands
 {
@@ -280,18 +278,18 @@ namespace PEBakery.Core.Commands
                         string srcDirPath = Path.GetDirectoryName(srcFilePath);
                         Debug.Assert(srcDirPath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
 
-                        (string fullPath, string shortPath)[] fileTuples = files
+                        (string realPath, string treePath)[] fileTuples = files
                             .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
                             .ToArray();
 
                         int successCount = 0;
-                        foreach ((string fullPath, string shortPath) in fileTuples)
+                        foreach ((string realPath, string treePath) in fileTuples)
                         {
                             // Add scripts into Project.AllScripts
-                            string scRealPath = Path.GetFullPath(fullPath);
+                            string scRealPath = Path.GetFullPath(realPath);
 
-                            string projDirName = s.Project.ProjectDir.Substring(s.Project.ProjectRoot.Length).Trim('\\');
-                            string destTreePath = Path.Combine(projDirName, destTreeDir, shortPath);
+                            string projectDirName = s.Project.ProjectDir.Substring(s.Project.ProjectRoot.Length).Trim('\\');
+                            string destTreePath = Path.Combine(projectDirName, destTreeDir, treePath);
                             if (s.Project.ContainsScriptByTreePath(destTreePath))
                             {
                                 if (subInfo.PreserveFlag)
