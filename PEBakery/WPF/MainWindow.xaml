@@ -49,6 +49,8 @@
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
         <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
+        <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
+        <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
         <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -657,9 +659,9 @@
                                     Visibility="{Binding ScriptCheckVisibility}"
                                     BorderThickness="0"
                                     Background="Transparent"
-                                    Foreground="{Binding ScriptCheckColor}"
+                                    Foreground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
                                     ToolTip="Syntax Check">
-                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"
+                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}}"
                                                             Width="Auto"
                                                             Height="Auto"/>
                             </Button>

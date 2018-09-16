@@ -471,9 +471,7 @@ namespace PEBakery.WPF
                 try
                 {
                     CodeValidator v = new CodeValidator(sc);
-                    v.Validate();
-
-                    LogInfo[] logs = v.LogInfos;
+                    (List<LogInfo> logs, CodeValidator.Result result) = v.Validate();
                     LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
                     LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
 
@@ -535,43 +533,39 @@ namespace PEBakery.WPF
                         }
                     }
 
-                    if (errorWarns == 0)
-                    {
-                        Model.ScriptCheckResult = true;
-
-                        if (!quiet)
-                        {
-                            b.AppendLine("No syntax error detected");
-                            b.AppendLine();
-                            b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-
-                            MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                    }
-                    else
-                    {
-                        Model.ScriptCheckResult = false;
-
-                        if (!quiet)
-                        {
-                            MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
-                            if (result == MessageBoxResult.OK)
-                            {
-                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-
-                                string tempFile = Path.GetTempFileName();
-                                File.Delete(tempFile);
-                                tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                                using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
-                                    sw.Write(b.ToString());
-
-                                OpenTextFile(tempFile);
-                            }
-                        }
-                    }
-
+                    Model.ScriptCheckResult = result;
                     if (!quiet)
+                    {
+                        switch (result)
+                        {
+                            case CodeValidator.Result.Clean:
+                                b.AppendLine("No syntax issue detected");
+                                b.AppendLine();
+                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                break;
+                            case CodeValidator.Result.Warning:
+                            case CodeValidator.Result.Error:
+                                string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
+                                MessageBoxImage dialogIcon = result == CodeValidator.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
+                                MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
+                                if (dialogResult == MessageBoxResult.OK)
+                                {
+                                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                                    string tempFile = Path.GetTempFileName();
+                                    File.Delete(tempFile);
+                                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                        sw.Write(b.ToString());
+
+                                    OpenTextFile(tempFile);
+                                }
+                                break;
+                        }
+
                         Model.WorkInProgress = false;
+                    }  
                 }
                 finally
                 {
@@ -586,7 +580,7 @@ namespace PEBakery.WPF
         {
             DrawScriptLogo(sc);
 
-            Model.ScriptCheckResult = null;
+            Model.ScriptCheckResult = CodeValidator.Result.Unknown;
 
             if (sc.Type == ScriptType.Directory)
             {
@@ -1583,51 +1577,15 @@ namespace PEBakery.WPF
 
         public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
 
-        private bool? _scriptCheckResult = null;
-        /// <summary>
-        /// true -> has issue, false -> no issue, null -> not checked
-        /// </summary>
-        public bool? ScriptCheckResult
+        private CodeValidator.Result _scriptCheckResult = CodeValidator.Result.Unknown;
+        public CodeValidator.Result ScriptCheckResult
         {
             get => _scriptCheckResult;
             set
             {
                 _scriptCheckResult = value;
-                OnPropertyUpdate(nameof(ScriptCheckIcon));
-                OnPropertyUpdate(nameof(ScriptCheckColor));
+                OnPropertyUpdate(nameof(ScriptCheckResult));
                 OnPropertyUpdate(nameof(ScriptCheckVisibility));
-            }
-        }
-
-        public PackIconMaterialKind ScriptCheckIcon
-        {
-            get
-            {
-                switch (_scriptCheckResult)
-                {
-                    case true:
-                        return PackIconMaterialKind.Check;
-                    case false:
-                        return PackIconMaterialKind.Close;
-                    default: // null
-                        return PackIconMaterialKind.Magnify;
-                }
-            }
-        }
-
-        public Brush ScriptCheckColor
-        {
-            get
-            {
-                switch (_scriptCheckResult)
-                {
-                    case true:
-                        return new SolidColorBrush(Colors.Green);
-                    case false:
-                        return new SolidColorBrush(Colors.Red);
-                    default: // null
-                        return new SolidColorBrush(Colors.Gray);
-                }
             }
         }
 
@@ -2353,6 +2311,72 @@ namespace PEBakery.WPF
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class CodeValidatorResultIconConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(CodeValidator.Result))
+                return null;
+
+            PackIconMaterialKind icon;
+            CodeValidator.Result result = (CodeValidator.Result) value;
+            switch (result)
+            {
+                case CodeValidator.Result.Clean:
+                    icon = PackIconMaterialKind.Check;
+                    break;
+                case CodeValidator.Result.Warning:
+                    icon = PackIconMaterialKind.Alert;
+                    break;
+                case CodeValidator.Result.Error:
+                    icon = PackIconMaterialKind.Close;
+                    break;
+                default:
+                    icon = PackIconMaterialKind.Magnify;
+                    break;
+            }
+            return icon;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class CodeValidatorResultColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || value.GetType() != typeof(CodeValidator.Result))
+                return null;
+
+            Brush brush;
+            CodeValidator.Result result = (CodeValidator.Result)value;
+            switch (result)
+            {
+                case CodeValidator.Result.Clean:
+                    brush = new SolidColorBrush(Colors.Green);
+                    break;
+                case CodeValidator.Result.Warning:
+                    brush = new SolidColorBrush(Colors.OrangeRed);
+                    break;
+                case CodeValidator.Result.Error:
+                    brush = new SolidColorBrush(Colors.Red);
+                    break;
+                default:
+                    brush = new SolidColorBrush(Colors.Gray);
+                    break;
+            }
+            return brush;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

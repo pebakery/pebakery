@@ -35,7 +35,7 @@ namespace PEBakery.Core
     {
         #region Field and Property
         private readonly Script _sc;
-        private readonly List<ScriptSection> _visitedSections = new List<ScriptSection>();
+        private readonly List<string> _visitedSections = new List<string>();
 
         public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code);
         public int VisitedSectionCount => _visitedSections.Count;
@@ -48,17 +48,6 @@ namespace PEBakery.Core
                 return (double)VisitedSectionCount / CodeSectionCount;
             }
         }
-
-        private readonly List<LogInfo> _logInfos = new List<LogInfo>();
-        public LogInfo[] LogInfos
-        {
-            get
-            { // Call .ToArray to get logInfo's copy 
-                LogInfo[] list = _logInfos.ToArray();
-                _logInfos.Clear();
-                return list;
-            }
-        }
         #endregion
 
         #region Constructor
@@ -69,31 +58,37 @@ namespace PEBakery.Core
         #endregion
 
         #region Validate
-        public void Validate()
+        public (List<LogInfo>, Result) Validate()
         {
+            List<LogInfo> logs = new List<LogInfo>();
+
             // Codes
             if (_sc.Sections.ContainsKey("Process"))
-                _logInfos.AddRange(ValidateCodeSection(_sc.Sections["Process"]));
+                logs.AddRange(ValidateCodeSection(_sc.Sections["Process"]));
 
             // UICtrls
             if (_sc.Sections.ContainsKey("Interface"))
-                _logInfos.AddRange(ValidateInterfaceSection(_sc.Sections["Interface"]));
-
+                logs.AddRange(ValidateInterfaceSection(_sc.Sections["Interface"]));
             if (_sc.MainInfo.ContainsKey("Interface"))
             {
                 string ifaceSection = _sc.MainInfo["Interface"];
                 if (_sc.Sections.ContainsKey(ifaceSection))
-                    _logInfos.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
+                    logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
             }
+
+            Result result = Result.Clean;
+            if (logs.Any(x => x.State == LogState.Error || x.State == LogState.CriticalError))
+                result = Result.Error;
+            else if (logs.Any(x => x.State == LogState.Warning))
+                result = Result.Warning;
+
+            return (logs, result);
         }
+        #endregion
 
         #region ValidateCodeSection
         private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
-            // Already processed, so skip
-            if (_visitedSections.Contains(section))
-                return new List<LogInfo>();
-
             // Force parsing of code, bypassing caching by section.GetCodes()
             List<string> lines;
             try
@@ -112,8 +107,6 @@ namespace PEBakery.Core
             }
 
             List<CodeCommand> codes = CodeParser.ParseStatements(lines, section, out List<LogInfo> logs);
-
-            _visitedSections.Add(section);
             InternalValidateCodes(codes, logs);
 
             return logs;
@@ -121,6 +114,8 @@ namespace PEBakery.Core
 
         private void InternalValidateCodes(List<CodeCommand> codes, List<LogInfo> logs)
         {
+            string targetCodeSection = null;
+            string targetInterfaceSection = null;
             foreach (CodeCommand cmd in codes)
             {
                 switch (cmd.Type)
@@ -134,17 +129,14 @@ namespace PEBakery.Core
                             {
                                 // For recursive section call
                                 // Ex) If,ExistSection,%ScriptFile%,DoWork,Run,%ScriptFile%,DoWork
-                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
+                                    info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
                                 {
-                                    if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
+                                    CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
+                                    if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
-
-                                        if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
-                                                continue;
-                                        }
+                                        if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
+                                            continue;
                                     }
                                 }
                             }
@@ -168,12 +160,7 @@ namespace PEBakery.Core
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
                                 CodeParser.StringContainsVariable(info.SectionName))
-                            {
-                                if (_sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode, cmd.LineIdx));
-                                else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
-                            }
+                                targetCodeSection = info.SectionName;
                         }
                         break;
                     case CodeType.Loop:
@@ -189,12 +176,7 @@ namespace PEBakery.Core
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
                                 CodeParser.StringContainsVariable(info.SectionName))
-                            {
-                                if (_sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(_sc.Sections[info.SectionName], cmd.RawCode, cmd.LineIdx));
-                                else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
-                            }
+                                targetCodeSection = info.SectionName;
                         }
                         break;
                     #endregion
@@ -206,12 +188,7 @@ namespace PEBakery.Core
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
                                 CodeParser.StringContainsVariable(info.Section))
-                            {
-                                if (_sc.Sections.ContainsKey(info.Section))
-                                    logs.AddRange(ValidateInterfaceSection(_sc.Sections[info.Section], cmd.RawCode, cmd.LineIdx));
-                                else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.Section}] does not exist", cmd));
-                            }
+                                targetInterfaceSection = info.Section;
                         }
                         break;
                     case CodeType.ReadInterface:
@@ -221,12 +198,7 @@ namespace PEBakery.Core
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
                                 CodeParser.StringContainsVariable(info.Section))
-                            {
-                                if (_sc.Sections.ContainsKey(info.Section))
-                                    logs.AddRange(ValidateInterfaceSection(_sc.Sections[info.Section], cmd.RawCode, cmd.LineIdx));
-                                else 
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.Section}] does not exist", cmd));
-                            }
+                                targetInterfaceSection = info.Section;
                         }
                         break;
                     case CodeType.WriteInterface:
@@ -236,15 +208,30 @@ namespace PEBakery.Core
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
                                 CodeParser.StringContainsVariable(info.Section))
-                            {
-                                if (_sc.Sections.ContainsKey(info.Section))
-                                    logs.AddRange(ValidateInterfaceSection(_sc.Sections[info.Section], cmd.RawCode, cmd.LineIdx));
-                                else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.Section}] does not exist", cmd));
-                            }
+                                targetInterfaceSection = info.Section;
                         }
                         break;
                         #endregion
+                }
+
+                if (targetCodeSection != null && !_visitedSections.Contains(targetCodeSection))
+                {
+                    _visitedSections.Add(targetCodeSection);
+
+                    if (_sc.Sections.ContainsKey(targetCodeSection))
+                        logs.AddRange(ValidateCodeSection(_sc.Sections[targetCodeSection], cmd.RawCode, cmd.LineIdx));
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Section [{targetCodeSection}] does not exist", cmd));
+                }
+
+                if (targetInterfaceSection != null && !_visitedSections.Contains(targetInterfaceSection))
+                {
+                    _visitedSections.Add(targetInterfaceSection);
+
+                    if (_sc.Sections.ContainsKey(targetInterfaceSection))
+                        logs.AddRange(ValidateInterfaceSection(_sc.Sections[targetInterfaceSection], cmd.RawCode, cmd.LineIdx));
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Section [{targetInterfaceSection}] does not exist", cmd));
                 }
             }
         }
@@ -253,10 +240,6 @@ namespace PEBakery.Core
         #region ValidateInterfaceSection
         private List<LogInfo> ValidateInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
-            // Already processed, so skip
-            if (_visitedSections.Contains(section))
-                return new List<LogInfo>();
-
             // Force parsing of code, bypassing caching by section.GetUICtrls()
             List<string> lines;
             try
@@ -273,8 +256,8 @@ namespace PEBakery.Core
 
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
-            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, section, out List<LogInfo> logs);
 
+            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, section, out List<LogInfo> logs);
             foreach (UIControl uiCtrl in uiCtrls)
             {
                 switch (uiCtrl.Type)
@@ -309,7 +292,7 @@ namespace PEBakery.Core
                             if (info.Picture != null &&
                                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                                 !EncodedFile.ContainsInterface(_sc, info.Picture))
-                                logs.Add(new LogInfo(LogState.Error, $"Image resource [{info.Picture}] does not exist", uiCtrl));
+                                logs.Add(new LogInfo(LogState.Warning, $"Image resource [{info.Picture}] does not exist", uiCtrl));
 
                             if (info.SectionName != null)
                             {
@@ -348,12 +331,18 @@ namespace PEBakery.Core
                         break;
                 }
             }
-
-            _visitedSections.Add(section);
             return logs;
         }
         #endregion
 
+        #region enum Result
+        public enum Result
+        {
+            Unknown,
+            Clean,
+            Warning,
+            Error
+        }
         #endregion
     }
 }
