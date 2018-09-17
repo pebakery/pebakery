@@ -1,9 +1,8 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Tests.Core;
+using System;
+using System.IO;
 
 namespace PEBakery.Tests
 {
@@ -14,6 +13,7 @@ namespace PEBakery.Tests
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
+            // Load Project "TestSuite" (ScriptCache disabled)
             EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(EngineTests.BaseDir, null);
             projects.PrepareLoad();

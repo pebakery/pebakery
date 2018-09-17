@@ -214,14 +214,13 @@ namespace PEBakery.Core
         private const string EngineVersion = "EngineVersion";
         private const string BaseDir = "BaseDir";
         private const string CacheRevision = "CacheRevision";
-        private const string CacheRevisionValue = "r1";
         public void SaveCacheRevision(string baseDir)
         {
             DB_CacheRevision[] infos =
             {
                 new DB_CacheRevision { Key = EngineVersion, Value = Properties.Resources.EngineVersion },
                 new DB_CacheRevision { Key = BaseDir, Value = baseDir },
-                new DB_CacheRevision { Key = CacheRevision, Value = CacheRevisionValue },
+                new DB_CacheRevision { Key = CacheRevision, Value = Properties.Resources.ScriptCacheRevision },
             };
             InsertOrReplaceAll(infos);
         }
@@ -243,7 +242,7 @@ namespace PEBakery.Core
                 return false;
             if (!infoDict[BaseDir].Equals(baseDir, StringComparison.Ordinal))
                 return false;
-            if (!infoDict[CacheRevision].Equals(CacheRevisionValue, StringComparison.Ordinal))
+            if (!infoDict[CacheRevision].Equals(Properties.Resources.ScriptCacheRevision, StringComparison.Ordinal))
                 return false;
 
             return true;

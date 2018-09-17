@@ -64,14 +64,15 @@ namespace PEBakery.Core.Commands
 
             // Refresh is required to simulate WinBuilder 082 behavior
             Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
-            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
-            if (iface == null)
-                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script.TreePath}] does not have section [{ifaceSecName}]");
 
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ifaceSectionName}]");
+
             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.UIControlKey, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
-                return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.UIControlKey}] in section [{ifaceSecName}]");
+                return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.UIControlKey}] in section [{ifaceSectionName}]");
 
             if (uiCtrl.Visibility != visibility)
             {
@@ -112,11 +113,11 @@ namespace PEBakery.Core.Commands
 
             // Refresh is required to simulate WinBuilder 082 behavior
             Script sc = s.Project.RefreshScript(cmd.Section.Script, s);
-            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
-            if (iface == null)
-                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Section.Script.TreePath}] does not have section [{ifaceSecName}]");
 
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{sc.TreePath}] does not have section [{ifaceSectionName}]");
 
             List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
@@ -144,7 +145,7 @@ namespace PEBakery.Core.Commands
             {
                 UIControl uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
-                    return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSecName}]");
+                    return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSectionName}]");
 
                 uiCmd.Visibility = visibility;
                 uiCmds.Add(uiCmd);
@@ -491,8 +492,11 @@ namespace PEBakery.Core.Commands
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            ScriptSection iface = sc.Sections[section];
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
+
             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist in section [{section}] of [{scriptFile}]");
@@ -527,8 +531,10 @@ namespace PEBakery.Core.Commands
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            ScriptSection iface = sc.Sections[section];
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             var targets = new List<(UIControl, CodeInfo_ReadInterface, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
@@ -1018,8 +1024,11 @@ namespace PEBakery.Core.Commands
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            ScriptSection iface = sc.Sections[section];
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
+
             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
                 return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist in section [{section}] of [{scriptFile}]");
@@ -1061,8 +1070,10 @@ namespace PEBakery.Core.Commands
             if (!sc.Sections.ContainsKey(section))
                 return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
-            ScriptSection iface = sc.Sections[section];
-            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            // Get UIControls
+            (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(section);
+            if (uiCtrls == null)
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             var targets = new List<(UIControl, InterfaceElement, string, string, CodeCommand)>(infoOp.Cmds.Count);
             foreach (CodeCommand subCmd in infoOp.Cmds)
@@ -1364,20 +1375,18 @@ namespace PEBakery.Core.Commands
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
-                List<UIControl> uiCtrls = null;
-                try { uiCtrls = sc.Sections[interfaceSection].GetUICtrls(true); }
-                catch { /* No [Interface] section, or unable to get List<UIControl> */ }
+                // Get UIControls
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(interfaceSection);
+                if (uiCtrls == null) // No [Interface] section, or unable to get List<UIControl>
+                    return logs;
 
-                if (uiCtrls != null)
+                List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
+                if (0 < subLogs.Count)
                 {
-                    List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
-                    if (0 < subLogs.Count)
-                    {
-                        s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
-                        logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
-                        s.Logger.BuildWrite(s, subLogs);
-                        s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
-                    }
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
+                    logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
+                    s.Logger.BuildWrite(s, subLogs);
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
                 }
             }
 

@@ -172,7 +172,7 @@ namespace PEBakery.WPF
             _ifaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
 
             // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc, false);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)

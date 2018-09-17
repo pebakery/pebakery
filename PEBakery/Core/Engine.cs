@@ -113,9 +113,12 @@ namespace PEBakery.Core
             s.ProcessedSectionHashes.Clear();
 
             // Set Interface using MainWindow, MainViewModel
-            long allLineCount = s.CurrentScript.Sections
-                .Where(x => x.Value.Type == SectionType.Code)
-                .Aggregate<KeyValuePair<string, ScriptSection>, long>(0, (sum, kv) => sum + kv.Value.Lines.Count);
+            long allLineCount = 0;
+            foreach (ScriptSection section in s.CurrentScript.Sections.Values.Where(x => x.Type == SectionType.Code))
+            {
+                Debug.Assert(section.Lines != null, "CodeSection should return proper \'Lines\' property");
+                allLineCount += section.Lines.Length;
+            }
 
             s.MainViewModel.BuildScriptProgressBarMax = allLineCount;
             s.MainViewModel.BuildScriptProgressBarValue = 0;
@@ -323,16 +326,10 @@ namespace PEBakery.Core
         #region RunSection
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, int depth)
         {
-            List<CodeCommand> cmds;
-            try
-            {
-                cmds = section.GetCodes(true);
-            }
-            catch (InternalException)
-            {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid code section", depth));
-                return;
-            }
+            if (section.Lines == null)
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
+
+            (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
 
             // Set CurrentSection
             s.CurrentSection = section;
@@ -354,16 +351,10 @@ namespace PEBakery.Core
 
         public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
-            List<CodeCommand> cmds;
-            try
-            {
-                cmds = section.GetCodes(true);
-            }
-            catch (InternalException)
-            {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid code section", depth));
-                return;
-            }
+            if (section.Lines == null)
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
+
+            (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
 
             // Set CurrentSection
             s.CurrentSection = section;
@@ -383,7 +374,7 @@ namespace PEBakery.Core
 
         #region RunCommands
         // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, List<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
         {
             if (cmds.Count == 0)
             {

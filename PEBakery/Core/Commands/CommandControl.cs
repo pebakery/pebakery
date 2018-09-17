@@ -81,7 +81,7 @@ namespace PEBakery.Core.Commands
                             if (iface == null)
                                 goto case false;
 
-                            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+                            (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
                             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
                             if (uiCtrl == null)
                                 goto case false;

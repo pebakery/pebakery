@@ -25,13 +25,13 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using PEBakery.Helper;
-using PEBakery.IniLib;
 
 namespace PEBakery.Core.Commands
 {
@@ -70,7 +70,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Script sc = Engine.GetScriptInstance(s,s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            List<string> dirs = sc.Sections["EncodedFolders"].Lines;
+            string[] dirs = sc.Sections[EncodedFile.EncodedFolders].Lines;
             if (!dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
                 return LogInfo.LogErrorMessage(logs, $"Directory [{dirName}] not exists in [{scriptFile}]");
 
@@ -185,7 +185,7 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            List<string> lines = sc.Sections[dirName].Lines;
+            string[] lines = sc.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {

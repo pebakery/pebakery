@@ -71,7 +71,9 @@ namespace PEBakery.Core
                 return;
             }
 
-            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(project.MainScript.Sections["Variables"].GetLines());
+            ScriptSection variablesSection = project.MainScript.Sections["Variables"];
+
+            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(variablesSection.Lines);
             if (!(varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")))
             {
                 MacroEnabled = false;
@@ -108,7 +110,7 @@ namespace PEBakery.Core
             // Parse Section [APIVAR] into MacroDict
             {
                 ScriptSection section = MacroSection;
-                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(MacroSection.GetLines());
+                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(MacroSection.Lines);
                 foreach (var kv in rawDict)
                 {
                     try
@@ -130,7 +132,7 @@ namespace PEBakery.Core
             if (project.MainScript.Sections.ContainsKey(Variables.VarSectionName))
             {
                 ScriptSection permaSection = project.MainScript.Sections[Variables.VarSectionName];
-                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.GetLines());
+                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.Lines);
                 foreach (var kv in rawDict)
                 {
                     try
@@ -158,7 +160,7 @@ namespace PEBakery.Core
 
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
-                Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.GetLines());
+                Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.Lines);
                 return LoadLocalMacroDict(section, dict, append);
             }
 

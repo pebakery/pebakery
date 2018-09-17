@@ -62,10 +62,10 @@ namespace PEBakery.Core
             }
         }
 
-        public static List<CodeCommand> ParseStatements(List<string> lines, ScriptSection section, out List<LogInfo> errorLogs)
+        public static (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IList<string> lines, ScriptSection section)
         {
             // Select Code sections and compile
-            List<CodeCommand> cmds = new List<CodeCommand>(16);
+            List<CodeCommand> cmds = new List<CodeCommand>();
             for (int i = 0; i < lines.Count; i++)
             {
                 try
@@ -85,7 +85,7 @@ namespace PEBakery.Core
                 }
             }
 
-            errorLogs = cmds
+            List<LogInfo> errLogs = cmds
                 .Where(x => x.Type == CodeType.Error)
                 .Select(x => new LogInfo(LogState.Error, x.Info.Cast<CodeInfo_Error>().ErrorMessage, x))
                 .ToList();
@@ -97,13 +97,13 @@ namespace PEBakery.Core
             }
             catch (InvalidCodeCommandException e)
             {
-                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                errLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
             if (OptimizeCode)
-                return CodeOptimizer.Optimize(foldedList);
-            else
-                return foldedList;
+                foldedList = CodeOptimizer.Optimize(foldedList);
+
+            return (foldedList.ToArray(), errLogs);
         }
         #endregion
 
@@ -181,7 +181,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCommand, ParseCommandFromSlicedArgs, ParseCodeType, ParseArguments
-        private static CodeCommand ParseCommand(List<string> rawCodes, ScriptSection section, ref int idx)
+        private static CodeCommand ParseCommand(IList<string> rawCodes, ScriptSection section, ref int idx)
         {
             // Command's line number in physical file
             int lineIdx = section.LineIdx + 1 + idx;

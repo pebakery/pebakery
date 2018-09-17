@@ -1,12 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Helper;
+using System;
+using System.IO;
+using System.Linq;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Tests.Core.Command
@@ -149,20 +146,23 @@ namespace PEBakery.Tests.Core.Command
 
                         // Check whether file was successfully encoded
                         Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
-                        List<string> folders = sc.Sections["EncodedFolders"].GetLines();
-                        folders = folders.Where(x => !x.Equals(string.Empty, StringComparison.Ordinal)).ToList();
-                        Assert.IsTrue(folders.Count == 2);
+                        string[] folders = sc.Sections["EncodedFolders"].Lines
+                            .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                            .ToArray();
+                        Assert.IsTrue(folders.Length == 2);
                         Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
 
                         Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
-                        List<string> fileInfos = sc.Sections["FolderExample"].GetLinesOnce();
-                        fileInfos = fileInfos.Where(x => !x.Equals(string.Empty, StringComparison.Ordinal)).ToList();
+                        string[] fileInfos = sc.Sections["FolderExample"].Lines
+                            .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                            .ToArray();
                         Assert.IsTrue(fileInfos[0].StartsWith($"{srcFileName}=", StringComparison.Ordinal));
 
                         Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{srcFileName}"));
-                        List<string> encodedFile = sc.Sections[$"EncodedFile-FolderExample-{srcFileName}"].GetLinesOnce();
-                        encodedFile = encodedFile.Where(x => x.Length != 0).ToList();
-                        Assert.IsTrue(1 < encodedFile.Count);
+                        string[] encodedFile = sc.Sections[$"EncodedFile-FolderExample-{srcFileName}"].Lines
+                            .Where(x => x.Length != 0)
+                            .ToArray();
+                        Assert.IsTrue(1 < encodedFile.Length);
                         Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
 
                         // Check whether file can be successfully extracted

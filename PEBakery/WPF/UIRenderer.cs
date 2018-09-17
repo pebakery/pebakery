@@ -78,7 +78,7 @@ namespace PEBakery.WPF
             _variables = script.Project.Variables;
             RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script, true);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
             if (uiCtrls == null)
                 uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
 
@@ -101,7 +101,7 @@ namespace PEBakery.WPF
 
         #region Load Utility
 
-        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, bool caching)
+        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc)
         {
             // Check if script has custom interface section
             string ifaceSectionName = GetInterfaceSectionName(sc);
@@ -111,18 +111,8 @@ namespace PEBakery.WPF
                 try
                 {
                     ScriptSection ifaceSection = sc.Sections[ifaceSectionName];
-                    if (caching)
-                    {
-                        List<UIControl> uiCtrls = ifaceSection.GetUICtrls(true);
-                        List<LogInfo> logInfos = ifaceSection.LogInfos;
-                        return (uiCtrls, logInfos);
-                    }
-                    else
-                    {
-                        List<string> lines = ifaceSection.GetLines();
-                        List<UIControl> uiCtrls = UIParser.ParseStatements(lines, ifaceSection, out List<LogInfo> logInfos);
-                        return (uiCtrls, logInfos);
-                    }
+                    (List<UIControl> uiCtrls, List<LogInfo> errorLogs) = UIParser.ParseStatements(ifaceSection.Lines, ifaceSection);
+                    return (uiCtrls, errorLogs);
                 }
                 catch (Exception e)
                 {

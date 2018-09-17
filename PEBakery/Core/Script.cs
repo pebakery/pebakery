@@ -30,7 +30,6 @@ using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -42,6 +41,7 @@ namespace PEBakery.Core
     RealPath : Where can script found in the disk.
     TreePath : Where should script be put in build tree
                Can be obtained by stripping "%BaseDir%\Project\" from RealPath.
+               If a script is placed outside of %BaseDir%, it is same with RealPath
     */
     #endregion
 
@@ -51,7 +51,7 @@ namespace PEBakery.Core
     {
         #region Fields
         private readonly string _realPath; // Real path of script
-        private readonly string _treePath; // StrippePd" %BaseDir%\Projects" from _realPath
+        private readonly string _treePath; // Strips "%BaseDir%\Projects" from _realPath
         private bool _fullyParsed;
         private readonly bool _isMainScript;
         private readonly Dictionary<string, ScriptSection> _sections;
@@ -104,11 +104,10 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.MainInfo;
-
                 if (_sections.ContainsKey("Main"))
-                    return _sections["Main"].GetIniDict();
+                    return _sections["Main"].IniDict;
 
-                // Just return empty dictionary
+                // Section not found, Just return empty dictionary
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
@@ -232,25 +231,35 @@ namespace PEBakery.Core
             {
                 case ScriptType.Directory:
                     {
-                        if (level == null)
-                            level = 0;
-                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, new List<string>(), 1)
-                        };
+                        int dirLevel;
+                        if (level is int lv)
+                            dirLevel = lv;
+                        else
+                            dirLevel = 0;
 
                         // Mandatory Entries
-                        _sections["Main"].IniDict["Title"] = _title = Path.GetFileName(treePath);
-                        _sections["Main"].IniDict["Description"] = _description = $"Directory {_title}";
-                        _level = (int)level;
-                        _sections["Main"].IniDict["Level"] = _level.ToString();
+                        _title = Path.GetFileName(treePath);
+                        _description = $"[Directory] {_title}";
+                        _level = dirLevel;
 
                         // Optional Entries
                         _author = string.Empty;
                         _version = "0";
-                        _selected = SelectedState.None; // This Value should be adjusted later!
+                        _selected = SelectedState.None; // This value should be adjusted later!
                         _mandatory = false;
                         _link = null;
+
+                        List<string> mainSectionLines = new List<string>
+                        {
+                            $"Title={_title}",
+                            $"Description={_description}",
+                            $"Level={_level}",
+                        };
+
+                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, mainSectionLines.ToArray(), 1)
+                        };
                     }
                     break;
                 case ScriptType.Link:
@@ -385,7 +394,7 @@ namespace PEBakery.Core
                 {
                     if (inSection)
                     {
-                        dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
+                        dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines.ToArray(), sectionIdx);
                         lines = new List<string>();
                     }
                 }
@@ -425,11 +434,11 @@ namespace PEBakery.Core
         #region Detect Section Type
         private bool IsSectionEncodedFolders(string sectionName)
         {
-            List<string> encodedFolders;
+            IList<string> encodedFolders;
             if (_fullyParsed)
             {
                 if (_sections.ContainsKey(EncodedFile.EncodedFolders))
-                    encodedFolders = _sections[EncodedFile.EncodedFolders].GetLines();
+                    encodedFolders = _sections[EncodedFile.EncodedFolders].Lines;
                 else
                     return false;
             }
@@ -509,21 +518,21 @@ namespace PEBakery.Core
         #endregion
 
         #region ScriptSection
-        private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, List<string> lines, int lineIdx)
+        private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, string[] lines, int lineIdx)
         {
             switch (type)
             {
+                // SectionDataType.IniDict
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                    Dictionary<string, string> sectionKeys = Ini.ParseIniLinesIniStyle(lines);
-                    return new ScriptSection(this, sectionName, type, sectionKeys, lineIdx); // SectionDataType.IniDict
+                // SectionDataType.Lines
                 case SectionType.Variables:
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.Uninspected:
                 case SectionType.Interface:
-                    return new ScriptSection(this, sectionName, type, lines, lineIdx); // SectionDataType.Lines
+                    return new ScriptSection(this, sectionName, type, lines, lineIdx);
                 case SectionType.AttachEncode: // do not load now
                     return new ScriptSection(this, sectionName, type, false, lineIdx);
                 default:
@@ -538,17 +547,17 @@ namespace PEBakery.Core
             { // Force refresh by invalidating section
                 section = Sections[sectionName];
                 section.Unload();
-                section.Load();
+                section.LoadLines();
             }
             else
             {
-                List<string> lines = Ini.ParseRawSection(_realPath, sectionName);
-                if (lines == null)
+                List<string> lineList = Ini.ParseRawSection(_realPath, sectionName);
+                if (lineList == null)
                     return null;
 
                 SectionType type = DetectTypeOfSection(sectionName, true);
                 // lineIdx information is not provided, use with caution!
-                section = CreateScriptSectionInstance(sectionName, type, lines, 0);
+                section = CreateScriptSectionInstance(sectionName, type, lineList.ToArray(), 0);
                 Sections[sectionName] = section;
             }
 
@@ -561,24 +570,20 @@ namespace PEBakery.Core
         {
             if (!_sections.ContainsKey("Main"))
                 throw new ScriptParseException($"[{_realPath}] is invalid, please Add [Main] Section");
+            Dictionary<string, string> mainDict = _sections["Main"].IniDict;
 
-            bool fail = true;
-            if (_sections["Main"].DataType == SectionDataType.IniDict)
+            bool invalid = false;
+            switch (type)
             {
-                switch (type)
-                {
-                    case ScriptType.Script:
-                        if (_sections["Main"].IniDict.ContainsKey("Title"))
-                            fail = false;
-                        break;
-                    case ScriptType.Link:
-                        if (_sections["Main"].IniDict.ContainsKey("Link"))
-                            fail = false;
-                        break;
-                }
+                case ScriptType.Script:
+                    invalid |= !mainDict.ContainsKey("Title");
+                    break;
+                case ScriptType.Link:
+                    invalid |= !mainDict.ContainsKey("Link");
+                    break;
             }
 
-            if (fail)
+            if (invalid)
                 throw new ScriptParseException($"[{_realPath}] is invalid, check [Main] Section");
         }
         #endregion
@@ -648,15 +653,26 @@ namespace PEBakery.Core
             return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
         }
 
-        public List<UIControl> GetInterfaceControls(out string sectionName)
+        public (string sectionName, List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls()
         {
-            ScriptSection iface = GetInterfaceSection(out sectionName);
-            return iface?.GetUICtrls(true);
+            ScriptSection ifaceSection = GetInterfaceSection(out string sectionName);
+            if (ifaceSection == null)
+                return (null, null, null);
+
+            string[] lines = ifaceSection.Lines;
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIParser.ParseStatements(lines, ifaceSection);
+            return (sectionName, uiCtrls, errLogs);
         }
 
-        public List<UIControl> GetInterfaceControls(string srcSection)
+        public (List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls(string srcSection)
         {
-            return Sections.ContainsKey(srcSection) ? Sections[srcSection].GetUICtrls(true) : null;
+            if (!Sections.ContainsKey(srcSection))
+                return (null, null);
+            ScriptSection ifaceSection = Sections[srcSection];
+
+            string[] lines = ifaceSection.Lines;
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIParser.ParseStatements(lines, ifaceSection);
+            return (uiCtrls, errLogs);
         }
 
         public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = "Interface")
@@ -664,9 +680,7 @@ namespace PEBakery.Core
             if (!Sections.ContainsKey(destSection))
                 return false; // Section [destSection] not found
 
-            ScriptSection iface = Sections[destSection];
-            List<UIControl> oldCtrls = iface.GetUICtrls(true);
-
+            (List<UIControl> oldCtrls, _) = GetInterfaceControls(destSection);
             List<UIControl> updatedCtrls = new List<UIControl>();
             foreach (UIControl newCtrl in newCtrls)
             {
@@ -762,34 +776,16 @@ namespace PEBakery.Core
 
     public enum SectionType
     {
-        // Uninspected == It can be Code or AttachFileList
         None = 0,
         Main = 10,
         Ini = 20,
         Variables = 30,
-        Uninspected = 40,
+        Uninspected = 40, // Can be Code or AttachFileList
         Code = 50,
         Interface = 60,
         AttachFolderList = 100,
         AttachFileList = 101,
         AttachEncode = 102,
-    }
-
-    public enum SectionDataType
-    {
-        // First, only IniDict and Lines can be set.
-        // They only have [IniDict] or [Lines] as data.
-        IniDict = 1, // Dictionary<string, string>
-        Lines = 2, // List<string>
-    }
-
-    public enum SectionDataConverted
-    {
-        // SectionDataType.Lines can be converted to SectionDataConverted.Codes and SectionDataConverted.Interfaces
-        // They have [Lines] & [Codes], or [Lines] & [Interfaces] as data.
-        None = 0,
-        Codes = 1, // List<Command>
-        Interfaces = 2, // List<UIControl>
     }
     #endregion
 
@@ -812,358 +808,128 @@ namespace PEBakery.Core
 
     #region ScriptSection
     [Serializable]
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class ScriptSection
     {
         #region Fields and Properties
-        [NonSerialized]
-        private SectionDataConverted _convDataType = SectionDataConverted.None;
-
         public Script Script { get; }
         public Project Project => Script.Project;
         public string Name { get; }
         public SectionType Type { get; set; }
-        public SectionDataType DataType { get; set; }
-        public SectionDataConverted ConvertedType => _convDataType;
-        public bool Loaded { get; private set; }
         public int LineIdx { get; }
+        private string[] _lines;
 
-        // Logs
-        private readonly List<LogInfo> _logInfos = new List<LogInfo>();
-        public List<LogInfo> LogInfos
+        /// <summary>
+        /// Get lines of this section (Cached)
+        /// </summary>
+        public string[] Lines
         {
             get
-            { // Call .ToList to get logInfo's copy 
-                List<LogInfo> list = _logInfos.ToList();
-                _logInfos.Clear();
-                return list;
+            {
+                if (_lines != null)
+                    return _lines;
+                if (LoadLines())
+                    return _lines;
+                return null;
             }
         }
 
-        // Ini-Type Section
         private Dictionary<string, string> _iniDict;
         public Dictionary<string, string> IniDict
         {
             get
             {
-                if (!Loaded)
-                    Load();
-                return _iniDict;
-            }
-        }
-
-        // RawLine-Type Section
-        private List<string> _lines;
-        public List<string> Lines
-        {
-            get
-            {
-                if (!Loaded)
-                    Load();
-                return _lines;
-            }
-        }
-
-        // Code-Type Section
-        [NonSerialized]
-        private List<CodeCommand> _codes;
-        public List<CodeCommand> Codes
-        {
-            get
-            {
-                if (!Loaded)
-                    Load();
-                return _codes;
-            }
-        }
-
-        // Interface-Type Section
-        [NonSerialized]
-        private List<UIControl> _uiCtrls;
-        public List<UIControl> UICtrls
-        {
-            get
-            {
-                if (!Loaded)
-                    Load();
-                return _uiCtrls;
+                if (_iniDict != null)
+                    return _iniDict;
+                if (LoadIniDict())
+                    return _iniDict;
+                return null;
             }
         }
         #endregion
 
         #region Constructor
-        public ScriptSection(Script script, string sectionName, SectionType type)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            DataType = SelectDataType(type);
-            Loaded = false;
-        }
-
         public ScriptSection(Script script, string sectionName, SectionType type, bool load, int lineIdx)
         {
             Script = script;
             Name = sectionName;
             Type = type;
-            DataType = SelectDataType(type);
-            Loaded = false;
             LineIdx = lineIdx;
             if (load)
-                Load();
+                LoadLines();
         }
 
-        public ScriptSection(Script script, string sectionName, SectionType type, SectionDataType dataType, bool load, int lineIdx)
+        public ScriptSection(Script script, string sectionName, SectionType type, string[] lines, int lineIdx)
         {
             Script = script;
             Name = sectionName;
             Type = type;
-            DataType = dataType;
-            Loaded = false;
             LineIdx = lineIdx;
-            if (load)
-                Load();
-        }
-
-        public ScriptSection(Script script, string sectionName, SectionType type, Dictionary<string, string> iniDict, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            DataType = SectionDataType.IniDict;
-            Loaded = true;
-            _iniDict = iniDict;
-            LineIdx = lineIdx;
-        }
-
-        public ScriptSection(Script script, string sectionName, SectionType type, List<string> lines, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            DataType = SectionDataType.Lines;
-            Loaded = true;
             _lines = lines;
-            LineIdx = lineIdx;
         }
         #endregion
 
-        #region Methods
-        public SectionDataType SelectDataType(SectionType type)
+        #region Load, Unload, Reload
+        /// <summary>
+        /// If _lines is not loaded from file, load it to memory
+        /// </summary>
+        /// <returns>
+        /// true if _lines is valid
+        /// </returns>
+        public bool LoadLines()
         {
-            switch (type)
-            {
-                // Ini-Style
-                case SectionType.Main:
-                case SectionType.Ini:
-                case SectionType.AttachFileList:
-                    return SectionDataType.IniDict;
-                case SectionType.Variables: // Because of Local Macros, cannot set to IniDict
-                case SectionType.Interface:
-                case SectionType.Code:
-                case SectionType.AttachFolderList:
-                case SectionType.Uninspected:
-                case SectionType.AttachEncode:
-                    return SectionDataType.Lines;
-                default:
-                    throw new InternalException($"Invalid SectionType {type}");
-            }
+            if (_lines != null)
+                return true;
+
+            List<string> lineList = Ini.ParseIniSection(Script.RealPath, Name);
+            if (lineList == null)
+                return false;
+            _lines = lineList.ToArray();
+            return true;
         }
 
-        public void Load()
+        /// <summary>
+        /// If _lines is not loaded from file, load it to memory
+        /// </summary>
+        /// <returns>
+        /// true if _lines is valid
+        /// </returns>
+        public bool LoadIniDict()
         {
-            if (Loaded)
-                return;
+            bool result = true;
+            if (_lines == null)
+                result = LoadLines();
+            if (!result) // LoadLines failed
+                return false;
 
-            switch (DataType)
-            {
-                case SectionDataType.IniDict:
-                    var dict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
-                    _iniDict = dict ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
-                    break;
-                case SectionDataType.Lines:
-                    var lines = Ini.ParseIniSection(Script.RealPath, Name);
-                    _lines = lines ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
+            if (_iniDict != null)
+                return true;
 
-                    switch (_convDataType)
-                    {
-                        case SectionDataConverted.Codes:
-                            {
-                                _codes = CodeParser.ParseStatements(_lines, this, out List<LogInfo> logList);
-                                _logInfos.AddRange(logList);
-                                break;
-                            }
-                        case SectionDataConverted.Interfaces:
-                            {
-                                _uiCtrls = UIParser.ParseStatements(_lines, this, out List<LogInfo> logList);
-                                _logInfos.AddRange(logList);
-                                break;
-                            }
-                    }
-                    break;
-                default:
-                    throw new InternalException($"Invalid SectionType {Type}");
-            }
-            Loaded = true;
+            _iniDict = Ini.ParseIniLinesIniStyle(_lines);
+            return true;
         }
 
+        /// <summary>
+        /// Discard loaded _lines.
+        /// </summary>
+        /// <remarks>
+        /// Useful to reduce memory usage
+        /// </remarks>
+        /// <returns>
+        /// true if _lines is valid
+        /// </returns>
         public void Unload()
         {
-            if (!Loaded)
-                return;
-
-            switch (DataType)
-            {
-                case SectionDataType.IniDict:
-                    _iniDict = null;
-                    break;
-                case SectionDataType.Lines:
-                    _lines = null;
-                    switch (_convDataType)
-                    {
-                        case SectionDataConverted.Codes:
-                            _codes = null;
-                            break;
-                        case SectionDataConverted.Interfaces:
-                            _uiCtrls = null;
-                            break;
-                    }
-                    break;
-                default:
-                    throw new InternalException($"Invalid SectionType {Type}");
-            }
-            Loaded = false;
-        }
-
-        public void ConvertLineToCodeSection(List<string> lines)
-        {
-            if (Type == SectionType.Code && DataType == SectionDataType.Lines)
-            {
-                _codes = CodeParser.ParseStatements(lines, this, out List<LogInfo> logList);
-                _logInfos.AddRange(logList);
-
-                _convDataType = SectionDataConverted.Codes;
-            }
-            else
-            {
-                throw new InternalException($"Section [{Name}] is not a Line section");
-            }
-        }
-
-        public void ConvertLineToUICtrlSection(List<string> lines)
-        {
-            if ((Type == SectionType.Interface || Type == SectionType.Code) && DataType == SectionDataType.Lines)
-            {
-                _uiCtrls = UIParser.ParseStatements(lines, this, out List<LogInfo> logList);
-                _logInfos.AddRange(logList);
-
-                _convDataType = SectionDataConverted.Interfaces;
-            }
-            else
-            {
-                throw new InternalException($"Section [{Name}] is not a Line section");
-            }
-        }
-
-        public Dictionary<string, string> GetIniDict()
-        {
-            if (DataType == SectionDataType.IniDict)
-                return IniDict; // IniDict for Load()
-            throw new InternalException("GetIniDict must be used with [SectionDataType.IniDict]");
-        }
-
-        public List<string> GetLines()
-        {
-            if (DataType == SectionDataType.Lines)
-                return Lines; // Lines for Load()
-            throw new InternalException("GetLines must be used with [SectionDataType.Lines]");
+            _lines = null;
+            _iniDict = null;
         }
 
         /// <summary>
-        /// Get Lines without permanent loading
+        /// Reload _lines from file
         /// </summary>
-        /// <returns></returns>
-        public List<string> GetLinesOnce()
+        public bool Reload()
         {
-            if (DataType != SectionDataType.Lines)
-                throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
-
-            if (Loaded)
-                return _lines;
-
-            List<string> lines = Ini.ParseIniSection(Script.RealPath, Name);
-            _lines = lines ?? throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
-            return _lines;
-        }
-
-        public List<CodeCommand> GetCodes()
-        {
-            if (DataType == SectionDataType.Lines &&
-                _convDataType == SectionDataConverted.Codes)
-                return Codes; // Codes for Load()
-
-            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-        }
-
-        /// <summary>
-        /// Convert to Codes if SectionDataType is Lines
-        /// </summary>
-        /// <param name="convert"></param>
-        /// <returns></returns>
-        public List<CodeCommand> GetCodes(bool convert)
-        {
-            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Codes)
-                return Codes; // Codes for Load()
-
-            if (convert && DataType == SectionDataType.Lines)
-            {
-                ConvertLineToCodeSection(Lines); // Lines for Load()
-                return _codes;
-            }
-
-            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-        }
-
-        public List<CodeCommand> GetCodesForce(bool convert)
-        {
-            if (DataType == SectionDataType.Lines &&
-                _convDataType == SectionDataConverted.Codes)
-                return Codes; // Codes for Load()
-
-            if (convert && DataType == SectionDataType.Lines)
-            {
-                ConvertLineToCodeSection(Lines); // Lines for Load()
-                return _codes;
-            }
-
-            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-        }
-
-        public List<UIControl> GetUICtrls()
-        {
-            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Interfaces)
-                return UICtrls; // UICtrls for Load()
-
-            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
-        }
-
-        /// <summary>
-        /// Convert to Interfaces if SectionDataType is Lines
-        /// </summary>
-        /// <param name="convert"></param>
-        /// <returns></returns>
-        public List<UIControl> GetUICtrls(bool convert)
-        {
-            if (DataType == SectionDataType.Lines && _convDataType == SectionDataConverted.Interfaces)
-                return UICtrls; // UICtrls for Load()
-
-            if (convert && DataType == SectionDataType.Lines)
-            { // SectionDataType.Codes for custom interface section
-                ConvertLineToUICtrlSection(Lines); // Lines for Load()
-                return _uiCtrls;
-            }
-
-            throw new InternalException("GetUICtrls must be used with SectionDataConverted.Interfaces");
+            Unload();
+            return LoadLines();
         }
         #endregion
 

@@ -23,16 +23,14 @@
 */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Collections;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace PEBakery.IniLib
 {
@@ -406,13 +404,13 @@ namespace PEBakery.IniLib
                             FinalizeFile(w, lastLine, !firstLine);
                             break;
                         }
-                        
+
                         string line = rawLine.Trim();
-                            
+
                         // Section head like [Process] encountered
                         if (line.StartsWith("[", StringComparison.Ordinal) &&
                             line.EndsWith("]", StringComparison.Ordinal))
-                        { 
+                        {
                             // Finalize section
                             if (inTargetSection)
                                 FinalizeSection();
@@ -444,7 +442,7 @@ namespace PEBakery.IniLib
                             if (inTargetSection)
                                 lineBuffer.Add(new Tuple<string, string>(line, rawLine));
                             else // Passthrough
-                                w.WriteLine(rawLine);    
+                                w.WriteLine(rawLine);
                         }
 
                         firstLine = false;
@@ -1363,7 +1361,7 @@ namespace PEBakery.IniLib
 
         public static bool Merge(string srcFile1, string srcFile2, string destFile)
         {
-            IniFile[] srcIniFiles = 
+            IniFile[] srcIniFiles =
             {
                 new IniFile(srcFile1),
                 new IniFile(srcFile2),
@@ -1397,7 +1395,7 @@ namespace PEBakery.IniLib
                    line.StartsWith("//", StringComparison.Ordinal);
         }
 
-        public static List<string> FilterLines(IEnumerable<string> lines)
+        public static List<string> FilterCommentLines(IEnumerable<string> lines)
         {
             return lines.Where(x => 0 < x.Length && !Ini.IsLineComment(x)).ToList();
         }
@@ -1458,18 +1456,18 @@ namespace PEBakery.IniLib
             List<string> lines = new List<string>();
 
             Encoding encoding = IniHelper.DetectTextEncoding(file);
-            using (StreamReader reader = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, true))
             {
                 string line;
                 bool appendState = false;
-                while ((line = reader.ReadLine()) != null)
+                while ((line = r.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();
 
                     // Ignore comment
                     if (line.StartsWith("#", StringComparison.Ordinal) ||
                         line.StartsWith(";", StringComparison.Ordinal) ||
-                        line.StartsWith("//", StringComparison.Ordinal)) 
+                        line.StartsWith("//", StringComparison.Ordinal))
                         continue;
 
                     if (line.StartsWith("[", StringComparison.Ordinal) &&
@@ -1787,7 +1785,7 @@ namespace PEBakery.IniLib
         /// <param name="keys"></param>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static bool GetKeyValueFromLines(List<string> rawLines, out List<string> keys, out List<string> values)
+        public static bool GetKeyValueFromLines(IList<string> rawLines, out List<string> keys, out List<string> values)
         {
             keys = new List<string>();
             values = new List<string>();

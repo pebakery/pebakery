@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
+using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -32,12 +34,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using PEBakery.Helper;
-using PEBakery.IniLib;
-using PEBakery.WPF;
 
 namespace PEBakery.Core
 {
@@ -74,7 +71,7 @@ namespace PEBakery.Core
         {
             if (!sc.Sections.ContainsKey(UpdateSection))
                 return (null, "Unable to find script update information");
-            Dictionary<string, string> scUpdateDict = Ini.ParseIniLinesIniStyle(sc.Sections[UpdateSection].GetLines());
+            Dictionary<string, string> scUpdateDict = sc.Sections[UpdateSection].IniDict;
 
             // Parse ScriptUpdateType
             if (!scUpdateDict.ContainsKey(ScriptTypeKey))
@@ -93,7 +90,7 @@ namespace PEBakery.Core
                 // Get BaseUrl
                 if (!p.MainScript.Sections.ContainsKey(UpdateSection))
                     return (null, "Unable to find project update information");
-                Dictionary<string, string> pUpdateDict = Ini.ParseIniLinesIniStyle(p.MainScript.Sections[UpdateSection].GetLines());
+                Dictionary<string, string> pUpdateDict = p.MainScript.Sections[UpdateSection].IniDict;
                 if (!pUpdateDict.ContainsKey(BaseUrlKey))
                     return (null, "Unable to find project update base url");
                 string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('/');
@@ -220,7 +217,7 @@ namespace PEBakery.Core
 
         private static InterfaceSectionBackup BackupInterface(Script sc)
         {
-            List<UIControl> uiCtrls = sc.GetInterfaceControls(out string ifaceSectionName);
+            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
 
             // Collect uiCtrls which have value
             List<UIControl> valueCtrls = new List<UIControl>();
@@ -236,7 +233,7 @@ namespace PEBakery.Core
 
         private static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
         {
-            List<UIControl> uiCtrls = sc.GetInterfaceControls(out string ifaceSectionName);
+            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
 
             if (!ifaceSectionName.Equals(backup.SectionName, StringComparison.OrdinalIgnoreCase))
                 return false;

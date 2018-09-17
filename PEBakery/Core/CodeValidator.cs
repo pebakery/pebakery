@@ -89,15 +89,9 @@ namespace PEBakery.Core
         #region ValidateCodeSection
         private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
-            // Force parsing of code, bypassing caching by section.GetCodes()
-            List<string> lines;
-            try
+            if (section.Lines == null)
             {
-                lines = section.GetLines();
-            }
-            catch (InternalException)
-            {
-                string msg = $"Section [{section.Name}] is not a valid code section";
+                string msg = $"Unable to load section [{section.Name}]";
                 if (rawLine != null)
                     msg += $" ({rawLine})";
                 if (0 < lineIdx)
@@ -106,13 +100,14 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
 
-            List<CodeCommand> codes = CodeParser.ParseStatements(lines, section, out List<LogInfo> logs);
-            InternalValidateCodes(codes, logs);
+            // Force parsing of code, bypassing caching by section.GetCodes()
+            (CodeCommand[] cmds, List<LogInfo> logs) = CodeParser.ParseStatements(section.Lines, section);
+            InternalValidateCodes(cmds, logs);
 
             return logs;
         }
 
-        private void InternalValidateCodes(List<CodeCommand> codes, List<LogInfo> logs)
+        private void InternalValidateCodes(CodeCommand[] codes, List<LogInfo> logs)
         {
             string targetCodeSection = null;
             string targetInterfaceSection = null;
@@ -141,14 +136,14 @@ namespace PEBakery.Core
                                 }
                             }
 
-                            InternalValidateCodes(info.Link, logs);
+                            InternalValidateCodes(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Else:
                         {
                             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
-                            InternalValidateCodes(info.Link, logs);
+                            InternalValidateCodes(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Run:
@@ -241,12 +236,8 @@ namespace PEBakery.Core
         private List<LogInfo> ValidateInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
             // Force parsing of code, bypassing caching by section.GetUICtrls()
-            List<string> lines;
-            try
-            {
-                lines = section.GetLines();
-            }
-            catch (InternalException)
+            string[] lines = section.Lines;
+            if (lines == null)
             {
                 string msg = $"Section [{section.Name}] is not a valid interface section";
                 if (rawLine != null)
@@ -257,7 +248,7 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
 
-            List<UIControl> uiCtrls = UIParser.ParseStatements(lines, section, out List<LogInfo> logs);
+            (List<UIControl> uiCtrls, List<LogInfo> logs) = UIParser.ParseStatements(lines, section);
             foreach (UIControl uiCtrl in uiCtrls)
             {
                 switch (uiCtrl.Type)

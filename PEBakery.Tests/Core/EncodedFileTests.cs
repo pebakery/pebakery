@@ -27,20 +27,15 @@
 
 // #define DEBUG_MIDDLE_FILE
 
-using System;
-using System.IO;
-using System.Linq;
-using PEBakery.Helper;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
+using PEBakery.Helper;
 using PEBakery.IniLib;
-using PEBakery.LZ4Lib;
-using PEBakery.XZLib;
-using Joveler.ZLibWrapper;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace PEBakery.Tests.Core
 {
@@ -76,20 +71,23 @@ namespace PEBakery.Tests.Core
                 {
                     // Check whether file was successfully encoded
                     Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
-                    List<string> folders = sc.Sections["EncodedFolders"].GetLines();
-                    folders = folders.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                    Assert.IsTrue(folders.Count == 2);
+                    string[] folders = sc.Sections["EncodedFolders"].Lines
+                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .ToArray();
+                    Assert.IsTrue(folders.Length == 2);
                     Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
 
                     Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
-                    List<string> fileInfos = sc.Sections["FolderExample"].GetLinesOnce();
-                    fileInfos = fileInfos.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
+                    string[] fileInfos = sc.Sections["FolderExample"].Lines
+                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .ToArray();
                     Assert.IsTrue(fileInfos[0].StartsWith($"{fileName}=", StringComparison.Ordinal));
 
                     Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{fileName}"));
-                    List<string> encodedFile = sc.Sections[$"EncodedFile-FolderExample-{fileName}"].GetLinesOnce();
-                    encodedFile = encodedFile.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                    Assert.IsTrue(1 < encodedFile.Count);
+                    string[] encodedFile = sc.Sections[$"EncodedFile-FolderExample-{fileName}"].Lines
+                        .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
+                        .ToArray();
+                    Assert.IsTrue(1 < encodedFile.Length);
                     Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
 
                     // Check whether file can be successfully extracted
@@ -209,7 +207,7 @@ namespace PEBakery.Tests.Core
                     if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                         !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                     {
-                        List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
+                        string[] folders = sc.Sections[EncodedFolders].Lines;
                         Assert.AreEqual(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase), result);
                     }
                 }
@@ -372,7 +370,7 @@ namespace PEBakery.Tests.Core
 
                     EncodedFile.ExtractFolder(sc, folderName, destDir);
 
-                    string[] comps = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines()).Keys.ToArray();
+                    string[] comps = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].Lines).Keys.ToArray();
                     string[] dests = Directory.EnumerateFiles(destDir).Select(Path.GetFileName).ToArray();
 
                     Assert.IsTrue(comps.SequenceEqual(dests, StringComparer.OrdinalIgnoreCase));
@@ -640,7 +638,7 @@ namespace PEBakery.Tests.Core
                 clone.EncodeMode = null;
                 compNoDetailList.Add(clone);
             }
-            
+
             Template(true, compDetailList);
             Template(false, compNoDetailList);
         }
@@ -670,7 +668,7 @@ namespace PEBakery.Tests.Core
                     Assert.AreEqual(kv.Value.Count, infoDict[kv.Key].Count);
                     foreach (EncodedFileInfo fileInfo in kv.Value)
                         Assert.IsTrue(infoDict[kv.Key].Contains(fileInfo));
-                } 
+                }
             }
 
             Dictionary<string, List<EncodedFileInfo>> compDetailDict = new Dictionary<string, List<EncodedFileInfo>>
@@ -784,22 +782,10 @@ namespace PEBakery.Tests.Core
                     }
 
                     Assert.IsTrue(result);
-                    
+
                     Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
 
-                    Dictionary<string, string> fileDict;
-                    switch (sc.Sections[folderName].DataType)
-                    {
-                        case SectionDataType.IniDict:
-                            fileDict = sc.Sections[folderName].GetIniDict();
-                            break;
-                        case SectionDataType.Lines:
-                            fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
-                            break;
-                        default:
-                            throw new InternalException("Internal Logic Error at EncodedFile.ExtractFolder");
-                    }
-
+                    Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
                     Assert.IsFalse(fileDict.ContainsKey(fileName));
                 }
                 finally
@@ -841,19 +827,7 @@ namespace PEBakery.Tests.Core
 
                     Dictionary<string, string> fileDict = null;
                     if (result)
-                    {
-                        switch (sc.Sections[folderName].DataType)
-                        {
-                            case SectionDataType.IniDict:
-                                fileDict = sc.Sections[folderName].GetIniDict();
-                                break;
-                            case SectionDataType.Lines:
-                                fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
-                                break;
-                            default:
-                                throw new InternalException("Internal Logic Error at EncodedFile.ExtractFolder");
-                        }
-                    }
+                        fileDict = sc.Sections[folderName].IniDict;
 
                     string errMsg;
                     (sc, errMsg) = EncodedFile.DeleteFolder(sc, folderName);
@@ -868,7 +842,7 @@ namespace PEBakery.Tests.Core
                     Assert.IsFalse(sc.Sections.ContainsKey(folderName));
                     Assert.IsFalse(Ini.ContainsSection(destScript, folderName));
 
-                    List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
+                    string[] folders = sc.Sections[EncodedFolders].Lines;
                     Assert.IsFalse(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase));
 
                     foreach (string fileName in fileDict.Keys)
@@ -1053,7 +1027,7 @@ namespace PEBakery.Tests.Core
 #endif
                         encDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
                     }
-                        
+
                 }
 
                 Assert.IsTrue(binDigest.SequenceEqual(encDigest));

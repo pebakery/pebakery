@@ -137,11 +137,12 @@ namespace PEBakery.Tests.Core
             return EvalLines(s, rawCodes, check, out _);
         }
 
-        public static List<LogInfo> EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        public static List<LogInfo> EvalLines(EngineState s, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
             // Create CodeCommand
+            List<LogInfo> errorLogs;
             ScriptSection dummySection = DummySection();
-            cmds = CodeParser.ParseStatements(rawCodes, dummySection, out List<LogInfo> errorLogs);
+            (cmds, errorLogs) = CodeParser.ParseStatements(rawCodes, dummySection);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
                 Assert.AreEqual(ErrorCheck.ParserError, check);
@@ -178,7 +179,7 @@ namespace PEBakery.Tests.Core
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <returns></returns>
-        public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
             return EvalOptLines(s, DummySection(), opType, rawCodes, check, out cmds);
         }
@@ -205,11 +206,13 @@ namespace PEBakery.Tests.Core
         /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
+        /// <param name="cmds"></param>
         /// <returns></returns>
-        public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out List<CodeCommand> cmds)
+        public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
             // Parse CodeCommand
-            cmds = CodeParser.ParseStatements(rawCodes, section, out List<LogInfo> errorLogs);
+            List<LogInfo> errorLogs;
+            (cmds, errorLogs) = CodeParser.ParseStatements(rawCodes, section);
 
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
@@ -219,12 +222,12 @@ namespace PEBakery.Tests.Core
 
             if (opType is CodeType type)
             {
-                Assert.AreEqual(1, cmds.Count);
+                Assert.AreEqual(1, cmds.Length);
                 Assert.AreEqual(type, cmds[0].Type);
             }
             else
             {
-                Assert.IsTrue(1 < cmds.Count);
+                Assert.IsTrue(1 < cmds.Length);
             }
 
             // Reset halt flags

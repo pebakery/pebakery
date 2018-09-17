@@ -33,7 +33,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -294,23 +293,16 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            ScriptSection iface = sc.GetInterfaceSection(out string ifaceSecName);
-            if (iface != null)
+            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            if (ifaceSectionName != null && uiCtrls != null)
             {
-                List<UIControl> uiCtrls = null;
-                try { uiCtrls = sc.Sections[ifaceSecName].GetUICtrls(true); }
-                catch { /* No [Interface] section, or unable to get List<UIControl> */ }
-
-                if (uiCtrls != null)
+                List<LogInfo> subLogs = UIControlToVariables(uiCtrls);
+                if (0 < subLogs.Count)
                 {
-                    List<LogInfo> subLogs = UIControlToVariables(uiCtrls);
-                    if (0 < subLogs.Count)
-                    {
-                        logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSecName}]", 0));
-                        logs.AddRange(LogInfo.AddDepth(subLogs, 1));
-                        logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
-                        logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
-                    }
+                    logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSectionName}]", 0));
+                    logs.AddRange(LogInfo.AddDepth(subLogs, 1));
+                    logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
+                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
                 }
             }
 
@@ -633,20 +625,11 @@ namespace PEBakery.Core
         #region AddVariables
         public List<LogInfo> AddVariables(VarsType type, ScriptSection section)
         {
-            Dictionary<string, string> dict;
+            string[] lines = section.Lines;
+            if (lines == null)
+                throw new ExecuteException($"Unable to load section [{section.Name}]");
 
-            switch (section.DataType)
-            {
-                case SectionDataType.IniDict:
-                    dict = section.GetIniDict();
-                    break;
-                case SectionDataType.Lines:
-                    dict = Ini.ParseIniLinesVarStyle(section.GetLines());
-                    break;
-                default:
-                    throw new ExecuteException($"Section [{section.Name}] is not IniDict or Lines");
-            }
-
+            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
             if (0 < dict.Keys.Count)
                 return InternalAddDictionary(type, dict);
 
@@ -807,7 +790,7 @@ namespace PEBakery.Core
         }
 
         public static LogInfo SetSectionOutParam(EngineState s, int pIdx, string value)
-        { 
+        {
             // pIdx starts from 1 
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section out parameter's index [{pIdx}] must be a positive integer");
@@ -815,7 +798,7 @@ namespace PEBakery.Core
                 return new LogInfo(LogState.Error, "Section out parameter cannot have a circular reference");
             if (s.CurSectionOutParams.Count == 0 || s.CurSectionOutParams.Count <= pIdx - 1)
                 return new LogInfo(LogState.Error, $"[#o{pIdx}] is not referencing any variables");
-            
+
             // Write to varKey
             string varKey = s.CurSectionOutParams[pIdx - 1]; // %Dest%
             string key = GetVariableName(s, varKey); // %D%

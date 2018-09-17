@@ -209,20 +209,20 @@ namespace PEBakery.WPF
                 return;
             }
 
-            Project project = m.CodeBox_CurrentProject;
+            Project p = m.CodeBox_CurrentProject;
 
-            Script sc = project.MainScript;
+            Script sc = p.MainScript;
             ScriptSection section;
-            if (project.MainScript.Sections.ContainsKey("Process"))
+            if (p.MainScript.Sections.ContainsKey("Process"))
                 section = sc.Sections["Process"];
             else
-                section = new ScriptSection(sc, "Process", SectionType.Code, new List<string>(), 1);
+                section = new ScriptSection(sc, "Process", SectionType.Code, new string[0], 1);
 
-            List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<CodeCommand> cmds = CodeParser.ParseStatements(lines, section, out List<LogInfo> errorLogs);
+            string[] lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToArray();
+            (CodeCommand[] cmds, List<LogInfo> errorLogs) = CodeParser.ParseStatements(lines, section);
 
             // Check Macros
-            Macro macro = new Macro(project, project.Variables, out _);
+            Macro macro = new Macro(p, p.Variables, out _);
             if (macro.MacroEnabled)
             {
                 foreach (CodeCommand cmd in cmds)

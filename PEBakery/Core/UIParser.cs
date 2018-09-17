@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
@@ -70,10 +69,10 @@ namespace PEBakery.Core
             return null;
         }
 
-        public static List<UIControl> ParseStatements(List<string> lines, ScriptSection section, out List<LogInfo> errorLogs)
+        public static (List<UIControl> uiCtrl, List<LogInfo> errLogs) ParseStatements(IList<string> lines, ScriptSection section)
         {
             // Select Code sections and compile
-            errorLogs = new List<LogInfo>();
+            List<LogInfo> errLogs = new List<LogInfo>();
             List<UIControl> uiCtrls = new List<UIControl>();
             for (int i = 0; i < lines.Count; i++)
             {
@@ -88,32 +87,32 @@ namespace PEBakery.Core
                     // Check uiCtrl.Type
                     if (uiCtrl.Type == UIControlType.None)
                     {
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine}) (Line {lineIdx})"));
+                        errLogs.Add(new LogInfo(LogState.Error, $"Invalid interface control type ({uiCtrl.RawLine}) (Line {lineIdx})"));
                         continue;
                     }
 
                     // Check if interface control's key is duplicated
                     if (uiCtrls.Select(x => x.Key).Contains(uiCtrl.Key, StringComparer.OrdinalIgnoreCase))
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine}) (Line {lineIdx})"));
+                        errLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine}) (Line {lineIdx})"));
                     else
                         uiCtrls.Add(uiCtrl);
                 }
                 catch (InvalidCommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine}) (Line {lineIdx})"));
+                    errLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine}) (Line {lineIdx})"));
                 }
                 catch (Exception e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} (Line {section.LineIdx + 1 + i})"));
+                    errLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} (Line {section.LineIdx + 1 + i})"));
                 }
             }
 
-            return uiCtrls;
+            return (uiCtrls, errLogs);
         }
         #endregion
 
         #region ParseUIControl
-        public static UIControl ParseUIControl(List<string> rawLines, ScriptSection section, ref int idx)
+        public static UIControl ParseUIControl(IList<string> rawLines, ScriptSection section, ref int idx)
         {
             // UICommand's line number in physical file
             int lineIdx = section.LineIdx + 1 + idx;
