@@ -38,7 +38,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -166,12 +165,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Const Strings, String Factory
-        internal const string EncodedFolders = "EncodedFolders";
-        internal const string AuthorEncoded = "AuthorEncoded";
-        internal const string InterfaceEncoded = "InterfaceEncoded";
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string GetSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
-
         public const long InterfaceSizeLimit = 4 * 1024 * 1024;
         #endregion
 
@@ -180,7 +173,7 @@ namespace PEBakery.Core
             new Dictionary<ImageHelper.ImageType, EncodeMode>
             {
                 // Auto detect compress algorithm by extension.
-                // Note: .ico file can be either raw (bmp) or compressed (png).
+                // Note: .ico file can be either raw (bitmap) or compressed (png).
                 //       To be sure, use EncodeMode.ZLib in .ico file.
                 { ImageHelper.ImageType.Bmp, EncodeMode.ZLib },
                 { ImageHelper.ImageType.Jpg, EncodeMode.Raw },
@@ -261,7 +254,7 @@ namespace PEBakery.Core
             if (!fileDict.ContainsKey(fileName))
                 return false;
 
-            return sc.Sections.ContainsKey(GetSectionName(folderName, fileName));
+            return sc.Sections.ContainsKey(ScriptSection.Names.GetEncodedSectionName(folderName, fileName));
         }
         #endregion
 
@@ -283,12 +276,12 @@ namespace PEBakery.Core
                     type = ImageEncodeDict[imageType];
             }
 
-            return AttachFile(sc, InterfaceEncoded, fileName, srcFilePath, type);
+            return AttachFile(sc, ScriptSection.Names.InterfaceEncoded, fileName, srcFilePath, type);
         }
 
         public static bool ContainsInterface(Script sc, string fileName)
         {
-            return ContainsFile(sc, InterfaceEncoded, fileName);
+            return ContainsFile(sc, ScriptSection.Names.InterfaceEncoded, fileName);
         }
         #endregion
 
@@ -314,7 +307,7 @@ namespace PEBakery.Core
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Encode(sc, "AuthorEncoded", fileName, fs, ImageEncodeDict[imageType], true);
+                return Encode(sc, ScriptSection.Names.AuthorEncoded, fileName, fs, ImageEncodeDict[imageType], true);
             }
         }
 
@@ -339,15 +332,15 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            if (!sc.Sections.ContainsKey(AuthorEncoded))
+            if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 return false;
 
-            Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].IniDict;
+            Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
             if (!fileDict.ContainsKey("Logo"))
                 return false;
 
             string logoName = fileDict["Logo"];
-            return sc.Sections.ContainsKey(GetSectionName(AuthorEncoded, logoName));
+            return sc.Sections.ContainsKey(ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoName));
         }
         #endregion
 
@@ -374,18 +367,18 @@ namespace PEBakery.Core
             }
 
             // Write folder name into EncodedFolder (except AuthorEncoded, InterfaceEncoded)
-            if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+            if (!folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
             {
-                if (sc.Sections.ContainsKey(EncodedFolders))
+                if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                 {
-                    string[] folders = sc.Sections[EncodedFolders].Lines;
+                    string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
                     if (Array.FindIndex(folders, x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) == -1)
-                        Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
+                        Ini.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
                 else
                 {
-                    Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
+                    Ini.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
             }
 
@@ -401,15 +394,13 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(folderName));
 
             // AuthorEncoded, InterfaceEncoded is not recorded to EncodedFolders
-            if (folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) ||
-                folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-            {
+            if (folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) ||
+                folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 return sc.Sections.ContainsKey(folderName);
-            }
 
-            if (sc.Sections.ContainsKey(folderName) && sc.Sections.ContainsKey(EncodedFolders))
+            if (sc.Sections.ContainsKey(folderName) && sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
             {
-                string[] folders = sc.Sections[EncodedFolders].Lines;
+                string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
                 return Array.FindIndex(folders, x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) != -1;
             }
 
@@ -418,7 +409,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
-
         public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream)
         {
             return Task.Run(() => ExtractFile(sc, folderName, fileName, outStream));
@@ -429,7 +419,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            string section = GetSectionName(folderName, fileName);
+            string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (!sc.Sections.ContainsKey(section))
                 throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
@@ -449,7 +439,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            string section = GetSectionName(folderName, fileName);
+            string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
             if (!sc.Sections.ContainsKey(section))
                 throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
@@ -479,7 +469,7 @@ namespace PEBakery.Core
 
                 using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                 {
-                    string section = GetSectionName(folderName, fileName);
+                    string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
                     if (!sc.Sections.ContainsKey(section))
                         throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
@@ -499,18 +489,22 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            if (!sc.Sections.ContainsKey(AuthorEncoded))
+            if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
 
-            Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].IniDict;
+            Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
             if (!fileDict.ContainsKey("Logo"))
-                throw new InvalidOperationException($"Logo does not exist in \'{sc.Title}\'");
+                throw new InvalidOperationException($"Logo does not exist in [{sc.Title}]");
 
             string logoFile = fileDict["Logo"];
             if (!ImageHelper.GetImageType(logoFile, out type))
                 throw new ArgumentException($"Image [{Path.GetExtension(logoFile)}] is not supported");
 
-            string[] encoded = sc.Sections[GetSectionName(AuthorEncoded, logoFile)].Lines;
+            string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile);
+            if (!sc.Sections.ContainsKey(section))
+                throw new InvalidOperationException($"Unable to find [{logoFile}] from [{sc.RealPath}]");
+
+            string[] encoded = sc.Sections[section].Lines;
             return DecodeInMemory(encoded);
         }
 
@@ -536,7 +530,7 @@ namespace PEBakery.Core
 
         public static MemoryStream ExtractInterface(Script sc, string fileName)
         {
-            string section = GetSectionName(InterfaceEncoded, fileName);
+            string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.InterfaceEncoded, fileName);
             if (!sc.Sections.ContainsKey(section))
                 throw new InvalidOperationException($"[{fileName}] does not exist in interface of [{sc.RealPath}]");
 
@@ -579,7 +573,7 @@ namespace PEBakery.Core
 
             if (detail)
             {
-                string[] encoded = sc.Sections[GetSectionName(dirName, fileName)].Lines;
+                string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
                 info.EncodeMode = GetEncodeMode(encoded);
             }
 
@@ -596,12 +590,12 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo { DirName = AuthorEncoded };
+            EncodedFileInfo info = new EncodedFileInfo { DirName = ScriptSection.Names.AuthorEncoded };
 
-            if (!sc.Sections.ContainsKey(AuthorEncoded))
-                return (null, "Directory [AuthorEncoded] does not exist");
+            if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
+                return (null, $"Directory [{ScriptSection.Names.AuthorEncoded}] does not exist");
 
-            Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].IniDict;
+            Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
             if (!fileDict.ContainsKey("Logo"))
                 return (null, "Logo does not exist");
 
@@ -618,7 +612,11 @@ namespace PEBakery.Core
 
             if (detail)
             {
-                string[] encoded = sc.Sections[GetSectionName(AuthorEncoded, info.FileName)].Lines;
+                string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, info.FileName);
+                if (!sc.Sections.ContainsKey(section))
+                    throw new InvalidOperationException($"[{info.FileName}] does not exist in interface of [{sc.RealPath}]");
+
+                string[] encoded = sc.Sections[section].Lines;
                 info.EncodeMode = GetEncodeModeInMem(encoded);
             }
 
@@ -660,7 +658,7 @@ namespace PEBakery.Core
 
                 if (detail)
                 {
-                    string[] encoded = sc.Sections[GetSectionName(dirName, fileName)].Lines;
+                    string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
                     info.EncodeMode = GetEncodeMode(encoded);
                 }
 
@@ -681,18 +679,18 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
-            if (!sc.Sections.ContainsKey(EncodedFolders))
+            if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                 return (infoDict, null); // Return empty dict
 
-            List<string> dirNames = Ini.FilterCommentLines(sc.Sections[EncodedFolders].Lines);
-            int aeIdx = dirNames.FindIndex(x => x.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase));
+            List<string> dirNames = Ini.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
+            int aeIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
             if (aeIdx != -1)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
                 dirNames.RemoveAt(aeIdx);
             }
 
-            int ieIdx = dirNames.FindIndex(x => x.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
+            int ieIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
             if (ieIdx != -1)
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
@@ -739,7 +737,7 @@ namespace PEBakery.Core
 
                     if (detail)
                     {
-                        string[] encoded = sc.Sections[GetSectionName(dirName, fileName)].Lines;
+                        string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
                         info.EncodeMode = GetEncodeMode(encoded);
                     }
 
@@ -807,7 +805,7 @@ namespace PEBakery.Core
                     errorMsg = $"Unable to delete index of encoded file [{fileName}] from [{sc.RealPath}]";
 
                 // Delete encoded file section
-                if (!Ini.DeleteSection(sc.RealPath, GetSectionName(folderName, fileName)))
+                if (!Ini.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, fileName)))
                     errorMsg = $"Unable to delete encoded file [{fileName}] from [{sc.RealPath}]";
             }
             catch
@@ -844,13 +842,13 @@ namespace PEBakery.Core
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
-                if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                    !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                if (!folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                    !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!sc.Sections.ContainsKey(EncodedFolders))
+                    if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
-                    List<string> folders = Ini.FilterCommentLines(sc.Sections[EncodedFolders].Lines);
+                    List<string> folders = Ini.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
                     int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
@@ -858,10 +856,10 @@ namespace PEBakery.Core
                     // Delete index of encoded folder
                     folders.RemoveAt(idx);
                     // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
-                    if (!Ini.DeleteSection(sc.RealPath, EncodedFolders))
+                    if (!Ini.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
                         return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
 
-                    foreach (IniKey key in folders.Select(x => new IniKey(EncodedFolders, x)))
+                    foreach (IniKey key in folders.Select(x => new IniKey(ScriptSection.Names.EncodedFolders, x)))
                     {
                         if (!Ini.WriteRawLine(sc.RealPath, key))
                             return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
@@ -877,7 +875,7 @@ namespace PEBakery.Core
                     Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
 
                     // Get index of files
-                    if (folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                    if (folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
                     {
                         if (fileDict.ContainsKey("Logo"))
                             fileDict.Remove("Logo");
@@ -891,7 +889,7 @@ namespace PEBakery.Core
                     // Delete encoded file section
                     foreach (string file in files)
                     {
-                        if (!Ini.DeleteSection(sc.RealPath, GetSectionName(folderName, file)))
+                        if (!Ini.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, file)))
                             errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
                     }
                 }
@@ -930,10 +928,10 @@ namespace PEBakery.Core
             try
             {
                 // Get encoded file index
-                if (!sc.Sections.ContainsKey(AuthorEncoded))
+                if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                     return (sc, $"Logo not found in [{sc.RealPath}]");
 
-                Dictionary<string, string> fileDict = sc.Sections[AuthorEncoded].IniDict;
+                Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
 
                 // Get filename of logo
                 if (!fileDict.ContainsKey("Logo"))
@@ -944,11 +942,11 @@ namespace PEBakery.Core
                     return (sc, $"Logo not found in [{sc.RealPath}]");
 
                 // Delete encoded file section
-                if (!Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, logoFile)))
+                if (!Ini.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile)))
                     errorMsg = $"Encoded file [{logoFile}] not found in [{sc.RealPath}]";
 
                 // Delete encoded file index
-                if (!(Ini.DeleteKey(sc.RealPath, AuthorEncoded, logoFile) && Ini.DeleteKey(sc.RealPath, AuthorEncoded, "Logo")))
+                if (!(Ini.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, logoFile) && Ini.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo")))
                     errorMsg = $"Unable to delete index of logo [{logoFile}] from [{sc.RealPath}]";
             }
             catch
@@ -1144,17 +1142,17 @@ namespace PEBakery.Core
                 if (!encodeLogo)
                 { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
                     bool writeFolderSection = true;
-                    if (sc.Sections.ContainsKey(EncodedFolders))
+                    if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                     {
-                        string[] folders = sc.Sections[EncodedFolders].Lines;
+                        string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
                         if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
                             writeFolderSection = false;
                     }
 
                     if (writeFolderSection &&
-                        !folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                        !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-                        Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
+                        !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                        !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                        Ini.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
 
                 // Write file info into [{folderName}]
@@ -1168,13 +1166,13 @@ namespace PEBakery.Core
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = Ini.ReadKey(sc.RealPath, AuthorEncoded, "Logo");
-                    Ini.WriteKey(sc.RealPath, AuthorEncoded, "Logo", fileName);
+                    string lastLogo = Ini.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    Ini.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)
                     {
-                        Ini.DeleteKey(sc.RealPath, AuthorEncoded, lastLogo);
-                        Ini.DeleteSection(sc.RealPath, GetSectionName(AuthorEncoded, lastLogo));
+                        Ini.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
+                        Ini.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
                     }
                 }
             }
@@ -1195,7 +1193,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Decode
-        private static long Decode(IList<string> encodedList, Stream outStream)
+        private static long Decode(string[] encodedLines, Stream outStream)
         {
             string tempDecode = Path.GetTempFileName();
             string tempComp = Path.GetTempFileName();
@@ -1204,6 +1202,7 @@ namespace PEBakery.Core
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
+                    List<string> encodedList = Ini.FilterInvalidIniLines(encodedLines);
                     int decodeLen = SplitBase64.Decode(encodedList.ToList(), decodeStream);
 
                     // [Stage 2] Read final footer
@@ -1409,9 +1408,10 @@ namespace PEBakery.Core
         #endregion
 
         #region DecodeInMemory
-        private static MemoryStream DecodeInMemory(IList<string> encodedList)
+        private static MemoryStream DecodeInMemory(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
+            List<string> encodedList = Ini.FilterInvalidIniLines(encodedLines);
             byte[] decoded = SplitBase64.DecodeInMem(encodedList.ToList());
 
             // [Stage 2] Read final footer
@@ -1648,9 +1648,10 @@ namespace PEBakery.Core
         #endregion
 
         #region GetEncodeModeInMem
-        private static EncodeMode GetEncodeModeInMem(IList<string> encodedList)
+        private static EncodeMode GetEncodeModeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
+            List<string> encodedList = Ini.FilterInvalidIniLines(encodedLines);
             byte[] decoded = SplitBase64.DecodeInMem(encodedList.ToList());
 
             // [Stage 2] Read final footer
@@ -1868,7 +1869,8 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
+            (List<string> keys, List<string> base64Blocks) = Ini.GetKeyValueFromLines(encodedList);
+            if (keys == null || base64Blocks == null)
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
                 throw new InvalidOperationException("Key of the encoded lines are malformed");
@@ -1930,7 +1932,8 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
+            (List<string> keys, List<string> base64Blocks) = Ini.GetKeyValueFromLines(encodedList);
+            if (keys == null || base64Blocks == null)
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
                 throw new InvalidOperationException("Key of the encoded lines are malformed");
@@ -1995,7 +1998,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return EncodedFile.GetSectionName(DirName, FileName);
+            return ScriptSection.Names.GetEncodedSectionName(DirName, FileName);
         }
     }
     #endregion

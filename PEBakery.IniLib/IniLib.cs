@@ -1400,6 +1400,17 @@ namespace PEBakery.IniLib
             return lines.Where(x => 0 < x.Length && !Ini.IsLineComment(x)).ToList();
         }
 
+        public static List<string> FilterInvalidIniLines(IEnumerable<string> lines)
+        {
+            return lines.Where(x =>
+            {
+                if (x.Length == 0)
+                    return false;
+                int idx = x.IndexOf('=');
+                return idx != 0 || idx != -1;
+            }).ToList();
+        }
+
         /// <summary>
         /// Parse INI style strings into dictionary
         /// </summary>
@@ -1476,6 +1487,7 @@ namespace PEBakery.IniLib
                         if (appendState)
                             break;
 
+                        // Remove [ and ]
                         string foundSection = line.Substring(1, line.Length - 2);
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
@@ -1522,6 +1534,7 @@ namespace PEBakery.IniLib
                         if (appendState)
                             break;
 
+                        // Remove [ and ]
                         string foundSection = line.Substring(1, line.Length - 2);
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
@@ -1730,10 +1743,10 @@ namespace PEBakery.IniLib
             bool result = false;
 
             Encoding encoding = IniHelper.DetectTextEncoding(file);
-            using (StreamReader reader = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, true))
             {
                 string line;
-                while ((line = reader.ReadLine()) != null)
+                while ((line = r.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();
                     if (line.StartsWith("[", StringComparison.Ordinal) &&
@@ -1747,57 +1760,44 @@ namespace PEBakery.IniLib
                     }
                 }
 
-                reader.Close();
+                r.Close();
             }
 
             return result;
         }
 
-
         /// <summary>
-        /// Return true if failed
+        /// Used to handle [EncodedFile-InterfaceEncoded-*] section
+        /// Return null if failed
         /// </summary>
-        /// <param name="rawLine"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static bool GetKeyValueFromLine(string rawLine, out string key, out string value)
+        public static (string key, string value) GetKeyValueFromLine(string rawLine)
         {
             int idx = rawLine.IndexOf('=');
-            if (idx != -1) // there is key
-            {
-                key = rawLine.Substring(0, idx);
-                value = rawLine.Substring(idx + 1);
-                return false;
-            }
-            else // No Ini Format!
-            {
-                key = string.Empty;
-                value = string.Empty;
-                return true;
-            }
+            if (idx == -1) // Unable to find key and value
+                return (null, null);
+
+            string key = rawLine.Substring(0, idx);
+            string value = rawLine.Substring(idx + 1);
+            return (key, value);
         }
 
         /// <summary>
-        /// Return true if failed
+        /// Used to handle [EncodedFile-InterfaceEncoded-*] section
+        /// Return null if failed
         /// </summary>
-        /// <param name="rawLines"></param>
-        /// <param name="keys"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public static bool GetKeyValueFromLines(IList<string> rawLines, out List<string> keys, out List<string> values)
+        public static (List<string> Keys, List<string> Values) GetKeyValueFromLines(IList<string> rawLines)
         {
-            keys = new List<string>();
-            values = new List<string>();
+            List<string> keys = new List<string>();
+            List<string> values = new List<string>();
             foreach (string rawLine in rawLines)
             {
-                if (GetKeyValueFromLine(rawLine, out string key, out string value))
-                    return true;
+                (string key, string value) = GetKeyValueFromLine(rawLine);
+                if (key == null || value == null)
+                    return (null, null);
                 keys.Add(key);
                 values.Add(value);
             }
-
-            return false;
+            return (keys, values);
         }
         #endregion
     }

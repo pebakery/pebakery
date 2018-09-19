@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            string[] dirs = sc.Sections[EncodedFile.EncodedFolders].Lines;
+            string[] dirs = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
             if (!dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
                 return LogInfo.LogErrorMessage(logs, $"Directory [{dirName}] not exists in [{scriptFile}]");
 

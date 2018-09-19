@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -437,14 +438,14 @@ namespace PEBakery.Core
             IList<string> encodedFolders;
             if (_fullyParsed)
             {
-                if (_sections.ContainsKey(EncodedFile.EncodedFolders))
-                    encodedFolders = _sections[EncodedFile.EncodedFolders].Lines;
+                if (_sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                    encodedFolders = _sections[ScriptSection.Names.EncodedFolders].Lines;
                 else
                     return false;
             }
             else
             {
-                encodedFolders = Ini.ParseIniSection(_realPath, EncodedFile.EncodedFolders);
+                encodedFolders = Ini.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
                 if (encodedFolders == null)  // No EncodedFolders section, exit
                     return false;
             }
@@ -460,20 +461,23 @@ namespace PEBakery.Core
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
             SectionType type;
-            if (sectionName.Equals("Main", StringComparison.OrdinalIgnoreCase))
+            if (sectionName.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Main;
-            else if (sectionName.Equals("Variables", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(ScriptSection.Names.Variables, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Variables;
-            else if (sectionName.Equals("Interface", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Interface;
-            else if (sectionName.Equals(EncodedFile.EncodedFolders, StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(ScriptSection.Names.EncodedFolders, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFolderList;
-            else if (sectionName.Equals(EncodedFile.AuthorEncoded, StringComparison.OrdinalIgnoreCase)
-                || sectionName.Equals(EncodedFile.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) ||
+                     sectionName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFileList;
-            else if (string.Compare(sectionName, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0) // lazy loading
-                type = SectionType.AttachEncode;
-            else
+            else if (sectionName.StartsWith(ScriptSection.Names.EncodedFileAuthorEncodedPrefix, StringComparison.OrdinalIgnoreCase) ||
+                     sectionName.StartsWith(ScriptSection.Names.EncodedFileInterfaceEncodedPrefix, StringComparison.OrdinalIgnoreCase))
+                type = SectionType.AttachEncodeNow;
+            else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
+                type = SectionType.AttachEncodeLazy;
+            else // Can be SectionType.Code or SectionType.AttachFileList
                 type = inspectCode ? DetectTypeOfUninspectedSection(sectionName) : SectionType.Uninspected;
             return type;
         }
@@ -506,10 +510,12 @@ namespace PEBakery.Core
             {
                 case SectionType.Main:
                 case SectionType.Variables:
+                case SectionType.Interface:
                 case SectionType.Code:
                 case SectionType.Uninspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
+                case SectionType.AttachEncodeNow:
                     return true;
                 default:
                     return false;
@@ -522,18 +528,16 @@ namespace PEBakery.Core
         {
             switch (type)
             {
-                // SectionDataType.IniDict
                 case SectionType.Main:
-                case SectionType.Ini:
-                case SectionType.AttachFileList:
-                // SectionDataType.Lines
                 case SectionType.Variables:
-                case SectionType.Code:
-                case SectionType.AttachFolderList:
-                case SectionType.Uninspected:
                 case SectionType.Interface:
+                case SectionType.Code:
+                case SectionType.Uninspected:
+                case SectionType.AttachFolderList:
+                case SectionType.AttachFileList:
+                case SectionType.AttachEncodeNow:
                     return new ScriptSection(this, sectionName, type, lines, lineIdx);
-                case SectionType.AttachEncode: // do not load now
+                case SectionType.AttachEncodeLazy: // do not load now
                     return new ScriptSection(this, sectionName, type, false, lineIdx);
                 default:
                     throw new ScriptParseException($"Invalid SectionType [{type}]");
@@ -686,7 +690,7 @@ namespace PEBakery.Core
             {
                 UIControl oldCtrl = oldCtrls.Find(x => x.Key.Equals(newCtrl.Key, StringComparison.OrdinalIgnoreCase));
                 if (oldCtrl == null)
-                { // newCtrl not exist in oldCtrls, append it
+                { // newCtrl not exist in oldCtrls, append it.
                     updatedCtrls.Add(newCtrl);
                     continue;
                 }
@@ -694,7 +698,7 @@ namespace PEBakery.Core
                 // newCtrl exist in oldCtrls
                 oldCtrls.Remove(oldCtrl);
                 if (oldCtrl.Type != newCtrl.Type)
-                { // Keep oldCtrl. They are different uiCtrls even though they have same key
+                { // Keep oldCtrl. They are different uiCtrls even though they have same key.
                     updatedCtrls.Add(oldCtrl);
                     continue;
                 }
@@ -777,15 +781,24 @@ namespace PEBakery.Core
     public enum SectionType
     {
         None = 0,
+        // [Main]
         Main = 10,
-        Ini = 20,
-        Variables = 30,
-        Uninspected = 40, // Can be Code or AttachFileList
-        Code = 50,
-        Interface = 60,
+        // [Variables]
+        Variables = 20,
+        // [Interface]
+        Interface = 30,
+        // [Process], ...
+        Code = 40,
+        // Code or AttachFileList
+        Uninspected = 90,
+        // [EncodedFolders]
         AttachFolderList = 100,
+        // [AuthorEncoded], [InterfaceEncoded], and other folders
         AttachFileList = 101,
-        AttachEncode = 102,
+        // [EncodedFile-InterfaceEncoded-*], [EncodedFile-AuthorEncoded-*]
+        AttachEncodeNow = 102,
+        // [EncodedFile-*]
+        AttachEncodeLazy = 103,
     }
     #endregion
 
@@ -808,8 +821,27 @@ namespace PEBakery.Core
 
     #region ScriptSection
     [Serializable]
-    public class ScriptSection
+    public class ScriptSection : IEquatable<ScriptSection>
     {
+        #region (Const) Known Section Names
+        public static class Names
+        {
+            public const string Main = "Main";
+            public const string Variables = "Variables";
+            public const string Interface = "Interface";
+            public const string Process = "Process";
+            public const string EncodedFolders = "EncodedFolders";
+            public const string AuthorEncoded = "AuthorEncoded";
+            public const string InterfaceEncoded = "InterfaceEncoded";
+            public const string EncodedFileInterfaceEncodedPrefix = "EncodedFile-InterfaceEncoded-";
+            public const string EncodedFileAuthorEncodedPrefix = "EncodedFile-AuthorEncoded-";
+            public const string EncodedFilePrefix = "EncodedFile-";
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static string GetEncodedSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
+        }
+        
+        #endregion
+
         #region Fields and Properties
         public Script Script { get; }
         public Project Project => Script.Project;
@@ -825,10 +857,21 @@ namespace PEBakery.Core
         {
             get
             {
+                // Already loaded, return directly
                 if (_lines != null)
                     return _lines;
+
+                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
+                if (Type == SectionType.AttachEncodeLazy)
+                {
+                    List<string> lineList = Ini.ParseRawSection(Script.RealPath, Name);
+                    return lineList?.ToArray();
+                }
+                
+                // Load from file, keep in memory.
                 if (LoadLines())
                     return _lines;
+
                 return null;
             }
         }
@@ -838,8 +881,15 @@ namespace PEBakery.Core
         {
             get
             {
+                // Already loaded, return directly
                 if (_iniDict != null)
                     return _iniDict;
+
+                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
+                if (Type == SectionType.AttachEncodeLazy)
+                    return Ini.ParseIniSectionToDict(Script.RealPath, Name);
+
+                // Load from file, keep in memory.
                 if (LoadIniDict())
                     return _iniDict;
                 return null;
@@ -870,7 +920,7 @@ namespace PEBakery.Core
 
         #region Load, Unload, Reload
         /// <summary>
-        /// If _lines is not loaded from file, load it to memory
+        /// If _lines is not loaded from file, load it to memory.
         /// </summary>
         /// <returns>
         /// true if _lines is valid
@@ -880,7 +930,7 @@ namespace PEBakery.Core
             if (_lines != null)
                 return true;
 
-            List<string> lineList = Ini.ParseIniSection(Script.RealPath, Name);
+            List<string> lineList = Ini.ParseRawSection(Script.RealPath, Name);
             if (lineList == null)
                 return false;
             _lines = lineList.ToArray();
@@ -888,7 +938,7 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// If _lines is not loaded from file, load it to memory
+        /// If _lines is not loaded from file, load it to memory.
         /// </summary>
         /// <returns>
         /// true if _lines is valid
@@ -912,11 +962,8 @@ namespace PEBakery.Core
         /// Discard loaded _lines.
         /// </summary>
         /// <remarks>
-        /// Useful to reduce memory usage
+        /// Useful to reduce memory usage.
         /// </remarks>
-        /// <returns>
-        /// true if _lines is valid
-        /// </returns>
         public void Unload()
         {
             _lines = null;
@@ -924,7 +971,7 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Reload _lines from file
+        /// Reload _lines from file.
         /// </summary>
         public bool Reload()
         {
@@ -936,8 +983,9 @@ namespace PEBakery.Core
         #region Equals, GetHashCode
         public override bool Equals(object obj)
         {
-            ScriptSection section = obj as ScriptSection;
-            return Equals(section);
+            if (obj is ScriptSection section)
+                return Equals(section);
+            return false;
         }
 
         public bool Equals(ScriptSection section)
@@ -949,7 +997,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Script.GetHashCode() ^ Name.GetHashCode();
+            return Script.GetHashCode() ^ Name.GetHashCode() ^ LineIdx.GetHashCode();
         }
         #endregion
 
@@ -970,7 +1018,7 @@ namespace PEBakery.Core
         public bool IsDir;
         public bool IsDirLink;
 
-        public override string ToString() => IsDir ? $"[D] {TreePath}" : TreePath;
+        public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
     }
 
     public class ScriptParseInfoComparer : IEqualityComparer<ScriptParseInfo>

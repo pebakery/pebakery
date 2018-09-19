@@ -826,7 +826,7 @@ namespace PEBakery.WPF
                 return;
             }
 
-            using (MemoryStream ms = EncodedFile.ExtractFileInMem(_sc, EncodedFile.InterfaceEncoded, fileName))
+            using (MemoryStream ms = EncodedFile.ExtractFileInMem(_sc, ScriptSection.Names.InterfaceEncoded, fileName))
             {
                 int width, height;
                 if (type == ImageHelper.ImageType.Svg)
@@ -1130,7 +1130,7 @@ namespace PEBakery.WPF
             string srcFileName = Path.GetFileName(srcFilePath);
             if (EncodedFile.ContainsInterface(_sc, srcFileName))
             {
-                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, EncodedFile.InterfaceEncoded, false);
+                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, ScriptSection.Names.InterfaceEncoded, false);
                 if (errMsg != null)
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -1254,7 +1254,7 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    EncodedFile.ExtractFile(_sc, EncodedFile.InterfaceEncoded, fileName, fs);
+                    EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs);
                 }
                 catch (Exception ex)
                 {
@@ -1332,12 +1332,12 @@ namespace PEBakery.WPF
                 }
                 m.InvokeUIControlEvent(false);
 
-                MessageBox.Show("Incorrrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Incorrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string errMsg;
-            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, EncodedFile.InterfaceEncoded, fileName);
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
             if (errMsg == null)
             {
                 UIControl.ReplaceAddress(_render.UICtrls, _sc);
