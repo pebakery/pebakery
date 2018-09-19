@@ -418,7 +418,7 @@ namespace PEBakery.WPF
             Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
             {
                 MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.DrawScript(_sc);
+                w?.DisplayScript(_sc);
             }));
         }
 

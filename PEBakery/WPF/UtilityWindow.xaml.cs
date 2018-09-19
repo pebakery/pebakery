@@ -182,7 +182,7 @@ namespace PEBakery.WPF
                     MainWindow w = Application.Current.MainWindow as MainWindow;
                     Debug.Assert(w != null, "MainWindow != null");
 
-                    w.DrawScript(w.CurMainTree.Script);
+                    w.DisplayScript(w.CurMainTree.Script);
 
                     if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow

@@ -331,7 +331,7 @@ namespace PEBakery.Core.Commands
                                 if (sc.Equals(w.CurMainTree.Script))
                                 {
                                     w.CurMainTree.Script = sc;
-                                    w.DrawScript(w.CurMainTree.Script);
+                                    w.DisplayScript(w.CurMainTree.Script);
                                 }
                             }
                         });
@@ -412,7 +412,7 @@ namespace PEBakery.Core.Commands
                                 if (sc.Equals(w.CurMainTree.Script))
                                 {
                                     w.CurMainTree.Script = sc;
-                                    w.DrawScript(w.CurMainTree.Script);
+                                    w.DisplayScript(w.CurMainTree.Script);
                                 }
                             }
                         });

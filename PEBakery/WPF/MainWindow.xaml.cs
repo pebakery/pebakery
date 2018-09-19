@@ -321,7 +321,7 @@ namespace PEBakery.WPF
                                 CurMainTree = Model.MainTreeItems[pIdx];
                                 CurMainTree.IsExpanded = true;
                                 if (Projects[pIdx] != null)
-                                    DrawScript(Projects[pIdx].MainScript);
+                                    DisplayScript(Projects[pIdx].MainScript);
                             }
                             else
                             {
@@ -447,7 +447,7 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 UpdateTreeViewIcon(node);
-                DrawScript(node.Script);
+                DisplayScript(node.Script);
             });
         }
 
@@ -565,7 +565,7 @@ namespace PEBakery.WPF
                         }
 
                         Model.WorkInProgress = false;
-                    }  
+                    }
                 }
                 finally
                 {
@@ -575,43 +575,21 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region DrawScript
-        public void DrawScript(Script sc)
+        #region DisplayScript
+        public void DisplayScript(Script sc)
         {
-            DrawScriptLogo(sc);
+            DisplayScriptLogo(sc);
+            DisplayScriptTexts(sc, Model, null);
 
             Model.ScriptCheckResult = CodeValidator.Result.Unknown;
-
             if (sc.Type == ScriptType.Directory)
             {
+                // Clear MainCanvas
                 Model.MainCanvas.Children.Clear();
-
-                Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
-                Model.ScriptDescriptionText = string.Empty;
-                Model.ScriptVersionText = string.Empty;
-                Model.ScriptAuthorText = string.Empty;
             }
             else
             {
-                Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
-                Model.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
-
-                string verStr = StringEscaper.ProcessVersionString(sc.Version);
-                if (verStr == null)
-                {
-                    Model.ScriptVersionText = string.Empty;
-                    Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
-                }
-                else
-                {
-                    Model.ScriptVersionText = "v" + verStr;
-                }
-
-                if (ScriptAuthorLenLimit < sc.Author.Length)
-                    Model.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
-                else
-                    Model.ScriptAuthorText = sc.Author;
-
+                // Render script interface
                 double scaleFactor = App.Setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale;
                 if (scaleFactor - 1 < double.Epsilon)
@@ -622,6 +600,7 @@ namespace PEBakery.WPF
                 Model.MainCanvas.LayoutTransform = scale;
                 render.Render();
 
+                // Run CodeValidator
                 // Do not use await, let it run in background
                 if (App.Setting.Script_AutoSyntaxCheck)
                     StartSyntaxCheck(true);
@@ -631,7 +610,7 @@ namespace PEBakery.WPF
             Model.OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
         }
 
-        public void DrawScriptLogo(Script sc)
+        public void DisplayScriptLogo(Script sc)
         {
             if (sc.Type == ScriptType.Directory)
             {
@@ -664,6 +643,59 @@ namespace PEBakery.WPF
 
                     Model.ScriptLogoIcon = iconKind;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Display script title, description, version and author
+        /// </summary>
+        /// <param name="sc">Source script to read information</param>
+        /// <param name="m">MainViewModel of MainWindow</param>
+        /// <param name="s">Set to non-null to notify running in build mode</param>
+        public static void DisplayScriptTexts(Script sc, MainViewModel m, EngineState s)
+        {
+            if (sc.Type == ScriptType.Directory && s != null)
+            { // In build mode, there are no directory scripts
+                m.ScriptTitleText = StringEscaper.Unescape(sc.Title);
+                m.ScriptDescriptionText = string.Empty;
+                m.ScriptVersionText = string.Empty;
+                m.ScriptAuthorText = string.Empty;
+            }
+            else
+            {
+                // Script Title
+                if (s != null && s.RunMode == EngineMode.RunAll)
+                    m.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
+                else
+                    m.ScriptTitleText = StringEscaper.Unescape(sc.Title);
+
+                // Script Description
+                m.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
+
+                // Script Version
+                string verStr = StringEscaper.ProcessVersionString(sc.Version);
+                if (verStr == null)
+                {
+                    if (s != null)
+                    { // Normal mode -> Notify script developer to fix
+                        m.ScriptVersionText = string.Empty;
+                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
+                    }
+                    else
+                    { // Build mode -> Suppress error log
+                        m.ScriptVersionText = sc.Version;
+                    }
+                }
+                else
+                {
+                    m.ScriptVersionText = $"v{verStr}";
+                }
+
+                // Script Author
+                if (ScriptAuthorLenLimit < sc.Author.Length)
+                    m.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
+                else
+                    m.ScriptAuthorText = sc.Author;
             }
         }
         #endregion
@@ -728,7 +760,7 @@ namespace PEBakery.WPF
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
                 Model.BuildTreeItems.Clear();
-                DrawScript(CurMainTree.Script);
+                DisplayScript(CurMainTree.Script);
 
                 if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
@@ -783,7 +815,7 @@ namespace PEBakery.WPF
                     // Scale Factor
                     double newScaleFactor = App.Setting.Interface_ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                        DrawScript(CurMainTree.Script);
+                        DisplayScript(CurMainTree.Script);
 
                     // Project
                     if (old_Compat_EnableEnvironmentVariables != App.Setting.Compat_EnableEnvironmentVariables)
@@ -894,7 +926,7 @@ namespace PEBakery.WPF
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
                     Model.BuildTreeItems.Clear();
-                    DrawScript(CurMainTree.Script);
+                    DisplayScript(CurMainTree.Script);
 
                     if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -968,7 +1000,7 @@ namespace PEBakery.WPF
                     sc = ScriptEditDialog.Tag as Script;
                     Debug.Assert(sc != null, $"{nameof(sc)} != null");
 
-                    DrawScript(sc);
+                    DisplayScript(sc);
                     CurMainTree.Script = sc;
                 }
             }
@@ -1204,7 +1236,7 @@ namespace PEBakery.WPF
             {
                 CurMainTree = projectRoot;
                 CurMainTree.IsExpanded = true;
-                DrawScript(CurMainTree.Script);
+                DisplayScript(CurMainTree.Script);
             }
         }
 
@@ -1296,7 +1328,7 @@ namespace PEBakery.WPF
                 {
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    DrawScript(item.Script);
+                    DisplayScript(item.Script);
                     watch.Stop();
                     double msec = watch.Elapsed.TotalMilliseconds;
                     string filename = Path.GetFileName(CurMainTree.Script.TreePath);
@@ -2324,7 +2356,7 @@ namespace PEBakery.WPF
                 return null;
 
             PackIconMaterialKind icon;
-            CodeValidator.Result result = (CodeValidator.Result) value;
+            CodeValidator.Result result = (CodeValidator.Result)value;
             switch (result)
             {
                 case CodeValidator.Result.Clean:

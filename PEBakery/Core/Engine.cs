@@ -126,17 +126,8 @@ namespace PEBakery.Core
 
             if (!prepareBuild || s.RunMode == EngineMode.RunAll)
             {
-                if (s.RunMode == EngineMode.RunAll)
-                    s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
-                else
-                    s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(sc.Title);
+                MainWindow.DisplayScriptTexts(sc, s.MainViewModel, s);
 
-                s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
-                s.MainViewModel.ScriptVersionText = "v" + sc.Version;
-                if (MainWindow.ScriptAuthorLenLimit < sc.Author.Length)
-                    s.MainViewModel.ScriptAuthorText = sc.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
-                else
-                    s.MainViewModel.ScriptAuthorText = sc.Author;
                 s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
 
                 Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
@@ -144,7 +135,7 @@ namespace PEBakery.Core
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
 
-                    w.DrawScriptLogo(sc);
+                    w.DisplayScriptLogo(sc);
 
                     if (0 < s.MainViewModel.BuildTreeItems.Count)
                     {

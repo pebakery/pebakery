@@ -96,7 +96,7 @@ namespace PEBakery.Core.Commands
                         return;
 
                     w.CurMainTree.Script = sc;
-                    w.DrawScript(w.CurMainTree.Script);
+                    w.DisplayScript(w.CurMainTree.Script);
                 });
             }
 
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
                     return;
 
                 w.CurMainTree.Script = sc;
-                w.DrawScript(w.CurMainTree.Script);
+                w.DisplayScript(w.CurMainTree.Script);
             });
 
             return logs;
@@ -1047,7 +1047,7 @@ namespace PEBakery.Core.Commands
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
                 if (w.CurMainTree.Script.Equals(cmd.Section.Script))
-                    w.DrawScript(cmd.Section.Script);
+                    w.DisplayScript(cmd.Section.Script);
             });
 
             return logs;
@@ -1116,7 +1116,7 @@ namespace PEBakery.Core.Commands
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
                 if (w.CurMainTree.Script.Equals(cmd.Section.Script))
-                    w.DrawScript(cmd.Section.Script);
+                    w.DisplayScript(cmd.Section.Script);
             });
 
             if (1 < updatedUICtrls.Count)
