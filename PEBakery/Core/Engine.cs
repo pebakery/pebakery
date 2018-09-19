@@ -329,7 +329,9 @@ namespace PEBakery.Core
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
 
-            (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
+            CodeParser parser = new CodeParser(section, new CodeParser.Options());
+            (CodeCommand[] cmds, _) = parser.ParseStatements();
+            // (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
 
             // Set CurrentSection
             s.CurrentSection = section;
@@ -354,7 +356,8 @@ namespace PEBakery.Core
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
 
-            (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            (CodeCommand[] cmds, _) = parser.ParseStatements();
 
             // Set CurrentSection
             s.CurrentSection = section;

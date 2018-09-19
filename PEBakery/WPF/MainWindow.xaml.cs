@@ -74,7 +74,7 @@ namespace PEBakery.WPF
         private readonly ScriptCache _scriptCache;
 
         public const int MaxDpiScale = 4;
-        public SettingViewModel Setting { get; }
+        // public SettingViewModel Setting { get; }
 
         public MainViewModel Model { get; }
 
@@ -134,8 +134,8 @@ namespace PEBakery.WPF
             App.BaseDir = BaseDir = argBaseDir;
 
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
-            Setting = new SettingViewModel(settingFile);
-            Model.MonospaceFont = Setting.Interface_MonospaceFont;
+            App.Setting = new SettingViewModel(settingFile);
+            Model.MonospaceFont = App.Setting.Interface_MonospaceFont;
 
             string dbDir = Path.Combine(BaseDir, "Database");
             if (!Directory.Exists(dbDir))
@@ -153,10 +153,10 @@ namespace PEBakery.WPF
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
-            Setting.LogDb = Logger.Db;
+            App.Setting.LogDb = Logger.Db;
 
             // If script cache is enabled, generate cache after 5 seconds
-            if (Setting.Script_EnableCache)
+            if (App.Setting.Script_EnableCache)
             {
                 string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
                 try
@@ -171,7 +171,7 @@ namespace PEBakery.WPF
                     Application.Current.Shutdown(1);
                 }
 
-                Setting.CacheDb = _scriptCache;
+                App.Setting.ScriptCache = _scriptCache;
             }
             else
             {
@@ -280,7 +280,7 @@ namespace PEBakery.WPF
                     Model.BottomProgressBarValue = 0;
 
                     // Init ProjectCollection
-                    if (Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
+                    if (App.Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
                     {
                         if (_scriptCache.CheckCacheRevision(BaseDir))
                             Projects = new ProjectCollection(BaseDir, _scriptCache);
@@ -301,7 +301,7 @@ namespace PEBakery.WPF
                     // Load projects in parallel
                     List<LogInfo> errorLogs = Projects.Load(progress);
                     Logger.SystemWrite(errorLogs);
-                    Setting.UpdateProjectList();
+                    App.Setting.UpdateProjectList();
 
                     if (0 < Projects.ProjectNames.Count)
                     { // Load success
@@ -315,7 +315,7 @@ namespace PEBakery.WPF
                                 Model.MainTreeItems.Add(projectRoot);
                             }
 
-                            int pIdx = Setting.Project_DefaultIndex;
+                            int pIdx = App.Setting.Project_DefaultIndex;
                             if (0 <= pIdx && pIdx < Model.MainTreeItems.Count)
                             {
                                 CurMainTree = Model.MainTreeItems[pIdx];
@@ -334,7 +334,7 @@ namespace PEBakery.WPF
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg;
-                        if (Setting.Script_EnableCache)
+                        if (App.Setting.Script_EnableCache)
                         {
                             double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (totalScriptCount + stage2LinkCount);
                             msg = $"{totalScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
@@ -350,7 +350,7 @@ namespace PEBakery.WPF
                         Logger.SystemWrite(Logger.LogSeperator);
 
                         // If script cache is enabled, update cache.
-                        if (Setting.Script_EnableCache)
+                        if (App.Setting.Script_EnableCache)
                             StartScriptCaching();
                     }
                     else
@@ -612,7 +612,7 @@ namespace PEBakery.WPF
                 else
                     Model.ScriptAuthorText = sc.Author;
 
-                double scaleFactor = Setting.Interface_ScaleFactor / 100;
+                double scaleFactor = App.Setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale;
                 if (scaleFactor - 1 < double.Epsilon)
                     scale = new ScaleTransform(1, 1);
@@ -623,7 +623,7 @@ namespace PEBakery.WPF
                 render.Render();
 
                 // Do not use await, let it run in background
-                if (Setting.Script_AutoSyntaxCheck)
+                if (App.Setting.Script_AutoSyntaxCheck)
                     StartSyntaxCheck(true);
             }
 
@@ -691,7 +691,7 @@ namespace PEBakery.WPF
                 CurBuildTree = null;
 
                 EngineState s = new EngineState(p, Logger, Model);
-                s.SetOptions(Setting);
+                s.SetOptions(App.Setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -730,7 +730,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Clear();
                 DrawScript(CurMainTree.Script);
 
-                if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
                     LogDialog = new LogWindow(1);
                     LogDialog.Show();
@@ -761,39 +761,39 @@ namespace PEBakery.WPF
             if (_projectsLoading != 0)
                 return;
 
-            double old_Interface_ScaleFactor = Setting.Interface_ScaleFactor;
-            bool old_Compat_AsteriskBugDirLink = Setting.Compat_AsteriskBugDirLink;
-            bool old_Compat_EnableEnvironmentVariables = Setting.Compat_EnableEnvironmentVariables;
-            bool old_Script_EnableCache = Setting.Script_EnableCache;
+            double old_Interface_ScaleFactor = App.Setting.Interface_ScaleFactor;
+            bool old_Compat_AsteriskBugDirLink = App.Setting.Compat_AsteriskBugDirLink;
+            bool old_Compat_EnableEnvironmentVariables = App.Setting.Compat_EnableEnvironmentVariables;
+            bool old_Script_EnableCache = App.Setting.Script_EnableCache;
 
-            SettingWindow dialog = new SettingWindow(Setting) { Owner = this };
+            SettingWindow dialog = new SettingWindow(App.Setting) { Owner = this };
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
                 // Apply
-                Setting.ApplySetting();
+                App.Setting.ApplySetting();
 
                 // Refresh Project
-                if (old_Compat_AsteriskBugDirLink != Setting.Compat_AsteriskBugDirLink)
+                if (old_Compat_AsteriskBugDirLink != App.Setting.Compat_AsteriskBugDirLink)
                 {
                     StartLoadingProjects();
                 }
                 else
                 {
                     // Scale Factor
-                    double newScaleFactor = Setting.Interface_ScaleFactor;
+                    double newScaleFactor = App.Setting.Interface_ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
                         DrawScript(CurMainTree.Script);
 
                     // Project
-                    if (old_Compat_EnableEnvironmentVariables != Setting.Compat_EnableEnvironmentVariables)
+                    if (old_Compat_EnableEnvironmentVariables != App.Setting.Compat_EnableEnvironmentVariables)
                     { // Update project's envionrmnet variables
                         foreach (Project p in Projects)
                             p.Variables.LoadDefaultFixedVariables();
                     }
 
                     // Script
-                    if (!old_Script_EnableCache && Setting.Script_EnableCache)
+                    if (!old_Script_EnableCache && App.Setting.Script_EnableCache)
                         StartScriptCaching();
                 }
             }
@@ -806,7 +806,7 @@ namespace PEBakery.WPF
             if (0 < UtilityWindow.Count)
                 return;
 
-            UtilityDialog = new UtilityWindow(Setting.Interface_MonospaceFont) { Owner = this };
+            UtilityDialog = new UtilityWindow(App.Setting.Interface_MonospaceFont) { Owner = this };
             UtilityDialog.Show();
         }
 
@@ -835,7 +835,7 @@ namespace PEBakery.WPF
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(Setting.Interface_MonospaceFont) { Owner = this };
+            AboutWindow dialog = new AboutWindow(App.Setting.Interface_MonospaceFont) { Owner = this };
             dialog.ShowDialog();
         }
         #endregion
@@ -863,7 +863,7 @@ namespace PEBakery.WPF
                     CurBuildTree = null;
 
                     EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
-                    s.SetOptions(Setting);
+                    s.SetOptions(App.Setting);
 
                     Engine.WorkingEngine = new Engine(s);
 
@@ -896,7 +896,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Clear();
                     DrawScript(CurMainTree.Script);
 
-                    if (Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
                         LogDialog = new LogWindow(1);
                         LogDialog.Show();
@@ -1327,25 +1327,25 @@ namespace PEBakery.WPF
                 return;
             }
 
-            if (Setting.Interface_UseCustomEditor)
+            if (App.Setting.Interface_UseCustomEditor)
             {
-                string ext = Path.GetExtension(Setting.Interface_CustomEditorPath);
+                string ext = Path.GetExtension(App.Setting.Interface_CustomEditorPath);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{App.Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (!File.Exists(Setting.Interface_CustomEditorPath))
+                if (!File.Exists(App.Setting.Interface_CustomEditorPath))
                 {
-                    MessageBox.Show($"Custom editor [{Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{App.Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 ProcessStartInfo info = new ProcessStartInfo
                 {
                     UseShellExecute = false,
-                    FileName = Setting.Interface_CustomEditorPath,
+                    FileName = App.Setting.Interface_CustomEditorPath,
                     Arguments = StringEscaper.Doublequote(filePath),
                 };
 

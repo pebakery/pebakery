@@ -35,34 +35,42 @@ using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
 {
-    public static class CodeParser
+    public class CodeParser
     {
-        #region Static Fields
-        public static bool OptimizeCode = true;
-        public static bool AllowLegacyBranchCondition = true;
-        public static bool AllowLegacyRegWrite = true;
-        public static bool AllowLegacyInterfaceCommand = true;
-        public static bool AllowLegacySectionParamCommand = true;
-        public static bool AllowExtendedSectionParams = true;
+        #region Fields and Properties
+        private readonly ScriptSection _section;
+        private readonly Options _opts;
+        #endregion
+
+        #region Options
+        public struct Options
+        {
+            // Optimization
+            public bool OptimizeCode;
+            // Compatibility Options
+            public bool AllowLegacyBranchCondition;
+            public bool AllowLegacyRegWrite;
+            public bool AllowLegacyInterfaceCommand;
+            public bool AllowLegacySectionParamCommand;
+            public bool AllowExtendedSectionParams;
+        }
+        #endregion
+
+        #region Constructor
+        public CodeParser(ScriptSection section, Options options)
+        {
+            _section = section;
+            _opts = options;
+        }
         #endregion
 
         #region ParseStatement, ParseStatements
-        public static CodeCommand ParseStatement(string rawCode, ScriptSection section)
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements()
         {
-            int idx = 0;
-            List<string> list = new List<string> { rawCode };
-
-            try
-            {
-                return ParseCommand(list, section, ref idx);
-            }
-            catch (Exception e)
-            {
-                return new CodeCommand(rawCode.Trim(), section, CodeType.Error, new CodeInfo_Error(e), section.LineIdx + idx + 1);
-            }
+            return ParseStatements(_section.Lines);
         }
 
-        public static (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IList<string> lines, ScriptSection section)
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IList<string> lines)
         {
             // Select Code sections and compile
             List<CodeCommand> cmds = new List<CodeCommand>();
@@ -70,17 +78,17 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    CodeCommand cmd = ParseCommand(lines, section, ref i);
+                    CodeCommand cmd = ParseCommand(lines, ref i);
                     cmds.Add(cmd);
                 }
                 catch (InvalidCommandException e)
                 {
-                    CodeCommand error = new CodeCommand(e.RawLine, section, CodeType.Error, new CodeInfo_Error(e), section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(e.RawLine, _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + i + 1);
                     cmds.Add(error);
                 }
                 catch (Exception e)
                 {
-                    CodeCommand error = new CodeCommand(lines[i].Trim(), section, CodeType.Error, new CodeInfo_Error(e), section.LineIdx + i + 1);
+                    CodeCommand error = new CodeCommand(lines[i].Trim(), _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + i + 1);
                     cmds.Add(error);
                 }
             }
@@ -97,13 +105,28 @@ namespace PEBakery.Core
             }
             catch (InvalidCodeCommandException e)
             {
-                errLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                errLogs.Add(new LogInfo(LogState.Error, $"Cannot parse section [{_section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
-            if (OptimizeCode)
+            if (_opts.OptimizeCode)
                 foldedList = CodeOptimizer.Optimize(foldedList);
 
             return (foldedList.ToArray(), errLogs);
+        }
+
+        public CodeCommand ParseStatement(string rawCode)
+        {
+            int idx = 0;
+            List<string> list = new List<string> { rawCode };
+
+            try
+            {
+                return ParseCommand(list, ref idx);
+            }
+            catch (Exception e)
+            {
+                return new CodeCommand(rawCode.Trim(), _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + idx + 1);
+            }
         }
         #endregion
 
@@ -181,21 +204,21 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCommand, ParseCommandFromSlicedArgs, ParseCodeType, ParseArguments
-        private static CodeCommand ParseCommand(IList<string> rawCodes, ScriptSection section, ref int idx)
+        private CodeCommand ParseCommand(IList<string> rawCodes, ref int idx)
         {
             // Command's line number in physical file
-            int lineIdx = section.LineIdx + 1 + idx;
+            int lineIdx = _section.LineIdx + 1 + idx;
 
             // Remove whitespace of rawCode's from start and end
             string rawCode = rawCodes[idx].Trim();
 
             // Check if rawCode is empty
             if (rawCode.Length == 0)
-                return new CodeCommand(string.Empty, section, CodeType.None, null, lineIdx);
+                return new CodeCommand(string.Empty, _section, CodeType.None, null, lineIdx);
 
             // Line Comment Identifier : '//', '#', ';'
             if (rawCode[0] == '/' || rawCode[0] == '#' || rawCode[0] == ';')
-                return new CodeCommand(rawCode, section, CodeType.Comment, null, lineIdx);
+                return new CodeCommand(rawCode, _section, CodeType.Comment, null, lineIdx);
 
             // Split with period
             Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
@@ -255,8 +278,8 @@ namespace PEBakery.Core
             }
 
             // Create instance of command
-            CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
-            return new CodeCommand(rawCode, section, type, info, lineIdx);
+            CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
+            return new CodeCommand(rawCode, _section, type, info, lineIdx);
 
             // [Process] <- LineIdx
             // Echo,A <- if idx is 0, should point here. Add 1 to solve this.
@@ -267,7 +290,7 @@ namespace PEBakery.Core
         /// Used to get Embedded Command from If, Else
         /// </summary>
         /// <returns></returns>
-        private static CodeCommand ParseStatementFromSlicedArgs(string rawCode, List<string> args, ScriptSection section, int lineIdx)
+        private CodeCommand ParseStatementFromSlicedArgs(string rawCode, List<string> args, int lineIdx)
         {
             CodeType type;
 
@@ -284,17 +307,17 @@ namespace PEBakery.Core
 
             try
             {
-                CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), section, lineIdx);
-                return new CodeCommand(rawCode, section, type, info, lineIdx);
+                CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), lineIdx);
+                return new CodeCommand(rawCode, _section, type, info, lineIdx);
             }
             catch (InvalidCommandException e)
             {
-                CodeCommand error = new CodeCommand(rawCode, section, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), lineIdx);
+                CodeCommand error = new CodeCommand(rawCode, _section, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)), lineIdx);
                 throw new InvalidCodeCommandException(e.Message, error);
             }
         }
 
-        public static CodeType ParseCodeType(string typeStr, out string macroType)
+        public CodeType ParseCodeType(string typeStr, out string macroType)
         {
             macroType = null;
 
@@ -307,8 +330,8 @@ namespace PEBakery.Core
                            type == CodeType.None ||
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
-                           !AllowLegacyInterfaceCommand && type == CodeType.Visible ||
-                           !AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
+                           !_opts.AllowLegacyInterfaceCommand && type == CodeType.Visible ||
+                           !_opts.AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 
@@ -323,7 +346,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfo
-        public static CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, ScriptSection section, int lineIdx)
+        public CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, int lineIdx)
         {
             switch (type)
             {
@@ -2067,36 +2090,36 @@ namespace PEBakery.Core
                         { // Retrieve.Dir -> UserInput.DirPath
                             type = CodeType.UserInput;
                             args[0] = "DirPath";
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
                         else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.File -> UserInput.FilePath
                             type = CodeType.UserInput;
                             args[0] = "FilePath";
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
                         else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileSize -> FileSize
                             type = CodeType.FileSize;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
                         else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileVersion -> FileVersion
                             type = CodeType.FileVersion;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
                         else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FolderSize -> DirSize
                             type = CodeType.DirSize;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
                         else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.MD5 -> Hash.MD5
                             type = CodeType.Hash;
-                            return ParseCodeInfo(rawCode, ref type, macroType, args, section, lineIdx);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
 
                         throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
@@ -2236,9 +2259,9 @@ namespace PEBakery.Core
                         }
                     }
                 case CodeType.If:
-                    return ParseCodeInfoIf(rawCode, args, section, lineIdx);
+                    return ParseCodeInfoIf(rawCode, args, lineIdx);
                 case CodeType.Else:
-                    return ParseCodeInfoElse(rawCode, args, section, lineIdx);
+                    return ParseCodeInfoElse(rawCode, args, lineIdx);
                 case CodeType.Begin:
                 case CodeType.End:
                     return new CodeInfo();
@@ -2448,7 +2471,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 82 System
                 case CodeType.System:
-                    return ParseCodeInfoSystem(rawCode, args, section, lineIdx);
+                    return ParseCodeInfoSystem(rawCode, args, lineIdx);
                 case CodeType.ShellExecute:
                 case CodeType.ShellExecuteEx:
                 case CodeType.ShellExecuteDelete:
@@ -3737,7 +3760,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfoSystem, ParseSystemType
-        public static CodeInfo_System ParseCodeInfoSystem(string rawCode, List<string> args, ScriptSection section, int lineIdx)
+        public CodeInfo_System ParseCodeInfoSystem(string rawCode, List<string> args, int lineIdx)
         {
             SystemType type = ParseSystemType(args[0]);
             SystemInfo info;
@@ -3823,7 +3846,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, section, lineIdx);
+                        CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
 
                         info = new SystemInfo_OnBuildExit(embed);
                     }
@@ -3834,7 +3857,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, section, lineIdx);
+                        CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
 
                         info = new SystemInfo_OnScriptExit(embed);
                     }
@@ -4017,7 +4040,7 @@ namespace PEBakery.Core
                    sectionReturnValueMatch;
         }
 
-        public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, ScriptSection section, int lineIdx)
+        public CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, int lineIdx)
         {
             if (args.Count < 2)
                 throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
@@ -4069,8 +4092,7 @@ namespace PEBakery.Core
                 string compArg1 = args[cIdx];
                 string compArg2 = args[cIdx + 2];
                 cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), section, lineIdx);
-
+                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
             }
             else // IfSubOpcode - Non-Compare series
             {
@@ -4172,7 +4194,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    if (AllowLegacyBranchCondition)
+                    if (_opts.AllowLegacyBranchCondition)
                     { // Deprecated BranchConditions
                         if (condStr.Equals("NotExistFile", StringComparison.OrdinalIgnoreCase))
                         {
@@ -4227,21 +4249,21 @@ namespace PEBakery.Core
                     }
                 }
 
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), section, lineIdx);
+                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), lineIdx);
             }
 
             return new CodeInfo_If(cond, embCmd);
         }
 
-        public static CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, ScriptSection section, int lineIdx)
+        public CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, int lineIdx)
         {
-            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, section, lineIdx); // Skip Else
+            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, lineIdx); // Skip Else
             return new CodeInfo_Else(embCmd);
         }
 
-        public static CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, ScriptSection section, int lineIdx)
+        public CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, int lineIdx)
         {
-            CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, section, lineIdx);
+            CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
             return embed;
         }
         #endregion

@@ -93,23 +93,37 @@ namespace PEBakery.Tests.Core
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, DummySection(), rawCode, type, check, out _);
+            CodeParser parser = new CodeParser(DummySection(), App.Setting.ExportCodeParserOptions());
+            return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            return Eval(s, DummySection(), rawCode, type, check, out cmd);
+            CodeParser parser = new CodeParser(DummySection(), App.Setting.ExportCodeParserOptions());
+            return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, section, rawCode, type, check, out _);
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return Eval(s, parser, rawCode, type, check, out cmd);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check)
+        {
+            return Eval(s, parser, rawCode, type, check, out _);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, CodeParser parser, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
             // Create CodeCommand
-            cmd = CodeParser.ParseStatement(rawCode, section);
+            cmd = parser.ParseStatement(rawCode);
             if (cmd.Type == CodeType.Error)
             {
                 CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
@@ -142,7 +156,8 @@ namespace PEBakery.Tests.Core
             // Create CodeCommand
             List<LogInfo> errorLogs;
             ScriptSection dummySection = DummySection();
-            (cmds, errorLogs) = CodeParser.ParseStatements(rawCodes, dummySection);
+            CodeParser parser = new CodeParser(dummySection, App.Setting.ExportCodeParserOptions());
+            (cmds, errorLogs) = parser.ParseStatements(rawCodes);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
                 Assert.AreEqual(ErrorCheck.ParserError, check);
@@ -168,7 +183,9 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            return EvalOptLines(s, DummySection(), opType, rawCodes, check, out _);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
         /// <summary>
@@ -181,7 +198,9 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
-            return EvalOptLines(s, DummySection(), opType, rawCodes, check, out cmds);
+            ScriptSection section = DummySection();
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
         }
 
         /// <summary>
@@ -195,7 +214,8 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            return EvalOptLines(s, section, opType, rawCodes, check, out _);
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
         /// <summary>
@@ -210,9 +230,39 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
+        }
+
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="parser"></param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, CodeParser parser, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check)
+        {
+            return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
+        }
+
+        /// <summary>
+        /// Eval for multiple lines of code
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="parser"></param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
+        /// <param name="rawCodes"></param>
+        /// <param name="check"></param>
+        /// <param name="cmds"></param>
+        /// <returns></returns>
+        public static List<LogInfo> EvalOptLines(EngineState s, CodeParser parser, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
+        {
             // Parse CodeCommand
             List<LogInfo> errorLogs;
-            (cmds, errorLogs) = CodeParser.ParseStatements(rawCodes, section);
+            (cmds, errorLogs) = parser.ParseStatements(rawCodes);
 
             if (errorLogs.Any(x => x.State == LogState.Error))
             {

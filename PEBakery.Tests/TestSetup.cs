@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Tests.Core;
+using PEBakery.WPF;
 using System;
 using System.IO;
 
@@ -13,6 +14,12 @@ namespace PEBakery.Tests
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
+            // Setting instance
+            string emptyTempFile = Path.GetTempFileName();
+            if (File.Exists(emptyTempFile))
+                File.Delete(emptyTempFile);
+            App.Setting = new SettingViewModel(emptyTempFile); // Set to default
+
             // Load Project "TestSuite" (ScriptCache disabled)
             EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(EngineTests.BaseDir, null);
@@ -21,6 +28,7 @@ namespace PEBakery.Tests
 
             // Should be only one project named TestSuite
             EngineTests.Project = projects.ProjectList[0];
+            Assert.IsTrue(projects.ProjectList.Count == 1);
 
             // Init NativeAssembly
             NativeGlobalInit();
@@ -33,8 +41,6 @@ namespace PEBakery.Tests
             App.Logger = EngineTests.Logger;
             App.BaseDir = EngineTests.BaseDir;
             App.BuildDate = BuildTimestamp.ReadDateTime();
-
-            CodeParser.OptimizeCode = true;
         }
 
         private static void NativeGlobalInit()

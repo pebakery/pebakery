@@ -384,8 +384,9 @@ namespace PEBakery.Tests.Core.Command
             const BranchConditionType type = BranchConditionType.ExistMacro;
 
             // Test if Unicode can be used in macro name
-            s.Macro.GlobalDict["대한"] = CodeParser.ParseStatement("Echo,054-790-6641", EngineTests.DummySection());
-            s.Macro.LocalDict["Sonic"] = CodeParser.ParseStatement("Echo,Tails", EngineTests.DummySection());
+            CodeParser parser = new CodeParser(EngineTests.DummySection(), App.Setting.ExportCodeParserOptions());
+            s.Macro.GlobalDict["대한"] = parser.ParseStatement("Echo,사람");
+            s.Macro.LocalDict["Sonic"] = parser.ParseStatement("Echo,Tails");
             s.Variables.SetValue(VarsType.Local, "Tails", "Sonic");
 
             BranchCondition cond = new BranchCondition(type, false, "대한");

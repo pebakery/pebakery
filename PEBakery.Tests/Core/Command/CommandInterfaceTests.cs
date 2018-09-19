@@ -51,6 +51,7 @@ namespace PEBakery.Tests.Core.Command
             string srcFile = Path.Combine(EngineTests.Project.ProjectDir, TestSuiteInterface, "ReadInterface.script");
             string scriptFile = Path.GetTempFileName();
 
+
             try
             {
                 void SingleTemplate(string rawCode, string key, string compStr, ErrorCheck check = ErrorCheck.Success)
@@ -59,10 +60,17 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    // ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    ScriptSection section = sc.Sections["Process"];
+
+                    // Enable Visible command
+                    CodeParser.Options opts = App.Setting.ExportCodeParserOptions();
+                    opts.AllowLegacyInterfaceCommand = true;
+                    CodeParser parser = new CodeParser(section, opts);
+
                     try
                     {
-                        EngineTests.Eval(s, ifaceSection, rawCode, CodeType.Visible, check);
+                        EngineTests.Eval(s, parser, rawCode, CodeType.Visible, check);
                         if (check == ErrorCheck.Success)
                         {
                             string dest = Ini.ReadKey(scriptFile, "Interface", key);
@@ -81,11 +89,18 @@ namespace PEBakery.Tests.Core.Command
 
                     EngineState s = EngineTests.CreateEngineState();
                     Script sc = s.Project.LoadScriptRuntime(scriptFile, new LoadScriptRuntimeOptions());
-                    ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    // ScriptSection ifaceSection = sc.GetInterfaceSection(out _);
+                    ScriptSection section = sc.Sections["Process"];
+
+                    // Enable Visible command
+                    CodeParser.Options opts = App.Setting.ExportCodeParserOptions();
+                    opts.AllowLegacyInterfaceCommand = true;
+                    CodeParser parser = new CodeParser(section, opts);
+
                     try
                     {
                         CodeType? opType = optSuccess ? (CodeType?)CodeType.VisibleOp : null;
-                        EngineTests.EvalOptLines(s, ifaceSection, opType, rawCodes, check);
+                        EngineTests.EvalOptLines(s, parser, section, opType, rawCodes, check);
                         if (check == ErrorCheck.Success)
                         {
                             foreach ((string key, string value) in compTuples)

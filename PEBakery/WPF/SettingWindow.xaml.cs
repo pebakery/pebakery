@@ -25,22 +25,22 @@
     not derived from or based on this program. 
 */
 
+using Ookii.Dialogs.Wpf;
+using PEBakery.Core;
+using PEBakery.Helper;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
-using System.Threading;
-using System.Collections.ObjectModel;
-using System.Drawing.Text;
-using PEBakery.IniLib;
-using PEBakery.Core;
-using PEBakery.Helper;
-using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
 {
@@ -202,12 +202,15 @@ namespace PEBakery.WPF
     #endregion
 
     #region SettingViewModel
+    /// <summary>
+    /// TODO: Split Model and ViewModel
+    /// </summary>
     public class SettingViewModel : INotifyPropertyChanged
     {
         #region Field and Constructor
         private readonly string _settingFile;
         public LogDatabase LogDb { get; set; }
-        public ScriptCache CacheDb { get; set; }
+        public ScriptCache ScriptCache { get; set; }
         public ProjectCollection Projects { get; private set; }
 
         public SettingViewModel(string settingFile)
@@ -838,19 +841,26 @@ namespace PEBakery.WPF
         #region ApplySetting
         public void ApplySetting()
         {
-            CodeParser.OptimizeCode = General_OptimizeCode;
             Engine.StopBuildOnError = General_StopBuildOnError;
             Logger.DebugLevel = Log_DebugLevel;
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
-            CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
-            CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
-            CodeParser.AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand;
-            CodeParser.AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams;
             UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
+        }
+
+        public CodeParser.Options ExportCodeParserOptions()
+        {
+            return new CodeParser.Options
+            {
+                OptimizeCode = General_OptimizeCode,
+                AllowLegacyBranchCondition = Compat_LegacyBranchCondition,
+                AllowLegacyRegWrite = Compat_LegacyRegWrite,
+                AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand,
+                AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams,
+            };
         }
         #endregion
 
@@ -922,7 +932,7 @@ namespace PEBakery.WPF
             // If key not specified or value malformed, default value will be used.
             SetToDefault();
 
-            if (File.Exists(_settingFile) == false)
+            if (!File.Exists(_settingFile))
                 return;
 
             const string generalStr = "General";
@@ -1152,9 +1162,9 @@ namespace PEBakery.WPF
 
         public void ClearCacheDb()
         {
-            if (CacheDb != null)
+            if (ScriptCache != null)
             {
-                CacheDb.ClearTable(new ScriptCache.ClearTableOptions
+                ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
                 {
                     ScriptCache = true,
                 });
@@ -1171,13 +1181,13 @@ namespace PEBakery.WPF
 
         public void UpdateCacheDbState()
         {
-            if (CacheDb == null)
+            if (ScriptCache == null)
             {
                 Script_CacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = CacheDb.Table<DB_ScriptCache>().Count();
+                int cacheCount = ScriptCache.Table<DB_ScriptCache>().Count();
                 Script_CacheState = $"{cacheCount} scripts cached";
             }
         }

@@ -25,11 +25,10 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
 using System;
 using System.IO;
-using System.Linq;
-using PEBakery.Core;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -41,7 +40,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandNetwork")]
         public void WebGet()
-        { 
+        {
             EngineState s = EngineTests.CreateEngineState();
 
             WebGet_1(s);

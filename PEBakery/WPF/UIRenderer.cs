@@ -1209,19 +1209,16 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                Logger logger = null;
-                SettingViewModel setting = null;
-                MainViewModel mainModel = null;
+                Logger logger = App.Logger;
 
+                MainViewModel mainModel = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
 
-                    logger = w.Logger;
                     mainModel = w.Model;
-                    setting = w.Setting;
-
+                    
                     // Populate BuildTree
                     if (!hideProgress)
                     {
@@ -1235,7 +1232,7 @@ namespace PEBakery.WPF
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
-                s.SetOptions(setting);
+                s.SetOptions(App.Setting);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
                     s.LogMode = LogMode.FullDefer;
 

@@ -100,8 +100,8 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
 
-            // Force parsing of code, bypassing caching by section.GetCodes()
-            (CodeCommand[] cmds, List<LogInfo> logs) = CodeParser.ParseStatements(section.Lines, section);
+            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            (CodeCommand[] cmds, List<LogInfo> logs) = parser.ParseStatements();
             InternalValidateCodes(cmds, logs);
 
             return logs;

@@ -1,4 +1,5 @@
 ﻿using PEBakery.Core;
+using PEBakery.WPF;
 using System;
 using System.Globalization;
 using System.IO;
@@ -16,6 +17,7 @@ namespace PEBakery
         public static Logger Logger;
         public static string BaseDir;
         public static DateTime BuildDate;
+        public static SettingViewModel Setting;
 
         internal void App_Startup(object sender, StartupEventArgs e)
         {

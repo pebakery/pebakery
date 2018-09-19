@@ -25,14 +25,14 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.Win32;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.IO;
-using Microsoft.Win32;
 using System.ComponentModel;
-using PEBakery.Helper;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -288,13 +288,14 @@ namespace PEBakery.Core.Commands
 
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
-            List<string> args = new List<string>() { hKeyStr, valTypeStr, info.KeyPath, info.ValueName };
+            List<string> args = new List<string> { hKeyStr, valTypeStr, info.KeyPath, info.ValueName };
             args.AddRange(info.ValueDatas);
             if (info.NoWarn)
                 args.Add("NOWARN");
 
             CodeType newType = CodeType.RegWrite;
-            CodeInfo newInfo = CodeParser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.Section, cmd.LineIdx);
+            CodeParser parser = new CodeParser(cmd.Section, App.Setting.ExportCodeParserOptions());
+            CodeInfo newInfo = parser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.LineIdx);
             CodeCommand newCmd = new CodeCommand(cmd.RawCode, CodeType.RegWrite, newInfo, cmd.LineIdx);
             return CommandRegistry.RegWrite(s, newCmd);
         }

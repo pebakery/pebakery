@@ -115,10 +115,15 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
-                            GlobalDict[kv.Key] = CodeParser.ParseStatement(kv.Value, section);
+                        if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
+                        { // Macro Name Validation
+                            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+                            GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
+                        }
                         else
+                        {
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                        }
                     }
                     catch (Exception e)
                     {
@@ -137,11 +142,15 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        // Macro Name Validation
                         if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
-                            GlobalDict[kv.Key] = CodeParser.ParseStatement(kv.Value, permaSection);
+                        { // Macro Name Validation
+                            CodeParser parser = new CodeParser(permaSection, App.Setting.ExportCodeParserOptions());
+                            GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
+                        }
                         else
+                        {
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                        }
                     }
                     catch (Exception e)
                     {
@@ -194,7 +203,8 @@ namespace PEBakery.Core
                             continue;
                         }
 
-                        LocalDict[kv.Key] = CodeParser.ParseStatement(kv.Value, section);
+                        CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+                        LocalDict[kv.Key] = parser.ParseStatement(kv.Value);
                         logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
                         count += 1;
                     }
@@ -229,7 +239,8 @@ namespace PEBakery.Core
             if (macroCommand != null)
             { // Insert
                 // Try parsing
-                CodeCommand cmd = CodeParser.ParseStatement(macroCommand, section);
+                CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+                CodeCommand cmd = parser.ParseStatement(macroCommand);
                 if (cmd.Type == CodeType.Error)
                 {
                     CodeInfo_Error info = cmd.Info.Cast<CodeInfo_Error>();
