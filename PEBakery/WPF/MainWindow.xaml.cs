@@ -69,12 +69,12 @@ namespace PEBakery.WPF
 
         public ProjectTreeItemModel CurMainTree { get; private set; }
         public ProjectTreeItemModel CurBuildTree { get; set; }
+        private UIRenderer _renderer { get; set; }
 
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
 
         public const int MaxDpiScale = 4;
-        // public SettingViewModel Setting { get; }
 
         public MainViewModel Model { get; }
 
@@ -584,21 +584,11 @@ namespace PEBakery.WPF
             Model.ScriptCheckResult = CodeValidator.Result.Unknown;
             if (sc.Type == ScriptType.Directory)
             {
-                // Clear MainCanvas
-                Model.MainCanvas.Children.Clear();
+                ClearScriptInterface();
             }
             else
             {
-                // Render script interface
-                double scaleFactor = App.Setting.Interface_ScaleFactor / 100;
-                ScaleTransform scale;
-                if (scaleFactor - 1 < double.Epsilon)
-                    scale = new ScaleTransform(1, 1);
-                else
-                    scale = new ScaleTransform(scaleFactor, scaleFactor);
-                UIRenderer render = new UIRenderer(Model.MainCanvas, this, sc, scaleFactor, true);
-                Model.MainCanvas.LayoutTransform = scale;
-                render.Render();
+                DisplayScriptInerface(sc);
 
                 // Run CodeValidator
                 // Do not use await, let it run in background
@@ -608,6 +598,32 @@ namespace PEBakery.WPF
 
             Model.IsTreeEntryFile = sc.Type != ScriptType.Directory;
             Model.OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
+        }
+
+        public void DisplayScriptInerface(Script sc)
+        {
+            // Set scale factor
+            double scaleFactor = App.Setting.Interface_ScaleFactor / 100;
+            ScaleTransform scale;
+            if (scaleFactor - 1 < double.Epsilon)
+                scale = new ScaleTransform(1, 1);
+            else
+                scale = new ScaleTransform(scaleFactor, scaleFactor);
+            Model.MainCanvas.LayoutTransform = scale;
+
+            // Render script interface
+            ClearScriptInterface();
+            _renderer = new UIRenderer(Model.MainCanvas, this, sc, scaleFactor, true);
+            _renderer.Render();
+        }
+
+        public void ClearScriptInterface()
+        {
+            if (_renderer == null)
+                return;
+
+            _renderer.Clear();
+            _renderer = null;
         }
 
         public void DisplayScriptLogo(Script sc)
@@ -1986,10 +2002,7 @@ namespace PEBakery.WPF
         {
             set
             {
-                if (value)
-                    BuildCommandProgressVisibility = Visibility.Visible;
-                else
-                    BuildCommandProgressVisibility = Visibility.Collapsed;
+                BuildCommandProgressVisibility = value ? Visibility.Visible : Visibility.Collapsed;
                 OnPropertyUpdate(nameof(BuildCommandProgressVisibility));
             }
         }
@@ -2312,10 +2325,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region ToString
-        public override string ToString()
-        {
-            return Text;
-        }
+        public override string ToString() => Text;
         #endregion
     }
     #endregion

@@ -48,25 +48,26 @@ using System.Windows.Navigation;
 
 namespace PEBakery.WPF
 {
-    // TODO: Fix potential memory leak due to event handler
     #region UIRenderer
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class UIRenderer
     {
-        #region Fields
+        #region Fields and Properties
         public const int MaxDpiScale = 4;
         public const int MaxUrlDisplayLen = 47;
-        public const string Interface = "Interface";
-
         private readonly Variables _variables;
 
-        public RenderInfo RenderInfo;
-        public List<UIControl> UICtrls { get; }
+        private RenderInfo _r;
         public double ScaleFactor
         {
-            get => RenderInfo.ScaleFactor;
-            set => RenderInfo.ScaleFactor = value;
+            get => _r.ScaleFactor;
+            set => _r.ScaleFactor = value;
         }
+
+        public readonly List<UIControl> UICtrls;
+        private UIControl[] _visibleCtrls => _r.ViewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
+        private UIControl[] _radioButtons => _visibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+        private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
 
         // Compatibility Option
         public static bool IgnoreWidthOfWebLabel = false;
@@ -76,13 +77,10 @@ namespace PEBakery.WPF
         public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode)
         {
             _variables = script.Project.Variables;
-            RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
+            _r = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
-            if (uiCtrls == null)
-                uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
-
-            UICtrls = uiCtrls;
+            UICtrls = uiCtrls ?? new List<UIControl>(0);
 
             App.Logger.SystemWrite(errLogs);
         }
@@ -90,17 +88,13 @@ namespace PEBakery.WPF
         public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode)
         {
             _variables = script.Project.Variables;
-            RenderInfo = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
+            _r = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
 
-            if (uiCtrls == null)
-                uiCtrls = new List<UIControl>(0); // Create empty uiCtrls to prevent crash
-
-            UICtrls = uiCtrls;
+            UICtrls = uiCtrls ?? new List<UIControl>(0);
         }
         #endregion
 
         #region Load Utility
-
         public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc)
         {
             // Check if script has custom interface section
@@ -128,88 +122,140 @@ namespace PEBakery.WPF
         public static string GetInterfaceSectionName(Script sc)
         {
             // Check if script has custom interface section
-            if (sc.MainInfo.ContainsKey(Interface))
-                return sc.MainInfo[Interface];
-            return Interface;
+            if (sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
+                return sc.MainInfo[ScriptSection.Names.Interface];
+            return ScriptSection.Names.Interface;
         }
         #endregion
 
-        #region Render All
+        #region Render
         public void Render()
         {
             if (UICtrls == null) // This script does not have 'Interface' section
                 return;
 
-            UIControl[] uiCtrlArr = RenderInfo.ViewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
-
-            InitCanvas(RenderInfo.Canvas);
-            UIControl[] radioButtons = uiCtrlArr.Where(x => x.Type == UIControlType.RadioButton).ToArray();
-            foreach (UIControl uiCmd in uiCtrlArr)
+            InitCanvas(_r.Canvas);
+            _cleanInfos.Clear();
+            foreach (UIControl uiCtrl in _visibleCtrls)
             {
                 try
                 {
-                    switch (uiCmd.Type)
+                    // Render and add event
+                    RenderCleanInfo? clean = null;
+                    switch (uiCtrl.Type)
                     {
                         case UIControlType.TextBox:
-                            UIRenderer.RenderTextBox(RenderInfo, uiCmd);
+                            clean = RenderTextBox(uiCtrl);
                             break;
                         case UIControlType.TextLabel:
-                            UIRenderer.RenderTextLabel(RenderInfo, uiCmd);
+                            RenderTextLabel(uiCtrl);
                             break;
                         case UIControlType.NumberBox:
-                            UIRenderer.RenderNumberBox(RenderInfo, uiCmd);
+                            clean = RenderNumberBox(uiCtrl);
                             break;
                         case UIControlType.CheckBox:
-                            UIRenderer.RenderCheckBox(RenderInfo, uiCmd);
+                            clean = RenderCheckBox(uiCtrl);
                             break;
                         case UIControlType.ComboBox:
-                            UIRenderer.RenderComboBox(RenderInfo, uiCmd);
+                            clean = RenderComboBox(uiCtrl);
                             break;
                         case UIControlType.Image:
-                            UIRenderer.RenderImage(RenderInfo, uiCmd);
+                            clean = RenderImage(uiCtrl);
                             break;
                         case UIControlType.TextFile:
-                            UIRenderer.RenderTextFile(RenderInfo, uiCmd);
+                            RenderTextFile(uiCtrl);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(RenderInfo, uiCmd);
+                            clean = RenderButton(uiCtrl);
                             break;
                         case UIControlType.WebLabel:
-                            UIRenderer.RenderWebLabel(RenderInfo, uiCmd);
+                            clean = RenderWebLabel(uiCtrl);
                             break;
                         case UIControlType.RadioButton:
-                            UIRenderer.RenderRadioButton(RenderInfo, uiCmd, radioButtons);
+                            clean = RenderRadioButton(uiCtrl);
                             break;
                         case UIControlType.Bevel:
-                            UIRenderer.RenderBevel(RenderInfo, uiCmd);
+                            RenderBevel(uiCtrl);
                             break;
                         case UIControlType.FileBox:
-                            UIRenderer.RenderFileBox(RenderInfo, uiCmd, _variables);
+                            clean = RenderFileBox(uiCtrl, _variables);
                             break;
                         case UIControlType.RadioGroup:
-                            UIRenderer.RenderRadioGroup(RenderInfo, uiCmd);
+                            clean = RenderRadioGroup(uiCtrl);
                             break;
                         default:
-                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
+                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unknown UIControlType [{uiCtrl.Type}] ({uiCtrl.RawLine})"));
                             break;
                     }
+
+                    // In edit mode (ScriptEditWindow), all event handler is disabled -> no need to clean events
+                    if (_r.ViewMode && clean is RenderCleanInfo ci)
+                        _cleanInfos.Add(ci);
                 }
                 catch (Exception e)
                 {
                     // Log failure
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCtrl.RawLine}]"));
                 }
             }
         }
         #endregion
 
-        #region Render Each Control
-        /// <summary>
-        /// Render TextBox control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderTextBox(RenderInfo r, UIControl uiCtrl)
+        #region Clear
+        public void Clear()
+        {
+            if (UICtrls == null) // This script does not have 'Interface' section
+                return;
+
+            foreach (RenderCleanInfo ci in _cleanInfos)
+            {
+                // Remove Event
+                switch (ci.UICtrl.Type)
+                {
+                    case UIControlType.TextBox:
+                        ManageTextBoxEvent(ci.Element as TextBox, false);
+                        break;
+                    case UIControlType.NumberBox:
+                        ManageNumberBoxEvent(ci.Element as NumberBox, false);
+                        break;
+                    case UIControlType.CheckBox:
+                        ManageCheckBoxEvent(ci.Element as CheckBox, false, (string)ci.Tag);
+                        break;
+                    case UIControlType.ComboBox:
+                        ManageComboBoxEvent(ci.Element as ComboBox, false, (string)ci.Tag);
+                        break;
+                    case UIControlType.Image:
+                        ManageImageEvent(ci.Element as Button, false, (bool)ci.Tag);
+                        break;
+                    case UIControlType.Button:
+                        ManageButtonEvent(ci.Element as Button, false, (string)ci.Tag);
+                        break;
+                    case UIControlType.WebLabel:
+                        ManageWebLabelEvent(ci.Element as Hyperlink, false);
+                        break;
+                    case UIControlType.RadioButton:
+                        ManageRadioButtonEvent(ci.Element as RadioButton, false, (string)ci.Tag);
+                        break;
+                    case UIControlType.FileBox:
+                        Debug.Assert(ci.Elements != null, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.FileBox}]");
+                        Debug.Assert(ci.Elements.Length == 2, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.FileBox}]]");
+                        ManageFileBoxEvent(ci.Elements[0] as TextBox, ci.Elements[1] as Button, false);
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(ci.Elements != null, $"null in [UIRenderer.{nameof(Clear)}, {UIControlType.RadioGroup}]");
+                        ManageRadioGroupEvent(ci.Elements.Select(x => x as RadioButton).ToArray(), false, (string)ci.Tag);
+                        break;
+                }
+            }
+
+            _cleanInfos.Clear();
+            InitCanvas(_r.Canvas);
+        }
+        #endregion
+
+        #region Render Control
+        #region TextBox
+        public RenderCleanInfo RenderTextBox(UIControl uiCtrl)
         {
             // WB082 textbox control's y coord is of textbox's, not textlabel's.
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
@@ -222,23 +268,14 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (r.ViewMode)
-            {
-                box.LostFocus += (object sender, RoutedEventArgs e) =>
-                {
-                    TextBox tBox = sender as TextBox;
-                    Debug.Assert(tBox != null);
-
-                    info.Value = tBox.Text;
-                    uiCtrl.Update();
-                };
-            }
+            if (_r.ViewMode)
+                ManageTextBoxEvent(box, true);
 
             if (uiCtrl.Text.Length == 0)
             { // No caption
                 SetToolTip(box, info.ToolTip);
-                SetEditModeProperties(r, box, uiCtrl);
-                DrawToCanvas(r, box, uiCtrl.Rect);
+                SetEditModeProperties(_r, box, uiCtrl);
+                DrawToCanvas(_r, box, uiCtrl);
             }
             else
             { // Print caption
@@ -262,19 +299,40 @@ namespace PEBakery.WPF
                 grid.Children.Add(box);
 
                 SetToolTip(grid, info.ToolTip);
-                SetEditModeProperties(r, grid, uiCtrl);
+                SetEditModeProperties(_r, grid, uiCtrl);
 
                 Rect gridRect = new Rect(uiCtrl.X, uiCtrl.Y - UIInfo_TextBox.AddWidth, uiCtrl.Width, uiCtrl.Height + UIInfo_TextBox.AddWidth);
-                DrawToCanvas(r, grid, gridRect);
+                DrawToCanvas(_r, grid, uiCtrl, gridRect);
             }
+
+            return new RenderCleanInfo(uiCtrl, box);
         }
 
-        /// <summary>
-        /// Render TextLabel control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderTextLabel(RenderInfo r, UIControl uiCtrl)
+        public void ManageTextBoxEvent(TextBox box, bool addMode)
+        {
+            Debug.Assert(box != null, $"null in [{nameof(ManageTextBoxEvent)}]");
+            if (addMode)
+                box.LostFocus += TextBox_LostFocus;
+            else
+                box.LostFocus -= TextBox_LostFocus;
+        }
+
+        public void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox box = sender as TextBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(TextBox_LostFocus)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.TextBox);
+            UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+            info.Value = box.Text;
+            uiCtrl.Update();
+        }
+        #endregion
+
+        #region TextLabel
+        public void RenderTextLabel(UIControl uiCtrl)
         {
             UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
 
@@ -308,16 +366,13 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(block, info.ToolTip);
-            SetEditModeProperties(r, block, uiCtrl);
-            DrawToCanvas(r, block, uiCtrl.Rect);
+            SetEditModeProperties(_r, block, uiCtrl);
+            DrawToCanvas(_r, block, uiCtrl);
         }
+        #endregion
 
-        /// <summary>
-        /// Render NumberBox control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderNumberBox(RenderInfo r, UIControl uiCtrl)
+        #region NumberBox
+        public RenderCleanInfo RenderNumberBox(UIControl uiCtrl)
         {
             UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
 
@@ -332,30 +387,45 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (r.ViewMode)
-            {
-                box.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
-                {
-                    info.Value = (int)e.NewValue;
-                    uiCtrl.Update();
-                };
-            }
+            if (_r.ViewMode)
+                ManageNumberBoxEvent(box, true);
 
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(r, box, uiCtrl);
-            DrawToCanvas(r, box, uiCtrl.Rect);
+            SetEditModeProperties(_r, box, uiCtrl);
+            DrawToCanvas(_r, box, uiCtrl);
+
+            return new RenderCleanInfo(uiCtrl, box);
         }
 
-        /// <summary>
-        /// Render CheckBox control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderCheckBox(RenderInfo r, UIControl uiCtrl)
+        public void ManageNumberBoxEvent(NumberBox box, bool addMode)
+        {
+            Debug.Assert(box != null, $"null in [{nameof(ManageNumberBoxEvent)}]");
+            if (addMode)
+                box.ValueChanged += NumberBox_ValueChanged;
+            else
+                box.ValueChanged -= NumberBox_ValueChanged;
+        }
+
+        public void NumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        {
+            NumberBox box = sender as NumberBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(NumberBox_ValueChanged)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.NumberBox);
+            UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+            info.Value = (int)e.NewValue;
+            uiCtrl.Update();
+        }
+        #endregion
+
+        #region CheckBox
+        public RenderCleanInfo RenderCheckBox(UIControl uiCtrl)
         {
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
 
-            CheckBox checkBox = new CheckBox
+            CheckBox box = new CheckBox
             {
                 Content = uiCtrl.Text,
                 IsChecked = info.Value,
@@ -363,51 +433,80 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (info.SectionName != null && r.ViewMode)
-            {
-                checkBox.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                    {
-                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
-                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
-                    }
-                    else
-                    {
-                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                    }
-                };
-            }
+            if (_r.ViewMode)
+                ManageCheckBoxEvent(box, true, info.SectionName);
 
-            if (r.ViewMode)
-            {
-                checkBox.Checked += (object sender, RoutedEventArgs e) =>
-                {
-                    info.Value = true;
-                    uiCtrl.Update();
-                };
-                checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
-                {
-                    info.Value = false;
-                    uiCtrl.Update();
-                };
-            }
+            SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(_r, box, uiCtrl);
+            DrawToCanvas(_r, box, uiCtrl);
 
-            SetToolTip(checkBox, info.ToolTip);
-            SetEditModeProperties(r, checkBox, uiCtrl);
-            DrawToCanvas(r, checkBox, uiCtrl.Rect);
+            return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        /// <summary>
-        /// Render ComboBox control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderComboBox(RenderInfo r, UIControl uiCtrl)
+        public void ManageCheckBoxEvent(CheckBox box, bool addMode, string sectionName)
+        {
+            Debug.Assert(box != null, $"null in [{nameof(ManageCheckBoxEvent)}]");
+            if (addMode)
+            {
+                box.Checked += CheckBox_Checked;
+                box.Unchecked += CheckBox_Unchecked;
+                if (sectionName != null)
+                    box.Click += CheckBox_Click;
+            }
+            else
+            {
+                box.Checked -= CheckBox_Checked;
+                box.Unchecked -= CheckBox_Unchecked;
+                if (sectionName != null)
+                    box.Click -= CheckBox_Click;
+            }
+        }
+
+        public void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            CheckBox box = sender as CheckBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Checked)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            info.Value = true;
+            uiCtrl.Update();
+        }
+
+        public void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            CheckBox box = sender as CheckBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Unchecked)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+            
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            info.Value = false;
+            uiCtrl.Update();
+        }
+
+        public void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            CheckBox box = sender as CheckBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Click)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
+
+        #region ComboBox
+        public RenderCleanInfo RenderComboBox(UIControl uiCtrl)
         {
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
-            ComboBox comboBox = new ComboBox
+            ComboBox box = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
                 ItemsSource = info.Items,
@@ -415,49 +514,66 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (r.ViewMode)
-            {
-                comboBox.LostFocus += (object sender, RoutedEventArgs e) =>
-                {
-                    ComboBox box = sender as ComboBox;
-                    Debug.Assert(box != null);
+            if (_r.ViewMode)
+                ManageComboBoxEvent(box, true, info.SectionName);
 
-                    if (info.Index != box.SelectedIndex)
-                    {
-                        info.Index = box.SelectedIndex;
-                        uiCtrl.Text = info.Items[box.SelectedIndex];
-                        uiCtrl.Update();
-                    }
-                };
-            }
+            SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(_r, box, uiCtrl);
+            DrawToCanvas(_r, box, uiCtrl);
 
-            if (info.SectionName != null && r.ViewMode)
-            {
-                comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs e) =>
-                {
-                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                    {
-                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
-                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - CheckBox [{uiCtrl.Key}]", info.HideProgress);
-                    }
-                    else
-                    {
-                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                    }
-                };
-            }
-
-            SetToolTip(comboBox, info.ToolTip);
-            SetEditModeProperties(r, comboBox, uiCtrl);
-            DrawToCanvas(r, comboBox, uiCtrl.Rect);
+            return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
 
-        /// <summary>
-        /// Render Image control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderImage(RenderInfo r, UIControl uiCtrl)
+        public void ManageComboBoxEvent(ComboBox box, bool addMode, string sectionName)
+        {
+            Debug.Assert(box != null, $"null in [{nameof(ManageComboBoxEvent)}]");
+            if (addMode)
+            {
+                box.LostFocus += ComboBox_LostFocus;
+                if (sectionName != null)
+                    box.SelectionChanged += ComboBox_SelectionChanged;
+            }
+            else
+            {
+                box.LostFocus -= ComboBox_LostFocus;
+                if (sectionName != null)
+                    box.SelectionChanged -= ComboBox_SelectionChanged;
+            }
+        }
+
+        public void ComboBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ComboBox box = sender as ComboBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Checked)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+
+            if (info.Index != box.SelectedIndex)
+            {
+                info.Index = box.SelectedIndex;
+                uiCtrl.Text = info.Items[box.SelectedIndex];
+                uiCtrl.Update();
+            }
+        }
+
+        public void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox box = sender as ComboBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_SelectionChanged)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox);
+            UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
+
+        #region Image
+        public RenderCleanInfo? RenderImage(UIControl uiCtrl)
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
@@ -481,13 +597,13 @@ namespace PEBakery.WPF
                     Child = noImage,
                 };
                 SetToolTip(border, info.ToolTip);
-                SetEditModeProperties(r, border, uiCtrl);
-                DrawToCanvas(r, border, uiCtrl.Rect);
-                return;
+                SetEditModeProperties(_r, border, uiCtrl);
+                DrawToCanvas(_r, border, uiCtrl);
+                return null;
             }
 
             if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
-            { // Wrong encoded image
+            { // Encoded image does not exist
                 PackIconMaterial alertImage = new PackIconMaterial
                 {
                     Kind = PackIconMaterialKind.Alert,
@@ -506,11 +622,11 @@ namespace PEBakery.WPF
                     Child = alertImage,
                 };
                 SetToolTip(border, info.ToolTip);
-                SetEditModeProperties(r, border, uiCtrl);
-                DrawToCanvas(r, border, uiCtrl.Rect);
+                SetEditModeProperties(_r, border, uiCtrl);
+                DrawToCanvas(_r, border, uiCtrl);
 
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
-                return;
+                return null;
             }
 
             BitmapImage bitmap;
@@ -519,26 +635,27 @@ namespace PEBakery.WPF
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
-                    return;
+                    return null;
                 }
 
-                if (type == ImageHelper.ImageType.Svg)
+                switch (type)
                 {
-                    double width = uiCtrl.Rect.Width * r.ScaleFactor;
-                    double height = uiCtrl.Rect.Height * r.ScaleFactor;
-                    bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
-                }
-                else
-                {
-                    bitmap = ImageHelper.ImageToBitmapImage(ms);
+                    case ImageHelper.ImageType.Svg:
+                        double width = uiCtrl.Rect.Width * _r.ScaleFactor;
+                        double height = uiCtrl.Rect.Height * _r.ScaleFactor;
+                        bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
+                        break;
+                    default:
+                        bitmap = ImageHelper.ImageToBitmapImage(ms);
+                        break;
                 }
             }
 
-            if (r.ViewMode)
+            if (_r.ViewMode)
             {
                 Button button = new Button
                 {
-                    Style = (Style)r.Window.FindResource("ImageButton"),
+                    Style = (Style)_r.Window.FindResource("ImageButton"),
                     Background = ImageHelper.BitmapImageToImageBrush(bitmap)
                 };
 
@@ -552,45 +669,13 @@ namespace PEBakery.WPF
                 }
 
                 string toolTip = info.ToolTip;
-                if (hasUrl)
-                { // Open URL
-                    button.Click += (object sender, RoutedEventArgs e) =>
-                    {
-                        Process.Start(info.Url);
-                    };
-
-                    toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.Url);
-                }
-                else
-                { // Open picture with external viewer
-                    button.Click += (object sender, RoutedEventArgs e) =>
-                    {
-                        if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
-                        {
-                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
-                            return;
-                        }
-
-                        string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
-
-                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
-                        using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
-                        {
-                            ms.Position = 0;
-                            ms.CopyTo(fs);
-                        }
-
-                        ProcessStartInfo procInfo = new ProcessStartInfo
-                        {
-                            FileName = path,
-                            UseShellExecute = true
-                        };
-                        Process.Start(procInfo);
-                    };
-                }
+                ManageImageEvent(button, true, hasUrl);
+                if (hasUrl) // Open URL
+                    toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
 
                 SetToolTip(button, toolTip);
-                DrawToCanvas(r, button, uiCtrl.Rect);
+                DrawToCanvas(_r, button, uiCtrl);
+                return new RenderCleanInfo(uiCtrl, button, hasUrl);
             }
             else
             {
@@ -604,17 +689,83 @@ namespace PEBakery.WPF
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
                 SetToolTip(image, info.ToolTip);
-                SetEditModeProperties(r, image, uiCtrl);
-                DrawToCanvas(r, image, uiCtrl.Rect);
+                SetEditModeProperties(_r, image, uiCtrl);
+                DrawToCanvas(_r, image, uiCtrl);
+                return null;
+            }
+        }
+
+        public void ManageImageEvent(Button button, bool addMode, bool hasUrl)
+        {
+            Debug.Assert(button != null, $"null in [{nameof(ManageImageEvent)}]");
+            if (addMode)
+            {
+                if (hasUrl)
+                    button.Click += Image_Click_OpenUrl;
+                else
+                    button.Click += Image_Click_OpenImage;
+            }
+            else
+            {
+                if (hasUrl)
+                    button.Click -= Image_Click_OpenUrl;
+                else
+                    button.Click -= Image_Click_OpenImage;
             }
         }
 
         /// <summary>
-        /// Render TextFile control.
-        /// Return true if failed.
+        /// Open URL
         /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderTextFile(RenderInfo r, UIControl uiCtrl)
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void Image_Click_OpenUrl(object sender, RoutedEventArgs e)
+        { 
+            Image image = sender as Image;
+            Debug.Assert(image != null, $"Wrong sender in [{nameof(Image_Click_OpenUrl)}]");
+            if (!(image.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.Image);
+            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+
+            FileHelper.OpenUri(info.Url);
+        }
+
+        /// <summary>
+        /// Open picture with external viewer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void Image_Click_OpenImage(object sender, RoutedEventArgs e)
+        {
+            Image image = sender as Image;
+            Debug.Assert(image != null, $"Wrong sender in [{nameof(Image_Click_OpenImage)}]");
+            if (!(image.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.Image);
+            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                return;
+            }
+
+            string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
+
+            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+            {
+                ms.Position = 0;
+                ms.CopyTo(fs);
+            }
+
+            FileHelper.OpenPath(path);
+        }
+        #endregion
+
+        #region TextFile
+        public void RenderTextFile(UIControl uiCtrl)
         {
             UIInfo_TextFile info = uiCtrl.Info.Cast<UIInfo_TextFile>();
 
@@ -649,16 +800,13 @@ namespace PEBakery.WPF
             ScrollViewer.SetCanContentScroll(textBox, true);
 
             SetToolTip(textBox, info.ToolTip);
-            SetEditModeProperties(r, textBox, uiCtrl);
-            DrawToCanvas(r, textBox, uiCtrl.Rect);
+            SetEditModeProperties(_r, textBox, uiCtrl);
+            DrawToCanvas(_r, textBox, uiCtrl);
         }
+        #endregion
 
-        /// <summary>
-        /// Render Button control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderButton(RenderInfo r, UIControl uiCtrl)
+        #region Button
+        public RenderCleanInfo? RenderButton(UIControl uiCtrl)
         {
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
@@ -668,28 +816,15 @@ namespace PEBakery.WPF
                 VerticalAlignment = VerticalAlignment.Center,
             };
 
-            if (r.ViewMode)
-            {
-                button.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                    {
-                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
-                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - Button [{uiCtrl.Key}]", info.HideProgress);
-                    }
-                    else
-                    {
-                        App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                    }
-                };
-            }
+            if (_r.ViewMode)
+                ManageButtonEvent(button, true, info.SectionName);
 
             if (info.Picture != null &&
                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                 EncodedFile.ContainsInterface(uiCtrl.Section.Script, info.Picture))
             { // Has Picture
                 if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
-                    return;
+                    return null;
 
                 Image image = new Image
                 {
@@ -741,16 +876,42 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(button, info.ToolTip);
-            SetEditModeProperties(r, button, uiCtrl);
-            DrawToCanvas(r, button, uiCtrl.Rect);
+            SetEditModeProperties(_r, button, uiCtrl);
+            DrawToCanvas(_r, button, uiCtrl);
+
+            return new RenderCleanInfo(uiCtrl, button, info.SectionName);
         }
 
-        /// <summary>
-        /// Render WebLabel control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderWebLabel(RenderInfo r, UIControl uiCtrl)
+        public void ManageButtonEvent(Button button, bool addMode, string sectionName)
+        {
+            Debug.Assert(button != null, $"null in [{nameof(ManageButtonEvent)}]");
+            if (addMode)
+            {
+                if (sectionName != null)
+                    button.Click += Button_Click;
+            }
+            else
+            {
+                if (sectionName != null)
+                    button.Click -= Button_Click;
+            }
+        }
+
+        public void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ComboBox box = sender as ComboBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_SelectionChanged)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.Button);
+            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
+
+        #region WebLabel
+        public RenderCleanInfo RenderWebLabel(UIControl uiCtrl)
         {
             UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
 
@@ -760,41 +921,46 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
             };
 
-            Hyperlink hyperLink = new Hyperlink
-            {
-                NavigateUri = new Uri(info.Url),
-            };
-            hyperLink.Inlines.Add(uiCtrl.Text);
-            if (r.ViewMode)
-            {
-                hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
-                {
-                    FileHelper.OpenUri(e.Uri.AbsoluteUri);
-                };
-            }
-            block.Inlines.Add(hyperLink);
+            Hyperlink link = new Hyperlink {NavigateUri = new Uri(info.Url)};
+            link.Inlines.Add(uiCtrl.Text);
+            if (_r.ViewMode)
+                ManageWebLabelEvent(link, true);
+            block.Inlines.Add(link);
 
-            string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.Url);
+            string toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
             SetToolTip(block, toolTip);
-            SetEditModeProperties(r, block, uiCtrl);
+            SetEditModeProperties(_r, block, uiCtrl);
 
-            if (IgnoreWidthOfWebLabel && r.ViewMode)
+            if (IgnoreWidthOfWebLabel && _r.ViewMode)
             { // Disable this in edit mode to encourage script developer address this issue
                 Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, block.Width, uiCtrl.Height);
-                DrawToCanvas(r, block, rect);
+                DrawToCanvas(_r, block, uiCtrl, rect);
             }
             else
             {
-                DrawToCanvas(r, block, uiCtrl.Rect);
+                DrawToCanvas(_r, block, uiCtrl);
             }
+
+            return new RenderCleanInfo(uiCtrl, link);
         }
 
-        /// <summary>
-        /// Render RadioGroup control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderRadioButton(RenderInfo r, UIControl uiCtrl, UIControl[] radioButtons)
+        public void ManageWebLabelEvent(Hyperlink link, bool addMode)
+        {
+            Debug.Assert(link != null, $"null in [{nameof(ManageButtonEvent)}]");
+            if (addMode)
+                link.RequestNavigate += WebLabel_RequestNavigate;
+            else
+                link.RequestNavigate -= WebLabel_RequestNavigate;
+        }
+
+        public void WebLabel_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            FileHelper.OpenUri(e.Uri.AbsoluteUri);
+        }
+        #endregion
+
+        #region RadioButton
+        public RenderCleanInfo RenderRadioButton(UIControl uiCtrl)
         {
             UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
@@ -802,67 +968,79 @@ namespace PEBakery.WPF
 
             RadioButton radio = new RadioButton
             {
-                GroupName = r.Script.RealPath,
+                GroupName = _r.Script.RealPath,
                 Content = uiCtrl.Text,
                 FontSize = fontSize,
                 IsChecked = info.Selected,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (info.SectionName != null && r.ViewMode)
-            {
-                radio.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                    {
-                        ScriptSection targetSection = r.Script.Sections[info.SectionName];
-                        UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - RadioButton [{uiCtrl.Key}]", info.HideProgress);
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                        });
-                    }
-                };
-            }
-
-            if (r.ViewMode)
-            {
-                radio.Checked += (object sender, RoutedEventArgs e) =>
-                {
-                    // RadioButton btn = sender as RadioButton;
-                    info.Selected = true;
-
-                    // Uncheck the other RadioButtons
-                    List<UIControl> updateList = radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.Ordinal)).ToList();
-                    foreach (UIControl uncheck in updateList)
-                    {
-                        Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                        UIInfo_RadioButton unInfo = uncheck.Info as UIInfo_RadioButton;
-                        Debug.Assert(unInfo != null, "Invalid UIInfo");
-
-                        unInfo.Selected = false;
-                    }
-
-                    updateList.Add(uiCtrl);
-                    UIControl.Update(updateList);
-                };
-            }
+            if (_r.ViewMode)
+                ManageRadioButtonEvent(radio, true, info.SectionName);
 
             SetToolTip(radio, info.ToolTip);
-            SetEditModeProperties(r, radio, uiCtrl);
-            DrawToCanvas(r, radio, uiCtrl.Rect);
+            SetEditModeProperties(_r, radio, uiCtrl);
+            DrawToCanvas(_r, radio, uiCtrl);
+
+            return new RenderCleanInfo(uiCtrl, radio, info.SectionName);
         }
 
-        /// <summary>
-        /// Render Bevel control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
+        public void ManageRadioButtonEvent(RadioButton radio, bool addMode, string sectionName)
+        {
+            Debug.Assert(radio != null, $"null in [{nameof(ManageRadioButtonEvent)}]");
+            if (addMode)
+            {
+                radio.Checked += RadioButton_Checked;
+                if (sectionName != null)
+                    radio.Click += Button_Click;
+            }
+            else
+            {
+                radio.Checked -= RadioButton_Checked;
+                if (sectionName != null)
+                    radio.Click -= Button_Click;
+            }
+        }
+
+        public void RadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton radio = sender as RadioButton;
+            Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Checked)}]");
+            if (!(radio.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton);
+            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+
+            info.Selected = true;
+
+            // Uncheck the other RadioButtons
+            List<UIControl> updateList = _radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (UIControl uncheck in updateList)
+            {
+                UIInfo_RadioButton unInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
+                unInfo.Selected = false;
+            }
+
+            updateList.Add(uiCtrl);
+            UIControl.Update(updateList);
+        }
+
+        public void RadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            RadioButton radio = sender as RadioButton;
+            Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Click)}]");
+            if (!(radio.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton);
+            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
+
+        #region Bevel
+        public void RenderBevel(UIControl uiCtrl)
         {
             UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
 
@@ -874,7 +1052,7 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.Gray,
             };
 
-            if (!r.ViewMode)
+            if (!_r.ViewMode)
             {
                 bevel.IsHitTestVisible = true; // Focus is given when clicked
                 Panel.SetZIndex(bevel, -1); // Should have lowest z-index
@@ -883,8 +1061,8 @@ namespace PEBakery.WPF
             SetToolTip(bevel, info.ToolTip);
             if (info.FontSize == null)
             { // No caption (WinBuilder compatible)
-                SetEditModeProperties(r, bevel, uiCtrl);
-                DrawToCanvas(r, bevel, uiCtrl.Rect);
+                SetEditModeProperties(_r, bevel, uiCtrl);
+                DrawToCanvas(_r, bevel, uiCtrl);
             }
             else
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
@@ -897,7 +1075,7 @@ namespace PEBakery.WPF
                     BorderBrush = Brushes.Transparent,
                 };
 
-                if (!r.ViewMode) // Focus is given when clicked
+                if (!_r.ViewMode) // Focus is given when clicked
                     textBorder.IsHitTestVisible = true;
 
                 TextBlock textBlock = new TextBlock
@@ -937,17 +1115,14 @@ namespace PEBakery.WPF
                 Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
                 subCanvas.Children.Add(textBorder);
-                SetEditModeProperties(r, subCanvas, uiCtrl);
-                DrawToCanvas(r, subCanvas, uiCtrl.Rect);
+                SetEditModeProperties(_r, subCanvas, uiCtrl);
+                DrawToCanvas(_r, subCanvas, uiCtrl);
             }
         }
+        #endregion
 
-        /// <summary>
-        /// Render FileBox control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderFileBox(RenderInfo r, UIControl uiCtrl, Variables variables)
+        #region FileBox
+        public RenderCleanInfo RenderFileBox(UIControl uiCtrl, Variables variables)
         {
             UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
@@ -958,18 +1133,6 @@ namespace PEBakery.WPF
                 Margin = new Thickness(0, 0, 5, 0),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-
-            if (r.ViewMode)
-            {
-                box.TextChanged += (object sender, TextChangedEventArgs e) =>
-                {
-                    TextBox tBox = sender as TextBox;
-                    Debug.Assert(tBox != null);
-
-                    uiCtrl.Text = tBox.Text;
-                    uiCtrl.Update();
-                };
-            }
 
             Button button = new Button
             {
@@ -982,51 +1145,8 @@ namespace PEBakery.WPF
                 },
             };
 
-            if (r.ViewMode)
-            {
-                button.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    // Button bt = sender as Button;
-
-                    if (info.IsFile)
-                    { // File
-                        string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
-                        if (File.Exists(currentPath))
-                            currentPath = Path.GetDirectoryName(currentPath);
-                        else
-                            currentPath = string.Empty;
-                        Debug.Assert(currentPath != null);
-
-                        Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
-                        {
-                            Filter = "All Files|*.*",
-                            InitialDirectory = currentPath,
-                        };
-                        if (dialog.ShowDialog() == true)
-                        {
-                            box.Text = dialog.FileName;
-                        }
-                    }
-                    else
-                    { // Directory
-                        VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
-
-                        string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
-                        if (Directory.Exists(currentPath))
-                            dialog.SelectedPath = currentPath;
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (dialog.ShowDialog(r.Window) == true)
-                            {
-                                box.Text = dialog.SelectedPath;
-                                if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
-                                    box.Text += "\\";
-                            }
-                        });
-                    }
-                };
-            }
+            if (_r.ViewMode)
+                ManageFileBoxEvent(box, button, true);
 
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -1038,16 +1158,91 @@ namespace PEBakery.WPF
             grid.Children.Add(button);
 
             SetToolTip(grid, info.ToolTip);
-            SetEditModeProperties(r, grid, uiCtrl);
-            DrawToCanvas(r, grid, uiCtrl.Rect);
+            SetEditModeProperties(_r, grid, uiCtrl);
+            DrawToCanvas(_r, grid, uiCtrl);
+
+            return new RenderCleanInfo(uiCtrl, new object[] { box, button });
         }
 
-        /// <summary>
-        /// Render RadioGroup control.
-        /// Return true if failed.
-        /// </summary>
-        /// <returns>Success = false, Failure = true</returns>
-        public static void RenderRadioGroup(RenderInfo r, UIControl uiCtrl)
+        public void ManageFileBoxEvent(TextBox box, Button button, bool addMode)
+        {
+            Debug.Assert(box != null, $"null in [{nameof(ManageFileBoxEvent)}]");
+            if (addMode)
+            {
+                box.TextChanged += FileBox_TextChanged;
+                button.Click += FileBox_ButtonClick;
+            }
+            else
+            {
+                box.TextChanged -= FileBox_TextChanged;
+                button.Click -= FileBox_ButtonClick;
+            }
+        }
+
+        public void FileBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox box = sender as TextBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(FileBox_TextChanged)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.FileBox);
+            uiCtrl.Text = box.Text;
+            uiCtrl.Update();
+        }
+
+        public void FileBox_ButtonClick(object sender, RoutedEventArgs e)
+        {
+            TextBox box = sender as TextBox;
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(FileBox_ButtonClick)}]");
+            if (!(box.Tag is UIControl uiCtrl))
+                return;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.FileBox);
+            UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+
+            if (info.IsFile)
+            { // File
+                string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
+                if (File.Exists(currentPath))
+                    currentPath = Path.GetDirectoryName(currentPath);
+                else
+                    currentPath = string.Empty;
+                Debug.Assert(currentPath != null);
+
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "All Files|*.*",
+                    InitialDirectory = currentPath,
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    box.Text = dialog.FileName;
+                }
+            }
+            else
+            { // Directory
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+
+                string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
+                if (Directory.Exists(currentPath))
+                    dialog.SelectedPath = currentPath;
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (dialog.ShowDialog(_r.Window) == true)
+                    {
+                        box.Text = dialog.SelectedPath;
+                        if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
+                            box.Text += "\\";
+                    }
+                });
+            }
+        }
+        #endregion
+
+        #region RadioGroup
+        public RenderCleanInfo RenderRadioGroup(UIControl uiCtrl)
         {
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
@@ -1060,65 +1255,92 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.LightGray,
             };
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(r, box, uiCtrl);
+            SetEditModeProperties(_r, box, uiCtrl);
 
             Grid grid = new Grid();
             box.Content = grid;
 
+            RadioButton[] radios = new RadioButton[info.Items.Count];
             for (int i = 0; i < info.Items.Count; i++)
             {
                 RadioButton radio = new RadioButton
                 {
-                    GroupName = r.Script.RealPath + uiCtrl.Key,
+                    GroupName = $"{_r.Script.RealPath}_{uiCtrl.Key}",
                     Content = info.Items[i],
-                    Tag = i,
+                    Tag = new Tuple<UIControl, int>(uiCtrl, i),
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     IsChecked = i == info.Selected,
                 };
-
-                if (r.ViewMode)
-                {
-                    radio.Checked += (object sender, RoutedEventArgs e) =>
-                    {
-                        RadioButton btn = sender as RadioButton;
-                        Debug.Assert(btn != null);
-
-                        info.Selected = (int)btn.Tag;
-                        uiCtrl.Update();
-                    };
-                }
-
-                if (info.SectionName != null && r.ViewMode)
-                {
-                    radio.Click += (object sender, RoutedEventArgs e) =>
-                    {
-                        if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                        {
-                            ScriptSection targetSection = r.Script.Sections[info.SectionName];
-                            UIRenderer.RunOneSection(targetSection, $"{r.Script.Title} - RadioGroup [{uiCtrl.Key}]", info.HideProgress);
-                        }
-                        else
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                MainWindow w = Application.Current.MainWindow as MainWindow;
-                                w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                            });
-                        }
-                    };
-                }
 
                 SetToolTip(radio, info.ToolTip);
 
                 Grid.SetRow(radio, i);
                 grid.RowDefinitions.Add(new RowDefinition());
                 grid.Children.Add(radio);
+                radios[i] = radio;
             }
 
+            if (_r.ViewMode)
+                ManageRadioGroupEvent(radios, true, info.SectionName);
+
             Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, uiCtrl.Width, uiCtrl.Height);
-            DrawToCanvas(r, box, rect);
+            DrawToCanvas(_r, box, uiCtrl, rect);
+
+            return new RenderCleanInfo(uiCtrl, radios.Select(x => (object)x).ToArray());
         }
+
+        public void ManageRadioGroupEvent(RadioButton[] buttons, bool addMode, string sectionName)
+        {
+            Debug.Assert(buttons != null, $"null in [{nameof(ManageRadioGroupEvent)}]");
+            foreach (RadioButton button in buttons)
+            {
+                if (addMode)
+                {
+                    button.Checked += RadioGroup_Checked;
+                    if (sectionName != null)
+                        button.Click += RadioGroup_Click;
+                }
+                else
+                {
+                    button.Checked -= RadioGroup_Checked;
+                    if (sectionName != null)
+                        button.Click -= RadioGroup_Click;
+                }
+            }   
+        }
+
+        public void RadioGroup_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton button = sender as RadioButton;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Checked)}]");
+            if (!(button.Tag is Tuple<UIControl, int> tup))
+                return;
+
+            UIControl uiCtrl = tup.Item1;
+            int idx = tup.Item2;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+
+            info.Selected = idx;
+            uiCtrl.Update();
+        }
+
+        public void RadioGroup_Click(object sender, RoutedEventArgs e)
+        {
+            RadioButton button = sender as RadioButton;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Click)}]");
+            if (!(button.Tag is Tuple<UIControl, int> tup))
+                return;
+
+            UIControl uiCtrl = tup.Item1;
+
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup);
+            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+            RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+        #endregion
         #endregion
 
         #region Render Utility
@@ -1130,18 +1352,33 @@ namespace PEBakery.WPF
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect rect)
+        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, UIControl uiCtrl)
         {
-            DrawToCanvas(r.Canvas, element, rect);
+            DrawToCanvas(r.Canvas, element, uiCtrl, uiCtrl.Rect);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, UIControl uiCtrl, Rect rect)
+        {
+            DrawToCanvas(r.Canvas, element, uiCtrl, rect);
+        }
+
+        public static void DrawToCanvas(Canvas canvas, FrameworkElement element, UIControl uiCtrl, Rect rect)
+        {
+            // Add Tag to uiCtrl
+            element.Tag = uiCtrl;
+            DrawToCanvas(canvas, element, rect);
         }
 
         public static void DrawToCanvas(Canvas canvas, FrameworkElement element, Rect rect)
         {
+            // Set Position
             Canvas.SetLeft(element, rect.X);
             Canvas.SetTop(element, rect.Y);
             element.Width = rect.Width;
             element.Height = rect.Height;
 
+            // Expand canvas if needed
             canvas.Children.Add(element);
             if (double.IsNaN(canvas.Width) || canvas.Width < rect.X + rect.Width)
                 canvas.Width = rect.X + rect.Width;
@@ -1166,7 +1403,6 @@ namespace PEBakery.WPF
                 return;
 
             // Only for EditMode
-            element.Tag = uiCtrl;
             if (!uiCtrl.Visibility)
                 element.Opacity = 0.5;
         }
@@ -1203,7 +1439,20 @@ namespace PEBakery.WPF
         #endregion
 
         #region RunOneSection
-        private static async void RunOneSection(ScriptSection section, string logMsg, bool hideProgress)
+        private void RunOneSection(UIControlType ctrlType, string ctrlKey, string sectionName, bool hideProgress)
+        {
+            if (_r.Script.Sections.ContainsKey(sectionName)) // Only if section exists
+            {
+                ScriptSection targetSection = _r.Script.Sections[sectionName];
+                InternalRunOneSection(targetSection, $"{_r.Script.Title} - {ctrlType} [{ctrlKey}]", hideProgress);
+            }
+            else
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{sectionName}] does not exist"));
+            }
+        }
+
+        private static async void InternalRunOneSection(ScriptSection section, string logMsg, bool hideProgress)
         {
             if (Engine.WorkingLock == 0)
             {
@@ -1218,7 +1467,7 @@ namespace PEBakery.WPF
                         return;
 
                     mainModel = w.Model;
-                    
+
                     // Populate BuildTree
                     if (!hideProgress)
                     {
@@ -1286,7 +1535,7 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region RenderInfo
+    #region struct RenderInfo
     public struct RenderInfo
     {
         public double ScaleFactor;
@@ -1298,13 +1547,39 @@ namespace PEBakery.WPF
         /// </summary>
         public readonly bool ViewMode;
 
-        public RenderInfo(Canvas canvas, Window window, Script script, double scale, bool allowModify)
+        public RenderInfo(Canvas canvas, Window window, Script script, double scale, bool viewMode)
         {
             ScaleFactor = scale;
             Canvas = canvas;
             Window = window;
             Script = script;
-            ViewMode = allowModify;
+            ViewMode = viewMode;
+        }
+    }
+    #endregion
+
+    #region struct RenderCleanInfo
+    public struct RenderCleanInfo
+    {
+        public readonly UIControl UICtrl;
+        public readonly object Element;
+        public readonly object[] Elements;
+        public readonly object Tag;
+
+        public RenderCleanInfo(UIControl uiCtrl, object element, object tag = null)
+        {
+            UICtrl = uiCtrl;
+            Element = element;
+            Elements = null;
+            Tag = tag;
+        }
+
+        public RenderCleanInfo(UIControl uiCtrl, object[] elements, object tag = null)
+        {
+            UICtrl = uiCtrl;
+            Element = null;
+            Elements = elements;
+            Tag = tag;
         }
     }
     #endregion

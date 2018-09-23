@@ -32,7 +32,7 @@ namespace PEBakery.WPF
         public static int Count = 0;
 
         private Script _sc;
-        private UIRenderer _render;
+        private UIRenderer _renderer;
         private readonly ScriptEditViewModel m;
         private string _ifaceSectionName;
         #endregion
@@ -124,6 +124,7 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
             m.UIControlModified -= ViewModel_UIControlModified;
 
+            _renderer.Clear();
             Interlocked.Decrement(ref Count);
         }
         #endregion
@@ -189,7 +190,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            _render = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
+            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = -1;
@@ -309,7 +310,7 @@ namespace PEBakery.WPF
                     {
                         UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
-                        m.UICtrlRadioButtonList = _render.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
+                        m.UICtrlRadioButtonList = _renderer.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
                         m.UICtrlRadioButtonInfo = info;
                         m.UICtrlSectionToRun = info.SectionName;
                         m.UICtrlHideProgress = info.HideProgress;
@@ -384,7 +385,7 @@ namespace PEBakery.WPF
 
         private bool WriteScriptInterface(bool refresh = true)
         {
-            if (_render == null)
+            if (_renderer == null)
                 return false;
 
             try
@@ -392,7 +393,7 @@ namespace PEBakery.WPF
                 if (m.SelectedUICtrl != null)
                     WriteUIControlInfo(m.SelectedUICtrl);
 
-                UIControl.Update(_render.UICtrls);
+                UIControl.Update(_renderer.UICtrls);
                 UIControl.Delete(m.UICtrlToBeDeleted);
                 m.UICtrlToBeDeleted.Clear();
                 Ini.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
@@ -589,10 +590,10 @@ namespace PEBakery.WPF
             double scaleFactor = m.InterfaceScaleFactor / 100;
             if (scaleFactor - 1 < double.Epsilon)
                 scaleFactor = 1;
-            _render.ScaleFactor = scaleFactor;
+            _renderer.ScaleFactor = scaleFactor;
             m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
 
-            _render.Render();
+            _renderer.Render();
             m.InterfaceLoaded = true;
         }
 
@@ -609,10 +610,10 @@ namespace PEBakery.WPF
 
         private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (m.InterfaceUICtrlIndex < 0 || _render.UICtrls.Count <= m.InterfaceUICtrlIndex)
+            if (m.InterfaceUICtrlIndex < 0 || _renderer.UICtrls.Count <= m.InterfaceUICtrlIndex)
                 return;
 
-            m.SelectedUICtrl = _render.UICtrls[m.InterfaceUICtrlIndex];
+            m.SelectedUICtrl = _renderer.UICtrls[m.InterfaceUICtrlIndex];
             m.InterfaceCanvas.ResetSelectedBorder();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
@@ -627,7 +628,7 @@ namespace PEBakery.WPF
             if (m.SelectedUICtrl != null)
                 ReadUIControlInfo(m.SelectedUICtrl);
 
-            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+            int idx = _renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
             m.InterfaceUICtrlIndex = idx;
         }
@@ -651,12 +652,12 @@ namespace PEBakery.WPF
             if (!e.Direct)
                 WriteUIControlInfo(uiCtrl);
 
-            int idx = _render.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
+            int idx = _renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-            _render.UICtrls[idx] = uiCtrl;
+            _renderer.UICtrls[idx] = uiCtrl;
 
             m.InterfaceCanvas.ResetSelectedBorder();
-            _render.Render();
+            _renderer.Render();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
@@ -665,7 +666,7 @@ namespace PEBakery.WPF
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
             if (type == UIControlType.None)
                 return;
-            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _render.UICtrls.Select(x => x.Key));
+            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _renderer.UICtrls.Select(x => x.Key));
         }
 
         private void UICtrlAddCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -694,7 +695,7 @@ namespace PEBakery.WPF
                 return;
             }
             string key = m.UICtrlAddName.Trim();
-            if (_render.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
+            if (_renderer.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
             {
                 MessageBox.Show($"Interface key [{key}] is duplicated", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -713,12 +714,12 @@ namespace PEBakery.WPF
             Debug.Assert(uiCtrl != null, "Internal Logic Error at UICtrlAddButton_Click");
             Debug.Assert(errorLogs.Count == 0, "Internal Logic Error at UICtrlAddButton_Click");
 
-            _render.UICtrls.Add(uiCtrl);
-            m.InterfaceUICtrls = new ObservableCollection<string>(_render.UICtrls.Select(x => x.Key));
+            _renderer.UICtrls.Add(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(_renderer.UICtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = 0;
 
             m.InterfaceCanvas.ResetSelectedBorder();
-            _render.Render();
+            _renderer.Render();
             m.SelectedUICtrl = uiCtrl;
             m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
 
@@ -739,11 +740,11 @@ namespace PEBakery.WPF
             UIControl uiCtrl = m.SelectedUICtrl;
             m.UICtrlToBeDeleted.Add(uiCtrl);
 
-            _render.UICtrls.Remove(uiCtrl);
-            m.InterfaceUICtrls = new ObservableCollection<string>(_render.UICtrls.Select(x => x.Key));
+            _renderer.UICtrls.Remove(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(_renderer.UICtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = 0;
 
-            _render.Render();
+            _renderer.Render();
             m.SelectedUICtrl = null;
 
             m.InterfaceNotSaved = true;
@@ -1156,7 +1157,7 @@ namespace PEBakery.WPF
             {
                 _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath);
 
-                UIControl.ReplaceAddress(_render.UICtrls, _sc);
+                UIControl.ReplaceAddress(_renderer.UICtrls, _sc);
 
                 switch (selectedType)
                 {
@@ -1340,7 +1341,7 @@ namespace PEBakery.WPF
             (_sc, errMsg) = EncodedFile.DeleteFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
             if (errMsg == null)
             {
-                UIControl.ReplaceAddress(_render.UICtrls, _sc);
+                UIControl.ReplaceAddress(_renderer.UICtrls, _sc);
 
                 switch (selectedType)
                 {
