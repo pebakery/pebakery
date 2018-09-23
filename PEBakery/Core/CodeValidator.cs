@@ -269,12 +269,12 @@ namespace PEBakery.Core
                     case UIControlType.Image:
                         if (!uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
                             !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Error, $"Image resource [{uiCtrl.Text}] does not exist", uiCtrl));
+                            logs.Add(new LogInfo(LogState.Warning, $"Image resource [{uiCtrl.Text}] does not exist", uiCtrl));
                         break;
                     case UIControlType.TextFile:
                         if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase) &&
                             !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Error, $"Text resource [{uiCtrl.Text}] does not exist", uiCtrl));
+                            logs.Add(new LogInfo(LogState.Warning, $"Text resource [{uiCtrl.Text}] does not exist", uiCtrl));
                         break;
                     case UIControlType.Button:
                         {

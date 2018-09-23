@@ -654,7 +654,7 @@ namespace PEBakery.WPF
         /// <param name="s">Set to non-null to notify running in build mode</param>
         public static void DisplayScriptTexts(Script sc, MainViewModel m, EngineState s)
         {
-            if (sc.Type == ScriptType.Directory && s != null)
+            if (sc.Type == ScriptType.Directory && s == null)
             { // In build mode, there are no directory scripts
                 m.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 m.ScriptDescriptionText = string.Empty;
@@ -678,12 +678,12 @@ namespace PEBakery.WPF
                 {
                     if (s != null)
                     { // Normal mode -> Notify script developer to fix
-                        m.ScriptVersionText = string.Empty;
+                        m.ScriptVersionText = "Error";
                         App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
                     }
                     else
                     { // Build mode -> Suppress error log
-                        m.ScriptVersionText = sc.Version;
+                        m.ScriptVersionText = verStr;
                     }
                 }
                 else
@@ -692,10 +692,11 @@ namespace PEBakery.WPF
                 }
 
                 // Script Author
-                if (ScriptAuthorLenLimit < sc.Author.Length)
-                    m.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
+                string author = StringEscaper.Unescape(sc.Author);
+                if (ScriptAuthorLenLimit < author.Length)
+                    m.ScriptAuthorText = author.Substring(0, ScriptAuthorLenLimit) + "...";
                 else
-                    m.ScriptAuthorText = sc.Author;
+                    m.ScriptAuthorText = author;
             }
         }
         #endregion
