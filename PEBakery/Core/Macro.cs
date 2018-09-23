@@ -101,8 +101,8 @@ namespace PEBakery.Core
             }
             MacroSection = MacroScript.Sections[varDict["APIVAR"]];
             variables.SetValue(VarsType.Global, "API", macroScriptPath);
-            if (MacroScript.Sections.ContainsKey(Variables.VarSectionName))
-                variables.AddVariables(VarsType.Global, MacroScript.Sections[Variables.VarSectionName]);
+            if (MacroScript.Sections.ContainsKey(ScriptSection.Names.Variables))
+                variables.AddVariables(VarsType.Global, MacroScript.Sections[ScriptSection.Names.Variables]);
 
             // Import Section [APIVAR]'s variables, such as '%Shc_Mode%=0'
             variables.AddVariables(VarsType.Global, MacroSection);
@@ -134,9 +134,9 @@ namespace PEBakery.Core
 
             // Parse MainScript's section [Variables] into MacroDict
             // (Written by SetMacro, ... ,PERMANENT
-            if (project.MainScript.Sections.ContainsKey(Variables.VarSectionName))
+            if (project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
-                ScriptSection permaSection = project.MainScript.Sections[Variables.VarSectionName];
+                ScriptSection permaSection = project.MainScript.Sections[ScriptSection.Names.Variables];
                 Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.Lines);
                 foreach (var kv in rawDict)
                 {
@@ -161,7 +161,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        public List<LogInfo> LoadLocalMacroDict(Script sc, bool append, string sectionName = Variables.VarSectionName)
+        public List<LogInfo> LoadLocalMacroDict(Script sc, bool append, string sectionName = ScriptSection.Names.Variables)
         {
             if (sc.Sections.ContainsKey(sectionName))
             {
@@ -251,7 +251,7 @@ namespace PEBakery.Core
                 if (permanent) // MacroDict
                 {
                     GlobalDict[macroName] = cmd;
-                    if (Ini.WriteKey(section.Project.MainScript.RealPath, Variables.VarSectionName, macroName, cmd.RawCode))
+                    if (Ini.WriteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
                         return new LogInfo(LogState.Error, $"Could not write macro into [{section.Project.MainScript.RealPath}]");
@@ -275,7 +275,7 @@ namespace PEBakery.Core
                     if (GlobalDict.ContainsKey(macroName))
                     {
                         GlobalDict.Remove(macroName);
-                        Ini.DeleteKey(section.Project.MainScript.RealPath, Variables.VarSectionName, macroName);
+                        Ini.DeleteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
 

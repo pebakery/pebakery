@@ -60,7 +60,6 @@ namespace PEBakery.Core
         #region Static
         public static bool OverridableFixedVariables = false;
         public static bool EnableEnvironmentVariables = false;
-        public const string VarSectionName = "Variables";
         #endregion
 
         #region Field and Property

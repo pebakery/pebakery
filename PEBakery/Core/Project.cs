@@ -949,7 +949,7 @@ namespace PEBakery.Core
             if (Variables == null)
                 return;
 
-            ScriptSection section = MainScript.RefreshSection(Variables.VarSectionName);
+            ScriptSection section = MainScript.RefreshSection(ScriptSection.Names.Variables);
             if (section != null)
                 Variables.AddVariables(VarsType.Global, section);
         }
