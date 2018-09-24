@@ -899,9 +899,9 @@ namespace PEBakery.WPF
 
         public void Button_Click(object sender, RoutedEventArgs e)
         {
-            ComboBox box = sender as ComboBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_SelectionChanged)}]");
-            if (!(box.Tag is UIControl uiCtrl))
+            Button button = sender as Button;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(Button_Click)}]");
+            if (!(button.Tag is UIControl uiCtrl))
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.Button);
