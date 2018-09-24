@@ -163,7 +163,7 @@ namespace PEBakery.WPF
 
                 // Set StatusBar Text
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainWindow.PrintBuildElapsedStatus("Running CodeBox...", mainModel, s.Watch, ct.Token);
+                Task printStatus = MainWindow.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
@@ -171,7 +171,7 @@ namespace PEBakery.WPF
                 // Report elapsed build time
                 ct.Cancel();
                 await printStatus;
-                mainModel.StatusBarText = $"CodeBox took {s.Watch.Elapsed:h\\:mm\\:ss}";
+                mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
                 mainModel.WorkInProgress = false;
                 mainModel.SwitchNormalBuildInterface = true;

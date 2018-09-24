@@ -532,7 +532,7 @@ namespace PEBakery.Core
             // Build Id
             DB_BuildInfo dbBuild = new DB_BuildInfo
             {
-                StartTime = DateTime.UtcNow,
+                StartTime = s.StartTime,
                 Name = name,
             };
 
@@ -601,9 +601,7 @@ namespace PEBakery.Core
             if (dbBuild == null)
                 throw new KeyNotFoundException($"Unable to find DB_BuildInfo instance, id = {s.BuildId}");
 
-            dbBuild.EndTime = DateTime.UtcNow;
-            TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
-
+            dbBuild.EndTime = s.EndTime;
             switch (s.LogMode)
             {
                 case LogMode.PartDefer:
@@ -615,7 +613,7 @@ namespace PEBakery.Core
                     break;
             }
 
-            SystemWrite(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished ({t:h\\:mm\\:ss})"));
+            SystemWrite(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished ({s.Elapsed:h\\:mm\\:ss})"));
 
             _scriptRefIdDict.Clear();
         }

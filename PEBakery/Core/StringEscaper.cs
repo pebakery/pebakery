@@ -322,12 +322,11 @@ namespace PEBakery.Core
                         b.Append(str.Substring(idx));
                         break;
                     }
-                    else
-                    { // # (O)
-                        b.Append(str.Substring(idx, hIdx - idx));
-                        b.Append(@"##");
-                        idx = hIdx += 1;
-                    }
+                    
+                    // # (O)
+                    b.Append(str.Substring(idx, hIdx - idx));
+                    b.Append(@"##");
+                    idx = hIdx + 1;
                 }
                 str = b.ToString();
             }

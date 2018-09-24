@@ -42,7 +42,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -1511,7 +1510,7 @@ namespace PEBakery.WPF
 
                 // Set StatusBar Text
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, mainModel, s.Watch, ct.Token);
+                Task printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, s, ct.Token);
 
                 // Run
                 await Engine.WorkingEngine.Run(logMsg);
@@ -1519,7 +1518,7 @@ namespace PEBakery.WPF
                 // Cancel and Wait until PrintBuildElapsedStatus stops
                 ct.Cancel();
                 await printStatus;
-                mainModel.StatusBarText = $"{logMsg} took {s.Watch.Elapsed:h\\:mm\\:ss}";
+                mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)

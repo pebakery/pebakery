@@ -750,7 +750,7 @@ namespace PEBakery.WPF
 
                 // Set StatusBar Text
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = PrintBuildElapsedStatus($"Building {p.ProjectName}...", Model, s.Watch, ct.Token);
+                Task printStatus = PrintBuildElapsedStatus($"Building {p.ProjectName}...", s, ct.Token);
 
                 // Run
                 int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
@@ -767,7 +767,7 @@ namespace PEBakery.WPF
                 // Report elapsed time
                 ct.Cancel();
                 await printStatus;
-                Model.StatusBarText = $"{p.ProjectName} build done ({s.Watch.Elapsed:h\\:mm\\:ss})";
+                Model.StatusBarText = $"{p.ProjectName} build done ({s.Elapsed:h\\:mm\\:ss})";
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;
@@ -914,7 +914,7 @@ namespace PEBakery.WPF
                     // Switch to Build View
                     Model.SwitchNormalBuildInterface = false;
                     CancellationTokenSource ct = new CancellationTokenSource();
-                    Task printStatus = PrintBuildElapsedStatus($"Running {sc.Title}...", Model, s.Watch, ct.Token);
+                    Task printStatus = PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
 
                     // Run
                     int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
@@ -929,7 +929,7 @@ namespace PEBakery.WPF
 
                     // Cancel and Wait until PrintBuildElapsedStatus stops
                     // Report elapsed time
-                    TimeSpan t = s.Watch.Elapsed;
+                    TimeSpan t = s.Elapsed;
 
                     ct.Cancel();
                     await printStatus;
@@ -1418,14 +1418,14 @@ namespace PEBakery.WPF
         #endregion
 
         #region PrintBuildElapsedStatus
-        public static Task PrintBuildElapsedStatus(string msg, MainViewModel m, Stopwatch watch, CancellationToken token)
+        public static Task PrintBuildElapsedStatus(string msg, EngineState s, CancellationToken token)
         {
             return Task.Run(() =>
             {
                 while (true)
                 {
-                    TimeSpan t = watch.Elapsed;
-                    m.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+                    TimeSpan t = DateTime.UtcNow - s.StartTime;
+                    s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
 
                     if (token.IsCancellationRequested)
                         return;

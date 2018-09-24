@@ -30,10 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -495,7 +493,7 @@ namespace PEBakery.WPF
             {
                 _selectBuildIndex = value;
 
-                if (0 < _buildEntries.Count)
+                if (-1 < value && 0 < _buildEntries.Count)
                 {
                     int buildId = _buildEntries[value].Item2;
                     RefreshScript(buildId, false);
