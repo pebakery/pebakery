@@ -1125,7 +1125,6 @@ namespace PEBakery.WPF
                 OpenFolder(sc.RealPath);
             else
                 OpenFolder(Path.GetDirectoryName(sc.RealPath));
-
         }
         #endregion
 

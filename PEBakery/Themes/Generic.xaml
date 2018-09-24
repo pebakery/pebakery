@@ -24,7 +24,7 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/PEBakery;component/WPF/Controls/ProgressRing.xaml"/>

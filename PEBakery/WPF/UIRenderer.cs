@@ -42,6 +42,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -669,7 +670,7 @@ namespace PEBakery.WPF
             {
                 Button button = new Button
                 {
-                    Style = (Style)_window.FindResource("ImageButton"),
+                    Style = Application.Current.FindResource("ImageButtonStyle") as Style,
                     Background = ImageHelper.BitmapImageToImageBrush(bitmap)
                 };
 
@@ -1378,6 +1379,7 @@ namespace PEBakery.WPF
             DrawToCanvas(_canvas, element, uiCtrl, rect);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void DrawToCanvas(Canvas canvas, FrameworkElement element, UIControl uiCtrl, Rect rect)
         {
             // Add Tag to uiCtrl

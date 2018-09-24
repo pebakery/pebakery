@@ -8,6 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Donut.xaml"/>
+                <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
