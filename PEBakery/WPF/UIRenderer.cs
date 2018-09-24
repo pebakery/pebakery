@@ -253,7 +253,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Render Control
+        #region Methods for Control
         #region TextBox
         public RenderCleanInfo RenderTextBox(UIControl uiCtrl)
         {
@@ -266,6 +266,7 @@ namespace PEBakery.WPF
                 Height = uiCtrl.Height,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
+                Tag = uiCtrl,
             };
 
             if (_r.ViewMode)
@@ -544,11 +545,11 @@ namespace PEBakery.WPF
         public void ComboBox_LostFocus(object sender, RoutedEventArgs e)
         {
             ComboBox box = sender as ComboBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Checked)}]");
+            Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_LostFocus)}]");
             if (!(box.Tag is UIControl uiCtrl))
                 return;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox);
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
             if (info.Index != box.SelectedIndex)
@@ -721,9 +722,9 @@ namespace PEBakery.WPF
         /// <param name="e"></param>
         public void Image_Click_OpenUrl(object sender, RoutedEventArgs e)
         { 
-            Image image = sender as Image;
-            Debug.Assert(image != null, $"Wrong sender in [{nameof(Image_Click_OpenUrl)}]");
-            if (!(image.Tag is UIControl uiCtrl))
+            Button button = sender as Button;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenUrl)}]");
+            if (!(button.Tag is UIControl uiCtrl))
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.Image);
@@ -739,9 +740,9 @@ namespace PEBakery.WPF
         /// <param name="e"></param>
         public void Image_Click_OpenImage(object sender, RoutedEventArgs e)
         {
-            Image image = sender as Image;
-            Debug.Assert(image != null, $"Wrong sender in [{nameof(Image_Click_OpenImage)}]");
-            if (!(image.Tag is UIControl uiCtrl))
+            Button button = sender as Button;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenImage)}]");
+            if (!(button.Tag is UIControl uiCtrl))
                 return;
 
             Debug.Assert(uiCtrl.Type == UIControlType.Image);
@@ -1132,6 +1133,7 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 Margin = new Thickness(0, 0, 5, 0),
                 VerticalContentAlignment = VerticalAlignment.Center,
+                Tag = uiCtrl,
             };
 
             Button button = new Button
@@ -1143,6 +1145,7 @@ namespace PEBakery.WPF
                     Width = double.NaN,
                     Height = double.NaN,
                 },
+                Tag = new Tuple<UIControl, TextBox>(uiCtrl, box),
             };
 
             if (_r.ViewMode)
@@ -1193,10 +1196,14 @@ namespace PEBakery.WPF
 
         public void FileBox_ButtonClick(object sender, RoutedEventArgs e)
         {
-            TextBox box = sender as TextBox;
-            Debug.Assert(box != null, $"Wrong sender in [{nameof(FileBox_ButtonClick)}]");
-            if (!(box.Tag is UIControl uiCtrl))
+            Button button = sender as Button;
+            Debug.Assert(button != null, $"Wrong sender in [{nameof(FileBox_ButtonClick)}]");
+            
+            if (!(button.Tag is Tuple<UIControl, TextBox> tup))
                 return;
+
+            UIControl uiCtrl = tup.Item1;
+            TextBox box = tup.Item2;
 
             Debug.Assert(uiCtrl.Type == UIControlType.FileBox);
             UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
@@ -1232,9 +1239,10 @@ namespace PEBakery.WPF
                 {
                     if (dialog.ShowDialog(_r.Window) == true)
                     {
-                        box.Text = dialog.SelectedPath;
-                        if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
-                            box.Text += "\\";
+                        string path = dialog.SelectedPath;
+                        if (!path.EndsWith("\\", StringComparison.Ordinal))
+                            path += "\\";
+                        box.Text = path;
                     }
                 });
             }
@@ -1320,7 +1328,7 @@ namespace PEBakery.WPF
             UIControl uiCtrl = tup.Item1;
             int idx = tup.Item2;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, "Wrong UIControl Type");
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
             info.Selected = idx;
