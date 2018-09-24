@@ -57,27 +57,36 @@ namespace PEBakery.WPF
         public const int MaxUrlDisplayLen = 47;
         private readonly Variables _variables;
 
-        private RenderInfo _r;
-        public double ScaleFactor
-        {
-            get => _r.ScaleFactor;
-            set => _r.ScaleFactor = value;
-        }
+        private readonly Canvas _canvas;
+        private readonly Window _window;
+        private readonly Script _sc;
+        /// <summary>
+        /// Custom scale factor of interface. Independent from system monitor dpi.
+        /// </summary>
+        public double ScaleFactor;
+        /// <summary>
+        /// true in MainWindow, false in ScriptEditWindow
+        /// </summary>
+        private readonly bool _viewMode;
+        // Compatibility Option
+        private readonly bool _ignoreWidthOfWebLabel = false;
 
         public readonly List<UIControl> UICtrls;
-        private UIControl[] _visibleCtrls => _r.ViewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
+        private UIControl[] _visibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
         private UIControl[] _radioButtons => _visibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
         private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
-
-        // Compatibility Option
-        public static bool IgnoreWidthOfWebLabel = false;
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode)
+        public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
-            _r = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
+            _canvas = canvas;
+            _window = window;
+            _sc = script;
+            ScaleFactor = scaleFactor;
+            _viewMode = viewMode;
+            _ignoreWidthOfWebLabel = compatWebLabel;
 
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
             UICtrls = uiCtrls ?? new List<UIControl>(0);
@@ -85,10 +94,15 @@ namespace PEBakery.WPF
             App.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode)
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
-            _r = new RenderInfo(canvas, window, script, scaleFactor, viewMode);
+            _canvas = canvas;
+            _window = window;
+            _sc = script;
+            ScaleFactor = scaleFactor;
+            _viewMode = viewMode;
+            _ignoreWidthOfWebLabel = compatWebLabel;
 
             UICtrls = uiCtrls ?? new List<UIControl>(0);
         }
@@ -134,7 +148,7 @@ namespace PEBakery.WPF
             if (UICtrls == null) // This script does not have 'Interface' section
                 return;
 
-            InitCanvas(_r.Canvas);
+            InitCanvas(_canvas);
             _cleanInfos.Clear();
             foreach (UIControl uiCtrl in _visibleCtrls)
             {
@@ -189,7 +203,7 @@ namespace PEBakery.WPF
                     }
 
                     // In edit mode (ScriptEditWindow), all event handler is disabled -> no need to clean events
-                    if (_r.ViewMode && clean is RenderCleanInfo ci)
+                    if (_viewMode && clean is RenderCleanInfo ci)
                         _cleanInfos.Add(ci);
                 }
                 catch (Exception e)
@@ -249,7 +263,7 @@ namespace PEBakery.WPF
             }
 
             _cleanInfos.Clear();
-            InitCanvas(_r.Canvas);
+            InitCanvas(_canvas);
         }
         #endregion
 
@@ -269,14 +283,14 @@ namespace PEBakery.WPF
                 Tag = uiCtrl,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageTextBoxEvent(box, true);
 
             if (uiCtrl.Text.Length == 0)
             { // No caption
                 SetToolTip(box, info.ToolTip);
-                SetEditModeProperties(_r, box, uiCtrl);
-                DrawToCanvas(_r, box, uiCtrl);
+                SetEditModeProperties(box, uiCtrl);
+                DrawToCanvas(box, uiCtrl);
             }
             else
             { // Print caption
@@ -300,10 +314,10 @@ namespace PEBakery.WPF
                 grid.Children.Add(box);
 
                 SetToolTip(grid, info.ToolTip);
-                SetEditModeProperties(_r, grid, uiCtrl);
+                SetEditModeProperties(grid, uiCtrl);
 
                 Rect gridRect = new Rect(uiCtrl.X, uiCtrl.Y - UIInfo_TextBox.AddWidth, uiCtrl.Width, uiCtrl.Height + UIInfo_TextBox.AddWidth);
-                DrawToCanvas(_r, grid, uiCtrl, gridRect);
+                DrawToCanvas(grid, uiCtrl, gridRect);
             }
 
             return new RenderCleanInfo(uiCtrl, box);
@@ -367,8 +381,8 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(block, info.ToolTip);
-            SetEditModeProperties(_r, block, uiCtrl);
-            DrawToCanvas(_r, block, uiCtrl);
+            SetEditModeProperties(block, uiCtrl);
+            DrawToCanvas(block, uiCtrl);
         }
         #endregion
 
@@ -388,12 +402,12 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageNumberBoxEvent(box, true);
 
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(_r, box, uiCtrl);
-            DrawToCanvas(_r, box, uiCtrl);
+            SetEditModeProperties(box, uiCtrl);
+            DrawToCanvas(box, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, box);
         }
@@ -434,12 +448,12 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageCheckBoxEvent(box, true, info.SectionName);
 
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(_r, box, uiCtrl);
-            DrawToCanvas(_r, box, uiCtrl);
+            SetEditModeProperties(box, uiCtrl);
+            DrawToCanvas(box, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
@@ -515,12 +529,12 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageComboBoxEvent(box, true, info.SectionName);
 
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(_r, box, uiCtrl);
-            DrawToCanvas(_r, box, uiCtrl);
+            SetEditModeProperties(box, uiCtrl);
+            DrawToCanvas(box, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, box, info.SectionName);
         }
@@ -597,8 +611,8 @@ namespace PEBakery.WPF
                     Child = noImage,
                 };
                 SetToolTip(border, info.ToolTip);
-                SetEditModeProperties(_r, border, uiCtrl);
-                DrawToCanvas(_r, border, uiCtrl);
+                SetEditModeProperties(border, uiCtrl);
+                DrawToCanvas(border, uiCtrl);
                 return null;
             }
 
@@ -622,8 +636,8 @@ namespace PEBakery.WPF
                     Child = alertImage,
                 };
                 SetToolTip(border, info.ToolTip);
-                SetEditModeProperties(_r, border, uiCtrl);
-                DrawToCanvas(_r, border, uiCtrl);
+                SetEditModeProperties(border, uiCtrl);
+                DrawToCanvas(border, uiCtrl);
 
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
                 return null;
@@ -641,8 +655,8 @@ namespace PEBakery.WPF
                 switch (type)
                 {
                     case ImageHelper.ImageType.Svg:
-                        double width = uiCtrl.Rect.Width * _r.ScaleFactor;
-                        double height = uiCtrl.Rect.Height * _r.ScaleFactor;
+                        double width = uiCtrl.Rect.Width * ScaleFactor;
+                        double height = uiCtrl.Rect.Height * ScaleFactor;
                         bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
                         break;
                     default:
@@ -651,11 +665,11 @@ namespace PEBakery.WPF
                 }
             }
 
-            if (_r.ViewMode)
+            if (_viewMode)
             {
                 Button button = new Button
                 {
-                    Style = (Style)_r.Window.FindResource("ImageButton"),
+                    Style = (Style)_window.FindResource("ImageButton"),
                     Background = ImageHelper.BitmapImageToImageBrush(bitmap)
                 };
 
@@ -674,7 +688,7 @@ namespace PEBakery.WPF
                     toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
 
                 SetToolTip(button, toolTip);
-                DrawToCanvas(_r, button, uiCtrl);
+                DrawToCanvas(button, uiCtrl);
                 return new RenderCleanInfo(uiCtrl, button, hasUrl);
             }
             else
@@ -689,8 +703,8 @@ namespace PEBakery.WPF
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
                 SetToolTip(image, info.ToolTip);
-                SetEditModeProperties(_r, image, uiCtrl);
-                DrawToCanvas(_r, image, uiCtrl);
+                SetEditModeProperties(image, uiCtrl);
+                DrawToCanvas(image, uiCtrl);
                 return null;
             }
         }
@@ -797,8 +811,8 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(textBox, info.ToolTip);
-            SetEditModeProperties(_r, textBox, uiCtrl);
-            DrawToCanvas(_r, textBox, uiCtrl);
+            SetEditModeProperties(textBox, uiCtrl);
+            DrawToCanvas(textBox, uiCtrl);
         }
         #endregion
 
@@ -813,7 +827,7 @@ namespace PEBakery.WPF
                 VerticalAlignment = VerticalAlignment.Center,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageButtonEvent(button, true, info.SectionName);
 
             if (info.Picture != null &&
@@ -873,8 +887,8 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(button, info.ToolTip);
-            SetEditModeProperties(_r, button, uiCtrl);
-            DrawToCanvas(_r, button, uiCtrl);
+            SetEditModeProperties(button, uiCtrl);
+            DrawToCanvas(button, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, button, info.SectionName);
         }
@@ -920,22 +934,22 @@ namespace PEBakery.WPF
 
             Hyperlink link = new Hyperlink { NavigateUri = new Uri(info.Url) };
             link.Inlines.Add(uiCtrl.Text);
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageWebLabelEvent(link, true);
             block.Inlines.Add(link);
 
             string toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
             SetToolTip(block, toolTip);
-            SetEditModeProperties(_r, block, uiCtrl);
+            SetEditModeProperties(block, uiCtrl);
 
-            if (IgnoreWidthOfWebLabel && _r.ViewMode)
+            if (_ignoreWidthOfWebLabel && _viewMode)
             { // Disable this in edit mode to encourage script developer address this issue
                 Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, block.Width, uiCtrl.Height);
-                DrawToCanvas(_r, block, uiCtrl, rect);
+                DrawToCanvas(block, uiCtrl, rect);
             }
             else
             {
-                DrawToCanvas(_r, block, uiCtrl);
+                DrawToCanvas(block, uiCtrl);
             }
 
             return new RenderCleanInfo(uiCtrl, link);
@@ -965,19 +979,19 @@ namespace PEBakery.WPF
 
             RadioButton radio = new RadioButton
             {
-                GroupName = _r.Script.RealPath,
+                GroupName = _sc.RealPath,
                 Content = uiCtrl.Text,
                 FontSize = fontSize,
                 IsChecked = info.Selected,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageRadioButtonEvent(radio, true, info.SectionName);
 
             SetToolTip(radio, info.ToolTip);
-            SetEditModeProperties(_r, radio, uiCtrl);
-            DrawToCanvas(_r, radio, uiCtrl);
+            SetEditModeProperties(radio, uiCtrl);
+            DrawToCanvas(radio, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, radio, info.SectionName);
         }
@@ -1048,7 +1062,7 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.Gray,
             };
 
-            if (!_r.ViewMode)
+            if (!_viewMode)
             {
                 bevel.IsHitTestVisible = true; // Focus is given when clicked
                 Panel.SetZIndex(bevel, -1); // Should have lowest z-index
@@ -1057,8 +1071,8 @@ namespace PEBakery.WPF
             SetToolTip(bevel, info.ToolTip);
             if (info.FontSize == null)
             { // No caption (WinBuilder compatible)
-                SetEditModeProperties(_r, bevel, uiCtrl);
-                DrawToCanvas(_r, bevel, uiCtrl);
+                SetEditModeProperties(bevel, uiCtrl);
+                DrawToCanvas(bevel, uiCtrl);
             }
             else
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
@@ -1071,7 +1085,7 @@ namespace PEBakery.WPF
                     BorderBrush = Brushes.Transparent,
                 };
 
-                if (!_r.ViewMode) // Focus is given when clicked
+                if (!_viewMode) // Focus is given when clicked
                     textBorder.IsHitTestVisible = true;
 
                 TextBlock textBlock = new TextBlock
@@ -1111,8 +1125,8 @@ namespace PEBakery.WPF
                 Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
                 subCanvas.Children.Add(textBorder);
-                SetEditModeProperties(_r, subCanvas, uiCtrl);
-                DrawToCanvas(_r, subCanvas, uiCtrl);
+                SetEditModeProperties(subCanvas, uiCtrl);
+                DrawToCanvas(subCanvas, uiCtrl);
             }
         }
         #endregion
@@ -1143,7 +1157,7 @@ namespace PEBakery.WPF
                 Tag = new Tuple<UIControl, TextBox>(uiCtrl, box),
             };
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageFileBoxEvent(box, button, true);
 
             Grid grid = new Grid();
@@ -1156,8 +1170,8 @@ namespace PEBakery.WPF
             grid.Children.Add(button);
 
             SetToolTip(grid, info.ToolTip);
-            SetEditModeProperties(_r, grid, uiCtrl);
-            DrawToCanvas(_r, grid, uiCtrl);
+            SetEditModeProperties(grid, uiCtrl);
+            DrawToCanvas(grid, uiCtrl);
 
             return new RenderCleanInfo(uiCtrl, new object[] { box, button });
         }
@@ -1231,7 +1245,7 @@ namespace PEBakery.WPF
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (dialog.ShowDialog(_r.Window) == true)
+                    if (dialog.ShowDialog(_window) == true)
                     {
                         string path = dialog.SelectedPath;
                         if (!path.EndsWith("\\", StringComparison.Ordinal))
@@ -1257,7 +1271,7 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.LightGray,
             };
             SetToolTip(box, info.ToolTip);
-            SetEditModeProperties(_r, box, uiCtrl);
+            SetEditModeProperties(box, uiCtrl);
 
             Grid grid = new Grid();
             box.Content = grid;
@@ -1267,7 +1281,7 @@ namespace PEBakery.WPF
             {
                 RadioButton radio = new RadioButton
                 {
-                    GroupName = $"{_r.Script.RealPath}_{uiCtrl.Key}",
+                    GroupName = $"{_sc.RealPath}_{uiCtrl.Key}",
                     Content = info.Items[i],
                     Tag = new Tuple<UIControl, int>(uiCtrl, i),
                     FontSize = fontSize,
@@ -1283,11 +1297,11 @@ namespace PEBakery.WPF
                 radios[i] = radio;
             }
 
-            if (_r.ViewMode)
+            if (_viewMode)
                 ManageRadioGroupEvent(radios, true, info.SectionName);
 
             Rect rect = new Rect(uiCtrl.X, uiCtrl.Y, uiCtrl.Width, uiCtrl.Height);
-            DrawToCanvas(_r, box, uiCtrl, rect);
+            DrawToCanvas(box, uiCtrl, rect);
 
             return new RenderCleanInfo(uiCtrl, radios.Select(x => (object)x).ToArray());
         }
@@ -1353,15 +1367,15 @@ namespace PEBakery.WPF
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, UIControl uiCtrl)
+        private void DrawToCanvas(FrameworkElement element, UIControl uiCtrl)
         {
-            DrawToCanvas(r.Canvas, element, uiCtrl, uiCtrl.Rect);
+            DrawToCanvas(_canvas, element, uiCtrl, uiCtrl.Rect);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, UIControl uiCtrl, Rect rect)
+        private void DrawToCanvas(FrameworkElement element, UIControl uiCtrl, Rect rect)
         {
-            DrawToCanvas(r.Canvas, element, uiCtrl, rect);
+            DrawToCanvas(_canvas, element, uiCtrl, rect);
         }
 
         public static void DrawToCanvas(Canvas canvas, FrameworkElement element, UIControl uiCtrl, Rect rect)
@@ -1398,12 +1412,13 @@ namespace PEBakery.WPF
                 element.ToolTip = toolTip;
         }
 
-        private static void SetEditModeProperties(RenderInfo r, FrameworkElement element, UIControl uiCtrl)
+        private void SetEditModeProperties(FrameworkElement element, UIControl uiCtrl)
         {
-            if (r.ViewMode)
+            // Do nothing in view mode (MainWindow)
+            if (_viewMode)
                 return;
 
-            // Only for EditMode
+            // Only for EditMode (ScriptEditWindow)
             if (!uiCtrl.Visibility)
                 element.Opacity = 0.5;
         }
@@ -1442,10 +1457,10 @@ namespace PEBakery.WPF
         #region RunOneSection
         private void RunOneSection(UIControlType ctrlType, string ctrlKey, string sectionName, bool hideProgress)
         {
-            if (_r.Script.Sections.ContainsKey(sectionName)) // Only if section exists
+            if (_sc.Sections.ContainsKey(sectionName)) // Only if section exists
             {
-                ScriptSection targetSection = _r.Script.Sections[sectionName];
-                InternalRunOneSection(targetSection, $"{_r.Script.Title} - {ctrlType} [{ctrlKey}]", hideProgress);
+                ScriptSection targetSection = _sc.Sections[sectionName];
+                InternalRunOneSection(targetSection, $"{_sc.Title} - {ctrlType} [{ctrlKey}]", hideProgress);
             }
             else
             {
@@ -1533,29 +1548,6 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-    }
-    #endregion
-
-    #region struct RenderInfo
-    public struct RenderInfo
-    {
-        public double ScaleFactor;
-        public readonly Canvas Canvas;
-        public readonly Window Window;
-        public readonly Script Script;
-        /// <summary>
-        /// true in MainWindow, false in ScriptEditWindow
-        /// </summary>
-        public readonly bool ViewMode;
-
-        public RenderInfo(Canvas canvas, Window window, Script script, double scale, bool viewMode)
-        {
-            ScaleFactor = scale;
-            Canvas = canvas;
-            Window = window;
-            Script = script;
-            ViewMode = viewMode;
-        }
     }
     #endregion
 

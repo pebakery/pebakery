@@ -146,7 +146,7 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                m.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(_sc, 100 * MainWindow.MaxDpiScale);
+                m.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(_sc, 100 * UIRenderer.MaxDpiScale);
                 m.ScriptLogoInfo = info;
             }
             else
@@ -190,7 +190,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false);
+            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false, App.Setting.Compat_IgnoreWidthOfWebLabel);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = -1;

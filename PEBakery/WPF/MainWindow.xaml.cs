@@ -74,8 +74,6 @@ namespace PEBakery.WPF
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
 
-        public const int MaxDpiScale = 4;
-
         public MainViewModel Model { get; }
 
         public LogWindow LogDialog = null;
@@ -613,7 +611,7 @@ namespace PEBakery.WPF
 
             // Render script interface
             ClearScriptInterface();
-            _renderer = new UIRenderer(Model.MainCanvas, this, sc, scaleFactor, true);
+            _renderer = new UIRenderer(Model.MainCanvas, this, sc, scaleFactor, true, App.Setting.Compat_IgnoreWidthOfWebLabel);
             _renderer.Render();
         }
 
@@ -639,7 +637,7 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    const double svgSize = 100 * MaxDpiScale;
+                    const double svgSize = 100 * UIRenderer.MaxDpiScale;
                     Model.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(sc, svgSize);
                 }
                 catch
@@ -699,7 +697,7 @@ namespace PEBakery.WPF
                     }
                     else
                     { // Build mode -> Suppress error log
-                        m.ScriptVersionText = verStr;
+                        m.ScriptVersionText = sc.Version;
                     }
                 }
                 else
@@ -892,10 +890,7 @@ namespace PEBakery.WPF
         #region Script Buttons
         private async void ScriptRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
-                return;
-
-            if (Model.WorkInProgress)
+            if (CurMainTree?.Script == null || Model.WorkInProgress)
                 return;
 
             Script sc = CurMainTree.Script;

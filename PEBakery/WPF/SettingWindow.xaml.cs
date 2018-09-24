@@ -846,7 +846,6 @@ namespace PEBakery.WPF
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
-            UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
             Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
             Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
         }
