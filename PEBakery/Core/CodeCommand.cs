@@ -154,6 +154,11 @@ namespace PEBakery.Core
     public class CodeInfo
     {
         #region Cast
+        /// <summary>
+        /// Type safe casting helper
+        /// </summary>
+        /// <typeparam name="T">Child of CodeInfo</typeparam>
+        /// <returns>CodeInfo casted as T</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : CodeInfo
         {
@@ -163,6 +168,11 @@ namespace PEBakery.Core
             return cast;
         }
 
+        /// <summary>
+        /// Type safe casting helper
+        /// </summary>
+        /// <typeparam name="T">Child of CodeInfo</typeparam>
+        /// <returns>CodeInfo casted as T</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Cast<T>(CodeInfo info) where T : CodeInfo
         {

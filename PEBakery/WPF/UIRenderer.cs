@@ -322,11 +322,11 @@ namespace PEBakery.WPF
         {
             TextBox box = sender as TextBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(TextBox_LostFocus)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.TextBox);
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(TextBox_LostFocus)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.TextBox, $"Wrong UIControlType in [{nameof(TextBox_LostFocus)}]");
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+
             info.Value = box.Text;
             uiCtrl.Update();
         }
@@ -411,11 +411,11 @@ namespace PEBakery.WPF
         {
             NumberBox box = sender as NumberBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(NumberBox_ValueChanged)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.NumberBox);
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(NumberBox_ValueChanged)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.NumberBox, $"Wrong UIControlType in [{nameof(NumberBox_ValueChanged)}]");
             UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+
             info.Value = (int)e.NewValue;
             uiCtrl.Update();
         }
@@ -467,11 +467,11 @@ namespace PEBakery.WPF
         {
             CheckBox box = sender as CheckBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Checked)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Checked)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Checked)}]");
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+
             info.Value = true;
             uiCtrl.Update();
         }
@@ -480,11 +480,11 @@ namespace PEBakery.WPF
         {
             CheckBox box = sender as CheckBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Unchecked)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
-            
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Unchecked)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Unchecked)}]");
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+
             info.Value = false;
             uiCtrl.Update();
         }
@@ -493,10 +493,10 @@ namespace PEBakery.WPF
         {
             CheckBox box = sender as CheckBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(CheckBox_Click)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(CheckBox_Click)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox, $"Wrong UIControlType in [{nameof(CheckBox_Click)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.CheckBox);
             UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -546,10 +546,9 @@ namespace PEBakery.WPF
         {
             ComboBox box = sender as ComboBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_LostFocus)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox);
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(ComboBox_LostFocus)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_LostFocus)}]");
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
 
             if (info.Index != box.SelectedIndex)
@@ -564,10 +563,10 @@ namespace PEBakery.WPF
         {
             ComboBox box = sender as ComboBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(ComboBox_SelectionChanged)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(ComboBox_SelectionChanged)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox, $"Wrong UIControlType in [{nameof(ComboBox_SelectionChanged)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.ComboBox);
             UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -721,13 +720,12 @@ namespace PEBakery.WPF
         /// <param name="sender"></param>
         /// <param name="e"></param>
         public void Image_Click_OpenUrl(object sender, RoutedEventArgs e)
-        { 
+        {
             Button button = sender as Button;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenUrl)}]");
-            if (!(button.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.Image);
+            UIControl uiCtrl = button.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenUrl)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenUrl)}]");
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
             FileHelper.OpenUri(info.Url);
@@ -742,10 +740,10 @@ namespace PEBakery.WPF
         {
             Button button = sender as Button;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(Image_Click_OpenImage)}]");
-            if (!(button.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = button.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenImage)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenImage)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.Image);
             if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
@@ -753,7 +751,6 @@ namespace PEBakery.WPF
             }
 
             string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
-
             using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
             {
@@ -777,6 +774,9 @@ namespace PEBakery.WPF
                 IsReadOnly = true,
                 FontSize = CalcFontPointScale(),
             };
+            ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetCanContentScroll(textBox, true);
 
             if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
@@ -795,10 +795,6 @@ namespace PEBakery.WPF
                     }
                 }
             }
-
-            ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(textBox, true);
 
             SetToolTip(textBox, info.ToolTip);
             SetEditModeProperties(_r, textBox, uiCtrl);
@@ -902,10 +898,10 @@ namespace PEBakery.WPF
         {
             Button button = sender as Button;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(Button_Click)}]");
-            if (!(button.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = button.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Button_Click)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.Button, $"Wrong UIControlType in [{nameof(Button_Click)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.Button);
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -922,7 +918,7 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
             };
 
-            Hyperlink link = new Hyperlink {NavigateUri = new Uri(info.Url)};
+            Hyperlink link = new Hyperlink { NavigateUri = new Uri(info.Url) };
             link.Inlines.Add(uiCtrl.Text);
             if (_r.ViewMode)
                 ManageWebLabelEvent(link, true);
@@ -1007,10 +1003,9 @@ namespace PEBakery.WPF
         {
             RadioButton radio = sender as RadioButton;
             Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Checked)}]");
-            if (!(radio.Tag is UIControl uiCtrl))
-                return;
-
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton);
+            UIControl uiCtrl = radio.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(RadioButton_Checked)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Checked)}]");
             UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
 
             info.Selected = true;
@@ -1031,10 +1026,10 @@ namespace PEBakery.WPF
         {
             RadioButton radio = sender as RadioButton;
             Debug.Assert(radio != null, $"Wrong sender in [{nameof(RadioButton_Click)}]");
-            if (!(radio.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = radio.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(RadioButton_Click)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton, $"Wrong UIControlType in [{nameof(RadioButton_Click)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioButton);
             UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
@@ -1186,10 +1181,10 @@ namespace PEBakery.WPF
         {
             TextBox box = sender as TextBox;
             Debug.Assert(box != null, $"Wrong sender in [{nameof(FileBox_TextChanged)}]");
-            if (!(box.Tag is UIControl uiCtrl))
-                return;
+            UIControl uiCtrl = box.Tag as UIControl;
+            Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(FileBox_TextChanged)}]");
+            Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_TextChanged)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.FileBox);
             uiCtrl.Text = box.Text;
             uiCtrl.Update();
         }
@@ -1198,14 +1193,13 @@ namespace PEBakery.WPF
         {
             Button button = sender as Button;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(FileBox_ButtonClick)}]");
-            
-            if (!(button.Tag is Tuple<UIControl, TextBox> tup))
-                return;
+            Tuple<UIControl, TextBox> tup = button.Tag as Tuple<UIControl, TextBox>;
+            Debug.Assert(tup != null, $"Wrong tag in [{nameof(FileBox_ButtonClick)}]");
 
             UIControl uiCtrl = tup.Item1;
             TextBox box = tup.Item2;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.FileBox);
+            Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_ButtonClick)}]");
             UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
             if (info.IsFile)
@@ -1315,20 +1309,20 @@ namespace PEBakery.WPF
                     if (sectionName != null)
                         button.Click -= RadioGroup_Click;
                 }
-            }   
+            }
         }
 
         public void RadioGroup_Checked(object sender, RoutedEventArgs e)
         {
             RadioButton button = sender as RadioButton;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Checked)}]");
-            if (!(button.Tag is Tuple<UIControl, int> tup))
-                return;
+            Tuple<UIControl, int> tup = button.Tag as Tuple<UIControl, int>;
+            Debug.Assert(tup != null, $"Wrong tag in [{nameof(RadioGroup_Checked)}]");
 
             UIControl uiCtrl = tup.Item1;
             int idx = tup.Item2;
 
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, "Wrong UIControl Type");
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
 
             info.Selected = idx;
@@ -1339,12 +1333,11 @@ namespace PEBakery.WPF
         {
             RadioButton button = sender as RadioButton;
             Debug.Assert(button != null, $"Wrong sender in [{nameof(RadioGroup_Click)}]");
-            if (!(button.Tag is Tuple<UIControl, int> tup))
-                return;
-
+            Tuple<UIControl, int> tup = button.Tag as Tuple<UIControl, int>;
+            Debug.Assert(tup != null, $"Wrong tag in [{nameof(RadioGroup_Checked)}]");
             UIControl uiCtrl = tup.Item1;
+            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup, $"Wrong UIControlType in [{nameof(RadioGroup_Checked)}]");
 
-            Debug.Assert(uiCtrl.Type == UIControlType.RadioGroup);
             UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }

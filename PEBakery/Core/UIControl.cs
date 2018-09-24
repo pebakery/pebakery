@@ -553,6 +553,11 @@ namespace PEBakery.Core
         }
 
         #region Cast
+        /// <summary>
+        /// Type safe casting helper
+        /// </summary>
+        /// <typeparam name="T">Child of UIInfo</typeparam>
+        /// <returns>UIInfo casted as T</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : UIInfo
         {
@@ -562,6 +567,11 @@ namespace PEBakery.Core
             return cast;
         }
 
+        /// <summary>
+        /// Type safe casting helper
+        /// </summary>
+        /// <typeparam name="T">Child of UIInfo</typeparam>
+        /// <returns>UIInfo casted as T</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Cast<T>(UIInfo info) where T : UIInfo
         {
