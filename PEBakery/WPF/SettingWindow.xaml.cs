@@ -51,9 +51,9 @@ namespace PEBakery.WPF
         #region Field and Constructor
         public SettingViewModel Model;
 
-        public SettingWindow(SettingViewModel model)
+        public SettingWindow()
         {
-            DataContext = Model = model;
+            DataContext = Model = Global.Setting;
             InitializeComponent();
         }
         #endregion
@@ -856,6 +856,7 @@ namespace PEBakery.WPF
                 OptimizeCode = General_OptimizeCode,
                 AllowLegacyBranchCondition = Compat_LegacyBranchCondition,
                 AllowLegacyRegWrite = Compat_LegacyRegWrite,
+                AllowLegacyInterfaceCommand = Compat_LegacyInterfaceCommand,
                 AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand,
                 AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams,
             };

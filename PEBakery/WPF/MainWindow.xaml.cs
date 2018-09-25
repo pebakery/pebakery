@@ -808,7 +808,7 @@ namespace PEBakery.WPF
             bool old_Compat_EnableEnvironmentVariables = Global.Setting.Compat_EnableEnvironmentVariables;
             bool old_Script_EnableCache = Global.Setting.Script_EnableCache;
 
-            SettingWindow dialog = new SettingWindow(Global.Setting) { Owner = this };
+            SettingWindow dialog = new SettingWindow { Owner = this };
             bool? result = dialog.ShowDialog();
             if (result == true)
             {

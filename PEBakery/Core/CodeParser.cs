@@ -221,7 +221,7 @@ namespace PEBakery.Core
                 return new CodeCommand(rawCode, _section, CodeType.Comment, null, lineIdx);
 
             // Split with period
-            (string codeTypeStr, string remainder) = CodeParser.GetNextArgument(rawCode);
+            (string codeTypeStr, string remainder) = GetNextArgument(rawCode);
 
             // Parse CodeType
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
@@ -235,7 +235,7 @@ namespace PEBakery.Core
             while (remainder != null)
             {
                 string nextArg;
-                (nextArg, remainder) = CodeParser.GetNextArgument(remainder);
+                (nextArg, remainder) = GetNextArgument(remainder);
                 args.Add(nextArg);
             }
 
@@ -359,7 +359,7 @@ namespace PEBakery.Core
                     { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool preserve = false;
@@ -399,7 +399,7 @@ namespace PEBakery.Core
                     { // FileDelete,<FilePath>[,NOWARN][,NOREC]
                         const int minArgCount = 1;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string filePath = args[0];
@@ -442,7 +442,7 @@ namespace PEBakery.Core
                     { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16LE | UTF16BE | ANSI]
                         const int minArgCount = 1;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string filePath = args[0];
@@ -535,7 +535,7 @@ namespace PEBakery.Core
                     { // DirDelete,<DirPath>
                         const int minArgCount = 1;
                         const int maxArgCount = 2; // For deprecated [FAST] argument
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         return new CodeInfo_DirDelete(args[0]);
@@ -610,7 +610,7 @@ namespace PEBakery.Core
                 case CodeType.RegWrite:
                     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>,[NOWARN]
                         const int minArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         // Compatbility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
@@ -638,61 +638,62 @@ namespace PEBakery.Core
                         switch (valType)
                         {
                             case RegistryValueKind.None:
+                                // RegWrite,HKCU,0x0,Software\PEBakery
+                                // RegWrite,HKCU,0x0,Software\PEBakery,Hello
+                                switch (cnt)
                                 {
-                                    // RegWrite,HKCU,0x0,Software\PEBakery
-                                    // RegWrite,HKCU,0x0,Software\PEBakery,Hello
-                                    if (cnt == 3)
+                                    case 3:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, null, noWarn);
-                                    else if (cnt == 4)
+                                    case 4:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.String:
                             case RegistryValueKind.ExpandString:
+                                switch (cnt)
                                 {
-                                    if (cnt == 3)
+                                    case 3:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, null, noWarn);
-                                    else if (cnt == 4)
+                                    case 4:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
-                                    else if (cnt == 5)
+                                    case 5:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
+                                switch (cnt)
                                 {
-                                    if (4 == cnt)
-                                    { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
+                                    case 4:
+                                        // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
-                                    }
-                                    else if (5 <= cnt)
-                                    { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
+                                    case 5:
+                                        // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
                                         string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
                                         if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
                                             return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
                                         else
                                             return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
-                                    }
                                 }
                                 break;
                             case RegistryValueKind.Binary:
+                                switch (cnt)
                                 {
-                                    if (cnt == 4)
+                                    case 4:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
-                                    else if (5 == cnt)
+                                    case 5:
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
-                                    else if (6 <= cnt)
-                                    {
-                                        string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
-                                    }
+                                }
+
+                                if (6 <= cnt)
+                                {
+                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.DWord:
                             case RegistryValueKind.QWord:
-                                {
-                                    if (cnt == 5)
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
-                                }
+                                if (cnt == 5)
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
                                 break;
                             default:
                                 throw new InvalidCommandException($"Invalid ValueType [{valType}]", rawCode);
@@ -703,7 +704,7 @@ namespace PEBakery.Core
                 case CodeType.RegWriteLegacy:
                     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>
                         const int minArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
@@ -731,7 +732,7 @@ namespace PEBakery.Core
                     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
@@ -746,7 +747,7 @@ namespace PEBakery.Core
                     { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
                         const int minArgCount = 5;
                         const int maxArgCount = 6;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
@@ -787,7 +788,7 @@ namespace PEBakery.Core
                     { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>,[WILDCARD]
                         const int minArgCount = 4;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         RegistryKey hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
@@ -901,7 +902,7 @@ namespace PEBakery.Core
                     { // INIReadSection,<FileName>,<Section>,<DestVar>
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[2];
@@ -948,7 +949,7 @@ namespace PEBakery.Core
                     {  // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool append = false;
@@ -992,7 +993,7 @@ namespace PEBakery.Core
                     { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>,[NOERR]
                         const int minArgCount = 4;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
@@ -1023,7 +1024,7 @@ namespace PEBakery.Core
                     { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 3;
                         const int maxArgCount = 7;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string split = null;
@@ -1070,7 +1071,7 @@ namespace PEBakery.Core
                     { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 4;
                         const int maxArgCount = 7;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string split = null;
@@ -1119,7 +1120,7 @@ namespace PEBakery.Core
                     { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR],[NOWARN]
                         const int minArgCount = 4;
                         const int maxArgCount = 10;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string split = null;
@@ -1181,7 +1182,7 @@ namespace PEBakery.Core
                     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
                         const int minArgCount = 3;
                         const int maxArgCount = 9;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string imageName = null;
@@ -1244,7 +1245,7 @@ namespace PEBakery.Core
                     { // WimAppend,<SrcDir>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
                         const int minArgCount = 2;
                         const int maxArgCount = 9;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string imageName = null;
@@ -1315,7 +1316,7 @@ namespace PEBakery.Core
                     { // WimDelete,<SrcWim>,<ImageIndex>,[CHECK]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool check = false;
@@ -1342,7 +1343,7 @@ namespace PEBakery.Core
                     { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[NOACL],[PRESERVE],[REBUILD]
                         const int minArgCount = 4;
                         const int maxArgCount = 8;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool check = false;
@@ -1389,7 +1390,7 @@ namespace PEBakery.Core
                     { // WimPathDelete,<WimFile>,<ImageIndex>,<Path>,[CHECK],[REBUILD]
                         const int minArgCount = 3;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool check = false;
@@ -1422,7 +1423,7 @@ namespace PEBakery.Core
                     { // WimPathRename,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD]
                         const int minArgCount = 4;
                         const int maxArgCount = 6;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool check = false;
@@ -1455,7 +1456,7 @@ namespace PEBakery.Core
                     { // WimOptimize,<WimFile>,[Recomp=STR],[CHECK|NOCHECK]
                         const int minArgCount = 1;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string recompress = null;
@@ -1494,7 +1495,7 @@ namespace PEBakery.Core
                     { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Split=STR],[Recomp=STR],[BOOT],[CHECK|NOCHECK]
                         const int minArgCount = 3;
                         const int maxArgCount = 9;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string imageName = null;
@@ -1566,7 +1567,7 @@ namespace PEBakery.Core
                     { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Unicode]
                         const int minArgCount = 3;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         ArchiveCompressFormat format;
@@ -1647,7 +1648,7 @@ namespace PEBakery.Core
                     { // Decompress,<SrcArchive>,<DestDir>,[Unicode]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         Encoding encoding = null;
@@ -1696,7 +1697,7 @@ namespace PEBakery.Core
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string srcCab = args[0];
@@ -1733,7 +1734,7 @@ namespace PEBakery.Core
                     { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
                         const int minArgCount = 2;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string srcFile = args[0];
@@ -1769,7 +1770,7 @@ namespace PEBakery.Core
                     { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
                         const int minArgCount = 2;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         HashHelper.HashType hashType = HashHelper.HashType.None;
@@ -1860,7 +1861,7 @@ namespace PEBakery.Core
                     { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string _params = null;
@@ -1881,7 +1882,7 @@ namespace PEBakery.Core
                     { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string compression = null;
@@ -1897,7 +1898,7 @@ namespace PEBakery.Core
                         // [,PERMANENT] - for compability of WB082
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string interfaceKey = Variables.TrimPercentMark(args[0]);
@@ -1924,7 +1925,7 @@ namespace PEBakery.Core
                     { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>,[Delim=<Str>]
                         const int minArgCount = 5;
                         const int maxArgCount = 6;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
@@ -1960,7 +1961,7 @@ namespace PEBakery.Core
                     { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>,[Delim=<Str>]
                         const int minArgCount = 5;
                         const int maxArgCount = 6;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         InterfaceElement element = ParseInterfaceElement(args[0]);
@@ -1992,7 +1993,7 @@ namespace PEBakery.Core
                     { // Message,<Message>[,ICON][,TIMEOUT]
                         const int minArgCount = 1;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string message = args[0];
@@ -2023,7 +2024,7 @@ namespace PEBakery.Core
                     { // Echo,<Message>,[WARN]
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool warn = false;
@@ -2039,7 +2040,7 @@ namespace PEBakery.Core
                     { // EchoFile,<SrcFile>[,WARN][,ENCODE]
                         const int minArgCount = 1;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool warn = false;
@@ -2142,7 +2143,7 @@ namespace PEBakery.Core
                         // Run,<ScriptFile>,<Section>,[Params]
                         // Exec,<ScriptFile>,<Section>,[Params]
                         const int minArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         string scriptFile = args[0];
@@ -2158,7 +2159,7 @@ namespace PEBakery.Core
                 case CodeType.RunEx:
                     { // RunEx,<ScriptFile>,<Section>,[InOutParams]
                         const int minArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         string scriptFile = args[0];
@@ -2200,7 +2201,7 @@ namespace PEBakery.Core
                         else
                         { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
                             const int minArgCount = 4;
-                            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            if (CheckInfoArgumentCount(args, minArgCount, -1))
                                 throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                             // Get parameters 
@@ -2229,7 +2230,7 @@ namespace PEBakery.Core
                         else
                         { // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
                             const int minArgCount = 4;
-                            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            if (CheckInfoArgumentCount(args, minArgCount, -1))
                                 throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                             // Get parameters
@@ -2269,7 +2270,7 @@ namespace PEBakery.Core
                     { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string varName = args[0];
@@ -2302,7 +2303,7 @@ namespace PEBakery.Core
                     { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string macroName = args[0];
@@ -2335,7 +2336,7 @@ namespace PEBakery.Core
                     { // AddVariables,%ScriptFile%,<Section>[,GLOBAL]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string varName = args[0];
@@ -2361,7 +2362,7 @@ namespace PEBakery.Core
                     { // Exit,[Message],[NOWARN]
                         const int minArgCount = 0;
                         const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string msg = string.Empty;
@@ -2381,7 +2382,7 @@ namespace PEBakery.Core
                     { // Halt,<Message>
                         const int minArgCount = 0;
                         const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string message = string.Empty;
@@ -2434,7 +2435,7 @@ namespace PEBakery.Core
                     { // PackParam,<StartIndex>,<DestVar>,[VarCount]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         Variables.VarKeyType varKeyType = Variables.DetectType(args[1]);
@@ -2479,7 +2480,7 @@ namespace PEBakery.Core
                         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         if (type == CodeType.ShellExecuteEx && args.Count == 5)
@@ -2600,7 +2601,7 @@ namespace PEBakery.Core
         public static CodeInfo_UserInput ParseCodeInfoUserInput(string rawCode, List<string> args)
         {
             const int minArgCount = 3;
-            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+            if (CheckInfoArgumentCount(args, minArgCount, -1))
                 throw new InvalidCommandException($"Command [UserInput] must have at least [{minArgCount}] arguments", rawCode);
 
             UserInputType type = ParseUserInputType(args[0]);
@@ -2652,7 +2653,7 @@ namespace PEBakery.Core
         #region ParseCodeInfoStrFormat, ParseStrFormatType
         public static CodeInfo_StrFormat ParseCodeInfoStrFormat(string rawCode, List<string> args)
         {
-            if (CodeParser.CheckInfoArgumentCount(args, 2, -1))
+            if (CheckInfoArgumentCount(args, 2, -1))
                 throw new InvalidCommandException("Command [StrFormat] must have at least [2] arguments", rawCode);
 
             StrFormatType type = ParseStrFormatType(args[0]);
@@ -2668,10 +2669,9 @@ namespace PEBakery.Core
                     {
                         // StrFormat,IntToBytes,<Integer>,<DestVar>
                         // StrFormat,IntToBytes,<SrcDestVar>
-
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [StrFormat,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[0];
@@ -3171,7 +3171,7 @@ namespace PEBakery.Core
 
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
@@ -3252,7 +3252,7 @@ namespace PEBakery.Core
                     {  // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
@@ -3282,7 +3282,7 @@ namespace PEBakery.Core
                     { // Math,BitShift,<DestVar>,<Src>,<LEFT|RIGHT>,<Shift>,[8|16|32|64],[UNSIGNED]
                         const int minArgCount = 4;
                         const int maxArgCount = 6;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
@@ -3357,7 +3357,7 @@ namespace PEBakery.Core
                     { // Math,Hex,<DestVar>,<Integer>,[BitSize]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string destVar = args[0];
@@ -3422,7 +3422,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3460,7 +3460,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3493,7 +3493,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3526,7 +3526,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3559,7 +3559,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3591,7 +3591,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3623,7 +3623,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3664,7 +3664,7 @@ namespace PEBakery.Core
                     {
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3705,7 +3705,7 @@ namespace PEBakery.Core
                     { // List,Sort,<%ListVar%>,<Asc|Desc>,[Delim=<Str>]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check ListVar
@@ -3781,7 +3781,7 @@ namespace PEBakery.Core
                     { // System,ErrorOff,[Lines]
                         const int minArgCount = 0;
                         const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         if (args.Count == 0) // No args
@@ -3841,7 +3841,7 @@ namespace PEBakery.Core
                 case SystemType.OnBuildExit:
                     { // System,OnBuildExit,<Command>
                         const int minArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
@@ -3852,7 +3852,7 @@ namespace PEBakery.Core
                 case SystemType.OnScriptExit:
                     { // System,OnScriptExit,<Command>
                         const int minArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, lineIdx);
@@ -3883,7 +3883,7 @@ namespace PEBakery.Core
                     { // System,LoadNewScript,<SrcFilePath>,<DestTreeDir>,[PRESERVE],[NOWARN],[NOREC]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool preserve = false;
@@ -3921,7 +3921,7 @@ namespace PEBakery.Core
                     { // System,RefreshScript,<FilePath>,[NOREC]
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool noRec = false;
@@ -3945,7 +3945,7 @@ namespace PEBakery.Core
                     { // System,SaveLog,<DestPath>,[LogFormat]
                         const int minArgCount = 1;
                         const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string logFormat = null;
