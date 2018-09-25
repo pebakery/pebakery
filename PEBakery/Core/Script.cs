@@ -250,7 +250,7 @@ namespace PEBakery.Core
                         _mandatory = false;
                         _link = null;
 
-                        List<string> mainSectionLines = new List<string>
+                        string[] mainSectionLines = new string[]
                         {
                             $"Title={_title}",
                             $"Description={_description}",
@@ -259,7 +259,7 @@ namespace PEBakery.Core
 
                         _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
                         {
-                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, mainSectionLines.ToArray(), 1)
+                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, mainSectionLines, 1)
                         };
                     }
                     break;
@@ -269,10 +269,8 @@ namespace PEBakery.Core
                         CheckMainSection(ScriptType.Link);
                         ScriptSection mainSection = _sections["Main"];
 
-                        if (mainSection.IniDict.ContainsKey("Link") == false)
-                        {
+                        if (!mainSection.IniDict.ContainsKey("Link"))
                             throw new ScriptParseException($"Invalid link path in script {realPath}");
-                        }
 
                         if (mainSection.IniDict.ContainsKey("Selected"))
                         {
@@ -349,9 +347,9 @@ namespace PEBakery.Core
                                         string remainder = rawList;
                                         while (remainder != null)
                                         {
-                                            Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
-                                            _interfaceList.Add(tuple.Item1);
-                                            remainder = tuple.Item2;
+                                            string next;
+                                            (next, remainder) = CodeParser.GetNextArgument(remainder);
+                                            _interfaceList.Add(next);
                                         }
                                     }
                                     catch (InvalidCommandException) { } // Just Ignore
@@ -623,9 +621,9 @@ namespace PEBakery.Core
                 string remainder = rawLine;
                 while (remainder != null)
                 {
-                    Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
-                    paths.Add(tuple.Item1);
-                    remainder = tuple.Item2;
+                    string next;
+                    (next, remainder) = CodeParser.GetNextArgument(remainder);
+                    paths.Add(next);
                 }
             }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }

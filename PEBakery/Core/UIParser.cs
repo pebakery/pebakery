@@ -149,9 +149,9 @@ namespace PEBakery.Core
                 string remainder = rawValue;
                 while (remainder != null)
                 {
-                    Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
-                    args.Add(tuple.Item1);
-                    remainder = tuple.Item2;
+                    string next;
+                    (next, remainder) = CodeParser.GetNextArgument(remainder);
+                    args.Add(next);
                 }
             }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }

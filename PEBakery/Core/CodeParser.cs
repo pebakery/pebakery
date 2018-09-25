@@ -131,7 +131,7 @@ namespace PEBakery.Core
         #endregion
 
         #region GetNextArgument
-        public static Tuple<string, string> GetNextArgument(string str)
+        public static (string Next, string Remainder) GetNextArgument(string str)
         {
             str = str.Trim();
 
@@ -172,7 +172,7 @@ namespace PEBakery.Core
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
                     string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
-                    return new Tuple<string, string>(next, null);
+                    return (next, null);
                 }
                 else // [   Return SetError(@error,0,0)], [Append]
                 {
@@ -183,7 +183,7 @@ namespace PEBakery.Core
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
                     string next = preNext.Substring(1, preNext.Length - 2);
                     string remainder = str.Substring(pIdx + 1).Trim();
-                    return new Tuple<string, string>(next, remainder);
+                    return (next, remainder);
                 }
             }
             else // No doublequote for now
@@ -191,13 +191,13 @@ namespace PEBakery.Core
                 int pIdx = str.IndexOf(",", StringComparison.Ordinal);
                 if (pIdx == -1) // Last one
                 {
-                    return new Tuple<string, string>(str, null);
+                    return (str, null);
                 }
                 else // [FileCreateBlank], [#3.au3]
                 {
                     string next = str.Substring(0, pIdx).Trim();
                     string remainder = str.Substring(pIdx + 1).Trim();
-                    return new Tuple<string, string>(next, remainder);
+                    return (next, remainder);
                 }
             }
         }
@@ -221,9 +221,7 @@ namespace PEBakery.Core
                 return new CodeCommand(rawCode, _section, CodeType.Comment, null, lineIdx);
 
             // Split with period
-            Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
-            string codeTypeStr = tuple.Item1;
-            string remainder = tuple.Item2;
+            (string codeTypeStr, string remainder) = CodeParser.GetNextArgument(rawCode);
 
             // Parse CodeType
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
@@ -236,9 +234,9 @@ namespace PEBakery.Core
             List<string> args = new List<string>();
             while (remainder != null)
             {
-                tuple = CodeParser.GetNextArgument(remainder);
-                args.Add(tuple.Item1);
-                remainder = tuple.Item2;
+                string nextArg;
+                (nextArg, remainder) = CodeParser.GetNextArgument(remainder);
+                args.Add(nextArg);
             }
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
@@ -255,9 +253,9 @@ namespace PEBakery.Core
 
                     // Check if nextRawCode is Empty / Comment
                     if (nextRawCode.Length == 0 ||
-                        rawCode.StartsWith("//") ||
-                        rawCode.StartsWith("#") ||
-                        rawCode.StartsWith(";"))
+                        rawCode.StartsWith("//", StringComparison.Ordinal) ||
+                        rawCode.StartsWith("#", StringComparison.Ordinal) ||
+                        rawCode.StartsWith(";", StringComparison.Ordinal))
                         throw new InvalidCommandException(@"Valid command should be placed after '\'", rawCode);
 
                     // Parse next raw code
@@ -266,9 +264,9 @@ namespace PEBakery.Core
                     remainder = nextRawCode;
                     do
                     {
-                        tuple = CodeParser.GetNextArgument(remainder);
-                        args.Add(tuple.Item1);
-                        remainder = tuple.Item2;
+                        string nextArg;
+                        (nextArg, remainder) = CodeParser.GetNextArgument(remainder);
+                        args.Add(nextArg);
                     }
                     while (remainder != null);
 

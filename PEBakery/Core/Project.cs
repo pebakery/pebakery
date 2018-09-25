@@ -228,7 +228,7 @@ namespace PEBakery.Core
                         { // Absolute Path
                             if (!Directory.Exists(dirPath))
                             {
-                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
+                                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
                                 continue;
                             }
 
@@ -253,7 +253,7 @@ namespace PEBakery.Core
                             string fullPath = Path.Combine(_baseDir, dirPath);
                             if (!Directory.Exists(fullPath))
                             {
-                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
+                                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
                                 continue;
                             }
 
@@ -286,7 +286,7 @@ namespace PEBakery.Core
 
                             if (!Directory.Exists(dirPath))
                             {
-                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
+                                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{dirPath}] for directory link"));
                                 continue;
                             }
 
@@ -307,7 +307,7 @@ namespace PEBakery.Core
                             string fullPath = Path.Combine(_baseDir, dirPath);
                             if (!Directory.Exists(fullPath))
                             {
-                                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
+                                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find path [{fullPath}] for directory link"));
                                 continue;
                             }
 
@@ -392,7 +392,7 @@ namespace PEBakery.Core
 
                 if (!linkRawPath.StartsWith("Projects"))
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}] has invalid link path [{linkRawPath}]"));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}] has invalid link path [{linkRawPath}]"));
                     return (null, null);
                 }
 
@@ -403,7 +403,7 @@ namespace PEBakery.Core
                 // Unable to find 
                 if (!File.Exists(linkRealPath))
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}]'s link path [{linkRawPath}] cannot be found in disk"));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}]'s link path [{linkRawPath}] cannot be found in disk"));
                     return (null, null);
                 }
 

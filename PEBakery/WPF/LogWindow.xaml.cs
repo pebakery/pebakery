@@ -279,7 +279,7 @@ namespace PEBakery.WPF
         #region Constructor
         public LogViewModel()
         {
-            Logger = App.Logger;
+            Logger = Global.Logger;
             RefreshSystemLog();
             RefreshBuildLog();
         }

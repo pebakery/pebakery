@@ -12,27 +12,20 @@ namespace PEBakery
     // ReSharper disable RedundantExtendsListEntry
     public partial class App : Application
     {
-        public static string[] Args;
-        public static int Version = 0;
-        public static Logger Logger;
-        public static string BaseDir;
-        public static DateTime BuildDate;
-        public static SettingViewModel Setting;
-
         internal void App_Startup(object sender, StartupEventArgs e)
         {
             // If no command line arguments were provided, don't process them 
             if (e.Args.Length == 0)
-                Args = new string[0];
+                Global.Args = new string[0];
             else if (e.Args.Length > 0)
-                Args = e.Args;
+                Global.Args = e.Args;
 
             // Initialize zlib and wimlib
             NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.EngineVersion;
-            BuildDate = BuildTimestamp.ReadDateTime();
+            Global.BuildDate = BuildTimestamp.ReadDateTime();
         }
 
         public static void NativeGlobalInit(string baseDir)

@@ -64,7 +64,7 @@ namespace PEBakery.Tests.Core.Command
                     ScriptSection section = sc.Sections["Process"];
 
                     // Enable Visible command
-                    CodeParser.Options opts = App.Setting.ExportCodeParserOptions();
+                    CodeParser.Options opts = Global.Setting.ExportCodeParserOptions();
                     opts.AllowLegacyInterfaceCommand = true;
                     CodeParser parser = new CodeParser(section, opts);
 
@@ -93,7 +93,7 @@ namespace PEBakery.Tests.Core.Command
                     ScriptSection section = sc.Sections["Process"];
 
                     // Enable Visible command
-                    CodeParser.Options opts = App.Setting.ExportCodeParserOptions();
+                    CodeParser.Options opts = Global.Setting.ExportCodeParserOptions();
                     opts.AllowLegacyInterfaceCommand = true;
                     CodeParser parser = new CodeParser(section, opts);
 

@@ -686,14 +686,14 @@ namespace PEBakery.Core
             int aeIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
             if (aeIdx != -1)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
                 dirNames.RemoveAt(aeIdx);
             }
 
             int ieIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
             if (ieIdx != -1)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
                 dirNames.RemoveAt(ieIdx);
             }
 

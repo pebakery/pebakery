@@ -60,7 +60,7 @@ namespace PEBakery.WPF
             { // Rollback Count to 0
                 Interlocked.Decrement(ref Count);
 
-                App.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
+                Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
                 MessageBox.Show($"[Error Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -141,7 +141,7 @@ namespace PEBakery.WPF
                 (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(_sc, true);
                 if (errMsg != null)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show($"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -178,7 +178,7 @@ namespace PEBakery.WPF
             {
                 if (0 < errLogs.Count)
                 {
-                    App.Logger.SystemWrite(errLogs);
+                    Global.Logger.SystemWrite(errLogs);
 
                     StringBuilder b = new StringBuilder();
                     b.AppendLine("[Error Messages]");
@@ -190,7 +190,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false, App.Setting.Compat_IgnoreWidthOfWebLabel);
+            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false, Global.Setting.Compat_IgnoreWidthOfWebLabel);
 
             m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = -1;
@@ -210,7 +210,7 @@ namespace PEBakery.WPF
             (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(_sc, false);
             if (errMsg != null)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -356,7 +356,7 @@ namespace PEBakery.WPF
             if (verStr == null)
             {
                 string errMsg = $"Invalid version string [{m.ScriptVersion}], please check again";
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
@@ -510,7 +510,7 @@ namespace PEBakery.WPF
             }
             catch (Exception ex)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                 MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -527,7 +527,7 @@ namespace PEBakery.WPF
             {
                 SaveFileDialog dialog = new SaveFileDialog
                 {
-                    InitialDirectory = App.BaseDir,
+                    InitialDirectory = Global.BaseDir,
                     OverwritePrompt = true,
                     Filter = $"Image ({type.ToString().ToLower()})|*.{type}",
                     DefaultExt = $".{type}",
@@ -549,7 +549,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception ex)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -574,7 +574,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1134,7 +1134,7 @@ namespace PEBakery.WPF
                 (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, ScriptSection.Names.InterfaceEncoded, false);
                 if (errMsg != null)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -1180,7 +1180,7 @@ namespace PEBakery.WPF
             }
             catch (Exception ex)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                 MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1259,7 +1259,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception ex)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -1364,7 +1364,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1415,7 +1415,7 @@ namespace PEBakery.WPF
             }
             catch (Exception ex)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                 MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
@@ -1442,7 +1442,7 @@ namespace PEBakery.WPF
                 (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(_sc, item.Name, false);
                 if (errMsg != null)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -1499,7 +1499,7 @@ namespace PEBakery.WPF
                     }
                     catch (Exception ex)
                     {
-                        App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                         MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
@@ -1534,7 +1534,7 @@ namespace PEBakery.WPF
             }
             else // Failure
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1624,7 +1624,7 @@ namespace PEBakery.WPF
             }
             catch (Exception ex)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                 MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1662,7 +1662,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception ex)
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -1696,7 +1696,7 @@ namespace PEBakery.WPF
             }
             else // Failure
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1721,7 +1721,7 @@ namespace PEBakery.WPF
             }
             else // Failure
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                 MessageBox.Show($"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

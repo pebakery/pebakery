@@ -93,25 +93,25 @@ namespace PEBakery.Tests.Core
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(DummySection(), App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting.ExportCodeParserOptions());
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(DummySection(), App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting.ExportCodeParserOptions());
             return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
@@ -156,7 +156,7 @@ namespace PEBakery.Tests.Core
             // Create CodeCommand
             List<LogInfo> errorLogs;
             ScriptSection dummySection = DummySection();
-            CodeParser parser = new CodeParser(dummySection, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(dummySection, Global.Setting.ExportCodeParserOptions());
             (cmds, errorLogs) = parser.ParseStatements(rawCodes);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {
@@ -184,7 +184,7 @@ namespace PEBakery.Tests.Core
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
             ScriptSection section = DummySection();
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
@@ -199,7 +199,7 @@ namespace PEBakery.Tests.Core
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
             ScriptSection section = DummySection();
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
         }
 
@@ -214,7 +214,7 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out _);
         }
 
@@ -230,7 +230,7 @@ namespace PEBakery.Tests.Core
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, ScriptSection section, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             return EvalOptLines(s, parser, section, opType, rawCodes, check, out cmds);
         }
 

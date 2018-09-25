@@ -18,7 +18,7 @@ namespace PEBakery.Tests
             string emptyTempFile = Path.GetTempFileName();
             if (File.Exists(emptyTempFile))
                 File.Delete(emptyTempFile);
-            App.Setting = new SettingViewModel(emptyTempFile); // Set to default
+            Global.Setting = new SettingViewModel(emptyTempFile); // Set to default
 
             // Load Project "TestSuite" (ScriptCache disabled)
             EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
@@ -38,9 +38,9 @@ namespace PEBakery.Tests
             EngineTests.Logger = new Logger(":memory:");
             EngineTests.Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
 
-            App.Logger = EngineTests.Logger;
-            App.BaseDir = EngineTests.BaseDir;
-            App.BuildDate = BuildTimestamp.ReadDateTime();
+            Global.Logger = EngineTests.Logger;
+            Global.BaseDir = EngineTests.BaseDir;
+            Global.BuildDate = BuildTimestamp.ReadDateTime();
         }
 
         private static void NativeGlobalInit()

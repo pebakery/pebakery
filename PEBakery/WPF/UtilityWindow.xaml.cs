@@ -140,7 +140,7 @@ namespace PEBakery.WPF
                 Project project = m.CodeBox_CurrentProject;
                 Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
 
-                SettingViewModel setting = App.Setting;
+                SettingViewModel setting = Global.Setting;
                 Logger logger = null;
                 MainViewModel mainModel = null;
                 Application.Current.Dispatcher.Invoke(() =>
@@ -184,7 +184,7 @@ namespace PEBakery.WPF
 
                     w.DisplayScript(w.CurMainTree.Script);
 
-                    if (App.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
                         w.LogDialog = new LogWindow(1);
                         w.LogDialog.Show();
@@ -218,7 +218,7 @@ namespace PEBakery.WPF
                 section = new ScriptSection(sc, "Process", SectionType.Code, new string[0], 1);
 
             string[] lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToArray();
-            CodeParser parser = new CodeParser(section, App.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             (CodeCommand[] cmds, List<LogInfo> errorLogs) = parser.ParseStatements(lines);
 
             // Check Macros

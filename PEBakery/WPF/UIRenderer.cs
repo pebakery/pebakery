@@ -91,7 +91,7 @@ namespace PEBakery.WPF
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
             UICtrls = uiCtrls ?? new List<UIControl>(0);
 
-            App.Logger.SystemWrite(errLogs);
+            Global.Logger.SystemWrite(errLogs);
         }
 
         public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode, bool compatWebLabel)
@@ -198,7 +198,7 @@ namespace PEBakery.WPF
                             clean = RenderRadioGroup(uiCtrl);
                             break;
                         default:
-                            App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unknown UIControlType [{uiCtrl.Type}] ({uiCtrl.RawLine})"));
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unknown UIControlType [{uiCtrl.Type}] ({uiCtrl.RawLine})"));
                             break;
                     }
 
@@ -209,7 +209,7 @@ namespace PEBakery.WPF
                 catch (Exception e)
                 {
                     // Log failure
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCtrl.RawLine}]"));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCtrl.RawLine}]"));
                 }
             }
         }
@@ -639,7 +639,7 @@ namespace PEBakery.WPF
                 SetEditModeProperties(border, uiCtrl);
                 DrawToCanvas(border, uiCtrl);
 
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
                 return null;
             }
 
@@ -648,7 +648,7 @@ namespace PEBakery.WPF
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                     return null;
                 }
 
@@ -760,7 +760,7 @@ namespace PEBakery.WPF
 
             if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                 return;
             }
 
@@ -798,7 +798,7 @@ namespace PEBakery.WPF
                 { // Wrong encoded text
                     string errMsg = $"Unable to find encoded text [{uiCtrl.Text}]";
                     textBox.Text = errMsg;
-                    App.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
                 }
                 else
                 {
@@ -1466,7 +1466,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{sectionName}] does not exist"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{sectionName}] does not exist"));
             }
         }
 
@@ -1476,7 +1476,7 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                Logger logger = App.Logger;
+                Logger logger = Global.Logger;
 
                 MainViewModel mainModel = null;
                 Application.Current.Dispatcher.Invoke(() =>
@@ -1499,7 +1499,7 @@ namespace PEBakery.WPF
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
-                s.SetOptions(App.Setting);
+                s.SetOptions(Global.Setting);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
                     s.LogMode = LogMode.FullDefer;
 
