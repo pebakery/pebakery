@@ -114,7 +114,7 @@ namespace PEBakery.Core
     HideProgress : (Bool)   
 
     [ToolTip]
-    <StringValue> : ToolTip to show when mousehover event, always start with __
+    <StringValue> : ToolTip to show at mousehover event, always start with __
     */
     #endregion
 
@@ -192,7 +192,6 @@ namespace PEBakery.Core
                 b.Append(StringEscaper.QuoteEscape(Key));
                 b.Append("=");
             }
-
             b.Append(StringEscaper.QuoteEscape(Text));
             b.Append(",");
             b.Append(Visibility ? "1," : "0,");
@@ -232,9 +231,15 @@ namespace PEBakery.Core
             {
                 Debug.Assert(fullPath.Equals(uiCtrl.Section.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
+                // Prepare updating actual file
                 keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
+
+                // Update ScriptSection.Lines
+                int lineIdx = Array.FindIndex(uiCtrl.Section.Lines, x => x.StartsWith($"{uiCtrl.Key}=", StringComparison.OrdinalIgnoreCase));
+                uiCtrl.Section.Lines[lineIdx] = uiCtrl.ForgeRawLine(true);
             }
 
+            // Update actual file
             return Ini.WriteKeys(fullPath, keys);
         }
         #endregion
