@@ -213,6 +213,11 @@ namespace PEBakery.Core
         #region Update
         public bool Update()
         {
+            // Update ScriptSection.Lines
+            int lineIdx = Array.FindIndex(Section.Lines, x => x.StartsWith($"{Key}=", StringComparison.OrdinalIgnoreCase));
+            Section.Lines[lineIdx] = ForgeRawLine(true);
+
+            // Update actual file
             return Ini.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
