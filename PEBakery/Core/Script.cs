@@ -205,18 +205,15 @@ namespace PEBakery.Core
 
         #region Constructor
         public Script(
-            ScriptType type, 
-            string realPath, string treePath,
-            Project project, string projectRoot,
+            ScriptType type, string realPath, string treePath, Project project,
             int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-            Debug.Assert(projectRoot != null, $"{nameof(projectRoot)} is null");
 
-            Debug.Assert(!Path.IsPathRooted(treePath), $"{nameof(treePath)} must not be rooted path");
-            Debug.Assert(!isDirLink || type != ScriptType.Link);
+            Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
+            Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
             _realPath = realPath;
             _treePath = treePath;
@@ -835,7 +832,7 @@ namespace PEBakery.Core
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static string GetEncodedSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
         }
-        
+
         #endregion
 
         #region Fields and Properties
@@ -863,7 +860,7 @@ namespace PEBakery.Core
                     List<string> lineList = Ini.ParseRawSection(Script.RealPath, Name);
                     return lineList?.ToArray();
                 }
-                
+
                 // Load from file, keep in memory.
                 if (LoadLines())
                     return _lines;

@@ -1169,12 +1169,12 @@ namespace PEBakery.WPF
 
                         if (ts != null)
                         {
-                            dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, project, project.ProjectRoot, sc.Level, false, false, ts.IsDirLink);
+                            dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, project, sc.Level, false, false, ts.IsDirLink);
                         }
                         else
                         {
                             string fullTreePath = Path.Combine(project.ProjectRoot, treePath);
-                            dirScript = new Script(ScriptType.Directory, fullTreePath, treePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                            dirScript = new Script(ScriptType.Directory, fullTreePath, treePath, project, sc.Level, false, false, sc.IsDirLink);
                         }
 
                         treeParent = PopulateOneTreeItem(dirScript, projectRoot, treeParent);

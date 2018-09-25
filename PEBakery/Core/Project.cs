@@ -35,9 +35,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -447,7 +445,7 @@ namespace PEBakery.Core
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = ScriptType.Link;
                             string fullPath = Path.Combine(_baseDir, linkRealPath);
-                            linkTarget = new Script(type, fullPath, fullPath, sc.Project, ProjectRoot, null, false, false, false);
+                            linkTarget = new Script(type, fullPath, fullPath, sc.Project, null, false, false, false);
 
                             Debug.Assert(sc != null);
                         }
@@ -588,11 +586,11 @@ namespace PEBakery.Core
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
                         if (spi.IsDir) // level information is empty, will be modified in InternalSortScripts
-                            sc = new Script(ScriptType.Directory, spi.RealPath, spi.TreePath, this, ProjectRoot, null, false, false, spi.IsDirLink);
+                            sc = new Script(ScriptType.Directory, spi.RealPath, spi.TreePath, this, null, false, false, spi.IsDirLink);
                         else if (Path.GetExtension(spi.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
-                            sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, ProjectRoot, null, isMainScript, false, false);
+                            sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, null, isMainScript, false, false);
                         else
-                            sc = new Script(ScriptType.Script, spi.RealPath, spi.TreePath, this, ProjectRoot, null, isMainScript, false, spi.IsDirLink);
+                            sc = new Script(ScriptType.Script, spi.RealPath, spi.TreePath, this, null, isMainScript, false, spi.IsDirLink);
 
                         Debug.Assert(sc != null);
                     }
@@ -664,7 +662,7 @@ namespace PEBakery.Core
                         Script ts = scripts.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                         Debug.Assert(ts != null, "Internal Logic Error at InternalSortScripts");
 
-                        Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, ProjectRoot, sc.Level, false, false, ts.IsDirLink);
+                        Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, sc.Level, false, false, ts.IsDirLink);
                         nodeId = scTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
                     }
@@ -768,15 +766,15 @@ namespace PEBakery.Core
                 string mainScriptPath = Path.Combine(ProjectRoot, ProjectName, "script.project");
                 if (realPath.Equals(mainScriptPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    sc = new Script(ScriptType.Script, realPath, treePath, this, ProjectRoot, 0, true, ignoreMain, isDirLink);
+                    sc = new Script(ScriptType.Script, realPath, treePath, this, 0, true, ignoreMain, isDirLink);
                 }
                 else
                 {
                     string ext = Path.GetExtension(realPath);
                     if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        sc = new Script(ScriptType.Link, realPath, treePath, this, ProjectRoot, null, false, false, false);
+                        sc = new Script(ScriptType.Link, realPath, treePath, this, null, false, false, false);
                     else
-                        sc = new Script(ScriptType.Script, realPath, treePath, this, ProjectRoot, null, false, ignoreMain, isDirLink);
+                        sc = new Script(ScriptType.Script, realPath, treePath, this, null, false, ignoreMain, isDirLink);
                 }
 
                 // Check Script Link's validity
@@ -879,7 +877,7 @@ namespace PEBakery.Core
                             {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
-                                Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                                Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, sc.Level, false, false, sc.IsDirLink);
                                 AllScripts.Add(dirScript);
                             }
                         }
