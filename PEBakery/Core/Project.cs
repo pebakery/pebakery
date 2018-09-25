@@ -499,7 +499,7 @@ namespace PEBakery.Core
     #endregion
 
     #region Project
-    public class Project
+    public class Project : IEquatable<Project>
     {
         #region Fields
         private int _mainScriptIdx;
@@ -507,9 +507,9 @@ namespace PEBakery.Core
 
         #region Properties
         public string ProjectName { get; }
-        public string ProjectRoot { get; }
-        public string ProjectDir { get; }
         public string BaseDir { get; }
+        public string ProjectRoot { get; } // {BaseDir}\Projects
+        public string ProjectDir { get; } // {BaseDir}\Projects\{ProjectDirName}
         public Script MainScript => AllScripts[_mainScriptIdx];
         public List<Script> AllScripts { get; private set; }
         public List<Script> ActiveScripts => CollectActiveScripts(AllScripts);
@@ -725,12 +725,12 @@ namespace PEBakery.Core
             int aIdx = AllScripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
             if (aIdx == -1)
             { // Even if idx is not found in Projects directory, just proceed to deal with monkey-patched scripts.
-                sc = LoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
+                sc = InternalLoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
             }
             else
             {
                 // This one is in legit Project list, so [Main] cannot be ignored
-                sc = LoadScript(sc.RealPath, sc.TreePath, false, sc.IsDirLink);
+                sc = InternalLoadScript(sc.RealPath, sc.TreePath, false, sc.IsDirLink);
                 if (sc == null)
                     return null;
 
@@ -748,74 +748,19 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region LoadScript, LoadScriptRuntime
+        #region InternalLoadScript
         /// <summary>
-        /// Load scripts into project while running
-        /// Return true if error
+        /// Load script from file. 
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
-        {
-            return LoadScriptRuntime(realPath, realPath, opts);
-        }
-
-        /// <summary>
-        /// Load scripts into project while running
-        /// Return true if error
-        /// </summary>
-        public Script LoadScriptRuntime(string realPath, string treePath, LoadScriptRuntimeOptions opts)
-        {
-            if (realPath == null)
-                throw new ArgumentNullException(nameof(realPath));
-            if (treePath == null)
-                throw new ArgumentNullException(nameof(treePath));
-
-            Script sc = LoadScript(realPath, treePath, opts.IgnoreMain, false);
-            if (opts.AddToProjectTree)
-            {
-                int sIdx = AllScripts.FindIndex(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                if (sIdx != -1)
-                { // TreePath collision
-                    if (opts.OverwriteToProjectTree)
-                        AllScripts[sIdx] = sc;
-                    else
-                        throw new InvalidOperationException($"Unable to overwrite project tree [{treePath}]");
-                }
-                else
-                {
-                    // Generate Directory Script if necessary
-                    int bsIdx = sc.TreePath.IndexOf('\\');
-                    if (bsIdx != -1)
-                    {
-                        string[] paths = sc.TreePath
-                            .Substring(ProjectName.Length).TrimStart('\\')
-                            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                        for (int i = 0; i < paths.Length - 1; i++)
-                        {
-                            string pathKey = PathKeyGenerator(paths, i);
-                            Script ts = AllScripts.FirstOrDefault(x =>
-                                x.Level == sc.Level &&
-                                x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
-                            if (ts == null)
-                            {
-                                string dirTreePath = Path.Combine(ProjectRoot, ProjectName, pathKey);
-                                string dirRealPath = Path.GetDirectoryName(realPath);
-                                Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
-                                AllScripts.Add(dirScript);
-                            }
-                        }
-                    }
-
-                    AllScripts.Add(sc);
-                }
-
-                AllScriptCount += 1;
-            }
-
-            return sc;
-        }
-
-        public Script LoadScript(string realPath, string treePath, bool ignoreMain, bool isDirLink)
+        /// <param name="realPath"></param>
+        /// <param name="treePath"></param>
+        /// <param name="ignoreMain"></param>
+        /// <param name="isDirLink"></param>
+        /// <remarks>
+        /// Project loader uses customized version of script loader. It bypasses caching.
+        /// </remarks>
+        /// <returns>Script instance of {realPath}</returns>
+        private Script InternalLoadScript(string realPath, string treePath, bool ignoreMain, bool isDirLink)
         {
             Script sc;
             try
@@ -862,6 +807,88 @@ namespace PEBakery.Core
             catch
             { // Do nothing - intentionally left blank
                 return null;
+            }
+
+            return sc;
+        }
+        #endregion
+
+        #region LoadScriptRuntime
+        /// <summary>
+        /// Load scripts into project while running
+        /// Return true if error
+        /// </summary>
+        public Script LoadScriptRuntime(string realPath, LoadScriptRuntimeOptions opts)
+        {
+            Debug.Assert(realPath != null, $"nameof({realPath}) is null");
+
+            // Temp script must have empty treePath
+            // If a script is going to be added in script tree, it must not be empty
+            string treePath = string.Empty;
+
+            // If realPath is child of ProjectRoot ("%BaseDir%\Projects"), remove it 
+            if (realPath.StartsWith(ProjectRoot, StringComparison.OrdinalIgnoreCase))
+                treePath = realPath.Substring(ProjectRoot.Length + 1);
+
+            return LoadScriptRuntime(realPath, treePath, opts);
+        }
+
+        /// <summary>
+        /// Load scripts into project while running
+        /// Return true if error
+        /// </summary>
+        public Script LoadScriptRuntime(string realPath, string treePath, LoadScriptRuntimeOptions opts)
+        {
+            Debug.Assert(realPath != null, $"nameof({realPath}) is null");
+            Debug.Assert(treePath != null, $"nameof({treePath}) is null");
+
+            // To use opts.AddToProjectTree, treePath should be valid
+            if (opts.AddToProjectTree && treePath.Length == 0)
+                throw new ArgumentException("Cannot add script to project tree because of empty treePath");
+
+            // Load Script
+            Script sc = InternalLoadScript(realPath, treePath, opts.IgnoreMain, false);
+
+            // Add to project tree if option is set
+            if (opts.AddToProjectTree)
+            {
+                int sIdx = AllScripts.FindIndex(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
+                if (sIdx != -1)
+                { // Script already exists in project tree (collision)
+                    if (opts.OverwriteToProjectTree)
+                        AllScripts[sIdx] = sc;
+                    else
+                        throw new InvalidOperationException($"Unable to overwrite project tree [{treePath}]");
+                }
+                else
+                { // Add to project tree
+                    // Generate Directory Script if necessary
+                    int bsIdx = sc.TreePath.IndexOf('\\');
+                    if (bsIdx != -1)
+                    {
+                        string[] paths = sc.TreePath
+                            .Substring(ProjectName.Length).TrimStart('\\')
+                            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        for (int i = 0; i < paths.Length - 1; i++)
+                        {
+                            string pathKey = PathKeyGenerator(paths, i);
+                            Script ts = AllScripts.FirstOrDefault(x =>
+                                x.Level == sc.Level &&
+                                x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
+                            if (ts == null)
+                            {
+                                string dirRealPath = Path.GetDirectoryName(realPath);
+                                string dirTreePath = Path.Combine(ProjectName, pathKey);
+                                Script dirScript = new Script(ScriptType.Directory, dirRealPath, dirTreePath, this, ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                                AllScripts.Add(dirScript);
+                            }
+                        }
+                    }
+
+                    AllScripts.Add(sc);
+                }
+
+                AllScriptCount += 1;
             }
 
             return sc;
@@ -970,7 +997,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Equals
+        #region Equals, GetHashCode, ToString
         public override bool Equals(object obj)
         {
             Project project = obj as Project;
@@ -991,9 +1018,7 @@ namespace PEBakery.Core
         {
             return ProjectName.GetHashCode() ^ ProjectRoot.GetHashCode() ^ ProjectDir.GetHashCode();
         }
-        #endregion
 
-        #region ToString
         public override string ToString()
         {
             return ProjectName;

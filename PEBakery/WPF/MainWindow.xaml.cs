@@ -1165,7 +1165,7 @@ namespace PEBakery.WPF
                         Script dirScript;
 
                         if (assertDirExist)
-                            Debug.Assert(ts != null, "Internal Logic Error at ScriptListToTreeViewModel");
+                            Debug.Assert(ts != null, $"{nameof(ts)} is null (MainWindow.ScriptListToTreeViewModel)");
 
                         if (ts != null)
                         {
@@ -1173,8 +1173,8 @@ namespace PEBakery.WPF
                         }
                         else
                         {
-                            string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                            dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                            string fullTreePath = Path.Combine(project.ProjectRoot, treePath);
+                            dirScript = new Script(ScriptType.Directory, fullTreePath, treePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                         }
 
                         treeParent = PopulateOneTreeItem(dirScript, projectRoot, treeParent);

@@ -38,6 +38,7 @@ namespace PEBakery.Tests
             EngineTests.Logger = new Logger(":memory:");
             EngineTests.Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
 
+            // Set Global 
             Global.Logger = EngineTests.Logger;
             Global.BaseDir = EngineTests.BaseDir;
             Global.BuildDate = BuildTimestamp.ReadDateTime();

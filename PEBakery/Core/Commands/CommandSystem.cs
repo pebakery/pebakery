@@ -43,8 +43,7 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> SystemCmd(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
-
+            List<LogInfo> logs = new List<LogInfo>(1);
             CodeInfo_System info = cmd.Info.Cast<CodeInfo_System>();
 
             SystemType type = info.Type;
@@ -276,7 +275,7 @@ namespace PEBakery.Core.Commands
                         List<Script> newScripts = new List<Script>(files.Length);
 
                         string srcDirPath = Path.GetDirectoryName(srcFilePath);
-                        Debug.Assert(srcDirPath != null, "Internal Logic Error at CommandSystem.LoadNewScript");
+                        Debug.Assert(srcDirPath != null, $"{nameof(srcDirPath)} is null (CommandSystem.LoadNewScript)");
 
                         (string realPath, string treePath)[] fileTuples = files
                             .Select(x => (x, x.Substring(srcDirPath.Length).Trim('\\')))
@@ -288,8 +287,7 @@ namespace PEBakery.Core.Commands
                             // Add scripts into Project.AllScripts
                             string scRealPath = Path.GetFullPath(realPath);
 
-                            string projectDirName = s.Project.ProjectDir.Substring(s.Project.ProjectRoot.Length).Trim('\\');
-                            string destTreePath = Path.Combine(projectDirName, destTreeDir, treePath);
+                            string destTreePath = Path.Combine(s.Project.ProjectName, destTreeDir, treePath);
                             if (s.Project.ContainsScriptByTreePath(destTreePath))
                             {
                                 if (subInfo.PreserveFlag)
@@ -449,12 +447,15 @@ namespace PEBakery.Core.Commands
                             // Flush deferred logs into database
                             int realBuildId = s.Logger.Flush(s);
 
+                            // This message should make it on exported log
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
+
+                            // Do not use s.BuildId, for case of FullDeferredLogging
                             s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
                             {
                                 IncludeComments = true,
                                 IncludeMacros = true,
-                            }); // Do not use s.BuildId, for case of FullDelayedLogging
+                            });
                         }
                     }
                     break;
@@ -527,7 +528,7 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> ShellExecute(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(4);
 
             CodeInfo_ShellExecute info = cmd.Info.Cast<CodeInfo_ShellExecute>();
 

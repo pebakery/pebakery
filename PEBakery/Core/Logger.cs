@@ -40,7 +40,7 @@ using System.Text;
 
 namespace PEBakery.Core
 {
-    #region LogState, LogInfo
+    #region enum LogState
     public enum LogState
     {
         None = 0,
@@ -53,7 +53,9 @@ namespace PEBakery.Core
         Ignore = 401,
         Muted = 402,
     }
+    #endregion
 
+    #region struct LogInfo
     [Serializable]
     public struct LogInfo
     {

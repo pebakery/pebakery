@@ -205,28 +205,26 @@ namespace PEBakery.Core
 
         #region Constructor
         public Script(
-            ScriptType type,
+            ScriptType type, 
             string realPath, string treePath,
             Project project, string projectRoot,
             int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
-            if (projectRoot == null)
-                throw new ArgumentNullException(nameof(projectRoot));
+            Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
+            Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
+            Debug.Assert(project != null, $"{nameof(project)} is null");
+            Debug.Assert(projectRoot != null, $"{nameof(projectRoot)} is null");
 
-            _realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
-            if (treePath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
-                _treePath = treePath.Remove(0, projectRoot.Length + 1);
-            else
-                _treePath = treePath;
-            Debug.Assert(_treePath != null);
+            Debug.Assert(!Path.IsPathRooted(treePath), $"{nameof(treePath)} must not be rooted path");
+            Debug.Assert(!isDirLink || type != ScriptType.Link);
 
+            _realPath = realPath;
+            _treePath = treePath;
             _type = type;
-            _project = project ?? throw new ArgumentNullException(nameof(project));
+            _project = project;
             _isMainScript = isMainScript;
             _linkLoaded = false;
             _isDirLink = isDirLink;
-
-            Debug.Assert(!_isDirLink || type != ScriptType.Link);
 
             switch (type)
             {
