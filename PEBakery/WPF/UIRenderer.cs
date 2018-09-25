@@ -58,7 +58,7 @@ namespace PEBakery.WPF
         private readonly Variables _variables;
 
         private readonly Canvas _canvas;
-        private readonly Window _window;
+        private readonly Window _window; // Can be null
         private readonly Script _sc;
         /// <summary>
         /// Custom scale factor of interface. Independent from system monitor dpi.
@@ -1245,7 +1245,8 @@ namespace PEBakery.WPF
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (dialog.ShowDialog(_window) == true)
+                    bool? result = _window == null ? dialog.ShowDialog() : dialog.ShowDialog(_window);
+                    if (result == true)
                     {
                         string path = dialog.SelectedPath;
                         if (!path.EndsWith("\\", StringComparison.Ordinal))

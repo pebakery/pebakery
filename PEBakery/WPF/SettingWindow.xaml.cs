@@ -53,8 +53,7 @@ namespace PEBakery.WPF
 
         public SettingWindow(SettingViewModel model)
         {
-            Model = model;
-            DataContext = Model;
+            DataContext = Model = model;
             InitializeComponent();
         }
         #endregion

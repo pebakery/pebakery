@@ -289,7 +289,7 @@ namespace PEBakery.Core
             return unescaped;
         }
 
-        private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> _fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @",", @"#$c" },
             { "\"", @"#$q" },
@@ -298,7 +298,7 @@ namespace PEBakery.Core
             { Environment.NewLine, @"#$x" },
         };
 
-        private static readonly Dictionary<string, string> escapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> _escapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "\"", @"#$q" },
             { "\t", @"#$t" },
@@ -308,7 +308,6 @@ namespace PEBakery.Core
         public static string Escape(string str, bool fullEscape = false, bool escapePercent = false)
         {
             // Escape # first
-            // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
             if (str.IndexOf('#') != -1)
             {
                 int idx = 0;
@@ -331,12 +330,7 @@ namespace PEBakery.Core
                 str = b.ToString();
             }
 
-            Dictionary<string, string> dict;
-            if (fullEscape)
-                dict = fullEscapeSeqs;
-            else
-                dict = escapeSeqs;
-
+            Dictionary<string, string> dict = fullEscape ? _fullEscapeSeqs : _escapeSeqs;
             str = dict.Keys.Aggregate(str, (from, to) => from.Replace(to, dict[to]));
 
             if (escapePercent)

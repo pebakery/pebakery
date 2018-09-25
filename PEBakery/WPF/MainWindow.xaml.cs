@@ -262,16 +262,11 @@ namespace PEBakery.WPF
                     }
                     Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{BaseDir}]"));
 
-                    // Load CommentProcessing Icon
+                    // Load CommentProcessing Icon, Clear interfaces
                     Model.ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
                     Model.MainTreeItems.Clear();
                     Model.BuildTreeItems.Clear();
-                    // Model.MainCanvas.Children.Clear();
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Model.MainCanvas.Children.Clear();
-                    });
+                    Application.Current.Dispatcher.Invoke(ClearScriptInterface);
 
                     Model.BottomProgressBarMinimum = 0;
                     Model.BottomProgressBarMaximum = 100;
