@@ -47,7 +47,7 @@ namespace PEBakery.Core
         {
             // Optimization
             public bool OptimizeCode;
-            // Compatibility Options
+            // Compatibility
             public bool AllowLegacyBranchCondition;
             public bool AllowLegacyRegWrite;
             public bool AllowLegacyInterfaceCommand;
@@ -65,10 +65,22 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseStatement, ParseStatements
-        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements()
+        public CodeCommand ParseStatement(string rawCode)
         {
-            return ParseStatements(_section.Lines);
+            int idx = 0;
+            List<string> list = new List<string> { rawCode };
+
+            try
+            {
+                return ParseCommand(list, ref idx);
+            }
+            catch (Exception e)
+            {
+                return new CodeCommand(rawCode.Trim(), _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + idx + 1);
+            }
         }
+
+        public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements() => ParseStatements(_section.Lines);
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements(IList<string> lines)
         {
@@ -112,21 +124,6 @@ namespace PEBakery.Core
                 foldedList = CodeOptimizer.Optimize(foldedList);
 
             return (foldedList.ToArray(), errLogs);
-        }
-
-        public CodeCommand ParseStatement(string rawCode)
-        {
-            int idx = 0;
-            List<string> list = new List<string> { rawCode };
-
-            try
-            {
-                return ParseCommand(list, ref idx);
-            }
-            catch (Exception e)
-            {
-                return new CodeCommand(rawCode.Trim(), _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + idx + 1);
-            }
         }
         #endregion
 
@@ -661,30 +658,25 @@ namespace PEBakery.Core
                                 }
                                 break;
                             case RegistryValueKind.MultiString:
-                                switch (cnt)
-                                {
-                                    case 4:
-                                        // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
+                                if (4 == cnt)
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
+                                }
+                                else if (5 <= cnt)
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
+                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
+                                    if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
-                                    case 5:
-                                        // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
-                                        string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                        if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
-                                            return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
-                                        else
-                                            return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                    else
+                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
-                                switch (cnt)
-                                {
-                                    case 4:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
-                                    case 5:
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
-                                }
-
-                                if (6 <= cnt)
+                                if (cnt == 4)
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], string.Empty, null, noWarn);
+                                else if (5 == cnt)
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
+                                else if (6 <= cnt)
                                 {
                                     string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
                                     return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
