@@ -28,60 +28,61 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace PEBakery.TreeLib
 {
+    #region class Tree
     public class Tree<T> : IEnumerable
     {
-        private List<Node<T>> root;
-        private List<int> idList;
-        private int count;
+        #region Fields and Properties
+        private readonly List<int> _idList;
 
-        public List<Node<T>> Root { get => root; }
-        public int Count { get => count; }
+        public List<Node<T>> Root { get; }
+        public int Count { get; private set; }
+        #endregion
 
+        #region Constructor
         public Tree()
         {
-            root = new List<Node<T>>();
-            idList = new List<int>
+            Root = new List<Node<T>>();
+            _idList = new List<int>
             {
                 0
             };
-            count = 0;
+            Count = 0;
         }
+        #endregion
 
+        #region Add, Delete, Count
         /// <summary>
         /// Add node to tree. Returns node id. If fails, return -1.
         /// </summary>
         /// <param name="parentId"></param>
-        /// <param name="id"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         public int AddNode(int parentId, T data)
         {
             if (parentId == 0)
             { // Root NodeList
-                int id = idList.Max() + 1;
-                idList.Add(id);
+                int id = _idList.Max() + 1;
+                _idList.Add(id);
                 Node<T> node = new Node<T>(parentId, id, data, null);
-                root.Add(node);
-                count++;
+                Root.Add(node);
+                Count++;
                 return id;
             }
             else
             {
-                int id = idList.Max() + 1;
-                idList.Add(id);
+                int id = _idList.Max() + 1;
+                _idList.Add(id);
                 Node<T> parent = SearchNode(parentId);
                 Debug.Assert(parent != null);
                 if (parent == null)
                     return -1;
                 Node<T> node = new Node<T>(parentId, id, data, parent.Child);
                 parent.Child.Add(node);
-                count++;
+                Count++;
                 return id;
             }
         }
@@ -89,9 +90,7 @@ namespace PEBakery.TreeLib
         /// <summary>
         /// Delete node from tree. If success, return true.
         /// </summary>
-        /// <param name="parentId"></param>
         /// <param name="id"></param>
-        /// <param name="data"></param>
         /// <returns></returns>
         public bool DeleteNode(int id)
         {
@@ -106,11 +105,11 @@ namespace PEBakery.TreeLib
                 Debug.Assert(node != null);
                 if (node == null)
                     return false;
-                count -= CountLeaves(node);
+                Count -= CountLeaves(node);
                 RecursiveDeleteNodeChild(node);
                 sibling.Remove(node);
                 node = null;
-                count--;
+                Count--;
                 return true;
             }
         }
@@ -148,17 +147,16 @@ namespace PEBakery.TreeLib
 
             return leavesCount;
         }
+        #endregion
 
+        #region Search
         public Node<T> SearchNode(int id)
         {
             if (id == 0)
-            {
                 return null;
-            }
-            else
-            { // Start from root
-                return RecursiveSearchNode(id, root, out List<Node<T>> dummy);
-            }
+
+            // Start from root
+            return RecursiveSearchNode(id, Root, out List<Node<T>> dummy);
         }
 
         public Node<T> SearchNode(int id, out List<Node<T>> sibling)
@@ -168,10 +166,9 @@ namespace PEBakery.TreeLib
                 sibling = null;
                 return null;
             }
-            else
-            { // Start from root
-                return RecursiveSearchNode(id, root, out sibling);
-            }
+
+            // Start from root
+            return RecursiveSearchNode(id, Root, out sibling);
         }
 
         private Node<T> RecursiveSearchNode(int id, List<Node<T>> list, out List<Node<T>> sibling)
@@ -199,12 +196,12 @@ namespace PEBakery.TreeLib
 
         public Node<T> SearchNode(T data)
         {
-            return RecursiveSearchNode(data, root, out List<Node<T>> dummy);
+            return RecursiveSearchNode(data, Root, out List<Node<T>> dummy);
         }
 
         public Node<T> SearchNode(T data, out List<Node<T>> sibling)
         {
-            return RecursiveSearchNode(data, root, out sibling);
+            return RecursiveSearchNode(data, Root, out sibling);
         }
 
         private Node<T> RecursiveSearchNode(T data, List<Node<T>> list, out List<Node<T>> sibling)
@@ -247,7 +244,10 @@ namespace PEBakery.TreeLib
             else
                 return null;
         }
+        #endregion
 
+        #region GetEnumerator (DFS, BFS)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerator GetEnumerator()
         {
             return GetEnumeratorDFS();
@@ -258,7 +258,7 @@ namespace PEBakery.TreeLib
             Queue<List<Node<T>>> q = new Queue<List<Node<T>>>();
             Queue<Node<T>> qFinal = new Queue<Node<T>>();
 
-            q.Enqueue(root);
+            q.Enqueue(Root);
 
             while (0 < q.Count)
             {
@@ -278,7 +278,7 @@ namespace PEBakery.TreeLib
         public IEnumerator GetEnumeratorDFS()
         {
             Queue<Node<T>> qFinal = new Queue<Node<T>>();
-            RecursiveGetEnumeratorDFS(root, qFinal);
+            RecursiveGetEnumeratorDFS(Root, qFinal);
 
             while (0 < qFinal.Count)
                 yield return qFinal.Dequeue().Data;
@@ -293,10 +293,12 @@ namespace PEBakery.TreeLib
                     RecursiveGetEnumeratorDFS(node.Child, qFinal);
             }
         }
+        #endregion
 
+        #region Sort
         public void Sort(Comparison<Node<T>> sortFunc)
         {
-            RecursiveSort(sortFunc, root);
+            RecursiveSort(sortFunc, Root);
         }
 
         private void RecursiveSort(Comparison<Node<T>> sortFunc, List<Node<T>> list)
@@ -309,9 +311,11 @@ namespace PEBakery.TreeLib
                     RecursiveSort(sortFunc, node.Child);
             }
         }
-
+        #endregion
     }
+    #endregion
 
+    #region class Node
     public class Node<T>
     {
         public int Id;
@@ -322,11 +326,11 @@ namespace PEBakery.TreeLib
 
         public Node(int parentId, int id, T data, List<Node<T>> parent)
         {
-            this.ParentId = parentId;
-            this.Id = id;
-            this.Data = data;
-            this.Parent = parent;
-            this.Child = new List<Node<T>>();
+            ParentId = parentId;
+            Id = id;
+            Data = data;
+            Parent = parent;
+            Child = new List<Node<T>>();
         }
 
         public override string ToString()
@@ -334,4 +338,5 @@ namespace PEBakery.TreeLib
             return $"Node ({Id}, {Data}, {Child.Count})";
         }
     }
+    #endregion
 }
