@@ -73,9 +73,6 @@ namespace PEBakery.Core
     XZ Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
     - Use this for ultimate compress ratio.
 
-    [Type 4] (PEBakery Only!)
-    LZ4 Compressed File + Zlib Compressed FirstFooter + Raw FinalFooter
-
     [FirstFooter]
     550Byte (0x226) (When decompressed)
     0x000 - 0x1FF (512B) -> L-V (Length - Value)
@@ -1001,7 +998,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Compress file with zlib
                     int readByte;
-                    byte[] buffer = new byte[4096 * 1024]; // 4MB
+                    byte[] buffer = new byte[64 * 1024]; // 64KB
                     Crc32Checksum crc32 = new Crc32Checksum();
                     switch (mode)
                     {
@@ -1288,7 +1285,7 @@ namespace PEBakery.Core
                     // [Stage 7] Decompress body
                     Crc32Checksum crc32 = new Crc32Checksum();
                     long outPosBak = outStream.Position;
-                    byte[] buffer = new byte[4096 * 1024]; // 4MB
+                    byte[] buffer = new byte[64 * 1024]; // 64KB
                     switch ((EncodeMode)compMode)
                     {
                         case EncodeMode.ZLib: // Type 1, zlib
@@ -1796,7 +1793,7 @@ namespace PEBakery.Core
             long posBak = stream.Position;
             stream.Position = 0;
 
-            byte[] buffer = new byte[4090 * 1024 * 3]; // Process ~12MB at once (encode to ~16MB)
+            byte[] buffer = new byte[4090 * 12]; // Process ~48KB at once (encode to ~64KB)
             while (stream.Position < stream.Length)
             {
                 int readByte = stream.Read(buffer, 0, buffer.Length);
@@ -1878,7 +1875,10 @@ namespace PEBakery.Core
 
             int encodeLen = 0;
             int decodeLen = 0;
-            StringBuilder b = new StringBuilder(4090 * 4096); // Process encoded block ~16MB at once
+
+            // Process encoded block ~64KB at once
+            // Avoid allocation larger than 85KB, to avoid Large Object Heap allocation
+            StringBuilder b = new StringBuilder(4090 * 16); 
             for (int i = 0; i < base64Blocks.Count; i++)
             {
                 string block = base64Blocks[i];
@@ -1890,7 +1890,7 @@ namespace PEBakery.Core
                 b.Append(block);
                 encodeLen += block.Length;
 
-                // If buffer is full, decode ~16MB to ~12MB raw bytes
+                // If buffer is full, decode ~64KB to ~48KB raw bytes
                 if ((i + 1) % 4096 == 0)
                 {
                     byte[] buffer = Convert.FromBase64String(b.ToString());

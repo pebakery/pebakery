@@ -40,9 +40,9 @@ namespace PEBakery.Core
     #region Internals Documentation
     /*
     RealPath : Where can script found in the disk.
-    TreePath : Where should script be put in build tree
-               Can be obtained by stripping "%BaseDir%\Project\" from RealPath.
-               If a script is placed outside of %BaseDir%, it is same with RealPath
+    TreePath : Where should script be put in script tree.
+               Can be obtained by stripping "%BaseDir%\Projects\" from RealPath.
+               Must be empty for temporary scripts (scripts will not be put in script tree).
     */
     #endregion
 
@@ -51,8 +51,8 @@ namespace PEBakery.Core
     public class Script : IEquatable<Script>
     {
         #region Fields
-        private readonly string _realPath; // Real path of script
-        private readonly string _treePath; // Strips "%BaseDir%\Projects" from _realPath
+        private readonly string _realPath;
+        private readonly string _treePath;
         private bool _fullyParsed;
         private readonly bool _isMainScript;
         private readonly Dictionary<string, ScriptSection> _sections;
