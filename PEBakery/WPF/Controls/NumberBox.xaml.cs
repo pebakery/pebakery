@@ -23,8 +23,6 @@
 */
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -53,7 +51,7 @@ namespace PEBakery.WPF.Controls
             new FrameworkPropertyMetadata(DefaultValue, OnValueChanged, CoerceValue));
 
         private const decimal DefaultMinimum = 0;
-        public decimal Minimum 
+        public decimal Minimum
         {
             get => (decimal)GetValue(MinimumProperty);
             set => SetValue(MinimumProperty, value);

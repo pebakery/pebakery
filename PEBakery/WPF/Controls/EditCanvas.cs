@@ -99,7 +99,7 @@ namespace PEBakery.WPF.Controls
 
             DrawSelectedBorder(element);
         }
-        
+
         public void DrawSelectedBorder(FrameworkElement element)
         {
             if (element == null)
