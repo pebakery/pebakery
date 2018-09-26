@@ -143,21 +143,21 @@ namespace PEBakery.Helper
         }
         */
 
-        public static bool CompressManagedZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
+        public static bool CompressManagedZip(string srcPath, string destArchive, CompressLevel helperLevel, Encoding encoding)
         {
             SharpCompress.Compressors.Deflate.CompressionLevel compLevel;
             switch (helperLevel)
             {
-                case ArchiveHelper.CompressLevel.Store:
+                case CompressLevel.Store:
                     compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
                     break;
-                case ArchiveHelper.CompressLevel.Fastest:
+                case CompressLevel.Fastest:
                     compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
                     break;
-                case ArchiveHelper.CompressLevel.Normal:
+                case CompressLevel.Normal:
                     compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
                     break;
-                case ArchiveHelper.CompressLevel.Best:
+                case CompressLevel.Best:
                     compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
                     break;
                 default:

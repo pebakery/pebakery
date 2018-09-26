@@ -23,7 +23,6 @@
     SOFTWARE.
 */
 
-using BetterWin32Errors;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -120,8 +119,8 @@ namespace PEBakery.Helper
 
             if (!AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
             {
-                Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                if (error == Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                 else
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
@@ -129,8 +128,8 @@ namespace PEBakery.Helper
 
             if (!AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
             {
-                Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                if (error == Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                 else
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");

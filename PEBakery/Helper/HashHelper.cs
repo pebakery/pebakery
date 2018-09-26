@@ -42,24 +42,24 @@ namespace PEBakery.Helper
         public const int SHA384Len = 384 / 8;
         public const int SHA512Len = 512 / 8;
 
-        public static byte[] CalcHash(HashHelper.HashType type, byte[] data)
+        public static byte[] CalcHash(HashType type, byte[] data)
         {
             return InternalCalcHash(type, data);
         }
 
-        public static byte[] CalcHash(HashHelper.HashType type, string hex)
+        public static byte[] CalcHash(HashType type, string hex)
         {
             if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             return InternalCalcHash(type, data);
         }
 
-        public static byte[] CalcHash(HashHelper.HashType type, Stream stream)
+        public static byte[] CalcHash(HashType type, Stream stream)
         {
             return InternalCalcHash(type, stream);
         }
 
-        public static string CalcHashString(HashHelper.HashType type, byte[] data)
+        public static string CalcHashString(HashType type, byte[] data)
         {
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
@@ -68,7 +68,7 @@ namespace PEBakery.Helper
             return builder.ToString();
         }
 
-        public static string CalcHashString(HashHelper.HashType type, string hex)
+        public static string CalcHashString(HashType type, string hex)
         {
             if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
@@ -79,7 +79,7 @@ namespace PEBakery.Helper
             return builder.ToString();
         }
 
-        public static string CalcHashString(HashHelper.HashType type, Stream stream)
+        public static string CalcHashString(HashType type, Stream stream)
         {
             byte[] h = InternalCalcHash(type, stream);
             StringBuilder builder = new StringBuilder();
@@ -88,24 +88,24 @@ namespace PEBakery.Helper
             return builder.ToString();
         }
 
-        private static byte[] InternalCalcHash(HashHelper.HashType type, byte[] data)
+        private static byte[] InternalCalcHash(HashType type, byte[] data)
         {
             HashAlgorithm hash;
             switch (type)
             {
-                case HashHelper.HashType.MD5:
+                case HashType.MD5:
                     hash = MD5.Create();
                     break;
-                case HashHelper.HashType.SHA1:
+                case HashType.SHA1:
                     hash = SHA1.Create();
                     break;
-                case HashHelper.HashType.SHA256:
+                case HashType.SHA256:
                     hash = SHA256.Create();
                     break;
-                case HashHelper.HashType.SHA384:
+                case HashType.SHA384:
                     hash = SHA384.Create();
                     break;
-                case HashHelper.HashType.SHA512:
+                case HashType.SHA512:
                     hash = SHA512.Create();
                     break;
                 default:
@@ -114,24 +114,24 @@ namespace PEBakery.Helper
             return hash.ComputeHash(data);
         }
 
-        private static byte[] InternalCalcHash(HashHelper.HashType type, Stream stream)
+        private static byte[] InternalCalcHash(HashType type, Stream stream)
         {
             HashAlgorithm hash;
             switch (type)
             {
-                case HashHelper.HashType.MD5:
+                case HashType.MD5:
                     hash = MD5.Create();
                     break;
-                case HashHelper.HashType.SHA1:
+                case HashType.SHA1:
                     hash = SHA1.Create();
                     break;
-                case HashHelper.HashType.SHA256:
+                case HashType.SHA256:
                     hash = SHA256.Create();
                     break;
-                case HashHelper.HashType.SHA384:
+                case HashType.SHA384:
                     hash = SHA384.Create();
                     break;
-                case HashHelper.HashType.SHA512:
+                case HashType.SHA512:
                     hash = SHA512.Create();
                     break;
                 default:
@@ -140,41 +140,40 @@ namespace PEBakery.Helper
             return hash.ComputeHash(stream);
         }
 
-        public static HashHelper.HashType DetectHashType(byte[] data)
+        public static HashType DetectHashType(byte[] data)
         {
             return InternalDetectHashType(data.Length);
         }
 
-        public static HashHelper.HashType DetectHashType(string hex)
+        public static HashType DetectHashType(string hex)
         {
             if (StringHelper.IsHex(hex))
-                return HashHelper.HashType.None;
+                return HashType.None;
             if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] hashByte))
-                return HashHelper.HashType.None;
+                return HashType.None;
 
             return InternalDetectHashType(hashByte.Length);
         }
 
-        private static HashHelper.HashType InternalDetectHashType(int length)
+        private static HashType InternalDetectHashType(int length)
         {
-            HashHelper.HashType hashType = HashHelper.HashType.None;
-
+            HashType hashType;
             switch (length)
             {
                 case HashHelper.MD5Len * 2:
-                    hashType = HashHelper.HashType.MD5;
+                    hashType = HashType.MD5;
                     break;
                 case HashHelper.SHA1Len * 2:
-                    hashType = HashHelper.HashType.SHA1;
+                    hashType = HashType.SHA1;
                     break;
                 case HashHelper.SHA256Len * 2:
-                    hashType = HashHelper.HashType.SHA256;
+                    hashType = HashType.SHA256;
                     break;
                 case HashHelper.SHA384Len * 2:
-                    hashType = HashHelper.HashType.SHA384;
+                    hashType = HashType.SHA384;
                     break;
                 case HashHelper.SHA512Len * 2:
-                    hashType = HashHelper.HashType.SHA512;
+                    hashType = HashType.SHA512;
                     break;
                 default:
                     throw new InvalidOperationException("Cannot recognize valid hash string");
@@ -183,24 +182,24 @@ namespace PEBakery.Helper
             return hashType;
         }
 
-        public static int GetHashByteLen(HashHelper.HashType hashType)
+        public static int GetHashByteLen(HashType hashType)
         {
             int byteLen;
             switch (hashType)
             {
-                case HashHelper.HashType.MD5:
+                case HashType.MD5:
                     byteLen = 32;
                     break;
-                case HashHelper.HashType.SHA1:
+                case HashType.SHA1:
                     byteLen = 40;
                     break;
-                case HashHelper.HashType.SHA256:
+                case HashType.SHA256:
                     byteLen = 64;
                     break;
-                case HashHelper.HashType.SHA384:
+                case HashType.SHA384:
                     byteLen = 96;
                     break;
-                case HashHelper.HashType.SHA512:
+                case HashType.SHA512:
                     byteLen = 128;
                     break;
                 default:
@@ -209,19 +208,19 @@ namespace PEBakery.Helper
             return byteLen;
         }
 
-        public static HashHelper.HashType ParseHashType(string str)
+        public static HashType ParseHashType(string str)
         {
-            HashHelper.HashType hashType;
+            HashType hashType;
             if (str.Equals("MD5", StringComparison.OrdinalIgnoreCase))
-                hashType = HashHelper.HashType.MD5;
+                hashType = HashType.MD5;
             else if (str.Equals("SHA1", StringComparison.OrdinalIgnoreCase))
-                hashType = HashHelper.HashType.SHA1;
+                hashType = HashType.SHA1;
             else if (str.Equals("SHA256", StringComparison.OrdinalIgnoreCase))
-                hashType = HashHelper.HashType.SHA256;
+                hashType = HashType.SHA256;
             else if (str.Equals("SHA384", StringComparison.OrdinalIgnoreCase))
-                hashType = HashHelper.HashType.SHA384;
+                hashType = HashType.SHA384;
             else if (str.Equals("SHA512", StringComparison.OrdinalIgnoreCase))
-                hashType = HashHelper.HashType.SHA512;
+                hashType = HashType.SHA512;
             else
                 throw new ArgumentException($"Wrong HashType [{str}]");
             return hashType;

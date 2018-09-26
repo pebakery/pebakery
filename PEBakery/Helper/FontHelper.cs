@@ -27,6 +27,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
+
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 // ReSharper disable EnumUnderlyingTypeIsInt
@@ -209,7 +211,7 @@ namespace PEBakery.Helper
         [DllImport("comdlg32.dll", CharSet = CharSet.Auto, EntryPoint = "ChooseFont", SetLastError = true)]
         public static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
 
-        public static LogFontWeight FontWeightConvert_WPFToLogFont(System.Windows.FontWeight weight)
+        public static LogFontWeight FontWeightConvert_WPFToLogFont(FontWeight weight)
         {
             if (weight == FontWeights.Thin)
                 return LogFontWeight.FW_THIN;
@@ -233,7 +235,7 @@ namespace PEBakery.Helper
                 return LogFontWeight.FW_REGULAR;
         }
 
-        public static System.Windows.FontWeight FontWeightConvert_LogFontToWPF(LogFontWeight enumWeight)
+        public static FontWeight FontWeightConvert_LogFontToWPF(LogFontWeight enumWeight)
         {
             switch (enumWeight)
             {
@@ -260,7 +262,7 @@ namespace PEBakery.Helper
             }
         }
 
-        public static System.Windows.FontWeight FontWeightConvert_StringToWPF(string str)
+        public static FontWeight FontWeightConvert_StringToWPF(string str)
         {
             if (str.Equals("Thin", StringComparison.OrdinalIgnoreCase))
                 return FontWeights.Thin;
@@ -291,13 +293,13 @@ namespace PEBakery.Helper
 
         public struct WPFFont
         {
-            public System.Windows.Media.FontFamily FontFamily;
-            public System.Windows.FontWeight FontWeight;
+            public FontFamily FontFamily;
+            public FontWeight FontWeight;
             public int FontSizeInPoint; // In Point (72DPI)
             public int Win32FontSize => -(int)Math.Round(FontSizeInPoint * 96 / 72f);
             public double FontSizeInDIP => FontSizeInPoint * 96 / 72f; // Device Independent Pixel (96DPI)
 
-            public WPFFont(System.Windows.Media.FontFamily fontFamily, System.Windows.FontWeight fontWeight, int fontSize)
+            public WPFFont(FontFamily fontFamily, FontWeight fontWeight, int fontSize)
             {
                 FontFamily = fontFamily;
                 FontWeight = fontWeight;
@@ -336,8 +338,8 @@ namespace PEBakery.Helper
             ChooseFont(ref chosenFont);
             Marshal.PtrToStructure(pLogFont, logFont);
 
-            System.Windows.Media.FontFamily fontFamily = new System.Windows.Media.FontFamily(logFont.lfFaceName);
-            System.Windows.FontWeight fontWeight = FontWeightConvert_LogFontToWPF(logFont.lfWeight);
+            FontFamily fontFamily = new FontFamily(logFont.lfFaceName);
+            FontWeight fontWeight = FontWeightConvert_LogFontToWPF(logFont.lfWeight);
             int fontSize = -(int)Math.Round(logFont.lfHeight * 72 / 96f); // Point - 72DPI, Device Independent Pixel - 96DPI
 
             Marshal.FreeHGlobal(pLogFont);
