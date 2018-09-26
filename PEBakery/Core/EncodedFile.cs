@@ -1878,7 +1878,7 @@ namespace PEBakery.Core
 
             // Process encoded block ~64KB at once
             // Avoid allocation larger than 85KB, to avoid Large Object Heap allocation
-            StringBuilder b = new StringBuilder(4090 * 16); 
+            StringBuilder b = new StringBuilder(4090 * 16);
             for (int i = 0; i < base64Blocks.Count; i++)
             {
                 string block = base64Blocks[i];

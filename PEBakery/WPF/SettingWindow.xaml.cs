@@ -1190,7 +1190,9 @@ namespace PEBakery.WPF
                 Script_CacheState = $"{cacheCount} scripts cached";
             }
         }
+        #endregion
 
+        #region UpdateProjectList
         public void UpdateProjectList()
         {
             Application.Current?.Dispatcher.Invoke(() =>

@@ -32,6 +32,7 @@ using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -524,7 +525,7 @@ namespace PEBakery.WPF
             ComboBox box = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
-                ItemsSource = info.Items,
+                ItemsSource = new ObservableCollection<string>(info.Items),
                 SelectedIndex = info.Index,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
