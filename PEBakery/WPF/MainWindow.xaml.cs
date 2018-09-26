@@ -60,7 +60,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Variables
-        public ProjectCollection Projects { get; private set; }
         public string BaseDir { get; }
 
         private int _projectsLoading = 0;
@@ -74,7 +73,11 @@ namespace PEBakery.WPF
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
 
-        public MainViewModel Model { get; }
+        public MainViewModel Model
+        {
+            get => Global.MainViewModel;
+            set => Global.MainViewModel = value;
+        }
 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
@@ -276,32 +279,32 @@ namespace PEBakery.WPF
                     if (Global.Setting.Script_EnableCache && _scriptCache != null) // Use ScriptCache
                     {
                         if (_scriptCache.CheckCacheRevision(BaseDir))
-                            Projects = new ProjectCollection(BaseDir, _scriptCache);
+                            Global.Projects = new ProjectCollection(BaseDir, _scriptCache);
                         else // Cache is invalid
-                            Projects = new ProjectCollection(BaseDir, null);
+                            Global.Projects = new ProjectCollection(BaseDir, null);
                     }
                     else // Do not use ScriptCache
                     {
-                        Projects = new ProjectCollection(BaseDir, null);
+                        Global.Projects = new ProjectCollection(BaseDir, null);
                     }
 
                     // Prepare by getting script paths
                     progress.Report((Project.LoadReport.FindingScript, null));
-                    (totalScriptCount, stage2LinkCount) = Projects.PrepareLoad();
+                    (totalScriptCount, stage2LinkCount) = Global.Projects.PrepareLoad();
                     ifaceUpdateFreq = totalScriptCount / 64 + 1;
                     Model.BottomProgressBarMaximum = totalScriptCount + stage2LinkCount;
 
                     // Load projects in parallel
-                    List<LogInfo> errorLogs = Projects.Load(progress);
+                    List<LogInfo> errorLogs = Global.Projects.Load(progress);
                     Logger.SystemWrite(errorLogs);
                     Global.Setting.UpdateProjectList();
 
-                    if (0 < Projects.ProjectNames.Count)
+                    if (0 < Global.Projects.ProjectNames.Count)
                     { // Load success
                         // Populate TreeView
                         Dispatcher.Invoke(() =>
                         {
-                            foreach (Project project in Projects.ProjectList)
+                            foreach (Project project in Global.Projects.ProjectList)
                             {
                                 ProjectTreeItemModel projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
                                 ScriptListToTreeViewModel(project, project.VisibleScripts, true, projectRoot);
@@ -313,8 +316,8 @@ namespace PEBakery.WPF
                             {
                                 CurMainTree = Model.MainTreeItems[pIdx];
                                 CurMainTree.IsExpanded = true;
-                                if (Projects[pIdx] != null)
-                                    DisplayScript(Projects[pIdx].MainScript);
+                                if (Global.Projects[pIdx] != null)
+                                    DisplayScript(Global.Projects[pIdx].MainScript);
                             }
                             else
                             {
@@ -322,7 +325,7 @@ namespace PEBakery.WPF
                             }
                         });
 
-                        Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
+                        Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
 
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
@@ -349,7 +352,7 @@ namespace PEBakery.WPF
                     else
                     { // Load failure
                         Model.ScriptTitleText = "Unable to find project.";
-                        Model.ScriptDescriptionText = $"Please provide project in [{Projects.ProjectRoot}]";
+                        Model.ScriptDescriptionText = $"Please provide project in [{Global.Projects.ProjectRoot}]";
                         Model.StatusBarText = "Unable to find project.";
                     }
                 }
@@ -375,7 +378,7 @@ namespace PEBakery.WPF
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
-                    (_, int updatedCount) = _scriptCache.CacheScripts(Projects, BaseDir);
+                    (_, int updatedCount) = _scriptCache.CacheScripts(Global.Projects, BaseDir);
                     watch.Stop();
 
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
@@ -805,6 +808,7 @@ namespace PEBakery.WPF
 
             double old_Interface_ScaleFactor = Global.Setting.Interface_ScaleFactor;
             bool old_Compat_AsteriskBugDirLink = Global.Setting.Compat_AsteriskBugDirLink;
+            bool old_Compat_OverridableFixedVariables = Global.Setting.Compat_OverridableFixedVariables;
             bool old_Compat_EnableEnvironmentVariables = Global.Setting.Compat_EnableEnvironmentVariables;
             bool old_Script_EnableCache = Global.Setting.Script_EnableCache;
 
@@ -815,8 +819,10 @@ namespace PEBakery.WPF
                 // Apply
                 Global.Setting.ApplySetting();
 
-                // Refresh Project
-                if (old_Compat_AsteriskBugDirLink != Global.Setting.Compat_AsteriskBugDirLink)
+                // Refresh Projects
+                if (old_Compat_AsteriskBugDirLink != Global.Setting.Compat_AsteriskBugDirLink ||
+                    old_Compat_OverridableFixedVariables != Global.Setting.Compat_OverridableFixedVariables ||
+                    old_Compat_EnableEnvironmentVariables != Global.Setting.Compat_EnableEnvironmentVariables)
                 {
                     StartLoadingProjects();
                 }
@@ -826,13 +832,6 @@ namespace PEBakery.WPF
                     double newScaleFactor = Global.Setting.Interface_ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
                         DisplayScript(CurMainTree.Script);
-
-                    // Project
-                    if (old_Compat_EnableEnvironmentVariables != Global.Setting.Compat_EnableEnvironmentVariables)
-                    { // Update project's envionrmnet variables
-                        foreach (Project p in Projects)
-                            p.Variables.LoadDefaultFixedVariables();
-                    }
 
                     // Script
                     if (!old_Script_EnableCache && Global.Setting.Script_EnableCache)

@@ -845,8 +845,6 @@ namespace PEBakery.WPF
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
             MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
-            Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
-            Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
         }
 
         public CodeParser.Options ExportCodeParserOptions()
@@ -859,6 +857,15 @@ namespace PEBakery.WPF
                 AllowLegacyInterfaceCommand = Compat_LegacyInterfaceCommand,
                 AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand,
                 AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams,
+            };
+        }
+
+        public Variables.Options ExportVariablesOptions()
+        {
+            return new Variables.Options
+            {
+                OverridableFixedVariables = Compat_OverridableFixedVariables,
+                EnableEnvironmentVariables = Compat_EnableEnvironmentVariables,
             };
         }
         #endregion
@@ -1195,12 +1202,11 @@ namespace PEBakery.WPF
         #region UpdateProjectList
         public void UpdateProjectList()
         {
+            Projects = Global.Projects;
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-
-                Projects = w.Projects;
 
                 bool foundDefault = false;
                 List<string> projNameList = Projects.ProjectNames;

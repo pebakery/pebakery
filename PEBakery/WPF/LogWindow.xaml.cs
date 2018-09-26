@@ -217,13 +217,7 @@ namespace PEBakery.WPF
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
-            bool busy = false;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                busy = w.Model.WorkInProgress || 0 < Engine.WorkingLock;
-            });
+            bool busy = Global.MainViewModel.WorkInProgress || 0 < Engine.WorkingLock;
             if (busy)
             {
                 MessageBox.Show("PEBakery is busy, please wait.", "Busy", MessageBoxButton.OK, MessageBoxImage.Warning);

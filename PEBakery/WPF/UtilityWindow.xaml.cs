@@ -65,7 +65,7 @@ namespace PEBakery.WPF
                 MainWindow w = Application.Current.MainWindow as MainWindow;
                 Debug.Assert(w != null, "MainWindow != null");
 
-                List<Project> projList = w.Projects.ProjectList;
+                List<Project> projList = Global.Projects.ProjectList;
                 for (int i = 0; i < projList.Count; i++)
                 {
                     Project proj = projList[i];
@@ -141,22 +141,13 @@ namespace PEBakery.WPF
                 Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
 
                 SettingViewModel setting = Global.Setting;
-                Logger logger = null;
-                MainViewModel mainModel = null;
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    Debug.Assert(w != null, "MainWindow != null");
-
-                    logger = w.Logger;
-                    mainModel = w.Model;
-                });
+                MainViewModel mainModel = Global.MainViewModel;
 
                 mainModel.BuildTreeItems.Clear();
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
+                EngineState s = new EngineState(sc.Project, Global.Logger, mainModel, EngineMode.RunMainAndOne, sc);
                 s.SetOptions(setting);
 
                 Engine.WorkingEngine = new Engine(s);

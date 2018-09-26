@@ -1479,20 +1479,18 @@ namespace PEBakery.WPF
 
                 Logger logger = Global.Logger;
 
-                MainViewModel mainModel = null;
+                MainViewModel mainModel = Global.MainViewModel;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
 
-                    mainModel = w.Model;
-
                     // Populate BuildTree
                     if (!hideProgress)
                     {
-                        w.Model.BuildTreeItems.Clear();
+                        mainModel.BuildTreeItems.Clear();
                         ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(section.Script, null, null);
-                        w.Model.BuildTreeItems.Add(itemRoot);
+                        mainModel.BuildTreeItems.Add(itemRoot);
                         w.CurBuildTree = null;
                     }
                 });

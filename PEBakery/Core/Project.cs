@@ -618,7 +618,7 @@ namespace PEBakery.Core
         public void PostLoad()
         {
             SortAllScripts();
-            Variables = new Variables(this);
+            Variables = new Variables(this, Global.Setting.ExportVariablesOptions());
         }
 
         public void SortAllScripts()

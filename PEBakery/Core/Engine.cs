@@ -322,7 +322,6 @@ namespace PEBakery.Core
 
             CodeParser parser = new CodeParser(section, new CodeParser.Options());
             (CodeCommand[] cmds, _) = parser.ParseStatements();
-            // (CodeCommand[] cmds, _) = CodeParser.ParseStatements(section.Lines, section);
 
             // Set CurrentSection
             s.CurrentSection = section;

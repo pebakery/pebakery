@@ -57,13 +57,18 @@ namespace PEBakery.Core
          *    3. Global Variables
          */
 
-        #region Static
-        public static bool OverridableFixedVariables = false;
-        public static bool EnableEnvironmentVariables = false;
+        #region struct Options
+        public struct Options
+        {
+            // Compatibility
+            public bool OverridableFixedVariables;
+            public bool EnableEnvironmentVariables;
+        }
         #endregion
 
-        #region Field and Property
+        #region Fields and Properties
         private readonly Project _project;
+        private readonly Options _opts;
         private Dictionary<string, string> _fixedVars;
         private Dictionary<string, string> _globalVars;
         private Dictionary<string, string> _localVars;
@@ -82,12 +87,13 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public Variables(Project project)
+        public Variables(Project project, Options opts)
         {
             _project = project;
             _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _opts = opts;
 
             LoadDefaultFixedVariables();
             LoadDefaultGlobalVariables();
@@ -140,7 +146,7 @@ namespace PEBakery.Core
             #endregion
 
             #region Envrionment Variables
-            if (EnableEnvironmentVariables)
+            if (_opts.EnableEnvironmentVariables)
             {
                 List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
                 { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
@@ -489,7 +495,7 @@ namespace PEBakery.Core
             bool globalResult = _globalVars.TryGetValue(key, out string globalValue);
             bool localResult = _localVars.TryGetValue(key, out string localValue);
 
-            if (OverridableFixedVariables)
+            if (_opts.OverridableFixedVariables)
             { // WinBuilder compatible
                 if (localResult)
                     value = Expand(localValue);
@@ -559,7 +565,7 @@ namespace PEBakery.Core
                         b.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (OverridableFixedVariables)
+                    if (_opts.OverridableFixedVariables)
                     { // WinBuilder compatible
                         if (_localVars.ContainsKey(varName))
                         {
@@ -909,7 +915,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
 
                     // Does this variable resides in fixedDict?
-                    if (!OverridableFixedVariables)
+                    if (!s.Variables._opts.OverridableFixedVariables)
                     {
                         if (s.Variables.Exists(VarsType.Fixed, key))
                         {
@@ -1016,7 +1022,7 @@ namespace PEBakery.Core
         #region DeepCopy
         public Variables DeepCopy()
         {
-            Variables variables = new Variables(_project)
+            Variables variables = new Variables(_project, Global.Setting.ExportVariablesOptions())
             {
                 _fixedVars = new Dictionary<string, string>(_fixedVars, StringComparer.OrdinalIgnoreCase),
                 _globalVars = new Dictionary<string, string>(_globalVars, StringComparer.OrdinalIgnoreCase),

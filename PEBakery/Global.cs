@@ -33,11 +33,18 @@ namespace PEBakery
 {
     public static class Global
     {
-        public static string[] Args;
+        // Build-time constant
         public static int Version = 0;
-        public static Logger Logger;
-        public static string BaseDir;
         public static DateTime BuildDate;
+
+        // Start-time variables
+        public static string[] Args;
+        public static string BaseDir;
+
+        // Global Instances
+        public static Logger Logger;
+        public static MainViewModel MainViewModel;
         public static SettingViewModel Setting;
+        public static ProjectCollection Projects;
     }
 }
