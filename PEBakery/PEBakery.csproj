@@ -201,7 +201,6 @@
     <Compile Include="WPF\Controls\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\CustomMessageBoxUtil.cs" />
     <Compile Include="Core\EncodedFile.cs" />
     <Compile Include="Core\Commands\CommandBranch.cs" />
     <Compile Include="Core\Engine.cs" />

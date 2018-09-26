@@ -50,50 +50,37 @@
                        VerticalAlignment="Center" Margin="12,20,41,15" />
             </DockPanel>
         </Grid>
-        <TextBlock
-            Name="TextBlock_Timeout"
-            Grid.Row="1"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            FontSize="11"
-            Margin="0, 8, 0, 8"
-            FontWeight="SemiBold">
-        </TextBlock>
-        <ProgressBar
-            Name="ProgressBar_Timeout"
-            Grid.Row="2">
-        </ProgressBar>
+        <TextBlock x:Name="TextBlock_Timeout"
+                   Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="11"
+                   Margin="0, 8, 0, 8"
+                   FontWeight="SemiBold"/>
+        <ProgressBar x:Name="ProgressBar_Timeout" 
+                     Grid.Row="2"/>
         <Grid Grid.Row="3" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" MinHeight="49">
             <DockPanel Margin="5,0">
-                
                 <!-- Cancel Button -->
                 <Button Name="Button_Cancel" MinWidth="88" MaxWidth="160" Height="26" Margin="5,0" HorizontalAlignment="Right" Visibility="Collapsed" IsCancel="True"
                         DockPanel.Dock="Right" Click="Button_Cancel_Click">
                     <Label Name="Label_Cancel" Padding="0" Margin="10,0">_Cancel</Label>
                 </Button>
-                <!-- End Cancel Button -->
-                
                 <!-- No Button -->
                 <Button Name="Button_No" MinWidth="88" MaxWidth="160" Height="26" Margin="5,0" HorizontalAlignment="Right" Visibility="Collapsed"
                         DockPanel.Dock="Right" Click="Button_No_Click">
                     <Label Name="Label_No" Padding="0" Margin="10,0">_No</Label>
                 </Button>
-                <!-- End No Button -->
-                
                 <!-- Yes Button -->
                 <Button Name="Button_Yes" MinWidth="88" MaxWidth="160" Height="26" Margin="35,0,5,0" HorizontalAlignment="Right" Visibility="Collapsed"
                         DockPanel.Dock="Right" Click="Button_Yes_Click">
                     <Label Name="Label_Yes" Padding="0" Margin="10,0">_Yes</Label>
                 </Button>
-                <!-- End Yes Button -->
-                
                 <!-- OK Button -->
                 <Button Name="Button_OK" MinWidth="88" MaxWidth="160" Margin="35,0,5,0" HorizontalAlignment="Right" Height="26"
                         Click="Button_OK_Click">
                     <Label Name="Label_Ok" Padding="0" Margin="10,0">_OK</Label>
                 </Button>
-                <!-- End OK Button -->
-                
             </DockPanel>
         </Grid>
     </Grid>

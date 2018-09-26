@@ -25,8 +25,18 @@
 */
 
 using System;
+using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace PEBakery.WPF.Controls
@@ -36,88 +46,54 @@ namespace PEBakery.WPF.Controls
     /// </summary>
     internal partial class CustomMessageBoxWindow : Window
     {
+        #region Fields and Properties
         internal string Caption
         {
-            get
-            {
-                return Title;
-            }
-            set
-            {
-                Title = value;
-            }
+            get => Title;
+            set => Title = value;
         }
 
         internal string Message
         {
-            get
-            {
-                return TextBlock_Message.Text;
-            }
-            set
-            {
-                TextBlock_Message.Text = value;
-            }
+            get => TextBlock_Message.Text;
+            set => TextBlock_Message.Text = value;
         }
 
         internal string OkButtonText
         {
-            get
-            {
-                return Label_Ok.Content.ToString();
-            }
-            set
-            {
-                Label_Ok.Content = value.TryAddKeyboardAccellerator();
-            }
+            get => Label_Ok.Content.ToString();
+            set => Label_Ok.Content = TryAddKeyboardAccellerator(value);
         }
 
         internal string CancelButtonText
         {
-            get
-            {
-                return Label_Cancel.Content.ToString();
-            }
-            set
-            {
-                Label_Cancel.Content = value.TryAddKeyboardAccellerator();
-            }
+            get => Label_Cancel.Content.ToString();
+            set => Label_Cancel.Content = TryAddKeyboardAccellerator(value);
         }
 
         internal string YesButtonText
         {
-            get
-            {
-                return Label_Yes.Content.ToString();
-            }
-            set
-            {
-                Label_Yes.Content = value.TryAddKeyboardAccellerator();
-            }
+            get => Label_Yes.Content.ToString();
+            set => Label_Yes.Content = TryAddKeyboardAccellerator(value);
         }
 
         internal string NoButtonText
         {
-            get
-            {
-                return Label_No.Content.ToString();
-            }
-            set
-            {
-                Label_No.Content = value.TryAddKeyboardAccellerator();
-            }
+            get => Label_No.Content.ToString();
+            set => Label_No.Content = TryAddKeyboardAccellerator(value);
         }
 
-        internal int Timeout { get; set; } // Set this to 0 to disable
-
+        internal int TimeoutSecond { get; set; } // Set this to 0 to disable
         public MessageBoxResult Result { get; set; }
+        #endregion
 
+        #region Constructor
         internal CustomMessageBoxWindow(string message, int timeout = 0)
         {
             InitializeComponent();
 
             Message = message;
-            Image_MessageBox.Visibility = System.Windows.Visibility.Collapsed;
+            Image_MessageBox.Visibility = Visibility.Collapsed;
             DisplayButtons(MessageBoxButton.OK);
             SetTimeout(timeout);
         }
@@ -128,7 +104,7 @@ namespace PEBakery.WPF.Controls
 
             Message = message;
             Caption = caption;
-            Image_MessageBox.Visibility = System.Windows.Visibility.Collapsed;
+            Image_MessageBox.Visibility = Visibility.Collapsed;
             DisplayButtons(MessageBoxButton.OK);
             SetTimeout(timeout);
         }
@@ -139,7 +115,7 @@ namespace PEBakery.WPF.Controls
 
             Message = message;
             Caption = caption;
-            Image_MessageBox.Visibility = System.Windows.Visibility.Collapsed;
+            Image_MessageBox.Visibility = Visibility.Collapsed;
 
             DisplayButtons(button);
             SetTimeout(timeout);
@@ -162,52 +138,54 @@ namespace PEBakery.WPF.Controls
 
             Message = message;
             Caption = caption;
-            Image_MessageBox.Visibility = System.Windows.Visibility.Collapsed;
-            
+            Image_MessageBox.Visibility = Visibility.Collapsed;
+
             DisplayButtons(button);
             DisplayImage(image);
             SetTimeout(timeout);
         }
+        #endregion
 
+        #region Internal Methods
         private void DisplayButtons(MessageBoxButton button)
         {
             switch (button)
             {
                 case MessageBoxButton.OKCancel:
                     // Hide all but OK, Cancel
-                    Button_OK.Visibility = System.Windows.Visibility.Visible;
+                    Button_OK.Visibility = Visibility.Visible;
                     Button_OK.Focus();
-                    Button_Cancel.Visibility = System.Windows.Visibility.Visible;
+                    Button_Cancel.Visibility = Visibility.Visible;
 
-                    Button_Yes.Visibility = System.Windows.Visibility.Collapsed;
-                    Button_No.Visibility = System.Windows.Visibility.Collapsed;
+                    Button_Yes.Visibility = Visibility.Collapsed;
+                    Button_No.Visibility = Visibility.Collapsed;
                     break;
                 case MessageBoxButton.YesNo:
                     // Hide all but Yes, No
-                    Button_Yes.Visibility = System.Windows.Visibility.Visible;
+                    Button_Yes.Visibility = Visibility.Visible;
                     Button_Yes.Focus();
-                    Button_No.Visibility = System.Windows.Visibility.Visible;
+                    Button_No.Visibility = Visibility.Visible;
 
-                    Button_OK.Visibility = System.Windows.Visibility.Collapsed;
-                    Button_Cancel.Visibility = System.Windows.Visibility.Collapsed;
+                    Button_OK.Visibility = Visibility.Collapsed;
+                    Button_Cancel.Visibility = Visibility.Collapsed;
                     break;
                 case MessageBoxButton.YesNoCancel:
                     // Hide only OK
-                    Button_Yes.Visibility = System.Windows.Visibility.Visible;
+                    Button_Yes.Visibility = Visibility.Visible;
                     Button_Yes.Focus();
-                    Button_No.Visibility = System.Windows.Visibility.Visible;
-                    Button_Cancel.Visibility = System.Windows.Visibility.Visible;
+                    Button_No.Visibility = Visibility.Visible;
+                    Button_Cancel.Visibility = Visibility.Visible;
 
-                    Button_OK.Visibility = System.Windows.Visibility.Collapsed;
+                    Button_OK.Visibility = Visibility.Collapsed;
                     break;
                 default:
                     // Hide all but OK
-                    Button_OK.Visibility = System.Windows.Visibility.Visible;
+                    Button_OK.Visibility = Visibility.Visible;
                     Button_OK.Focus();
 
-                    Button_Yes.Visibility = System.Windows.Visibility.Collapsed;
-                    Button_No.Visibility = System.Windows.Visibility.Collapsed;
-                    Button_Cancel.Visibility = System.Windows.Visibility.Collapsed;
+                    Button_Yes.Visibility = Visibility.Collapsed;
+                    Button_No.Visibility = Visibility.Collapsed;
+                    Button_Cancel.Visibility = Visibility.Collapsed;
                     break;
             }
         }
@@ -235,26 +213,28 @@ namespace PEBakery.WPF.Controls
                     break;
             }
 
-            Image_MessageBox.Source = icon.ToImageSource();
-            Image_MessageBox.Visibility = System.Windows.Visibility.Visible;
+            Image_MessageBox.Source = ToImageSource(icon);
+            Image_MessageBox.Visibility = Visibility.Visible;
         }
 
         private void SetTimeout(int timeout)
         {
-            if (0 < timeout) // Timeout is set
-            {
-                Timeout = timeout;
-                TextBlock_Timeout.Visibility = Visibility.Visible;
-                ProgressBar_Timeout.Visibility = Visibility.Visible;
-            }
-            else // No Timeout
-            {
-                Timeout = 0; 
+            TimeoutSecond = timeout;
+            if (timeout == 0)
+            { // No Timeout
+                
                 TextBlock_Timeout.Visibility = Visibility.Collapsed;
                 ProgressBar_Timeout.Visibility = Visibility.Collapsed;
             }
+            else
+            {  // Timeout is set
+                TextBlock_Timeout.Visibility = Visibility.Visible;
+                ProgressBar_Timeout.Visibility = Visibility.Visible;
+            }
         }
+        #endregion
 
+        #region Event Handler
         private void Button_OK_Click(object sender, RoutedEventArgs e)
         {
             Result = MessageBoxResult.OK;
@@ -279,31 +259,72 @@ namespace PEBakery.WPF.Controls
             Close();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            if (0 < Timeout)
-            { // Timeout set
-                TextBlock_Timeout.Text = Timeout.ToString();
-                ProgressBar_Timeout.SetPercent(100.0 / Timeout, TimeSpan.FromSeconds(1));
+            if (TimeoutSecond == 0)
+                return; // Timeout not set
 
-                DispatcherTimer Timer = new DispatcherTimer();
+            /*
+            // 
+            TextBlock_Timeout.Text = TimeoutSecond.ToString();
+            SetPercent(ProgressBar_Timeout, 100.0 / TimeoutSecond, TimeSpan.FromSeconds(1));
+            */
 
-                int elapsed = 0;
-                Timer.Interval = TimeSpan.FromSeconds(1);
-                Timer.Tick += (object tickSender, EventArgs tickArgs) =>
+            // Setup ProgressBar Timer and let it run in background
+            int elapsed = 0;
+            while (true)
+            {
+                TextBlock_Timeout.Text = (TimeoutSecond - elapsed).ToString();
+                SetPercent(ProgressBar_Timeout, (elapsed + 1) * 100.0 / TimeoutSecond, TimeSpan.FromSeconds(1));
+
+                if (elapsed == TimeoutSecond)
                 {
-                    elapsed += 1;
-                    TextBlock_Timeout.Text = (Timeout - elapsed).ToString();
-                    ProgressBar_Timeout.SetPercent((elapsed + 1) * 100.0 / Timeout, TimeSpan.FromSeconds(1));
+                    Result = MessageBoxResult.None;
+                    Close();
+                }
 
-                    if (elapsed == Timeout)
-                    {
-                        Result = MessageBoxResult.None;
-                        Close();
-                    }
-                };
-                Timer.Start();
+                elapsed += 1;
+                await Task.Delay(1000);
             }
         }
+        #endregion
+
+        #region Utility
+        internal static ImageSource ToImageSource(Icon icon)
+        {
+            ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
+                icon.Handle,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions());
+
+            return imageSource;
+        }
+
+        /// <summary>
+        /// Keyboard Accellerators are used in Windows to allow easy shortcuts to controls like Buttons and 
+        /// MenuItems. These allow users to press the Alt key, and a shortcut key will be highlighted on the 
+        /// control. If the user presses that key, that control will be activated.
+        /// This method checks a string if it contains a keyboard accellerator. If it doesn't, it adds one to the
+        /// beginning of the string. If there are two strings with the same accellerator, Windows handles it.
+        /// The keyboard accellerator character for WPF is underscore (_). It will not be visible.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        internal static string TryAddKeyboardAccellerator(string input)
+        {
+            const string accellerator = "_";            // This is the default WPF accellerator symbol - used to be & in WinForms
+
+            // If it already contains an accellerator, do nothing
+            if (input.Contains(accellerator)) return input;
+
+            return accellerator + input;
+        }
+
+        public static void SetPercent(ProgressBar progressBar, double percentage, TimeSpan duration)
+        {
+            DoubleAnimation animation = new DoubleAnimation(percentage, duration);
+            progressBar.BeginAnimation(RangeBase.ValueProperty, animation);
+        }
+        #endregion
     }
 }

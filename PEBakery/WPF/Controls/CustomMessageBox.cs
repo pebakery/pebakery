@@ -141,7 +141,7 @@ namespace PEBakery.WPF.Controls
                 OkButtonText = okButtonText
             };
             msg.ShowDialog();
-            
+
             return msg.Result;
         }
 
@@ -181,7 +181,7 @@ namespace PEBakery.WPF.Controls
                 CancelButtonText = cancelButtonText
             };
             msg.ShowDialog();
-            
+
             return msg.Result;
         }
 
