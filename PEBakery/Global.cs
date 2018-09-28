@@ -28,6 +28,7 @@
 using PEBakery.Core;
 using PEBakery.WPF;
 using System;
+using Microsoft.IO;
 
 namespace PEBakery
 {
@@ -40,6 +41,9 @@ namespace PEBakery
         // Start-time variables
         public static string[] Args;
         public static string BaseDir;
+
+        // Buffer Pool
+        public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
 
         // Global Instances
         public static Logger Logger;

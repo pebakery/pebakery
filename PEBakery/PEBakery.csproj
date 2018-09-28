@@ -87,6 +87,9 @@
     <Reference Include="Microsoft.Build.Framework" />
     <Reference Include="Microsoft.Build.Tasks.v4.0" />
     <Reference Include="Microsoft.Build.Utilities.v4.0" />
+    <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=1.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.1.2.2\lib\net45\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Wim, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7325a91af6f28c40, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Wim.1.2.4\lib\net40\Microsoft.Wim.dll</HintPath>
     </Reference>

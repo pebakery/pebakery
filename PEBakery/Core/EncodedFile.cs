@@ -443,7 +443,12 @@ namespace PEBakery.Core
             string[] encoded = sc.Sections[section].Lines;
             if (encoded == null)
                 throw new InvalidOperationException($"Unable to find [{folderName}\\{fileName}] from [{sc.RealPath}]");
-            return DecodeInMemory(encoded);
+            return DecodeInMem(encoded);
+        }
+
+        public static Task ExtractFolderAsync(Script sc, string folderName, string destDir, bool overwrite = false)
+        {
+            return Task.Run(() => ExtractFolder(sc, folderName, destDir, overwrite));
         }
 
         public static void ExtractFolder(Script sc, string folderName, string destDir, bool overwrite = false)
@@ -502,13 +507,18 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Unable to find [{logoFile}] from [{sc.RealPath}]");
 
             string[] encoded = sc.Sections[section].Lines;
-            return DecodeInMemory(encoded);
+            return DecodeInMem(encoded);
+        }
+
+        public static Task<ImageSource> ExtractLogoImageSourceAsync(Script sc, double? svgSize = null)
+        {
+            return Task.Run(() => ExtractLogoImageSource(sc, svgSize));
         }
 
         public static ImageSource ExtractLogoImageSource(Script sc, double? svgSize = null)
         {
             ImageSource imageSource;
-            using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+            using (MemoryStream mem = ExtractLogo(sc, out ImageHelper.ImageType type))
             {
                 if (type == ImageHelper.ImageType.Svg)
                 {
@@ -525,6 +535,11 @@ namespace PEBakery.Core
             return imageSource;
         }
 
+        public static Task<MemoryStream> ExtractInterfaceAsync(Script sc, string fileName)
+        {
+            return Task.Run(() => ExtractInterface(sc, fileName));
+        }
+
         public static MemoryStream ExtractInterface(Script sc, string fileName)
         {
             string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.InterfaceEncoded, fileName);
@@ -532,7 +547,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"[{fileName}] does not exist in interface of [{sc.RealPath}]");
 
             string[] encoded = sc.Sections[section].Lines;
-            return DecodeInMemory(encoded);
+            return DecodeInMem(encoded);
         }
         #endregion
 
@@ -964,11 +979,11 @@ namespace PEBakery.Core
         #endregion
 
         #region Encode
-        private static Script Encode(Script sc, string dirName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo)
+        private static Script Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo)
         {
-            using (MemoryStream ms = new MemoryStream(input))
+            using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.Encode"))
             {
-                return Encode(sc, dirName, fileName, ms, mode, encodeLogo);
+                return Encode(sc, folderName, fileName, ms, mode, encodeLogo);
             }
         }
 
@@ -977,13 +992,13 @@ namespace PEBakery.Core
             byte[] fileNameUtf8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUtf8.Length == 0 || 512 <= fileNameUtf8.Length)
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
-            string section = $"EncodedFile-{folderName}-{fileName}";
+            string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
 
             // Check Overwrite
             bool fileOverwrite = false;
             if (sc.Sections.ContainsKey(folderName))
             {
-                // Check if [{dirName}] section and [EncodedFile-{dirName}-{fileName}] section exists
+                // Check if [{dirName}] section and [EncodedFile-{folderName}-{fileName}] section exists
                 ScriptSection scSect = sc.Sections[folderName];
                 if (scSect.IniDict.ContainsKey(fileName) && sc.Sections.ContainsKey(section))
                     fileOverwrite = true;
@@ -1227,7 +1242,7 @@ namespace PEBakery.Core
 
                     // [Stage 4] Decompress first footer
                     byte[] firstFooter = new byte[0x226];
-                    using (MemoryStream compressedFooter = new MemoryStream(compressedFooterLen))
+                    using (MemoryStream compressedFooter = Global.MemoryStreamManager.GetStream("EncodedFile.Decode.Stage4", compressedFooterLen))
                     {
                         decodeStream.Position = compressedFooterIdx;
                         decodeStream.CopyTo(compressedFooter, compressedFooterLen);
@@ -1403,8 +1418,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region DecodeInMemory
-        private static MemoryStream DecodeInMemory(string[] encodedLines)
+        #region DecodeInMem
+        private static MemoryStream DecodeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded = SplitBase64.DecodeInMem(Ini.FilterInvalidIniLines(encodedLines));
@@ -1429,7 +1444,7 @@ namespace PEBakery.Core
 
             // [Stage 4] Decompress first footer
             byte[] rawFooter;
-            using (MemoryStream rawFooterStream = new MemoryStream())
+            using (MemoryStream rawFooterStream = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage4"))
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
                 using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
@@ -1481,23 +1496,22 @@ namespace PEBakery.Core
             }
 
             // [Stage 7] Decompress body
-            MemoryStream rawBodyStream = new MemoryStream(); // This stream should be alive even after this method returns
+            MemoryStream rawBodyStream = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage7"); // This stream should be alive even after this method returns
             switch ((EncodeMode)compMode)
             {
                 case EncodeMode.ZLib: // Type 1, zlib
                     {
 #if DEBUG_MIDDLE_FILE
-                    string debugDir = Path.Combine(App.BaseDir, "Debug");
-                    Directory.CreateDirectory(debugDir);
-                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".zz");
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                    {
-                        ms.CopyTo(debug);
-                    }
-#endif
-
+                        string debugDir = Path.Combine(App.BaseDir, "Debug");
+                        Directory.CreateDirectory(debugDir);
+                        string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".zz");
                         using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
+                        {
+                            ms.CopyTo(debug);
+                        }
+#endif
+                        using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage7.ZLib", decoded, 0, compressedBodyLen))
                         using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
                         {
                             zs.CopyTo(rawBodyStream);
@@ -1508,29 +1522,29 @@ namespace PEBakery.Core
                     {
                         rawBodyStream.Write(decoded, 0, rawBodyLen);
 #if DEBUG_MIDDLE_FILE
-                    string debugDir = Path.Combine(App.BaseDir, "Debug");
-                    Directory.CreateDirectory(debugDir);
-                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".bin");
-                    using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                    {
-                        debug.Write(decoded, 0, rawBodyLen);
-                    }
+                        string debugDir = Path.Combine(App.BaseDir, "Debug");
+                        Directory.CreateDirectory(debugDir);
+                        string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".bin");
+                        using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
+                        {
+                            debug.Write(decoded, 0, rawBodyLen);
+                        }
 #endif
                     }
                     break;
                 case EncodeMode.XZ: // Type 3, LZMA
                     {
 #if DEBUG_MIDDLE_FILE
-                    string debugDir = Path.Combine(App.BaseDir, "Debug");
-                    Directory.CreateDirectory(debugDir);
-                    string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".xz");
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
-                    {
-                        ms.CopyTo(debug);
-                    }
-#endif
+                        string debugDir = Path.Combine(App.BaseDir, "Debug");
+                        Directory.CreateDirectory(debugDir);
+                        string debugFile = Path.Combine(debugDir, Path.GetFileName(Path.GetRandomFileName()) + ".xz");
                         using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (FileStream debug = new FileStream(debugFile, FileMode.Create, FileAccess.Write))
+                        {
+                            ms.CopyTo(debug);
+                        }
+#endif
+                        using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage7.XZ", decoded, 0, compressedBodyLen))
                         using (XZStream xzs = new XZStream(ms, LzmaMode.Decompress))
                         {
                             xzs.CopyTo(rawBodyStream);
@@ -1591,7 +1605,7 @@ namespace PEBakery.Core
 
                     // [Stage 4] Decompress first footer
                     byte[] firstFooter = new byte[0x226];
-                    using (MemoryStream compressedFooter = new MemoryStream(compressedFooterLen))
+                    using (MemoryStream compressedFooter = Global.MemoryStreamManager.GetStream("EncodedFile.GetEncodeMode.Stage4", compressedFooterLen))
                     {
                         decodeStream.Position = compressedFooterIdx;
                         decodeStream.CopyTo(compressedFooter, compressedFooterLen);
@@ -1668,9 +1682,9 @@ namespace PEBakery.Core
 
             // [Stage 4] Decompress first footer
             byte[] rawFooter;
-            using (MemoryStream rawFooterStream = new MemoryStream())
+            using (MemoryStream rawFooterStream = Global.MemoryStreamManager.GetStream("EncodedFile.GetEncodeMode.Stage4"))
             {
-                using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
+                using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.GetEncodeMode.Stage4.ZLib", decoded, compressedFooterIdx, compressedFooterLen))
                 using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
                 {
                     zs.CopyTo(rawFooterStream);
