@@ -1,20 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Columns;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Engines;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Reports;
+﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Joveler.ZLibWrapper;
 using PEBakery.LZ4Lib;
 using PEBakery.XZLib;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
 
 namespace CompBench
 {
@@ -64,11 +57,19 @@ namespace CompBench
         };
 
         // LZ4CompLevel
-        public Dictionary<string, LZ4CompLevel> LZ4LevelDict = new Dictionary<string, LZ4CompLevel>(StringComparer.Ordinal)
+        public Dictionary<string, LZ4CompLevel> NativeLZ4LevelDict = new Dictionary<string, LZ4CompLevel>(StringComparer.Ordinal)
         {
             ["Fastest"] = LZ4CompLevel.Fast,
             ["Default"] = LZ4CompLevel.High,
             ["Best"] = LZ4CompLevel.VeryHigh, // LZ4-HC
+        };
+
+        // ManagedLZ4CompLevel
+        public Dictionary<string, LZ4Level> ManagedLZ4LevelDict = new Dictionary<string, LZ4Level>(StringComparer.Ordinal)
+        {
+            ["Fastest"] = LZ4Level.L00_FAST,
+            ["Default"] = LZ4Level.L09_HC,
+            ["Best"] = LZ4Level.L12_MAX, // LZ4-HC
         };
 
         [GlobalSetup]
@@ -107,14 +108,35 @@ namespace CompBench
         }
 
         [Benchmark]
-        public double LZ4()
+        public double Native_LZ4()
         {
             long compLen;
             byte[] rawData = SrcFiles[SrcFileName];
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(rawData))
-                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, LZ4LevelDict[Level], true))
+                using (LZ4FrameStream lzs = new LZ4FrameStream(ms, LZ4Mode.Compress, NativeLZ4LevelDict[Level], true))
+                {
+                    rms.CopyTo(lzs);
+                }
+
+                ms.Flush();
+                compLen = ms.Position;
+            }
+
+            CompRatio = (double)compLen / rawData.Length;
+            return CompRatio;
+        }
+
+        [Benchmark]
+        public double Managed_LZ4()
+        {
+            long compLen;
+            byte[] rawData = SrcFiles[SrcFileName];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(rawData))
+                using (LZ4EncoderStream lzs = LZ4Stream.Encode(ms, ManagedLZ4LevelDict[Level], 0, true))
                 {
                     rms.CopyTo(lzs);
                 }
@@ -215,7 +237,7 @@ namespace CompBench
             {
                 foreach (string srcFileName in SrcFileNames)
                 {
-                    foreach (string ext in new string[] {".zz", ".xz", ".lz4"})
+                    foreach (string ext in new string[] { ".zz", ".xz", ".lz4" })
                     {
                         string srcFile = Path.Combine(_sampleDir, level, srcFileName + ext);
                         using (MemoryStream ms = new MemoryStream())
@@ -242,13 +264,30 @@ namespace CompBench
         }
 
         [Benchmark]
-        public long LZ4()
+        public long Native_LZ4()
         {
             byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.lz4"];
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(compData))
                 using (LZ4FrameStream zs = new LZ4FrameStream(rms, LZ4Mode.Decompress))
+                {
+                    zs.CopyTo(ms);
+                }
+
+                ms.Flush();
+                return ms.Length;
+            }
+        }
+
+        [Benchmark]
+        public long Managed_LZ4()
+        {
+            byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.lz4"];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(compData))
+                using (LZ4DecoderStream zs = LZ4Stream.Decode(rms, 0))
                 {
                     zs.CopyTo(ms);
                 }
@@ -306,16 +345,16 @@ namespace CompBench
             string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string lz4DllPath = Path.Combine(baseDir, arch, "liblz4.so.1.8.2.dll");
 
-            Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath, 64 * 1024);
-            PEBakery.XZLib.XZStream.GlobalInit(xzDllPath, 64 * 1024);
-            PEBakery.LZ4Lib.LZ4FrameStream.GlobalInit(lz4DllPath);
+            ZLibInit.GlobalInit(zLibDllPath, 64 * 1024);
+            XZStream.GlobalInit(xzDllPath, 64 * 1024);
+            LZ4FrameStream.GlobalInit(lz4DllPath);
         }
 
         public static void NativeGlobalCleanup()
         {
-            Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
-            PEBakery.XZLib.XZStream.GlobalCleanup();
-            PEBakery.LZ4Lib.LZ4FrameStream.GlobalCleanup();
+            ZLibInit.GlobalCleanup();
+            XZStream.GlobalCleanup();
+            LZ4FrameStream.GlobalCleanup();
         }
 
         public static void Main(string[] args)

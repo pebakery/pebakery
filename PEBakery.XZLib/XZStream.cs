@@ -29,7 +29,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace PEBakery.XZLib
@@ -46,7 +45,7 @@ namespace PEBakery.XZLib
         private LzmaStream _lzmaStream;
         private GCHandle _lzmaStreamPin;
 
-        private static int _internalBufferSize = 4 * 1024 * 1024; // 4MB
+        private static int _internalBufferSize = 64 * 1024; // 64KB
         private int _internalBufPos = 0;
         private const int ReadDone = -1;
         private readonly byte[] _internalBuf = new byte[_internalBufferSize];
@@ -101,11 +100,11 @@ namespace PEBakery.XZLib
 
             _lzmaStream = new LzmaStream();
             _lzmaStreamPin = GCHandle.Alloc(_lzmaStream, GCHandleType.Pinned);
-            
+
             switch (mode)
             {
                 case LzmaMode.Compress:
-                {
+                    {
                         _lzmaStream.NextIn = IntPtr.Zero;
                         _lzmaStream.AvailIn = 0;
                         if (threads == 1)
@@ -145,13 +144,13 @@ namespace PEBakery.XZLib
                         break;
                     }
                 case LzmaMode.Decompress:
-                { // Reference : 02_decompress.c
+                    { // Reference : 02_decompress.c
                         if (1 < threads)
-                        Trace.TraceWarning("Mulithread decompression is not supported");
-                    LzmaRet ret = NativeMethods.LzmaStreamDecoder(_lzmaStream, ulong.MaxValue, LzmaDecodingFlag.CONCATENATED);
-                    XZException.CheckLzmaError(ret);
-                    break;
-                }    
+                            Trace.TraceWarning("Mulithread decompression is not supported");
+                        LzmaRet ret = NativeMethods.LzmaStreamDecoder(_lzmaStream, ulong.MaxValue, LzmaDecodingFlag.CONCATENATED);
+                        XZException.CheckLzmaError(ret);
+                        break;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(mode));
             }
@@ -192,7 +191,7 @@ namespace PEBakery.XZLib
                         _baseStream.Dispose();
                     _baseStream = null;
                 }
-                
+
                 _disposed = true;
             }
         }
@@ -205,7 +204,7 @@ namespace PEBakery.XZLib
         #endregion
 
         #region Global - (Static) GlobalInit, GlobalCleanup
-        public static void GlobalInit(string dllPath, int bufferSize = 4 * 1024 * 1024)
+        public static void GlobalInit(string dllPath, int bufferSize = 64 * 1024)
         {
             if (NativeMethods.Loaded)
                 throw new InvalidOperationException(NativeMethods.MsgAlreadyInited);
@@ -328,7 +327,7 @@ namespace PEBakery.XZLib
 
                         _internalBufPos = 0;
                         _lzmaStream.NextIn = pinRead;
-                        _lzmaStream.AvailIn = (uint) baseReadSize;
+                        _lzmaStream.AvailIn = (uint)baseReadSize;
 
                         if (baseReadSize == 0) // End of stream
                             action = LzmaAction.FINISH;
@@ -389,7 +388,7 @@ namespace PEBakery.XZLib
 
                     // If the output buffer is full, write the data from the output bufffer to the output file.
                     if (_lzmaStream.AvailOut == 0)
-                    { 
+                    {
                         // Write to _baseStream
                         _baseStream.Write(_internalBuf, 0, _internalBuf.Length);
                         TotalOut += _internalBuf.Length;
@@ -438,7 +437,7 @@ namespace PEBakery.XZLib
                         // Reset NextOut and AvailOut
                         _internalBufPos = 0;
                         _lzmaStream.NextOut = pinWrite;
-                        _lzmaStream.AvailOut = (uint)_internalBuf.Length;   
+                        _lzmaStream.AvailOut = (uint)_internalBuf.Length;
                     }
                     else
                     { // Once everything has been encoded successfully, the return value of lzma_code() will be LZMA_STREAM_END.
@@ -455,7 +454,7 @@ namespace PEBakery.XZLib
                 _baseStream.Flush();
                 return;
             }
-                
+
             using (PinnedArray pinWrite = new PinnedArray(_internalBuf))
             {
                 _lzmaStream.NextIn = IntPtr.Zero;
@@ -471,7 +470,7 @@ namespace PEBakery.XZLib
                     {
                         ulong bakAvailOut = _lzmaStream.AvailOut;
                         ret = NativeMethods.LzmaCode(_lzmaStream, LzmaAction.FULL_FLUSH);
-                        writeSize += (int) (bakAvailOut - _lzmaStream.AvailOut);
+                        writeSize += (int)(bakAvailOut - _lzmaStream.AvailOut);
                     }
                     _internalBufPos += writeSize;
 

@@ -479,7 +479,7 @@ namespace PEBakery.Tests.Core
 
             Template("Type1.jpg", true, new EncodedFileInfo
             {
-                DirName = FolderExample,
+                FolderName = FolderExample,
                 FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
@@ -487,7 +487,7 @@ namespace PEBakery.Tests.Core
             });
             Template("type1.jpg", false, new EncodedFileInfo
             {
-                DirName = folderExample,
+                FolderName = folderExample,
                 FileName = "Type1.jpg",
                 RawSize = 7683,
                 EncodedSize = 10244,
@@ -496,7 +496,7 @@ namespace PEBakery.Tests.Core
 
             Template("Type2.7z", true, new EncodedFileInfo
             {
-                DirName = FolderExample,
+                FolderName = FolderExample,
                 FileName = "Type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
@@ -504,7 +504,7 @@ namespace PEBakery.Tests.Core
             });
             Template("Type2.7z", false, new EncodedFileInfo
             {
-                DirName = FolderExample,
+                FolderName = FolderExample,
                 FileName = "type2.7z",
                 RawSize = 1631,
                 EncodedSize = 2175,
@@ -513,7 +513,7 @@ namespace PEBakery.Tests.Core
 
             Template("Type3.pdf", true, new EncodedFileInfo
             {
-                DirName = FolderExample,
+                FolderName = FolderExample,
                 FileName = "Type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
@@ -521,7 +521,7 @@ namespace PEBakery.Tests.Core
             });
             Template("Type3.pdf", false, new EncodedFileInfo
             {
-                DirName = folderExample,
+                FolderName = folderExample,
                 FileName = "type3.pdf",
                 RawSize = 88692,
                 EncodedSize = 102908,
@@ -560,7 +560,7 @@ namespace PEBakery.Tests.Core
 
             Template(logoScript, true, new EncodedFileInfo
             {
-                DirName = "AuthorEncoded",
+                FolderName = "AuthorEncoded",
                 FileName = "logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
@@ -568,7 +568,7 @@ namespace PEBakery.Tests.Core
             });
             Template(logoScript, false, new EncodedFileInfo
             {
-                DirName = "authorEncoded",
+                FolderName = "authorEncoded",
                 FileName = "Logo.jpg",
                 RawSize = 973,
                 EncodedSize = 1298,
@@ -606,7 +606,7 @@ namespace PEBakery.Tests.Core
             {
                 new EncodedFileInfo
                 {
-                    DirName = FolderExample,
+                    FolderName = FolderExample,
                     FileName = "Type1.jpg",
                     RawSize = 7683,
                     EncodedSize = 10244,
@@ -614,7 +614,7 @@ namespace PEBakery.Tests.Core
                 },
                 new EncodedFileInfo
                 {
-                    DirName = FolderExample,
+                    FolderName = FolderExample,
                     FileName = "Type2.7z",
                     RawSize = 1631,
                     EncodedSize = 2175,
@@ -622,7 +622,7 @@ namespace PEBakery.Tests.Core
                 },
                 new EncodedFileInfo
                 {
-                    DirName = FolderExample,
+                    FolderName = FolderExample,
                     FileName = "Type3.pdf",
                     RawSize = 88692,
                     EncodedSize = 102908,
@@ -677,7 +677,7 @@ namespace PEBakery.Tests.Core
                 {
                     new EncodedFileInfo
                     {
-                        DirName = FolderExample,
+                        FolderName = FolderExample,
                         FileName = "Type1.jpg",
                         RawSize = 7683,
                         EncodedSize = 10244,
@@ -685,7 +685,7 @@ namespace PEBakery.Tests.Core
                     },
                     new EncodedFileInfo
                     {
-                        DirName = FolderExample,
+                        FolderName = FolderExample,
                         FileName = "Type2.7z",
                         RawSize = 1631,
                         EncodedSize = 2175,
@@ -693,7 +693,7 @@ namespace PEBakery.Tests.Core
                     },
                     new EncodedFileInfo
                     {
-                        DirName = FolderExample,
+                        FolderName = FolderExample,
                         FileName = "Type3.pdf",
                         RawSize = 88692,
                         EncodedSize = 102908,
@@ -704,7 +704,7 @@ namespace PEBakery.Tests.Core
                 {
                     new EncodedFileInfo
                     {
-                        DirName = "FolderRun",
+                        FolderName = "FolderRun",
                         FileName = "TestBatch.cmd",
                         RawSize = 34,
                         EncodedSize = 144,
@@ -715,7 +715,7 @@ namespace PEBakery.Tests.Core
                 {
                     new EncodedFileInfo
                     {
-                        DirName = "BannerImage",
+                        FolderName = "BannerImage",
                         FileName = "Banner.bmp",
                         RawSize = 17626,
                         EncodedSize = 23502,
@@ -723,7 +723,7 @@ namespace PEBakery.Tests.Core
                     },
                     new EncodedFileInfo
                     {
-                        DirName = "BannerImage",
+                        FolderName = "BannerImage",
                         FileName = "Banner.svg",
                         RawSize = 4715,
                         EncodedSize = 6287,

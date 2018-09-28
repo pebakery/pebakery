@@ -1492,7 +1492,7 @@ namespace PEBakery.WPF
                         string destFile = Path.Combine(destDir, info.FileName);
                         using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
-                            EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
+                            EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs);
                         }
 
                         MessageBox.Show("File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1655,7 +1655,7 @@ namespace PEBakery.WPF
                 {
                     using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
                     {
-                        EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
+                        EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs);
                     }
 
                     MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1685,7 +1685,7 @@ namespace PEBakery.WPF
                 return;
 
             string errMsg;
-            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName);
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.FolderName, info.FileName);
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;
@@ -1709,7 +1709,7 @@ namespace PEBakery.WPF
 
             Debug.Assert(item.Detail != null);
             EncodedFileInfo info = item.Detail;
-            string dirName = info.DirName;
+            string dirName = info.FolderName;
             string fileName = info.FileName;
 
             string errMsg;

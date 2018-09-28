@@ -308,20 +308,20 @@ namespace PEBakery.Core
             }
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type)
+        public static Script AttachLogo(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcStream, type, true);
+            return Encode(sc, folderName, fileName, srcStream, type, true);
         }
 
-        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type)
+        public static Script AttachLogo(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcBuffer, type, true);
+            return Encode(sc, folderName, fileName, srcBuffer, type, true);
         }
 
         public static bool ContainsLogo(Script sc)
@@ -553,26 +553,26 @@ namespace PEBakery.Core
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
 
-        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string dirName, string fileName, bool detail = false)
+        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string folderName, string fileName, bool detail = false)
         {
-            return Task.Run(() => GetFileInfo(sc, dirName, fileName, detail));
+            return Task.Run(() => GetFileInfo(sc, folderName, fileName, detail));
         }
 
-        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
+        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string folderName, string fileName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             EncodedFileInfo info = new EncodedFileInfo
             {
-                DirName = dirName,
+                FolderName = folderName,
                 FileName = fileName,
             };
 
-            if (!sc.Sections.ContainsKey(dirName))
-                return (null, $"Directory [{dirName}] does not exist");
+            if (!sc.Sections.ContainsKey(folderName))
+                return (null, $"Directory [{folderName}] does not exist");
 
-            Dictionary<string, string> fileDict = sc.Sections[dirName].IniDict;
+            Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             if (!fileDict.ContainsKey(fileName))
                 return (null, $"File index of [{fileName}] does not exist");
 
@@ -585,7 +585,7 @@ namespace PEBakery.Core
 
             if (detail)
             {
-                string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
+                string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(folderName, fileName)].Lines;
                 info.EncodeMode = GetEncodeMode(encoded);
             }
 
@@ -602,7 +602,7 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            EncodedFileInfo info = new EncodedFileInfo { DirName = ScriptSection.Names.AuthorEncoded };
+            EncodedFileInfo info = new EncodedFileInfo { FolderName = ScriptSection.Names.AuthorEncoded };
 
             if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
                 return (null, $"Directory [{ScriptSection.Names.AuthorEncoded}] does not exist");
@@ -635,26 +635,26 @@ namespace PEBakery.Core
             return (info, null);
         }
 
-        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string dirName, bool detail = false)
+        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string folderName, bool detail = false)
         {
-            return Task.Run(() => GetFolderInfo(sc, dirName, detail));
+            return Task.Run(() => GetFolderInfo(sc, folderName, detail));
         }
 
-        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string dirName, bool detail = false)
+        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string folderName, bool detail = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            if (!sc.Sections.ContainsKey(dirName))
-                return (null, $"Directory [{dirName}] does not exist");
+            if (!sc.Sections.ContainsKey(folderName))
+                return (null, $"Directory [{folderName}] does not exist");
 
             List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
-            Dictionary<string, string> fileDict = sc.Sections[dirName].IniDict;
+            Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             foreach (string fileName in fileDict.Keys)
             {
                 EncodedFileInfo info = new EncodedFileInfo
                 {
-                    DirName = dirName,
+                    FolderName = folderName,
                     FileName = fileName,
                 };
 
@@ -670,7 +670,7 @@ namespace PEBakery.Core
 
                 if (detail)
                 {
-                    string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
+                    string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(folderName, fileName)].Lines;
                     info.EncodeMode = GetEncodeMode(encoded);
                 }
 
@@ -694,28 +694,28 @@ namespace PEBakery.Core
             if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                 return (infoDict, null); // Return empty dict
 
-            List<string> dirNames = Ini.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
-            int aeIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
+            List<string> folderNames = Ini.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
+            int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
             if (aeIdx != -1)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
-                dirNames.RemoveAt(aeIdx);
+                folderNames.RemoveAt(aeIdx);
             }
 
-            int ieIdx = dirNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
+            int ieIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase));
             if (ieIdx != -1)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
-                dirNames.RemoveAt(ieIdx);
+                folderNames.RemoveAt(ieIdx);
             }
 
-            foreach (string dirName in dirNames)
+            foreach (string folderName in folderNames)
             {
-                if (!infoDict.ContainsKey(dirName))
-                    infoDict[dirName] = new List<EncodedFileInfo>();
+                if (!infoDict.ContainsKey(folderName))
+                    infoDict[folderName] = new List<EncodedFileInfo>();
 
                 // Follow WB082 behavior
-                if (!sc.Sections.ContainsKey(dirName))
+                if (!sc.Sections.ContainsKey(folderName))
                     continue;
 
                 /*
@@ -726,7 +726,7 @@ namespace PEBakery.Core
                    D2Coding-OFL-License.txt=2102,2803
                    D2Coding-Ver1.2-TTC-20161024.7z=3118244,4157659
                 */
-                Dictionary<string, string> fileDict = sc.Sections[dirName].IniDict;
+                Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
                 foreach (var kv in fileDict)
                 {
                     string fileName = kv.Key;
@@ -734,7 +734,7 @@ namespace PEBakery.Core
 
                     EncodedFileInfo info = new EncodedFileInfo
                     {
-                        DirName = dirName,
+                        FolderName = folderName,
                         FileName = fileName,
                     };
 
@@ -749,11 +749,11 @@ namespace PEBakery.Core
 
                     if (detail)
                     {
-                        string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(dirName, fileName)].Lines;
+                        string[] encoded = sc.Sections[ScriptSection.Names.GetEncodedSectionName(folderName, fileName)].Lines;
                         info.EncodeMode = GetEncodeMode(encoded);
                     }
 
-                    infoDict[dirName].Add(info);
+                    infoDict[folderName].Add(info);
                 }
             }
 
@@ -894,7 +894,7 @@ namespace PEBakery.Core
                     }
                     var files = fileDict.Keys;
 
-                    // Delete section [dirName]
+                    // Delete section [folderName]
                     if (!Ini.DeleteSection(sc.RealPath, folderName))
                         errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
 
@@ -998,7 +998,7 @@ namespace PEBakery.Core
             bool fileOverwrite = false;
             if (sc.Sections.ContainsKey(folderName))
             {
-                // Check if [{dirName}] section and [EncodedFile-{folderName}-{fileName}] section exists
+                // Check if [{folderName}] section and [EncodedFile-{folderName}-{fileName}] section exists
                 ScriptSection scSect = sc.Sections[folderName];
                 if (scSect.IniDict.ContainsKey(fileName) && sc.Sections.ContainsKey(section))
                     fileOverwrite = true;
@@ -1977,7 +1977,7 @@ namespace PEBakery.Core
     #region EncodedFileInfo
     public class EncodedFileInfo : IEquatable<EncodedFileInfo>, ICloneable
     {
-        public string DirName;
+        public string FolderName;
         public string FileName;
         public int RawSize;
         public int EncodedSize;
@@ -1988,7 +1988,7 @@ namespace PEBakery.Core
             if (x == null)
                 return false;
 
-            return DirName.Equals(x.DirName, StringComparison.OrdinalIgnoreCase) &&
+            return FolderName.Equals(x.FolderName, StringComparison.OrdinalIgnoreCase) &&
                    FileName.Equals(x.FileName, StringComparison.OrdinalIgnoreCase) &&
                    RawSize == x.RawSize &&
                    EncodedSize == x.EncodedSize &&
@@ -1999,7 +1999,7 @@ namespace PEBakery.Core
         {
             return new EncodedFileInfo
             {
-                DirName = DirName,
+                FolderName = FolderName,
                 FileName = FileName,
                 RawSize = RawSize,
                 EncodedSize = EncodedSize,
@@ -2009,7 +2009,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return ScriptSection.Names.GetEncodedSectionName(DirName, FileName);
+            return ScriptSection.Names.GetEncodedSectionName(FolderName, FileName);
         }
     }
     #endregion
