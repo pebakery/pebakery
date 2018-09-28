@@ -600,7 +600,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Logging
-        private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
+        private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>
         {
             DebugLevel.Production.ToString(),
             DebugLevel.PrintException.ToString(),

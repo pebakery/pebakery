@@ -38,7 +38,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
-        Width="600" Height="500"
+        Width="600" Height="520"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
@@ -49,43 +49,44 @@
         <TabControl Grid.Row="0">
             <TabItem Header="Projects">
                 <StackPanel>
-                    <Grid Height="25"
-                          Margin="15, 15, 15, 0"
+                    <Grid Margin="5, 5, 5, 0"
                           VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Margin="0, 0, 0, 5" 
+                                   FontSize="12"
                                    VerticalAlignment="Center"
                                    Text="Default Project"/>
-                        <ComboBox Grid.Column="1"
+                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                  Margin="0, 0, 0, 5"
                                   VerticalAlignment="Center"
                                   ItemsSource="{Binding Project_List}"
                                   SelectedIndex="{Binding Project_DefaultIndex}"/>
-                    </Grid>
-                    <Grid Height="25"
-                          Margin="15, 15, 15, 0"
-                          VerticalAlignment="Center">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   Margin="0, 0, 0, 5"
+                                   FontSize="12"
                                    VerticalAlignment="Center"
-                                   Text="Project Path Setting"/>
-                        <ComboBox Grid.Column="1"
+                                   Text="Project to Configure"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1"
+                                  Margin="0, 0, 0, 5"
                                   VerticalAlignment="Center"
                                   ItemsSource="{Binding Project_List}"
                                   SelectedIndex="{Binding Project_SelectedIndex}"/>
                     </Grid>
-                    <Border Margin="15, 15, 15, 0"
-                            Height="Auto"
-                            BorderBrush="Gray"
-                            BorderThickness="1">
+                    <GroupBox Margin="5, 5, 5, 0"
+                              Header="Source Setup (Legacy)"
+                              BorderBrush="Gray">
                         <StackPanel IsEnabled="{Binding Project_PathEnabled}">
                             <Grid Height="25"
-                                  Margin="15, 15, 15, 0"
+                                  Margin="5, 5, 5, 0"
                                   VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
@@ -94,6 +95,7 @@
                                     <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
+                                           FontSize="12"
                                            VerticalAlignment="Center"
                                            Text="Source Directory"/>
                                 <ComboBox Grid.Column="1"
@@ -123,7 +125,7 @@
                                 </Button>
                             </Grid>
                             <Grid Height="25"
-                                  Margin="15, 15, 15, 0"
+                                  Margin="5, 5, 5, 0"
                                   VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
@@ -135,6 +137,7 @@
                                            Text="Target Directory"/>
                                 <TextBox Grid.Column="1"
                                          Margin="0, 0, 5, 0"
+                                         FontSize="12"
                                          VerticalContentAlignment="Center"
                                          Text="{Binding Project_TargetDirectory}"/>
                                 <Button Grid.Column="2"
@@ -149,7 +152,7 @@
                                 </Button>
                             </Grid>
                             <Grid Height="25"
-                                  Margin="15, 15, 15, 15"
+                                  Margin="5, 5, 5, 5"
                                   VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
@@ -157,6 +160,7 @@
                                     <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
+                                           FontSize="12"
                                            VerticalAlignment="Center"
                                            Text="ISO File"/>
                                 <TextBox Grid.Column="1"
@@ -175,7 +179,7 @@
                                 </Button>
                             </Grid>
                         </StackPanel>
-                    </Border>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="General">
@@ -183,16 +187,16 @@
                     <GroupBox Header="Build"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Optimize Code"
                                       IsChecked="{Binding General_OptimizeCode}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Show LogWindow After Build"
                                       IsChecked="{Binding General_ShowLogAfterBuild}" />
-                            <CheckBox Margin="0, 0, 0, 5"
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Stop Build on Error"
                                       IsChecked="{Binding General_StopBuildOnError}" />
@@ -201,8 +205,8 @@
                     <GroupBox Header="Path Length Limit"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="0, 0, 0, 5">
-                            <CheckBox Margin="5, 5, 5, 0"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Enable Long File Path Support"
                                       ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
@@ -213,16 +217,17 @@
                     <GroupBox Header="User-Agent"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 0">
-                            <CheckBox Margin="0, 0, 0, 5"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Use Custom User-Agent in WebGet"
                                       IsChecked="{Binding General_UseCustomUserAgent}" />
-                            <DockPanel Margin="0, 0, 0, 5"
+                            <DockPanel Margin="0, 0, 0, 3" 
                                        VerticalAlignment="Center">
-                                <TextBlock Text="Custom User-Agent"/>
+                                <TextBlock FontSize="12"
+                                           Text="Custom User-Agent" />
                                 <TextBox DockPanel.Dock="Left"
-                                         Margin="10, 0, 0, 0"
+                                         Margin="10, 0, 0, 0" FontSize="12"
                                          VerticalContentAlignment="Center"
                                          IsEnabled="{Binding General_UseCustomUserAgent}"
                                          Text="{Binding General_CustomUserAgent}" />
@@ -234,9 +239,9 @@
             <TabItem Header="Interface">
                 <StackPanel>
                     <GroupBox Header="Default Monospace Font"
-                              Margin="15, 15, 15, 0"
+                              Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <Grid Margin="5, 5, 5, 5">
+                        <Grid Margin="3, 3, 3, 3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="25"/>
@@ -261,9 +266,9 @@
                         </Grid>
                     </GroupBox>
                     <GroupBox Header="Scale Factor for Script Interface"
-                              Margin="15, 10, 15, 0"
+                              Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <DockPanel Margin="5, 5, 5, 0">
+                        <DockPanel Margin="3, 3, 3, 0">
                             <TextBlock DockPanel.Dock="Right"
                                        TextAlignment="Right"
                                        Text="%" />
@@ -276,16 +281,17 @@
                                     TickPlacement="BottomRight"
                                     TickFrequency="10"
                                     IsSnapToTickEnabled="True"
+                                    Foreground="Black"
                                     x:Name="ScaleFactorSlider"
                                     Value="{Binding Interface_ScaleFactor}" />
                         </DockPanel>
                     </GroupBox>
                     <GroupBox Header="Default Code Editor"
-                              Margin="15, 15, 15, 0"
+                              Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel Margin="5, 5, 5, 5">
+                        <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox DockPanel.Dock="Left" 
-                                      Margin="0, 0, 0, 5"
+                                      Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       IsChecked="{Binding Interface_UseCustomEditor}"
                                       Content="Use Custom Editor" />
@@ -308,62 +314,98 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Display Console Output When Executing ShellExecute"
-                              IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
+                    <GroupBox Header="Build Mode Interface"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Display Console Output When Executing ShellExecute"
+                                      IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Script">
                 <StackPanel>
                     <GroupBox Header="Script Cache"
-                              Margin="15, 15, 15, 0"
+                              Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
-                        <StackPanel>
-                            <CheckBox  Margin="5, 5, 5, 0"
-                                       VerticalContentAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       Content="Enable Script Cache"
-                                       IsChecked="{Binding Script_EnableCache}" />
-                            <DockPanel Height="25"
-                                       Margin="5, 5, 5, 5"
-                                       VerticalAlignment="Center">
-                                <Button DockPanel.Dock="Right"
-                                        Content="Clear Cache Database"
-                                        Width="150"
-                                        Click="Button_ClearCache_Click" />
-                                <TextBlock Margin="0, 0, 10, 0"
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Content="Enable Script Cache"
+                                      IsChecked="{Binding Script_EnableCache}" />
+                            <Grid Height="25"
+                                  Margin="0, 0, 0, 3"
+                                  VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="150"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Margin="0, 0, 10, 0"
                                            VerticalAlignment="Center"
                                            Text="{Binding Script_CacheState}"/>
-                            </DockPanel>
+                                <Button Grid.Column="1"
+                                        Content="Clear Cache Database"
+                                        Click="Button_ClearCache_Click" />
+                            </Grid>
                         </StackPanel>
                     </GroupBox>
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Auto Check Syntax Error"
-                              IsChecked="{Binding Script_AutoSyntaxCheck}" />
+                    <GroupBox Header="Syntax Checker"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Auto Check Syntax Error"
+                                      IsChecked="{Binding Script_AutoSyntaxCheck}" />
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Log">
                 <StackPanel>
-                    <Grid Margin="15, 15, 15, 0"
-                          VerticalAlignment="Center">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   Text="Log Debug Level" />
-                        <ComboBox Grid.Column="1"
-                                  x:Name="ComboBox_LogDebugLevel"
-                                  ItemsSource="{Binding Log_DebugLevelList}"
-                                  SelectedIndex="{Binding Log_DebugLevelIndex}"/>
-                    </Grid>
-                    <GroupBox
-                        Header="Log Database"
-                        Margin="15, 15, 15, 0"
-                        BorderBrush="Gray">
+                    <GroupBox Header="Optimization"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="0, 0, 0, 5">
+                            <CheckBox Margin="5, 5, 5, 0"
+                                      VerticalContentAlignment="Center"
+                                      Content="Deferred Logging"
+                                      ToolTip="Deferred logging vastly improves performance."
+                                      IsChecked="{Binding Log_DeferredLogging}" />
+                            <CheckBox Margin="5, 5, 5, 0"
+                                      VerticalContentAlignment="Center"
+                                      Content="Compact Exported HTML Log"
+                                      ToolTip="Compact the size of HTML at the expense of memory."
+                                      IsChecked="{Binding Log_MinifyHtmlExport}" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Debug Level"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <Grid Margin="5, 5, 5, 5"
+                              VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Text="Log Debug Level" />
+                            <ComboBox Grid.Column="1"
+                                      x:Name="ComboBox_LogDebugLevel"
+                                      ItemsSource="{Binding Log_DebugLevelList}"
+                                      SelectedIndex="{Binding Log_DebugLevelIndex}"/>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox Header="Log Database"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
                         <DockPanel Height="25"
                                    Margin="5, 5, 5, 5"
                                    VerticalAlignment="Center">
@@ -376,20 +418,29 @@
                                        Text="{Binding Log_DBState}" />
                         </DockPanel>
                     </GroupBox>
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Deferred Logging"
-                              ToolTip="Deferred logging vastly improves performance."
-                              IsChecked="{Binding Log_DeferredLogging}" />
-                    <CheckBox Margin="15, 15, 15, 0"
-                              VerticalContentAlignment="Center"
-                              Content="Compact Exported HTML Log"
-                              ToolTip="Compact the size of HTML at the expense of memory."
-                              IsChecked="{Binding Log_MinifyHtmlExport}" />
+
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compat">
-                <StackPanel CanVerticallyScroll="True">
+                <StackPanel>
+                    <Grid Margin="5, 5, 5, 0"
+                          Height="25"
+                          VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Text="Project to Configure"/>
+                        <ComboBox Grid.Column="1"
+                                  VerticalAlignment="Center"
+                                  IsEnabled="False"
+                                  ItemsSource="{Binding Project_List}"
+                                  SelectedIndex="{Binding Project_SelectedIndex}"/>
+                    </Grid>
                     <GroupBox Header="Asterisk Bug"
                               Margin="5, 3, 5, 0"
                               BorderBrush="Gray">
@@ -426,7 +477,7 @@
                                       IsChecked="{Binding Compat_LegacyRegWrite}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Allow Set to modifiy interface controls"
+                                      Content="Allow Set to modify interface controls"
                                       IsChecked="{Binding Compat_AllowSetModifyInterface}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"

@@ -68,12 +68,12 @@ namespace PEBakery.WPF
 
         public ProjectTreeItemModel CurMainTree { get; private set; }
         public ProjectTreeItemModel CurBuildTree { get; set; }
-        private UIRenderer _renderer { get; set; }
+        private UIRenderer _renderer;
 
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
 
-        public MainViewModel Model
+        private static MainViewModel Model
         {
             get => Global.MainViewModel;
             set => Global.MainViewModel = value;
@@ -2084,15 +2084,15 @@ namespace PEBakery.WPF
             }
         }
 
-        public string Text => StringEscaper.Unescape(_script.Title);
+        public string Text => StringEscaper.Unescape(_sc.Title);
 
-        private Script _script;
+        private Script _sc;
         public Script Script
         {
-            get => _script;
+            get => _sc;
             set
             {
-                _script = value;
+                _sc = value;
                 OnPropertyUpdate(nameof(Script));
                 OnPropertyUpdate(nameof(Checked));
                 OnPropertyUpdate(nameof(CheckBoxVisible));
@@ -2145,7 +2145,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (_script.Selected)
+                switch (_sc.Selected)
                 {
                     case SelectedState.True:
                         return true;
@@ -2155,47 +2155,45 @@ namespace PEBakery.WPF
             }
             set
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.Dispatcher.Invoke(() =>
+                Global.MainViewModel.WorkInProgress = true;
+                if (!_sc.Mandatory && _sc.Selected != SelectedState.None)
                 {
-                    w.Model.WorkInProgress = true;
-                    if (_script.Mandatory == false && _script.Selected != SelectedState.None)
+                    if (value)
                     {
-                        if (value)
+                        _sc.Selected = SelectedState.True;
+
+                        try
                         {
-                            _script.Selected = SelectedState.True;
-
-                            try
-                            {
-                                // Run 'Disable' directive
-                                List<LogInfo> errorLogs = DisableScripts(ProjectRoot, _script);
-                                w.Logger.SystemWrite(errorLogs);
-                            }
-                            catch (Exception e)
-                            {
-                                w.Logger.SystemWrite(new LogInfo(LogState.Error, e));
-                            }
+                            // Run 'Disable' directive
+                            List<LogInfo> errorLogs = DisableScripts(ProjectRoot, _sc);
+                            Global.Logger.SystemWrite(errorLogs);
                         }
-                        else
+                        catch (Exception e)
                         {
-                            _script.Selected = SelectedState.False;
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
                         }
-
-                        if (_script.IsMainScript == false)
-                        {
-                            if (0 < Children.Count)
-                            { // Set child scripts, too -> Top-down propagation
-                                foreach (ProjectTreeItemModel childModel in Children)
-                                    childModel.Checked = value;
-                            }
-
-                            ParentCheckedPropagation();
-                        }
-
-                        OnPropertyUpdate(nameof(Checked));
                     }
-                    w.Model.WorkInProgress = false;
-                });
+                    else
+                    {
+                        _sc.Selected = SelectedState.False;
+                    }
+
+                    if (!_sc.IsMainScript)
+                    {
+                        // Set also child scripts (Top-down propagation)
+                        // Disable for Project's MainScript
+                        if (0 < Children.Count)
+                        { 
+                            foreach (ProjectTreeItemModel childModel in Children)
+                                childModel.Checked = value;
+                        }
+
+                        ParentCheckedPropagation();
+                    }
+
+                    OnPropertyUpdate(nameof(Checked));
+                }
+                Global.MainViewModel.WorkInProgress = false;
             }
         }
 
@@ -2220,12 +2218,12 @@ namespace PEBakery.WPF
             if (Parent == null)
                 return;
 
-            if (!_script.Mandatory && _script.Selected != SelectedState.None)
+            if (!_sc.Mandatory && _sc.Selected != SelectedState.None)
             {
                 if (value)
-                    _script.Selected = SelectedState.True;
+                    _sc.Selected = SelectedState.True;
                 else
-                    _script.Selected = SelectedState.False;
+                    _sc.Selected = SelectedState.False;
             }
 
             OnPropertyUpdate(nameof(Checked));
@@ -2236,7 +2234,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (_script.Selected == SelectedState.None)
+                if (_sc.Selected == SelectedState.None)
                     return Visibility.Collapsed;
                 return Visibility.Visible;
             }
