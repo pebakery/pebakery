@@ -981,7 +981,7 @@ namespace PEBakery.Core
         #region Encode
         private static Script Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo)
         {
-            using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.Encode"))
+            using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.Encode", input, 0, input.Length))
             {
                 return Encode(sc, folderName, fileName, ms, mode, encodeLogo);
             }

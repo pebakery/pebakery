@@ -182,6 +182,13 @@ Material Icons
     https://material.io/tools/icons/
     https://github.com/google/material-design-icons
 
+Microsoft.IO.RecyclableMemoryStream
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) 2015-2016 Microsoft
+    https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream
+
 NaturalSort.Extension
     MIT License
     https://opensource.org/licenses/MIT
