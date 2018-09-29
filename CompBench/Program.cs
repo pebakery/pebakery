@@ -41,11 +41,18 @@ namespace CompBench
         };
 
         // ZLibCompLevel
-        public Dictionary<string, ZLibCompLevel> ZLibLevelDict = new Dictionary<string, ZLibCompLevel>(StringComparer.Ordinal)
+        public Dictionary<string, ZLibCompLevel> NativeZLibLevelDict = new Dictionary<string, ZLibCompLevel>(StringComparer.Ordinal)
         {
             ["Fastest"] = ZLibCompLevel.BestSpeed,
             ["Default"] = ZLibCompLevel.Default,
             ["Best"] = ZLibCompLevel.BestCompression,
+        };
+
+        public Dictionary<string, SharpCompress.Compressors.Deflate.CompressionLevel> ManagedZLibLevelDict = new Dictionary<string, SharpCompress.Compressors.Deflate.CompressionLevel>(StringComparer.Ordinal)
+        {
+            ["Fastest"] = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed,
+            ["Default"] = SharpCompress.Compressors.Deflate.CompressionLevel.Default,
+            ["Best"] = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression,
         };
 
         // XZPreset
@@ -150,14 +157,14 @@ namespace CompBench
         }
 
         [Benchmark]
-        public double ZLib()
+        public double Native_ZLib()
         {
             long compLen;
             byte[] rawData = SrcFiles[SrcFileName];
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(rawData))
-                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, ZLibLevelDict[Level], true))
+                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Compress, NativeZLibLevelDict[Level], true))
                 {
                     rms.CopyTo(zs);
                 }
@@ -171,7 +178,27 @@ namespace CompBench
         }
 
         [Benchmark]
-        public double XZ()
+        public double Managed_ZLib()
+        {
+            long compLen;
+            byte[] rawData = SrcFiles[SrcFileName];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(rawData))
+                using (SharpCompress.Compressors.Deflate.ZlibStream zs = new SharpCompress.Compressors.Deflate.ZlibStream(ms, SharpCompress.Compressors.CompressionMode.Compress, ManagedZLibLevelDict[Level]))
+                {
+                    rms.CopyTo(zs);
+                    ms.Flush();
+                    compLen = ms.Position;
+                }
+            }
+
+            CompRatio = (double)compLen / rawData.Length;
+            return CompRatio;
+        }
+
+        [Benchmark]
+        public double Native_XZ()
         {
             long compLen;
             byte[] rawData = SrcFiles[SrcFileName];
@@ -298,7 +325,7 @@ namespace CompBench
         }
 
         [Benchmark]
-        public long ZLib()
+        public long Native_ZLib()
         {
             byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.zz"];
             using (MemoryStream ms = new MemoryStream())
@@ -315,13 +342,47 @@ namespace CompBench
         }
 
         [Benchmark]
-        public long XZ()
+        public long Managed_ZLib()
+        {
+            byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.zz"];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(compData))
+                using (SharpCompress.Compressors.Deflate.ZlibStream zs = new SharpCompress.Compressors.Deflate.ZlibStream(rms, SharpCompress.Compressors.CompressionMode.Decompress))
+                {
+                    zs.CopyTo(ms);
+                }
+
+                ms.Flush();
+                return ms.Length;
+            }
+        }
+
+        [Benchmark]
+        public long Native_XZ()
         {
             byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.xz"];
             using (MemoryStream ms = new MemoryStream())
             {
                 using (MemoryStream rms = new MemoryStream(compData))
                 using (XZStream zs = new XZStream(rms, LzmaMode.Decompress))
+                {
+                    zs.CopyTo(ms);
+                }
+
+                ms.Flush();
+                return ms.Length;
+            }
+        }
+
+        [Benchmark]
+        public long Managed_XZ()
+        {
+            byte[] compData = SrcFiles[$"{Level}_{SrcFileName}.xz"];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (MemoryStream rms = new MemoryStream(compData))
+                using (SharpCompress.Compressors.Xz.XZStream zs = new SharpCompress.Compressors.Xz.XZStream(rms))
                 {
                     zs.CopyTo(ms);
                 }
