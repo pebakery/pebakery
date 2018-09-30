@@ -26,7 +26,7 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -123,7 +123,7 @@ namespace PEBakery.Core
             {
                 new IniKey("Main", "Title"),
             };
-            keys = Ini.ReadKeys(fullPath, keys);
+            keys = IniUtil.ReadKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             string projectTitle = dict["Title"];
@@ -212,7 +212,7 @@ namespace PEBakery.Core
                 new IniKey("Main", "TargetDir"),
                 new IniKey("Main", "ISOFile"),
             };
-            keys = Ini.ReadKeys(fullPath, keys);
+            keys = IniUtil.ReadKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             // If PathSetting is set to False, do not set SourceDir, TargetDir and ISOFile
@@ -634,7 +634,7 @@ namespace PEBakery.Core
             if (lines == null)
                 throw new ExecuteException($"Unable to load section [{section.Name}]");
 
-            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
+            Dictionary<string, string> dict = IniUtil.ParseIniLinesVarStyle(lines);
             if (0 < dict.Keys.Count)
                 return InternalAddDictionary(type, dict);
 
@@ -644,7 +644,7 @@ namespace PEBakery.Core
 
         public List<LogInfo> AddVariables(VarsType type, IEnumerable<string> lines)
         {
-            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
+            Dictionary<string, string> dict = IniUtil.ParseIniLinesVarStyle(lines);
             return InternalAddDictionary(type, dict);
         }
 
@@ -855,7 +855,7 @@ namespace PEBakery.Core
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
-                            if (Ini.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
+                            if (IniUtil.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             else
                                 logs.Add(new LogInfo(LogState.Success, globalResult ? $"Global variable [%{key}%] was deleted" : $"Local variable [%{key}%] was deleted"));
@@ -940,7 +940,7 @@ namespace PEBakery.Core
 
                         if (log.State == LogState.Success)
                         { // SetValue success, write to IniFile
-                            if (Ini.WriteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                            if (IniUtil.WriteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));

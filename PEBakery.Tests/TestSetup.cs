@@ -31,7 +31,7 @@ namespace PEBakery.Tests
             Assert.IsTrue(projects.ProjectList.Count == 1);
 
             // Init NativeAssembly
-            NativeGlobalInit();
+            Global.NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Use InMemory Database for Tests
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
@@ -44,28 +44,12 @@ namespace PEBakery.Tests
             Global.BuildDate = BuildTimestamp.ReadDateTime();
         }
 
-        private static void NativeGlobalInit()
-        {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string arch = IntPtr.Size == 8 ? "x64" : "x86";
-
-            string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            string wimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
-
-            Joveler.ZLibWrapper.ZLibInit.GlobalInit(zLibDllPath, 64 * 1024);
-            ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
-            PEBakery.XZLib.XZStream.GlobalInit(xzDllPath, 64 * 1024);
-        }
-
         [AssemblyCleanup]
         public static void AssemblyCleanup()
         {
             EngineTests.Logger?.Dispose();
 
-            Joveler.ZLibWrapper.ZLibInit.GlobalCleanup();
-            ManagedWimLib.Wim.GlobalCleanup();
-            PEBakery.XZLib.XZStream.GlobalCleanup();
+            Global.NativeGlobalCleanup();
         }
         #endregion
     }

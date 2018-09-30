@@ -28,7 +28,7 @@
 using ManagedWimLib;
 using Microsoft.Win32;
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -530,7 +530,7 @@ namespace PEBakery.Core.Commands
                         string iniFile = StringEscaper.Preprocess(s, c.Arg1);
                         string section = StringEscaper.Preprocess(s, c.Arg2);
 
-                        match = Ini.ContainsSection(iniFile, section);
+                        match = IniUtil.ContainsSection(iniFile, section);
                         if (match)
                             logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
                         else

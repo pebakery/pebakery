@@ -28,6 +28,8 @@
 using PEBakery.Core;
 using PEBakery.WPF;
 using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.IO;
 
 namespace PEBakery
@@ -50,5 +52,37 @@ namespace PEBakery
         public static MainViewModel MainViewModel;
         public static SettingViewModel Setting;
         public static ProjectCollection Projects;
+
+        // Load Native Libraries
+        public static void NativeGlobalInit(string baseDir)
+        {
+            string arch;
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X64:
+                    arch = "x64";
+                    break;
+                case Architecture.X86:
+                    arch = "x86";
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+
+            string zlibPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
+            string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+
+            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, 64 * 1024); // 64K
+            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath, 64 * 1024); // 64K
+            ManagedWimLib.Wim.GlobalInit(wimlibPath);
+        }
+
+        public static void NativeGlobalCleanup()
+        {
+            Joveler.Compression.ZLib.ZLibInit.GlobalCleanup();
+            Joveler.Compression.XZ.XZInit.GlobalCleanup();
+            ManagedWimLib.Wim.GlobalCleanup();
+        }
     }
 }

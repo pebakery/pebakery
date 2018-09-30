@@ -258,16 +258,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PEBakery.LZ4Lib\PEBakery.LZ4Lib.csproj">
-      <Project>{9c3609be-51b8-418e-9081-84ef5ece5746}</Project>
-      <Name>PEBakery.LZ4Lib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.XZLib\PEBakery.XZLib.csproj">
-      <Project>{b46ceb16-a610-4439-ac30-fd971e93a1d0}</Project>
-      <Name>PEBakery.XZLib</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.2\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.2\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>

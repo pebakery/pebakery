@@ -28,7 +28,7 @@
 using MahApps.Metro.IconPacks;
 using PEBakery.Core;
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using SQLite;
 using System;
 using System.Collections.Generic;
@@ -2254,7 +2254,7 @@ namespace PEBakery.WPF
                 int exist = sc.Project.AllScripts.Count(x => x.RealPath.Equals(path, StringComparison.OrdinalIgnoreCase));
                 if (exist == 1)
                 {
-                    Ini.WriteKey(path, "Main", "Selected", "False");
+                    IniUtil.WriteKey(path, "Main", "Selected", "False");
                     ProjectTreeItemModel found = FindScriptByRealPath(path);
                     if (found != null)
                     {

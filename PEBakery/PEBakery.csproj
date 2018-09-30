@@ -74,8 +74,11 @@
     <Reference Include="ControlzEx, Version=3.0.2.4, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ControlzEx.3.0.2.4\lib\net462\ControlzEx.dll</HintPath>
     </Reference>
-    <Reference Include="Joveler.ZLibWrapper, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Joveler.ZLibWrapper.1.3.1\lib\net45\Joveler.ZLibWrapper.dll</HintPath>
+    <Reference Include="Joveler.Compression.XZ, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Joveler.Compression.XZ.1.0.0\lib\netstandard2.0\Joveler.Compression.XZ.dll</HintPath>
+    </Reference>
+    <Reference Include="Joveler.Compression.ZLib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Joveler.Compression.ZLib.2.0.0\lib\netstandard2.0\Joveler.Compression.ZLib.dll</HintPath>
     </Reference>
     <Reference Include="MahApps.Metro.IconPacks, Version=2.3.0.4, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.IconPacks.2.3.0\lib\net46\MahApps.Metro.IconPacks.dll</HintPath>
@@ -353,21 +356,17 @@
       <Project>{d01b1d20-8f5b-4834-8e5c-c7ec6dd587d4}</Project>
       <Name>Ookii.Dialogs.Wpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PEBakery.CabLib\PEBakery.CabLib.csproj">
+    <ProjectReference Include="..\PEBakery.Cab\PEBakery.Cab.csproj">
       <Project>{d3d90156-0a5c-467b-8dcc-a8a50bfd529c}</Project>
       <Name>PEBakery.CabLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PEBakery.IniLib\PEBakery.IniLib.csproj">
+    <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.IniLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PEBakery.TreeLib\PEBakery.TreeLib.csproj">
+    <ProjectReference Include="..\PEBakery.Tree\PEBakery.Tree.csproj">
       <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>
       <Name>PEBakery.TreeLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery.XZLib\PEBakery.XZLib.csproj">
-      <Project>{b46ceb16-a610-4439-ac30-fd971e93a1d0}</Project>
-      <Name>PEBakery.XZLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -395,19 +394,21 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets'))" />
     <Error Condition="!Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Timestamp.1.0.0\build\Timestamp.targets'))" />
-    <Error Condition="!Exists('..\packages\Joveler.ZLibWrapper.1.3.1\build\net45\Joveler.ZLibWrapper.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.ZLibWrapper.1.3.1\build\net45\Joveler.ZLibWrapper.targets'))" />
     <Error Condition="!Exists('..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets'))" />
+    <Error Condition="!Exists('..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets'))" />
+    <Error Condition="!Exists('..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets'))" />
   </Target>
   <Import Project="..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets" Condition="Exists('..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets')" />
   <Import Project="..\packages\Timestamp.1.0.0\build\Timestamp.targets" Condition="Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" />
-  <Import Project="..\packages\Joveler.ZLibWrapper.1.3.1\build\net45\Joveler.ZLibWrapper.targets" Condition="Exists('..\packages\Joveler.ZLibWrapper.1.3.1\build\net45\Joveler.ZLibWrapper.targets')" />
   <Import Project="..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets" Condition="Exists('..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" />
+  <Import Project="..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets" Condition="Exists('..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets')" />
+  <Import Project="..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets" Condition="Exists('..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

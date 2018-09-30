@@ -26,8 +26,8 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.IniLib;
-using PEBakery.TreeLib;
+using PEBakery.Ini;
+using PEBakery.Tree;
 using SQLite;
 using System;
 using System.Collections;
@@ -198,7 +198,7 @@ namespace PEBakery.Core
         {
             var dirLinks = new List<ScriptParseInfo>();
             var linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
-            foreach (string linkFile in linkFiles.Where(x => Ini.ContainsSection(x, "Links")))
+            foreach (string linkFile in linkFiles.Where(x => IniUtil.ContainsSection(x, "Links")))
             {
                 Debug.Assert(linkFile != null, $"{nameof(linkFile)} is wrong");
                 Debug.Assert(linkFile.StartsWith(_baseDir), $"{nameof(linkFile)} [{linkFile}] does not start with %BaseDir%");
@@ -207,7 +207,7 @@ namespace PEBakery.Core
                 string prefix = Path.GetDirectoryName(linkFile.Substring(ProjectRoot.Length + 1)); // +1 for \
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
-                List<string> rawPaths = Ini.ParseRawSection(linkFile, "Links");
+                List<string> rawPaths = IniUtil.ParseRawSection(linkFile, "Links");
                 if (rawPaths == null)
                     continue;
                 var paths = rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0);
@@ -629,7 +629,7 @@ namespace PEBakery.Core
 
         private List<Script> InternalSortScripts(List<Script> scripts)
         {
-            Tree<Script> scTree = new Tree<Script>();
+            KwayTree<Script> scTree = new KwayTree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             int rootId = scTree.AddNode(0, MainScript); // Root is script.project

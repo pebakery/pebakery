@@ -25,7 +25,7 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -73,7 +73,7 @@ namespace PEBakery.Core
 
             ScriptSection variablesSection = project.MainScript.Sections["Variables"];
 
-            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(variablesSection.Lines);
+            Dictionary<string, string> varDict = IniUtil.ParseIniLinesVarStyle(variablesSection.Lines);
             if (!(varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")))
             {
                 MacroEnabled = false;
@@ -110,7 +110,7 @@ namespace PEBakery.Core
             // Parse Section [APIVAR] into MacroDict
             {
                 ScriptSection section = MacroSection;
-                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(MacroSection.Lines);
+                Dictionary<string, string> rawDict = IniUtil.ParseIniLinesIniStyle(MacroSection.Lines);
                 foreach (var kv in rawDict)
                 {
                     try
@@ -137,7 +137,7 @@ namespace PEBakery.Core
             if (project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
                 ScriptSection permaSection = project.MainScript.Sections[ScriptSection.Names.Variables];
-                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.Lines);
+                Dictionary<string, string> rawDict = IniUtil.ParseIniLinesIniStyle(permaSection.Lines);
                 foreach (var kv in rawDict)
                 {
                     try
@@ -169,7 +169,7 @@ namespace PEBakery.Core
 
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
-                Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.Lines);
+                Dictionary<string, string> dict = IniUtil.ParseIniLinesIniStyle(section.Lines);
                 return LoadLocalMacroDict(section, dict, append);
             }
 
@@ -178,7 +178,7 @@ namespace PEBakery.Core
 
         public List<LogInfo> LoadLocalMacroDict(ScriptSection section, IEnumerable<string> lines, bool append)
         {
-            Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(lines);
+            Dictionary<string, string> dict = IniUtil.ParseIniLinesIniStyle(lines);
             return LoadLocalMacroDict(section, dict, append);
         }
 
@@ -251,7 +251,7 @@ namespace PEBakery.Core
                 if (permanent) // MacroDict
                 {
                     GlobalDict[macroName] = cmd;
-                    if (Ini.WriteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName, cmd.RawCode))
+                    if (IniUtil.WriteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
                         return new LogInfo(LogState.Error, $"Could not write macro into [{section.Project.MainScript.RealPath}]");
@@ -275,7 +275,7 @@ namespace PEBakery.Core
                     if (GlobalDict.ContainsKey(macroName))
                     {
                         GlobalDict.Remove(macroName);
-                        Ini.DeleteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName);
+                        IniUtil.DeleteKey(section.Project.MainScript.RealPath, ScriptSection.Names.Variables, macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
 

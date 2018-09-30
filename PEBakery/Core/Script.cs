@@ -26,7 +26,7 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -195,7 +195,7 @@ namespace PEBakery.Core
                 if (_type != ScriptType.Directory && _sections.ContainsKey("Main"))
                 {
                     _sections["Main"].IniDict["Selected"] = valStr;
-                    Ini.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
+                    IniUtil.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
                 }
             }
         }
@@ -438,7 +438,7 @@ namespace PEBakery.Core
             }
             else
             {
-                encodedFolders = Ini.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
+                encodedFolders = IniUtil.ParseIniSection(_realPath, ScriptSection.Names.EncodedFolders);
                 if (encodedFolders == null)  // No EncodedFolders section, exit
                     return false;
             }
@@ -548,7 +548,7 @@ namespace PEBakery.Core
             }
             else
             {
-                List<string> lineList = Ini.ParseRawSection(_realPath, sectionName);
+                List<string> lineList = IniUtil.ParseRawSection(_realPath, sectionName);
                 if (lineList == null)
                     return null;
 
@@ -857,7 +857,7 @@ namespace PEBakery.Core
                 // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
                 {
-                    List<string> lineList = Ini.ParseRawSection(Script.RealPath, Name);
+                    List<string> lineList = IniUtil.ParseRawSection(Script.RealPath, Name);
                     return lineList?.ToArray();
                 }
 
@@ -880,7 +880,7 @@ namespace PEBakery.Core
 
                 // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
-                    return Ini.ParseIniSectionToDict(Script.RealPath, Name);
+                    return IniUtil.ParseIniSectionToDict(Script.RealPath, Name);
 
                 // Load from file, keep in memory.
                 if (LoadIniDict())
@@ -923,7 +923,7 @@ namespace PEBakery.Core
             if (_lines != null)
                 return true;
 
-            List<string> lineList = Ini.ParseRawSection(Script.RealPath, Name);
+            List<string> lineList = IniUtil.ParseRawSection(Script.RealPath, Name);
             if (lineList == null)
                 return false;
             _lines = lineList.ToArray();
@@ -947,7 +947,7 @@ namespace PEBakery.Core
             if (_iniDict != null)
                 return true;
 
-            _iniDict = Ini.ParseIniLinesIniStyle(_lines);
+            _iniDict = IniUtil.ParseIniLinesIniStyle(_lines);
             return true;
         }
 

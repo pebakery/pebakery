@@ -26,7 +26,7 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Media;
@@ -135,12 +135,12 @@ namespace PEBakery.Core.Commands
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Directly read from file
-            List<string> lines = Ini.ParseRawSection(sc.RealPath, sectionName);
+            List<string> lines = IniUtil.ParseRawSection(sc.RealPath, sectionName);
             if (lines == null)
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Add Variables
-            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);
+            Dictionary<string, string> varDict = IniUtil.ParseIniLinesVarStyle(lines);
             List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
 
             // Add Macros

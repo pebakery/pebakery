@@ -27,7 +27,7 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -77,7 +77,7 @@ namespace PEBakery.Tests.Core.Command
         public void Set_3(EngineState s)
         {
             string pPath = s.Project.MainScript.RealPath;
-            Ini.DeleteKey(pPath, "Variables", "%Set_3%");
+            IniUtil.DeleteKey(pPath, "Variables", "%Set_3%");
 
             const string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
@@ -86,10 +86,10 @@ namespace PEBakery.Tests.Core.Command
             string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
-            string permanent = Ini.ReadKey(pPath, "Variables", "%Set_3%");
+            string permanent = IniUtil.ReadKey(pPath, "Variables", "%Set_3%");
             Assert.IsTrue(dest.Equals(permanent, StringComparison.Ordinal));
 
-            Ini.DeleteKey(pPath, "Variables", "%Set_3%");
+            IniUtil.DeleteKey(pPath, "Variables", "%Set_3%");
         }
 
         public void Set_4(EngineState s)

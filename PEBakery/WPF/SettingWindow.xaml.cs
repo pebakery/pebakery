@@ -28,7 +28,7 @@
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -148,7 +148,7 @@ namespace PEBakery.WPF
 
             int idx = Model.Project_SelectedIndex;
             string fullPath = Model.Projects[idx].MainScript.RealPath;
-            Ini.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
+            IniUtil.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
         }
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
@@ -274,7 +274,7 @@ namespace PEBakery.WPF
                         new IniKey("Main", "ISOFile"),
                         new IniKey("Main", "PathSetting"),
                     };
-                    keys = Ini.ReadKeys(fullPath, keys);
+                    keys = IniUtil.ReadKeys(fullPath, keys);
 
                     // PathSetting
                     if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -362,7 +362,7 @@ namespace PEBakery.WPF
                         b.Append(",");
                         b.Append(Project_SourceDirectoryList[x]);
                     }
-                    Ini.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
+                    IniUtil.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
 
                 OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
@@ -375,11 +375,11 @@ namespace PEBakery.WPF
             get => project_TargetDirectory;
             set
             {
-                if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
+                if (!value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase))
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    Ini.WriteKey(fullPath, "Main", "TargetDir", value);
+                    IniUtil.WriteKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
 
@@ -399,7 +399,7 @@ namespace PEBakery.WPF
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    Ini.WriteKey(fullPath, "Main", "ISOFile", value);
+                    IniUtil.WriteKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
 
@@ -984,7 +984,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
             };
 
-            keys = Ini.ReadKeys(_settingFile, keys);
+            keys = IniUtil.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
             #region Parse Helpers
@@ -1139,7 +1139,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
             };
-            Ini.WriteKeys(_settingFile, keys);
+            IniUtil.WriteKeys(_settingFile, keys);
         }
 
         private static string KeyPart(string str, string section)

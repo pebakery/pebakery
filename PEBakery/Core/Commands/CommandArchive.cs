@@ -25,7 +25,7 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.CabLib;
+using PEBakery.Cab;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;

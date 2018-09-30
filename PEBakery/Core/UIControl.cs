@@ -26,7 +26,7 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -217,7 +217,7 @@ namespace PEBakery.Core
             Section.Lines[lineIdx] = ForgeRawLine(true);
 
             // Update actual file
-            return Ini.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
+            return IniUtil.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
         public static bool Update(List<UIControl> uiCtrls)
@@ -240,14 +240,14 @@ namespace PEBakery.Core
             }
 
             // Update actual file
-            return Ini.WriteKeys(fullPath, keys);
+            return IniUtil.WriteKeys(fullPath, keys);
         }
         #endregion
 
         #region Delete
         public bool Delete()
         {
-            return Ini.DeleteKey(Section.Script.RealPath, Section.Name, Key);
+            return IniUtil.DeleteKey(Section.Script.RealPath, Section.Name, Key);
         }
 
         public static bool Delete(List<UIControl> uiCtrls)
@@ -264,7 +264,7 @@ namespace PEBakery.Core
                 keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key));
             }
 
-            return Ini.DeleteKeys(fullPath, keys).Any(x => x);
+            return IniUtil.DeleteKeys(fullPath, keys).Any(x => x);
         }
         #endregion
 

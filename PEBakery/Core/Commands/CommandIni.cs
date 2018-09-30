@@ -25,7 +25,7 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            string value = Ini.ReadKey(fileName, sectionName, key);
+            string value = IniUtil.ReadKey(fileName, sectionName, key);
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
@@ -101,7 +101,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            keys = Ini.ReadKeys(fileName, keys);
+            keys = IniUtil.ReadKeys(fileName, keys);
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -163,7 +163,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteKey(fileName, sectionName, key, value);
+            bool result = IniUtil.WriteKey(fileName, sectionName, key, value);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] written to [{fileName}]", cmd));
             else
@@ -207,7 +207,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteKeys(fileName, keys);
+            bool result = IniUtil.WriteKeys(fileName, keys);
 
             if (result)
             {
@@ -253,7 +253,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result = Ini.DeleteKey(fileName, sectionName, key);
+            bool result = IniUtil.DeleteKey(fileName, sectionName, key);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
             else
@@ -291,7 +291,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            bool[] result = Ini.DeleteKeys(fileName, keys);
+            bool[] result = IniUtil.DeleteKeys(fileName, keys);
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -334,7 +334,7 @@ namespace PEBakery.Core.Commands
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
-            IniKey[] keys = Ini.ReadSection(fileName, section);
+            IniKey[] keys = IniUtil.ReadSection(fileName, section);
             if (keys != null)
             {
                 List<string> kvList = new List<string>(keys.Length * 2);
@@ -390,7 +390,7 @@ namespace PEBakery.Core.Commands
                     delims[i] = StringEscaper.Preprocess(s, info.Delim);
             }
 
-            Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(fileName, sections);
+            Dictionary<string, IniKey[]> keyDict = IniUtil.ReadSections(fileName, sections);
 
             int successCount = 0;
             for (int i = 0; i < sections.Length; i++)
@@ -454,7 +454,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.AddSection(fileName, section);
+            bool result = IniUtil.AddSection(fileName, section);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{section}] added to [{fileName}]", cmd));
             else
@@ -494,7 +494,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.AddSections(fileName, sections);
+            bool result = IniUtil.AddSections(fileName, sections);
 
             if (result)
             {
@@ -530,7 +530,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result = Ini.DeleteSection(fileName, section);
+            bool result = IniUtil.DeleteSection(fileName, section);
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{section}] deleted from [{fileName}]", cmd));
@@ -564,7 +564,7 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            bool result = Ini.DeleteSections(fileName, sections);
+            bool result = IniUtil.DeleteSections(fileName, sections);
 
             if (result)
             {
@@ -608,7 +608,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteRawLine(fileName, section, line, info.Append);
+            bool result = IniUtil.WriteRawLine(fileName, section, line, info.Append);
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Line [{line}] wrote to [{fileName}]", cmd));
@@ -654,7 +654,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteRawLines(fileName, keyList, append);
+            bool result = IniUtil.WriteRawLines(fileName, keyList, append);
 
             if (result)
             {
@@ -693,7 +693,7 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destFile, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result = Ini.Merge(srcFile, destFile);
+            bool result = IniUtil.Merge(srcFile, destFile);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
             else

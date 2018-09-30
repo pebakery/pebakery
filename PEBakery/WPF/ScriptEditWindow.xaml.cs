@@ -3,7 +3,7 @@ using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
 using PEBakery.Helper;
-using PEBakery.IniLib;
+using PEBakery.Ini;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -373,7 +373,7 @@ namespace PEBakery.WPF
                 new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
             };
 
-            Ini.WriteKeys(_sc.RealPath, keys);
+            IniUtil.WriteKeys(_sc.RealPath, keys);
             _sc = _sc.Project.RefreshScript(_sc);
 
             if (refresh)
@@ -396,7 +396,7 @@ namespace PEBakery.WPF
                 UIControl.Update(_renderer.UICtrls);
                 UIControl.Delete(m.UICtrlToBeDeleted);
                 m.UICtrlToBeDeleted.Clear();
-                Ini.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
+                IniUtil.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
                 m.UICtrlKeyChanged.Clear();
 
                 if (refresh)
@@ -703,7 +703,7 @@ namespace PEBakery.WPF
 
             if (!_sc.Sections.ContainsKey(_ifaceSectionName))
             { // No [Interface] section, so add it
-                Ini.AddSection(_sc.DirectRealPath, _ifaceSectionName);
+                IniUtil.AddSection(_sc.DirectRealPath, _ifaceSectionName);
                 _sc = _sc.Project.RefreshScript(_sc);
             }
 

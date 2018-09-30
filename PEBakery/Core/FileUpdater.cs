@@ -135,7 +135,7 @@ namespace PEBakery.Core
             // Get BaseUrl
             if (!p.MainScript.Sections.ContainsKey(UpdateSection))
                 return LogInfo.LogErrorMessage(logs, "Unable to find project update information");
-            Dictionary<string, string> pUpdateDict = Ini.ParseIniLinesIniStyle(p.MainScript.Sections[UpdateSection].GetLines());
+            Dictionary<string, string> pUpdateDict = IniUtil.ParseIniLinesIniStyle(p.MainScript.Sections[UpdateSection].GetLines());
             if (!pUpdateDict.ContainsKey(BaseUrlKey))
                 return LogInfo.LogErrorMessage(logs, "Unable to find project update base url");
             string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('\\');
@@ -144,7 +144,7 @@ namespace PEBakery.Core
             {
                 if (!sc.Sections.ContainsKey(UpdateSection))
                     continue;
-                Dictionary<string, string> scUpdateDict = Ini.ParseIniLinesIniStyle(sc.Sections[UpdateSection].GetLines());
+                Dictionary<string, string> scUpdateDict = IniUtil.ParseIniLinesIniStyle(sc.Sections[UpdateSection].GetLines());
 
                 // Parse ScriptUpdateType
                 if (!scUpdateDict.ContainsKey(ScriptTypeKey))

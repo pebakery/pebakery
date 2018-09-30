@@ -23,7 +23,7 @@
     SOFTWARE.
 */
 
-using PEBakery.CabLib;
+using PEBakery.Cab;
 using SevenZipExtractor;
 using SharpCompress.Common;
 using SharpCompress.Readers;

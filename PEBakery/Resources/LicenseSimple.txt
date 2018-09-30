@@ -34,29 +34,19 @@ not derived from or based on this program.
 -----------------------------------------------------------
 These parts of PEBakery is licensed under various license.
 
-PEBakery.CabLib
-PEBakery.CabLib.Tests
+PEBakery.Cab
+PEBakery.Cab.Tests
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
 
-PEBakery.IniLib
-PEBakery.IniLib.Tests
+PEBakery.Ini
+PEBakery.Ini.Tests
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery.TreeLib
+PEBakery.Tree
     MIT License
     https://opensource.org/licenses/MIT
-	
-PEBakery.XZLib
-PEBakery.XZLib.Tests
-    MIT License
-    https://opensource.org/licenses/MIT
-	
-PEBakery.LZ4Lib
-PEBakery.LZ4Lib.Tests
-    The 2-Clause BSD License
-    https://opensource.org/licenses/BSD-2-Clause
 
 ManagedWimLib
 ManagedWimLib.Tests
@@ -76,17 +66,6 @@ LauncherNative
 LauncherSharp
     MIT License
     https://opensource.org/licenses/MIT
-
-XZNet20/XZ.Net.dll
-    MIT License
-    https://opensource.org/licenses/MIT
-
-    https://github.com/RomanBelkov/XZ.NET
-
-XZNet20/liblzma.dll
-XZNet20/liblzma64.dll
-    Public Domain
-    https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
 
 PEBakery/Helper
     MIT License
@@ -154,12 +133,19 @@ ControlzEx
     Copyright (c) 2015 Jan Karger, Bastian Schmidt
     https://github.com/ControlzEx/ControlzEx
 
-ZLibWrapper
+Joveler.Compression.XZ
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/Joveler.Compression
+
+Joveler.Compression.ZLib
     zlib license
     https://opensource.org/licenses/Zlib
 
     Copyright (C) Hajin Jang
-    https://github.com/ied206/ZLibWrapper
+    https://github.com/ied206/Joveler.Compression
 
 MahApps.Metro.IconPacks
     MIT License
