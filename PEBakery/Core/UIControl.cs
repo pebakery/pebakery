@@ -214,7 +214,8 @@ namespace PEBakery.Core
         {
             // Update ScriptSection.Lines
             int lineIdx = Array.FindIndex(Section.Lines, x => x.StartsWith($"{Key}=", StringComparison.OrdinalIgnoreCase));
-            Section.Lines[lineIdx] = ForgeRawLine(true);
+            if (0 <= lineIdx && lineIdx < Section.Lines.Length)
+                Section.Lines[lineIdx] = ForgeRawLine(true);
 
             // Update actual file
             return IniUtil.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
@@ -236,7 +237,8 @@ namespace PEBakery.Core
 
                 // Update ScriptSection.Lines
                 int lineIdx = Array.FindIndex(uiCtrl.Section.Lines, x => x.StartsWith($"{uiCtrl.Key}=", StringComparison.OrdinalIgnoreCase));
-                uiCtrl.Section.Lines[lineIdx] = uiCtrl.ForgeRawLine(true);
+                if (0 <= lineIdx && lineIdx < uiCtrl.Section.Lines.Length)
+                    uiCtrl.Section.Lines[lineIdx] = uiCtrl.ForgeRawLine(true);
             }
 
             // Update actual file
