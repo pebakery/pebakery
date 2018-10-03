@@ -54,7 +54,7 @@ ManagedWimLib.Tests
     https://www.gnu.org/licenses/lgpl-3.0.en.html
 
 Ookii.Dialogs.Wpf
-    The 3-Clause BSD License
+    The BSD 3-Clause License
     https://opensource.org/licenses/BSD-3-Clause
 
     Copyright (c) Sven Groot (Ookii.org) 2009
@@ -219,18 +219,19 @@ SharpCompress
     Copyright (c) Adam Hathcock
     https://github.com/adamhathcock/sharpcompress
 
+SharpVectors
+    The BSD 3-Clause License
+    https://opensource.org/licenses/BSD-3-Clause
+
+    Copyright (c) Elinam LLC
+    https://github.com/ElinamLLC/SharpVectors
+
 sqlite-net-pcl
     MIT License
     https://opensource.org/licenses/MIT
 
     Copyright (c) Krueger Systems, Inc.
     https://github.com/praeclarum/sqlite-net
-
-Svg.Net
-    Microsoft Public License (MS-PL)
-    https://opensource.org/licenses/MS-PL
-
-    https://github.com/vvvv/SVG
 
 Timestamp
     MIT License
