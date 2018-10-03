@@ -146,7 +146,23 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                m.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(_sc, 100 * UIRenderer.MaxDpiScale);
+                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                {
+                    switch (type)
+                    {
+                        case ImageHelper.ImageType.Svg:
+                            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                            Rect svgSize = svgDrawing.Bounds;
+                            (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
+                            m.ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                            m.ScriptLogoSvgWidth = width;
+                            m.ScriptLogoSvgHeight = height;
+                            break;
+                        default:
+                            m.ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
+                            break;
+                    }
+                }
                 m.ScriptLogoInfo = info;
             }
             else
@@ -831,7 +847,7 @@ namespace PEBakery.WPF
             {
                 int width, height;
                 if (type == ImageHelper.ImageType.Svg)
-                    (width, height) = ImageHelper.GetSvgSize(ms);
+                    (width, height) = ImageHelper.GetSvgSizeInt(ms);
                 else
                     (width, height) = ImageHelper.GetImageSize(ms);
 
@@ -1929,29 +1945,70 @@ namespace PEBakery.WPF
         public bool ScriptLogoUpdated { get; set; } = false;
 
         #region ScriptLogo
-        private bool _scriptLogoToggle;
-        public bool ScriptLogoToggle
+        private bool _scriptLogoIcon;
+        public bool ScriptLogoIcon
         {
-            get => _scriptLogoToggle;
+            get => _scriptLogoIcon;
             set
             {
-                _scriptLogoToggle = value;
-                OnPropertyUpdate(nameof(ScriptLogoImageVisible));
-                OnPropertyUpdate(nameof(ScriptLogoNoneIconVisible));
+                _scriptLogoIcon = true;
+                _scriptLogoImage = null;
+                _scriptLogoSvg = null;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
             }
         }
 
-        public Visibility ScriptLogoImageVisible => !ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
-        public Visibility ScriptLogoNoneIconVisible => ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
         private ImageSource _scriptLogoImage;
         public ImageSource ScriptLogoImage
         {
             get => _scriptLogoImage;
             set
             {
+                _scriptLogoIcon = false;
                 _scriptLogoImage = value;
-                ScriptLogoToggle = value == null;
+                _scriptLogoSvg = null;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
                 OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
+            }
+        }
+
+        private DrawingBrush _scriptLogoSvg;
+        public DrawingBrush ScriptLogoSvg
+        {
+            get => _scriptLogoSvg;
+            set
+            {
+                _scriptLogoIcon = false;
+                _scriptLogoImage = null;
+                _scriptLogoSvg = value;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
+            }
+        }
+
+        private double _scriptLogoSvgWidth;
+        public double ScriptLogoSvgWidth
+        {
+            get => _scriptLogoSvgWidth;
+            set
+            {
+                _scriptLogoSvgWidth = value;
+                OnPropertyUpdate(nameof(ScriptLogoSvgWidth));
+            }
+        }
+
+        private double _scriptLogoSvgHeight;
+        public double ScriptLogoSvgHeight
+        {
+            get => _scriptLogoSvgHeight;
+            set
+            {
+                _scriptLogoSvgHeight = value;
+                OnPropertyUpdate(nameof(ScriptLogoSvgHeight));
             }
         }
         #endregion

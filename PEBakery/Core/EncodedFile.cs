@@ -27,10 +27,10 @@
 
 // #define DEBUG_MIDDLE_FILE
 
+using Joveler.Compression.XZ;
 using Joveler.Compression.ZLib;
 using PEBakery.Helper;
 using PEBakery.Ini;
-using Joveler.Compression.XZ;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -41,7 +41,9 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace PEBakery.Core
 {
@@ -508,31 +510,6 @@ namespace PEBakery.Core
 
             string[] encoded = sc.Sections[section].Lines;
             return DecodeInMem(encoded);
-        }
-
-        public static Task<ImageSource> ExtractLogoImageSourceAsync(Script sc, double? svgSize = null)
-        {
-            return Task.Run(() => ExtractLogoImageSource(sc, svgSize));
-        }
-
-        public static ImageSource ExtractLogoImageSource(Script sc, double? svgSize = null)
-        {
-            ImageSource imageSource;
-            using (MemoryStream mem = ExtractLogo(sc, out ImageHelper.ImageType type))
-            {
-                if (type == ImageHelper.ImageType.Svg)
-                {
-                    if (svgSize == null)
-                        imageSource = ImageHelper.SvgToBitmapImage(mem);
-                    else
-                        imageSource = ImageHelper.SvgToBitmapImage(mem, (double)svgSize, (double)svgSize, true);
-                }
-                else
-                {
-                    imageSource = ImageHelper.ImageToBitmapImage(mem);
-                }
-            }
-            return imageSource;
         }
 
         public static Task<MemoryStream> ExtractInterfaceAsync(Script sc, string fileName)

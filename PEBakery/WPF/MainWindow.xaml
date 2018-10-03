@@ -51,6 +51,7 @@
         <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
         <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
         <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
+        <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
         <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -576,7 +577,7 @@
                            StretchDirection="DownOnly"
                            Stretch="Uniform"
                            UseLayoutRounding="True"
-                           Visibility="{Binding ScriptLogoImageVisible}"
+                           Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                            Source="{Binding ScriptLogoImage}"/>
                     <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
                                                 Grid.Row="0" Grid.Column="0"
@@ -584,8 +585,17 @@
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"
                                                 UseLayoutRounding="True"
-                                                Visibility="{Binding ScriptLogoIconVisible}"
+                                                Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                                                 Kind="{Binding ScriptLogoIcon}"/>
+                    <Border x:Name="ScriptLogoSvg"
+                            Grid.Row="0" Grid.Column="0"
+                            Width="{Binding ScriptLogoSvgWidth}"
+                            Height="{Binding ScriptLogoSvgHeight}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            UseLayoutRounding="True"
+                            Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                            Background="{Binding ScriptLogoSvg}"/>
                     <Grid Grid.Row="0" Grid.Column="1"
                           Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>

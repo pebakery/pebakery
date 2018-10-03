@@ -23,13 +23,15 @@
     SOFTWARE.
 */
 
-using Svg;
+using SharpVectors.Converters;
+using SharpVectors.Renderers.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -38,6 +40,7 @@ namespace PEBakery.Helper
     #region ImageHelper
     public static class ImageHelper
     {
+        #region ImageType
         public enum ImageType
         {
             Bmp, Jpg, Png, Gif, Ico, Svg
@@ -76,7 +79,9 @@ namespace PEBakery.Helper
                 return false;
             }
         }
+        #endregion
 
+        #region Bitmap
         public static BitmapImage ImageToBitmapImage(byte[] image)
         {
             BitmapImage bitmap = new BitmapImage();
@@ -99,23 +104,6 @@ namespace PEBakery.Helper
             return bitmap;
         }
 
-        public static BitmapImage BitmapToBitmapImage(Bitmap srcBmp)
-        {
-            BitmapImage bitmap = new BitmapImage();
-            using (MemoryStream ms = new MemoryStream())
-            {
-                srcBmp.Save(ms, ImageFormat.Bmp);
-                ms.Position = 0;
-
-                bitmap.BeginInit();
-                bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = ms;
-                bitmap.EndInit();
-            }
-            return bitmap;
-        }
-
         public static (int, int) GetImageSize(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
@@ -132,78 +120,198 @@ namespace PEBakery.Helper
             return brush;
         }
 
-        public static (int Width, int Height) GetSvgSize(Stream stream)
-        {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            SizeF size = svgDoc.GetDimensions();
-            return ((int)size.Width, (int)size.Height);
-        }
-
-        public static BitmapImage SvgToBitmapImage(Stream stream)
-        {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw());
-        }
-
-        public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height, bool keepAspectRatio = true)
-        {
-            return SvgToBitmapImage(stream, (int)Math.Round(width), (int)Math.Round(height), keepAspectRatio);
-        }
-
-        public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height, bool keepAspectRatio = true)
-        {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            if (keepAspectRatio)
-            {
-                SizeF size = svgDoc.GetDimensions();
-                float imageRatio = size.Width / size.Height;
-                float drawRatio = (float)width / height;
-
-                if (Math.Abs(imageRatio - drawRatio) < float.Epsilon) // Ratio is equal, do not touch it 
-                    return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
-                else if (imageRatio < drawRatio)
-                    return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width / imageRatio, 0), height));
-                else // if (drawRatio < imageRatio) 
-                    return ImageHelper.ToBitmapImage(svgDoc.Draw(width, (int)Math.Round(height / imageRatio, 0)));
-            }
-            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
-        }
-
-        public static BitmapImage ToBitmapImage(Bitmap bitmap)
-        {
-            using (MemoryStream mem = new MemoryStream())
-            {
-                bitmap.Save(mem, ImageFormat.Png);
-                mem.Position = 0;
-
-                BitmapImage bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = mem;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-
-                return bitmapImage;
-            }
-        }
-
-        public static ImageBrush SvgToImageBrush(Stream stream)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream));
-        }
-        public static ImageBrush SvgToImageBrush(Stream stream, double width, double height)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream, width, height));
-        }
-
-        public static ImageBrush SvgToImageBrush(Stream stream, int width, int height)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream, width, height));
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
         {
             return new ImageBrush { ImageSource = bitmap };
         }
+        #endregion
+
+        #region Svg
+        public static DrawingGroup SvgToDrawingGroup(Stream stream)
+        {
+            FileSvgReader reader = new FileSvgReader(new WpfDrawingSettings
+            {
+                CultureInfo = CultureInfo.InvariantCulture,
+                IncludeRuntime = true,
+            });
+            reader.Read(stream);
+            return reader.Drawing;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DrawingBrush SvgToDrawingBrush(Stream stream)
+        {
+            return new DrawingBrush { Drawing = SvgToDrawingGroup(stream) };
+        }
+
+        public static (double Width, double Height) GetSvgSizeDouble(Stream stream)
+        {
+            DrawingGroup drawingGroup = SvgToDrawingGroup(stream);
+            Rect rect = drawingGroup.Bounds;
+            return (rect.Width, rect.Height);
+        }
+
+        public static (int Width, int Height) GetSvgSizeInt(Stream stream)
+        {
+            (double width, double height) = GetSvgSizeDouble(stream);
+            int newWidth = (int)Math.Round(width, 0);
+            int newHeight = (int)Math.Round(height, 0);
+            return (newWidth, newHeight);
+        }
+        #endregion
+
+        #region StretchSizeAspectRatio
+        public static (int Width, int Height) StretchSizeAspectRatio(int currentWidth, int currentHeight, int targetWidth, int targetHeight)
+        {
+            double currentAspectRatio = (double)currentWidth / currentHeight;
+            double targetAspectRatio = (double)targetWidth / targetHeight;
+
+            int newWidth;
+            int newHeight;
+            // Aspect ratio is equal, return original target width and height
+            if (currentAspectRatio - targetAspectRatio < double.Epsilon)
+            {
+                newWidth = targetWidth;
+                newHeight = targetHeight;
+            }
+            else if (currentAspectRatio < targetAspectRatio)
+            { // Shrink width
+                newWidth = (int)Math.Round(targetHeight * targetAspectRatio, 0);
+                newHeight = targetHeight;
+            }
+            else
+            { // Shrink height
+                newWidth = targetWidth;
+                newHeight = (int)Math.Round(targetWidth * targetAspectRatio, 0);
+            }
+
+            return (newWidth, newHeight);
+        }
+
+        public static (double Width, double Height) StretchSizeAspectRatio(double currentWidth, double currentHeight, double targetWidth, double targetHeight)
+        {
+            double currentAspectRatio = currentWidth / currentHeight;
+            double targetAspectRatio = targetWidth / targetHeight;
+
+            double newWidth;
+            double newHeight;
+
+            // Aspect ratio is equal, return original target width and height
+            if (Math.Abs(currentAspectRatio - targetAspectRatio) < double.Epsilon)
+            {
+                newWidth = targetWidth;
+                newHeight = targetHeight;
+            }
+            else if (currentAspectRatio < targetAspectRatio)
+            { // Shrink width
+                newWidth = targetHeight * currentAspectRatio;
+                newHeight = targetHeight;
+            }
+            else
+            { // Shrink height
+                newWidth = targetWidth;
+                newHeight = targetWidth * currentAspectRatio;
+            }
+
+            return (newWidth, newHeight);
+        }
+        #endregion
+
+        #region MaskWhiteAsTrapsarent
+        private static void WriteToBrga32Bitmap(byte[] pixels, int idx, byte r, byte g, byte b, byte a)
+        {
+            pixels[idx] = r;
+            pixels[idx + 1] = g;
+            pixels[idx + 2] = b;
+            pixels[idx + 3] = a;
+        }
+
+        private static (byte r, byte g, byte b, byte a) ReadFromBrga32Bitmap(byte[] pixels, int idx)
+        {
+            byte r = pixels[idx];
+            byte g = pixels[idx + 1];
+            byte b = pixels[idx + 2];
+            byte a = pixels[idx + 3];
+
+            return (r, g, b, a);
+        }
+
+        private static (byte r, byte g, byte b) ReadFromBrg24Bitmap(byte[] pixels, int idx)
+        {
+            byte r = pixels[idx];
+            byte g = pixels[idx + 1];
+            byte b = pixels[idx + 2];
+
+            return (r, g, b);
+        }
+
+        /// <summary>
+        /// If a pixel is #FFFFFFFF (White), convert it to #00FFFFFF (transparent)
+        /// </summary>
+        /// <param name="src"></param>
+        /// <returns></returns>
+        public static BitmapSource MaskWhiteAsTransparent(BitmapSource src)
+        {
+            if (src.Format.Equals(PixelFormats.Bgr24))
+            {
+                int stride = src.PixelWidth * 3;
+                byte[] srcPixels = new byte[stride * src.PixelHeight];
+                src.CopyPixels(srcPixels, stride, 0);
+
+                WriteableBitmap dest =
+                    new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                byte[] destPixels = new byte[src.PixelWidth * src.PixelHeight * 4];
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int rgb24idx = (x + y * src.PixelWidth) * 3;
+                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+
+                        byte a = 255;
+                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24idx);
+                        if (r == 255 && g == 255 && b == 255)
+                            a = 0; // Max transparency
+                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                dest.WritePixels(rect, destPixels, src.PixelWidth * 4, 0);
+                return dest;
+            }
+
+            if (src.Format.Equals(PixelFormats.Bgra32))
+            {
+                int stride = src.PixelWidth * 4;
+                byte[] srcPixels = new byte[stride * src.PixelHeight];
+                src.CopyPixels(srcPixels, stride, 0);
+
+                WriteableBitmap dest =
+                    new WriteableBitmap(src.PixelWidth, src.PixelHeight, 96, 96, PixelFormats.Bgra32, null);
+                byte[] destPixels = new byte[src.PixelWidth * src.PixelHeight * 4];
+                for (int y = 0; y < src.PixelHeight; y++)
+                {
+                    for (int x = 0; x < src.PixelWidth; x++)
+                    {
+                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+
+                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32idx);
+                        if (r == 255 && g == 255 && b == 255 & a == 255)
+                            a = 0; // Max transparency
+                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                    }
+                }
+
+                Int32Rect rect = new Int32Rect(0, 0, src.PixelWidth, src.PixelHeight);
+                dest.WritePixels(rect, destPixels, src.PixelWidth * 4, 0);
+                return dest;
+            }
+
+            return src;
+        }
+        #endregion
     }
     #endregion
 }

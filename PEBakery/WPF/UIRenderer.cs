@@ -644,34 +644,34 @@ namespace PEBakery.WPF
                 return null;
             }
 
-            BitmapImage bitmap;
-            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType imgType))
             {
-                if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
-                    return null;
-                }
-
-                switch (type)
-                {
-                    case ImageHelper.ImageType.Svg:
-                        double width = uiCtrl.Rect.Width * ScaleFactor;
-                        double height = uiCtrl.Rect.Height * ScaleFactor;
-                        bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
-                        break;
-                    default:
-                        bitmap = ImageHelper.ImageToBitmapImage(ms);
-                        break;
-                }
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                return null;
             }
 
             if (_viewMode)
             {
+                Brush brush;
+
+                // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                {
+                    switch (imgType)
+                    {
+                        case ImageHelper.ImageType.Svg:
+                            brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
+                            break;
+                        default:
+                            brush = ImageHelper.ImageToImageBrush(ms);
+                            break;
+                    }
+                }
+
                 Button button = new Button
                 {
                     Style = Application.Current.FindResource("ImageButtonStyle") as Style,
-                    Background = ImageHelper.BitmapImageToImageBrush(bitmap)
+                    Background = brush,
                 };
 
                 bool hasUrl = false;
@@ -694,18 +694,38 @@ namespace PEBakery.WPF
             }
             else
             {
-                Image image = new Image
-                {
-                    StretchDirection = StretchDirection.Both,
-                    Stretch = Stretch.Fill,
-                    UseLayoutRounding = true,
-                    Source = bitmap,
-                };
-                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                FrameworkElement element;
 
-                SetToolTip(image, info.ToolTip);
-                SetEditModeProperties(image, uiCtrl);
-                DrawToCanvas(image, uiCtrl);
+                // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                {
+                    switch (imgType)
+                    {
+                        case ImageHelper.ImageType.Svg:
+                            Border border = new Border
+                            {
+                                Background = ImageHelper.SvgToDrawingBrush(ms),
+                                UseLayoutRounding = true,
+                            };
+                            element = border;
+                            break;
+                        default:
+                            Image image = new Image
+                            {
+                                StretchDirection = StretchDirection.Both,
+                                Stretch = Stretch.Fill,
+                                UseLayoutRounding = true,
+                                Source = ImageHelper.ImageToBitmapImage(ms),
+                            };
+                            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                            element = image;
+                            break;
+                    }
+                }
+
+                SetToolTip(element, info.ToolTip);
+                SetEditModeProperties(element, uiCtrl);
+                DrawToCanvas(element, uiCtrl);
                 return null;
             }
         }
@@ -835,31 +855,81 @@ namespace PEBakery.WPF
                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                 EncodedFile.ContainsInterface(uiCtrl.Section.Script, info.Picture))
             { // Has Picture
-                if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
+                if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType imgType))
                     return null;
 
-                Image image = new Image
-                {
-                    StretchDirection = StretchDirection.DownOnly,
-                    Stretch = Stretch.Uniform,
-                    UseLayoutRounding = true,
-                };
-                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                FrameworkElement imageContent;
 
+                // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
                 using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, info.Picture))
                 {
-                    if (type == ImageHelper.ImageType.Svg)
-                        image.Source = ImageHelper.SvgToBitmapImage(ms);
-                    else
-                        image.Source = ImageHelper.ImageToBitmapImage(ms);
+                    switch (imgType)
+                    {
+                        case ImageHelper.ImageType.Svg:
+                            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                            Rect svgSize = svgDrawing.Bounds;
+                            (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, uiCtrl.Width, uiCtrl.Height);
+                            Border border = new Border
+                            {
+                                Width = width,
+                                Height = height,
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                VerticalAlignment = VerticalAlignment.Center,
+                                UseLayoutRounding = true,
+                                Background = new DrawingBrush { Drawing = svgDrawing },
+                            };
+                            imageContent = border;
+                            break;
+                        case ImageHelper.ImageType.Bmp:
+                            BitmapSource srcBitmap = ImageHelper.ImageToBitmapImage(ms);
+                            BitmapSource newBitmap = ImageHelper.MaskWhiteAsTransparent(srcBitmap);
+                            Image bitmapImage = new Image
+                            {
+                                Width = newBitmap.PixelWidth,
+                                Height = newBitmap.PixelHeight,
+                                Stretch = Stretch.Uniform, // Ignore image's DPI
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                VerticalAlignment = VerticalAlignment.Center,
+                                UseLayoutRounding = true,
+                                Source = newBitmap,
+                            };
+                            RenderOptions.SetBitmapScalingMode(bitmapImage, BitmapScalingMode.HighQuality);
+                            imageContent = bitmapImage;
+                            break;
+                        default:
+                            BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
+                            Image image = new Image
+                            {
+                                Width = bitmap.PixelWidth,
+                                Height = bitmap.PixelHeight,
+                                Stretch = Stretch.Uniform, // Ignore image's DPI
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                VerticalAlignment = VerticalAlignment.Center,
+                                UseLayoutRounding = true,
+                                
+                                Source = bitmap,
+                            };
+                            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                            imageContent = image;
+                            break;
+                    }
                 }
 
-                if (uiCtrl.Text.Equals(string.Empty, StringComparison.Ordinal))
+                if (uiCtrl.Text.Length == 0)
                 { // No text, just image
-                    button.Content = image;
+                    button.Content = imageContent;
                 }
                 else
                 { // Button has text
+                    TextBlock text = new TextBlock
+                    {
+                        Text = uiCtrl.Text,
+                        FontSize = CalcFontPointScale(),
+                        Height = double.NaN,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(CalcFontPointScale() / 4, 0, 0, 0),
+                    };
+
                     StackPanel panel = new StackPanel
                     {
                         HorizontalAlignment = HorizontalAlignment.Center,
@@ -867,16 +937,7 @@ namespace PEBakery.WPF
                         Orientation = Orientation.Horizontal,
                     };
 
-                    TextBlock text = new TextBlock
-                    {
-                        Text = uiCtrl.Text,
-                        FontSize = CalcFontPointScale(),
-                        Height = double.NaN,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        Margin = new Thickness(CalcFontPointScale() / 2, 0, 0, 0),
-                    };
-
-                    panel.Children.Add(image);
+                    panel.Children.Add(imageContent);
                     panel.Children.Add(text);
                     button.Content = panel;
                 }

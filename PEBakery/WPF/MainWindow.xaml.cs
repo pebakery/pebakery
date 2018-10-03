@@ -584,7 +584,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                DisplayScriptInerface(sc);
+                DisplayScriptInterface(sc);
 
                 // Run CodeValidator
                 // Do not use await, let it run in background
@@ -596,7 +596,7 @@ namespace PEBakery.WPF
             Model.OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
         }
 
-        public void DisplayScriptInerface(Script sc)
+        public void DisplayScriptInterface(Script sc)
         {
             // Set scale factor
             double scaleFactor = Global.Setting.Interface_ScaleFactor / 100;
@@ -635,8 +635,23 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    const double svgSize = 100 * UIRenderer.MaxDpiScale;
-                    Model.ScriptLogoImage = EncodedFile.ExtractLogoImageSource(sc, svgSize);
+                    using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                    {
+                        switch (type)
+                        {
+                            case ImageHelper.ImageType.Svg:
+                                DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                Rect svgSize = svgDrawing.Bounds;
+                                (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
+                                Model.ScriptLogoSvg = new DrawingBrush {Drawing = svgDrawing };
+                                Model.ScriptLogoSvgWidth = width;
+                                Model.ScriptLogoSvgHeight = height;
+                                break;
+                            default:
+                                Model.ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
+                                break;
+                        }
+                    }
                 }
                 catch
                 { // No logo file - use default
@@ -1418,6 +1433,12 @@ namespace PEBakery.WPF
             {
                 while (true)
                 {
+                    if (s.StartTime == DateTime.MinValue)
+                    { // Engine not started yet
+                        s.MainViewModel.StatusBarText = msg;
+                        return;
+                    }
+
                     TimeSpan t = DateTime.UtcNow - s.StartTime;
                     s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
 
@@ -1556,41 +1577,70 @@ namespace PEBakery.WPF
         }
 
         #region ScriptLogo
-        private bool _scriptLogoToggle;
-        public bool ScriptLogoToggle
+        private PackIconMaterialKind? _scriptLogoIcon;
+        public PackIconMaterialKind? ScriptLogoIcon
         {
-            get => _scriptLogoToggle;
+            get => _scriptLogoIcon;
             set
             {
-                _scriptLogoToggle = value;
-                OnPropertyUpdate(nameof(ScriptLogoImageVisible));
-                OnPropertyUpdate(nameof(ScriptLogoIconVisible));
+                _scriptLogoIcon = value;
+                _scriptLogoImage = null;
+                _scriptLogoSvg = null;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
             }
         }
 
-        public Visibility ScriptLogoImageVisible => !ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
         private ImageSource _scriptLogoImage;
         public ImageSource ScriptLogoImage
         {
             get => _scriptLogoImage;
             set
             {
+                _scriptLogoIcon = null;
                 _scriptLogoImage = value;
-                ScriptLogoToggle = false;
+                _scriptLogoSvg = null;
+                OnPropertyUpdate(nameof(ScriptLogoIcon));
                 OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
             }
         }
 
-        public Visibility ScriptLogoIconVisible => ScriptLogoToggle ? Visibility.Visible : Visibility.Hidden;
-        private PackIconMaterialKind _scriptLogoIcon;
-        public PackIconMaterialKind ScriptLogoIcon
+        private DrawingBrush _scriptLogoSvg;
+        public DrawingBrush ScriptLogoSvg
         {
-            get => _scriptLogoIcon;
+            get => _scriptLogoSvg;
             set
             {
-                _scriptLogoIcon = value;
-                ScriptLogoToggle = true;
+                _scriptLogoIcon = null;
+                _scriptLogoImage = null;
+                _scriptLogoSvg = value;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+                OnPropertyUpdate(nameof(ScriptLogoSvg));
+            }
+        }
+
+        private double _scriptLogoSvgWidth;
+        public double ScriptLogoSvgWidth
+        {
+            get => _scriptLogoSvgWidth;
+            set
+            {
+                _scriptLogoSvgWidth = value;
+                OnPropertyUpdate(nameof(ScriptLogoSvgWidth));
+            }
+        }
+
+        private double _scriptLogoSvgHeight;
+        public double ScriptLogoSvgHeight
+        {
+            get => _scriptLogoSvgHeight;
+            set
+            {
+                _scriptLogoSvgHeight = value;
+                OnPropertyUpdate(nameof(ScriptLogoSvgHeight));
             }
         }
         #endregion
@@ -2340,6 +2390,21 @@ namespace PEBakery.WPF
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class ScriptLogoVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b)
+                return b ? Visibility.Visible : Visibility.Collapsed;
+            return value != null ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

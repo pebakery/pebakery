@@ -56,6 +56,9 @@
                         CanExecute="UICtrlDeleteCommand_CanExecute"
                         Executed="UICtrlDeleteCommand_Executed"/>
     </Window.CommandBindings>
+    <Window.Resources>
+        <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -207,6 +210,7 @@
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
 
+                            <!-- Script Logo -->
                             <Image x:Name="ScriptLogoImage"
                                    Grid.Row="0" Grid.Column="0"
                                    Width="90" Height="90"
@@ -215,7 +219,7 @@
                                    StretchDirection="DownOnly"
                                    Stretch="Uniform"
                                    UseLayoutRounding="True"
-                                   Visibility="{Binding ScriptLogoImageVisible}"
+                                   Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                                    Source="{Binding ScriptLogoImage}"
                                    ToolTip="Recommended image size : 80x80"/>
                             <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
@@ -225,9 +229,18 @@
                                                         VerticalAlignment="Center"
                                                         HorizontalAlignment="Center"
                                                         UseLayoutRounding="True"
-                                                        Visibility="{Binding ScriptLogoNoneIconVisible}"
+                                                        Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                                                         Kind="BorderNone"
                                                         ToolTip="Recommended image size : 80x80"/>
+                            <Border x:Name="ScriptLogoSvg"
+                                    Grid.Row="0" Grid.Column="0"
+                                    Width="{Binding ScriptLogoSvgWidth}"
+                                    Height="{Binding ScriptLogoSvgHeight}"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    UseLayoutRounding="True"
+                                    Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                                    Background="{Binding ScriptLogoSvg}"/>
                             <Grid Grid.Row="0" Grid.Column="1"
                                   Height="80"
                                   Visibility="{Binding ScriptLogoInfoVisibility}">
