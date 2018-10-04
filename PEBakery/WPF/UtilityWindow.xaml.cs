@@ -49,16 +49,16 @@ namespace PEBakery.WPF
         #region Field and Constructor
         public static int Count = 0;
 
-        private readonly UtilityViewModel m;
+        private readonly UtilityViewModel _m;
 
         public UtilityWindow(FontHelper.WPFFont monoFont)
         {
             Interlocked.Increment(ref Count);
 
-            m = new UtilityViewModel(monoFont);
+            _m = new UtilityViewModel(monoFont);
 
             InitializeComponent();
-            DataContext = m;
+            DataContext = _m;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -70,10 +70,10 @@ namespace PEBakery.WPF
                 {
                     Project proj = projList[i];
 
-                    m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
+                    _m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
 
                     if (proj.ProjectName.Equals(w.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
-                        m.CodeBox_SelectedProjectIndex = i;
+                        _m.CodeBox_SelectedProjectIndex = i;
                 }
             });
         }
@@ -94,29 +94,29 @@ namespace PEBakery.WPF
 
         private void EscapeButton_Click(object sender, RoutedEventArgs e)
         {
-            m.Escaper_ConvertedString = StringEscaper.QuoteEscape(m.Escaper_StringToConvert, false, m.Escaper_EscapePercent);
+            _m.Escaper_ConvertedString = StringEscaper.QuoteEscape(_m.Escaper_StringToConvert, false, _m.Escaper_EscapePercent);
         }
 
         private void UnescapeButton_Click(object sender, RoutedEventArgs e)
         {
-            string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
-            m.Escaper_ConvertedString = m.Escaper_EscapePercent ? StringEscaper.UnescapePercent(str) : str;
+            string str = StringEscaper.QuoteUnescape(_m.Escaper_StringToConvert);
+            _m.Escaper_ConvertedString = _m.Escaper_EscapePercent ? StringEscaper.UnescapePercent(str) : str;
         }
 
         private void EscapeSequenceLegend_Click(object sender, RoutedEventArgs e)
         {
-            m.Escaper_ConvertedString = StringEscaper.Legend;
+            _m.Escaper_ConvertedString = StringEscaper.Legend;
         }
 
         private void CodeBoxSaveButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
-            if (File.Exists(m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+            if (File.Exists(_m.CodeFile))
+                encoding = FileHelper.DetectTextEncoding(_m.CodeFile);
 
-            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            using (StreamWriter writer = new StreamWriter(_m.CodeFile, false, encoding))
             {
-                writer.Write(m.CodeBox_Input);
+                writer.Write(_m.CodeBox_Input);
                 writer.Close();
             }
         }
@@ -124,12 +124,12 @@ namespace PEBakery.WPF
         private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
-            if (File.Exists(m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+            if (File.Exists(_m.CodeFile))
+                encoding = FileHelper.DetectTextEncoding(_m.CodeFile);
 
-            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            using (StreamWriter writer = new StreamWriter(_m.CodeFile, false, encoding))
             {
-                writer.Write(m.CodeBox_Input);
+                writer.Write(_m.CodeBox_Input);
                 writer.Close();
             }
 
@@ -137,8 +137,8 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                Project project = m.CodeBox_CurrentProject;
-                Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
+                Project project = _m.CodeBox_CurrentProject;
+                Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions());
 
                 SettingViewModel setting = Global.Setting;
                 MainViewModel mainModel = Global.MainViewModel;
@@ -193,13 +193,13 @@ namespace PEBakery.WPF
 
         private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            if (m.Syntax_InputCode.Equals(string.Empty, StringComparison.Ordinal))
+            if (_m.Syntax_InputCode.Equals(string.Empty, StringComparison.Ordinal))
             {
-                m.Syntax_Output = "No Code";
+                _m.Syntax_Output = "No Code";
                 return;
             }
 
-            Project p = m.CodeBox_CurrentProject;
+            Project p = _m.CodeBox_CurrentProject;
 
             Script sc = p.MainScript;
             ScriptSection section;
@@ -208,7 +208,7 @@ namespace PEBakery.WPF
             else
                 section = new ScriptSection(sc, "Process", SectionType.Code, new string[0], 1);
 
-            string[] lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToArray();
+            string[] lines = _m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToArray();
             CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
             (CodeCommand[] cmds, List<LogInfo> errorLogs) = parser.ParseStatements(lines);
 
@@ -238,11 +238,11 @@ namespace PEBakery.WPF
                     LogInfo log = errorLogs[i];
                     b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
                 }
-                m.Syntax_Output = b.ToString();
+                _m.Syntax_Output = b.ToString();
             }
             else
             {
-                m.Syntax_Output = "No Error";
+                _m.Syntax_Output = "No Error";
             }
         }
         #endregion
@@ -254,7 +254,7 @@ namespace PEBakery.WPF
 
         private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = m.TabIndex == 0;
+            e.CanExecute = _m.TabIndex == 0;
         }
 
         private void CodeBoxSave_Executed(object sender, ExecutedRoutedEventArgs e)

@@ -2399,8 +2399,6 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool b)
-                return b ? Visibility.Visible : Visibility.Collapsed;
             return value != null ? Visibility.Visible : Visibility.Collapsed;
         }
 

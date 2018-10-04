@@ -98,7 +98,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
-      <Name>PEBakery.IniLib</Name>
+      <Name>PEBakery.Ini</Name>
     </ProjectReference>
     <ProjectReference Include="..\PEBakery\PEBakery.csproj">
       <Project>{d6224dce-02d5-4005-88fb-00a8e00cace1}</Project>

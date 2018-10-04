@@ -200,8 +200,6 @@
                     </GroupBox>
                     <GroupBox Header="Logo"
                               BorderBrush="Gray">
-                    
-                        <!-- Script Logo -->
                         <Grid Height="100"
                               Margin="3, 0, 5, 0">
                             <Grid.ColumnDefinitions>
@@ -230,7 +228,7 @@
                                                         HorizontalAlignment="Center"
                                                         UseLayoutRounding="True"
                                                         Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
-                                                        Kind="BorderNone"
+                                                        Kind="{Binding ScriptLogoIcon}"
                                                         ToolTip="Recommended image size : 80x80"/>
                             <Border x:Name="ScriptLogoSvg"
                                     Grid.Row="0" Grid.Column="0"

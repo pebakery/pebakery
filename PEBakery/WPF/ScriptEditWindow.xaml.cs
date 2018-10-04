@@ -166,8 +166,8 @@ namespace PEBakery.WPF
                 m.ScriptLogoInfo = info;
             }
             else
-            {
-                m.ScriptLogoImage = null;
+            { // No script logo
+                m.ScriptLogoIcon = PackIconMaterialKind.BorderNone;
                 m.ScriptLogoInfo = null;
             }
 
@@ -1945,13 +1945,13 @@ namespace PEBakery.WPF
         public bool ScriptLogoUpdated { get; set; } = false;
 
         #region ScriptLogo
-        private bool _scriptLogoIcon;
-        public bool ScriptLogoIcon
+        private PackIconMaterialKind? _scriptLogoIcon;
+        public PackIconMaterialKind? ScriptLogoIcon
         {
             get => _scriptLogoIcon;
             set
             {
-                _scriptLogoIcon = true;
+                _scriptLogoIcon = value;
                 _scriptLogoImage = null;
                 _scriptLogoSvg = null;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));
@@ -1966,7 +1966,7 @@ namespace PEBakery.WPF
             get => _scriptLogoImage;
             set
             {
-                _scriptLogoIcon = false;
+                _scriptLogoIcon = null;
                 _scriptLogoImage = value;
                 _scriptLogoSvg = null;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));
@@ -1981,7 +1981,7 @@ namespace PEBakery.WPF
             get => _scriptLogoSvg;
             set
             {
-                _scriptLogoIcon = false;
+                _scriptLogoIcon = null;
                 _scriptLogoImage = null;
                 _scriptLogoSvg = value;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));

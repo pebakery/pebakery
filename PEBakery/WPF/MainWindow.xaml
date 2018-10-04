@@ -569,6 +569,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
+                    <!-- ScriptLogo -->
                     <Image x:Name="ScriptLogoImage"
                            Grid.Row="0" Grid.Column="0"
                            Width="90" Height="90"
