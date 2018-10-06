@@ -1546,7 +1546,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private string _titleBar = "PEBakery";
+        public const string DefaultTitleBar = "PEBakery";
+        private string _titleBar = DefaultTitleBar;
         public string TitleBar
         {
             get => _titleBar;

@@ -873,6 +873,8 @@ namespace PEBakery.WPF
             Global.MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             if (Interface_UseCustomTitle)
                 Global.MainViewModel.TitleBar = Interface_CustomTitle;
+            else
+                Global.MainViewModel.TitleBar = MainViewModel.DefaultTitleBar;
         }
 
         public CodeParser.Options ExportCodeParserOptions()
