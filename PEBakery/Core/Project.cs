@@ -962,12 +962,10 @@ namespace PEBakery.Core
             return AllScripts.Find(x => x.RealPath.Equals(sRealPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        /*
         public Script GetScriptByTreePath(string sTreePath)
         {
             return AllScripts.Find(x => x.TreePath.Equals(sTreePath, StringComparison.OrdinalIgnoreCase));
         }
-        */
 
         public bool ContainsScriptByRealPath(string sRealPath)
         {
