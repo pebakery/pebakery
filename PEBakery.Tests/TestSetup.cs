@@ -14,7 +14,10 @@ namespace PEBakery.Tests
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
-            // Setting instance
+            // Set MainViewModel
+            Global.MainViewModel = new MainViewModel();
+
+            // Instance of Setting
             string emptyTempFile = Path.GetTempFileName();
             if (File.Exists(emptyTempFile))
                 File.Delete(emptyTempFile);

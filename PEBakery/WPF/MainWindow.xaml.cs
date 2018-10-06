@@ -59,8 +59,8 @@ namespace PEBakery.WPF
         internal const int ScriptAuthorLenLimit = 35;
         #endregion
 
-        #region Variables
-        public string BaseDir { get; }
+        #region Fields and Properties
+        public string BaseDir => Global.BaseDir;
 
         private int _projectsLoading = 0;
         private int _scriptRefreshing = 0;
@@ -110,7 +110,7 @@ namespace PEBakery.WPF
                     if (i + 1 < args.Length)
                     {
                         argBaseDir = Path.GetFullPath(args[i + 1]);
-                        if (Directory.Exists(argBaseDir) == false)
+                        if (!Directory.Exists(argBaseDir))
                         {
                             MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
                             Environment.Exit(1); // Force Shutdown
@@ -123,25 +123,32 @@ namespace PEBakery.WPF
                         Console.WriteLine("\'/basedir\' must be used with path\r\n");
                     }
                 }
-                else if (args[i].Equals("/?", StringComparison.OrdinalIgnoreCase)
-                    || args[i].Equals("/help", StringComparison.OrdinalIgnoreCase)
-                    || args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
+                else if (args[i].Equals("/?", StringComparison.OrdinalIgnoreCase) || 
+                         args[i].Equals("/help", StringComparison.OrdinalIgnoreCase) || 
+                         args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
                 {
                     // ReSharper disable once LocalizableElement
                     Console.WriteLine("Sorry, help message not implemented\r\n");
                 }
             }
 
-            Global.BaseDir = BaseDir = argBaseDir;
+            Global.BaseDir = argBaseDir;
 
+            // Setting File
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Global.Setting = new SettingViewModel(settingFile);
             Model.MonospaceFont = Global.Setting.Interface_MonospaceFont;
 
+            // Custom Title
+            if (Global.Setting.Interface_UseCustomTitle)
+                Model.TitleBar = Global.Setting.Interface_CustomTitle;
+
+            // Database Directory
             string dbDir = Path.Combine(BaseDir, "Database");
             if (!Directory.Exists(dbDir))
                 Directory.CreateDirectory(dbDir);
 
+            // Log Database
             string logDbFile = Path.Combine(dbDir, "PEBakeryLog.db");
             try
             {
@@ -184,7 +191,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Background Workers and Tasks
+        #region Background Tasks
         public Task StartLoadingProjects(bool quiet = false)
         {
             if (_projectsLoading != 0)
@@ -559,8 +566,8 @@ namespace PEBakery.WPF
                                     string tempFile = Path.GetTempFileName();
                                     File.Delete(tempFile);
                                     tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
-                                        sw.Write(b.ToString());
+                                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                        w.Write(b.ToString());
 
                                     OpenTextFile(tempFile);
                                 }
@@ -1539,6 +1546,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private string _titleBar = "PEBakery";
+        public string TitleBar
+        {
+            get => _titleBar;
+            set
+            {
+                _titleBar = value;
+                OnPropertyUpdate(nameof(TitleBar));
+            }
+        }
+
         private string _scriptTitleText = "Welcome to PEBakery!";
         public string ScriptTitleText
         {
@@ -1967,7 +1985,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public static bool DisplayShellExecuteConOut = true;
+        public bool DisplayShellExecuteConOut = true;
         private Visibility _buildConOutRedirectVisibility = Visibility.Collapsed;
         public Visibility BuildConOutRedirectVisibility => DisplayShellExecuteConOut ? _buildConOutRedirectVisibility : Visibility.Collapsed;
 
@@ -2311,7 +2329,7 @@ namespace PEBakery.WPF
                 int exist = sc.Project.AllScripts.Count(x => x.RealPath.Equals(path, StringComparison.OrdinalIgnoreCase));
                 if (exist == 1)
                 {
-                    IniUtil.WriteKey(path, "Main", "Selected", "False");
+                    IniReadWriter.WriteKey(path, "Main", "Selected", "False");
                     ProjectTreeItemModel found = FindScriptByRealPath(path);
                     if (found != null)
                     {

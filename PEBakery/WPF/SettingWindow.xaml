@@ -190,15 +190,15 @@
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Optimize Code"
+                                      Content="Optimize code"
                                       IsChecked="{Binding General_OptimizeCode}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Show LogWindow After Build"
+                                      Content="Show LogWindow after build"
                                       IsChecked="{Binding General_ShowLogAfterBuild}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Stop Build on Error"
+                                      Content="Stop build on error"
                                       IsChecked="{Binding General_StopBuildOnError}" />
                         </StackPanel>
                     </GroupBox>
@@ -208,7 +208,7 @@
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Enable Long File Path Support"
+                                      Content="Enable long file path support"
                                       ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
                                       Click="CheckBox_EnableLongFilePath_Click"
                                       IsChecked="{Binding General_EnableLongFilePath}" />
@@ -220,18 +220,22 @@
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Use Custom User-Agent in WebGet"
+                                      Content="Use custom User-Agent in WebGet"
                                       IsChecked="{Binding General_UseCustomUserAgent}" />
-                            <DockPanel Margin="0, 0, 0, 3" 
-                                       VerticalAlignment="Center">
-                                <TextBlock FontSize="12"
+                            <Grid Margin="0, 0, 0, 3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           FontSize="12"
                                            Text="Custom User-Agent" />
-                                <TextBox DockPanel.Dock="Left"
-                                         Margin="10, 0, 0, 0" FontSize="12"
+                                <TextBox Grid.Column="1"
+                                         FontSize="12"
                                          VerticalContentAlignment="Center"
                                          IsEnabled="{Binding General_UseCustomUserAgent}"
                                          Text="{Binding General_CustomUserAgent}" />
-                            </DockPanel>
+                            </Grid>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
@@ -322,6 +326,30 @@
                                       VerticalContentAlignment="Center"
                                       Content="Display Console Output When Executing ShellExecute"
                                       IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="PEBakery Title"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Use custom title"
+                                      IsChecked="{Binding Interface_UseCustomTitle}" />
+                            <Grid Margin="0, 0, 0, 3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           FontSize="12"
+                                           Text="Custom Title" />
+                                <TextBox Grid.Column="1"
+                                         FontSize="12"
+                                         VerticalContentAlignment="Center"
+                                         IsEnabled="{Binding Interface_UseCustomTitle}"
+                                         Text="{Binding Interface_CustomTitle}" />
+                            </Grid>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

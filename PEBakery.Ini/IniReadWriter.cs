@@ -63,7 +63,7 @@ namespace PEBakery.Ini
     #endregion
 
     #region IniUtil Class
-    public static class IniUtil
+    public static class IniReadWriter
     {
         #region Lock
         private static readonly ConcurrentDictionary<string, ReaderWriterLockSlim> LockDict =
@@ -1397,7 +1397,7 @@ namespace PEBakery.Ini
 
         public static List<string> FilterCommentLines(IEnumerable<string> lines)
         {
-            return lines.Where(x => 0 < x.Length && !IniUtil.IsLineComment(x)).ToList();
+            return lines.Where(x => 0 < x.Length && !IniReadWriter.IsLineComment(x)).ToList();
         }
 
         public static List<string> FilterInvalidIniLines(IEnumerable<string> lines)
@@ -1812,7 +1812,7 @@ namespace PEBakery.Ini
         public IniFile(string filePath)
         {
             FilePath = filePath;
-            Sections = IniUtil.ParseToDict(filePath);
+            Sections = IniReadWriter.ParseToDict(filePath);
         }
     }
     #endregion

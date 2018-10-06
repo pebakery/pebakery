@@ -218,7 +218,7 @@ namespace PEBakery.Core
                 Section.Lines[lineIdx] = ForgeRawLine(true);
 
             // Update actual file
-            return IniUtil.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
+            return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
         public static bool Update(List<UIControl> uiCtrls)
@@ -242,14 +242,14 @@ namespace PEBakery.Core
             }
 
             // Update actual file
-            return IniUtil.WriteKeys(fullPath, keys);
+            return IniReadWriter.WriteKeys(fullPath, keys);
         }
         #endregion
 
         #region Delete
         public bool Delete()
         {
-            return IniUtil.DeleteKey(Section.Script.RealPath, Section.Name, Key);
+            return IniReadWriter.DeleteKey(Section.Script.RealPath, Section.Name, Key);
         }
 
         public static bool Delete(List<UIControl> uiCtrls)
@@ -266,7 +266,7 @@ namespace PEBakery.Core
                 keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key));
             }
 
-            return IniUtil.DeleteKeys(fullPath, keys).Any(x => x);
+            return IniReadWriter.DeleteKeys(fullPath, keys).Any(x => x);
         }
         #endregion
 

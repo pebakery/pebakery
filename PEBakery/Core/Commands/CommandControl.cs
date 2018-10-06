@@ -135,12 +135,12 @@ namespace PEBakery.Core.Commands
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Directly read from file
-            List<string> lines = IniUtil.ParseRawSection(sc.RealPath, sectionName);
+            List<string> lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
             if (lines == null)
                 return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Add Variables
-            Dictionary<string, string> varDict = IniUtil.ParseIniLinesVarStyle(lines);
+            Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(lines);
             List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
 
             // Add Macros

@@ -186,7 +186,7 @@ namespace PEBakery.Core.Commands
             }
 
             string[] lines = sc.Sections[dirName].Lines;
-            Dictionary<string, string> fileDict = IniUtil.ParseIniLinesIniStyle(lines);
+            Dictionary<string, string> fileDict = IniReadWriter.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {
                 using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))

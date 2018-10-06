@@ -373,15 +373,15 @@ namespace PEBakery.Core
                 {
                     string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
                     if (Array.FindIndex(folders, x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) == -1)
-                        IniUtil.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                        IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
                 else
                 {
-                    IniUtil.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                    IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
             }
 
-            IniUtil.AddSection(sc.RealPath, folderName);
+            IniReadWriter.AddSection(sc.RealPath, folderName);
             return sc.Project.RefreshScript(sc);
         }
 
@@ -671,7 +671,7 @@ namespace PEBakery.Core
             if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                 return (infoDict, null); // Return empty dict
 
-            List<string> folderNames = IniUtil.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
+            List<string> folderNames = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
             int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
             if (aeIdx != -1)
             {
@@ -790,11 +790,11 @@ namespace PEBakery.Core
                     return (sc, $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]");
 
                 // Delete encoded file index
-                if (!IniUtil.DeleteKey(sc.RealPath, folderName, fileName))
+                if (!IniReadWriter.DeleteKey(sc.RealPath, folderName, fileName))
                     errorMsg = $"Unable to delete index of encoded file [{fileName}] from [{sc.RealPath}]";
 
                 // Delete encoded file section
-                if (!IniUtil.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, fileName)))
+                if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, fileName)))
                     errorMsg = $"Unable to delete encoded file [{fileName}] from [{sc.RealPath}]";
             }
             catch
@@ -837,7 +837,7 @@ namespace PEBakery.Core
                     if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
-                    List<string> folders = IniUtil.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
+                    List<string> folders = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
                     int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
@@ -845,12 +845,12 @@ namespace PEBakery.Core
                     // Delete index of encoded folder
                     folders.RemoveAt(idx);
                     // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
-                    if (!IniUtil.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
+                    if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
                         return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
 
                     foreach (IniKey key in folders.Select(x => new IniKey(ScriptSection.Names.EncodedFolders, x)))
                     {
-                        if (!IniUtil.WriteRawLine(sc.RealPath, key))
+                        if (!IniReadWriter.WriteRawLine(sc.RealPath, key))
                             return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
                     }
                 }
@@ -872,13 +872,13 @@ namespace PEBakery.Core
                     var files = fileDict.Keys;
 
                     // Delete section [folderName]
-                    if (!IniUtil.DeleteSection(sc.RealPath, folderName))
+                    if (!IniReadWriter.DeleteSection(sc.RealPath, folderName))
                         errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
 
                     // Delete encoded file section
                     foreach (string file in files)
                     {
-                        if (!IniUtil.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, file)))
+                        if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, file)))
                             errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
                     }
                 }
@@ -931,11 +931,11 @@ namespace PEBakery.Core
                     return (sc, $"Logo not found in [{sc.RealPath}]");
 
                 // Delete encoded file section
-                if (!IniUtil.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile)))
+                if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile)))
                     errorMsg = $"Encoded file [{logoFile}] not found in [{sc.RealPath}]";
 
                 // Delete encoded file index
-                if (!(IniUtil.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, logoFile) && IniUtil.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo")))
+                if (!(IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, logoFile) && IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo")))
                     errorMsg = $"Unable to delete index of logo [{logoFile}] from [{sc.RealPath}]";
             }
             catch
@@ -1141,27 +1141,27 @@ namespace PEBakery.Core
                     if (writeFolderSection &&
                         !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                         !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-                        IniUtil.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                        IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
 
                 // Write file info into [{folderName}]
-                IniUtil.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+                IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
 
                 // Write encoded file into [EncodedFile-{folderName}-{fileName}]
                 if (fileOverwrite)
-                    IniUtil.DeleteSection(sc.RealPath, section); // Delete existing encoded file
-                IniUtil.WriteKeys(sc.RealPath, keys);
+                    IniReadWriter.DeleteSection(sc.RealPath, section); // Delete existing encoded file
+                IniReadWriter.WriteKeys(sc.RealPath, keys);
 
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = IniUtil.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
-                    IniUtil.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
+                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)
                     {
-                        IniUtil.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
-                        IniUtil.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
+                        IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
+                        IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
                     }
                 }
             }
@@ -1191,7 +1191,7 @@ namespace PEBakery.Core
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
-                    int decodeLen = SplitBase64.Decode(IniUtil.FilterInvalidIniLines(encodedLines), decodeStream);
+                    int decodeLen = SplitBase64.Decode(IniReadWriter.FilterInvalidIniLines(encodedLines), decodeStream);
 
                     // [Stage 2] Read final footer
                     const int finalFooterLen = 0x24;
@@ -1399,7 +1399,7 @@ namespace PEBakery.Core
         private static MemoryStream DecodeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniUtil.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -1554,7 +1554,7 @@ namespace PEBakery.Core
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
-                    int decodeLen = SplitBase64.Decode(IniUtil.FilterInvalidIniLines(encodedLines), decodeStream);
+                    int decodeLen = SplitBase64.Decode(IniReadWriter.FilterInvalidIniLines(encodedLines), decodeStream);
 
                     // [Stage 2] Read final footer
                     const int finalFooterLen = 0x24;
@@ -1637,7 +1637,7 @@ namespace PEBakery.Core
         private static EncodeMode GetEncodeModeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMem(IniUtil.FilterInvalidIniLines(encodedLines));
+            byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -1854,7 +1854,7 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            (List<string> keys, List<string> base64Blocks) = IniUtil.GetKeyValueFromLines(encodedList);
+            (List<string> keys, List<string> base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
             if (keys == null || base64Blocks == null)
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
@@ -1920,7 +1920,7 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            (List<string> keys, List<string> base64Blocks) = IniUtil.GetKeyValueFromLines(encodedList);
+            (List<string> keys, List<string> base64Blocks) = IniReadWriter.GetKeyValueFromLines(encodedList);
             if (keys == null || base64Blocks == null)
                 throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))

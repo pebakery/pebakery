@@ -148,7 +148,7 @@ namespace PEBakery.WPF
 
             int idx = Model.Project_SelectedIndex;
             string fullPath = Model.Projects[idx].MainScript.RealPath;
-            IniUtil.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
+            IniReadWriter.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
         }
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
@@ -274,7 +274,7 @@ namespace PEBakery.WPF
                         new IniKey("Main", "ISOFile"),
                         new IniKey("Main", "PathSetting"),
                     };
-                    keys = IniUtil.ReadKeys(fullPath, keys);
+                    keys = IniReadWriter.ReadKeys(fullPath, keys);
 
                     // PathSetting
                     if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -362,7 +362,7 @@ namespace PEBakery.WPF
                         b.Append(",");
                         b.Append(Project_SourceDirectoryList[x]);
                     }
-                    IniUtil.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
+                    IniReadWriter.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
 
                 OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
@@ -379,7 +379,7 @@ namespace PEBakery.WPF
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    IniUtil.WriteKey(fullPath, "Main", "TargetDir", value);
+                    IniReadWriter.WriteKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
 
@@ -399,7 +399,7 @@ namespace PEBakery.WPF
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    IniUtil.WriteKey(fullPath, "Main", "ISOFile", value);
+                    IniReadWriter.WriteKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
 
@@ -560,6 +560,29 @@ namespace PEBakery.WPF
             {
                 interface_DisplayShellExecuteConOut = value;
                 OnPropertyUpdate(nameof(Interface_DisplayShellExecuteConOut));
+            }
+        }
+
+        // Custom Title
+        private bool interface_UseCustomTitle;
+        public bool Interface_UseCustomTitle
+        {
+            get => interface_UseCustomTitle;
+            set
+            {
+                interface_UseCustomTitle = value;
+                OnPropertyUpdate(nameof(Interface_UseCustomTitle));
+            }
+        }
+
+        private string interface_CustomTitle;
+        public string Interface_CustomTitle
+        {
+            get => interface_CustomTitle;
+            set
+            {
+                interface_CustomTitle = value;
+                OnPropertyUpdate(nameof(Interface_CustomTitle));
             }
         }
         #endregion
@@ -840,11 +863,16 @@ namespace PEBakery.WPF
         #region ApplySetting
         public void ApplySetting()
         {
+            // Static
             Engine.StopBuildOnError = General_StopBuildOnError;
             Logger.DebugLevel = Log_DebugLevel;
             Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
-            MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
             ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
+
+            // Instance
+            Global.MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
+            if (Interface_UseCustomTitle)
+                Global.MainViewModel.TitleBar = Interface_CustomTitle;
         }
 
         public CodeParser.Options ExportCodeParserOptions()
@@ -882,8 +910,8 @@ namespace PEBakery.WPF
             General_StopBuildOnError = true;
             General_EnableLongFilePath = false;
             General_UseCustomUserAgent = false;
-            // Custom User-Agent is set to Edge's on Windows 10 v1709
-            General_CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299";
+            // Custom User-Agent is set to Edge's on Windows 10 v1809
+            General_CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
 
             // Interface
             using (InstalledFontCollection fonts = new InstalledFontCollection())
@@ -901,6 +929,8 @@ namespace PEBakery.WPF
             Interface_DisplayShellExecuteConOut = true;
             Interface_UseCustomEditor = false;
             Interface_CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+            Interface_UseCustomTitle = false;
+            Interface_CustomTitle = string.Empty;
 
             // Script
             Script_EnableCache = true;
@@ -964,6 +994,8 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr)), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomTitle), interfaceStr)), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomTitle), interfaceStr)), // String
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
@@ -984,7 +1016,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
             };
 
-            keys = IniUtil.ReadKeys(_settingFile, keys);
+            keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
             #region Parse Helpers
@@ -1070,6 +1102,8 @@ namespace PEBakery.WPF
             Interface_UseCustomEditor = ParseBoolean(nameof(Interface_UseCustomEditor), Interface_UseCustomEditor);
             Interface_CustomEditorPath = ParseString(nameof(Interface_CustomEditorPath), Interface_CustomEditorPath);
             Interface_DisplayShellExecuteConOut = ParseBoolean(nameof(Interface_DisplayShellExecuteConOut), Interface_DisplayShellExecuteConOut);
+            Interface_UseCustomTitle = ParseBoolean(nameof(Interface_UseCustomTitle), Interface_UseCustomTitle);
+            Interface_CustomTitle = ParseString(nameof(Interface_CustomTitle), Interface_CustomTitle);
 
             // Script
             Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
@@ -1119,6 +1153,8 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr), Interface_UseCustomEditor.ToString()), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomTitle), interfaceStr), Interface_UseCustomTitle.ToString()), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomTitle), interfaceStr), Interface_CustomTitle), // String
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
@@ -1139,7 +1175,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
             };
-            IniUtil.WriteKeys(_settingFile, keys);
+            IniReadWriter.WriteKeys(_settingFile, keys);
         }
 
         private static string KeyPart(string str, string section)

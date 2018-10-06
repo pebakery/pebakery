@@ -73,7 +73,7 @@ namespace PEBakery.Tests.Core.Command
                         EngineTests.Eval(s, parser, rawCode, CodeType.Visible, check);
                         if (check == ErrorCheck.Success)
                         {
-                            string dest = IniUtil.ReadKey(scriptFile, "Interface", key);
+                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                             Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                         }
                     }
@@ -105,7 +105,7 @@ namespace PEBakery.Tests.Core.Command
                         {
                             foreach ((string key, string value) in compTuples)
                             {
-                                string dest = IniUtil.ReadKey(scriptFile, "Interface", key);
+                                string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                                 Assert.IsTrue(dest.Equals(value, StringComparison.Ordinal));
                             }
                         }
@@ -371,7 +371,7 @@ namespace PEBakery.Tests.Core.Command
                     EngineTests.Eval(s, rawCode, CodeType.WriteInterface, check);
                     if (check == ErrorCheck.Success)
                     {
-                        string dest = IniUtil.ReadKey(scriptFile, "Interface", key);
+                        string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                         Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
                     }
                 }
@@ -394,7 +394,7 @@ namespace PEBakery.Tests.Core.Command
                         {
                             string key = compTuples[i].key;
                             string value = compTuples[i].value;
-                            string dest = IniUtil.ReadKey(scriptFile, "Interface", key);
+                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                             Assert.IsTrue(dest.Equals(value, StringComparison.Ordinal));
                         }
                     }

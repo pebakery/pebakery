@@ -202,7 +202,7 @@ namespace PEBakery.Tests.Core
                     }
 
                     Assert.AreEqual(sc.Sections.ContainsKey(folderName), result);
-                    Assert.AreEqual(IniUtil.ContainsSection(destScript, folderName), result);
+                    Assert.AreEqual(IniReadWriter.ContainsSection(destScript, folderName), result);
 
                     if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                         !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
@@ -370,7 +370,7 @@ namespace PEBakery.Tests.Core
 
                     EncodedFile.ExtractFolder(sc, folderName, destDir);
 
-                    string[] comps = IniUtil.ParseIniLinesIniStyle(sc.Sections[folderName].Lines).Keys.ToArray();
+                    string[] comps = IniReadWriter.ParseIniLinesIniStyle(sc.Sections[folderName].Lines).Keys.ToArray();
                     string[] dests = Directory.EnumerateFiles(destDir).Select(Path.GetFileName).ToArray();
 
                     Assert.IsTrue(comps.SequenceEqual(dests, StringComparer.OrdinalIgnoreCase));
@@ -840,7 +840,7 @@ namespace PEBakery.Tests.Core
                     Assert.IsTrue(result);
 
                     Assert.IsFalse(sc.Sections.ContainsKey(folderName));
-                    Assert.IsFalse(IniUtil.ContainsSection(destScript, folderName));
+                    Assert.IsFalse(IniReadWriter.ContainsSection(destScript, folderName));
 
                     string[] folders = sc.Sections[EncodedFolders].Lines;
                     Assert.IsFalse(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase));

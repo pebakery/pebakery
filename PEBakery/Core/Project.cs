@@ -200,7 +200,7 @@ namespace PEBakery.Core
                 Debug.Assert(linkFile != null, $"{nameof(linkFile)} is wrong");
                 Debug.Assert(linkFile.StartsWith(_baseDir), $"{nameof(linkFile)} [{linkFile}] does not start with %BaseDir%");
 
-                List<string> rawPaths = IniUtil.ParseRawSection(linkFile, "Links");
+                List<string> rawPaths = IniReadWriter.ParseRawSection(linkFile, "Links");
                 if (rawPaths == null) // No [Links] section -> do not process
                     continue;
 
@@ -386,27 +386,10 @@ namespace PEBakery.Core
                 // BE CAREFUL ABOUT THIS DIFFERENCE WHEN HANDLING LINK PATHS!
 
                 string linkRealPath;
-                if (Path.IsPathRooted(linkRawPath))
-                { // Full Path
-                    // Ex) link=E:\Link\HelloWorld.script
-                    linkRealPath = linkRawPath;
-                }
-                else
-                { // Non-rooted path
-                    // Ex) link=Projects\TestSuite\Downloads\HelloWorld.script
-                    /*
-                    string linkRealPath = Path.Combine(_baseDir, linkRawPath);
-                    string linkTreePath = linkRawPath.Substring("Projects".Length + 1);
-                    if (!linkRawPath.StartsWith("Projects"))
-                    {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}] has invalid link path [{linkRawPath}]"));
-                        return (null, null);
-                    }
-                    */
-
-                    // Ex) link=Projects\TestSuite\Downloads\HelloWorld.script
-                    linkRealPath = Path.Combine(_baseDir, linkRawPath);
-                }
+                if (Path.IsPathRooted(linkRawPath)) // Ex) link=E:\Link\HelloWorld.script
+                    linkRealPath = linkRawPath; // Full path, 
+                else // Ex) link=Projects\TestSuite\Downloads\HelloWorld.script
+                    linkRealPath = Path.Combine(_baseDir, linkRawPath); // Non-rooted path 
 
                 // Unable to find 
                 if (!File.Exists(linkRealPath))
@@ -570,8 +553,8 @@ namespace PEBakery.Core
             object listLock = new object();
             Parallel.ForEach(spis, spi =>
             {
-                Debug.Assert(spi.RealPath != null, "Internal Logic Error at Project.Load");
-                Debug.Assert(spi.TreePath != null, "Internal Logic Error at Project.Load");
+                Debug.Assert(spi.RealPath != null, "spi.RealPath is wrong");
+                Debug.Assert(spi.TreePath != null, "spi.TreePath is wrong");
 
                 LoadReport cached = LoadReport.Stage1;
                 Script sc = null;

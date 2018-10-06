@@ -608,7 +608,7 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.CreateNoWindow = true;
 
                         // Redirecting standard stream without reading can full buffer, which leads to hang
-                        if (MainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
+                        if (Global.MainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
                         {
                             redirectStandardStream = true;
 

@@ -389,7 +389,7 @@ namespace PEBakery.WPF
                 new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
             };
 
-            IniUtil.WriteKeys(_sc.RealPath, keys);
+            IniReadWriter.WriteKeys(_sc.RealPath, keys);
             _sc = _sc.Project.RefreshScript(_sc);
 
             if (refresh)
@@ -412,7 +412,7 @@ namespace PEBakery.WPF
                 UIControl.Update(_renderer.UICtrls);
                 UIControl.Delete(m.UICtrlToBeDeleted);
                 m.UICtrlToBeDeleted.Clear();
-                IniUtil.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
+                IniReadWriter.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
                 m.UICtrlKeyChanged.Clear();
 
                 if (refresh)
@@ -719,7 +719,7 @@ namespace PEBakery.WPF
 
             if (!_sc.Sections.ContainsKey(_ifaceSectionName))
             { // No [Interface] section, so add it
-                IniUtil.AddSection(_sc.DirectRealPath, _ifaceSectionName);
+                IniReadWriter.AddSection(_sc.DirectRealPath, _ifaceSectionName);
                 _sc = _sc.Project.RefreshScript(_sc);
             }
 
