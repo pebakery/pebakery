@@ -27,6 +27,7 @@
 
 using SQLite;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -92,7 +93,7 @@ namespace PEBakery.Core
                         bool updated = SerializeScript(sc, cachePool, updatePool);
 
                         // Q) Can this value measured by updatePool.Count?
-                        // A) Even if two scripts were serialized, it should be counted as one script.
+                        // A) Even if two scripts were serialized (e.g. .link), they should be counted as one script.
                         if (updated)
                             Interlocked.Increment(ref updatedCount);
                     });
@@ -124,20 +125,22 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(updatePool));
             Debug.Assert(sc.Type != ScriptType.Directory);
 
-            // Does cache exist?
+            // If script file is not found in the disk, ignore it
+            if (!File.Exists(sc.DirectRealPath))
+                return false;
             FileInfo f = new FileInfo(sc.DirectRealPath);
 
             // Retrieve Cache
             bool updated = false;
-            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == sc.TreePath.GetHashCode());
+            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == sc.DirectRealPath.GetHashCode());
 
             // Update Cache into updateDB
             if (scCache == null)
             { // Cache not exists
                 scCache = new DB_ScriptCache
                 {
-                    Hash = sc.TreePath.GetHashCode(),
-                    TreePath = sc.TreePath,
+                    Hash = sc.DirectRealPath.GetHashCode(),
+                    RealPath = sc.DirectRealPath,
                     LastWriteTimeUtc = f.LastWriteTimeUtc,
                     FileSize = f.Length,
                 };
@@ -155,7 +158,7 @@ namespace PEBakery.Core
                     updated = true;
                 }
             }
-            else if (scCache.TreePath.Equals(sc.TreePath, StringComparison.Ordinal) &&
+            else if (scCache.RealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -183,15 +186,15 @@ namespace PEBakery.Core
             return updated;
         }
 
-        public static (Script sc, bool cacheValid) DeserializeScript(string realPath, string treePath, DB_ScriptCache[] cachePool)
+        public static (Script sc, bool cacheValid) DeserializeScript(string realPath, DB_ScriptCache[] cachePool)
         {
             Script sc = null;
             bool cacheValid = true;
 
             FileInfo f = new FileInfo(realPath);
-            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == treePath.GetHashCode());
+            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == realPath.GetHashCode());
             if (scCache != null &&
-                scCache.TreePath.Equals(treePath, StringComparison.Ordinal) &&
+                scCache.RealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase) &&
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
                 scCache.FileSize == f.Length)
             { // Cache Hit
@@ -237,7 +240,7 @@ namespace PEBakery.Core
             if (!infoDict.ContainsKey(CacheRevision))
                 return false;
 
-            // Does value match?
+            // Does value match? (Used Ordinal instead of OrdinalIgnoreCase for cache safety)
             if (!infoDict[EngineVersion].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
                 return false;
             if (!infoDict[BaseDir].Equals(baseDir, StringComparison.Ordinal))
@@ -250,14 +253,14 @@ namespace PEBakery.Core
         #endregion
 
         #region InsertOrReplaceAll
-        public int InsertOrReplaceAll(System.Collections.IEnumerable objects)
+        public int InsertOrReplaceAll(IEnumerable objects)
         {
-            var c = 0;
+            int c = 0;
             RunInTransaction(() =>
             {
-                foreach (var r in objects)
+                foreach (object o in objects)
                 {
-                    c += InsertOrReplace(r);
+                    c += InsertOrReplace(o);
                 }
             });
             return c;
@@ -290,26 +293,26 @@ namespace PEBakery.Core
         public string Key { get; set; }
         public string Value { get; set; }
 
-        public override string ToString()
-        {
-            return $"Key [{Key}] = {Value}";
-        }
+        public override string ToString() => $"Key [{Key}] = {Value}";
     }
 
     public class DB_ScriptCache
     {
+        /// <summary>
+        /// RealPath.GetHashCode()
+        /// </summary>
         [PrimaryKey]
         public int Hash { get; set; }
+        /// <summary>
+        /// Equivalent to Script.DirectRealPath
+        /// </summary>
         [MaxLength(32768)]
-        public string TreePath { get; set; } // Without BaseDir
+        public string RealPath { get; set; }
         public DateTime LastWriteTimeUtc { get; set; }
         public long FileSize { get; set; }
         public byte[] Serialized { get; set; }
 
-        public override string ToString()
-        {
-            return $"{Hash} = [{TreePath}] Cache";
-        }
+        public override string ToString() => $"[{Hash}] {RealPath}";
     }
     #endregion
 }

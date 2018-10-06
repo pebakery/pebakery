@@ -62,7 +62,7 @@ namespace PEBakery.Ini
     }
     #endregion
 
-    #region Ini Class
+    #region IniUtil Class
     public static class IniUtil
     {
         #region Lock

@@ -281,7 +281,14 @@ namespace PEBakery.WPF
                         if (_scriptCache.CheckCacheRevision(BaseDir))
                             Global.Projects = new ProjectCollection(BaseDir, _scriptCache);
                         else // Cache is invalid
+                        {
+                            _scriptCache.ClearTable(new ScriptCache.ClearTableOptions
+                            {
+                                CacheInfo = false,
+                                ScriptCache = true,
+                            });
                             Global.Projects = new ProjectCollection(BaseDir, null);
+                        }
                     }
                     else // Do not use ScriptCache
                     {

@@ -164,10 +164,7 @@ namespace PEBakery.Core
                 List<ScriptParseInfo> dirLinks = GetDirLinks(projectDir);
 
                 int spiCount = 1 + scripts.Length + links.Length + dirLinks.Count;
-                List<ScriptParseInfo> spis = new List<ScriptParseInfo>(spiCount)
-                {
-                    rootScript
-                };
+                List<ScriptParseInfo> spis = new List<ScriptParseInfo>(spiCount) { rootScript };
                 spis.AddRange(scripts);
                 spis.AddRange(links);
                 spis.AddRange(dirLinks);
@@ -178,7 +175,7 @@ namespace PEBakery.Core
                     // Filter duplicated scripts (such as directory covered both by scripts/links and dirLinks 
                     .Distinct(new ScriptParseInfoComparer())
                     // This sort is for more natural loading messages
-                    // It should be sorted one more time later, using tree structure
+                    // It should be sorted one more time later, using KwayTree
                     .OrderBy(x => x.RealPath, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
@@ -198,18 +195,19 @@ namespace PEBakery.Core
         {
             var dirLinks = new List<ScriptParseInfo>();
             var linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
-            foreach (string linkFile in linkFiles.Where(x => IniUtil.ContainsSection(x, "Links")))
+            foreach (string linkFile in linkFiles)
             {
                 Debug.Assert(linkFile != null, $"{nameof(linkFile)} is wrong");
                 Debug.Assert(linkFile.StartsWith(_baseDir), $"{nameof(linkFile)} [{linkFile}] does not start with %BaseDir%");
+
+                List<string> rawPaths = IniUtil.ParseRawSection(linkFile, "Links");
+                if (rawPaths == null) // No [Links] section -> do not process
+                    continue;
 
                 // TreePath of directory where folder.project exists
                 string prefix = Path.GetDirectoryName(linkFile.Substring(ProjectRoot.Length + 1)); // +1 for \
                 Debug.Assert(prefix != null, $"Wrong prefix of [{linkFile}]");
 
-                List<string> rawPaths = IniUtil.ParseRawSection(linkFile, "Links");
-                if (rawPaths == null)
-                    continue;
                 var paths = rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0);
 
                 foreach (string path in paths)
@@ -381,31 +379,43 @@ namespace PEBakery.Core
                 cachePool = _scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
-            (string LinkRealPath, string LinkTreePath) CheckLinkPath(Script sc, string linkRawPath)
+            string CheckLinkPath(Script sc, string linkRawPath)
             {
                 // PEBakery's TreePath strips "%BaseDir%\Project" (ProjectRoot) from RealPath.
                 // WinBuilder's .link file's link= path strips "%BaseDir%" from RealPath.
-                // Also, WB does not accept rooted path (e.g. E:\WinPE\Korean_IME.script) in link path.
                 // BE CAREFUL ABOUT THIS DIFFERENCE WHEN HANDLING LINK PATHS!
 
-                if (!linkRawPath.StartsWith("Projects"))
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}] has invalid link path [{linkRawPath}]"));
-                    return (null, null);
+                string linkRealPath;
+                if (Path.IsPathRooted(linkRawPath))
+                { // Full Path
+                    // Ex) link=E:\Link\HelloWorld.script
+                    linkRealPath = linkRawPath;
                 }
+                else
+                { // Non-rooted path
+                    // Ex) link=Projects\TestSuite\Downloads\HelloWorld.script
+                    /*
+                    string linkRealPath = Path.Combine(_baseDir, linkRawPath);
+                    string linkTreePath = linkRawPath.Substring("Projects".Length + 1);
+                    if (!linkRawPath.StartsWith("Projects"))
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}] has invalid link path [{linkRawPath}]"));
+                        return (null, null);
+                    }
+                    */
 
-                // Ex) link=Projects\YomiD\Downloads\Downloads_Info.Script
-                string linkRealPath = Path.Combine(_baseDir, linkRawPath);
-                string linkTreePath = linkRawPath.Substring("Projects".Length + 1);
+                    // Ex) link=Projects\TestSuite\Downloads\HelloWorld.script
+                    linkRealPath = Path.Combine(_baseDir, linkRawPath);
+                }
 
                 // Unable to find 
                 if (!File.Exists(linkRealPath))
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Link [{sc.TreePath}]'s link path [{linkRawPath}] cannot be found in disk"));
-                    return (null, null);
+                    return null;
                 }
 
-                return (linkRealPath, linkTreePath);
+                return linkRealPath;
             }
 
             bool cacheValid = true;
@@ -421,14 +431,14 @@ namespace PEBakery.Core
                     do
                     {
                         string linkRawPath = sc.Sections["Main"].IniDict["Link"];
-                        (string linkRealPath, string linkTreePath) = CheckLinkPath(sc, linkRawPath);
-                        if (linkRealPath == null || linkTreePath == null)
+                        string linkRealPath = CheckLinkPath(sc, linkRawPath);
+                        if (linkRealPath == null)
                             return;
 
                         // Load .link's linked scripts with cache
                         if (cachePool != null && cacheValid)
                         { // Case of ScriptCache enabled
-                            (linkTarget, cacheValid) = ScriptCache.DeserializeScript(linkRealPath, linkTreePath, cachePool);
+                            (linkTarget, cacheValid) = ScriptCache.DeserializeScript(linkRealPath, cachePool);
                             if (linkTarget != null)
                             {
                                 linkTarget.Project = sc.Project;
@@ -445,7 +455,7 @@ namespace PEBakery.Core
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = ScriptType.Link;
                             string fullPath = Path.Combine(_baseDir, linkRealPath);
-                            linkTarget = new Script(type, fullPath, fullPath, sc.Project, null, false, false, false);
+                            linkTarget = new Script(type, fullPath, string.Empty, sc.Project, null, false, false, false);
 
                             Debug.Assert(sc != null);
                         }
@@ -569,7 +579,7 @@ namespace PEBakery.Core
                 {
                     if (cachePool != null && cacheValid && !spi.IsDir)
                     { // ScriptCache enabled (disabled in Directory script)
-                        (sc, cacheValid) = ScriptCache.DeserializeScript(spi.RealPath, spi.TreePath, cachePool);
+                        (sc, cacheValid) = ScriptCache.DeserializeScript(spi.RealPath, cachePool);
                         if (sc != null)
                         {
                             sc.Project = this;
@@ -580,7 +590,7 @@ namespace PEBakery.Core
 
                     if (sc == null)
                     { // Cache Miss
-                        bool isMainScript = spi.RealPath.Equals(mainScriptPath, StringComparison.Ordinal);
+                        bool isMainScript = spi.RealPath.Equals(mainScriptPath, StringComparison.OrdinalIgnoreCase);
 
                         // TODO : Lazy loading of link, takes too much time at start
                         // Directory scripts will not be directly used (so level information is dummy)
@@ -952,10 +962,12 @@ namespace PEBakery.Core
             return AllScripts.Find(x => x.RealPath.Equals(sRealPath, StringComparison.OrdinalIgnoreCase));
         }
 
+        /*
         public Script GetScriptByTreePath(string sTreePath)
         {
             return AllScripts.Find(x => x.TreePath.Equals(sTreePath, StringComparison.OrdinalIgnoreCase));
         }
+        */
 
         public bool ContainsScriptByRealPath(string sRealPath)
         {
@@ -980,7 +992,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region DeepCopy
+        #region Clone
         public Project PartialDeepCopy()
         {
             Project project = new Project(BaseDir, ProjectName)
