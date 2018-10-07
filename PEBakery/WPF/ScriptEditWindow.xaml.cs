@@ -49,7 +49,8 @@ namespace PEBakery.WPF
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
-                m.InterfaceCanvas.UIControlDragged += InterfaceCanvas_UIControlDragged;
+                m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlMoved;
+                m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlMoved;
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 ReadScriptGeneral();
@@ -122,6 +123,8 @@ namespace PEBakery.WPF
         private void Window_Closed(object sender, EventArgs e)
         {
             m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
+            m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlMoved;
+            m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlMoved;
             m.UIControlModified -= ViewModel_UIControlModified;
 
             _renderer.Clear();
@@ -649,7 +652,7 @@ namespace PEBakery.WPF
             m.InterfaceUICtrlIndex = idx;
         }
 
-        private void InterfaceCanvas_UIControlDragged(object sender, DragCanvas.UIControlDraggedEventArgs e)
+        private void InterfaceCanvas_UIControlMoved(object sender, DragCanvas.UIControlDraggedEventArgs e)
         {
             if (e.UIControl == null)
                 return;
@@ -659,6 +662,24 @@ namespace PEBakery.WPF
                 return;
 
             m.InvokeUIControlEvent(true);
+        }
+
+        private void InterfaceCanvasDragMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            switch (m.InterfaceCanvasDragModeIndex)
+            {
+                default:
+                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Move;
+                    m.InterfaceCanvas.BorderBrush = Brushes.Red;
+                    break;
+                case 1:
+                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Resize;
+                    m.InterfaceCanvas.BorderBrush = Brushes.Blue;
+                    break;   
+            }
+
+            m.InterfaceCanvas.ResetSelectedBorder();
+            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
@@ -2135,6 +2156,16 @@ namespace PEBakery.WPF
             {
                 _interfaceLoaded = value;
                 OnPropertyUpdate(nameof(InterfaceLoaded));
+            }
+        }
+        private int _interfaceCanvasDragModeIndex;
+        public int InterfaceCanvasDragModeIndex
+        {
+            get => _interfaceCanvasDragModeIndex;
+            set
+            {
+                _interfaceCanvasDragModeIndex = value;
+                OnPropertyUpdate(nameof(InterfaceCanvasDragModeIndex));
             }
         }
         private ObservableCollection<string> _interfaceUICtrls = new ObservableCollection<string>();

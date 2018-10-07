@@ -429,10 +429,36 @@
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="5, 5, 5, 5" Orientation="Vertical">
+                                    <!-- UIControl Selection -->
                                     <ComboBox IsEnabled="{Binding InterfaceLoaded}"
                                               SelectedIndex="{Binding InterfaceUICtrlIndex}"
                                               ItemsSource="{Binding InterfaceUICtrls}"
                                               SelectionChanged="UIControlComboBox_SelectionChanged"/>
+
+                                    <!-- Move or Resize -->
+                                    <Grid Margin="0, 5, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Drag" />
+                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  FontSize="11"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding InterfaceCanvasDragModeIndex}"
+                                                  SelectionChanged="InterfaceCanvasDragMode_SelectionChanged">
+                                            <ComboBoxItem Content="Move"/>
+                                            <ComboBoxItem Content="Resize"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    
                                     <!-- Common -->
                                     <Grid Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>
@@ -440,7 +466,6 @@
                                             <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="0" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
@@ -449,53 +474,54 @@
                                             <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                        <!-- General Properties -->
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Visible" />
-                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                        <CheckBox Grid.Row="0" Grid.Column="1"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   IsChecked="{Binding UICtrlVisible}"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="X" />
-                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Y"/>
-                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Width"/>
-                                        <cc:NumberBox Grid.Row="4" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Height" />
-                                        <cc:NumberBox Grid.Row="5" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="4" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="6" Grid.Column="0"
+                                        <TextBlock Grid.Row="5" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="ToolTip" />
-                                        <TextBox Grid.Row="6" Grid.Column="1"
+                                        <TextBox Grid.Row="5" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"

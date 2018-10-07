@@ -38,6 +38,7 @@ namespace PEBakery.WPF.Controls
         #region Fields
         protected FrameworkElement _selectedElement;
         protected Border _selectedBorder;
+        public SolidColorBrush BorderBrush { get; set; } = Brushes.Red;
         #endregion
 
         #region Properties
@@ -84,6 +85,9 @@ namespace PEBakery.WPF.Controls
 
         public void DrawSelectedBorder(UIControl uiCtrl)
         {
+            if (uiCtrl == null)
+                return;
+
             FrameworkElement element = null;
             foreach (FrameworkElement child in Children)
             {
@@ -111,7 +115,7 @@ namespace PEBakery.WPF.Controls
                 _selectedBorder = new Border
                 {
                     Opacity = 0.75,
-                    BorderBrush = Brushes.Red,
+                    BorderBrush = BorderBrush,
                     BorderThickness = new Thickness(2),
                     Focusable = false,
                 };
@@ -125,8 +129,8 @@ namespace PEBakery.WPF.Controls
 
                 Rect rect = new Rect
                 {
-                    X = Canvas.GetLeft(_selectedElement),
-                    Y = Canvas.GetTop(_selectedElement),
+                    X = GetLeft(_selectedElement),
+                    Y = GetTop(_selectedElement),
                     Width = _selectedElement.Width,
                     Height = _selectedElement.Height,
                 };
