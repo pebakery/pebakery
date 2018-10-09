@@ -206,11 +206,11 @@ RazorEngine
     
     https://github.com/Antaris/RazorEngine
 
-SevenZipExtractor
-    MIT License
-    https://opensource.org/licenses/MIT
+SevenZipSharp
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
 
-    https://github.com/adoconnection/SevenZipExtractor
+    https://github.com/squid-box/SevenZipSharp
 
 SharpCompress
     MIT License

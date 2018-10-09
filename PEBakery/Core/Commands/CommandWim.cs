@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-
 using ManagedWimLib;
 using Microsoft.Wim;
 using PEBakery.Helper;
@@ -74,7 +73,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Directory [{mountDir}] does not exist");
 
             // Check imageIndex
-            int imageCount = 0;
+            int imageCount;
             try
             {
                 using (WimHandle hWim = WimgApi.CreateFile(srcWim,
@@ -131,10 +130,7 @@ namespace PEBakery.Core.Commands
 
                         using (WimHandle hImage = WimgApi.LoadImage(hWim, imageIndex))
                         {
-                            s.MainViewModel.BuildCommandProgressTitle = "WimMount Progress";
-                            s.MainViewModel.BuildCommandProgressText = string.Empty;
-                            s.MainViewModel.BuildCommandProgressMax = 100;
-                            s.MainViewModel.BuildCommandProgressShow = true;
+                            s.MainViewModel.SetBuildCommandProgress("WimMount Progress");
 
                             // Mount Wim
                             WimgApi.MountImage(hImage, mountDir, mountFlag);
@@ -147,10 +143,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     {
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                         WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
                     }
                 }
@@ -199,10 +192,7 @@ namespace PEBakery.Core.Commands
 
                 // Prepare Command Progress Report
                 WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
-                s.MainViewModel.BuildCommandProgressTitle = "WimUnmount Progress";
-                s.MainViewModel.BuildCommandProgressText = string.Empty;
-                s.MainViewModel.BuildCommandProgressMax = 100;
-                s.MainViewModel.BuildCommandProgressShow = true;
+                s.MainViewModel.SetBuildCommandProgress("WimUnmount Progress");
 
                 try
                 {
@@ -236,10 +226,7 @@ namespace PEBakery.Core.Commands
                 }
                 finally
                 { // Finalize Command Progress Report
-                    s.MainViewModel.BuildCommandProgressShow = false;
-                    s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressValue = 0;
+                    s.MainViewModel.ResetBuildCommandProgress();
                     WimgApi.UnregisterMessageCallback(hWim, WimgApiCallback);
                 }
             }
@@ -444,11 +431,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Apply to disk
-                    s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimApply Progress");
                     try
                     {
                         wim.ExtractImage(imageIndex, destDir, extractFlags);
@@ -457,10 +440,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -603,11 +583,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Extract file(s)
-                    s.MainViewModel.BuildCommandProgressTitle = "WimExtract Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimExtract Progress");
                     try
                     {
                         // Ignore GLOB_HAD_NO_MATCHES
@@ -617,10 +593,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -704,9 +677,8 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    // Extract files
-                    s.MainViewModel.EnableBuildCommandProgress("WimExtract Progress", string.Empty, 100);
-
+                    // Extract files\
+                    s.MainViewModel.SetBuildCommandProgress("WimExtract Progress");
                     try
                     {
                         Debug.Assert(extractPaths.Count == infoOp.Cmds.Count);
@@ -719,7 +691,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.DisableBuildCommandProgress();
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -855,11 +827,7 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Info, $"Extract files based on listfile [{listFilePath}] :\r\n{listFileContent}"));
 
                     // Extract file(s)
-                    s.MainViewModel.BuildCommandProgressTitle = "WimExtractBulk Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimExtractBulk Progress");
                     try
                     {
                         if (info.NoErrFlag)
@@ -880,10 +848,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -977,11 +942,7 @@ namespace PEBakery.Core.Commands
                         wim.SetImageFlags(1, wimFlags);
                     }
 
-                    s.MainViewModel.BuildCommandProgressTitle = "WimCapture Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimCapture Progress");
                     try
                     {
                         wim.Write(destWim, Wim.AllImages, writeFlags, (uint)Environment.ProcessorCount);
@@ -990,10 +951,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1085,11 +1043,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Appned to Wim
-                    s.MainViewModel.BuildCommandProgressTitle = "WimAppend Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimAppend Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1098,10 +1052,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1202,11 +1153,7 @@ namespace PEBakery.Core.Commands
 
                     wim.DeleteImage(imageIndex);
 
-                    s.MainViewModel.BuildCommandProgressTitle = "WimDelete Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimDelete Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1215,10 +1162,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1314,7 +1258,7 @@ namespace PEBakery.Core.Commands
                     UpdateCommand addCmd = UpdateCommand.SetAdd(srcPath, destPath, null, addFlags);
                     wim.UpdateImage(imageIndex, addCmd, updateFlags);
 
-                    s.MainViewModel.EnableBuildCommandProgress("WimPathAdd Progress", string.Empty, 100);
+                    s.MainViewModel.SetBuildCommandProgress("WimPathAdd Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1323,7 +1267,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.DisableBuildCommandProgress();
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1375,7 +1319,7 @@ namespace PEBakery.Core.Commands
                     UpdateCommand deleteCmd = UpdateCommand.SetDelete(path, deleteFlags);
                     wim.UpdateImage(imageIndex, deleteCmd, updateFlags);
 
-                    s.MainViewModel.EnableBuildCommandProgress("WimPathDelete Progress", string.Empty, 100);
+                    s.MainViewModel.SetBuildCommandProgress("WimPathDelete Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1384,7 +1328,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.DisableBuildCommandProgress();
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1436,7 +1380,7 @@ namespace PEBakery.Core.Commands
                     UpdateCommand renCmd = UpdateCommand.SetRename(srcPath, destPath);
                     wim.UpdateImage(imageIndex, renCmd, updateFlags);
 
-                    s.MainViewModel.EnableBuildCommandProgress("WimPathRename Progress", string.Empty, 100);
+                    s.MainViewModel.SetBuildCommandProgress("WimPathRename Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1445,7 +1389,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.DisableBuildCommandProgress();
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1588,7 +1532,7 @@ namespace PEBakery.Core.Commands
 
                     wim.UpdateImage(imageIndex, wimUpdateCmds, updateFlags);
 
-                    s.MainViewModel.EnableBuildCommandProgress("WimPath Progress", string.Empty, 100);
+                    s.MainViewModel.SetBuildCommandProgress("WimPath Progress");
                     try
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
@@ -1598,7 +1542,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.DisableBuildCommandProgress();
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1736,11 +1680,7 @@ namespace PEBakery.Core.Commands
                     if (compType != null)
                         wim.SetOutputCompressionType((CompressionType)compType);
 
-                    s.MainViewModel.BuildCommandProgressTitle = "WimOptimize Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimOptimize Progress");
                     try
                     {
                         long before = new FileInfo(wimFile).Length;
@@ -1753,10 +1693,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
                 }
             }
@@ -1834,11 +1771,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    s.MainViewModel.BuildCommandProgressTitle = "WimExport Progress";
-                    s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = 100;
-                    s.MainViewModel.BuildCommandProgressShow = true;
-
+                    s.MainViewModel.SetBuildCommandProgress("WimExport Progress");
                     try
                     {
                         if (File.Exists(destWimPath))
@@ -1912,10 +1845,7 @@ namespace PEBakery.Core.Commands
                     }
                     finally
                     { // Finalize Command Progress Report
-                        s.MainViewModel.BuildCommandProgressShow = false;
-                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
-                        s.MainViewModel.BuildCommandProgressText = string.Empty;
-                        s.MainViewModel.BuildCommandProgressValue = 0;
+                        s.MainViewModel.SetBuildCommandProgress("Progress");
                     }
                 }
             }

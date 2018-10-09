@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using SevenZip;
 
 namespace PEBakery.Core.Commands
 {
@@ -43,28 +44,115 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
 
+            #region Event Handlers
+            void ReportCompressProgress(object sender, ProgressEventArgs args)
+            {
+                s.MainViewModel.BuildCommandProgressValue = args.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Compressing... ({args.PercentDone}%)";
+            }
+            #endregion
+
+            // Parse arguments / parameters
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
-
-            ArchiveHelper.CompressLevel compLevel = ArchiveHelper.CompressLevel.Normal;
-            if (info.CompressLevel != null)
-                compLevel = (ArchiveHelper.CompressLevel)info.CompressLevel;
-
+            SevenZip.OutArchiveFormat outFormat = ArchiveHelper.ToSevenZipOutFormat(info.Format);
+            SevenZip.CompressionLevel compLevel = SevenZip.CompressionLevel.Normal;
+            if (info.CompressLevel is ArchiveHelper.CompressLevel level)
+            {
+                try
+                {
+                    compLevel = ArchiveHelper.ToSevenZipLevel(level);
+                }
+                catch (ArgumentException)
+                { // Should have been filtered by CodeParser
+                    logs.Add(new LogInfo(LogState.CriticalError, $"Invalid ArchiveHelper.CompressLevel [{info.CompressLevel}]"));
+                    return logs;
+                }
+            }
+                
             // Path Security Check
             if (!StringEscaper.PathSecurityCheck(destArchive, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
+            // Check if a file or directory exist under name of destArchive 
             if (Directory.Exists(destArchive))
                 return LogInfo.LogErrorMessage(logs, $"[{destArchive}] should be a file, not a directory");
+            if (File.Exists(destArchive))
+            {
+                logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
+                File.Delete(destArchive);
+            }
+
+            // If parent directory of destArchive does not exist, create it
+            Directory.CreateDirectory(FileHelper.GetDirNameEx(destArchive));
+
+            // Call SevenZipSharp
+            SevenZipCompressor compressor = new SevenZipCompressor
+            {
+                ArchiveFormat = outFormat,
+                CompressionMode = CompressionMode.Create,
+                CompressionLevel = compLevel,
+            };
+            switch (outFormat)
+            {
+                case OutArchiveFormat.Zip:
+                    compressor.CustomParameters["cu"] = "on"; // Force UTF-8 for filename
+                    break;
+            }
+
+            if (File.Exists(srcPath))
+            {
+                // Compressor Options
+                compressor.DirectoryStructure = false;
+
+                // Comprssor Callbacks
+                compressor.Compressing += ReportCompressProgress;
+
+                s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                try
+                {
+                    using (FileStream fs = new FileStream(destArchive, FileMode.Create))
+                    {
+                        compressor.CompressFiles(fs, srcPath);
+                    }
+                }
+                finally
+                {
+                    compressor.Compressing -= ReportCompressProgress;
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
+                
+            }
+            else if (Directory.Exists(srcPath))
+            {
+                // Compressor Options
+                compressor.DirectoryStructure = true;
+                compressor.PreserveDirectoryRoot = true;
+                compressor.IncludeEmptyDirectories = true;
+
+                // Comprssor Callbacks
+                compressor.Compressing += ReportCompressProgress;
+
+                s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                try
+                {
+                    using (FileStream fs = new FileStream(destArchive, FileMode.Create))
+                    {
+                        compressor.CompressDirectory(srcPath, fs);
+                    }
+                }
+                finally
+                {
+                    compressor.Compressing -= ReportCompressProgress;
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
+            }
+            else
+            {
+                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
+            }
 
             if (File.Exists(destArchive))
-                logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
-
-            if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
-                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
-
-            bool success = ArchiveHelper.CompressNative(srcPath, destArchive, info.Format, compLevel);
-            if (success)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));

@@ -45,7 +45,7 @@ namespace PEBakery.Tests.Core.Command
         public void Compress()
         {
             void DirTemplate(string arcType, string srcDirName, ArchiveHelper.CompressLevel? level)
-            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(srcDir, srcDirName);

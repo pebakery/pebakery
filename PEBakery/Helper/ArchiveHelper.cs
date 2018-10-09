@@ -39,6 +39,7 @@ namespace PEBakery.Helper
     #region ArchiveHelper
     public static class ArchiveHelper
     {
+        #region PEBakery.Cab
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
@@ -74,6 +75,39 @@ namespace PEBakery.Helper
                 return cab.ExtractSingleFile(target, destDir);
             }
         }
+        #endregion
+
+        #region SevenZipSharp, SharpCompress
+        public enum CompressLevel
+        {
+            Store = 0,
+            Fastest = 1,
+            Normal = 6,
+            Best = 9,
+        }
+
+        public static SevenZip.CompressionLevel ToSevenZipLevel(ArchiveHelper.CompressLevel level)
+        {
+            SevenZip.CompressionLevel compLevel;
+            switch (level)
+            {
+                case ArchiveHelper.CompressLevel.Store:
+                    compLevel = SevenZip.CompressionLevel.None;
+                    break;
+                case ArchiveHelper.CompressLevel.Fastest:
+                    compLevel = SevenZip.CompressionLevel.Fast;
+                    break;
+                case ArchiveHelper.CompressLevel.Normal:
+                    compLevel = SevenZip.CompressionLevel.Normal;
+                    break;
+                case ArchiveHelper.CompressLevel.Best:
+                    compLevel = SevenZip.CompressionLevel.Ultra;
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{level}]");
+            }
+            return compLevel;
+        }
 
         public enum ArchiveCompressFormat
         {
@@ -84,35 +118,8 @@ namespace PEBakery.Helper
             SevenZip = 2,
         }
 
-        public enum CompressLevel
+        public static SevenZip.OutArchiveFormat ToSevenZipOutFormat(ArchiveHelper.ArchiveCompressFormat format)
         {
-            Store = 0,
-            Fastest = 1,
-            Normal = 6,
-            Best = 9,
-        }
-
-        public static bool CompressNative(string srcPath, string destArchive, ArchiveHelper.ArchiveCompressFormat format, ArchiveHelper.CompressLevel level)
-        {
-            SevenZip.CompressionLevel compLevel;
-            switch (level)
-            {
-                case ArchiveHelper.CompressLevel.Store:
-                    compLevel = CompressionLevel.None;
-                    break;
-                case ArchiveHelper.CompressLevel.Fastest:
-                    compLevel = CompressionLevel.Fast;
-                    break;
-                case ArchiveHelper.CompressLevel.Normal:
-                    compLevel = CompressionLevel.Normal;
-                    break;
-                case ArchiveHelper.CompressLevel.Best:
-                    compLevel = CompressionLevel.Ultra;
-                    break;
-                default:
-                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{level}]");
-            }
-
             SevenZip.OutArchiveFormat outFormat;
             switch (format)
             {
@@ -125,7 +132,16 @@ namespace PEBakery.Helper
                 default:
                     throw new ArgumentException($"Invalid ArchiveHelper.ArchiveFormat [{format}]");
             }
+            return outFormat;
+        }
 
+        public static bool CompressNative(string srcPath, string destArchive,
+            ArchiveHelper.ArchiveCompressFormat format, ArchiveHelper.CompressLevel level)
+        {
+            SevenZip.OutArchiveFormat outFormat = ToSevenZipOutFormat(format);
+            SevenZip.CompressionLevel compLevel = ToSevenZipLevel(level);
+
+            // Overwrite is default
             if (File.Exists(destArchive))
                 File.Delete(destArchive);
 
@@ -140,7 +156,7 @@ namespace PEBakery.Helper
             switch (outFormat)
             {
                 case OutArchiveFormat.Zip:
-                    compressor.CustomParameters["cu"] = "on";
+                    compressor.CustomParameters["cu"] = "on"; // Force UTF-8 for filename
                     break;
             }
 
@@ -251,6 +267,7 @@ namespace PEBakery.Helper
                 }
             }
         }
+        #endregion
     }
     #endregion
 }

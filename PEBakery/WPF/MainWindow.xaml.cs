@@ -2071,22 +2071,6 @@ namespace PEBakery.WPF
             }
         }
 
-        public void EnableBuildCommandProgress(string title, string text, int progressMax)
-        {
-            BuildCommandProgressTitle = title;
-            BuildCommandProgressText = text;
-            BuildCommandProgressMax = progressMax;
-            BuildCommandProgressShow = true;
-        }
-
-        public void DisableBuildCommandProgress()
-        {
-            BuildCommandProgressShow = false;
-            BuildCommandProgressTitle = "Progress";
-            BuildCommandProgressText = string.Empty;
-            BuildCommandProgressValue = 0;
-        }
-
         // Taskbar Progress State
         //
         // None - Hidden

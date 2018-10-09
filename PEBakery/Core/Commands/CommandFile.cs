@@ -26,7 +26,6 @@
 */
 
 using PEBakery.Helper;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
