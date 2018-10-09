@@ -204,9 +204,8 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public Script(
-            ScriptType type, string realPath, string treePath, Project project,
-            int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
+        public Script(ScriptType type, string realPath, string treePath, Project project,
+                      int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
@@ -245,7 +244,7 @@ namespace PEBakery.Core
                         _mandatory = false;
                         _link = null;
 
-                        string[] mainSectionLines = new string[]
+                        string[] mainSectionLines =
                         {
                             $"Title={_title}",
                             $"Description={_description}",
@@ -269,10 +268,10 @@ namespace PEBakery.Core
 
                         if (mainSection.IniDict.ContainsKey("Selected"))
                         {
-                            string _value = mainSection.IniDict["Selected"];
-                            if (_value.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            string value = mainSection.IniDict["Selected"];
+                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 _selected = SelectedState.True;
-                            else if (_value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
                                 _selected = SelectedState.False;
                             else
                                 _selected = SelectedState.None;
@@ -361,7 +360,7 @@ namespace PEBakery.Core
                     }
                     break;
                 default:
-                    Debug.Assert(false); // Internal Error
+                    Debug.Assert(false, "Internal Error at Script constructor"); // Internal Error
                     break;
             }
         }

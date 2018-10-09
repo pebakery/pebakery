@@ -154,7 +154,7 @@ namespace PEBakery.Core
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                CodeParser.StringContainsVariable(info.SectionName))
+                                !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
                         }
                         break;
@@ -170,7 +170,7 @@ namespace PEBakery.Core
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                CodeParser.StringContainsVariable(info.SectionName))
+                                !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
                         }
                         break;
