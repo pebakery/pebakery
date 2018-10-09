@@ -129,16 +129,25 @@ namespace PEBakery.Helper
             if (File.Exists(destArchive))
                 File.Delete(destArchive);
 
+            SevenZipCompressor compressor = new SevenZipCompressor
+            {
+                ArchiveFormat = outFormat,
+                CompressionMode = CompressionMode.Create,
+                CompressionLevel = compLevel,
+                
+            };
+
+            switch (outFormat)
+            {
+                case OutArchiveFormat.Zip:
+                    compressor.CustomParameters["cu"] = "on";
+                    break;
+            }
+
             if (File.Exists(srcPath))
             {
-                SevenZipCompressor compressor = new SevenZipCompressor
-                {
-                    ArchiveFormat = outFormat,
-                    CompressionMode = CompressionMode.Create,
-                    CompressionLevel = compLevel,
-                    DirectoryStructure = false,
-                };
-                
+                compressor.DirectoryStructure = false;
+
                 using (FileStream fs = new FileStream(destArchive, FileMode.Create))
                 {
                     compressor.CompressFiles(fs, srcPath);
@@ -146,15 +155,9 @@ namespace PEBakery.Helper
             }
             else if (Directory.Exists(srcPath))
             {
-                SevenZipCompressor compressor = new SevenZipCompressor
-                {
-                    ArchiveFormat = outFormat,
-                    CompressionMode = CompressionMode.Create,
-                    CompressionLevel = compLevel,
-                    DirectoryStructure = true,
-                    PreserveDirectoryRoot = true,
-                    IncludeEmptyDirectories = true,
-                };
+                compressor.DirectoryStructure = true;
+                compressor.PreserveDirectoryRoot = true;
+                compressor.IncludeEmptyDirectories = true;
 
                 using (FileStream fs = new FileStream(destArchive, FileMode.Create))
                 {
