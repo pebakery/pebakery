@@ -1556,21 +1556,22 @@ namespace PEBakery.Core
                 #endregion
                 #region 06 Archive
                 case CodeType.Compress:
-                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Unicode]
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
                         const int minArgCount = 3;
-                        const int maxArgCount = 5;
+                        const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        ArchiveCompressFormat format;
+                        ArchiveHelper.ArchiveCompressFormat format;
                         string formatStr = args[0];
                         if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveCompressFormat.Zip;
+                            format = ArchiveHelper.ArchiveCompressFormat.Zip;
+                        else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveHelper.ArchiveCompressFormat.SevenZip;
                         else
-                            throw new InvalidCommandException($"[{formatStr}] is not a valid ArchiveCompressType", rawCode);
+                            throw new InvalidCommandException($"Cannot compress to [{formatStr}] file format", rawCode);
 
                         ArchiveHelper.CompressLevel? compLevel = null;
-                        Encoding encoding = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1598,43 +1599,13 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
                                 compLevel = ArchiveHelper.CompressLevel.Best;
                             }
-                            else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.UTF8;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.BigEndianUnicode;
-                            }
-                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Default;
-                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
+                        return new CodeInfo_Compress(format, args[1], args[2], compLevel);
                     }
                 case CodeType.Decompress:
                     { // Decompress,<SrcArchive>,<DestDir>,[Unicode]

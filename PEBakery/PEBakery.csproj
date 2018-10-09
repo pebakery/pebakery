@@ -108,8 +108,8 @@
     <Reference Include="RazorEngine, Version=3.10.0.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <HintPath>..\packages\RazorEngine.3.10.0\lib\net45\RazorEngine.dll</HintPath>
     </Reference>
-    <Reference Include="SevenZipExtractor, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SevenZipExtractor.1.0.12\lib\net45\SevenZipExtractor.dll</HintPath>
+    <Reference Include="SevenZipSharp, Version=1.1.106.0, Culture=neutral, PublicKeyToken=c8ff6ba0184838bb, processorArchitecture=MSIL">
+      <HintPath>..\packages\Squid-Box.SevenZipSharp.1.1.106\lib\net45\SevenZipSharp.dll</HintPath>
     </Reference>
     <Reference Include="SharpCompress, Version=0.22.0.0, Culture=neutral, PublicKeyToken=afb0a02973931d96, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpCompress.0.22.0\lib\net45\SharpCompress.dll</HintPath>
@@ -377,6 +377,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">
+      <Project>{0ee27887-e06a-4c64-82a0-7c496eced946}</Project>
+      <Name>NativeLibraries</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj">
       <Project>{d01b1d20-8f5b-4834-8e5c-c7ec6dd587d4}</Project>
       <Name>Ookii.Dialogs.Wpf</Name>
@@ -417,7 +421,6 @@
     <PropertyGroup>
       <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets'))" />
     <Error Condition="!Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Timestamp.1.0.0\build\Timestamp.targets'))" />
     <Error Condition="!Exists('..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets'))" />
@@ -426,7 +429,6 @@
     <Error Condition="!Exists('..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.XZ.1.0.0\build\netstandard2.0\Joveler.Compression.XZ.targets'))" />
     <Error Condition="!Exists('..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.ZLib.2.0.0\build\netstandard2.0\Joveler.Compression.ZLib.targets'))" />
   </Target>
-  <Import Project="..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets" Condition="Exists('..\packages\SevenZipExtractor.1.0.12\build\SevenZipExtractor.targets')" />
   <Import Project="..\packages\Timestamp.1.0.0\build\Timestamp.targets" Condition="Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" />
   <Import Project="..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets" Condition="Exists('..\packages\ManagedWimLib.1.1.0\build\net45\ManagedWimLib.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" />

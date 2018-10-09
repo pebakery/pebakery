@@ -25,14 +25,13 @@
     not derived from or based on this program. 
 */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
-using System.IO;
 using PEBakery.Helper;
-using System.Text;
-using System.Linq;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -45,101 +44,119 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandArchive")]
         public void Compress()
         {
-            Compress_DirTemplate("Zip", "France", "France_Store.zip", ArchiveHelper.CompressLevel.Store);
-            Compress_DirTemplate("Zip", "Korea", "Korea_Best.zip", ArchiveHelper.CompressLevel.Best);
-            Compress_FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), "Korean_IME_Logo_Normal.zip", ArchiveHelper.CompressLevel.Normal);
-        }
+            void DirTemplate(string arcType, string srcDirName, ArchiveHelper.CompressLevel? level)
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+                EngineState s = EngineTests.CreateEngineState();
+                string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                string srcFullPath = Path.Combine(srcDir, srcDirName);
+                string destDir = FileHelper.GetTempFileNameEx();
+                string destArchive = Path.Combine(destDir, $"{srcDirName}.{arcType}");
+                string decompDir = FileHelper.GetTempFileNameEx();
 
-        public void Compress_DirTemplate(string arcType, string srcDirPath, string destArc, ArchiveHelper.CompressLevel level, string encodingStr = null)
-        { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
-            EngineState s = EngineTests.CreateEngineState();
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string destRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string destFullPath = Path.Combine(destRootDir, destArc);
-            string compRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string compDir = Path.Combine(compRootDir, destArc);
-            string srcFullPath = Path.Combine(dirPath, srcDirPath);
-
-            try
-            {
-                Directory.CreateDirectory(destRootDir);
-                Directory.CreateDirectory(compDir);
-
-                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcDirPath}\",\"{destFullPath}\"";
-                if (encodingStr != null)
-                    rawCode += "," + encodingStr;
-                EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
-
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
-                CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
-                Debug.Assert(info != null, "Invalid CodeInfo");
-
-                ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
-
-                string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
-                string[] destFiles = Directory.GetFiles(compDir, "*", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == destFiles.Length);
-
-                for (int i = 0; i < srcFiles.Length; i++)
+                try
                 {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                    Directory.CreateDirectory(destDir);
+                    Directory.CreateDirectory(decompDir);
+
+                    string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcDirName}"",""{destArchive}""";
+                    switch (level)
+                    {
+                        case ArchiveHelper.CompressLevel.Best:
+                            rawCode += ",BEST";
+                            break;
+                        case ArchiveHelper.CompressLevel.Fastest:
+                            rawCode += ",FASTEST";
+                            break;
+                        case ArchiveHelper.CompressLevel.Normal:
+                            rawCode += ",NORMAL";
+                            break;
+                        case ArchiveHelper.CompressLevel.Store:
+                            rawCode += ",STORE";
+                            break;
+                    }
+                    EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
+
+                    ArchiveHelper.DecompressNative(destArchive, decompDir);
+
+                    string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
+                    string[] destFiles = Directory.GetFiles(decompDir, "*", SearchOption.AllDirectories);
+                    Assert.IsTrue(srcFiles.Length == destFiles.Length);
+
+                    for (int i = 0; i < srcFiles.Length; i++)
+                    {
+                        using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
+                            Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                        }
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                    if (Directory.Exists(decompDir))
+                        Directory.Delete(decompDir, true);
+                }
+            }
+
+            void FileTemplate(string arcType, string srcFilePath, ArchiveHelper.CompressLevel level)
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+                EngineState s = EngineTests.CreateEngineState();
+                string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                string srcFullPath = Path.Combine(srcDir, srcFilePath);
+                string srcFileName = Path.GetFileName(srcFilePath);
+                string destDir = FileHelper.GetTempFileNameEx();
+                string destArchive = Path.Combine(destDir, $"{srcFileName}.{arcType}");
+                string decompDir = FileHelper.GetTempFileNameEx();
+
+                try
+                {
+                    Directory.CreateDirectory(destDir);
+                    Directory.CreateDirectory(decompDir);
+
+                    string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcFilePath}"",""{destArchive}""";
+                    switch (level)
+                    {
+                        case ArchiveHelper.CompressLevel.Best:
+                            rawCode += ",BEST";
+                            break;
+                        case ArchiveHelper.CompressLevel.Fastest:
+                            rawCode += ",FASTEST";
+                            break;
+                        case ArchiveHelper.CompressLevel.Normal:
+                            rawCode += ",NORMAL";
+                            break;
+                        case ArchiveHelper.CompressLevel.Store:
+                            rawCode += ",STORE";
+                            break;
+                    }
+                    EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
+
+                    ArchiveHelper.DecompressNative(destArchive, decompDir);
+
+                    using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
-            }
-            finally
-            {
-                if (Directory.Exists(destRootDir))
-                    Directory.Delete(destRootDir, true);
-                if (Directory.Exists(compRootDir))
-                    Directory.Delete(compRootDir, true);
-            }
-        }
-
-        public void Compress_FileTemplate(string arcType, string srcFilePath, string destArc, ArchiveHelper.CompressLevel level, string encodingStr = null)
-        { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
-            EngineState s = EngineTests.CreateEngineState();
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string destDir = Path.Combine(dirPath, "Compress_Dest");
-            string compRootDir = Path.Combine(dirPath, "Compress_Comp");
-            string compDir = Path.Combine(compRootDir, destArc);
-            string srcFullPath = Path.Combine(dirPath, srcFilePath);
-            string destFullPath = Path.Combine(destDir, destArc);
-            string srcFileName = Path.GetFileName(srcFilePath);
-
-            try
-            {
-                Directory.CreateDirectory(destDir);
-                Directory.CreateDirectory(compDir);
-
-                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcFilePath}\",\"%TestBench%\\CommandArchive\\Compress_Dest\\{destArc}\"";
-                if (encodingStr != null)
-                    rawCode += "," + encodingStr;
-                EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
-
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
-                CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
-                Debug.Assert(info != null, "Invalid CodeInfo");
-
-                ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
-
-                using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (FileStream destStream = new FileStream(Path.Combine(compDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
+                finally
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
-                    Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                    Directory.Delete(destDir, true);
+                    Directory.Delete(decompDir, true);
                 }
             }
-            finally
-            {
-                Directory.Delete(destDir, true);
-                Directory.Delete(compRootDir, true);
-            }
+
+            DirTemplate("Zip", "France", ArchiveHelper.CompressLevel.Store);
+            DirTemplate("7z", "Korea", ArchiveHelper.CompressLevel.Normal);
+            DirTemplate("Zip", "Korea", ArchiveHelper.CompressLevel.Best);
+            FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveHelper.CompressLevel.Normal);
+            FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveHelper.CompressLevel.Best);
         }
         #endregion
 

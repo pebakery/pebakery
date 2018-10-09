@@ -31,7 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace PEBakery.Core.Commands
@@ -44,17 +43,12 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
 
-            ArchiveCompressFormat arcType = info.Format;
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
 
             ArchiveHelper.CompressLevel compLevel = ArchiveHelper.CompressLevel.Normal;
             if (info.CompressLevel != null)
                 compLevel = (ArchiveHelper.CompressLevel)info.CompressLevel;
-
-            Encoding encoding = info.Encoding;
-            if (info.Encoding == null)
-                encoding = Encoding.UTF8;
 
             // Path Security Check
             if (!StringEscaper.PathSecurityCheck(destArchive, out string errorMsg))
@@ -69,21 +63,11 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
                 return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
 
-            bool success;
-            switch (arcType)
-            {
-                case ArchiveCompressFormat.Zip:
-                    success = ArchiveHelper.CompressManagedZip(srcPath, destArchive, compLevel, encoding);
-                    break;
-                default:
-                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{arcType}] format is not supported"));
-                    return logs;
-            }
-
+            bool success = ArchiveHelper.CompressNative(srcPath, destArchive, info.Format, compLevel);
             if (success)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Compressing [{srcPath}] failed"));
+                logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
 
             return logs;
         }
@@ -113,7 +97,7 @@ namespace PEBakery.Core.Commands
             }
 
             if (info.Encoding == null)
-                ArchiveHelper.DecompressNative(srcArchive, destDir, true);
+                ArchiveHelper.DecompressNative(srcArchive, destDir);
             else
                 ArchiveHelper.DecompressManaged(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
 

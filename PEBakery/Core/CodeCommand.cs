@@ -2104,27 +2104,20 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 06 - Archive
-    public enum ArchiveCompressFormat
-    {
-        Zip = 1,
-    }
-
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Encoding]
-        public ArchiveCompressFormat Format;
+    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
+        public ArchiveHelper.ArchiveCompressFormat Format;
         public string SrcPath;
         public string DestArchive;
         public ArchiveHelper.CompressLevel? CompressLevel;
-        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
 
-        public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel, Encoding encoding)
+        public CodeInfo_Compress(ArchiveHelper.ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel)
         {
             Format = format;
             SrcPath = srcDir;
             DestArchive = destArchive;
             CompressLevel = compressLevel;
-            Encoding = encoding;
         }
 
         public override string ToString()
@@ -2132,11 +2125,14 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             switch (Format)
             {
-                case ArchiveCompressFormat.Zip:
+                case ArchiveHelper.ArchiveCompressFormat.Zip:
                     b.Append("Zip");
                     break;
+                case ArchiveHelper.ArchiveCompressFormat.SevenZip:
+                    b.Append("SevenZip");
+                    break;
                 default:
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
+                    throw new InternalException($"Wrong ArchiveFormat [{Format}]");
             }
             b.Append(",");
             b.Append(SrcPath);
@@ -2147,19 +2143,7 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(CompressLevel.ToString().ToUpper());
             }
-            if (Encoding != null)
-            {
-                if (Encoding.Equals(Encoding.UTF8))
-                    b.Append(",UTF8");
-                else if (Encoding.Equals(Encoding.Unicode))
-                    b.Append(",UTF16");
-                else if (Encoding.Equals(Encoding.BigEndianUnicode))
-                    b.Append(",UTF16BE");
-                else if (Encoding.Equals(Encoding.Default))
-                    b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
-            }
+            
             return b.ToString();
         }
     }

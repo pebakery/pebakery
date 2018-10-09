@@ -96,6 +96,10 @@
     <Compile Include="TestSetup.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">
+      <Project>{0ee27887-e06a-4c64-82a0-7c496eced946}</Project>
+      <Name>NativeLibraries</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.Ini</Name>

@@ -72,10 +72,12 @@ namespace PEBakery
             string zlibPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
 
             Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, 64 * 1024); // 64K
             Joveler.Compression.XZ.XZInit.GlobalInit(xzPath, 64 * 1024); // 64K
             ManagedWimLib.Wim.GlobalInit(wimlibPath);
+            SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
         }
 
         public static void NativeGlobalCleanup()
