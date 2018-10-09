@@ -26,10 +26,8 @@ using PEBakery.Core;
 using System;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 
 // ReSharper disable InconsistentNaming
-
 namespace PEBakery.WPF.Controls
 {
     public class DragCanvas : EditCanvas
@@ -72,14 +70,6 @@ namespace PEBakery.WPF.Controls
         // Resize
         protected ResizeClickPosition _resizeClickPos;
         protected Rect _dragStartElementRect;
-        #endregion
-
-        #region Constructor
-        public DragCanvas()
-        {
-            // To fire MouseMove event even if mouse is not hovering FrameworkElement, setting background is required.
-            // Background = Brushes.Transparent;
-        }
         #endregion
 
         #region Events
@@ -144,67 +134,36 @@ namespace PEBakery.WPF.Controls
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
             if (!_isBeingDragged || _selectedElement == null)
-            { // Switch mouse cursor
-                /* Work in progress, for now not working properly 
-                FrameworkElement element = null;
-                if (e.Source is DependencyObject dObj)
-                    element = FindRootFrameworkElement(dObj);
+                return;
 
-                switch (Mode)
-                {
-                    case DragMode.Move:
-                        if (element != null)
-                            SetMovingMouseCursor();
-                        else
-                            ResetMouseCursor();
-                            
-                        break;
-                    case DragMode.Resize:
-                        if (element != null)
-                        {
-                            Point nowCursorPoint = e.GetPosition(this);
-                            Rect rect = new Rect(GetLeft(element), GetTop(element), element.Width, element.Height);
-                            ResizeClickPosition clickPos = DetectResizeClickPosition(nowCursorPoint, rect);
-                            SetResizingMouseCursor(clickPos);
-                        }
-                        else
-                        {
-                            ResetMouseCursor();
-                        }
-                        break;
-                }
-                */
-            }
-            else
-            { // Moving/Resizing a UIControl
-                Point nowCursorPoint = e.GetPosition(this);
-                switch (Mode)
-                {
-                    case DragMode.Move:
-                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
-                        SetLeft(_selectedElement, newElementPos.X);
-                        SetTop(_selectedElement, newElementPos.Y);
-                        if (_selectedBorder != null)
-                        {
-                            SetLeft(_selectedBorder, newElementPos.X);
-                            SetTop(_selectedBorder, newElementPos.Y);
-                        }
-                        break;
-                    case DragMode.Resize:
-                        Rect newElementRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, _dragStartElementRect, _resizeClickPos);
-                        SetLeft(_selectedElement, newElementRect.X);
-                        SetTop(_selectedElement, newElementRect.Y);
-                        _selectedElement.Width = newElementRect.Width;
-                        _selectedElement.Height = newElementRect.Height;
-                        if (_selectedBorder != null)
-                        {
-                            SetLeft(_selectedBorder, newElementRect.X);
-                            SetTop(_selectedBorder, newElementRect.Y);
-                            _selectedBorder.Width = newElementRect.Width;
-                            _selectedBorder.Height = newElementRect.Height;
-                        }
-                        break;
-                }
+            // Moving/Resizing a UIControl
+            Point nowCursorPoint = e.GetPosition(this);
+            switch (Mode)
+            {
+                case DragMode.Move:
+                    Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
+                    SetLeft(_selectedElement, newElementPos.X);
+                    SetTop(_selectedElement, newElementPos.Y);
+                    if (_selectedBorder != null)
+                    {
+                        SetLeft(_selectedBorder, newElementPos.X);
+                        SetTop(_selectedBorder, newElementPos.Y);
+                    }
+                    break;
+                case DragMode.Resize:
+                    Rect newElementRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, _dragStartElementRect, _resizeClickPos);
+                    SetLeft(_selectedElement, newElementRect.X);
+                    SetTop(_selectedElement, newElementRect.Y);
+                    _selectedElement.Width = newElementRect.Width;
+                    _selectedElement.Height = newElementRect.Height;
+                    if (_selectedBorder != null)
+                    {
+                        SetLeft(_selectedBorder, newElementRect.X);
+                        SetTop(_selectedBorder, newElementRect.Y);
+                        _selectedBorder.Width = newElementRect.Width;
+                        _selectedBorder.Height = newElementRect.Height;
+                    }
+                    break;
             }
         }
 

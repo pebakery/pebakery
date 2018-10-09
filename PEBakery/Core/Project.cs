@@ -635,9 +635,13 @@ namespace PEBakery.Core
                     continue;
 
                 int nodeId = rootId;
-                string[] paths = sc.TreePath
-                    .Substring(ProjectName.Length).TrimStart('\\')
-                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                // Ex) sc.TreePath = TestSuite\Samples\SVG.script
+                // Ex) paths = { "TestSuite", "Samples", "SVG.script" }
+                // Project name should be ignored -> Use index starting from 1 in for loop
+                string[] paths = sc.TreePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                Debug.Assert(1 <= paths.Length, "Invalid TreePath");
+                paths = paths.Skip(1).ToArray();
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
                 for (int i = 0; i < paths.Length - 1; i++)
@@ -653,7 +657,7 @@ namespace PEBakery.Core
                         // Find ts, a Script instance of directory
                         string treePath = Path.Combine(ProjectName, pathKey);
                         Script ts = scripts.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                        Debug.Assert(ts != null, "Internal Logic Error at InternalSortScripts");
+                        Debug.Assert(ts != null, $"Unable to find proper directory for {sc.TreePath}");
 
                         Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, sc.Level, false, false, ts.IsDirLink);
                         nodeId = scTree.AddNode(nodeId, dirScript);
