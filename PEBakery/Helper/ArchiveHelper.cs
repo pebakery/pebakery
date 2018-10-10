@@ -24,15 +24,10 @@
 */
 
 using PEBakery.Cab;
-using SharpCompress.Common;
-using SharpCompress.Readers;
-using SharpCompress.Writers;
-using SharpCompress.Writers.Zip;
+using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using SevenZip;
 
 namespace PEBakery.Helper
 {
@@ -150,7 +145,7 @@ namespace PEBakery.Helper
                 ArchiveFormat = outFormat,
                 CompressionMode = CompressionMode.Create,
                 CompressionLevel = compLevel,
-                
+
             };
 
             switch (outFormat)
@@ -188,88 +183,11 @@ namespace PEBakery.Helper
             return File.Exists(destArchive);
         }
 
-        public static bool CompressManagedZip(string srcPath, string destArchive, CompressLevel helperLevel, Encoding encoding = null)
-        {
-            SharpCompress.Compressors.Deflate.CompressionLevel compLevel;
-            switch (helperLevel)
-            {
-                case CompressLevel.Store:
-                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
-                    break;
-                case CompressLevel.Fastest:
-                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
-                    break;
-                case CompressLevel.Normal:
-                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
-                    break;
-                case CompressLevel.Best:
-                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
-                    break;
-                default:
-                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
-            }
-
-            ZipWriterOptions opts = new ZipWriterOptions(CompressionType.Deflate)
-            {
-                LeaveStreamOpen = false,
-                DeflateCompressionLevel = compLevel,
-                UseZip64 = false,
-                ArchiveEncoding = encoding == null
-                    ? new ArchiveEncoding { Default = Encoding.UTF8 }
-                    : new ArchiveEncoding { Default = encoding },
-            };
-
-            if (File.Exists(destArchive))
-                File.Delete(destArchive);
-
-            using (FileStream fs = new FileStream(destArchive, FileMode.Create, FileAccess.Write))
-            {
-                using (ZipWriter w = new ZipWriter(fs, opts))
-                {
-                    if (Directory.Exists(srcPath))
-                        w.WriteAll(srcPath, "*", SearchOption.AllDirectories);
-                    else if (File.Exists(srcPath))
-                        w.Write(Path.GetFileName(srcPath), srcPath);
-                    else
-                        throw new ArgumentException($"[{srcPath}] does not exist");
-                }
-            }
-
-            return File.Exists(destArchive);
-        }
-
         public static void DecompressNative(string srcArchive, string destDir)
         {
             using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
             {
                 extractor.ExtractArchive(destDir);
-            }
-        }
-
-        public static void DecompressManaged(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions xOpts = new ExtractionOptions
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOpts = new ReaderOptions
-            {
-                LeaveStreamOpen = true,
-                ArchiveEncoding = encoding == null
-                    ? new ArchiveEncoding { Default = Encoding.UTF8 }
-                    : new ArchiveEncoding { Default = encoding },
-            };
-
-            using (Stream stream = new FileStream(srcArchive, FileMode.Open, FileAccess.Read))
-            using (IReader reader = ReaderFactory.Open(stream, rOpts))
-            {
-                while (reader.MoveToNextEntry())
-                {
-                    if (!reader.Entry.IsDirectory)
-                        reader.WriteEntryToDirectory(destDir, xOpts);
-                }
             }
         }
         #endregion
