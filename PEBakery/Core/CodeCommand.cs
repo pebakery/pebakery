@@ -2112,7 +2112,8 @@ namespace PEBakery.Core
         public string DestArchive;
         public ArchiveHelper.CompressLevel? CompressLevel;
 
-        public CodeInfo_Compress(ArchiveHelper.ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel)
+        public CodeInfo_Compress(
+            ArchiveHelper.ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel)
         {
             Format = format;
             SrcPath = srcDir;
@@ -2143,23 +2144,21 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(CompressLevel.ToString().ToUpper());
             }
-            
+
             return b.ToString();
         }
     }
 
     [Serializable]
     public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<SrcArchive>,<DestDir>,[Encoding]
+    { // Decompress,<SrcArchive>,<DestDir>
         public string SrcArchive;
         public string DestDir;
-        public Encoding Encoding; // Optional, [UTF8|UTF16|UTF16BE|ANSI]
 
-        public CodeInfo_Decompress(string srcArchive, string destArchive, Encoding encoding)
+        public CodeInfo_Decompress(string srcArchive, string destArchive)
         {
             SrcArchive = srcArchive;
             DestDir = destArchive;
-            Encoding = encoding;
         }
 
         public override string ToString()
@@ -2168,19 +2167,6 @@ namespace PEBakery.Core
             b.Append(SrcArchive);
             b.Append(",");
             b.Append(DestDir);
-            if (Encoding != null)
-            {
-                if (Encoding.Equals(Encoding.UTF8))
-                    b.Append(",UTF8");
-                else if (Encoding.Equals(Encoding.Unicode))
-                    b.Append(",UTF16");
-                else if (Encoding.Equals(Encoding.BigEndianUnicode))
-                    b.Append(",UTF16BE");
-                else if (Encoding.Equals(Encoding.Default))
-                    b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
-            }
             return b.ToString();
         }
     }

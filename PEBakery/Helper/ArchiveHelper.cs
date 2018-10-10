@@ -214,9 +214,10 @@ namespace PEBakery.Helper
                 LeaveStreamOpen = false,
                 DeflateCompressionLevel = compLevel,
                 UseZip64 = false,
+                ArchiveEncoding = encoding == null
+                    ? new ArchiveEncoding { Default = Encoding.UTF8 }
+                    : new ArchiveEncoding { Default = encoding },
             };
-            if (encoding != null)
-                opts.ArchiveEncoding = new ArchiveEncoding { Default = encoding };
 
             if (File.Exists(destArchive))
                 File.Delete(destArchive);
@@ -247,23 +248,27 @@ namespace PEBakery.Helper
 
         public static void DecompressManaged(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
         {
-            ExtractionOptions exOptions = new ExtractionOptions
+            ExtractionOptions xOpts = new ExtractionOptions
             {
                 ExtractFullPath = true,
                 Overwrite = overwrite,
             };
 
-            ReaderOptions opts = new ReaderOptions { LeaveStreamOpen = true, };
-            if (encoding != null)
-                opts.ArchiveEncoding = new ArchiveEncoding { Default = encoding };
+            ReaderOptions rOpts = new ReaderOptions
+            {
+                LeaveStreamOpen = true,
+                ArchiveEncoding = encoding == null
+                    ? new ArchiveEncoding { Default = Encoding.UTF8 }
+                    : new ArchiveEncoding { Default = encoding },
+            };
 
             using (Stream stream = new FileStream(srcArchive, FileMode.Open, FileAccess.Read))
-            using (IReader reader = ReaderFactory.Open(stream, opts))
+            using (IReader reader = ReaderFactory.Open(stream, rOpts))
             {
                 while (reader.MoveToNextEntry())
                 {
                     if (!reader.Entry.IsDirectory)
-                        reader.WriteEntryToDirectory(destDir, exOptions);
+                        reader.WriteEntryToDirectory(destDir, xOpts);
                 }
             }
         }

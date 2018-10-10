@@ -75,8 +75,7 @@ namespace PEBakery.Tests.Core.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-
-                    ArchiveHelper.DecompressNative(destArchive, decompDir);
+                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, "*", SearchOption.AllDirectories);
@@ -103,7 +102,7 @@ namespace PEBakery.Tests.Core.Command
             }
 
             void FileTemplate(string arcType, string srcFilePath, ArchiveHelper.CompressLevel level)
-            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(srcDir, srcFilePath);
@@ -134,8 +133,7 @@ namespace PEBakery.Tests.Core.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-
-                    ArchiveHelper.DecompressNative(destArchive, decompDir);
+                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -166,90 +164,86 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void Decompress()
         {
-            Decompress_DirTemplate("Korea.zip");
-            Decompress_DirTemplate("Korea.7z");
-            Decompress_DirTemplate("France.zip");
-            Decompress_DirTemplate("France.7z");
-            Decompress_DirTemplate("France.rar"); // RAR5
-            Decompress_FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo.jpg");
-            Decompress_FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo.jpg");
-            Decompress_FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo.jpg"); // Pre-RAR5
-        }
-
-        public void Decompress_FileTemplate(string archiveFile, string compFile, string encodingStr = null)
-        {
-            Debug.Assert(archiveFile != null);
-            string archiveType = Path.GetExtension(archiveFile).Substring(1);
-            string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
-
-            EngineState s = EngineTests.CreateEngineState();
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string srcPath = Path.Combine(dirPath, archiveName, compFile);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string destPath = Path.Combine(destDir, compFile);
-
-            try
+            void DirTemplate(string archiveFile)
             {
-                Directory.CreateDirectory(destDir);
+                Debug.Assert(archiveFile != null);
+                string archiveType = Path.GetExtension(archiveFile).Substring(1);
+                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
-                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
-                if (encodingStr != null)
-                    rawCode += "," + encodingStr;
-                EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
+                EngineState s = EngineTests.CreateEngineState();
+                string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                string srcFullPath = Path.Combine(dirPath, archiveName);
+                string destDir = FileHelper.GetTempFileNameEx();
 
-                using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                try
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
-                    Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                    string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
+                    EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
+
+                    string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
+                    string[] destFiles = Directory.GetFiles(Path.Combine(destDir, archiveName), "*", SearchOption.AllDirectories);
+                    Assert.IsTrue(srcFiles.Length == destFiles.Length);
+
+                    for (int i = 0; i < srcFiles.Length; i++)
+                    {
+                        using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
+                            Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                        }
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
                 }
             }
-            finally
+
+            void FileTemplate(string archiveFile, string compFile)
             {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
-            }
-        }
+                Debug.Assert(archiveFile != null);
+                string archiveType = Path.GetExtension(archiveFile).Substring(1);
+                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
-        public void Decompress_DirTemplate(string archiveFile, string encodingStr = null)
-        {
-            Debug.Assert(archiveFile != null);
-            string archiveType = Path.GetExtension(archiveFile).Substring(1);
-            string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
+                EngineState s = EngineTests.CreateEngineState();
+                string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                string srcPath = Path.Combine(dirPath, archiveName, compFile);
+                string destDir = FileHelper.GetTempFileNameEx();
+                string destPath = Path.Combine(destDir, compFile);
 
-            EngineState s = EngineTests.CreateEngineState();
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string srcFullPath = Path.Combine(dirPath, archiveName);
-            string destRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
-            try
-            {
-                string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destRootDir}\"";
-                if (encodingStr != null)
-                    rawCode += "," + encodingStr;
-                EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
-
-                string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
-                string[] destFiles = Directory.GetFiles(Path.Combine(destRootDir, archiveName), "*", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == destFiles.Length);
-
-                for (int i = 0; i < srcFiles.Length; i++)
+                try
                 {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                    Directory.CreateDirectory(destDir);
+
+                    string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
+                    EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
+
+                    using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
             }
-            finally
-            {
-                if (Directory.Exists(destRootDir))
-                    Directory.Delete(destRootDir, true);
-            }
+
+            DirTemplate("Korea.zip");
+            DirTemplate("Korea.7z");
+            DirTemplate("France.zip");
+            DirTemplate("France.7z");
+            DirTemplate("France.rar"); // RAR5
+            FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo.jpg"); // RAR2.9
         }
         #endregion
 

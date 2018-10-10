@@ -1608,53 +1608,12 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel);
                     }
                 case CodeType.Decompress:
-                    { // Decompress,<SrcArchive>,<DestDir>,[Unicode]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        Encoding encoding = null;
-                        for (int i = minArgCount; i < args.Count; i++)
-                        {
-                            string arg = args[i];
-                            if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.UTF8;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.Unicode;
-                            }
-                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.BigEndianUnicode;
-                            }
-                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encoding != null)
-                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.ASCII;
-                            }
-                            else
-                            {
-                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
-                            }
-                        }
-
-                        return new CodeInfo_Decompress(args[0], args[1], encoding);
+                    { // Decompress,<SrcArchive>,<DestDir>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                        
+                        return new CodeInfo_Decompress(args[0], args[1]);
                     }
                 case CodeType.Expand:
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]

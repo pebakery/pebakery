@@ -39,7 +39,7 @@ namespace PEBakery.Core.Commands
     public class CommandArchive
     {
         public static List<LogInfo> Compress(EngineState s, CodeCommand cmd)
-        { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
@@ -93,6 +93,8 @@ namespace PEBakery.Core.Commands
                 CompressionMode = CompressionMode.Create,
                 CompressionLevel = compLevel,
             };
+
+            // Set filename encoding
             switch (outFormat)
             {
                 case OutArchiveFormat.Zip:
@@ -105,7 +107,7 @@ namespace PEBakery.Core.Commands
                 // Compressor Options
                 compressor.DirectoryStructure = false;
 
-                // Comprssor Callbacks
+                // Compressor Callbacks
                 compressor.Compressing += ReportCompressProgress;
 
                 s.MainViewModel.SetBuildCommandProgress("Compress Progress");
@@ -130,7 +132,7 @@ namespace PEBakery.Core.Commands
                 compressor.PreserveDirectoryRoot = true;
                 compressor.IncludeEmptyDirectories = true;
 
-                // Comprssor Callbacks
+                // Compressor Callbacks
                 compressor.Compressing += ReportCompressProgress;
 
                 s.MainViewModel.SetBuildCommandProgress("Compress Progress");
@@ -161,7 +163,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> Decompress(EngineState s, CodeCommand cmd)
-        { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
@@ -181,9 +183,11 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
+            // Does SrcArchive exist?
             if (!File.Exists(srcArchive))
                 return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcArchive}]");
 
+            // Check if file or directory exist under name of destDir
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
@@ -192,29 +196,20 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            if (info.Encoding == null)
+            using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
             {
-                // Native Decompression
-                using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
+                extractor.Extracting += ReportDecompressProgress;
+                s.MainViewModel.SetBuildCommandProgress("Decompress Progress");
+                try
                 {
-
-                    // Decompressor Callbacks
-                    extractor.Extracting += ReportDecompressProgress;
-
-                    s.MainViewModel.SetBuildCommandProgress("Decompression Progress");
-                    try
-                    {
-                        extractor.ExtractArchive(destDir);
-                    }
-                    finally
-                    {
-                        extractor.Extracting -= ReportDecompressProgress;
-                        s.MainViewModel.ResetBuildCommandProgress();
-                    }
+                    extractor.ExtractArchive(destDir);
+                }
+                finally
+                {
+                    extractor.Extracting -= ReportDecompressProgress;
+                    s.MainViewModel.ResetBuildCommandProgress();
                 }
             }
-            else
-                ArchiveHelper.DecompressManaged(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] decompressed to [{destDir}]"));
             return logs;

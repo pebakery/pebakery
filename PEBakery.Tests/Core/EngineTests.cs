@@ -30,7 +30,10 @@ using PEBakery.Core;
 using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace PEBakery.Tests.Core
@@ -61,12 +64,11 @@ namespace PEBakery.Tests.Core
             if (doCopy)
             {
                 Project project = EngineTests.Project.PartialDeepCopy();
-                Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
                 if (sc == null)
-                    s = new EngineState(project, logger, model, EngineMode.RunAll);
+                    s = new EngineState(project, Logger, model, EngineMode.RunAll);
                 else
-                    s = new EngineState(project, logger, model, EngineMode.RunOne, sc, entrySection);
+                    s = new EngineState(project, Logger, model, EngineMode.RunOne, sc, entrySection);
             }
             else
             {
@@ -84,10 +86,7 @@ namespace PEBakery.Tests.Core
             return s;
         }
 
-        public static ScriptSection DummySection()
-        {
-            return Project.MainScript.Sections["Process"];
-        }
+        public static ScriptSection DummySection() => Project.MainScript.Sections["Process"];
         #endregion
 
         #region Eval
@@ -374,6 +373,32 @@ namespace PEBakery.Tests.Core
                     Assert.Fail();
                     break;
             }
+        }
+        #endregion
+
+        #region ExtractWith7z
+        public static int ExtractWith7z(string sampleDir, string srcArchive, string destDir)
+        {
+            string binary;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                binary = Path.Combine(sampleDir, "7z.exe");
+            else
+                throw new PlatformNotSupportedException();
+
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = binary,
+                    Arguments = $"x {Path.Combine(srcArchive)} -o{destDir}",
+                }
+            };
+            proc.Start();
+            proc.WaitForExit();
+            return proc.ExitCode;
         }
         #endregion
     }
