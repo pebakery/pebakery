@@ -39,7 +39,7 @@ namespace PEBakery.Core.Commands
     public class CommandArchive
     {
         public static List<LogInfo> Compress(EngineState s, CodeCommand cmd)
-        { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+        { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
@@ -166,6 +166,14 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
 
+            #region Event Handlers
+            void ReportDecompressProgress(object sender, ProgressEventArgs args)
+            {
+                s.MainViewModel.BuildCommandProgressValue = args.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Decompressing... ({args.PercentDone}%)";
+            }
+            #endregion
+
             string srcArchive = StringEscaper.Preprocess(s, info.SrcArchive);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
@@ -185,11 +193,30 @@ namespace PEBakery.Core.Commands
             }
 
             if (info.Encoding == null)
-                ArchiveHelper.DecompressNative(srcArchive, destDir);
+            {
+                // Native Decompression
+                using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
+                {
+
+                    // Decompressor Callbacks
+                    extractor.Extracting += ReportDecompressProgress;
+
+                    s.MainViewModel.SetBuildCommandProgress("Decompression Progress");
+                    try
+                    {
+                        extractor.ExtractArchive(destDir);
+                    }
+                    finally
+                    {
+                        extractor.Extracting -= ReportDecompressProgress;
+                        s.MainViewModel.ResetBuildCommandProgress();
+                    }
+                }
+            }
             else
                 ArchiveHelper.DecompressManaged(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
 
-            logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] compressed to [{destDir}]"));
+            logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] decompressed to [{destDir}]"));
             return logs;
         }
 
