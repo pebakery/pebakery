@@ -72,7 +72,7 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region SevenZipSharp, SharpCompress
+        #region SevenZipSharp
         public enum CompressLevel
         {
             Store = 0,
