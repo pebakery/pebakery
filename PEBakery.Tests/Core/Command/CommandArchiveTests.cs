@@ -272,15 +272,17 @@ namespace PEBakery.Tests.Core.Command
                     }
 
                     EngineTests.Eval(s, rawCode, CodeType.Expand, check);
-
-                    if (!testPreserve && File.Exists(destPath) || testPreserve && checkIfPreserve)
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
-                        using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        if (!testPreserve && File.Exists(destPath) || testPreserve && checkIfPreserve)
                         {
-                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
-                            Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                            using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                                byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
+                                Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                            }
                         }
                     }
                 }
@@ -302,21 +304,23 @@ namespace PEBakery.Tests.Core.Command
                         File.Create(destDir).Close();
 
                     EngineTests.Eval(s, rawCode, CodeType.Expand, check);
-
-                    string[] srcFiles = Directory.GetFiles(srcPath, "*", SearchOption.AllDirectories);
-                    string[] destFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
-                    Assert.IsTrue(srcFiles.Length == destFiles.Length);
-
-                    if (!testPreserve && Directory.Exists(destDir) || testPreserve && checkIfPreserve)
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
-                        for (int i = 0; i < srcFiles.Length; i++)
+                        string[] srcFiles = Directory.GetFiles(srcPath, "*", SearchOption.AllDirectories);
+                        string[] destFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
+                        Assert.IsTrue(srcFiles.Length == destFiles.Length);
+
+                        if (!testPreserve && Directory.Exists(destDir) || testPreserve && checkIfPreserve)
                         {
-                            using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
-                            using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                            for (int i = 0; i < srcFiles.Length; i++)
                             {
-                                byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
-                                byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
-                                Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                                using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                                using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                                {
+                                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
+                                    Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                                }
                             }
                         }
                     }

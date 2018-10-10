@@ -45,10 +45,10 @@ namespace PEBakery.Core.Commands
             CodeInfo_Compress info = cmd.Info.Cast<CodeInfo_Compress>();
 
             #region Event Handlers
-            void ReportCompressProgress(object sender, ProgressEventArgs args)
+            void ReportCompressProgress(object sender, ProgressEventArgs e)
             {
-                s.MainViewModel.BuildCommandProgressValue = args.PercentDone;
-                s.MainViewModel.BuildCommandProgressText = $"Compressing... ({args.PercentDone}%)";
+                s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Compressing... ({e.PercentDone}%)";
             }
             #endregion
 
@@ -169,10 +169,10 @@ namespace PEBakery.Core.Commands
             CodeInfo_Decompress info = cmd.Info.Cast<CodeInfo_Decompress>();
 
             #region Event Handlers
-            void ReportDecompressProgress(object sender, ProgressEventArgs args)
+            void ReportDecompressProgress(object sender, ProgressEventArgs e)
             {
-                s.MainViewModel.BuildCommandProgressValue = args.PercentDone;
-                s.MainViewModel.BuildCommandProgressText = $"Decompressing... ({args.PercentDone}%)";
+                s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Decompressing... ({e.PercentDone}%)";
             }
             #endregion
 
@@ -220,6 +220,22 @@ namespace PEBakery.Core.Commands
             List<LogInfo> logs = new List<LogInfo>();
 
             CodeInfo_Expand info = cmd.Info.Cast<CodeInfo_Expand>();
+            List<string> extractedFiles = new List<string>();
+
+            #region Event Handlers
+            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            {
+                s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";
+            }
+
+            object trackLock = new object();
+            void TrackExtractedFile(object sender, FileInfoEventArgs e)
+            {
+                lock (trackLock)
+                    extractedFiles.Add(e.FileInfo.FileName);
+            }
+            #endregion
 
             string srcCab = StringEscaper.Preprocess(s, info.SrcCab);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
@@ -238,21 +254,48 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
+            // Does srcCab exist?
+            if (!File.Exists(srcCab))
+                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcCab}]");
+
+            // Turn on report progress only if file is larger than 1MB
+            FileInfo fi = new FileInfo(srcCab);
+            bool reportProgress = 1024 * 1024 <= fi.Length; 
+
             if (singleFile == null)
             { // No singleFile operand, extract all
-                if (ArchiveHelper.ExtractCab(srcCab, destDir, out List<string> doneList)) // Success
+                using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
                 {
-                    foreach (string done in doneList)
-                        logs.Add(new LogInfo(LogState.Success, $"[{done}] extracted"));
-                    logs.Add(new LogInfo(LogState.Success, $"[{doneList.Count}] files from [{srcCab}] extracted to [{destDir}]"));
-                }
-                else // Failure
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{srcCab}]"));
+                    if (extractor.Format != InArchiveFormat.Cab)
+                        return LogInfo.LogErrorMessage(logs, "Expand command must be used with cabinet archive");
+
+                    if (reportProgress)
+                    {
+                        extractor.FileExtractionFinished += TrackExtractedFile;
+                        extractor.Extracting += ReportExpandProgress;
+                        s.MainViewModel.SetBuildCommandProgress("Expand Progress");
+                    }
+
+                    try
+                    {
+                        extractor.ExtractArchive(destDir);
+                        foreach (string file in extractedFiles)
+                            logs.Add(new LogInfo(LogState.Success, $"[{file}] extracted"));
+                        logs.Add(new LogInfo(LogState.Success, $"[{extractedFiles.Count}] files from [{srcCab}] extracted to [{destDir}]"));
+                    }
+                    finally
+                    {
+                        if (reportProgress)
+                        {
+                            extractor.FileExtractionFinished -= TrackExtractedFile;
+                            extractor.Extracting -= ReportExpandProgress;
+                            s.MainViewModel.ResetBuildCommandProgress();
+                        }
+                    }
                 }
             }
             else
-            { // singleFile specified, extract only that singleFile
+            { // singleFile specified, extract only that file
                 string destPath = Path.Combine(destDir, singleFile);
                 if (File.Exists(destPath))
                 { // Check PRESERVE, NOWARN 
@@ -265,10 +308,42 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                 }
 
-                if (ArchiveHelper.ExtractCab(srcCab, destDir, singleFile)) // Success
-                    logs.Add(new LogInfo(LogState.Success, $"[{singleFile}] from [{srcCab}] extracted to [{destPath}]"));
-                else // Failure
-                    logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{singleFile}] from [{srcCab}]"));
+                using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
+                {
+                    if (extractor.Format != InArchiveFormat.Cab)
+                        return LogInfo.LogErrorMessage(logs, "Expand command must be used with cabinet archive");
+
+                    if (reportProgress)
+                    {
+                        extractor.Extracting += ReportExpandProgress;
+                        s.MainViewModel.SetBuildCommandProgress("Expand Progress");
+                    }
+
+                    try
+                    {
+                        string destFile = Path.Combine(destDir, singleFile);
+                        using (FileStream fs = new FileStream(destFile, FileMode.Create))
+                        {
+                            if (extractor.ArchiveFileNames.Contains(singleFile))
+                            {
+                                extractor.ExtractFile(singleFile, fs);
+                                logs.Add(new LogInfo(LogState.Success, $"[{singleFile}] from [{srcCab}] extracted to [{destPath}]"));
+                            }
+                            else
+                            { // Unable to find specified file
+                                logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{singleFile}] from [{srcCab}]"));
+                            }   
+                        }
+                    }
+                    finally
+                    {
+                        if (reportProgress)
+                        {
+                            extractor.Extracting -= ReportExpandProgress;
+                            s.MainViewModel.ResetBuildCommandProgress();
+                        }
+                    }
+                }
             }
 
             return logs;
