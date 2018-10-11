@@ -25,14 +25,13 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Cab;
 using PEBakery.Helper;
+using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
-using SevenZip;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -69,7 +68,7 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
             }
-                
+
             // Path Security Check
             if (!StringEscaper.PathSecurityCheck(destArchive, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -123,7 +122,7 @@ namespace PEBakery.Core.Commands
                     compressor.Compressing -= ReportCompressProgress;
                     s.MainViewModel.ResetBuildCommandProgress();
                 }
-                
+
             }
             else if (Directory.Exists(srcPath))
             {
@@ -218,7 +217,6 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> Expand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_Expand info = cmd.Info.Cast<CodeInfo_Expand>();
             List<string> extractedFiles = new List<string>();
 
@@ -260,7 +258,7 @@ namespace PEBakery.Core.Commands
 
             // Turn on report progress only if file is larger than 1MB
             FileInfo fi = new FileInfo(srcCab);
-            bool reportProgress = 1024 * 1024 <= fi.Length; 
+            bool reportProgress = 1024 * 1024 <= fi.Length;
 
             if (singleFile == null)
             { // No singleFile operand, extract all
@@ -275,7 +273,6 @@ namespace PEBakery.Core.Commands
                         extractor.Extracting += ReportExpandProgress;
                         s.MainViewModel.SetBuildCommandProgress("Expand Progress");
                     }
-
                     try
                     {
                         extractor.ExtractArchive(destDir);
@@ -319,30 +316,32 @@ namespace PEBakery.Core.Commands
                         s.MainViewModel.SetBuildCommandProgress("Expand Progress");
                     }
 
-                    try
+                    string[] archiveFileNames = extractor.ArchiveFileNames.ToArray();
+                    if (archiveFileNames.Contains(singleFile, StringComparer.OrdinalIgnoreCase))
                     {
-                        string destFile = Path.Combine(destDir, singleFile);
-                        using (FileStream fs = new FileStream(destFile, FileMode.Create))
+                        try
                         {
-                            if (extractor.ArchiveFileNames.Contains(singleFile))
+                            string destFile = Path.Combine(destDir, singleFile);
+                            using (FileStream fs = new FileStream(destFile, FileMode.Create))
                             {
                                 extractor.ExtractFile(singleFile, fs);
-                                logs.Add(new LogInfo(LogState.Success, $"[{singleFile}] from [{srcCab}] extracted to [{destPath}]"));
                             }
-                            else
-                            { // Unable to find specified file
-                                logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{singleFile}] from [{srcCab}]"));
-                            }   
+                            logs.Add(new LogInfo(LogState.Success, $"[{singleFile}] from [{srcCab}] extracted to [{destPath}]"));
                         }
-                    }
-                    finally
-                    {
-                        if (reportProgress)
+                        finally
                         {
-                            extractor.Extracting -= ReportExpandProgress;
-                            s.MainViewModel.ResetBuildCommandProgress();
+                            if (reportProgress)
+                            {
+                                extractor.Extracting -= ReportExpandProgress;
+                                s.MainViewModel.ResetBuildCommandProgress();
+                            }
                         }
                     }
+                    else
+                    { // Unable to find specified file
+                        logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{singleFile}] from [{srcCab}]"));
+                    }
+                    
                 }
             }
 
@@ -352,8 +351,15 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> CopyOrExpand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-
             CodeInfo_CopyOrExpand info = cmd.Info.Cast<CodeInfo_CopyOrExpand>();
+
+            #region Event Handlers
+            void ReportExpandProgress(object sender, ProgressEventArgs e)
+            {
+                s.MainViewModel.BuildCommandProgressValue = e.PercentDone;
+                s.MainViewModel.BuildCommandProgressText = $"Expanding... ({e.PercentDone}%)";
+            }
+            #endregion
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
@@ -364,151 +370,96 @@ namespace PEBakery.Core.Commands
             if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            // Check srcFile contains wildcard
-            if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
-            { // No Wildcard
-                InternalCopyOrExpand(logs, info, srcFile, destPath);
-            }
-            else
-            { // With Wildcard
-                string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
-
-                string[] files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile));
-
-                if (0 < files.Length)
-                { // One or more file will be copied
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]", cmd));
-
-                    foreach (string file in files)
-                        InternalCopyOrExpand(logs, info, file, destPath);
-
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
-                }
-                else
-                { // No file will be copied
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"No files matching wildcard [{srcFile}] were found", cmd));
-                }
-            }
-
-            return logs;
-        }
-
-        private static void InternalCopyOrExpand(List<LogInfo> logs, CodeInfo_CopyOrExpand info, string srcFile, string destPath)
-        {
-            if (srcFile == null)
-                throw new ArgumentNullException(nameof(srcFile));
-            if (destPath == null)
-                throw new ArgumentNullException(nameof(destPath));
-
             string srcFileName = Path.GetFileName(srcFile);
-            bool destIsDir = Directory.Exists(destPath);
-            bool destIsFile = File.Exists(destPath);
-            if (!destIsDir)
+            string srcFileExt = Path.GetExtension(srcFile);
+            if (!Directory.Exists(destPath))
             {
-                if (destIsFile)
+                if (File.Exists(destPath))
                 {
                     if (info.Preserve)
                     {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten"));
-                        return;
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] already exists and will not be overwritten"));
+                        return logs;
                     }
 
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] already exists and will be overwritten"));
                 }
             }
 
+            // Get destFullPath. It should be a file.
+            string destDir;
+            string destFullPath;
+            if (Directory.Exists(destPath))
+            {
+                destDir = destPath;
+                destFullPath = Path.Combine(destPath, srcFileName);
+            }
+            else // Move to new name
+            {
+                destDir = FileHelper.GetDirNameEx(destPath);
+                destFullPath = destPath;
+            }
+            Directory.CreateDirectory(destDir);
+
+            // Copy or Expand srcFile.
             if (File.Exists(srcFile))
             { // SrcFile is uncompressed, just copy!
-                string destFullPath = destPath;
-                if (destIsDir)
-                    destFullPath = Path.Combine(destPath, srcFileName);
-                else if (!destIsFile)
-                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
-
                 File.Copy(srcFile, destFullPath, !info.Preserve);
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));
             }
             else
             { // Extract Cabinet from _ (Ex) EXPLORER.EX_ -> EXPLORER.EXE
-                string destDir = destIsDir ? destPath : Path.GetDirectoryName(destPath);
-                if (destDir == null)
-                    throw new InternalException("Internal Logic Error at InternalCopyOrExpand");
+              // Terminate if a file does not have equivalent cabinet file
+                if (srcFileExt.Length == ".".Length)
+                    return logs;
+                string srcCabExt = srcFileExt.Substring(0, srcFileExt.Length - 1) + "_";
+                string srcCab = srcFile.Substring(0, srcFile.Length - srcCabExt.Length) + srcCabExt;
 
-                string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
                 if (File.Exists(srcCab))
                 {
-                    // Get Temp Dir
-                    string tempDir;
-                    {
-                        string tempDirName = Path.GetTempFileName();
-                        File.Delete(tempDirName);
-                        tempDir = Path.Combine(Path.GetTempPath(), tempDirName);
-                    }
-                    Directory.CreateDirectory(tempDir);
+                    // Turn on report progress only if file is larger than 1MB
+                    FileInfo fi = new FileInfo(srcCab);
+                    bool reportProgress = 1024 * 1024 <= fi.Length;
 
-                    try
+                    using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
                     {
-                        bool result;
-                        using (FileStream fs = new FileStream(srcCab, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        using (CabExtract cab = new CabExtract(fs))
+                        if (extractor.Format != InArchiveFormat.Cab)
+                            return LogInfo.LogErrorMessage(logs, $"[{srcCab}] is not a cabinet archive");
+
+                        string[] archiveFileNames = extractor.ArchiveFileNames.ToArray();
+                        if (archiveFileNames.Length != 1)
+                            return LogInfo.LogErrorMessage(logs, $"Cabinet [{srcCab}] should contain only a single file");
+
+                        if (!archiveFileNames.Contains(srcFileName, StringComparer.OrdinalIgnoreCase))
+                            return LogInfo.LogErrorMessage(logs, $"Failed to extract [{srcFileName}] from [{srcCab}]");
+
+                        if (reportProgress)
                         {
-                            result = cab.ExtractAll(tempDir, out List<string> fileList);
-                            if (2 < fileList.Count) // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
+                            extractor.Extracting += ReportExpandProgress; // Use "Expanding" instead of "CopyOrExpanding"
+                            s.MainViewModel.SetBuildCommandProgress("CopyOrExpand Progress");
+                        }
+                        try
+                        {
+                            using (FileStream fs = new FileStream(destFullPath, FileMode.Create))
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain only a single file"));
-                                return;
+                                extractor.ExtractFile(srcFileName, fs);
                             }
+                            logs.Add(new LogInfo(LogState.Success, $"[{srcCab}] extracted to [{destFullPath}]"));
                         }
-
-                        if (result)
-                        { // Extract Success
-                            string tempFullPath = Path.Combine(tempDir, srcFileName);
-                            if (File.Exists(tempFullPath))
-                            {
-                                string destFullPath;
-                                if (destIsDir)
-                                    destFullPath = Path.Combine(destDir, srcFileName);
-                                else // Move to new name
-                                    destFullPath = Path.Combine(destDir, Path.GetFileName(destPath));
-
-                                if (File.Exists(destFullPath))
-                                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destFullPath}] already exists and will be overwritten"));
-
-                                try
-                                {
-                                    string destParent = Path.GetDirectoryName(destFullPath);
-                                    if (destParent == null)
-                                        throw new InternalException("Internal Logic Error at InternalCopyOrExpand");
-                                    if (!Directory.Exists(destParent))
-                                        Directory.CreateDirectory(destParent);
-                                    File.Copy(tempFullPath, destFullPath, true);
-                                    logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
-                                }
-                                finally
-                                {
-                                    File.Delete(tempFullPath);
-                                }
-                            }
-                            else
-                            { // Unable to find srcFile
-                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] does not contain [{Path.GetFileName(destPath)}]"));
-                            }
+                        finally
+                        {
+                            extractor.Extracting -= ReportExpandProgress; // Use "Expanding" instead of "CopyOrExpanding"
+                            s.MainViewModel.ResetBuildCommandProgress();
                         }
-                        else
-                        { // Extract Fail
-                            logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{srcCab}]"));
-                        }
-                    }
-                    finally
-                    {
-                        Directory.Delete(tempDir, true);
                     }
                 }
                 else
                 { // Error
-                    logs.Add(new LogInfo(LogState.Error, $"The file [{srcFile}] or [{srcCab}] could not be found"));
+                    logs.Add(new LogInfo(LogState.Error, $"The file [{srcFile}] or [{Path.GetFileName(srcCab)}] could not be found"));
                 }
             }
+
+            return logs;
         }
     }
 }

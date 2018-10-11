@@ -31,7 +31,6 @@ using PEBakery.Helper;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -381,7 +380,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempFileNameEx();
             string destFile = Path.Combine(destDir, "ex3.jpg");
 
             if (Directory.Exists(destDir))
@@ -415,7 +414,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempFileNameEx();
             string destFile = Path.Combine(destDir, "change.jpg");
 
             if (Directory.Exists(destDir))

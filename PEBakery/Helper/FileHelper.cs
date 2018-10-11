@@ -178,12 +178,9 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static string GetDirNameEx(string path)
         {
-            path = FileHelper.RemoveLastDirChar(path);
             string dirName = Path.GetDirectoryName(path);
-            if (dirName == string.Empty)
-                dirName = ".";
-            else if (dirName == null) // path denotes root directory
-                dirName = path; // So return root itself
+            if (dirName.Length == 0) // e.g. Hello.txt
+                return "."; // Consider path as [.\Hello.txt].
             return dirName;
         }
 
