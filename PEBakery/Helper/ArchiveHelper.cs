@@ -89,67 +89,6 @@ namespace PEBakery.Helper
             }
             return outFormat;
         }
-
-        public static bool CompressNative(string srcPath, string destArchive,
-            ArchiveHelper.ArchiveCompressFormat format, ArchiveHelper.CompressLevel level)
-        {
-            SevenZip.OutArchiveFormat outFormat = ToSevenZipOutFormat(format);
-            SevenZip.CompressionLevel compLevel = ToSevenZipLevel(level);
-
-            // Overwrite is default
-            if (File.Exists(destArchive))
-                File.Delete(destArchive);
-
-            SevenZipCompressor compressor = new SevenZipCompressor
-            {
-                ArchiveFormat = outFormat,
-                CompressionMode = CompressionMode.Create,
-                CompressionLevel = compLevel,
-
-            };
-
-            switch (outFormat)
-            {
-                case OutArchiveFormat.Zip:
-                    compressor.CustomParameters["cu"] = "on"; // Force UTF-8 for filename
-                    break;
-            }
-
-            if (File.Exists(srcPath))
-            {
-                compressor.DirectoryStructure = false;
-
-                using (FileStream fs = new FileStream(destArchive, FileMode.Create))
-                {
-                    compressor.CompressFiles(fs, srcPath);
-                }
-            }
-            else if (Directory.Exists(srcPath))
-            {
-                compressor.DirectoryStructure = true;
-                compressor.PreserveDirectoryRoot = true;
-                compressor.IncludeEmptyDirectories = true;
-
-                using (FileStream fs = new FileStream(destArchive, FileMode.Create))
-                {
-                    compressor.CompressDirectory(srcPath, fs);
-                }
-            }
-            else
-            {
-                throw new ArgumentException($"Path [{level}] does not exist");
-            }
-
-            return File.Exists(destArchive);
-        }
-
-        public static void DecompressNative(string srcArchive, string destDir)
-        {
-            using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
-            {
-                extractor.ExtractArchive(destDir);
-            }
-        }
         #endregion
     }
     #endregion
