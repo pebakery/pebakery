@@ -382,10 +382,6 @@
       <Project>{d01b1d20-8f5b-4834-8e5c-c7ec6dd587d4}</Project>
       <Name>Ookii.Dialogs.Wpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PEBakery.Cab\PEBakery.Cab.csproj">
-      <Project>{d3d90156-0a5c-467b-8dcc-a8a50bfd529c}</Project>
-      <Name>PEBakery.Cab</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.Ini</Name>

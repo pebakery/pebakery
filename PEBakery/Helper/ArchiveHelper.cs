@@ -23,10 +23,8 @@
     SOFTWARE.
 */
 
-using PEBakery.Cab;
 using SevenZip;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace PEBakery.Helper
@@ -34,44 +32,6 @@ namespace PEBakery.Helper
     #region ArchiveHelper
     public static class ArchiveHelper
     {
-        #region PEBakery.Cab
-        /// <summary>
-        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
-        /// </summary>
-        public static bool ExtractCab(string srcCabFile, string destDir)
-        {
-            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (CabExtract cab = new CabExtract(fs))
-            {
-                return cab.ExtractAll(destDir, out _);
-            }
-        }
-
-        /// <summary>
-        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
-        /// </summary>
-        public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
-        {
-            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (CabExtract cab = new CabExtract(fs))
-            {
-                return cab.ExtractAll(destDir, out extractedList);
-            }
-        }
-
-        /// <summary>
-        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
-        /// </summary>
-        public static bool ExtractCab(string srcCabFile, string destDir, string target)
-        {
-            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (CabExtract cab = new CabExtract(fs))
-            {
-                return cab.ExtractSingleFile(target, destDir);
-            }
-        }
-        #endregion
-
         #region SevenZipSharp
         public enum CompressLevel
         {

@@ -34,24 +34,11 @@ not derived from or based on this program.
 -----------------------------------------------------------
 These parts of PEBakery is licensed under various license.
 
-PEBakery.Cab
-PEBakery.Cab.Tests
-    Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-
 PEBakery.Ini
 PEBakery.Ini.Tests
-    MIT License
-    https://opensource.org/licenses/MIT
-
 PEBakery.Tree
     MIT License
     https://opensource.org/licenses/MIT
-
-ManagedWimLib
-ManagedWimLib.Tests
-    LGPLv3 License
-    https://www.gnu.org/licenses/lgpl-3.0.en.html
 
 Ookii.Dialogs.Wpf
     The BSD 3-Clause License
@@ -73,9 +60,6 @@ PEBakery/Helper
 
 PEBakery/WPF/Controls/NumberBox.xaml
 PEBakery/WPF/Controls/NumberBox.xaml.cs
-    MIT License
-    https://opensource.org/licenses/MIT
-
 PEBakery/WPF/Controls/DragCanvas.cs
 PEBakery/WPF/Controls/EditCanvas.cs
     MIT License
@@ -144,6 +128,7 @@ Joveler.Compression.ZLib
     zlib license
     https://opensource.org/licenses/Zlib
 
+    Copyright (C) Jean-loup Gailly and Mark Adler
     Copyright (C) Hajin Jang
     https://github.com/ied206/Joveler.Compression
 
@@ -160,7 +145,16 @@ ManagedWimgApi
 
     Copyright (c) josemesona
     https://github.com/josemesona/ManagedWimgApi
-    
+
+ManagedWimLib
+ManagedWimLib.Tests
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
+
+    Copyright (C) Eric Biggers
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/ManagedWimLib
+
 Material Icons
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
