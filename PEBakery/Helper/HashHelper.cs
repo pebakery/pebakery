@@ -68,9 +68,9 @@ namespace PEBakery.Helper
             return builder.ToString();
         }
 
-        public static string CalcHashString(HashType type, string hex)
+        public static string CalcHashString(HashType type, string hexStr)
         {
-            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
+            if (!NumberHelper.ParseHexStringToBytes(hexStr, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
@@ -145,11 +145,11 @@ namespace PEBakery.Helper
             return InternalDetectHashType(data.Length);
         }
 
-        public static HashType DetectHashType(string hex)
+        public static HashType DetectHashType(string hexStr)
         {
-            if (StringHelper.IsHex(hex))
+            if (StringHelper.IsHex(hexStr))
                 return HashType.None;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] hashByte))
+            if (!NumberHelper.ParseHexStringToBytes(hexStr, out byte[] hashByte))
                 return HashType.None;
 
             return InternalDetectHashType(hashByte.Length);
