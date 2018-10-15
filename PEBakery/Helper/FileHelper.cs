@@ -179,6 +179,8 @@ namespace PEBakery.Helper
         public static string GetDirNameEx(string path)
         {
             string dirName = Path.GetDirectoryName(path);
+            if (dirName == null)
+                return null;
             if (dirName.Length == 0) // e.g. Hello.txt
                 return "."; // Consider path as [.\Hello.txt].
             return dirName;
