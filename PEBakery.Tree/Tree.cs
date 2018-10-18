@@ -247,7 +247,6 @@ namespace PEBakery.Tree
         #endregion
 
         #region GetEnumerator (DFS, BFS)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerator GetEnumerator()
         {
             return GetEnumeratorDFS();
@@ -293,9 +292,9 @@ namespace PEBakery.Tree
                     RecursiveGetEnumeratorDFS(node.Child, qFinal);
             }
         }
-        #endregion
+#endregion
 
-        #region Sort
+#region Sort
         public void Sort(Comparison<KwayTreeNode<T>> sortFunc)
         {
             RecursiveSort(sortFunc, Root);
@@ -311,11 +310,11 @@ namespace PEBakery.Tree
                     RecursiveSort(sortFunc, node.Child);
             }
         }
-        #endregion
+#endregion
     }
-    #endregion
+#endregion
 
-    #region class KwayTreeNode
+#region class KwayTreeNode
     public class KwayTreeNode<T>
     {
         public int Id;
@@ -338,5 +337,5 @@ namespace PEBakery.Tree
             return $"Node ({Id}, {Data}, {Child.Count})";
         }
     }
-    #endregion
+#endregion
 }
