@@ -2107,13 +2107,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
     { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
-        public ArchiveHelper.ArchiveCompressFormat Format;
+        public ArchiveFile.ArchiveCompressFormat Format;
         public string SrcPath;
         public string DestArchive;
-        public ArchiveHelper.CompressLevel? CompressLevel;
+        public ArchiveFile.CompressLevel? CompressLevel;
 
         public CodeInfo_Compress(
-            ArchiveHelper.ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel)
+            ArchiveFile.ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveFile.CompressLevel? compressLevel)
         {
             Format = format;
             SrcPath = srcDir;
@@ -2126,10 +2126,10 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             switch (Format)
             {
-                case ArchiveHelper.ArchiveCompressFormat.Zip:
+                case ArchiveFile.ArchiveCompressFormat.Zip:
                     b.Append("Zip");
                     break;
-                case ArchiveHelper.ArchiveCompressFormat.SevenZip:
+                case ArchiveFile.ArchiveCompressFormat.SevenZip:
                     b.Append("SevenZip");
                     break;
                 default:

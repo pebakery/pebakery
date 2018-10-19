@@ -1562,16 +1562,16 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        ArchiveHelper.ArchiveCompressFormat format;
+                        ArchiveFile.ArchiveCompressFormat format;
                         string formatStr = args[0];
                         if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveHelper.ArchiveCompressFormat.Zip;
+                            format = ArchiveFile.ArchiveCompressFormat.Zip;
                         else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveHelper.ArchiveCompressFormat.SevenZip;
+                            format = ArchiveFile.ArchiveCompressFormat.SevenZip;
                         else
                             throw new InvalidCommandException($"Cannot compress to [{formatStr}] file format", rawCode);
 
-                        ArchiveHelper.CompressLevel? compLevel = null;
+                        ArchiveFile.CompressLevel? compLevel = null;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1579,25 +1579,25 @@ namespace PEBakery.Core
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Store;
+                                compLevel = ArchiveFile.CompressLevel.Store;
                             }
                             else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Fastest;
+                                compLevel = ArchiveFile.CompressLevel.Fastest;
                             }
                             else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Normal;
+                                compLevel = ArchiveFile.CompressLevel.Normal;
                             }
                             else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
                                     throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
-                                compLevel = ArchiveHelper.CompressLevel.Best;
+                                compLevel = ArchiveFile.CompressLevel.Best;
                             }
                             else
                             {

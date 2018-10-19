@@ -43,7 +43,7 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandArchive")]
         public void Compress()
         {
-            void DirTemplate(string arcType, string srcDirName, ArchiveHelper.CompressLevel? level)
+            void DirTemplate(string arcType, string srcDirName, ArchiveFile.CompressLevel? level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -60,16 +60,16 @@ namespace PEBakery.Tests.Core.Command
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcDirName}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveHelper.CompressLevel.Best:
+                        case ArchiveFile.CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveHelper.CompressLevel.Fastest:
+                        case ArchiveFile.CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveHelper.CompressLevel.Normal:
+                        case ArchiveFile.CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveHelper.CompressLevel.Store:
+                        case ArchiveFile.CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -100,7 +100,7 @@ namespace PEBakery.Tests.Core.Command
                 }
             }
 
-            void FileTemplate(string arcType, string srcFilePath, ArchiveHelper.CompressLevel level)
+            void FileTemplate(string arcType, string srcFilePath, ArchiveFile.CompressLevel level)
             { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
@@ -118,16 +118,16 @@ namespace PEBakery.Tests.Core.Command
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcFilePath}"",""{destArchive}""";
                     switch (level)
                     {
-                        case ArchiveHelper.CompressLevel.Best:
+                        case ArchiveFile.CompressLevel.Best:
                             rawCode += ",BEST";
                             break;
-                        case ArchiveHelper.CompressLevel.Fastest:
+                        case ArchiveFile.CompressLevel.Fastest:
                             rawCode += ",FASTEST";
                             break;
-                        case ArchiveHelper.CompressLevel.Normal:
+                        case ArchiveFile.CompressLevel.Normal:
                             rawCode += ",NORMAL";
                             break;
-                        case ArchiveHelper.CompressLevel.Store:
+                        case ArchiveFile.CompressLevel.Store:
                             rawCode += ",STORE";
                             break;
                     }
@@ -149,11 +149,11 @@ namespace PEBakery.Tests.Core.Command
                 }
             }
 
-            DirTemplate("Zip", "France", ArchiveHelper.CompressLevel.Store);
-            DirTemplate("7z", "Korea", ArchiveHelper.CompressLevel.Normal);
-            DirTemplate("Zip", "Korea", ArchiveHelper.CompressLevel.Best);
-            FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveHelper.CompressLevel.Normal);
-            FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveHelper.CompressLevel.Best);
+            DirTemplate("Zip", "France", ArchiveFile.CompressLevel.Store);
+            DirTemplate("7z", "Korea", ArchiveFile.CompressLevel.Normal);
+            DirTemplate("Zip", "Korea", ArchiveFile.CompressLevel.Best);
+            FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Normal);
+            FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Best);
         }
         #endregion
 

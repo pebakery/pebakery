@@ -187,6 +187,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Core\ArchiveFile.cs" />
     <Compile Include="Core\CodeOptimizer.cs" />
     <Compile Include="Core\CodeValidator.cs" />
     <Compile Include="Core\Commands\CommandList.cs" />
@@ -210,15 +211,6 @@
     <Compile Include="Global.cs" />
     <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\FileUpdater.cs" />
-    <Compile Include="Helper\ArchiveHelper.cs" />
-    <Compile Include="Helper\ControlsHelper.cs" />
-    <Compile Include="Helper\FileHelper.cs" />
-    <Compile Include="Helper\HashHelper.cs" />
-    <Compile Include="Helper\ImageHelper.cs" />
-    <Compile Include="Helper\NativeMethods.cs" />
-    <Compile Include="Helper\NumberHelper.cs" />
-    <Compile Include="Helper\RegistryHelper.cs" />
-    <Compile Include="Helper\StringHelper.cs" />
     <Compile Include="WPF\AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
@@ -304,7 +296,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Helper\FontHelper.cs" />
     <Compile Include="WPF\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -381,6 +372,10 @@
     <ProjectReference Include="..\Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj">
       <Project>{d01b1d20-8f5b-4834-8e5c-c7ec6dd587d4}</Project>
       <Name>Ookii.Dialogs.Wpf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj">
+      <Project>{3e7bbc76-70c7-4514-8750-968981267738}</Project>
+      <Name>PEBakery.Helper</Name>
     </ProjectReference>
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>

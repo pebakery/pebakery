@@ -170,6 +170,18 @@ namespace PEBakery.Helper
             return path;
         }
 
+        private static readonly object TempDirLock = new object();
+        public static string GetTempDir()
+        {
+            lock (TempDirLock)
+            {
+                string path = Path.GetTempFileName();
+                File.Delete(path);
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
+
         /// <summary>
         /// Extends Path.GetDirectoryName().
         /// If returned dir path is empty, change it to "."

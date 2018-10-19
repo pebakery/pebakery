@@ -91,7 +91,6 @@
     <Compile Include="Core\ScriptTests.cs" />
     <Compile Include="Core\StringEscaperTests.cs" />
     <Compile Include="Core\UIParserTests.cs" />
-    <Compile Include="HelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestSetup.cs" />
   </ItemGroup>
@@ -99,6 +98,10 @@
     <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">
       <Project>{0ee27887-e06a-4c64-82a0-7c496eced946}</Project>
       <Name>NativeLibraries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj">
+      <Project>{3e7bbc76-70c7-4514-8750-968981267738}</Project>
+      <Name>PEBakery.Helper</Name>
     </ProjectReference>
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>

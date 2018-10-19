@@ -54,13 +54,13 @@ namespace PEBakery.Core.Commands
             // Parse arguments / parameters
             string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
             string destArchive = StringEscaper.Preprocess(s, info.DestArchive);
-            SevenZip.OutArchiveFormat outFormat = ArchiveHelper.ToSevenZipOutFormat(info.Format);
+            SevenZip.OutArchiveFormat outFormat = ArchiveFile.ToSevenZipOutFormat(info.Format);
             SevenZip.CompressionLevel compLevel = SevenZip.CompressionLevel.Normal;
-            if (info.CompressLevel is ArchiveHelper.CompressLevel level)
+            if (info.CompressLevel is ArchiveFile.CompressLevel level)
             {
                 try
                 {
-                    compLevel = ArchiveHelper.ToSevenZipLevel(level);
+                    compLevel = ArchiveFile.ToSevenZipLevel(level);
                 }
                 catch (ArgumentException)
                 { // Should have been filtered by CodeParser
