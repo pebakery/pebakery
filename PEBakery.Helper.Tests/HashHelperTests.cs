@@ -50,14 +50,17 @@ namespace PEBakery.Helper.Tests
         #endregion
 
         #region GetHashProgress
+        private static readonly object progressLock = new object();
         private static int _idx;
         private static long _expectedLength;
         private static readonly IProgress<(long Position, long Length)> InternalProgress = new Progress<(long Position, long Length)>(x =>
         {
-            Console.WriteLine(_idx);
-            _idx += 1;
-            Assert.AreEqual(_idx * HashHelper.ReportInterval, x.Position);
-            Assert.AreEqual(_expectedLength, x.Length);
+            lock (progressLock)
+            {
+                _idx += 1;
+                Assert.AreEqual(_idx * HashHelper.ReportInterval, x.Position);
+                Assert.AreEqual(_expectedLength, x.Length);
+            }
         });
 
         [TestMethod]
