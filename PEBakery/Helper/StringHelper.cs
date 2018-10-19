@@ -297,6 +297,16 @@ namespace PEBakery.Helper
             return strs.Where(x => Regex.IsMatch(x, pattern, regexOptions));
         }
         #endregion
+
+        #region ToHexStr
+        public static string ToHexStr(byte[] input)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (byte b in input)
+                builder.Append(b.ToString("x2"));
+            return builder.ToString();
+        }
+        #endregion
     }
     #endregion
 }

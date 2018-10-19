@@ -24,9 +24,10 @@
 */
 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Helper
@@ -34,61 +35,26 @@ namespace PEBakery.Helper
     #region HashHelper
     public static class HashHelper
     {
+        #region Fields
         public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 }
+        public static readonly ReadOnlyDictionary<HashType, int> HashLenDict = new ReadOnlyDictionary<HashType, int>
+        (
+            new Dictionary<HashType, int>
+            {
+                [HashType.MD5] = 128 / 8,
+                [HashType.SHA1] = 160 / 8,
+                [HashType.SHA256] = 256 / 8,
+                [HashType.SHA384] = 384 / 8,
+                [HashType.SHA512] = 512 / 8,
+            }
+        );
 
-        public const int MD5Len = 128 / 8;
-        public const int SHA1Len = 160 / 8;
-        public const int SHA256Len = 256 / 8;
-        public const int SHA384Len = 384 / 8;
-        public const int SHA512Len = 512 / 8;
+        private const int BufferSize = 64 * 1024; // 64KB
+        public const int ReportInterval = 1024 * 1024; // 1MB
+        #endregion
 
-        public static byte[] CalcHash(HashType type, byte[] data)
-        {
-            return InternalCalcHash(type, data);
-        }
-
-        public static byte[] CalcHash(HashType type, string hex)
-        {
-            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
-                throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
-            return InternalCalcHash(type, data);
-        }
-
-        public static byte[] CalcHash(HashType type, Stream stream)
-        {
-            return InternalCalcHash(type, stream);
-        }
-
-        public static string CalcHashString(HashType type, byte[] data)
-        {
-            byte[] h = InternalCalcHash(type, data);
-            StringBuilder builder = new StringBuilder();
-            foreach (byte b in h)
-                builder.Append(b.ToString("x2"));
-            return builder.ToString();
-        }
-
-        public static string CalcHashString(HashType type, string hexStr)
-        {
-            if (!NumberHelper.ParseHexStringToBytes(hexStr, out byte[] data))
-                throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
-            byte[] h = InternalCalcHash(type, data);
-            StringBuilder builder = new StringBuilder();
-            foreach (byte b in h)
-                builder.Append(b.ToString("x2"));
-            return builder.ToString();
-        }
-
-        public static string CalcHashString(HashType type, Stream stream)
-        {
-            byte[] h = InternalCalcHash(type, stream);
-            StringBuilder builder = new StringBuilder();
-            foreach (byte b in h)
-                builder.Append(b.ToString("x2"));
-            return builder.ToString();
-        }
-
-        private static byte[] InternalCalcHash(HashType type, byte[] data)
+        #region CalcHash
+        public static byte[] GetHash(HashType type, byte[] input, IProgress<(long Position, long Length)> progress = null)
         {
             HashAlgorithm hash;
             switch (type)
@@ -111,10 +77,37 @@ namespace PEBakery.Helper
                 default:
                     throw new InvalidOperationException("Invalid Hash Type");
             }
-            return hash.ComputeHash(data);
+
+            // No progress report
+            if (progress == null)
+                return hash.ComputeHash(input);
+
+            // With progress report
+            int offset = 0;
+            while (offset < input.Length)
+            {
+                if (offset + ReportInterval < input.Length)
+                {
+                    hash.TransformBlock(input, offset, ReportInterval, input, offset);
+
+                    offset += ReportInterval;
+                    progress.Report((offset, input.Length));
+                }
+                else // Last run
+                {
+                    int bytesRead = input.Length - offset;
+
+                    hash.TransformFinalBlock(input, offset, bytesRead);
+
+                    offset += bytesRead;
+                    if (offset % ReportInterval == 0)
+                        progress.Report((offset, input.Length));
+                }
+            }
+            return hash.Hash;
         }
 
-        private static byte[] InternalCalcHash(HashType type, Stream stream)
+        public static byte[] GetHash(HashType type, Stream stream, IProgress<(long Position, long Length)> progress = null)
         {
             HashAlgorithm hash;
             switch (type)
@@ -137,9 +130,32 @@ namespace PEBakery.Helper
                 default:
                     throw new InvalidOperationException("Invalid Hash Type");
             }
-            return hash.ComputeHash(stream);
-        }
 
+            // No progress report
+            if (progress == null)
+                return hash.ComputeHash(stream);
+
+            // With progress report
+            long offset = stream.Position;
+            long length = stream.Length;
+            byte[] buffer = new byte[BufferSize];
+            while (offset < length)
+            {
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                if (offset + bytesRead < length)
+                    hash.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                else // Last run
+                    hash.TransformFinalBlock(buffer, 0, bytesRead);
+
+                offset += bytesRead;
+                if (offset % ReportInterval == 0)
+                    progress.Report((offset, length));
+            }
+            return hash.Hash;
+        }
+        #endregion
+
+        #region DetectHashType
         public static HashType DetectHashType(byte[] data)
         {
             return InternalDetectHashType(data.Length);
@@ -157,57 +173,33 @@ namespace PEBakery.Helper
 
         private static HashType InternalDetectHashType(int length)
         {
-            HashType hashType;
-            switch (length)
+            foreach (var kv in HashLenDict)
             {
-                case HashHelper.MD5Len * 2:
-                    hashType = HashType.MD5;
-                    break;
-                case HashHelper.SHA1Len * 2:
-                    hashType = HashType.SHA1;
-                    break;
-                case HashHelper.SHA256Len * 2:
-                    hashType = HashType.SHA256;
-                    break;
-                case HashHelper.SHA384Len * 2:
-                    hashType = HashType.SHA384;
-                    break;
-                case HashHelper.SHA512Len * 2:
-                    hashType = HashType.SHA512;
-                    break;
-                default:
-                    throw new InvalidOperationException("Cannot recognize valid hash string");
+                if (length == kv.Value)
+                    return kv.Key;
             }
-
-            return hashType;
+            throw new InvalidOperationException("Cannot recognize valid hash string");
         }
+        #endregion
 
+        #region GetHashByteLen
         public static int GetHashByteLen(HashType hashType)
         {
-            int byteLen;
             switch (hashType)
             {
                 case HashType.MD5:
-                    byteLen = 32;
-                    break;
                 case HashType.SHA1:
-                    byteLen = 40;
-                    break;
                 case HashType.SHA256:
-                    byteLen = 64;
-                    break;
                 case HashType.SHA384:
-                    byteLen = 96;
-                    break;
                 case HashType.SHA512:
-                    byteLen = 128;
-                    break;
+                    return HashLenDict[hashType];
                 default:
                     throw new ArgumentException($"Wrong HashType [{hashType}]");
             }
-            return byteLen;
         }
+        #endregion
 
+        #region ParseHashType
         public static HashType ParseHashType(string str)
         {
             HashType hashType;
@@ -225,6 +217,7 @@ namespace PEBakery.Helper
                 throw new ArgumentException($"Wrong HashType [{str}]");
             return hashType;
         }
+        #endregion
     }
     #endregion
 }

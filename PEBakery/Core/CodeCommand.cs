@@ -4530,7 +4530,6 @@ namespace PEBakery.Core
         GetFreeDrive,
         GetFreeSpace,
         IsAdmin,
-        Log,
         OnBuildExit,
         OnScriptExit,
         RefreshInterface,

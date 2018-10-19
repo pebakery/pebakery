@@ -27,6 +27,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Helper
 {
@@ -576,8 +577,6 @@ namespace PEBakery.Helper
         /// <returns>Return true if success.</returns>
         public static bool ParseHexStringToBytes(string hex, out byte[] array)
         {
-            // Encoding.UTF8.GetBytes
-
             if (hex.Length % 2 == 1) // hex's length must be even number
             {
                 array = new byte[0];
@@ -590,11 +589,11 @@ namespace PEBakery.Helper
             return true;
         }
 
-        const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;
-        const long TB = 1024L * 1024L * 1024L * 1024L;
-        const long GB = 1024L * 1024L * 1024L;
-        const long MB = 1024L * 1024L;
-        const long KB = 1024L;
+        private const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;
+        private const long TB = 1024L * 1024L * 1024L * 1024L;
+        private const long GB = 1024L * 1024L * 1024L;
+        private const long MB = 1024L * 1024L;
+        private const long KB = 1024L;
 
         public static string ByteSizeToSIUnit(long byteSize, int decPoint = 3)
         {

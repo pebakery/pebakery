@@ -96,13 +96,13 @@ namespace PEBakery.Tests.Core
                     {
                         EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
                         ms.Position = 0;
-                        extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                        extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                     }
 
                     byte[] originDigest;
                     using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                        originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
                     }
 
                     Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
@@ -291,7 +291,7 @@ namespace PEBakery.Tests.Core
                 {
                     EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
                     ms.Position = 0;
-                    extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -299,7 +299,7 @@ namespace PEBakery.Tests.Core
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -328,7 +328,7 @@ namespace PEBakery.Tests.Core
                 using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))
                 {
                     ms.Position = 0;
-                    extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                    extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                 }
 
                 string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
@@ -336,7 +336,7 @@ namespace PEBakery.Tests.Core
                 byte[] originDigest;
                 using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                    originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
                 }
 
                 // Compare Hash
@@ -405,7 +405,7 @@ namespace PEBakery.Tests.Core
             using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
             {
                 Assert.IsTrue(type == ImageHelper.ImageType.Jpg);
-                extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "Logo.jpg");
@@ -413,7 +413,7 @@ namespace PEBakery.Tests.Core
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -439,7 +439,7 @@ namespace PEBakery.Tests.Core
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterface(sc, "PEBakeryAlphaMemory.jpg"))
             {
-                extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
             }
 
             string originFile = Path.Combine("%TestBench%", "EncodedFile", "PEBakeryAlphaMemory.jpg");
@@ -447,7 +447,7 @@ namespace PEBakery.Tests.Core
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                originDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
             }
 
             // Compare Hash
@@ -986,7 +986,7 @@ namespace PEBakery.Tests.Core
                 byte[] encDigest;
                 using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    binDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                    binDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
                 }
 
                 List<string> lines = new List<string>();
@@ -1010,7 +1010,7 @@ namespace PEBakery.Tests.Core
                         fs.Write(decoded, 0, decoded.Length);
                     }
 #endif
-                    encDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, decoded);
+                    encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, decoded);
                 }
                 else
                 {
@@ -1025,7 +1025,7 @@ namespace PEBakery.Tests.Core
                         }
                         ms.Position = 0;
 #endif
-                        encDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                        encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                     }
 
                 }

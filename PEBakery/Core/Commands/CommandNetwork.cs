@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
 
             Uri uri = new Uri(url);
             string destFile;
-            if (Directory.Exists(destPath)) // downloadTo is dir
+            if (Directory.Exists(destPath))
             {
                 destFile = Path.Combine(destPath, Path.GetFileName(uri.LocalPath));
             }
@@ -112,14 +112,14 @@ namespace PEBakery.Core.Commands
                     if (result)
                     { // Success -> Check hash
                         string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
-                        int byteLen = HashHelper.GetHashByteLen(info.HashType);
-                        if (hashDigest.Length != byteLen)
+                        if (hashDigest.Length != 2 * HashHelper.GetHashByteLen(info.HashType))
                             return LogInfo.LogErrorMessage(logs, $"Hash digest [{hashDigest}] is not [{info.HashType}]");
 
                         string downDigest;
                         using (FileStream fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read))
                         {
-                            downDigest = HashHelper.CalcHashString(info.HashType, fs);
+                            byte[] digest = HashHelper.GetHash(info.HashType, fs);
+                            downDigest = StringHelper.ToHexStr(digest);
                         }
 
                         if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success

@@ -421,6 +421,7 @@
     <Error Condition="!Exists('..\packages\Joveler.Compression.XZ.1.1.0\build\net451\Joveler.Compression.XZ.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.XZ.1.1.0\build\net451\Joveler.Compression.XZ.targets'))" />
     <Error Condition="!Exists('..\packages\Joveler.Compression.ZLib.2.1.0\build\net451\Joveler.Compression.ZLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.ZLib.2.1.0\build\net451\Joveler.Compression.ZLib.targets'))" />
     <Error Condition="!Exists('..\packages\ManagedWimLib.1.2.1\build\net451\ManagedWimLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ManagedWimLib.1.2.1\build\net451\ManagedWimLib.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets'))" />
   </Target>
   <Import Project="..\packages\Timestamp.1.0.0\build\Timestamp.targets" Condition="Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" />
@@ -429,6 +430,7 @@
   <Import Project="..\packages\Joveler.Compression.XZ.1.1.0\build\net451\Joveler.Compression.XZ.targets" Condition="Exists('..\packages\Joveler.Compression.XZ.1.1.0\build\net451\Joveler.Compression.XZ.targets')" />
   <Import Project="..\packages\Joveler.Compression.ZLib.2.1.0\build\net451\Joveler.Compression.ZLib.targets" Condition="Exists('..\packages\Joveler.Compression.ZLib.2.1.0\build\net451\Joveler.Compression.ZLib.targets')" />
   <Import Project="..\packages\ManagedWimLib.1.2.1\build\net451\ManagedWimLib.targets" Condition="Exists('..\packages\ManagedWimLib.1.2.1\build\net451\ManagedWimLib.targets')" />
+  <Import Project="..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets" Condition="Exists('..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

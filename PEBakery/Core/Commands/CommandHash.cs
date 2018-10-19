@@ -51,7 +51,8 @@ namespace PEBakery.Core.Commands
             HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                digest = HashHelper.CalcHashString(hashType, fs);
+                byte[] rawDigest = HashHelper.GetHash(hashType, fs);
+                digest = StringHelper.ToHexStr(rawDigest);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{digest}]"));
