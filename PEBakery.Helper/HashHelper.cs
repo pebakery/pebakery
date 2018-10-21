@@ -112,7 +112,7 @@ namespace PEBakery.Helper
             return GetHash(type, stream, 0, null);
         }
 
-        public static byte[] GetHash(HashType type, Stream stream, int reportInterval, IProgress<long> progress)
+        public static byte[] GetHash(HashType type, Stream stream, long reportInterval, IProgress<long> progress)
         {
             HashAlgorithm hash;
             switch (type)

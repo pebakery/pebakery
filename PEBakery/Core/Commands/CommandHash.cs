@@ -30,12 +30,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
     public static class CommandHash
     {
+        private const int ReportThreshold = 32 * 1024 * 1024;
+        private const int ReportRound = 1024 * 1024;
+        private const int ReportIntervalMax = 128 * 1024 * 1024;
+
         public static List<LogInfo> Hash(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -47,13 +50,54 @@ namespace PEBakery.Core.Commands
             Debug.Assert(hashTypeStr != null, $"{nameof(hashTypeStr)} != null");
             Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
+            if (!File.Exists(filePath))
+                return LogInfo.LogErrorMessage(logs, $"File [{filePath}] does not exist");
+
+            long reportInterval = 0;
+
+            FileInfo fi = new FileInfo(filePath);
+            long fileSize = fi.Length;
+            
+            // If file size is larger than 32MB, turn on progress report
+            if (ReportThreshold <= fileSize)
+            {
+                // reportInterval should be times of 1MB
+                reportInterval = NumberHelper.Round(fileSize / 32, ReportRound);
+                // If reportInterval is larger than 128MB, limit to 128MB
+                if (ReportIntervalMax < reportInterval)
+                    reportInterval = ReportIntervalMax;
+            }
+
             string digest;
             HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+
+            if (0 < reportInterval)
+                s.MainViewModel.SetBuildCommandProgress("Hash Progress");
+            try
             {
-                byte[] rawDigest = HashHelper.GetHash(hashType, fs);
+                IProgress<long> progress = new Progress<long>(pos =>
+                {
+                    double percent = (double) pos / fileSize * 100;
+                    s.MainViewModel.BuildCommandProgressValue = percent;
+                    s.MainViewModel.BuildCommandProgressText = $"Hashing {hashType}... ({percent:0.0}%)";
+                });
+
+                byte[] rawDigest;
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    if (0 < reportInterval)
+                        rawDigest = HashHelper.GetHash(hashType, fs, reportInterval, progress);
+                    else
+                        rawDigest = HashHelper.GetHash(hashType, fs);
+                }
                 digest = StringHelper.ToHexStr(rawDigest);
             }
+            finally
+            {
+                if (0 < reportInterval)
+                    s.MainViewModel.ResetBuildCommandProgress();
+            }
+
 
             logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{digest}]"));
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest);

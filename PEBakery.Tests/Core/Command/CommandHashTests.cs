@@ -25,13 +25,13 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
+using PEBakery.Helper;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using PEBakery.Core;
-using PEBakery.Helper;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Tests.Core.Command
 {

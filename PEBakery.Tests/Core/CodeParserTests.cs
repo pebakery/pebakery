@@ -25,11 +25,10 @@
     not derived from or based on this program. 
 */
 
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace PEBakery.Tests.Core
 {
