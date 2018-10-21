@@ -211,20 +211,34 @@ namespace PEBakery.Core.Commands
 
                 string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, info.NoRec ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories);
 
-                if (0 < files.Length)
-                { // One or more file will be deleted
-                    foreach (string f in files)
+                if (files.Length == 0)
+                {
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files matching wildcard [{filePath}] were not found"));
+                    return logs;
+                }
+
+                s.MainViewModel.SetBuildCommandProgress("FileDelete Progress", files.Length);
+                try
+                {
+                    for (int i = 0; i < files.Length; i++)
                     {
+                        string f = files[i];
+                        s.MainViewModel.BuildCommandProgressText = f;
+
+                        // Prevent exception from readonly attribute
                         File.SetAttributes(f, FileAttributes.Normal);
                         File.Delete(f);
+
+                        s.MainViewModel.BuildCommandProgressValue = i + 1;
+
                         logs.Add(new LogInfo(LogState.Success, $"File [{f}] deleted"));
                     }
 
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files deleted"));
                 }
-                else
-                { // No file will be deleted
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files matching wildcard [{filePath}] were not found"));
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
                 }
             }
 
@@ -247,28 +261,24 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(srcPath))
             {
                 // Check if srcPath is directory
-                if (Directory.Exists(srcPath))
-                {
-                    if (s.CompatFileRenameCanMoveDir)
-                    {
-                        if (Directory.Exists(destPath))
-                        {
-                            string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+                if (!Directory.Exists(srcPath))
+                    return LogInfo.LogErrorMessage(logs, $"File [{srcPath}] does not exist");
 
-                            Directory.Move(srcPath, destFullPath);
-                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
-                            return logs;
-                        }
-
-                        Directory.Move(srcPath, destPath);
-                        logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
-                        return logs;
-                    }
-
+                if (!s.CompatFileRenameCanMoveDir)
                     return LogInfo.LogErrorMessage(logs, $"[{srcPath}] is a directory, not a file");
+
+                if (Directory.Exists(destPath))
+                {
+                    string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+
+                    Directory.Move(srcPath, destFullPath);
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
+                    return logs;
                 }
 
-                return LogInfo.LogErrorMessage(logs, $"File [{srcPath}] does not exist");
+                Directory.Move(srcPath, destPath);
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
+                return logs;
             }
 
             File.SetAttributes(srcPath, FileAttributes.Normal);
