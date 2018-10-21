@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Helper.Tests
@@ -31,38 +33,31 @@ namespace PEBakery.Helper.Tests
                 Assert.IsTrue(actual.Equals(expected, StringComparison.Ordinal));
             }
 
+            const string md5Digest = "68e109f0f40ca72a15e05cc22786f8e6";
+            const string sha1Digest = "db8ac1c259eb89d4a131b253bacfca5f319d54f2";
+            const string sha256Digest = "872e4e50ce9990d8b041330c47c9ddd11bec6b503ae9386a99da8584e9bb12c4";
+            const string sha384Digest = "293cd96eb25228a6fb09bfa86b9148ab69940e68903cbc0527a4fb150eec1ebe0f1ffce0bc5e3df312377e0a68f1950a";
+            const string sha512Digest = "8ae6ae71a75d3fb2e0225deeb004faf95d816a0a58093eb4cb5a3aa0f197050d7a4dc0a2d5c6fbae5fb5b0d536a0a9e6b686369fa57a027687c3630321547596";
+
             byte[] buffer = Encoding.UTF8.GetBytes("HelloWorld");
-            ArrayTemplate(HashHelper.HashType.MD5, buffer, "68e109f0f40ca72a15e05cc22786f8e6");
-            ArrayTemplate(HashHelper.HashType.SHA1, buffer, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
-            ArrayTemplate(HashHelper.HashType.SHA256, buffer, "872e4e50ce9990d8b041330c47c9ddd11bec6b503ae9386a99da8584e9bb12c4");
-            ArrayTemplate(HashHelper.HashType.SHA384, buffer, "293cd96eb25228a6fb09bfa86b9148ab69940e68903cbc0527a4fb150eec1ebe0f1ffce0bc5e3df312377e0a68f1950a");
-            ArrayTemplate(HashHelper.HashType.SHA512, buffer, "8ae6ae71a75d3fb2e0225deeb004faf95d816a0a58093eb4cb5a3aa0f197050d7a4dc0a2d5c6fbae5fb5b0d536a0a9e6b686369fa57a027687c3630321547596");
+            ArrayTemplate(HashHelper.HashType.MD5, buffer, md5Digest);
+            ArrayTemplate(HashHelper.HashType.SHA1, buffer, sha1Digest);
+            ArrayTemplate(HashHelper.HashType.SHA256, buffer, sha256Digest);
+            ArrayTemplate(HashHelper.HashType.SHA384, buffer, sha384Digest);
+            ArrayTemplate(HashHelper.HashType.SHA512, buffer, sha512Digest);
 
             using (MemoryStream ms = new MemoryStream(buffer))
             {
-                StreamTemplate(HashHelper.HashType.MD5, ms, "68e109f0f40ca72a15e05cc22786f8e6");
-                StreamTemplate(HashHelper.HashType.SHA1, ms, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
-                StreamTemplate(HashHelper.HashType.SHA256, ms, "872e4e50ce9990d8b041330c47c9ddd11bec6b503ae9386a99da8584e9bb12c4");
-                StreamTemplate(HashHelper.HashType.SHA384, ms, "293cd96eb25228a6fb09bfa86b9148ab69940e68903cbc0527a4fb150eec1ebe0f1ffce0bc5e3df312377e0a68f1950a");
-                StreamTemplate(HashHelper.HashType.SHA512, ms, "8ae6ae71a75d3fb2e0225deeb004faf95d816a0a58093eb4cb5a3aa0f197050d7a4dc0a2d5c6fbae5fb5b0d536a0a9e6b686369fa57a027687c3630321547596");
+                StreamTemplate(HashHelper.HashType.MD5, ms, md5Digest);
+                StreamTemplate(HashHelper.HashType.SHA1, ms, sha1Digest);
+                StreamTemplate(HashHelper.HashType.SHA256, ms, sha256Digest);
+                StreamTemplate(HashHelper.HashType.SHA384, ms, sha384Digest);
+                StreamTemplate(HashHelper.HashType.SHA512, ms, sha512Digest);
             }
         }
         #endregion
 
         #region GetHashProgress
-        private static readonly object progressLock = new object();
-        private static int _idx;
-        private static long _expectedLength;
-        private static readonly IProgress<(long Position, long Length)> InternalProgress = new Progress<(long Position, long Length)>(x =>
-        {
-            lock (progressLock)
-            {
-                _idx += 1;
-                Assert.AreEqual(_idx * HashHelper.ReportInterval, x.Position);
-                Assert.AreEqual(_expectedLength, x.Length);
-            }
-        });
-
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("HashHelper")]
@@ -70,25 +65,39 @@ namespace PEBakery.Helper.Tests
         {
             void ArrayTemplate(HashHelper.HashType type, byte[] input, string expected)
             {
-                _idx = 0;
-                _expectedLength = input.Length;
+                int idx = 0;
+                IProgress<long> progress = new Progress<long>(x =>
+                {
+                    int thisIdx = Interlocked.Increment(ref idx);
+                    switch (thisIdx)
+                    {
+                        default:
+                            Assert.AreEqual(thisIdx * 1024 * 1024, x);
+                            break;
+                        case 4:
+                            Assert.AreEqual((3 * 1024 + 512) * 1024, x);
+                            break;
+                    }
+                });
 
-                byte[] digest = HashHelper.GetHash(type, input, InternalProgress);
+                byte[] digest = HashHelper.GetHash(type, input, 1024 * 1024, progress);
                 string actual = StringHelper.ToHexStr(digest);
                 Assert.IsTrue(actual.Equals(expected, StringComparison.Ordinal));
-                Assert.AreEqual(3, _idx);
             }
 
             void StreamTemplate(HashHelper.HashType type, Stream stream, string expected)
             {
-                _idx = 0;
-                _expectedLength = stream.Length;
+                int idx = 0;
+                IProgress<long> progress = new Progress<long>(x =>
+                {
+                    int thisIdx = Interlocked.Increment(ref idx);
+                    Assert.AreEqual(thisIdx * 1024 * 1024, x);
+                });
 
                 stream.Position = 0;
-                byte[] digest = HashHelper.GetHash(type, stream, InternalProgress);
+                byte[] digest = HashHelper.GetHash(type, stream, 1024 * 1024, progress);
                 string actual = StringHelper.ToHexStr(digest);
                 Assert.IsTrue(actual.Equals(expected, StringComparison.Ordinal));
-                Assert.AreEqual(3, _idx);
             }
 
             string srcDir = Path.Combine(TestSetup.SampleDir, "HashHelper");

@@ -50,11 +50,15 @@ namespace PEBakery.Helper
         );
 
         private const int BufferSize = 64 * 1024; // 64KB
-        public const int ReportInterval = 1024 * 1024; // 1MB
         #endregion
 
         #region CalcHash
-        public static byte[] GetHash(HashType type, byte[] input, IProgress<(long Position, long Length)> progress = null)
+        public static byte[] GetHash(HashType type, byte[] input)
+        {
+            return GetHash(type, input, 0, null);
+        }
+
+        public static byte[] GetHash(HashType type, byte[] input, int reportInterval, IProgress<long> progress)
         {
             HashAlgorithm hash;
             switch (type)
@@ -79,35 +83,36 @@ namespace PEBakery.Helper
             }
 
             // No progress report
-            if (progress == null)
+            if (reportInterval <= 0 || progress == null)
                 return hash.ComputeHash(input);
 
             // With progress report
             int offset = 0;
             while (offset < input.Length)
             {
-                if (offset + ReportInterval < input.Length)
+                if (offset + reportInterval < input.Length)
                 {
-                    hash.TransformBlock(input, offset, ReportInterval, input, offset);
-
-                    offset += ReportInterval;
-                    progress.Report((offset, input.Length));
+                    hash.TransformBlock(input, offset, reportInterval, input, offset);
+                    offset += reportInterval;
                 }
                 else // Last run
                 {
                     int bytesRead = input.Length - offset;
-
                     hash.TransformFinalBlock(input, offset, bytesRead);
-
                     offset += bytesRead;
-                    if (offset % ReportInterval == 0)
-                        progress.Report((offset, input.Length));
                 }
+
+                progress.Report(offset);
             }
             return hash.Hash;
         }
 
-        public static byte[] GetHash(HashType type, Stream stream, IProgress<(long Position, long Length)> progress = null)
+        public static byte[] GetHash(HashType type, Stream stream)
+        {
+            return GetHash(type, stream, 0, null);
+        }
+
+        public static byte[] GetHash(HashType type, Stream stream, int reportInterval, IProgress<long> progress)
         {
             HashAlgorithm hash;
             switch (type)
@@ -132,25 +137,28 @@ namespace PEBakery.Helper
             }
 
             // No progress report
-            if (progress == null)
+            if (reportInterval <= 0 || progress == null)
                 return hash.ComputeHash(stream);
 
             // With progress report
+            long nextReport = reportInterval;
             long offset = stream.Position;
-            long length = stream.Length;
             byte[] buffer = new byte[BufferSize];
-            while (offset < length)
+            int bytesRead = 0;
+            do
             {
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                if (offset + bytesRead < length)
-                    hash.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-                else // Last run
-                    hash.TransformFinalBlock(buffer, 0, bytesRead);
-
+                bytesRead = stream.Read(buffer, 0, buffer.Length);
+                hash.TransformBlock(buffer, 0, bytesRead, buffer, 0);
                 offset += bytesRead;
-                if (offset % ReportInterval == 0)
-                    progress.Report((offset, length));
+                if (nextReport <= offset)
+                {
+                    progress.Report(offset);
+                    nextReport += reportInterval;
+                }
             }
+            while (0 < bytesRead);
+
+            hash.TransformFinalBlock(buffer, 0, 0);
             return hash.Hash;
         }
         #endregion
