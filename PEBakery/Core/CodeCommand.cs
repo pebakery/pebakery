@@ -2379,7 +2379,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Encode : CodeInfo
-    { // Encode,<ScriptFile>,<DirName>,<FileName>,[Compression]
+    { // Encode,<ScriptFile>,<DirName>,<FilePath>,[Compression]
         public string ScriptFile;
         public string DirName;
         public string FilePath; // Can have Wildcard

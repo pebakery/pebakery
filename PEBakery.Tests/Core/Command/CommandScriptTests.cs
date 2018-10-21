@@ -169,7 +169,7 @@ namespace PEBakery.Tests.Core.Command
                         byte[] extractDigest;
                         using (MemoryStream ms = new MemoryStream())
                         {
-                            EncodedFile.ExtractFile(sc, "FolderExample", srcFileName, ms);
+                            EncodedFile.ExtractFile(sc, "FolderExample", srcFileName, ms, null);
                             ms.Position = 0;
                             extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                         }

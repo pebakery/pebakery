@@ -1228,7 +1228,7 @@ namespace PEBakery.Core.Commands
 
                     // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);
-                    EncodedFile.AttachFile(sc, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
+                    EncodedFile.AttachFile(sc, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib, null);
 
                     // Read encoded text strings into memory
                     string txtStr;

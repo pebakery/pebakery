@@ -2091,7 +2091,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Build Interface Methods
-        public void SetBuildCommandProgress(string title, int max = 100)
+        public void SetBuildCommandProgress(string title, double max = 100)
         {
             BuildCommandProgressTitle = title;
             BuildCommandProgressText = string.Empty;

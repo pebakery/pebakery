@@ -1192,7 +1192,7 @@ namespace PEBakery.WPF
 
             try
             {
-                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath);
+                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath, null);
 
                 UIControl.ReplaceAddress(_renderer.UICtrls, _sc);
 
@@ -1292,7 +1292,7 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs);
+                    EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
                 }
                 catch (Exception ex)
                 {
@@ -1529,7 +1529,7 @@ namespace PEBakery.WPF
                         string destFile = Path.Combine(destDir, info.FileName);
                         using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
-                            EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs);
+                            EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs, null);
                         }
 
                         MessageBox.Show("File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1647,7 +1647,7 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                _sc = EncodedFile.AttachFile(_sc, item.Name, m.AttachNewFileName, srcFile, mode);
+                _sc = EncodedFile.AttachFile(_sc, item.Name, m.AttachNewFileName, srcFile, mode, null);
                 MessageBox.Show("File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 m.AttachNewFilePath = string.Empty;
@@ -1692,7 +1692,7 @@ namespace PEBakery.WPF
                 {
                     using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
                     {
-                        EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs);
+                        EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs, null);
                     }
 
                     MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);

@@ -30,6 +30,7 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -72,6 +73,11 @@ namespace PEBakery.Core.Commands
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
+            // Check if encoded file exist
+            if (!EncodedFile.ContainsFile(sc, dirName, fileName))
+                return LogInfo.LogErrorMessage(logs, $"Encoded file [{dirName}\\{fileName}] not found in script [{sc.RealPath}].");
+
+            // Filter dest path
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -83,10 +89,28 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            string destPath = Path.Combine(destDir, fileName);
-            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+            s.MainViewModel.SetBuildCommandProgress("ExtractFile Progress", 1);
+            try
             {
-                EncodedFile.ExtractFile(sc, dirName, fileName, fs);
+                object progressLock = new object();
+                IProgress<double> progress = new Progress<double>(x =>
+                {
+                    lock (progressLock)
+                    {
+                        s.MainViewModel.BuildCommandProgressText = $"Extracting {fileName}...\r\n({x * 100:0.0}%)";
+                        s.MainViewModel.BuildCommandProgressValue = x;
+                    }
+                });
+
+                string destPath = Path.Combine(destDir, fileName);
+                using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+                {
+                    EncodedFile.ExtractFile(sc, dirName, fileName, fs, progress);
+                }
+            }
+            finally
+            {
+                s.MainViewModel.ResetBuildCommandProgress();
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted to [{destDir}]"));
@@ -106,13 +130,34 @@ namespace PEBakery.Core.Commands
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDir);
+            // Check if encoded file exist
+            if (!EncodedFile.ContainsFile(sc, dirName, fileName))
+                return LogInfo.LogErrorMessage(logs, $"Encoded file [{dirName}\\{fileName}] not found in script [{sc.RealPath}].");
+
+            string tempDir = FileHelper.GetTempDir();
             string tempPath = Path.Combine(tempDir, fileName);
 
-            using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+            s.MainViewModel.SetBuildCommandProgress("ExtractAndRun Progress", 1);
+            try
             {
-                EncodedFile.ExtractFile(sc, dirName, info.FileName, fs);
+                object progressLock = new object();
+                IProgress<double> progress = new Progress<double>(x =>
+                {
+                    lock (progressLock)
+                    {
+                        s.MainViewModel.BuildCommandProgressText = $"Extracting {fileName}...\r\n({x * 100:0.0}%)";
+                        s.MainViewModel.BuildCommandProgressValue = x;
+                    }    
+                });
+
+                using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+                {
+                    EncodedFile.ExtractFile(sc, dirName, info.FileName, fs, progress);
+                }
+            }
+            finally
+            {
+                s.MainViewModel.ResetBuildCommandProgress();
             }
 
             Process proc = new Process
@@ -159,6 +204,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -170,7 +216,12 @@ namespace PEBakery.Core.Commands
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
+            
+            // Check if encoded file exist
+            if (!EncodedFile.ContainsFolder(sc, dirName))
+                return LogInfo.LogErrorMessage(logs, $"Encoded folder [{dirName}] not found in script [{sc.RealPath}].");
 
+            // Filter dest path
             if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
@@ -184,15 +235,38 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory");
                 Directory.CreateDirectory(destDir);
             }
-
+            
             string[] lines = sc.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = IniReadWriter.ParseIniLinesIniStyle(lines);
-            foreach (string file in fileDict.Keys)
+            int fileCount = fileDict.Count;
+
+            s.MainViewModel.SetBuildCommandProgress("ExtractAndRun Progress", fileCount);
+            try
             {
-                using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
+                int i = 0;
+                foreach (string file in fileDict.Keys)
                 {
-                    EncodedFile.ExtractFile(sc, dirName, file, fs);
+                    object progressLock = new object();
+                    IProgress<double> progress = new Progress<double>(x =>
+                    {
+                        lock (progressLock)
+                        {
+                            s.MainViewModel.BuildCommandProgressText = $"Extracting {file}...\r\n({(x + i) * 100 / fileCount:0.0}%)";
+                            s.MainViewModel.BuildCommandProgressValue = x + i;
+                        }
+                    });
+
+                    using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
+                    {
+                        EncodedFile.ExtractFile(sc, dirName, file, fs, progress);
+                    }
+
+                    i += 1;
                 }
+            }
+            finally
+            {
+                s.MainViewModel.ResetBuildCommandProgress();
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] was extracted to [{destDir}]"));
@@ -200,6 +274,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public static List<LogInfo> Encode(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -229,8 +304,26 @@ namespace PEBakery.Core.Commands
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                EncodedFile.AttachFile(sc, dirName, Path.GetFileName(filePath), filePath, mode);
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{sc.RealPath}]", cmd));
+                s.MainViewModel.SetBuildCommandProgress("Encode Progress", 1);
+                try
+                {
+                    object progressLock = new object();
+                    IProgress<double> progress = new Progress<double>(x =>
+                    {
+                        lock (progressLock)
+                        {
+                            s.MainViewModel.BuildCommandProgressText = $"Attaching {filePath}...\r\n({x * 100:0.0}%)";
+                            s.MainViewModel.BuildCommandProgressValue = x;
+                        }
+                    });
+
+                    EncodedFile.AttachFile(sc, dirName, Path.GetFileName(filePath), filePath, mode, progress);
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{sc.RealPath}]", cmd));
+                }
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
             }
             else
             { // With Wildcard
@@ -238,20 +331,42 @@ namespace PEBakery.Core.Commands
                 string srcDirToFind = FileHelper.GetDirNameEx(filePath);
                 string[] files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
 
-                if (0 < files.Length)
-                { // One or more file will be copidwed
-                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{sc.RealPath}]", cmd));
-                    for (int i = 0; i < files.Length; i++)
+                // No file will be compressed
+                if (files.Length == 0)
+                {
+                    logs.Add(new LogInfo(LogState.Warning, $"Files matching wildcard [{filePath}] were not found", cmd));
+                    return logs;
+                }
+
+                s.MainViewModel.SetBuildCommandProgress("Encode Progress", files.Length);
+                try
+                {
+                    int i = 0;
+                    object progressLock = new object();
+                    IProgress<double> progress = new Progress<double>(x =>
                     {
-                        EncodedFile.AttachFile(sc, dirName, Path.GetFileName(files[i]), files[i], mode);
-                        logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
+                        lock (progressLock)
+                        {
+                            s.MainViewModel.BuildCommandProgressText = $"Attaching {filePath}...\r\n({(x + i) * 100:0.0}%)";
+                            s.MainViewModel.BuildCommandProgressValue = x + i;
+                        }
+                    });
+
+                    // One or more file will be copied
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{sc.RealPath}]", cmd));
+                    foreach (string f in files)
+                    {
+                        EncodedFile.AttachFile(sc, dirName, Path.GetFileName(f), f, mode, progress);
+                        logs.Add(new LogInfo(LogState.Success, $"[{f}] encoded ({i + 1}/{files.Length})", cmd));
+
+                        i += 1;
                     }
 
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
-                else
-                { // No file will be compressed
-                    logs.Add(new LogInfo(LogState.Warning, $"Files matching wildcard [{filePath}] were not found", cmd));
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
                 }
             }
 

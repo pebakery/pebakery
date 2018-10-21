@@ -65,7 +65,7 @@ namespace PEBakery.Tests.Core
                 Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
                 string originFile = Path.Combine(dirPath, fileName);
-                sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode);
+                sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
 
                 try
                 {
@@ -94,7 +94,7 @@ namespace PEBakery.Tests.Core
                     byte[] extractDigest;
                     using (MemoryStream ms = new MemoryStream())
                     {
-                        EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
+                        EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                         ms.Position = 0;
                         extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                     }
@@ -289,7 +289,7 @@ namespace PEBakery.Tests.Core
                 byte[] extractDigest;
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
+                    EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms, null);
                     ms.Position = 0;
                     extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                 }
