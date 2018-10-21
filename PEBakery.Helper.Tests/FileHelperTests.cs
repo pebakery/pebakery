@@ -182,7 +182,11 @@ namespace PEBakery.Helper.Tests
             // Test 1
             Template(() =>
             {
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 string[] files = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
                 Assert.IsTrue(files.Length == 8);
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
@@ -198,7 +202,11 @@ namespace PEBakery.Helper.Tests
             // Test 2
             Template(() =>
             {
-                FileHelper.DirectoryCopy(srcDir, destDir, false, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = false,
+                    Overwrite = true,
+                });
                 string[] files = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
                 Assert.IsTrue(files.Length == 4);
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
@@ -210,7 +218,12 @@ namespace PEBakery.Helper.Tests
             // Test 3
             Template(() =>
             {
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true, "*.txt");
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                    FileWildcard = "*.txt",
+                });
                 string[] files = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
                 Assert.IsTrue(files.Length == 6);
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));
@@ -224,7 +237,12 @@ namespace PEBakery.Helper.Tests
             // Test 4
             Template(() =>
             {
-                FileHelper.DirectoryCopy(srcDir, destDir, false, true, "*.txt");
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = false,
+                    Overwrite = true,
+                    FileWildcard = "*.txt",
+                });
                 string[] files = Directory.GetFiles(destDir, "*.txt", SearchOption.AllDirectories);
                 Assert.IsTrue(files.Length == 3);
                 Assert.IsTrue(files.Contains(Path.Combine(destDir, "A.txt"), StringComparer.Ordinal));

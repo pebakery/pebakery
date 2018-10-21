@@ -183,7 +183,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     EngineTests.Eval(s, rawCode, CodeType.FileDelete, check);
@@ -208,7 +212,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     string[] destFiles;
@@ -258,7 +266,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     if (rawCode.StartsWith("FileRename", StringComparison.OrdinalIgnoreCase))
@@ -497,7 +509,13 @@ namespace PEBakery.Tests.Core.Command
                 try
                 {
                     if (copyDir)
-                        FileHelper.DirectoryCopy(srcFullPath, destFullPath, true, true);
+                    {
+                        FileHelper.DirCopy(srcFullPath, destFullPath, new FileHelper.DirCopyOptions
+                        {
+                            CopySubDirs = true,
+                            Overwrite = true,
+                        });
+                    } 
 
                     EngineTests.Eval(s, rawCode, CodeType.DirDelete, check);
 
@@ -547,7 +565,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     EngineTests.Eval(s, rawCode, CodeType.DirMove, check);
@@ -663,7 +685,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     EngineTests.Eval(s, rawCode, CodeType.PathMove, check);
@@ -690,7 +716,11 @@ namespace PEBakery.Tests.Core.Command
 
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
-                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                FileHelper.DirCopy(srcDir, destDir, new FileHelper.DirCopyOptions
+                {
+                    CopySubDirs = true,
+                    Overwrite = true,
+                });
                 try
                 {
                     EngineTests.Eval(s, rawCode, CodeType.PathMove, check);

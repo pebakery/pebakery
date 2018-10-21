@@ -25,10 +25,11 @@
     not derived from or based on this program. 
 */
 
-using System;
 using PEBakery.Helper;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -146,7 +147,7 @@ namespace PEBakery.Core.Commands
                             if (destFullParent == null)
                                 throw new InternalException("Internal Logic Error at FileCopy");
 
-                            s.MainViewModel.BuildCommandProgressText = f;
+                            s.MainViewModel.BuildCommandProgressText = $"{f} ({(double)(i + 1) / files.Length * 100:0.0}%)";
 
                             Directory.CreateDirectory(destFullParent);
                             File.Copy(f, destFullPath, true);
@@ -223,7 +224,7 @@ namespace PEBakery.Core.Commands
                     for (int i = 0; i < files.Length; i++)
                     {
                         string f = files[i];
-                        s.MainViewModel.BuildCommandProgressText = f;
+                        s.MainViewModel.BuildCommandProgressText = $"{f} ({(double)(i + 1) / files.Length * 100:0.0}%)";
 
                         // Prevent exception from readonly attribute
                         File.SetAttributes(f, FileAttributes.Normal);
@@ -383,6 +384,24 @@ namespace PEBakery.Core.Commands
             if (File.Exists(destDir))
                 return LogInfo.LogErrorMessage(logs, $"Cannot overwrite file [{destDir}] with directory [{srcDir}]");
 
+            // Prepare progress report
+            int progressCount = 0;
+            object progressLock = new object();
+            IProgress<string> progress = new Progress<string>(f =>
+            {
+                lock (progressLock)
+                {
+                    progressCount += 1;
+                    double percent;
+                    if (Math.Abs(s.MainViewModel.BuildCommandProgressMax) < double.Epsilon)
+                        percent = 0; 
+                    else
+                        percent = progressCount / s.MainViewModel.BuildCommandProgressMax * 100;
+                    s.MainViewModel.BuildCommandProgressText = $"{f} ({percent:0.0}%)";
+                    s.MainViewModel.BuildCommandProgressValue = progressCount;
+                }
+            });
+
             // Check srcDir contains wildcard
             string wildcard = Path.GetFileName(srcDir);
             if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -393,8 +412,25 @@ namespace PEBakery.Core.Commands
                 else
                     Directory.CreateDirectory(destFullPath);
 
-                FileHelper.DirectoryCopy(srcDir, destFullPath, true, true, null);
-                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destFullPath}]", cmd));
+                // Get total file count
+                int filesCount = FileHelper.GetFilesEx(srcDir, "*", SearchOption.AllDirectories).Length;
+
+                // Copy directory
+                s.MainViewModel.SetBuildCommandProgress("DirCopy Progress", filesCount);
+                try
+                {
+                    FileHelper.DirCopy(srcDir, destFullPath, new FileHelper.DirCopyOptions
+                    {
+                        CopySubDirs = true,
+                        Overwrite = true,
+                        Progress = progress,
+                    });
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destFullPath}]", cmd));
+                }
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
             }
             else
             { // With Wildcard
@@ -410,16 +446,52 @@ namespace PEBakery.Core.Commands
                 if (!dirInfo.Exists)
                     throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
 
+                // Get total file count
+                int filesCount = 0;
+                FileInfo[] compatFiles = null;
                 if (s.CompatDirCopyBug)
-                { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy _bug_
-                    foreach (FileInfo f in dirInfo.GetFiles(wildcard))
-                        File.Copy(f.FullName, Path.Combine(destDir, f.Name), true);
+                {
+                    compatFiles = dirInfo.GetFiles(wildcard);
+                    filesCount += compatFiles.Length;
                 }
 
-                // Copy first sublevel directory with wildcard
-                // Note that wildcard will not be applied to subdirectory copy
-                foreach (DirectoryInfo subDir in dirInfo.GetDirectories(wildcard))
-                    FileHelper.DirectoryCopy(subDir.FullName, Path.Combine(destDir, subDir.Name), true, true, null);
+                DirectoryInfo[] subDirs = dirInfo.GetDirectories(wildcard);
+                foreach (DirectoryInfo d in subDirs)
+                {
+                    string[] files = FileHelper.GetFilesEx(d.FullName, "*", SearchOption.AllDirectories);
+                    filesCount += files.Length;
+                }
+
+                // Copy directory
+                s.MainViewModel.SetBuildCommandProgress("DirCopy Progress", filesCount);
+                try
+                {
+                    if (s.CompatDirCopyBug)
+                    { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy _bug_
+                        Debug.Assert(compatFiles != null, $"Wrong {nameof(compatFiles)}");
+                        foreach (FileInfo f in compatFiles)
+                        {
+                            progress.Report(f.FullName);
+                            File.Copy(f.FullName, Path.Combine(destDir, f.Name), true);
+                        }
+                    }
+
+                    // Copy first sublevel directory with wildcard
+                    // Note wildcard will not be applied to subdirectory copy
+                    foreach (DirectoryInfo d in subDirs)
+                    {
+                        FileHelper.DirCopy(d.FullName, Path.Combine(destDir, d.Name), new FileHelper.DirCopyOptions
+                        {
+                            CopySubDirs = true,
+                            Overwrite = true,
+                            Progress = progress,
+                        });
+                    }
+                }
+                finally
+                {
+                    s.MainViewModel.ResetBuildCommandProgress();
+                }
 
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destDir}]", cmd));
             }

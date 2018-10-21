@@ -310,10 +310,19 @@ namespace PEBakery.Helper
             }
         }
 
+        #region DirectoryCopy
+        public struct DirCopyOptions
+        {
+            public bool CopySubDirs;
+            public bool Overwrite;
+            public string FileWildcard;
+            public IProgress<string> Progress;
+        }
+
         /// <summary>
         /// Copy directory.
         /// </summary>
-        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string fileWildcard = null)
+        public static void DirCopy(string srcDir, string destDir, DirCopyOptions opts)
         {
             // Get the subdirectories for the specified directory.
             DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
@@ -325,39 +334,43 @@ namespace PEBakery.Helper
             try
             {
                 FileInfo[] files;
-                if (fileWildcard == null)
+                if (opts.FileWildcard == null)
                     files = dirInfo.GetFiles();
                 else
-                    files = dirInfo.GetFiles(fileWildcard);
+                    files = dirInfo.GetFiles(opts.FileWildcard);
 
                 // If the destination directory doesn't exist, create it.
-                if (Directory.Exists(destDir) == false)
+                if (!Directory.Exists(destDir))
                     Directory.CreateDirectory(destDir);
 
-                foreach (FileInfo file in files)
+                foreach (FileInfo f in files)
                 {
-                    string tempPath = Path.Combine(destDir, file.Name);
-                    file.CopyTo(tempPath, overwrite);
+                    opts.Progress?.Report(f.FullName);
+
+                    string destPath = Path.Combine(destDir, f.Name);
+                    f.CopyTo(destPath, opts.Overwrite);
                 }
             }
             catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
             // If copying subdirectories, copy them and their contents to new location.
-            if (copySubDirs)
+            if (opts.CopySubDirs)
             {
                 DirectoryInfo[] dirs;
                 try { dirs = dirInfo.GetDirectories(); }
                 catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
 
-                foreach (DirectoryInfo subDir in dirs)
+                foreach (DirectoryInfo d in dirs)
                 {
-                    string tempPath = Path.Combine(destDir, subDir.Name);
-                    DirectoryCopy(subDir.FullName, tempPath, true, overwrite, fileWildcard);
+                    string tempPath = Path.Combine(destDir, d.Name);
+                    DirCopy(d.FullName, tempPath, opts);
                 }
             }
         }
+        #endregion
 
-        public static string[] GetDirectoriesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        #region GetDirectoriesEx
+        public static string[] GetDirsEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
 
@@ -366,29 +379,31 @@ namespace PEBakery.Helper
                 throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {dirPath}");
 
             List<string> foundDirs = new List<string>();
-            return InternalGetDirectoriesEx(dirInfo, searchPattern, searchOption, foundDirs).ToArray();
+            return InternalGetDirsEx(dirInfo, searchPattern, searchOption, foundDirs).ToArray();
         }
 
-        private static List<string> InternalGetDirectoriesEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundDirs)
+        private static List<string> InternalGetDirsEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundDirs)
         {
             if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
             if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
             try
             {
-                var dirs = dirInfo.GetDirectories();
+                DirectoryInfo[] dirs = dirInfo.GetDirectories();
                 foreach (DirectoryInfo dir in dirs)
                 {
                     foundDirs.Add(dir.FullName);
                     if (searchOption == SearchOption.AllDirectories)
-                        InternalGetDirectoriesEx(dir, searchPattern, searchOption, foundDirs);
+                        InternalGetDirsEx(dir, searchPattern, searchOption, foundDirs);
                 }
             }
             catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
             return foundDirs;
         }
+        #endregion
 
+        #region GetFilesEx
         public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
@@ -484,7 +499,9 @@ namespace PEBakery.Helper
             InternalGetFilesExWithDirs(dirInfo);
             return foundPaths.ToArray();
         }
+        #endregion
 
+        #region DirectoryDeleteEx
         public static void DirectoryDeleteEx(string path)
         {
             DirectoryInfo root = new DirectoryInfo(path);
@@ -506,6 +523,7 @@ namespace PEBakery.Helper
             }
             root.Delete(true);
         }
+        #endregion
 
         public static Process OpenUri(string uri)
         {
