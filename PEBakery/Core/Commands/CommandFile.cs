@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using System;
 using PEBakery.Helper;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -110,48 +111,62 @@ namespace PEBakery.Core.Commands
                 string srcDirToFind = Path.GetFullPath(FileHelper.GetDirNameEx(srcFile));
                 string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, info.NoRec ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories);
 
-                if (0 < files.Length)
-                { // One or more file will be copied
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
+                if (files.Length == 0)
+                {
+                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
+                    return logs;
+                }
 
-                    if (destPathIsDir || !destPathExists)
+                // One or more file will be copied
+                logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
+                if (destPathIsDir || !destPathExists)
+                {
+                    s.MainViewModel.SetBuildCommandProgress("FileCopy Progress", files.Length);
+                    try
                     {
-                        foreach (string f in files)
+                        for (int i = 0; i < files.Length; i++)
                         {
+                            string f = files[i];
                             string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
 
                             if (File.Exists(destFullPath))
                             {
                                 if (info.Preserve)
                                 {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten", cmd));
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite,
+                                        $"[{destFullPath}] will not be overwritten", cmd));
                                     continue;
                                 }
 
-                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten", cmd));
+                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite,
+                                    $"[{destFullPath}] will be overwritten", cmd));
                             }
 
                             string destFullParent = Path.GetDirectoryName(destFullPath);
                             if (destFullParent == null)
                                 throw new InternalException("Internal Logic Error at FileCopy");
 
+                            s.MainViewModel.BuildCommandProgressText = f;
+
                             Directory.CreateDirectory(destFullParent);
                             File.Copy(f, destFullPath, true);
 
+                            s.MainViewModel.BuildCommandProgressValue = i + 1;
+
                             logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]", cmd));
                         }
-
-                        logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                     }
-                    else
+                    finally
                     {
-                        logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
-                        return logs;
+                        s.MainViewModel.ResetBuildCommandProgress();
                     }
+
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
                 else
-                { // No file will be copied
-                    logs.Add(new LogInfo(LogState.Ignore, $"Files matching wildcard [{srcFile}] were not found", cmd));
+                {
+                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
+                    return logs;
                 }
             }
 
