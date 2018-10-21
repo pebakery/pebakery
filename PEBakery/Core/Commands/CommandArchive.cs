@@ -401,6 +401,17 @@ namespace PEBakery.Core.Commands
             }
             Directory.CreateDirectory(destDir);
 
+            // Check wildcard
+            // WinBuilder082 behavior
+            // - Some files are matched with wildcard : Reports success, but no files are copied.
+            // - No files are matched with wildcard   : Reports error.
+            string wildcard = Path.GetFileName(srcFile);
+            if (wildcard.IndexOfAny(new char[] {'*', '?'}) != -1)
+            {
+                logs.Add(new LogInfo(LogState.Warning, "CopyOrExpand does not support filename with wildcard"));
+                return logs;
+            }
+
             // Copy or Expand srcFile.
             if (File.Exists(srcFile))
             { // SrcFile is uncompressed, just copy!

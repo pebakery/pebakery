@@ -29,7 +29,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -147,7 +146,7 @@ namespace PEBakery.Core.Commands
                             if (destFullParent == null)
                                 throw new InternalException("Internal Logic Error at FileCopy");
 
-                            s.MainViewModel.BuildCommandProgressText = $"{f} ({(double)(i + 1) / files.Length * 100:0.0}%)";
+                            s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
 
                             Directory.CreateDirectory(destFullParent);
                             File.Copy(f, destFullPath, true);
@@ -224,7 +223,7 @@ namespace PEBakery.Core.Commands
                     for (int i = 0; i < files.Length; i++)
                     {
                         string f = files[i];
-                        s.MainViewModel.BuildCommandProgressText = $"{f} ({(double)(i + 1) / files.Length * 100:0.0}%)";
+                        s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({(double)(i + 1) / files.Length * 100:0.0}%)";
 
                         // Prevent exception from readonly attribute
                         File.SetAttributes(f, FileAttributes.Normal);
@@ -394,15 +393,15 @@ namespace PEBakery.Core.Commands
                     progressCount += 1;
                     double percent;
                     if (Math.Abs(s.MainViewModel.BuildCommandProgressMax) < double.Epsilon)
-                        percent = 0; 
+                        percent = 0;
                     else
                         percent = progressCount / s.MainViewModel.BuildCommandProgressMax * 100;
-                    s.MainViewModel.BuildCommandProgressText = $"{f} ({percent:0.0}%)";
+                    s.MainViewModel.BuildCommandProgressText = $"{f}\r\n({percent:0.0}%)";
                     s.MainViewModel.BuildCommandProgressValue = progressCount;
                 }
             });
 
-            // Check srcDir contains wildcard
+            // Check if srcDir contains wildcard
             string wildcard = Path.GetFileName(srcDir);
             if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
