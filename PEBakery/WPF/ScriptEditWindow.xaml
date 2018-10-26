@@ -41,6 +41,7 @@
         Closed="Window_Closed"
         Width="900" Height="720"
         MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
     <Window.CommandBindings>
         <CommandBinding Command="local:ScriptEditCommands.Save"
@@ -388,7 +389,7 @@
                                           SelectionChanged="UICtrlAddType_SelectionChanged"
                                           SelectedIndex="{Binding UICtrlAddTypeIndex}">
                                     <ComboBoxItem Content="TextBox"/>
-                                    <ComboBoxItem Content="TextBlock"/>
+                                    <ComboBoxItem Content="TextLabel"/>
                                     <ComboBoxItem Content="NumberBox"/>
                                     <ComboBoxItem Content="CheckBox"/>
                                     <ComboBoxItem Content="ComboBox"/>

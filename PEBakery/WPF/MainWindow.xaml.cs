@@ -1028,6 +1028,8 @@ namespace PEBakery.WPF
             {
                 ScriptEditDialog = new ScriptEditWindow(sc);
 
+                ScriptEditDialog.Owner = this;
+
                 // Open as Modal
                 // If ScriptEditWindow returns true in DialogResult, refresh script
                 if (ScriptEditDialog.ShowDialog() == true)
