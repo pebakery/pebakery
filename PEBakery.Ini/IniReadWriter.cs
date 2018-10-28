@@ -1536,7 +1536,7 @@ namespace PEBakery.Ini
                 if (x.Length == 0)
                     return false;
                 int idx = x.IndexOf('=');
-                return idx != 0 || idx != -1;
+                return idx != 0 && idx != -1;
             }).ToList();
         }
 
@@ -1905,8 +1905,8 @@ namespace PEBakery.Ini
             if (idx == -1) // Unable to find key and value
                 return (null, null);
 
-            string key = rawLine.Substring(0, idx);
-            string value = rawLine.Substring(idx + 1);
+            string key = rawLine.Substring(0, idx).Trim();
+            string value = rawLine.Substring(idx + 1).Trim();
             return (key, value);
         }
 

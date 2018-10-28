@@ -955,7 +955,7 @@ namespace PEBakery.Tests.Core
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            void Template(string binFileName, string encFileName, bool inMem)
+            void Template(string binFileName, string encFileName, string section, bool inMem)
             {
                 string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
 
@@ -970,20 +970,20 @@ namespace PEBakery.Tests.Core
                     binDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
                 }
 
-                List<string> lines = new List<string>();
-                using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
-                {
-                    string rawLine;
-                    while ((rawLine = r.ReadLine()) != null)
-                    {
-                        string line = rawLine.Trim();
-                        if (0 < line.Length)
-                            lines.Add(line);
-                    }
-                }
-
                 if (inMem)
                 {
+                    List<string> lines = new List<string>();
+                    using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
+                    {
+                        string rawLine;
+                        while ((rawLine = r.ReadLine()) != null)
+                        {
+                            string line = rawLine.Trim();
+                            if (0 < line.Length)
+                                lines.Add(line);
+                        }
+                    }
+
                     byte[] decoded = SplitBase64.DecodeInMem(lines);
 #if DEBUG_MIDDLE_FILE
                     using (FileStream fs = new FileStream(binFile + ".inMem.comp", FileMode.Create, FileAccess.Write))
@@ -997,7 +997,10 @@ namespace PEBakery.Tests.Core
                 {
                     using (MemoryStream ms = new MemoryStream())
                     {
-                        SplitBase64.Decode(lines, ms);
+                        using (StreamReader tr = new StreamReader(encFile, Encoding.UTF8))
+                        {
+                            SplitBase64.Decode(tr, section, ms);
+                        }
                         ms.Position = 0;
 #if DEBUG_MIDDLE_FILE
                         using (FileStream fs = new FileStream(binFile + ".noMem.comp", FileMode.Create, FileAccess.Write))
@@ -1008,18 +1011,20 @@ namespace PEBakery.Tests.Core
 #endif
                         encDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                     }
-
                 }
 
                 Assert.IsTrue(binDigest.SequenceEqual(encDigest));
             }
 
-            Template("BigData.bin", "BigDataEnc4090.txt", true);
-            Template("BigData.bin", "BigDataEnc4090.txt", false);
-            Template("Type3.pdf", "Type3Enc4090.txt", true);
-            Template("Type3.pdf", "Type3Enc4090.txt", false);
-            Template("Type3.pdf", "Type3Enc1024.txt", true);
-            Template("Type3.pdf", "Type3Enc1024.txt", false);
+            Template("BigData.bin", "BigDataEnc4090.txt", string.Empty, true);
+            Template("BigData.bin", "BigDataEnc4090.txt", string.Empty, false);
+            Template("BigData.bin", "BigDataEnc4090S.txt", "Base64", false);
+            Template("Type3.pdf", "Type3Enc4090.txt", string.Empty, true);
+            Template("Type3.pdf", "Type3Enc4090.txt", string.Empty, false);
+            Template("Type3.pdf", "Type3Enc4090S.txt", "Base64", false);
+            Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, true);
+            Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, false);
+            Template("Type3.pdf", "Type3Enc1024S.txt", "Base64", false);
         }
         #endregion
     }
