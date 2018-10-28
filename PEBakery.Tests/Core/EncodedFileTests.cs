@@ -925,9 +925,15 @@ namespace PEBakery.Tests.Core
                 string encFile = Path.Combine(workDir, encFileName);
 
                 string compStr;
+                StringBuilder b = new StringBuilder();
                 using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
                 {
-                    compStr = r.ReadToEnd();
+                    string rawLine;
+                    while ((rawLine = r.ReadLine()) != null)
+                    {
+                        b.AppendLine(rawLine);
+                    }
+                    compStr = b.ToString();
                 }
 
                 using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
