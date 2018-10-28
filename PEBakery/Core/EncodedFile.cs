@@ -1839,7 +1839,7 @@ namespace PEBakery.Core
             int encodedLen = 0;
             int lineCount = (int)(srcStream.Length * 4 / 3) / 4090;
             writer.Write("lines=");
-            writer.WriteLine(lineCount);
+            writer.WriteLine(lineCount); // lines={count} should be 0-based index
 
             long posBak = srcStream.Position;
             srcStream.Position = 0;
@@ -1935,7 +1935,7 @@ namespace PEBakery.Core
                 { // [Stage 1] Found target section
                     if (line.Length == 0)
                         continue;
-                    
+
                     (string key, string block) = IniReadWriter.GetKeyValueFromLine(line);
                     if (key == null || block == null)
                         throw new InvalidOperationException("Encoded lines are malformed");
@@ -1963,7 +1963,7 @@ namespace PEBakery.Core
                     encodeLen += block.Length;
 
                     // If buffer is full, decode ~64KB to ~48KB raw bytes
-                    if ((i + 1) % 4090 == 0)
+                    if (0 < i && (i + 1) % 16 == 0)
                     {
                         byte[] buffer = Convert.FromBase64String(b.ToString());
                         outStream.Write(buffer, 0, buffer.Length);
@@ -1974,9 +1974,9 @@ namespace PEBakery.Core
                     // Report progress
                     if (progress != null && i % 256 == 0)
                         progress.Report((i, lineCount));
-                }
 
-                i += 1;
+                    i += 1;
+                }
             }
 
             // Append '=' padding
