@@ -999,7 +999,9 @@ namespace PEBakery.Tests.Core
                     {
                         using (StreamReader tr = new StreamReader(encFile, Encoding.UTF8))
                         {
-                            SplitBase64.Decode(tr, section, ms);
+                            if (section.Length != 0)
+                                IniReadWriter.FastForwardTextReader(tr, section);
+                            SplitBase64.Decode(tr, ms);
                         }
                         ms.Position = 0;
 #if DEBUG_MIDDLE_FILE

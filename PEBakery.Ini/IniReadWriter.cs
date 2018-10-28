@@ -1928,6 +1928,35 @@ namespace PEBakery.Ini
             }
             return (keys, values);
         }
+
+        /// <summary>
+        /// Move position of TextReader to read content of specific .ini section
+        /// </summary>
+        /// <param name="tr"></param>
+        /// <param name="section"></param>
+        public static void FastForwardTextReader(TextReader tr, string section)
+        {
+            // Read base64 block directly from file
+            string line;
+            while ((line = tr.ReadLine()) != null)
+            { // Read text line by line
+                line = line.Trim();
+
+                // Ignore comment
+                if (line.StartsWith("#", StringComparison.Ordinal) ||
+                    line.StartsWith(";", StringComparison.Ordinal) ||
+                    line.StartsWith("//", StringComparison.Ordinal))
+                    continue;
+
+                if (line.StartsWith("[", StringComparison.Ordinal) &&
+                    line.EndsWith("]", StringComparison.Ordinal))
+                { // Start of section
+                    string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
+                    if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                        return;
+                }
+            }
+        }
         #endregion
     }
     #endregion

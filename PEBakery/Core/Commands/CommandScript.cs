@@ -98,16 +98,12 @@ namespace PEBakery.Core.Commands
                     lock (progressLock)
                     {
                         s.MainViewModel.BuildCommandProgressValue = x;
-                        if (Math.Abs(x) < double.Epsilon)
-                        { // [Stage 1] Read from file
-                            s.MainViewModel.BuildCommandProgressText = $"Reading from {sc.RealPath}\r\n({x * 100:0.0}%)";
-                        }
-                        else if (x < EncodedFile.Base64ReportFactor)
-                        { // [Stage 2] Base64
-                            s.MainViewModel.BuildCommandProgressText = $"Decoding base64\r\n({x * 100:0.0}%)";
+                        if (x < EncodedFile.Base64ReportFactor)
+                        { // [Stage 1] Base64
+                            s.MainViewModel.BuildCommandProgressText = $"Reading and decoding from {sc.RealPath}\r\n({x * 100:0.0}%)";
                         }
                         else
-                        { // [Stage 3] Decompress
+                        { // [Stage 2] Decompress
                             s.MainViewModel.BuildCommandProgressText = $"Decompressing {fileName}\r\n({x * 100:0.0}%)";
                         }
                     }
@@ -157,16 +153,12 @@ namespace PEBakery.Core.Commands
                     lock (progressLock)
                     {
                         s.MainViewModel.BuildCommandProgressValue = x;
-                        if (Math.Abs(x) < double.Epsilon)
-                        { // [Stage 1] Read from file
-                            s.MainViewModel.BuildCommandProgressText = $"Reading from {sc.RealPath}\r\n({x * 100:0.0}%)";
-                        }
-                        else if (x < EncodedFile.Base64ReportFactor)
-                        { // [Stage 2] Base64
-                            s.MainViewModel.BuildCommandProgressText = $"Decoding base64\r\n({x * 100:0.0}%)";
+                        if (x < EncodedFile.Base64ReportFactor)
+                        { // [Stage 1] Base64
+                            s.MainViewModel.BuildCommandProgressText = $"Reading and decoding from {sc.RealPath}\r\n({x * 100:0.0}%)";
                         }
                         else
-                        { // [Stage 3] Decompress
+                        { // [Stage 2] Decompress
                             s.MainViewModel.BuildCommandProgressText = $"Decompressing {fileName}\r\n({x * 100:0.0}%)";
                         }
                     }    

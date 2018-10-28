@@ -1222,7 +1222,8 @@ namespace PEBakery.Core
                     Encoding encoding = FileHelper.DetectTextEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
-                        decodeLen = SplitBase64.Decode(tr, section, decodeStream, new Progress<(int Pos, int Total)>(x =>
+                        IniReadWriter.FastForwardTextReader(tr, section);
+                        decodeLen = SplitBase64.Decode(tr, decodeStream, new Progress<(int Pos, int Total)>(x =>
                         {
                             progress?.Report((double)x.Pos / x.Total * Base64ReportFactor);
                         }));
@@ -1609,7 +1610,8 @@ namespace PEBakery.Core
                     Encoding encoding = FileHelper.DetectTextEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
-                        decodeLen = SplitBase64.Decode(tr, section, decodeStream);
+                        IniReadWriter.FastForwardTextReader(tr, section);
+                        decodeLen = SplitBase64.Decode(tr, decodeStream);
                     }
 
                     // [Stage 2] Read final footer
@@ -1831,15 +1833,15 @@ namespace PEBakery.Core
     public static class SplitBase64
     {
         #region Encode
-        public static int Encode(Stream srcStream, TextWriter writer, IProgress<long> progress = null)
+        public static int Encode(Stream srcStream, TextWriter tw, IProgress<long> progress = null)
         {
             const int reportInterval = 1024 * 1024; // 1MB
 
             int idx = 0;
             int encodedLen = 0;
             int lineCount = (int)(srcStream.Length * 4 / 3) / 4090;
-            writer.Write("lines=");
-            writer.WriteLine(lineCount); // lines={count} should be 0-based index
+            tw.Write("lines=");
+            tw.WriteLine(lineCount); // lines={count} should be 0-based index
 
             long posBak = srcStream.Position;
             srcStream.Position = 0;
@@ -1864,18 +1866,18 @@ namespace PEBakery.Core
                 int encodeBlockLines = encodedStr.Length / 4090;
                 for (int x = 0; x < encodeBlockLines; x++)
                 {
-                    writer.Write(idx);
-                    writer.Write("=");
-                    writer.WriteLine(encodedStr.Substring(x * 4090, 4090));
+                    tw.Write(idx);
+                    tw.Write("=");
+                    tw.WriteLine(encodedStr.Substring(x * 4090, 4090));
                     idx += 1;
                 }
 
                 string lastLine = encodedStr.Substring(encodeBlockLines * 4090);
                 if (0 < lastLine.Length && encodeBlockLines < 1024 * 4)
                 {
-                    writer.Write(idx);
-                    writer.Write("=");
-                    writer.WriteLine(lastLine);
+                    tw.Write(idx);
+                    tw.Write("=");
+                    tw.WriteLine(lastLine);
                 }
 
                 // Report progress
@@ -1894,7 +1896,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Decode
-        public static int Decode(TextReader tr, string section, Stream outStream, IProgress<(int Pos, int Total)> progress = null)
+        public static int Decode(TextReader tr, Stream destStream, IProgress<(int Pos, int Total)> progress = null)
         {
             int lineLen = -1;
             int lineCount = 0;
@@ -1909,74 +1911,57 @@ namespace PEBakery.Core
 
             // Read base64 block directly from file
             string line;
-            bool inTargetSection = section.Length == 0; // If section is empty, skip searching
             while ((line = tr.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
-
-                // Ignore comment
-                if (line.StartsWith("#", StringComparison.Ordinal) ||
-                    line.StartsWith(";", StringComparison.Ordinal) ||
-                    line.StartsWith("//", StringComparison.Ordinal))
+                if (line.Length == 0)
                     continue;
 
+                // End of section
                 if (line.StartsWith("[", StringComparison.Ordinal) &&
                     line.EndsWith("]", StringComparison.Ordinal))
-                { // Start of section
-                    if (inTargetSection)
-                        break;
+                    break;
 
-                    // Remove [ and ]
-                    string foundSection = line.Substring(1, line.Length - 2);
-                    if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
-                        inTargetSection = true;
+                (string key, string block) = IniReadWriter.GetKeyValueFromLine(line);
+                if (key == null || block == null)
+                    throw new InvalidOperationException("Encoded lines are malformed");
+
+                // [Stage 1] Get count of lines
+                if (key.Equals("lines", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(block, NumberStyles.Integer, CultureInfo.InvariantCulture, out lineCount))
+                        return -1; // Failure
+                    lineCount += 1; // WB's "lines={count}" is 0-based.
+                    continue;
                 }
-                else if (inTargetSection)
-                { // [Stage 1] Found target section
-                    if (line.Length == 0)
-                        continue;
 
-                    (string key, string block) = IniReadWriter.GetKeyValueFromLine(line);
-                    if (key == null || block == null)
-                        throw new InvalidOperationException("Encoded lines are malformed");
+                // [Stage 2] Get length of line
+                if (!StringHelper.IsInteger(key))
+                    throw new InvalidOperationException("Key of the encoded lines are malformed");
+                if (lineLen == -1)
+                    lineLen = block.Length;
+                if (4090 < block.Length ||
+                    i + 1 < lineCount && block.Length != lineLen)
+                    throw new InvalidOperationException("Length of encoded lines is inconsistent");
 
-                    // [Stage 2] Get count of lines
-                    if (key.Equals("lines", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!int.TryParse(block, NumberStyles.Integer, CultureInfo.InvariantCulture, out lineCount))
-                            return -1; // Failure
-                        lineCount += 1; // WB's "lines={count}" is 0-based.
-                        continue;
-                    }
+                // [Stage 3] Decode 
+                b.Append(block);
+                encodeLen += block.Length;
 
-                    // [Stage 3] Get length of line
-                    if (!StringHelper.IsInteger(key))
-                        throw new InvalidOperationException("Key of the encoded lines are malformed");
-                    if (lineLen == -1)
-                        lineLen = block.Length;
-                    if (4090 < block.Length ||
-                        i + 1 < lineCount && block.Length != lineLen)
-                        throw new InvalidOperationException("Length of encoded lines is inconsistent");
-
-                    // [Stage 4] Decode 
-                    b.Append(block);
-                    encodeLen += block.Length;
-
-                    // If buffer is full, decode ~64KB to ~48KB raw bytes
-                    if (0 < i && (i + 1) % 16 == 0)
-                    {
-                        byte[] buffer = Convert.FromBase64String(b.ToString());
-                        outStream.Write(buffer, 0, buffer.Length);
-                        decodeLen += buffer.Length;
-                        b.Clear();
-                    }
-
-                    // Report progress
-                    if (progress != null && i % 256 == 0)
-                        progress.Report((i, lineCount));
-
-                    i += 1;
+                // If buffer is full, decode ~64KB to ~48KB raw bytes
+                if (0 < i && (i + 1) % 16 == 0)
+                {
+                    byte[] buffer = Convert.FromBase64String(b.ToString());
+                    destStream.Write(buffer, 0, buffer.Length);
+                    decodeLen += buffer.Length;
+                    b.Clear();
                 }
+
+                // Report progress
+                if (progress != null && i % 256 == 0)
+                    progress.Report((i, lineCount));
+
+                i += 1;
             }
 
             // Append '=' padding
@@ -1996,7 +1981,7 @@ namespace PEBakery.Core
 
             byte[] finalBuffer = Convert.FromBase64String(b.ToString());
             decodeLen += finalBuffer.Length;
-            outStream.Write(finalBuffer, 0, finalBuffer.Length);
+            destStream.Write(finalBuffer, 0, finalBuffer.Length);
 
             return decodeLen;
         }
