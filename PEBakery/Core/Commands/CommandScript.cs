@@ -97,8 +97,19 @@ namespace PEBakery.Core.Commands
                 {
                     lock (progressLock)
                     {
-                        s.MainViewModel.BuildCommandProgressText = $"Extracting {fileName}...\r\n({x * 100:0.0}%)";
                         s.MainViewModel.BuildCommandProgressValue = x;
+                        if (Math.Abs(x) < double.Epsilon)
+                        { // [Stage 1] Read from file
+                            s.MainViewModel.BuildCommandProgressText = $"Reading from {sc.RealPath}\r\n({x * 100:0.0}%)";
+                        }
+                        else if (x < EncodedFile.Base64ReportFactor)
+                        { // [Stage 2] Base64
+                            s.MainViewModel.BuildCommandProgressText = $"Decoding base64\r\n({x * 100:0.0}%)";
+                        }
+                        else
+                        { // [Stage 3] Decompress
+                            s.MainViewModel.BuildCommandProgressText = $"Decompressing {fileName}\r\n({x * 100:0.0}%)";
+                        }
                     }
                 });
 
@@ -145,8 +156,19 @@ namespace PEBakery.Core.Commands
                 {
                     lock (progressLock)
                     {
-                        s.MainViewModel.BuildCommandProgressText = $"Extracting {fileName}...\r\n({x * 100:0.0}%)";
                         s.MainViewModel.BuildCommandProgressValue = x;
+                        if (Math.Abs(x) < double.Epsilon)
+                        { // [Stage 1] Read from file
+                            s.MainViewModel.BuildCommandProgressText = $"Reading from {sc.RealPath}\r\n({x * 100:0.0}%)";
+                        }
+                        else if (x < EncodedFile.Base64ReportFactor)
+                        { // [Stage 2] Base64
+                            s.MainViewModel.BuildCommandProgressText = $"Decoding base64\r\n({x * 100:0.0}%)";
+                        }
+                        else
+                        { // [Stage 3] Decompress
+                            s.MainViewModel.BuildCommandProgressText = $"Decompressing {fileName}\r\n({x * 100:0.0}%)";
+                        }
                     }    
                 });
 
@@ -312,8 +334,19 @@ namespace PEBakery.Core.Commands
                     {
                         lock (progressLock)
                         {
-                            s.MainViewModel.BuildCommandProgressText = $"Attaching {filePath}...\r\n({x * 100:0.0}%)";
                             s.MainViewModel.BuildCommandProgressValue = x;
+                            if (Math.Abs(x - 1) < double.Epsilon)
+                            { // [Stage 3] Write to file
+                                s.MainViewModel.BuildCommandProgressText = $"Writing to {sc.RealPath}\r\n({x * 100:0.0}%)";
+                            }
+                            else if (x < EncodedFile.CompReportFactor)
+                            { // [Stage 1] Compress
+                                s.MainViewModel.BuildCommandProgressText = $"Compressing {filePath}\r\n({x * 100:0.0}%)";
+                            }
+                            else
+                            { // [Stage 2] Base64
+                                s.MainViewModel.BuildCommandProgressText = $"Encoding to base64\r\n({x * 100:0.0}%)";
+                            }
                         }
                     });
 

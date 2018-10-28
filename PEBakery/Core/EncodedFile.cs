@@ -165,6 +165,9 @@ namespace PEBakery.Core
         public const long InterfaceSizeLimit = 4 * 1024 * 1024; // 4MB
         private const long BufferSize = 64 * 1024; // 64KB
         private const long ReportInterval = 1024 * 1024; // 1MB
+
+        public const double CompReportFactor = 0.8;
+        public const double Base64ReportFactor = 0.2;
         #endregion
 
         #region Dict ImageEncodeDict
@@ -1006,7 +1009,7 @@ namespace PEBakery.Core
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / inputLen * 0.8);
+                                        progress?.Report((double)offset / inputLen * CompReportFactor);
                                 }
                             }
                             break;
@@ -1018,7 +1021,7 @@ namespace PEBakery.Core
 
                                 offset += bytesRead;
                                 if (offset % ReportInterval == 0)
-                                    progress?.Report((double)offset / inputLen * 0.8);
+                                    progress?.Report((double)offset / inputLen * CompReportFactor);
                             }
                             break;
                         case EncodeMode.XZ:
@@ -1032,7 +1035,7 @@ namespace PEBakery.Core
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / inputLen * 0.8);
+                                        progress?.Report((double)offset / inputLen * CompReportFactor);
                                 }
                             }
                             break;
@@ -1127,9 +1130,13 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     using (StreamWriter tw = new StreamWriter(tempEncoded, false, Encoding.UTF8))
                     {
-                        encodedLen = SplitBase64.Encode(encodeStream, tw);
+                        // compressedBodyLen
+                        encodedLen = SplitBase64.Encode(encodeStream, tw, new Progress<long>(x =>
+                        {
+                            progress?.Report((double)x / compressedBodyLen * Base64ReportFactor + CompReportFactor);
+                        }));
                     }
-                    progress?.Report(0.9);
+                    progress?.Report(1);
                 }
 
                 // [Stage 6] Before writing to file, backup original script
@@ -1179,8 +1186,6 @@ namespace PEBakery.Core
                             IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
                         }
                     }
-
-                    progress?.Report(1);
                 }
                 catch
                 { // Error -> Rollback!
@@ -1216,7 +1221,12 @@ namespace PEBakery.Core
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
-                    int decodeLen = SplitBase64.Decode(IniReadWriter.FilterInvalidIniLines(encodedLines), decodeStream);
+                    int decodeLen;
+                    {
+                        List<string> lines = IniReadWriter.FilterInvalidIniLines(encodedLines);
+                        decodeLen = SplitBase64.Decode(lines, decodeStream);
+                    }
+                    progress?.Report(Base64ReportFactor);
 
                     // [Stage 2] Read final footer
                     const int finalFooterLen = 0x24;
@@ -1335,7 +1345,7 @@ namespace PEBakery.Core
 
                                         offset += bytesRead;
                                         if (offset % ReportInterval == 0)
-                                            progress?.Report((double)offset / rawBodyLen);
+                                            progress?.Report((double)offset / rawBodyLen * CompReportFactor + Base64ReportFactor);
                                     }
                                 }
                             }
@@ -1369,7 +1379,7 @@ namespace PEBakery.Core
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / rawBodyLen);
+                                        progress?.Report((double)offset / rawBodyLen * CompReportFactor + Base64ReportFactor);
                                 }
 
 #if DEBUG_MIDDLE_FILE
@@ -1407,7 +1417,7 @@ namespace PEBakery.Core
 
                                         offset += bytesRead;
                                         if (offset % ReportInterval == 0)
-                                            progress?.Report((double)offset / rawBodyLen);
+                                            progress?.Report((double)offset / rawBodyLen * CompReportFactor + Base64ReportFactor);
                                     }
                                 }
                             }
@@ -1815,8 +1825,10 @@ namespace PEBakery.Core
     public static class SplitBase64
     {
         #region Encode
-        public static int Encode(Stream srcStream, TextWriter writer)
+        public static int Encode(Stream srcStream, TextWriter writer, IProgress<long> progress = null)
         {
+            const int reportInterval = 1024 * 1024; // 1MB
+
             int idx = 0;
             int encodedLen = 0;
             int lineCount = (int)(srcStream.Length * 4 / 3) / 4090;
@@ -1826,13 +1838,16 @@ namespace PEBakery.Core
             long posBak = srcStream.Position;
             srcStream.Position = 0;
 
+            long offset = 0;
+            long nextReport = reportInterval;
             byte[] buffer = new byte[4090 * 12]; // Process ~48KB at once (encode to ~64KB)
             while (srcStream.Position < srcStream.Length)
             {
                 int readByte = srcStream.Read(buffer, 0, buffer.Length);
                 string encodedStr = Convert.ToBase64String(buffer, 0, readByte);
 
-                // Count Base64 string length
+                // Count (1) byte offset, and (2) base64 string length
+                offset += readByte;
                 encodedLen += encodedStr.Length;
 
                 // Remove Base64 Padding (==, =)
@@ -1856,6 +1871,13 @@ namespace PEBakery.Core
                     writer.Write("=");
                     writer.WriteLine(lastLine);
                 }
+
+                // Report progress
+                if (progress != null && nextReport <= offset)
+                {
+                    progress.Report(offset);
+                    nextReport += reportInterval;
+                }
             }
 
             Debug.Assert(idx == lineCount);
@@ -1866,7 +1888,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Decode
-        public static int Decode(List<string> encodedList, Stream outStream)
+        public static int Decode(List<string> encodedList, Stream outStream, IProgress<long> progress = null)
         {
             // Remove "lines=n"
             encodedList.RemoveAt(0);
@@ -1908,7 +1930,7 @@ namespace PEBakery.Core
                 }
             }
 
-            // Append = padding
+            // Append '=' padding
             switch (encodeLen % 4)
             {
                 case 0:
