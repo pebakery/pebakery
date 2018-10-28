@@ -26,6 +26,7 @@
 */
 
 // #define DEBUG_MIDDLE_FILE
+#define OPT_ENCODE
 
 using Joveler.Compression.XZ;
 using Joveler.Compression.ZLib;
@@ -965,6 +966,7 @@ namespace PEBakery.Core
 
         private static Script Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
         {
+            // Check filename
             byte[] fileNameUtf8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUtf8.Length == 0 || 512 <= fileNameUtf8.Length)
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
@@ -980,18 +982,18 @@ namespace PEBakery.Core
                     fileOverwrite = true;
             }
 
-            int encodedLen;
-            string tempFile = Path.GetTempFileName();
-            List<IniKey> keys;
+            string tempCompressed = Path.GetTempFileName();
+            string tempEncoded = Path.GetTempFileName();
             try
             {
-                using (FileStream encodeStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite))
+                int encodedLen;
+                using (FileStream encodeStream = new FileStream(tempCompressed, FileMode.Create, FileAccess.ReadWrite))
                 {
                     // [Stage 1] Compress file with zlib
                     int bytesRead;
                     long offset = 0;
                     long inputLen = inputStream.Length;
-                    byte[] buffer = new byte[BufferSize]; // 64KB
+                    byte[] buffer = new byte[BufferSize];
                     Crc32Checksum crc32 = new Crc32Checksum();
                     switch (mode)
                     {
@@ -1021,7 +1023,7 @@ namespace PEBakery.Core
                             }
                             break;
                         case EncodeMode.XZ:
-                            // Multithreading will take up too much memory, use singlethread instead.
+                            // Multi-threading will take up too much memory, use single thread instead.
                             using (XZStream xzs = new XZStream(encodeStream, LzmaMode.Compress, XZStream.DefaultPreset, true))
                             {
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
@@ -1123,69 +1125,77 @@ namespace PEBakery.Core
 
                     // [Stage 5] Encode with Base64 and split into 4090B
                     encodeStream.Flush();
-                    (keys, encodedLen) = SplitBase64.Encode(encodeStream, section);
-                }
-            }
-            finally
-            {
-                if (File.Exists(tempFile))
-                    File.Delete(tempFile);
-            }
-
-            // [Stage 6] Before writing to file, backup original script
-            string backupFile = Path.GetTempFileName();
-            File.Copy(sc.RealPath, backupFile, true);
-
-            // [Stage 7] Write to file
-            try
-            {
-                // Write folder info to [EncodedFolders]
-                if (!encodeLogo)
-                { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
-                    bool writeFolderSection = true;
-                    if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                    using (StreamWriter tw = new StreamWriter(tempEncoded, false, Encoding.UTF8))
                     {
-                        string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
-                        if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
-                            writeFolderSection = false;
+                        encodedLen = SplitBase64.Encode(encodeStream, tw);
                     }
-
-                    if (writeFolderSection &&
-                        !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                        !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-                        IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                 }
 
-                // Write file info into [{folderName}]
-                IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+                // [Stage 6] Before writing to file, backup original script
+                string backupFile = Path.GetTempFileName();
+                File.Copy(sc.RealPath, backupFile, true);
 
-                // Write encoded file into [EncodedFile-{folderName}-{fileName}]
-                if (fileOverwrite)
-                    IniReadWriter.DeleteSection(sc.RealPath, section); // Delete existing encoded file
-                IniReadWriter.WriteKeys(sc.RealPath, keys);
-
-                // Write additional line when encoding logo.
-                if (encodeLogo)
+                // [Stage 7] Write to file
+                try
                 {
-                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
-                    IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
+                    // Write folder info to [EncodedFolders]
+                    if (!encodeLogo)
+                    { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
+                        bool writeFolderSection = true;
+                        if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                        {
+                            string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
+                            if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
+                                writeFolderSection = false;
+                        }
 
-                    if (lastLogo != null)
+                        if (writeFolderSection &&
+                            !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                            !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                            IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                    }
+
+                    // Write file info into [{folderName}]
+                    IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+
+                    // Write encoded file into [EncodedFile-{folderName}-{fileName}]
+                    if (fileOverwrite)
+                        IniReadWriter.DeleteSection(sc.RealPath, section); // Delete existing encoded file
+                    using (StreamReader tr = new StreamReader(tempEncoded, Encoding.UTF8, false))
                     {
-                        IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
-                        IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
+                        IniReadWriter.WriteSectionFast(sc.RealPath, section, tr);
+                    }
+
+                    // Write additional line when encoding logo.
+                    if (encodeLogo)
+                    {
+                        string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                        IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
+
+                        if (lastLogo != null)
+                        {
+                            IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
+                            IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
+                        }
                     }
                 }
-            }
-            catch
-            { // Error -> Rollback!
-                File.Copy(backupFile, sc.RealPath, true);
-                throw new InvalidOperationException($"Error while writing encoded file into [{sc.RealPath}]");
+                catch
+                { // Error -> Rollback!
+                    File.Copy(backupFile, sc.RealPath, true);
+                    throw new InvalidOperationException($"Error while writing encoded file into [{sc.RealPath}]");
+                }
+                finally
+                { // Delete backup script
+                    if (File.Exists(backupFile))
+                        File.Delete(backupFile);
+                }
             }
             finally
-            { // Delete backup script
-                if (File.Exists(backupFile))
-                    File.Delete(backupFile);
+            {
+                if (File.Exists(tempCompressed))
+                    File.Delete(tempCompressed);
+                if (File.Exists(tempEncoded))
+                    File.Delete(tempEncoded);
             }
 
             // [Stage 8] Refresh Script
@@ -1802,19 +1812,21 @@ namespace PEBakery.Core
     public static class SplitBase64
     {
         #region Encode
-        public static (List<IniKey>, int) Encode(Stream stream, string section)
+        public static int Encode(Stream srcStream, TextWriter writer)
         {
             int idx = 0;
             int encodedLen = 0;
-            List<IniKey> keys = new List<IniKey>((int)(stream.Length * 4 / 3) / 4090 + 1);
+            int lineCount = (int) (srcStream.Length * 4 / 3) / 4090;
+            writer.Write("lines=");
+            writer.WriteLine(lineCount);
 
-            long posBak = stream.Position;
-            stream.Position = 0;
+            long posBak = srcStream.Position;
+            srcStream.Position = 0;
 
             byte[] buffer = new byte[4090 * 12]; // Process ~48KB at once (encode to ~64KB)
-            while (stream.Position < stream.Length)
+            while (srcStream.Position < srcStream.Length)
             {
-                int readByte = stream.Read(buffer, 0, buffer.Length);
+                int readByte = srcStream.Read(buffer, 0, buffer.Length);
                 string encodedStr = Convert.ToBase64String(buffer, 0, readByte);
 
                 // Count Base64 string length
@@ -1825,53 +1837,28 @@ namespace PEBakery.Core
                     encodedStr = encodedStr.TrimEnd('=');
 
                 // Tokenize encoded string by 4090 chars
-                int encodeLine = encodedStr.Length / 4090;
-                for (int x = 0; x < encodeLine; x++)
+                int encodeBlockLines = encodedStr.Length / 4090;
+                for (int x = 0; x < encodeBlockLines; x++)
                 {
-                    keys.Add(new IniKey(section, idx.ToString(), encodedStr.Substring(x * 4090, 4090)));
+                    writer.Write(idx);
+                    writer.Write("=");
+                    writer.WriteLine(encodedStr.Substring(x * 4090, 4090));
                     idx += 1;
                 }
 
-                string lastLine = encodedStr.Substring(encodeLine * 4090);
-                if (0 < lastLine.Length && encodeLine < 1024 * 4)
-                    keys.Add(new IniKey(section, idx.ToString(), lastLine));
-            }
-
-            stream.Position = posBak;
-
-            keys.Insert(0, new IniKey(section, "lines", idx.ToString())); // lines=X
-            return (keys, encodedLen);
-        }
-        #endregion
-
-        #region EncodeInMem
-        public static (List<IniKey>, int) EncodeInMem(byte[] binData, string section)
-        {
-            // Encode body, footer and finalFooter with Base64
-            string encodedStr = Convert.ToBase64String(binData);
-
-            // Remove Base64 Padding (==, =)
-            if (encodedStr.EndsWith("==", StringComparison.Ordinal))
-                encodedStr = encodedStr.Substring(0, encodedStr.Length - 2);
-            else if (encodedStr.EndsWith("=", StringComparison.Ordinal))
-                encodedStr = encodedStr.Substring(0, encodedStr.Length - 1);
-
-            // Tokenize encoded string into 4090B.
-            List<IniKey> keys = new List<IniKey>();
-            for (int i = 0; i <= encodedStr.Length / 4090; i++)
-            {
-                if (i < encodedStr.Length / 4090) // 1 Line is 4090 characters
+                string lastLine = encodedStr.Substring(encodeBlockLines * 4090);
+                if (0 < lastLine.Length && encodeBlockLines < 1024 * 4)
                 {
-                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, 4090))); // X=eJyFk0Fr20AQhe8G...
-                }
-                else // Last Iteration
-                {
-                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, encodedStr.Length - i * 4090))); // X=N3q8ryccAAQWuBjqA5QvAAAAAA (end)
-                    keys.Insert(0, new IniKey(section, "lines", i.ToString())); // lines=X
+                    writer.Write(idx);
+                    writer.Write("=");
+                    writer.WriteLine(lastLine);
                 }
             }
 
-            return (keys, encodedStr.Length);
+            Debug.Assert(idx == lineCount);
+            srcStream.Position = posBak;
+            
+            return encodedLen;
         }
         #endregion
 

@@ -916,7 +916,7 @@ namespace PEBakery.Tests.Core
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            void Template(string binFileName, string encFileName, bool inMem)
+            void Template(string binFileName, string encFileName)
             {
                 string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
 
@@ -924,48 +924,23 @@ namespace PEBakery.Tests.Core
                 string binFile = Path.Combine(workDir, binFileName);
                 string encFile = Path.Combine(workDir, encFileName);
 
-                List<string> lines = new List<string>();
+                string compStr;
                 using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
                 {
-                    string rawLine;
-                    while ((rawLine = r.ReadLine()) != null)
-                    {
-                        string line = rawLine.Trim();
-                        if (0 < line.Length)
-                            lines.Add(line);
-                    }
+                    compStr = r.ReadToEnd();
                 }
 
-                List<string> comps;
-                if (inMem)
+                using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (StringWriter sw = new StringWriter())
                 {
-                    byte[] buffer;
-                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        buffer = new byte[fs.Length];
-                        fs.Read(buffer, 0, buffer.Length);
-                    }
-
-                    (List<IniKey> keys, _) = SplitBase64.EncodeInMem(buffer, string.Empty);
-                    comps = keys.Select(x => $"{x.Key}={x.Value}").ToList();
+                    SplitBase64.Encode(fs, sw);
+                    string result = sw.ToString();
+                    Assert.IsTrue(result.Equals(compStr, StringComparison.Ordinal));
                 }
-                else
-                {
-                    List<IniKey> keys;
-                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        (keys, _) = SplitBase64.Encode(fs, string.Empty);
-                    }
-                    comps = keys.Select(x => $"{x.Key}={x.Value}").ToList();
-                }
-
-                Assert.IsTrue(lines.SequenceEqual(comps));
             }
 
-            Template("BigData.bin", "BigDataEnc4090.txt", true);
-            Template("BigData.bin", "BigDataEnc4090.txt", false);
-            Template("Type3.pdf", "Type3Enc4090.txt", true);
-            Template("Type3.pdf", "Type3Enc4090.txt", false);
+            Template("BigData.bin", "BigDataEnc4090.txt");
+            Template("Type3.pdf", "Type3Enc4090.txt");
         }
 
         [TestMethod]

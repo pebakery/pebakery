@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1130,6 +1131,134 @@ namespace PEBakery.Ini
                 {
                     return false;
                 }
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
+        }
+        #endregion
+
+        #region WriteSectionFast
+        /// <summary>
+        /// Write to section fast, designed for EncodedFile.Encode()
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteSectionFast(string file, string section, IList<string> lines)
+        {
+            return InternalWriteSectionFast(file, section, lines);
+        }
+
+        /// <summary>
+        /// Write to section fast, designed for EncodedFile.Encode()
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteSectionFast(string file, string section, string str)
+        {
+            return InternalWriteSectionFast(file, section, str);
+        }
+
+        /// <summary>
+        /// Write to section fast, designed for EncodedFile.Encode()
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool WriteSectionFast(string file, string section, TextReader tr)
+        {
+            return InternalWriteSectionFast(file, section, tr);
+        }
+
+        private static bool InternalWriteSectionFast(string file, string section, object content)
+        {
+            void WriteContent(TextWriter w)
+            {
+                w.WriteLine($"[{section}]");
+                switch (content)
+                {
+                    case string str:
+                        w.WriteLine(str);
+                        break;
+                    case IList<string> strs:
+                        foreach (string str in strs)
+                            w.WriteLine(str);
+                        break;
+                    case TextReader tr:
+                        string readLine;
+                        while ((readLine = tr.ReadLine()) != null)
+                            w.WriteLine(readLine);
+                        break;
+                    default:
+                        throw new ArgumentException("Invalid content");
+                }
+            }
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                // If file does not exist or blank, just create new file and insert keys.
+                if (!File.Exists(file))
+                {
+                    using (StreamWriter w = new StreamWriter(file, false, Encoding.UTF8))
+                    {
+                        WriteContent(w);
+                    }
+
+                    return true;
+                }
+
+                bool finished = false;
+                string tempPath = Path.GetTempFileName();
+                Encoding encoding = Helper.DetectTextEncoding(file);
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    string rawLine;
+                    bool passThisSection = false;
+
+                    // Main Logic
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        string line = rawLine.Trim();
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[", StringComparison.Ordinal) &&
+                            line.EndsWith("]", StringComparison.Ordinal))
+                        {
+                            passThisSection = false;
+
+                            string foundSection = line.Substring(1, line.Length - 2);
+                            if (foundSection.Equals(section, StringComparison.OrdinalIgnoreCase))
+                            {
+                                WriteContent(w);
+
+                                passThisSection = true;
+                                finished = true;
+                            }
+                        }
+
+                        if (!passThisSection)
+                            w.WriteLine(rawLine);
+                    }
+
+                    // End of file
+                    if (!finished)
+                    {
+                        WriteContent(w);
+                    }
+                }
+
+                Helper.FileReplaceEx(tempPath, file);
+                return true;
             }
             finally
             {

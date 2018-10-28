@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Ini.Tests
 {
@@ -1517,6 +1518,160 @@ namespace PEBakery.Ini.Tests
             {
                 File.Delete(tempFile);
             }
+        }
+        #endregion
+
+        #region WriteSectionFast
+        [TestCategory("PEBakery.Ini")]
+        [TestMethod]
+        public void WriteSectionFast()
+        {
+            #region Template
+            void MultiStrTemplate(string section, string[] strs, string before, string after)
+            {
+                string tempFile = Path.GetTempFileName();
+                try
+                {
+                    TestHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                    {
+                        w.WriteLine(before);
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, strs));
+
+                    Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, encoding))
+                    {
+                        string result = r.ReadToEnd();
+                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                    }
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
+            }
+
+            void SingleStrTemplate(string section, string str, string before, string after)
+            {
+                string tempFile = Path.GetTempFileName();
+                try
+                {
+                    TestHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                    {
+                        w.WriteLine(before);
+                    }
+
+                    Assert.IsTrue(IniReadWriter.WriteSectionFast(tempFile, section, str));
+
+                    Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, encoding))
+                    {
+                        string result = r.ReadToEnd();
+                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                    }
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
+            }
+
+            void TextReaderTemplate(string section, string str, string before, string after)
+            {
+                string tempSrcFile = Path.GetTempFileName();
+                string tempDestFile = Path.GetTempFileName();
+                try
+                {
+                    TestHelper.WriteTextBom(tempSrcFile, Encoding.UTF8);
+                    using (StreamWriter w = new StreamWriter(tempSrcFile, false, Encoding.UTF8))
+                    {
+                        w.WriteLine(str);
+                    }
+
+                    TestHelper.WriteTextBom(tempDestFile, Encoding.UTF8);
+                    using (StreamWriter w = new StreamWriter(tempDestFile, false, Encoding.UTF8))
+                    {
+                        w.WriteLine(before);
+                    }
+
+                    using (StreamReader tr = new StreamReader(tempSrcFile, Encoding.UTF8))
+                    {
+                        Assert.IsTrue(IniReadWriter.WriteSectionFast(tempDestFile, section, tr));
+                    }
+
+                    Encoding encoding = TestHelper.DetectTextEncoding(tempDestFile);
+                    using (StreamReader r = new StreamReader(tempDestFile, encoding))
+                    {
+                        string result = r.ReadToEnd();
+                        Assert.IsTrue(after.Equals(result, StringComparison.Ordinal));
+                    }
+                }
+                finally
+                {
+                    File.Delete(tempSrcFile);
+                    File.Delete(tempDestFile);
+                }
+            }
+            #endregion
+
+            // Test input : Multi string (string[])
+            string[] multiStrContent = { "x64", "x86" };
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine();
+            b.AppendLine("[Desktop]");
+            b.AppendLine("x64");
+            b.AppendLine("x86");
+            string beforeStr1 = string.Empty;
+            string afterStr1 = b.ToString();
+            MultiStrTemplate("Desktop", multiStrContent, beforeStr1, afterStr1);
+
+            b.Clear();
+            b.AppendLine("[Desktop]");
+            b.AppendLine("PPC");
+            string beforeStr2 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Desktop]");
+            b.AppendLine("x64");
+            b.AppendLine("x86");
+            string afterStr2 = b.ToString();
+            MultiStrTemplate("Desktop", multiStrContent, beforeStr2, afterStr2);
+
+            b.Clear();
+            b.AppendLine("[Mobile]");
+            b.AppendLine("armhf");
+            b.AppendLine("arm64");
+            string beforeStr3 = b.ToString();
+            b.Clear();
+            b.AppendLine("[Mobile]");
+            b.AppendLine("armhf");
+            b.AppendLine("arm64");
+            b.AppendLine();
+            b.AppendLine("[Desktop]");
+            b.AppendLine("x64");
+            b.AppendLine("x86");
+            string afterStr3 = b.ToString();
+            MultiStrTemplate("Desktop", multiStrContent, beforeStr3, afterStr3);
+
+            // Test input : Single String (string)
+            b.Clear();
+            b.AppendLine("x64");
+            b.AppendLine("x86");
+            string singleStrContent = b.ToString();
+            afterStr1 += Environment.NewLine;
+            afterStr2 += Environment.NewLine;
+            afterStr3 += Environment.NewLine;
+            SingleStrTemplate("Desktop", singleStrContent, beforeStr1, afterStr1);
+            SingleStrTemplate("Desktop", singleStrContent, beforeStr2, afterStr2);
+            SingleStrTemplate("Desktop", singleStrContent, beforeStr3, afterStr3);
+
+            // Test input : TextReader
+            TextReaderTemplate("Desktop", singleStrContent, beforeStr1, afterStr1);
+            TextReaderTemplate("Desktop", singleStrContent, beforeStr2, afterStr2);
+            TextReaderTemplate("Desktop", singleStrContent, beforeStr3, afterStr3);
         }
         #endregion
 
