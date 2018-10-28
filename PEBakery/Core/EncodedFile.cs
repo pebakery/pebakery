@@ -285,7 +285,6 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachLogo, ContainsLogo
-
         public static Task<Script> AttachLogoAsync(Script sc, string fileName, string srcFilePath)
         {
             return Task.Run(() => AttachLogo(sc, fileName, srcFilePath));
@@ -1007,7 +1006,7 @@ namespace PEBakery.Core
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / inputLen);
+                                        progress?.Report((double)offset / inputLen * 0.8);
                                 }
                             }
                             break;
@@ -1019,7 +1018,7 @@ namespace PEBakery.Core
 
                                 offset += bytesRead;
                                 if (offset % ReportInterval == 0)
-                                    progress?.Report((double)offset / inputLen);
+                                    progress?.Report((double)offset / inputLen * 0.8);
                             }
                             break;
                         case EncodeMode.XZ:
@@ -1033,7 +1032,7 @@ namespace PEBakery.Core
 
                                     offset += bytesRead;
                                     if (offset % ReportInterval == 0)
-                                        progress?.Report((double)offset / inputLen);
+                                        progress?.Report((double)offset / inputLen * 0.8);
                                 }
                             }
                             break;
@@ -1041,6 +1040,7 @@ namespace PEBakery.Core
                             throw new InternalException($"Wrong EncodeMode [{mode}]");
                     }
                     long compressedBodyLen = encodeStream.Position;
+                    progress?.Report(0.8);
 
                     // [Stage 2] Generate first footer
                     byte[] rawFooter = new byte[0x226]; // 0x550
@@ -1129,6 +1129,7 @@ namespace PEBakery.Core
                     {
                         encodedLen = SplitBase64.Encode(encodeStream, tw);
                     }
+                    progress?.Report(0.9);
                 }
 
                 // [Stage 6] Before writing to file, backup original script
@@ -1178,6 +1179,8 @@ namespace PEBakery.Core
                             IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
                         }
                     }
+
+                    progress?.Report(1);
                 }
                 catch
                 { // Error -> Rollback!
@@ -1816,7 +1819,7 @@ namespace PEBakery.Core
         {
             int idx = 0;
             int encodedLen = 0;
-            int lineCount = (int) (srcStream.Length * 4 / 3) / 4090;
+            int lineCount = (int)(srcStream.Length * 4 / 3) / 4090;
             writer.Write("lines=");
             writer.WriteLine(lineCount);
 
@@ -1857,7 +1860,7 @@ namespace PEBakery.Core
 
             Debug.Assert(idx == lineCount);
             srcStream.Position = posBak;
-            
+
             return encodedLen;
         }
         #endregion
