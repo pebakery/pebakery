@@ -57,18 +57,18 @@ namespace PEBakery.Tests.Core
             void Template(string fileName, EncodedFile.EncodeMode encodeMode)
             {
                 EngineState s = EngineTests.CreateEngineState();
-                string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
-                string blankPath = Path.Combine(dirPath, "Blank.script");
-                string scPath = Path.Combine(dirPath, "EncodeFileTests.script");
-                File.Copy(blankPath, scPath, true);
-
-                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
-
-                string originFile = Path.Combine(dirPath, fileName);
-                sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
-
+                string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
+                string srcScript = Path.Combine(srcDir, "Blank.script");
+                string destDir = FileHelper.GetTempDir();
+                string destScript = Path.Combine(destDir, "EncodeFileTests.script");
+                File.Copy(srcScript, destScript, true);
                 try
                 {
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+
+                    string originFile = Path.Combine(srcDir, fileName);
+                    sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
+
                     // Check whether file was successfully encoded
                     Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
                     string[] folders = sc.Sections["EncodedFolders"].Lines
@@ -109,7 +109,10 @@ namespace PEBakery.Tests.Core
                 }
                 finally
                 {
-                    File.Delete(scPath);
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                    if (File.Exists(destScript))
+                        File.Delete(destScript);
                 }
             }
 
@@ -282,9 +285,9 @@ namespace PEBakery.Tests.Core
             void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
-                string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-                scPath = StringEscaper.Preprocess(s, scPath);
-                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+                string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+                srcScript = StringEscaper.Preprocess(s, srcScript);
+                Script sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
 
                 byte[] extractDigest;
                 using (MemoryStream ms = new MemoryStream())
@@ -320,9 +323,9 @@ namespace PEBakery.Tests.Core
             void Template(string fileName)
             { // Type 1
                 EngineState s = EngineTests.CreateEngineState();
-                string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-                scPath = StringEscaper.Preprocess(s, scPath);
-                Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
+                string srcScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+                srcScript = StringEscaper.Preprocess(s, srcScript);
+                Script sc = s.Project.LoadScriptRuntime(srcScript, new LoadScriptRuntimeOptions());
 
                 byte[] extractDigest;
                 using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))

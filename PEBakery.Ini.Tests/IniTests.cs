@@ -2696,5 +2696,132 @@ namespace PEBakery.Ini.Tests
             }
         }
         #endregion
+
+        #region Fast Forward
+        [TestMethod]
+        [TestCategory("PEBakery.Ini")]
+        public void FastForwardTextReader()
+        {
+            void Template(string section, string src, string expected)
+            {
+                string remain;
+                using (StringReader sr = new StringReader(src))
+                {
+                    IniReadWriter.FastForwardTextReader(sr, section);
+                    remain = sr.ReadToEnd();
+                }
+
+                Assert.IsTrue(remain.Equals(expected, StringComparison.Ordinal));
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            string srcStr = b.ToString();
+
+            // First section
+            b.Clear();
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            Template("갑", srcStr, b.ToString());
+
+            // Second section
+            b.Clear();
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            Template("을", srcStr, b.ToString());
+
+            // Third section
+            b.Clear();
+            b.AppendLine("UnicodeC");
+            Template("병", srcStr, b.ToString());
+
+            // No target section
+            Template("NUL", srcStr, string.Empty);
+        }
+
+        [TestMethod]
+        [TestCategory("PEBakery.Ini")]
+        public void FastForwardTextWriter()
+        {
+            void Template(string section, string src, string expected, bool copyFromNewSection)
+            {
+                string result;
+                using (StringReader sr = new StringReader(src))
+                using (StringWriter sw = new StringWriter())
+                {
+                    IniReadWriter.FastForwardTextWriter(sr, sw, section, copyFromNewSection);
+                    result = sw.ToString();
+                }
+
+                Assert.IsTrue(result.Equals(expected, StringComparison.Ordinal));
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            string srcStr = b.ToString();
+
+            // First section
+            b.Clear();
+            b.AppendLine("[갑]");
+            Template("갑", srcStr, b.ToString(), false);
+
+            // Second section
+            b.Clear();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            Template("을", srcStr, b.ToString(), false);
+
+            // Third section
+            b.Clear();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            Template("병", srcStr, b.ToString(), false);
+
+            // No target section
+            b.Clear();
+            b.AppendLine("[갑]");
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            b.AppendLine();
+            b.AppendLine("[NUL]");
+            Template("NUL", srcStr, b.ToString(), false);
+
+            // Test copyFromNewSection
+            b.Clear();
+            b.AppendLine("UnicodeA");
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            srcStr = b.ToString();
+            b.Clear();
+            b.AppendLine("[을]");
+            b.AppendLine("UnicodeB");
+            b.AppendLine("[병]");
+            b.AppendLine("UnicodeC");
+            Template(null, srcStr, b.ToString(), true);
+        }
+        #endregion
     }
 }

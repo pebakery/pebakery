@@ -327,17 +327,13 @@ namespace PEBakery.Core.Commands
                         lock (progressLock)
                         {
                             s.MainViewModel.BuildCommandProgressValue = x;
-                            if (Math.Abs(x - 1) < double.Epsilon)
-                            { // [Stage 3] Write to file
-                                s.MainViewModel.BuildCommandProgressText = $"Writing to {sc.RealPath}\r\n({x * 100:0.0}%)";
-                            }
-                            else if (x < EncodedFile.CompReportFactor)
+                            if (x < EncodedFile.CompReportFactor)
                             { // [Stage 1] Compress
                                 s.MainViewModel.BuildCommandProgressText = $"Compressing {filePath}\r\n({x * 100:0.0}%)";
                             }
                             else
                             { // [Stage 2] Base64
-                                s.MainViewModel.BuildCommandProgressText = $"Encoding to base64\r\n({x * 100:0.0}%)";
+                                s.MainViewModel.BuildCommandProgressText = $"Encoding and writing to {sc.RealPath}\r\n({x * 100:0.0}%)";
                             }
                         }
                     });

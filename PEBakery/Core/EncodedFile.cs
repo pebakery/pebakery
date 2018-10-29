@@ -971,24 +971,17 @@ namespace PEBakery.Core
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
 
-            // Check Overwrite
-            bool fileOverwrite = false;
-            if (sc.Sections.ContainsKey(folderName))
-            {
-                // Check if [{folderName}] section and [EncodedFile-{folderName}-{fileName}] section exists
-                ScriptSection scSect = sc.Sections[folderName];
-                if (scSect.IniDict.ContainsKey(fileName) && sc.Sections.ContainsKey(section))
-                    fileOverwrite = true;
-            }
-
+            
+            // [Stage 1] Backup original script and prepare temp files
+            string backupFile = Path.GetTempFileName();
+            File.Copy(sc.RealPath, backupFile, true);
             string tempCompressed = Path.GetTempFileName();
-            string tempEncoded = Path.GetTempFileName();
             try
             {
                 int encodedLen;
                 using (FileStream encodeStream = new FileStream(tempCompressed, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    // [Stage 1] Compress file with zlib
+                    // [Stage 2] Compress file with zlib
                     int bytesRead;
                     long offset = 0;
                     long inputLen = inputStream.Length;
@@ -1042,7 +1035,7 @@ namespace PEBakery.Core
                     long compressedBodyLen = encodeStream.Position;
                     progress?.Report(0.8);
 
-                    // [Stage 2] Generate first footer
+                    // [Stage 3] Generate first footer
                     byte[] rawFooter = new byte[0x226]; // 0x550
                     {
                         // 0x000 - 0x1FF : Filename and its length
@@ -1091,7 +1084,7 @@ namespace PEBakery.Core
                         }
                     }
 
-                    // [Stage 3] Compress first footer and concat to body
+                    // [Stage 4] Compress first footer and concat to body
                     long compressedFooterLen = encodeStream.Position;
                     using (ZLibStream zs = new ZLibStream(encodeStream, ZLibMode.Compress, ZLibCompLevel.Level6, true))
                     {
@@ -1100,7 +1093,7 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     compressedFooterLen = encodeStream.Position - compressedFooterLen;
 
-                    // [Stage 4] Generate final footer
+                    // [Stage 5] Generate final footer
                     {
                         byte[] finalFooter = new byte[0x24];
 
@@ -1123,84 +1116,77 @@ namespace PEBakery.Core
                         encodeStream.Write(finalFooter, 0, finalFooter.Length);
                     }
 
-                    // [Stage 5] Encode with Base64 and split into 4090B
+                    // [Stage 6] Encode with Base64 and split into 4090B, and write into the script
                     encodeStream.Flush();
-                    using (StreamWriter tw = new StreamWriter(tempEncoded, false, Encoding.UTF8))
+                    encodeStream.Position = 0;
+
+                    // if (fileOverwrite) // Delete existing encoded file section
+                    //    IniReadWriter.DeleteSection(sc.RealPath, section);
+                    using (StreamReader tr = new StreamReader(backupFile, Encoding.UTF8, false))
+                    using (StreamWriter tw = new StreamWriter(sc.RealPath, false, Encoding.UTF8))
                     {
-                        // compressedBodyLen
+                        // No need to check existing encoded file section
+                        // Fresh write : Fast forward tr, tw to EOF
+                        // Overwrite   : Fast forward tr, tw to start of target section
+                        IniReadWriter.FastForwardTextWriter(tr, tw, section, false);
+
                         encodedLen = SplitBase64.Encode(encodeStream, tw, new Progress<long>(x =>
                         {
                             progress?.Report((double)x / compressedBodyLen * Base64ReportFactor + CompReportFactor);
                         }));
+
+                        // Fresh write : Return immediately (tr is already at EOF)
+                        // Overwrite   : Copy remaining line to tw from tr
+                        IniReadWriter.FastForwardTextWriter(tr, tw, null, true);
                     }
                     progress?.Report(1);
                 }
 
-                // [Stage 6] Before writing to file, backup original script
-                string backupFile = Path.GetTempFileName();
-                File.Copy(sc.RealPath, backupFile, true);
-
                 // [Stage 7] Write to file
-                try
+                // Write folder info to [EncodedFolders]
+                if (!encodeLogo)
+                { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
+                    bool writeFolderSection = true;
+                    if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                    {
+                        string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
+                        if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
+                            writeFolderSection = false;
+                    }
+
+                    if (writeFolderSection &&
+                        !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                        !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                        IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                }
+
+                // Write file info into [{folderName}]
+                IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+
+                // Write additional line when encoding logo.
+                if (encodeLogo)
                 {
-                    // Write folder info to [EncodedFolders]
-                    if (!encodeLogo)
-                    { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
-                        bool writeFolderSection = true;
-                        if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                        {
-                            string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
-                            if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
-                                writeFolderSection = false;
-                        }
+                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
-                        if (writeFolderSection &&
-                            !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                            !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-                            IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
-                    }
-
-                    // Write file info into [{folderName}]
-                    IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
-
-                    // Write encoded file into [EncodedFile-{folderName}-{fileName}]
-                    if (fileOverwrite)
-                        IniReadWriter.DeleteSection(sc.RealPath, section); // Delete existing encoded file
-                    using (StreamReader tr = new StreamReader(tempEncoded, Encoding.UTF8, false))
+                    if (lastLogo != null)
                     {
-                        IniReadWriter.WriteSectionFast(sc.RealPath, section, tr);
-                    }
-
-                    // Write additional line when encoding logo.
-                    if (encodeLogo)
-                    {
-                        string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
-                        IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
-
-                        if (lastLogo != null)
-                        {
-                            IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
-                            IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
-                        }
+                        IniReadWriter.DeleteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, lastLogo);
+                        IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, lastLogo));
                     }
                 }
-                catch
-                { // Error -> Rollback!
-                    File.Copy(backupFile, sc.RealPath, true);
-                    throw new InvalidOperationException($"Error while writing encoded file into [{sc.RealPath}]");
-                }
-                finally
-                { // Delete backup script
-                    if (File.Exists(backupFile))
-                        File.Delete(backupFile);
-                }
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw new InvalidOperationException($"Error while writing encoded file into [{sc.RealPath}]");
             }
             finally
             {
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
                 if (File.Exists(tempCompressed))
                     File.Delete(tempCompressed);
-                if (File.Exists(tempEncoded))
-                    File.Delete(tempEncoded);
             }
 
             // [Stage 8] Refresh Script

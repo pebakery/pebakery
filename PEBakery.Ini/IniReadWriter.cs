@@ -1516,6 +1516,99 @@ namespace PEBakery.Ini
         }
         #endregion
 
+        #region Fast Forward
+        /// <summary>
+        /// Move position of TextReader to read content of specific .ini section
+        /// Designed for fast read in EncodedFile class
+        /// </summary>
+        /// <param name="tr">TextReader to fast-forward.</param>
+        /// <param name="section">Section to find.</param>
+        public static void FastForwardTextReader(TextReader tr, string section)
+        {
+            if (section == null)
+                throw new ArgumentNullException(nameof(section));
+
+            // Read base64 block directly from file
+            string line;
+            while ((line = tr.ReadLine()) != null)
+            { // Read text line by line
+                line = line.Trim();
+
+                // Ignore comment
+                if (line.StartsWith("#", StringComparison.Ordinal) ||
+                    line.StartsWith(";", StringComparison.Ordinal) ||
+                    line.StartsWith("//", StringComparison.Ordinal))
+                    continue;
+
+                if (line.StartsWith("[", StringComparison.Ordinal) &&
+                    line.EndsWith("]", StringComparison.Ordinal))
+                { // Start of section
+                    string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
+
+                    // Found target section, so return
+                    if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                        return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Copy from TextReader to TextWriter until specific .ini section.
+        /// Designed for fast write in EncodedFile class
+        /// </summary>
+        /// <param name="tr">Source</param>
+        /// <param name="tw">Destination</param>
+        /// <param name="section">Section to find. Use null for full copy.</param>
+        /// <param name="copyFromNewSection">If tr is in the middle of a section, start copy after finding new section</param>
+        public static void FastForwardTextWriter(TextReader tr, TextWriter tw, string section, bool copyFromNewSection)
+        {
+            bool enableCopy = !copyFromNewSection;
+
+            string rawLine;
+            while ((rawLine = tr.ReadLine()) != null)
+            { // Read text line by line
+                if (enableCopy)
+                    tw.WriteLine(rawLine);
+
+                if (section == null && !enableCopy)
+                {
+                    string line = rawLine.Trim();
+                    if (line.StartsWith("[", StringComparison.Ordinal) &&
+                        line.EndsWith("]", StringComparison.Ordinal))
+                    { // Start of section
+                        tw.WriteLine(rawLine);
+                        enableCopy = true;
+                    }
+                }
+                else if (section != null)
+                {
+                    string line = rawLine.Trim();
+                    if (line.StartsWith("[", StringComparison.Ordinal) &&
+                        line.EndsWith("]", StringComparison.Ordinal))
+                    { // Start of section
+                        if (!enableCopy)
+                            tw.WriteLine(rawLine);
+                        enableCopy = true;
+
+                        // TODO: Try using Span<byte> to reduce memory allocation
+                        string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
+
+                        // Found target section, so return
+                        if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                            return;
+                    }
+                }
+            }
+
+            // Target section not found, insert section header at the end of TextWriter
+            if (section != null)
+            {
+                tw.WriteLine();
+                tw.WriteLine($"[{section}]");
+            }
+        }
+        #endregion
+
         #region Utility
         public static bool IsLineComment(string line)
         {
@@ -1927,35 +2020,6 @@ namespace PEBakery.Ini
                 values.Add(value);
             }
             return (keys, values);
-        }
-
-        /// <summary>
-        /// Move position of TextReader to read content of specific .ini section
-        /// </summary>
-        /// <param name="tr"></param>
-        /// <param name="section"></param>
-        public static void FastForwardTextReader(TextReader tr, string section)
-        {
-            // Read base64 block directly from file
-            string line;
-            while ((line = tr.ReadLine()) != null)
-            { // Read text line by line
-                line = line.Trim();
-
-                // Ignore comment
-                if (line.StartsWith("#", StringComparison.Ordinal) ||
-                    line.StartsWith(";", StringComparison.Ordinal) ||
-                    line.StartsWith("//", StringComparison.Ordinal))
-                    continue;
-
-                if (line.StartsWith("[", StringComparison.Ordinal) &&
-                    line.EndsWith("]", StringComparison.Ordinal))
-                { // Start of section
-                    string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
-                    if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
-                        return;
-                }
-            }
         }
         #endregion
     }
