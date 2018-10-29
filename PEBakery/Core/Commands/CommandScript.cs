@@ -161,7 +161,7 @@ namespace PEBakery.Core.Commands
                         { // [Stage 2] Decompress
                             s.MainViewModel.BuildCommandProgressText = $"Decompressing {fileName}\r\n({x * 100:0.0}%)";
                         }
-                    }    
+                    }
                 });
 
                 using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
@@ -230,7 +230,7 @@ namespace PEBakery.Core.Commands
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
-            
+
             // Check if encoded file exist
             if (!EncodedFile.ContainsFolder(sc, dirName))
                 return LogInfo.LogErrorMessage(logs, $"Encoded folder [{dirName}] not found in script [{sc.RealPath}].");
@@ -249,7 +249,7 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory");
                 Directory.CreateDirectory(destDir);
             }
-            
+
             string[] lines = sc.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = IniReadWriter.ParseIniLinesIniStyle(lines);
             int fileCount = fileDict.Count;

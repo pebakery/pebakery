@@ -217,6 +217,7 @@ namespace PEBakery.Core
         private const string EngineVersion = "EngineVersion";
         private const string BaseDir = "BaseDir";
         private const string CacheRevision = "CacheRevision";
+        private const string AsteriskBugDirLink = "AsteriskBugDirLink";
         public void SaveCacheRevision(string baseDir)
         {
             DB_CacheRevision[] infos =
@@ -224,6 +225,7 @@ namespace PEBakery.Core
                 new DB_CacheRevision { Key = EngineVersion, Value = Properties.Resources.EngineVersion },
                 new DB_CacheRevision { Key = BaseDir, Value = baseDir },
                 new DB_CacheRevision { Key = CacheRevision, Value = Properties.Resources.ScriptCacheRevision },
+                new DB_CacheRevision { Key = AsteriskBugDirLink, Value = Global.Setting.Compat_AsteriskBugDirLink.ToString() },
             };
             InsertOrReplaceAll(infos);
         }
@@ -239,6 +241,8 @@ namespace PEBakery.Core
                 return false;
             if (!infoDict.ContainsKey(CacheRevision))
                 return false;
+            if (!infoDict.ContainsKey(AsteriskBugDirLink))
+                return false;
 
             // Does value match? (Used Ordinal instead of OrdinalIgnoreCase for cache safety)
             if (!infoDict[EngineVersion].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
@@ -246,6 +250,8 @@ namespace PEBakery.Core
             if (!infoDict[BaseDir].Equals(baseDir, StringComparison.Ordinal))
                 return false;
             if (!infoDict[CacheRevision].Equals(Properties.Resources.ScriptCacheRevision, StringComparison.Ordinal))
+                return false;
+            if (!infoDict[AsteriskBugDirLink].Equals(Global.Setting.Compat_AsteriskBugDirLink.ToString(), StringComparison.Ordinal))
                 return false;
 
             return true;
