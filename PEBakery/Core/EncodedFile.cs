@@ -26,7 +26,6 @@
 */
 
 // #define DEBUG_MIDDLE_FILE
-#define OPT_ENCODE
 
 using Joveler.Compression.XZ;
 using Joveler.Compression.ZLib;
@@ -971,7 +970,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
 
-            
+
             // [Stage 1] Backup original script and prepare temp files
             string backupFile = Path.GetTempFileName();
             File.Copy(sc.RealPath, backupFile, true);
