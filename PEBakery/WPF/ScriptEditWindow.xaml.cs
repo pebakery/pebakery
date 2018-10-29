@@ -661,7 +661,8 @@ namespace PEBakery.WPF
             if (m.SelectedUICtrl != e.UIControl)
                 return;
 
-            m.InvokeUIControlEvent(true);
+            if (5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
+                m.InvokeUIControlEvent(true);
         }
 
         private void InterfaceCanvasDragMode_SelectionChanged(object sender, SelectionChangedEventArgs e)

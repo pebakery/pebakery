@@ -77,10 +77,14 @@ namespace PEBakery.WPF.Controls
         {
             public FrameworkElement Element { get; set; }
             public UIControl UIControl { get; set; }
-            public UIControlDraggedEventArgs(FrameworkElement element, UIControl uiCtrl)
+            public double DeltaX { get; set; }
+            public double DeltaY { get; set; }
+            public UIControlDraggedEventArgs(FrameworkElement element, UIControl uiCtrl, double deltaX, double deltaY)
             {
                 Element = element;
                 UIControl = uiCtrl;
+                DeltaX = deltaX;
+                DeltaY = deltaY;
             }
         }
         public delegate void UIControlMovedEventHandler(object sender, UIControlDraggedEventArgs e);
@@ -181,20 +185,26 @@ namespace PEBakery.WPF.Controls
             if (!(_selectedElement.Tag is UIControl uiCtrl))
                 return;
 
+            double deltaX;
+            double deltaY;
             Point nowCursorPoint = e.GetPosition(this);
             switch (Mode)
             {
                 case DragMode.Move:
                     Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.X, uiCtrl.Y));
+                    deltaX = newCtrlPos.X - uiCtrl.X;
+                    deltaY = newCtrlPos.Y - uiCtrl.Y;
 
                     // UIControl should have position/size of int
                     uiCtrl.X = (int)newCtrlPos.X;
                     uiCtrl.Y = (int)newCtrlPos.Y;
 
-                    UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl));
+                    UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
                 case DragMode.Resize:
                     Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, uiCtrl.Rect, _resizeClickPos);
+                    deltaX = newCtrlRect.X - uiCtrl.X;
+                    deltaY = newCtrlRect.Y - uiCtrl.Y;
 
                     // UIControl should have position/size of int
                     uiCtrl.X = (int)newCtrlRect.X;
@@ -202,7 +212,7 @@ namespace PEBakery.WPF.Controls
                     uiCtrl.Width = (int)newCtrlRect.Width;
                     uiCtrl.Height = (int)newCtrlRect.Height;
 
-                    UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl));
+                    UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
             }
 
