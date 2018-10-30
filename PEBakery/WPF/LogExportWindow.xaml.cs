@@ -38,6 +38,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using PEBakery.Core;
+using PEBakery.Helper;
 
 namespace PEBakery.WPF
 {
@@ -133,7 +134,16 @@ namespace PEBakery.WPF
             {
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                w.OpenTextFile(destFile);
+
+                if (_m.FileFormat == LogExportType.Html)
+                {
+                    // open .html files with the default browser
+                    FileHelper.OpenPath(destFile);
+                }
+                else
+                {
+                    w.OpenTextFile(destFile);
+                }
             });
 
             // Close LogExportWindow
