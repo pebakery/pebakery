@@ -59,6 +59,8 @@
     </Window.CommandBindings>
     <Window.Resources>
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
+        <local:AttachProgressValueToPercentConverter x:Key="AttachProgressValueToPercentConverter" />
+        <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -68,7 +70,7 @@
         <TabControl Grid.Row="0"
                     Background="White"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="General">
+            <TabItem Header="General" IsEnabled="{Binding EnableButtons}">
                 <StackPanel Margin="10, 0, 10, 10">
                     <GroupBox Header="Header"
                               BorderBrush="Gray">
@@ -349,7 +351,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Interface">
+            <TabItem Header="Interface" IsEnabled="{Binding EnableButtons}">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
@@ -459,7 +461,7 @@
                                             <ComboBoxItem Content="Resize"/>
                                         </ComboBox>
                                     </Grid>
-                                    
+
                                     <!-- Common -->
                                     <Grid Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>
@@ -833,7 +835,7 @@
                                                 x:Name="UICtrlButtonPictureAttachButton"
                                                 Click="UICtrlInterfaceAttachButton_Click"
                                                 ToolTip="Import image">
-                                                <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                             Width="Auto"
                                                                             Height="Auto"
@@ -1213,7 +1215,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Attachment">
+            <TabItem Header="Attachment" IsEnabled="{Binding EnableButtons}">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"
@@ -1282,7 +1284,7 @@
                             <!-- Detail of Attached File -->
                             <StackPanel Margin="5, 5, 5, 0"
                                         Orientation="Vertical"
-                                        Visibility="{Binding AttachDetailFileVisiblity}">
+                                        Visibility="{Binding AttachDetailFileVisibility}">
                                 <GroupBox Header="Detail"
                                           BorderBrush="Gray">
                                     <Grid>
@@ -1345,13 +1347,13 @@
                                 </GroupBox>
 
                                 <DockPanel Margin="5, 5, 0, 0"
-                                            Visibility="{Binding AttachDetailFileVisiblity}">
+                                            Visibility="{Binding AttachDetailFileVisibility}">
                                     <Button x:Name="ExtractFileButton"
                                             DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="ExtractFileButton_Click">
+                                            Command="{Binding ExtractFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Export"
                                                                         Width="Auto"
@@ -1366,7 +1368,7 @@
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="DeleteFileButton_Click">
+                                            Command="{Binding DeleteFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                                         Width="Auto"
@@ -1381,7 +1383,7 @@
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Right"
                                             Width="160" Height="25"
-                                            Click="InspectFileButton_Click">
+                                            Command="{Binding InspectFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Magnify"
                                                                         Width="Auto"
@@ -1397,7 +1399,7 @@
                             <GroupBox Header="Add Folder"
                                       Margin="5, 5, 0, 0"
                                       BorderBrush="Gray"
-                                      Visibility="{Binding AttachAddFolderVisiblity}">
+                                      Visibility="{Binding AttachAddFolderVisibility}">
                                 <Grid Margin="3, 0, 3, 2" Height="25">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="120"/>
@@ -1421,7 +1423,7 @@
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
                                             Click="AddFolderButton_Click"
-                                            Visibility="{Binding AttachAddFolderVisiblity}">
+                                            Visibility="{Binding AttachAddFolderVisibility}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderPlus"
                                                                         Width="Auto"
@@ -1436,7 +1438,7 @@
                             <!-- Detail of Attached Folder -->
                             <StackPanel Margin="5, 0, 0, 0"
                                         Orientation="Vertical"
-                                        Visibility="{Binding AttachDetailFolderVisiblity}">
+                                        Visibility="{Binding AttachDetailFolderVisibility}">
                                 <GroupBox Header="Attach File"
                                           Margin="0, 0, 0, 5"
                                           BorderBrush="Gray">
@@ -1467,7 +1469,7 @@
                                             <Button Grid.Row="0" Grid.Column="2"
                                                     Margin="0, 0, 0, 5"
                                                     x:Name="AttachNewFileChooseButton"
-                                                    Click="AttachNewFileChooseButto_Click"
+                                                    Click="AttachNewFileChooseButton_Click"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Width="120" >
@@ -1539,22 +1541,31 @@
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="RemoveFolderButton"
-                                        Margin="0, 0, 5, 0"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Top"
-                                        Width="120" Height="25"
-                                        Click="DeleteFolderButton_Click">
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Width="120" Height="25"
+                                            Click="DeleteFolderButton_Click">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="0, 5, 5, 5"/>
                                             <TextBlock Text="Delete Folder"
-                                           VerticalAlignment="Center"/>
+                                                       VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
+                            <Grid Margin="8, 10, 8, 0"
+                                  Height="20">
+                                <ProgressBar Maximum="1"
+                                             Value="{Binding AttachProgressValue}"
+                                             IsEnabled="{Binding AttachProgressValue, Converter={StaticResource AttachProgressValueToEnabledConverter}}"/>
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding AttachProgressValue, Converter={StaticResource AttachProgressValueToPercentConverter}}"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>

@@ -27,6 +27,8 @@ DEL %DestDir%\Binary\*.pdb
 DEL %DestDir%\Binary\*.xml
 DEL %DestDir%\Binary\*.config
 DEL %DestDir%\Binary\x64\*.so
+RD /S /Q %DestDir%\Binary\armhf
+RD /S /Q %DestDir%\Binary\arm64
 IF EXIST %DestDir%\Binary\*.db DEL %DestDir%\Binary\*.db
 IF EXIST %DestDir%\Binary\Database RD /S /Q %DestDir%\Binary\Database
 IF EXIST %DestDir%\Database RD /S /Q %DestDir%\Database

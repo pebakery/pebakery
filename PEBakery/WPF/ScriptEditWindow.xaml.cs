@@ -11,14 +11,17 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using PEBakery.Core.ViewModels;
 
 // ReSharper disable InconsistentNaming
 
@@ -32,9 +35,8 @@ namespace PEBakery.WPF
         public static int Count = 0;
 
         private Script _sc;
-        private UIRenderer _renderer;
         private readonly ScriptEditViewModel m;
-        private string _ifaceSectionName;
+        
         #endregion
 
         #region Constructor
@@ -45,17 +47,18 @@ namespace PEBakery.WPF
             try
             {
                 _sc = sc ?? throw new ArgumentNullException(nameof(sc));
+                DataContext = m = new ScriptEditViewModel(_sc, this);
 
                 InitializeComponent();
-                DataContext = m = new ScriptEditViewModel();
+                
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
                 m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlMoved;
                 m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlMoved;
                 m.UIControlModified += ViewModel_UIControlModified;
 
-                ReadScriptGeneral();
-                ReadScriptInterface();
-                ReadScriptAttachment();
+                m.ReadScriptGeneral();
+                m.ReadScriptInterface();
+                m.ReadScriptAttachment();
             }
             catch (Exception e)
             { // Rollback Count to 0
@@ -76,7 +79,7 @@ namespace PEBakery.WPF
                 switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
-                        if (WriteScriptGeneral(false))
+                        if (m.WriteScriptGeneral(false))
                             scriptSaved = true;
                         else
                         {
@@ -99,7 +102,7 @@ namespace PEBakery.WPF
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
-                        if (WriteScriptInterface(false))
+                        if (m.WriteScriptInterface(false))
                             scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
@@ -112,7 +115,7 @@ namespace PEBakery.WPF
             }
 
             if (scriptSaved)
-                RefreshMainWindow();
+                m.RefreshMainWindow();
 
             // If script was updated, force MainWindow to refresh script
             DialogResult = m.ScriptHeaderUpdated || m.ScriptLogoUpdated || m.InterfaceUpdated || m.ScriptAttachUpdated;
@@ -127,382 +130,8 @@ namespace PEBakery.WPF
             m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlMoved;
             m.UIControlModified -= ViewModel_UIControlModified;
 
-            _renderer.Clear();
+            m.Renderer.Clear();
             Interlocked.Decrement(ref Count);
-        }
-        #endregion
-
-        #region ReadScript
-        private void ReadScriptGeneral()
-        {
-            // Nested Function
-            string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
-
-            // General
-            if (EncodedFile.ContainsLogo(_sc))
-            {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(_sc, true);
-                if (errMsg != null)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
-                {
-                    switch (type)
-                    {
-                        case ImageHelper.ImageType.Svg:
-                            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                            Rect svgSize = svgDrawing.Bounds;
-                            (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
-                            m.ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                            m.ScriptLogoSvgWidth = width;
-                            m.ScriptLogoSvgHeight = height;
-                            break;
-                        default:
-                            m.ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
-                            break;
-                    }
-                }
-                m.ScriptLogoInfo = info;
-            }
-            else
-            { // No script logo
-                m.ScriptLogoIcon = PackIconMaterialKind.BorderNone;
-                m.ScriptLogoInfo = null;
-            }
-
-            m.ScriptTitle = _sc.Title;
-            m.ScriptAuthor = _sc.Author;
-            m.ScriptVersion = _sc.Version;
-            m.ScriptDate = GetStringValue("Date");
-            m.ScriptLevel = _sc.Level;
-            m.ScriptDescription = StringEscaper.Unescape(_sc.Description);
-            m.ScriptSelectedState = _sc.Selected;
-            m.ScriptMandatory = _sc.Mandatory;
-
-            m.ScriptHeaderNotSaved = false;
-            m.ScriptHeaderUpdated = false;
-        }
-
-        private void ReadScriptInterface()
-        {
-            _ifaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
-
-            // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
-            if (uiCtrls == null) // No Interface -> empty list
-            {
-                if (0 < errLogs.Count)
-                {
-                    Global.Logger.SystemWrite(errLogs);
-
-                    StringBuilder b = new StringBuilder();
-                    b.AppendLine("[Error Messages]");
-                    foreach (LogInfo log in errLogs)
-                        b.AppendLine(log.Message);
-                    MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-
-                uiCtrls = new List<UIControl>();
-            }
-
-            _renderer = new UIRenderer(m.InterfaceCanvas, this, _sc, uiCtrls.ToList(), 1, false, Global.Setting.Compat_IgnoreWidthOfWebLabel);
-
-            m.InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
-            m.InterfaceUICtrlIndex = -1;
-
-            m.InterfaceNotSaved = false;
-            m.InterfaceUpdated = false;
-
-            DrawScript();
-            ResetSelectedUICtrl();
-        }
-
-        private void ReadScriptAttachment()
-        {
-            // Attachment
-            m.AttachedFiles.Clear();
-
-            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(_sc, false);
-            if (errMsg != null)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            foreach (var kv in fileDict)
-            {
-                string dirName = kv.Key;
-
-                AttachedFileItem item = new AttachedFileItem(true, dirName);
-                foreach (EncodedFileInfo fi in kv.Value)
-                {
-                    AttachedFileItem child = new AttachedFileItem(false, fi.FileName, fi);
-                    item.Children.Add(child);
-                }
-                m.AttachedFiles.Add(item);
-            }
-        }
-
-        private void ReadUIControlInfo(UIControl uiCtrl)
-        {
-            m.UIControlModifiedEventToggle = true;
-
-            switch (uiCtrl.Type)
-            {
-                case UIControlType.TextBox:
-                    {
-                        UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
-
-                        m.UICtrlTextBoxInfo = info;
-                        break;
-                    }
-                case UIControlType.TextLabel:
-                    {
-                        UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
-
-                        m.UICtrlTextLabelInfo = info;
-                        break;
-                    }
-                case UIControlType.NumberBox:
-                    {
-                        UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
-
-                        m.UICtrlNumberBoxInfo = info;
-                        break;
-                    }
-                case UIControlType.CheckBox:
-                    {
-                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
-
-                        m.UICtrlCheckBoxInfo = info;
-                        m.UICtrlSectionToRun = info.SectionName;
-                        m.UICtrlHideProgress = info.HideProgress;
-                        break;
-                    }
-                case UIControlType.ComboBox:
-                    {
-                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
-
-                        m.UICtrlComboBoxInfo = info;
-                        m.UICtrlSectionToRun = info.SectionName;
-                        m.UICtrlHideProgress = info.HideProgress;
-                        break;
-                    }
-                case UIControlType.Image:
-                    {
-                        UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
-
-                        m.UICtrlImageInfo = info;
-                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                        break;
-                    }
-                case UIControlType.TextFile:
-                    {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
-
-                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                        break;
-                    }
-                case UIControlType.Button:
-                    {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
-
-                        m.UICtrlButtonInfo = info;
-                        m.UICtrlSectionToRun = info.SectionName;
-                        m.UICtrlHideProgress = info.HideProgress;
-                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                        break;
-                    }
-                case UIControlType.WebLabel:
-                    {
-                        UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
-
-                        m.UICtrlWebLabelInfo = info;
-                        break;
-                    }
-                case UIControlType.RadioButton:
-                    {
-                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
-
-                        m.UICtrlRadioButtonList = _renderer.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
-                        m.UICtrlRadioButtonInfo = info;
-                        m.UICtrlSectionToRun = info.SectionName;
-                        m.UICtrlHideProgress = info.HideProgress;
-                        break;
-                    }
-                case UIControlType.Bevel:
-                    {
-                        UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
-
-                        m.UICtrlBevelInfo = info;
-                        break;
-                    }
-                case UIControlType.FileBox:
-                    {
-                        UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
-
-                        m.UICtrlFileBoxInfo = info;
-                        break;
-                    }
-                case UIControlType.RadioGroup:
-                    {
-                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
-
-                        m.UICtrlRadioGroupInfo = info;
-                        m.UICtrlSectionToRun = info.SectionName;
-                        m.UICtrlHideProgress = info.HideProgress;
-                        break;
-                    }
-            }
-
-            m.UIControlModifiedEventToggle = false;
-        }
-        #endregion
-
-        #region WriteScript
-        private bool WriteScriptGeneral(bool refresh = true)
-        {
-            if (_sc == null)
-                return false;
-
-            // Check m.ScriptVersion
-            string verStr = StringEscaper.ProcessVersionString(m.ScriptVersion);
-            if (verStr == null)
-            {
-                string errMsg = $"Invalid version string [{m.ScriptVersion}], please check again";
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
-
-            IniKey[] keys =
-            {
-                new IniKey("Main", "Title", m.ScriptTitle),
-                new IniKey("Main", "Author", m.ScriptAuthor),
-                new IniKey("Main", "Version", m.ScriptVersion),
-                new IniKey("Main", "Date", m.ScriptDate),
-                new IniKey("Main", "Level", ((int)m.ScriptLevel).ToString()),
-                new IniKey("Main", "Description", StringEscaper.Escape(m.ScriptDescription)),
-                new IniKey("Main", "Selected", m.ScriptSelectedState.ToString()),
-                new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
-            };
-
-            IniReadWriter.WriteKeys(_sc.RealPath, keys);
-            _sc = _sc.Project.RefreshScript(_sc);
-
-            if (refresh)
-                RefreshMainWindow();
-
-            m.ScriptHeaderNotSaved = false;
-            return true;
-        }
-
-        private bool WriteScriptInterface(bool refresh = true)
-        {
-            if (_renderer == null)
-                return false;
-
-            try
-            {
-                if (m.SelectedUICtrl != null)
-                    WriteUIControlInfo(m.SelectedUICtrl);
-
-                UIControl.Update(_renderer.UICtrls);
-                UIControl.Delete(m.UICtrlToBeDeleted);
-                m.UICtrlToBeDeleted.Clear();
-                IniReadWriter.DeleteKeys(_sc.RealPath, m.UICtrlKeyChanged.Select(x => new IniKey(_ifaceSectionName, x)));
-                m.UICtrlKeyChanged.Clear();
-
-                if (refresh)
-                    RefreshMainWindow();
-
-                _sc = _sc.Project.RefreshScript(_sc);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show($"Interface save failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
-
-            m.InterfaceNotSaved = false;
-            return true;
-        }
-
-        private void RefreshMainWindow()
-        {
-            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.DisplayScript(_sc);
-            }));
-        }
-
-        private void WriteUIControlInfo(UIControl uiCtrl)
-        {
-            switch (uiCtrl.Type)
-            {
-                case UIControlType.CheckBox:
-                    {
-                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
-
-                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                        info.HideProgress = m.UICtrlHideProgress;
-                        break;
-                    }
-                case UIControlType.ComboBox:
-                    {
-                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
-
-                        uiCtrl.Text = info.Items[info.Index];
-                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                        info.HideProgress = m.UICtrlHideProgress;
-                        break;
-                    }
-                case UIControlType.Image:
-                    {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
-
-                        m.UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                        break;
-                    }
-                case UIControlType.TextFile:
-                    {
-                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
-
-                        m.UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
-                        break;
-                    }
-                case UIControlType.Button:
-                    {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
-
-                        m.UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
-                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                        info.HideProgress = m.UICtrlHideProgress;
-                        break;
-                    }
-                case UIControlType.RadioButton:
-                    {
-                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
-
-                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                        info.HideProgress = m.UICtrlHideProgress;
-                        break;
-                    }
-                case UIControlType.RadioGroup:
-                    {
-                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
-
-                        info.SectionName = string.IsNullOrWhiteSpace(m.UICtrlSectionToRun) ? null : m.UICtrlSectionToRun;
-                        info.HideProgress = m.UICtrlHideProgress;
-                        break;
-                    }
-            }
         }
         #endregion
 
@@ -525,7 +154,7 @@ namespace PEBakery.WPF
                 MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 m.ScriptLogoUpdated = true;
-                ReadScriptGeneral();
+                m.ReadScriptGeneral();
             }
             catch (Exception ex)
             {
@@ -589,7 +218,7 @@ namespace PEBakery.WPF
                 MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 m.ScriptLogoUpdated = true;
-                ReadScriptGeneral();
+                m.ReadScriptGeneral();
             }
             else
             {
@@ -601,38 +230,17 @@ namespace PEBakery.WPF
 
         #region Event Handler - Interface
         #region For Editor
-        private void DrawScript()
-        {
-            if (m == null)
-                return;
-
-            double scaleFactor = m.InterfaceScaleFactor / 100;
-            if (scaleFactor - 1 < double.Epsilon)
-                scaleFactor = 1;
-            _renderer.ScaleFactor = scaleFactor;
-            m.InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
-
-            _renderer.Render();
-            m.InterfaceLoaded = true;
-        }
-
-        private void ResetSelectedUICtrl()
-        {
-            m.SelectedUICtrl = null;
-            m.InterfaceCanvas.ResetSelectedBorder();
-        }
-
         private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DrawScript();
+            m.DrawScript();
         }
 
         private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (m.InterfaceUICtrlIndex < 0 || _renderer.UICtrls.Count <= m.InterfaceUICtrlIndex)
+            if (m.InterfaceUICtrlIndex < 0 || m.Renderer.UICtrls.Count <= m.InterfaceUICtrlIndex)
                 return;
 
-            m.SelectedUICtrl = _renderer.UICtrls[m.InterfaceUICtrlIndex];
+            m.SelectedUICtrl = m.Renderer.UICtrls[m.InterfaceUICtrlIndex];
             m.InterfaceCanvas.ResetSelectedBorder();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
@@ -645,9 +253,9 @@ namespace PEBakery.WPF
             m.SelectedUICtrl = e.UIControl;
 
             if (m.SelectedUICtrl != null)
-                ReadUIControlInfo(m.SelectedUICtrl);
+                m.ReadUIControlInfo(m.SelectedUICtrl);
 
-            int idx = _renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
             m.InterfaceUICtrlIndex = idx;
         }
@@ -688,14 +296,14 @@ namespace PEBakery.WPF
             UIControl uiCtrl = e.UIControl;
 
             if (!e.Direct)
-                WriteUIControlInfo(uiCtrl);
+                m.WriteUIControlInfo(uiCtrl);
 
-            int idx = _renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
+            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-            _renderer.UICtrls[idx] = uiCtrl;
+            m.Renderer.UICtrls[idx] = uiCtrl;
 
             m.InterfaceCanvas.ResetSelectedBorder();
-            _renderer.Render();
+            m.Renderer.Render();
             m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
         }
 
@@ -704,7 +312,7 @@ namespace PEBakery.WPF
             UIControlType type = UIControl.UIControlZeroBasedDict[m.UICtrlAddTypeIndex];
             if (type == UIControlType.None)
                 return;
-            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), _renderer.UICtrls.Select(x => x.Key));
+            m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), m.Renderer.UICtrls.Select(x => x.Key));
         }
 
         private void UICtrlAddCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -733,31 +341,31 @@ namespace PEBakery.WPF
                 return;
             }
             string key = m.UICtrlAddName.Trim();
-            if (_renderer.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
+            if (m.Renderer.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
             {
                 MessageBox.Show($"Interface key [{key}] is duplicated", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (!_sc.Sections.ContainsKey(_ifaceSectionName))
+            if (!_sc.Sections.ContainsKey(m.InterfaceSectionName))
             { // No [Interface] section, so add it
-                IniReadWriter.AddSection(_sc.DirectRealPath, _ifaceSectionName);
+                IniReadWriter.AddSection(_sc.DirectRealPath, m.InterfaceSectionName);
                 _sc = _sc.Project.RefreshScript(_sc);
             }
 
-            ScriptSection ifaceSection = _sc.Sections[_ifaceSectionName];
+            ScriptSection ifaceSection = _sc.Sections[m.InterfaceSectionName];
             string line = UIControl.GetUIControlTemplate(type, key);
 
             UIControl uiCtrl = UIParser.ParseStatement(line, ifaceSection, out List<LogInfo> errorLogs);
             Debug.Assert(uiCtrl != null, "Internal Logic Error at UICtrlAddButton_Click");
             Debug.Assert(errorLogs.Count == 0, "Internal Logic Error at UICtrlAddButton_Click");
 
-            _renderer.UICtrls.Add(uiCtrl);
-            m.InterfaceUICtrls = new ObservableCollection<string>(_renderer.UICtrls.Select(x => x.Key));
+            m.Renderer.UICtrls.Add(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(m.Renderer.UICtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = 0;
 
             m.InterfaceCanvas.ResetSelectedBorder();
-            _renderer.Render();
+            m.Renderer.Render();
             m.SelectedUICtrl = uiCtrl;
             m.InterfaceCanvas.DrawSelectedBorder(uiCtrl);
 
@@ -778,11 +386,11 @@ namespace PEBakery.WPF
             UIControl uiCtrl = m.SelectedUICtrl;
             m.UICtrlToBeDeleted.Add(uiCtrl);
 
-            _renderer.UICtrls.Remove(uiCtrl);
-            m.InterfaceUICtrls = new ObservableCollection<string>(_renderer.UICtrls.Select(x => x.Key));
+            m.Renderer.UICtrls.Remove(uiCtrl);
+            m.InterfaceUICtrls = new ObservableCollection<string>(m.Renderer.UICtrls.Select(x => x.Key));
             m.InterfaceUICtrlIndex = 0;
 
-            _renderer.Render();
+            m.Renderer.Render();
             m.SelectedUICtrl = null;
 
             m.InterfaceNotSaved = true;
@@ -809,10 +417,10 @@ namespace PEBakery.WPF
                 case 0:
                     // Changing focus is required to make sure changes in UI updated to ViewModel
                     MainSaveButton.Focus();
-                    WriteScriptGeneral();
+                    m.WriteScriptGeneral();
                     break;
                 case 1:
-                    WriteScriptInterface();
+                    m.WriteScriptInterface();
                     break;
             }
         }
@@ -832,7 +440,7 @@ namespace PEBakery.WPF
 
         private void UICtrlReloadCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            ReadScriptInterface();
+            m.ReadScriptInterface();
         }
         #endregion
         #region For Image
@@ -854,7 +462,7 @@ namespace PEBakery.WPF
             {
                 MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
+                    m.WriteScriptInterface(false);
                 else
                     return;
             }
@@ -876,7 +484,7 @@ namespace PEBakery.WPF
                 uiCtrl.Width = width;
                 uiCtrl.Height = height;
                 m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
+                m.WriteScriptInterface(false);
             }
         }
         #endregion
@@ -1152,7 +760,7 @@ namespace PEBakery.WPF
             {
                 MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
+                    m.WriteScriptInterface(false);
                 else
                     return;
             }
@@ -1195,7 +803,7 @@ namespace PEBakery.WPF
             {
                 _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath, null);
 
-                UIControl.ReplaceAddress(_renderer.UICtrls, _sc);
+                UIControl.ReplaceAddress(m.Renderer.UICtrls, _sc);
 
                 switch (selectedType)
                 {
@@ -1214,7 +822,7 @@ namespace PEBakery.WPF
                 }
 
                 m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
+                m.WriteScriptInterface(false);
             }
             catch (Exception ex)
             {
@@ -1347,7 +955,7 @@ namespace PEBakery.WPF
             {
                 MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
-                    WriteScriptInterface(false);
+                    m.WriteScriptInterface(false);
                 else
                     return;
             }
@@ -1379,7 +987,7 @@ namespace PEBakery.WPF
             (_sc, errMsg) = EncodedFile.DeleteFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
             if (errMsg == null)
             {
-                UIControl.ReplaceAddress(_renderer.UICtrls, _sc);
+                UIControl.ReplaceAddress(m.Renderer.UICtrls, _sc);
 
                 switch (selectedType)
                 {
@@ -1398,7 +1006,7 @@ namespace PEBakery.WPF
                 }
 
                 m.InvokeUIControlEvent(false);
-                WriteScriptInterface(false);
+                m.WriteScriptInterface(false);
             }
             else
             {
@@ -1458,7 +1066,7 @@ namespace PEBakery.WPF
             }
 
             m.ScriptAttachUpdated = true;
-            ReadScriptAttachment();
+            m.ReadScriptAttachment();
 
             m.AttachSelected = null;
             m.UpdateAttachFileDetail();
@@ -1565,7 +1173,7 @@ namespace PEBakery.WPF
             if (errMsg == null)
             {
                 m.ScriptAttachUpdated = true;
-                ReadScriptAttachment();
+                m.ReadScriptAttachment();
 
                 m.AttachSelected = null;
                 m.UpdateAttachFileDetail();
@@ -1577,7 +1185,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void AttachNewFileChooseButto_Click(object sender, RoutedEventArgs e)
+        private void AttachNewFileChooseButton_Click(object sender, RoutedEventArgs e)
         {
             AttachedFileItem item = m.AttachSelected;
             if (item == null)
@@ -1597,7 +1205,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void AttachFileButton_Click(object sender, RoutedEventArgs e)
+        private async void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
             AttachedFileItem item = m.AttachSelected;
             if (item == null)
@@ -1648,14 +1256,25 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                _sc = EncodedFile.AttachFile(_sc, item.Name, m.AttachNewFileName, srcFile, mode, null);
+                try
+                {
+                    m.EnableButtons = false;
+                    m.AttachProgressValue = 0;
+                    IProgress<double> progress = new Progress<double>(x => { m.AttachProgressValue = x; });
+                    _sc = await EncodedFile.AttachFileAsync(_sc, item.Name, m.AttachNewFileName, srcFile, mode, progress);
+                }
+                finally
+                {
+                    m.AttachProgressValue = -1;
+                    m.EnableButtons = true;
+                }
                 MessageBox.Show("File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 m.AttachNewFilePath = string.Empty;
                 m.AttachNewFileName = string.Empty;
 
                 m.ScriptAttachUpdated = true;
-                ReadScriptAttachment();
+                m.ReadScriptAttachment();
 
                 m.AttachSelected = null;
                 m.UpdateAttachFileDetail();
@@ -1667,114 +1286,19 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-
-        #region Buttons for File
-        private void ExtractFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            AttachedFileItem item = m.AttachSelected;
-            if (item == null)
-                return;
-
-            Debug.Assert(item.Detail != null);
-
-            EncodedFileInfo info = item.Detail;
-
-            string ext = Path.GetExtension(info.FileName);
-            SaveFileDialog dialog = new SaveFileDialog
-            {
-                OverwritePrompt = true,
-                Filter = $"{ext} file|*{ext}"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                string destPath = dialog.FileName;
-                try
-                {
-                    using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-                    {
-                        EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs, null);
-                    }
-
-                    MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void DeleteFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            AttachedFileItem item = m.AttachSelected;
-            if (item == null)
-                return;
-
-            Debug.Assert(item.Detail != null);
-            EncodedFileInfo info = item.Detail;
-
-            MessageBoxResult result = MessageBox.Show(
-                $"Are you sure to delete [{info.FileName}]?",
-                "Delete Confirm",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.No)
-                return;
-
-            string errMsg;
-            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.FolderName, info.FileName);
-            if (errMsg == null)
-            {
-                m.ScriptAttachUpdated = true;
-                ReadScriptAttachment();
-
-                m.AttachSelected = null;
-                m.UpdateAttachFileDetail();
-            }
-            else // Failure
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void InspectFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            AttachedFileItem item = m.AttachSelected;
-            if (item == null)
-                return;
-
-            Debug.Assert(item.Detail != null);
-            EncodedFileInfo info = item.Detail;
-            string dirName = info.FolderName;
-            string fileName = info.FileName;
-
-            string errMsg;
-            (info, errMsg) = EncodedFile.GetFileInfo(_sc, dirName, fileName, true);
-            if (errMsg == null)
-            {
-                item.Detail = info;
-                m.UpdateAttachFileDetail();
-            }
-            else // Failure
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        #endregion
-
         #endregion
     }
     #endregion
 
     #region ScriptEditViewModel
-    public class ScriptEditViewModel : INotifyPropertyChanged
+    public class ScriptEditViewModel : ViewModelBase
     {
         #region Constructor
-        public ScriptEditViewModel()
+        public ScriptEditViewModel(Script sc, Window window)
         {
+            _sc = sc;
+            _window = window;
+
             DragCanvas canvas = new DragCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -1803,6 +1327,28 @@ namespace PEBakery.WPF
         }
         public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
         public event UIControlModifiedHandler UIControlModified;
+        #endregion
+
+        #region Property - Basic
+        private Script _sc;
+        private readonly Window _window;
+        public UIRenderer Renderer { get; private set; }
+        public string InterfaceSectionName { get; private set; }
+
+        /// <summary>
+        /// Temp variable to disable buttons while working.
+        /// Will be replaced by Commands.
+        /// </summary>
+        private bool _enableButtons = true;
+        public bool EnableButtons
+        {
+            get => _enableButtons;
+            set
+            {
+                _enableButtons = value;
+                OnPropertyUpdate(nameof(EnableButtons));
+            }
+        }
         #endregion
 
         #region Property - Tab Index
@@ -2950,13 +2496,14 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Attachment
+
         public bool ScriptAttachUpdated { get; set; } = false;
 
         public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();
 
         public AttachedFileItem AttachSelected;
 
-        public Visibility AttachDetailFileVisiblity
+        public Visibility AttachDetailFileVisibility
         {
             get
             {
@@ -2968,7 +2515,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public Visibility AttachDetailFolderVisiblity
+        public Visibility AttachDetailFolderVisibility
         {
             get
             {
@@ -2980,7 +2527,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public Visibility AttachAddFolderVisiblity
+        public Visibility AttachAddFolderVisibility
         {
             get
             {
@@ -3055,11 +2602,7 @@ namespace PEBakery.WPF
         public string AttachNewFilePath
         {
             get => _attachNewFilePath;
-            set
-            {
-                _attachNewFilePath = value;
-                OnPropertyUpdate(nameof(AttachNewFilePath));
-            }
+            set => SetProperty(ref _attachNewFilePath, value);
         }
 
         private string _attachNewFileName = string.Empty;
@@ -3083,6 +2626,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(AttachNewCompressionIndex));
             }
         }
+
+        private double _attachProgressValue = -1;
+        public double AttachProgressValue
+        {
+            get => _attachProgressValue;
+            set
+            {
+                _attachProgressValue = value;
+                OnPropertyUpdate(nameof(AttachProgressValue));
+            }
+        }
         #endregion
 
         #region UpdateAttachFileDetail
@@ -3093,9 +2647,9 @@ namespace PEBakery.WPF
             OnPropertyUpdate(nameof(AttachFileRawSize));
             OnPropertyUpdate(nameof(AttachFileEncodedSize));
             OnPropertyUpdate(nameof(AttachFileCompression));
-            OnPropertyUpdate(nameof(AttachDetailFileVisiblity));
-            OnPropertyUpdate(nameof(AttachDetailFolderVisiblity));
-            OnPropertyUpdate(nameof(AttachAddFolderVisiblity));
+            OnPropertyUpdate(nameof(AttachDetailFileVisibility));
+            OnPropertyUpdate(nameof(AttachDetailFolderVisibility));
+            OnPropertyUpdate(nameof(AttachAddFolderVisibility));
         }
         #endregion
 
@@ -3112,11 +2666,513 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region OnPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
+        #region Methods - Attachment
+        // public ICommand AttachFileCommand => null;
+        public ICommand ExtractFileCommand => new RelayCommand(ExtractFileCommand_Execute, null);
+        public ICommand DeleteFileCommand => new RelayCommand(DeleteFileCommand_Execute, null);
+        public ICommand InspectFileCommand => new RelayCommand(InspectFileCommand_Execute, null);
+
+        private async void ExtractFileCommand_Execute(object parameter)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            AttachedFileItem item = AttachSelected;
+            if (item == null)
+                return;
+
+            Debug.Assert(item.Detail != null);
+
+            EncodedFileInfo info = item.Detail;
+
+            string ext = Path.GetExtension(info.FileName);
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                OverwritePrompt = true,
+                Filter = $"{ext} file|*{ext}"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string destPath = dialog.FileName;
+                try
+                {
+                    try
+                    {
+                        EnableButtons = false;
+                        AttachProgressValue = 0;
+                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+                        using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+                        {
+                            await EncodedFile.ExtractFileAsync(_sc, info.FolderName, info.FileName, fs, progress);
+                        }
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        EnableButtons = true;
+                    }
+
+                    MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void DeleteFileCommand_Execute(object parameter)
+        {
+            AttachedFileItem item = AttachSelected;
+            if (item == null)
+                return;
+
+            Debug.Assert(item.Detail != null);
+            EncodedFileInfo info = item.Detail;
+
+            MessageBoxResult result = MessageBox.Show(
+                $"Are you sure to delete [{info.FileName}]?",
+                "Delete Confirm",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
+                return;
+
+            string errMsg;
+            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.FolderName, info.FileName);
+            if (errMsg == null)
+            {
+                ScriptAttachUpdated = true;
+                ReadScriptAttachment();
+
+                AttachSelected = null;
+                UpdateAttachFileDetail();
+            }
+            else // Failure
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void InspectFileCommand_Execute(object parameter)
+        {
+            AttachedFileItem item = AttachSelected;
+            if (item == null)
+                return;
+
+            Debug.Assert(item.Detail != null);
+            EncodedFileInfo info = item.Detail;
+            string dirName = info.FolderName;
+            string fileName = info.FileName;
+
+            string errMsg;
+            (info, errMsg) = EncodedFile.GetFileInfo(_sc, dirName, fileName, true);
+            if (errMsg == null)
+            {
+                item.Detail = info;
+                UpdateAttachFileDetail();
+            }
+            else // Failure
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
+
+        #region Methods - ReadScript
+        public void ReadScriptGeneral()
+        {
+            // Nested Function
+            string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
+
+            // General
+            if (EncodedFile.ContainsLogo(_sc))
+            {
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(_sc, true);
+                if (errMsg != null)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                {
+                    switch (type)
+                    {
+                        case ImageHelper.ImageType.Svg:
+                            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                            Rect svgSize = svgDrawing.Bounds;
+                            (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
+                            ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                            ScriptLogoSvgWidth = width;
+                            ScriptLogoSvgHeight = height;
+                            break;
+                        default:
+                            ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
+                            break;
+                    }
+                }
+                ScriptLogoInfo = info;
+            }
+            else
+            { // No script logo
+                ScriptLogoIcon = PackIconMaterialKind.BorderNone;
+                ScriptLogoInfo = null;
+            }
+
+            ScriptTitle = _sc.Title;
+            ScriptAuthor = _sc.Author;
+            ScriptVersion = _sc.Version;
+            ScriptDate = GetStringValue("Date");
+            ScriptLevel = _sc.Level;
+            ScriptDescription = StringEscaper.Unescape(_sc.Description);
+            ScriptSelectedState = _sc.Selected;
+            ScriptMandatory = _sc.Mandatory;
+
+            ScriptHeaderNotSaved = false;
+            ScriptHeaderUpdated = false;
+        }
+
+        public void ReadScriptInterface()
+        {
+            InterfaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
+
+            // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
+            if (uiCtrls == null) // No Interface -> empty list
+            {
+                if (0 < errLogs.Count)
+                {
+                    Global.Logger.SystemWrite(errLogs);
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine("[Error Messages]");
+                    foreach (LogInfo log in errLogs)
+                        b.AppendLine(log.Message);
+                    MessageBox.Show(b.ToString(), "Interface Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                uiCtrls = new List<UIControl>();
+            }
+
+            Renderer = new UIRenderer(InterfaceCanvas, _window, _sc, uiCtrls.ToList(), 1, false, Global.Setting.Compat_IgnoreWidthOfWebLabel);
+
+            InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
+            InterfaceUICtrlIndex = -1;
+
+            InterfaceNotSaved = false;
+            InterfaceUpdated = false;
+
+            DrawScript();
+            ResetSelectedUICtrl();
+        }
+
+        public void ReadScriptAttachment()
+        {
+            // Attachment
+            AttachedFiles.Clear();
+
+            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(_sc, false);
+            if (errMsg != null)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show($"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            foreach (var kv in fileDict)
+            {
+                string dirName = kv.Key;
+
+                AttachedFileItem item = new AttachedFileItem(true, dirName);
+                foreach (EncodedFileInfo fi in kv.Value)
+                {
+                    AttachedFileItem child = new AttachedFileItem(false, fi.FileName, fi);
+                    item.Children.Add(child);
+                }
+                AttachedFiles.Add(item);
+            }
+        }
+
+        public void ReadUIControlInfo(UIControl uiCtrl)
+        {
+            UIControlModifiedEventToggle = true;
+
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.TextBox:
+                    {
+                        UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
+
+                        UICtrlTextBoxInfo = info;
+                        break;
+                    }
+                case UIControlType.TextLabel:
+                    {
+                        UIInfo_TextLabel info = uiCtrl.Info.Cast<UIInfo_TextLabel>();
+
+                        UICtrlTextLabelInfo = info;
+                        break;
+                    }
+                case UIControlType.NumberBox:
+                    {
+                        UIInfo_NumberBox info = uiCtrl.Info.Cast<UIInfo_NumberBox>();
+
+                        UICtrlNumberBoxInfo = info;
+                        break;
+                    }
+                case UIControlType.CheckBox:
+                    {
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+
+                        UICtrlCheckBoxInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
+                case UIControlType.ComboBox:
+                    {
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+
+                        UICtrlComboBoxInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
+                case UIControlType.Image:
+                    {
+                        UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+
+                        UICtrlImageInfo = info;
+                        UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
+                case UIControlType.TextFile:
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+
+                        UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
+                case UIControlType.Button:
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+
+                        UICtrlButtonInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        break;
+                    }
+                case UIControlType.WebLabel:
+                    {
+                        UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+
+                        UICtrlWebLabelInfo = info;
+                        break;
+                    }
+                case UIControlType.RadioButton:
+                    {
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+
+                        UICtrlRadioButtonList = Renderer.UICtrls.Where(x => x.Type == UIControlType.RadioButton).ToList();
+                        UICtrlRadioButtonInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
+                case UIControlType.Bevel:
+                    {
+                        UIInfo_Bevel info = uiCtrl.Info.Cast<UIInfo_Bevel>();
+
+                        UICtrlBevelInfo = info;
+                        break;
+                    }
+                case UIControlType.FileBox:
+                    {
+                        UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
+
+                        UICtrlFileBoxInfo = info;
+                        break;
+                    }
+                case UIControlType.RadioGroup:
+                    {
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+
+                        UICtrlRadioGroupInfo = info;
+                        UICtrlSectionToRun = info.SectionName;
+                        UICtrlHideProgress = info.HideProgress;
+                        break;
+                    }
+            }
+
+            UIControlModifiedEventToggle = false;
+        }
+        #endregion
+
+        #region Methods - WriteScript
+        public bool WriteScriptGeneral(bool refresh = true)
+        {
+            if (_sc == null)
+                return false;
+
+            // Check m.ScriptVersion
+            string verStr = StringEscaper.ProcessVersionString(ScriptVersion);
+            if (verStr == null)
+            {
+                string errMsg = $"Invalid version string [{ScriptVersion}], please check again";
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            IniKey[] keys =
+            {
+                new IniKey("Main", "Title", ScriptTitle),
+                new IniKey("Main", "Author", ScriptAuthor),
+                new IniKey("Main", "Version", ScriptVersion),
+                new IniKey("Main", "Date", ScriptDate),
+                new IniKey("Main", "Level", ((int)ScriptLevel).ToString()),
+                new IniKey("Main", "Description", StringEscaper.Escape(ScriptDescription)),
+                new IniKey("Main", "Selected", ScriptSelectedState.ToString()),
+                new IniKey("Main", "Mandatory", ScriptMandatory.ToString()),
+            };
+
+            IniReadWriter.WriteKeys(_sc.RealPath, keys);
+            _sc = _sc.Project.RefreshScript(_sc);
+
+            if (refresh)
+                RefreshMainWindow();
+
+            ScriptHeaderNotSaved = false;
+            return true;
+        }
+
+        public bool WriteScriptInterface(bool refresh = true)
+        {
+            if (Renderer == null)
+                return false;
+
+            try
+            {
+                if (SelectedUICtrl != null)
+                    WriteUIControlInfo(SelectedUICtrl);
+
+                UIControl.Update(Renderer.UICtrls);
+                UIControl.Delete(UICtrlToBeDeleted);
+                UICtrlToBeDeleted.Clear();
+                IniReadWriter.DeleteKeys(_sc.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
+                UICtrlKeyChanged.Clear();
+
+                if (refresh)
+                    RefreshMainWindow();
+
+                _sc = _sc.Project.RefreshScript(_sc);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Interface save failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            InterfaceNotSaved = false;
+            return true;
+        }
+
+        public void RefreshMainWindow()
+        {
+            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w?.DisplayScript(_sc);
+            }));
+        }
+
+        public void WriteUIControlInfo(UIControl uiCtrl)
+        {
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.CheckBox:
+                    {
+                        UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+                case UIControlType.ComboBox:
+                    {
+                        UIInfo_ComboBox info = uiCtrl.Info.Cast<UIInfo_ComboBox>();
+
+                        uiCtrl.Text = info.Items[info.Index];
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+                case UIControlType.Image:
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
+
+                        UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
+                case UIControlType.TextFile:
+                    {
+                        Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
+
+                        UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        break;
+                    }
+                case UIControlType.Button:
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+
+                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+                case UIControlType.RadioButton:
+                    {
+                        UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+                case UIControlType.RadioGroup:
+                    {
+                        UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+
+                        info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
+                        info.HideProgress = UICtrlHideProgress;
+                        break;
+                    }
+            }
+        }
+        #endregion
+
+        #region Methods - For Editor
+        public void DrawScript()
+        {
+            if (Renderer == null)
+                return;
+
+            double scaleFactor = InterfaceScaleFactor / 100;
+            if (scaleFactor - 1 < double.Epsilon)
+                scaleFactor = 1;
+            Renderer.ScaleFactor = scaleFactor;
+            InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
+
+            Renderer.Render();
+            InterfaceLoaded = true;
+        }
+
+        public void ResetSelectedUICtrl()
+        {
+            SelectedUICtrl = null;
+            InterfaceCanvas.ResetSelectedBorder();
         }
         #endregion
     }
@@ -3195,16 +3251,52 @@ namespace PEBakery.WPF
     #region ScriptEditCommands
     public static class ScriptEditCommands
     {
-        public static readonly RoutedUICommand Save = new RoutedUICommand(nameof(Save), nameof(Save), typeof(ScriptEditCommands), new InputGestureCollection
+        #region Save
+        public static readonly RoutedCommand Save = new RoutedUICommand(nameof(Save), nameof(Save), typeof(ScriptEditCommands), new InputGestureCollection
         {
             new KeyGesture(Key.S, ModifierKeys.Control),
         });
-        public static readonly RoutedUICommand UICtrlReload = new RoutedUICommand(nameof(UICtrlReload), nameof(UICtrlReload), typeof(ScriptEditCommands), new InputGestureCollection
+        #endregion
+        #region Interface
+        public static readonly RoutedCommand UICtrlReload = new RoutedUICommand(nameof(UICtrlReload), nameof(UICtrlReload), typeof(ScriptEditCommands), new InputGestureCollection
         {
             new KeyGesture(Key.R, ModifierKeys.Control),
         });
-        public static readonly RoutedUICommand UICtrlAdd = new RoutedUICommand(nameof(UICtrlAdd), nameof(UICtrlAdd), typeof(ScriptEditCommands));
-        public static readonly RoutedUICommand UICtrlDelete = new RoutedUICommand(nameof(UICtrlDelete), nameof(UICtrlDelete), typeof(ScriptEditCommands));
+        public static readonly RoutedCommand UICtrlAdd = new RoutedUICommand(nameof(UICtrlAdd), nameof(UICtrlAdd), typeof(ScriptEditCommands));
+        public static readonly RoutedCommand UICtrlDelete = new RoutedUICommand(nameof(UICtrlDelete), nameof(UICtrlDelete), typeof(ScriptEditCommands));
+        #endregion
+    }
+    #endregion
+
+    #region Converters
+    public class AttachProgressValueToPercentConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is double progress))
+                return string.Empty;
+            return 0 < progress ? $"{progress * 100:0.0}%" : string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return 0;
+        }
+    }
+
+    public class AttachProgressValueToEnabledConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is double progress))
+                return false;
+            return 0 <= progress;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return true;
+        }
     }
     #endregion
 }

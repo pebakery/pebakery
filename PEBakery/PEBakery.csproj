@@ -184,6 +184,8 @@
     <Compile Include="Core\Commands\CommandControl.cs" />
     <Compile Include="Core\Commands\CommandWim.cs" />
     <Compile Include="Core\Setting.cs" />
+    <Compile Include="Core\ViewModels\RelayCommand.cs" />
+    <Compile Include="Core\ViewModels\ViewModelBase.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\FileUpdater.cs" />
