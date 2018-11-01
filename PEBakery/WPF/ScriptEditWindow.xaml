@@ -47,16 +47,10 @@
         <CommandBinding Command="local:ScriptEditCommands.Save"
                         CanExecute="SaveCommand_CanExecute"
                         Executed="SaveCommand_Executed"/>
-        <CommandBinding Command="local:ScriptEditCommands.UICtrlReload"
-                        CanExecute="UICtrlReloadCommand_CanExecute"
-                        Executed="UICtrlReloadCommand_Executed"/>
-        <CommandBinding Command="local:ScriptEditCommands.UICtrlAdd"
-                        CanExecute="UICtrlAddCommand_CanExecute"
-                        Executed="UICtrlAddCommand_Executed"/>
-        <CommandBinding Command="local:ScriptEditCommands.UICtrlDelete"
-                        CanExecute="UICtrlDeleteCommand_CanExecute"
-                        Executed="UICtrlDeleteCommand_Executed"/>
     </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Command="{Binding UICtrlReloadCommand}" Key="R" Modifiers="Ctrl"/>
+    </Window.InputBindings>
     <Window.Resources>
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
         <local:AttachProgressValueToPercentConverter x:Key="AttachProgressValueToPercentConverter" />
@@ -70,7 +64,7 @@
         <TabControl Grid.Row="0"
                     Background="White"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="General" IsEnabled="{Binding EnableButtons}">
+            <TabItem Header="General" IsEnabled="{Binding CanExecuteCommand}">
                 <StackPanel Margin="10, 0, 10, 10">
                     <GroupBox Header="Header"
                               BorderBrush="Gray">
@@ -351,7 +345,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Interface" IsEnabled="{Binding EnableButtons}">
+            <TabItem Header="Interface" IsEnabled="{Binding CanExecuteCommand}">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
@@ -415,7 +409,7 @@
                                 <Button Grid.Row="2" Grid.Column="1"
                                         Margin="0, 5, 0, 0"
                                         x:Name="UICtrlAddButton"
-                                        Command="local:ScriptEditCommands.UICtrlAdd">
+                                        Command="{Binding UICtrlAddCommand}">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus"
                                                                     Width="Auto"
@@ -1123,7 +1117,7 @@
                                             Margin="0, 10, 0, 0"
                                             HorizontalAlignment="Right"
                                             x:Name="UICtrlDeleteButton"
-                                            Command="local:ScriptEditCommands.UICtrlDelete"
+                                            Command="{Binding UICtrlDeleteCommand}"
                                             ToolTip="Delete UIControl">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Close"
@@ -1188,7 +1182,7 @@
                                     Width="100" Height="25"
                                     Content="Reload"
                                     x:Name="InterfaceReloadButton"
-                                    Command="local:ScriptEditCommands.UICtrlReload"
+                                    Command="{Binding UICtrlReloadCommand}"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"/>
                             <Button Grid.Column="2"
@@ -1215,7 +1209,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Attachment" IsEnabled="{Binding EnableButtons}">
+            <TabItem Header="Attachment" IsEnabled="{Binding CanExecuteCommand}">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"
@@ -1422,7 +1416,7 @@
                                             VerticalAlignment="Top"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="AddFolderButton_Click"
+                                            Command="{Binding AddFolderCommand}"
                                             Visibility="{Binding AttachAddFolderVisibility}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderPlus"
@@ -1469,7 +1463,7 @@
                                             <Button Grid.Row="0" Grid.Column="2"
                                                     Margin="0, 0, 0, 5"
                                                     x:Name="AttachNewFileChooseButton"
-                                                    Click="AttachNewFileChooseButton_Click"
+                                                    Command="{Binding AttachNewFileChooseCommand}"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Width="120" >
@@ -1511,7 +1505,7 @@
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Width="120" Height="25"
-                                                    Click="AttachFileButton_Click">
+                                                    Command="{Binding AttachFileCommand}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="FilePlus"
                                                                                 Width="Auto"
@@ -1530,7 +1524,7 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Width="120" Height="25"
-                                        Click="ExtractFolderButton_Click">
+                                        Command="{Binding ExtractFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Export"
                                                                     Width="Auto"
@@ -1545,7 +1539,7 @@
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Top"
                                             Width="120" Height="25"
-                                            Click="DeleteFolderButton_Click">
+                                            Command="{Binding DeleteFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                             Width="Auto"
@@ -1557,10 +1551,11 @@
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
-                            <Grid Margin="8, 10, 8, 0"
+                            <Grid Margin="8, 5, 8, 0"
                                   Height="20">
                                 <ProgressBar Maximum="1"
                                              Value="{Binding AttachProgressValue}"
+                                             IsIndeterminate="{Binding AttachProgressIndeterminate}"
                                              IsEnabled="{Binding AttachProgressValue, Converter={StaticResource AttachProgressValueToEnabledConverter}}"/>
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
@@ -1580,6 +1575,7 @@
             <Button Grid.Row="0" Grid.Column="1"
                     Margin="10, 0, 0, 0"
                     IsCancel="True"
+                    IsEnabled="{Binding CanExecuteCommand}"
                     Content="Close"/>
         </Grid>
     </Grid>
