@@ -138,7 +138,7 @@ namespace PEBakery.WPF
                 if (_m.FileFormat == LogExportType.Html)
                 {
                     // open .html files with the default browser
-                    FileHelper.OpenPath(destFile);
+                    FileHelper.OpenUri(destFile);
                 }
                 else
                 {
