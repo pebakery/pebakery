@@ -300,7 +300,7 @@
                                 <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoAttachButton"
-                                        Click="ScriptLogoAttachButton_Click"
+                                        Command="{Binding ScriptLogoAttachCommand}"
                                         ToolTip="Import logo from image">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
@@ -314,8 +314,7 @@
                                 <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoExtractButton"
-                                        Click="ScriptLogoExtractButton_Click"
-                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        Command="{Binding ScriptLogoExtractCommand}"
                                         ToolTip="Export logo to image">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
@@ -328,8 +327,7 @@
                                 </Button>
                                 <Button Width="100" Height="25"
                                         x:Name="ScriptLogoDeleteButton"
-                                        Click="ScriptLogoDeleteButton_Click"
-                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        Command="{Binding ScriptLogoDeleteCommand}"
                                         ToolTip="Delete logo">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Close"
@@ -688,8 +686,8 @@
                                         <Button Grid.Row="0" Grid.Column="1"
                                                 Visibility="{Binding UICtrlImageUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlImageAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="ImageAttach"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft" Width="Auto" Height="Auto" Margin="3"/>
@@ -702,8 +700,8 @@
                                                     Visibility="{Binding UICtrlImageLoaded}"
                                                     Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlImageExtractButton"
-                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="ImageExtract"
                                                     ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight" Width="Auto" Height="Auto" Margin="3"/>
@@ -713,8 +711,8 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlImageResetButton"
-                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="ImageReset"
                                                     ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone" Width="Auto" Height="Auto" Margin="3"/>
@@ -725,7 +723,7 @@
                                             </Button>
                                             <Button Width="Auto" Height="25"
                                                     x:Name="UICtrlImageAutoResizeButton"
-                                                    Click="UICtrlImageAutoResizeButton_Click"
+                                                    Command="{Binding UICtrlImageAutoResizeCommand}"
                                                     ToolTip="Auto Resize">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
@@ -758,8 +756,8 @@
                                         <Button Grid.Column="1"
                                                 Visibility="{Binding UICtrlTextFileUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="TextFileAttach"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
@@ -775,9 +773,9 @@
                                                 Visibility="{Binding UICtrlTextFileLoaded}"
                                                 Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileExtractButton"
-                                                Click="UICtrlInterfaceExtractButton_Click"
-                                                ToolTip="Export image">
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="TextFileExtract"
+                                                    ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
@@ -789,9 +787,9 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileResetButton"
-                                                Click="UICtrlInterfaceResetButton_Click"
-                                                ToolTip="Reset image">
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="TextFileReset"
+                                                    ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
                                                                             Width="Auto"
@@ -826,8 +824,8 @@
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 Visibility="{Binding UICtrlButtonPictureUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlButtonPictureAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="ButtonPictureAttach"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
@@ -843,8 +841,8 @@
                                                     Visibility="{Binding UICtrlButtonPictureLoaded}"
                                                     Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlButtonPictureExtractButton"
-                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="ButtonPictureExtract"
                                                     ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
@@ -857,8 +855,8 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlButtonPictureResetButton"
-                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="ButtonPictureReset"
                                                     ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
@@ -916,8 +914,7 @@
                                                    Text="Select" />
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlRadioButtonSelect"
-                                                Click="UICtrlRadioButtonSelect_Click"
-                                                IsEnabled="{Binding UICtrlRadioButtonSelectEnable}"
+                                                Command="{Binding UICtrlRadioButtonSelectCommand}"
                                                 Content="Select"/>
                                     </Grid>
                                     <!-- Bevel -->
@@ -1053,7 +1050,7 @@
                                                  Text="{Binding UICtrlListItemBoxNewItem}"/>
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxUp"
-                                                Click="UICtrlListItemBoxUp_Click"
+                                                Command="{Binding UICtrlListItemBoxUpCommand}"
                                               ToolTip="Up">
                                             <iconPacks:PackIconMaterial Kind="ChevronUp"
                                                                         Width="Auto"
@@ -1062,7 +1059,7 @@
                                         </Button>
                                         <Button Grid.Row="2" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxDown"
-                                                Click="UICtrlListItemBoxDown_Click"
+                                                Command="{Binding UICtrlListItemBoxDownCommand}"
                                                 ToolTip="Down">
                                             <iconPacks:PackIconMaterial Kind="ChevronDown"
                                                                         Width="Auto"
@@ -1071,13 +1068,13 @@
                                         </Button>
                                         <Button Grid.Row="3" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxSelect"
-                                                Click="UICtrlListItemBoxSelect_Click"
+                                                Command="{Binding UICtrlListItemBoxSelectCommand}"
                                                 ToolTip="Select" >
                                             <TextBlock Text="S" FontWeight="Bold"/>
                                         </Button>
                                         <Button Grid.Row="4" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxDelete"
-                                                Click="UICtrlListItemBoxDelete_Click"
+                                                Command="{Binding UICtrlListItemBoxDeleteCommand}"
                                                 ToolTip="Delete">
                                             <iconPacks:PackIconMaterial Kind="Minus" 
                                                                         Width="Auto"
@@ -1086,7 +1083,7 @@
                                         </Button>
                                         <Button Grid.Row="5" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxAdd"
-                                                Click="UICtrlListItemBoxAdd_Click"
+                                                Command="{Binding UICtrlListItemBoxAddCommand}"
                                                 ToolTip="Add">
                                             <iconPacks:PackIconMaterial Kind="Plus" 
                                                                         Width="Auto"

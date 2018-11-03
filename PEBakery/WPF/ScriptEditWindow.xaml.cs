@@ -36,7 +36,6 @@ namespace PEBakery.WPF
 
         private Script _sc;
         private readonly ScriptEditViewModel m;
-        
         #endregion
 
         #region Constructor
@@ -135,99 +134,6 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Event Handler - Logo
-        private void ScriptLogoAttachButton_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog dialog = new OpenFileDialog
-            {
-                Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string srcFile = dialog.FileName;
-            try
-            {
-                string srcFileName = Path.GetFileName(srcFile);
-                _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
-                MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                m.ScriptLogoUpdated = true;
-                m.ReadScriptGeneral();
-            }
-            catch (Exception ex)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ScriptLogoExtractButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!EncodedFile.ContainsLogo(_sc))
-            {
-                MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
-            {
-                SaveFileDialog dialog = new SaveFileDialog
-                {
-                    InitialDirectory = Global.BaseDir,
-                    OverwritePrompt = true,
-                    Filter = $"Image ({type.ToString().ToLower()})|*.{type}",
-                    DefaultExt = $".{type}",
-                    AddExtension = true,
-                };
-
-                if (dialog.ShowDialog() != true)
-                    return;
-
-                string destPath = dialog.FileName;
-                try
-                {
-                    using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        ms.CopyTo(fs);
-                    }
-
-                    MessageBox.Show("Logo successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void ScriptLogoDeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!EncodedFile.ContainsLogo(_sc))
-            {
-                MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string errMsg;
-            (_sc, errMsg) = EncodedFile.DeleteLogo(_sc);
-            if (errMsg == null)
-            {
-                MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                m.ScriptLogoUpdated = true;
-                m.ReadScriptGeneral();
-            }
-            else
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        #endregion
-
         #region Event Handler - Interface
         #region For Editor
         private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -314,77 +220,7 @@ namespace PEBakery.WPF
                 return;
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), m.Renderer.UICtrls.Select(x => x.Key));
         }
-        #endregion
-        #region For Image
-        private void UICtrlImageAutoResizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-            string ext = Path.GetExtension(uiCtrl.Text);
-
-            Debug.Assert(fileName != null, internalErrorMsg);
-            Debug.Assert(ext != null, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    m.WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
-            {
-                MessageBox.Show($"Unsupported image [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            using (MemoryStream ms = EncodedFile.ExtractFileInMem(_sc, ScriptSection.Names.InterfaceEncoded, fileName))
-            {
-                int width, height;
-                if (type == ImageHelper.ImageType.Svg)
-                    (width, height) = ImageHelper.GetSvgSizeInt(ms);
-                else
-                    (width, height) = ImageHelper.GetImageSize(ms);
-
-                uiCtrl.Width = width;
-                uiCtrl.Height = height;
-                m.InvokeUIControlEvent(false);
-                m.WriteScriptInterface(false);
-            }
-        }
-        #endregion
-        #region For RadioButton
-        private void UICtrlRadioButtonSelect_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelect_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonInfo != null, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonInfo.Selected == false, internalErrorMsg);
-            Debug.Assert(m.UICtrlRadioButtonList != null, internalErrorMsg);
-
-            foreach (UIControl uncheck in m.UICtrlRadioButtonList.Where(x => !x.Key.Equals(m.SelectedUICtrl.Key)))
-            {
-                Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
-                UIInfo_RadioButton subInfo = uncheck.Info as UIInfo_RadioButton;
-                Debug.Assert(subInfo != null, "Invalid UIInfo");
-
-                subInfo.Selected = false;
-            }
-            m.UICtrlRadioButtonInfo.Selected = true;
-
-            m.OnPropertyUpdate(nameof(m.UICtrlRadioButtonSelectEnable));
-            m.InvokeUIControlEvent(true);
-        }
-        #endregion
+        #endregion  
         #region For (Common) ListItemBox
         private void ListNewItem_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -393,498 +229,6 @@ namespace PEBakery.WPF
                 e.Handled = true;
 
             OnPreviewTextInput(e);
-        }
-
-        private void UICtrlListItemBoxUp_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            List<string> items;
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = m.UICtrlComboBoxInfo.Items;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = m.UICtrlRadioGroupInfo.Items;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-            int idx = m.UICtrlListItemBoxSelectedIndex;
-            if (0 < idx)
-            {
-                string item = items[idx];
-                items.RemoveAt(idx);
-                items.Insert(idx - 1, item);
-
-                var editItem = m.UICtrlListItemBoxItems[idx];
-                m.UICtrlListItemBoxItems.RemoveAt(idx);
-                m.UICtrlListItemBoxItems.Insert(idx - 1, editItem);
-
-                switch (m.SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        if (m.UICtrlComboBoxInfo.Index == idx)
-                            m.UICtrlComboBoxInfo.Index = idx - 1;
-                        break;
-                    case UIControlType.RadioGroup:
-                        if (m.UICtrlRadioGroupInfo.Selected == idx)
-                            m.UICtrlRadioGroupInfo.Selected = idx - 1;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                m.UICtrlListItemBoxSelectedIndex = idx - 1;
-                m.InvokeUIControlEvent(false);
-            }
-        }
-
-        private void UICtrlListItemBoxDown_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDown_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            List<string> items;
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = m.UICtrlComboBoxInfo.Items;
-                    Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = m.UICtrlRadioGroupInfo.Items;
-                    Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            int idx = m.UICtrlListItemBoxSelectedIndex;
-            if (idx + 1 < items.Count)
-            {
-                string item = items[idx];
-                items.RemoveAt(idx);
-                items.Insert(idx + 1, item);
-
-                string editItem = m.UICtrlListItemBoxItems[idx];
-                m.UICtrlListItemBoxItems.RemoveAt(idx);
-                m.UICtrlListItemBoxItems.Insert(idx + 1, editItem);
-
-                switch (m.SelectedUICtrl.Type)
-                {
-                    case UIControlType.ComboBox:
-                        if (m.UICtrlComboBoxInfo.Index == idx)
-                            m.UICtrlComboBoxInfo.Index = idx + 1;
-                        break;
-                    case UIControlType.RadioGroup:
-                        if (m.UICtrlRadioGroupInfo.Selected == idx)
-                            m.UICtrlRadioGroupInfo.Selected = idx + 1;
-                        break;
-                    default:
-                        throw new InvalidOperationException(internalErrorMsg);
-                }
-
-                m.UICtrlListItemBoxSelectedIndex = idx + 1;
-                m.InvokeUIControlEvent(false);
-            }
-        }
-
-        private void UICtrlListItemBoxSelect_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelect_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
-                    Debug.Assert(m.UICtrlComboBoxInfo.Items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    m.UICtrlComboBoxInfo.Index = m.UICtrlListItemBoxSelectedIndex;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    Debug.Assert(m.UICtrlRadioGroupInfo.Items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-                    m.UICtrlRadioGroupInfo.Selected = m.UICtrlListItemBoxSelectedIndex;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            m.InvokeUIControlEvent(false);
-        }
-
-        private void UICtrlListItemBoxDelete_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDelete_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            List<string> items;
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
-                    items = m.UICtrlComboBoxInfo.Items;
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    items = m.UICtrlRadioGroupInfo.Items;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            Debug.Assert(items.Count == m.UICtrlListItemBoxItems.Count, internalErrorMsg);
-
-            int idx = m.UICtrlListItemBoxSelectedIndex;
-
-            items.RemoveAt(idx);
-            m.UICtrlListItemBoxItems.RemoveAt(idx);
-
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    if (m.UICtrlComboBoxInfo.Index == idx)
-                        m.UICtrlComboBoxInfo.Index = 0;
-                    break;
-                case UIControlType.RadioGroup:
-                    if (m.UICtrlRadioGroupInfo.Selected == idx)
-                        m.UICtrlRadioGroupInfo.Selected = 0;
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            m.UICtrlListItemBoxSelectedIndex = 0;
-            m.InvokeUIControlEvent(false);
-        }
-
-        private void UICtrlListItemBoxAdd_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAdd_Click";
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-
-            string newItem = m.UICtrlListItemBoxNewItem;
-            switch (m.SelectedUICtrl.Type)
-            {
-                case UIControlType.ComboBox:
-                    Debug.Assert(m.UICtrlComboBoxInfo != null, internalErrorMsg);
-                    m.UICtrlComboBoxInfo.Items.Add(newItem);
-                    break;
-                case UIControlType.RadioGroup:
-                    Debug.Assert(m.UICtrlRadioGroupInfo != null, internalErrorMsg);
-                    m.UICtrlRadioGroupInfo.Items.Add(newItem);
-                    break;
-                default:
-                    throw new InvalidOperationException(internalErrorMsg);
-            }
-            m.UICtrlListItemBoxItems.Add(newItem);
-
-            m.InvokeUIControlEvent(false);
-        }
-        #endregion
-        #region For (Common) InterfaceEncoded 
-        private void UICtrlInterfaceAttachButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceAttachButton_Click";
-
-            Button button = sender as Button;
-            Debug.Assert(button != null, internalErrorMsg);
-
-            UIControlType selectedType;
-            string saveConfirmMsg;
-            string extFilter;
-            if (button.Equals(UICtrlImageAttachButton))
-            {
-                selectedType = UIControlType.Image;
-                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-                extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
-            }
-            else if (button.Equals(UICtrlTextFileAttachButton))
-            {
-                selectedType = UIControlType.TextFile;
-                saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
-                extFilter = "Text File|*.txt";
-            }
-            else if (button.Equals(UICtrlButtonPictureAttachButton))
-            {
-                selectedType = UIControlType.Button;
-                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-                extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
-            }
-            else
-            {
-                throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    m.WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            OpenFileDialog dialog = new OpenFileDialog
-            {
-                Filter = extFilter,
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string srcFilePath = dialog.FileName;
-            string srcFileName = Path.GetFileName(srcFilePath);
-            if (EncodedFile.ContainsInterface(_sc, srcFileName))
-            {
-                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, ScriptSection.Names.InterfaceEncoded, false);
-                if (errMsg != null)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
-            }
-
-            // Pratically PEBakery is capable of handling large files.
-            // -> But large file in interface requires lots of memory to decompress and make unreponsive time longer.
-            // -> Threshold is fully debatable.
-            long fileLen = new FileInfo(srcFilePath).Length;
-            if (EncodedFile.InterfaceSizeLimit < fileLen) // 4MB limit
-            {
-                MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsive!\r\nContinue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.No)
-                    return;
-            }
-
-            try
-            {
-                _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath, null);
-
-                UIControl.ReplaceAddress(m.Renderer.UICtrls, _sc);
-
-                switch (selectedType)
-                {
-                    case UIControlType.Image:
-                        m.SelectedUICtrl.Text = srcFileName;
-                        m.UICtrlImageSet = true;
-                        break;
-                    case UIControlType.TextFile:
-                        m.SelectedUICtrl.Text = srcFileName;
-                        m.UICtrlTextFileSet = true;
-                        break;
-                    case UIControlType.Button:
-                        m.UICtrlButtonInfo.Picture = srcFileName;
-                        m.UICtrlButtonPictureSet = true;
-                        break;
-                }
-
-                m.InvokeUIControlEvent(false);
-                m.WriteScriptInterface(false);
-            }
-            catch (Exception ex)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        private void UICtrlInterfaceExtractButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractButton_Click";
-
-            Button button = sender as Button;
-            Debug.Assert(button != null, internalErrorMsg);
-
-            UIControlType selectedType;
-            string cannotFindFile;
-            if (button.Equals(UICtrlImageExtractButton))
-            {
-                selectedType = UIControlType.Image;
-                cannotFindFile = "Unable to find image";
-            }
-            else if (button.Equals(UICtrlTextFileExtractButton))
-            {
-                selectedType = UIControlType.TextFile;
-                cannotFindFile = "Unable to find text";
-            }
-            else if (button.Equals(UICtrlButtonPictureExtractButton))
-            {
-                selectedType = UIControlType.Button;
-                cannotFindFile = "Unable to find image";
-            }
-            else
-            {
-                throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-            if (selectedType == UIControlType.Button)
-            {
-                Debug.Assert(m.UICtrlButtonInfo != null, internalErrorMsg);
-                fileName = m.UICtrlButtonInfo.Picture;
-            }
-            string ext = Path.GetExtension(fileName);
-
-            Debug.Assert(fileName != null, internalErrorMsg);
-            Debug.Assert(ext != null, internalErrorMsg);
-
-            string extFilter;
-            if (selectedType == UIControlType.TextFile)
-                extFilter = $"Text File|*{ext}";
-            else
-                extFilter = $"Image|*{ext}";
-
-            if (!EncodedFile.ContainsInterface(_sc, fileName))
-            {
-                MessageBox.Show($"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            SaveFileDialog dialog = new SaveFileDialog
-            {
-                OverwritePrompt = true,
-                Filter = extFilter,
-                DefaultExt = ext,
-                AddExtension = true,
-            };
-            if (dialog.ShowDialog() != true)
-                return;
-
-            string destPath = dialog.FileName;
-            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-            {
-                try
-                {
-                    EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
-                }
-                catch (Exception ex)
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-        private void UICtrlInterfaceResetButton_Click(object sender, RoutedEventArgs e)
-        {
-            const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceResetButton_Click";
-
-            Button button = sender as Button;
-            Debug.Assert(button != null, internalErrorMsg);
-
-            UIControlType selectedType;
-            string saveConfirmMsg;
-            if (button.Equals(UICtrlImageResetButton))
-            {
-                selectedType = UIControlType.Image;
-                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-            }
-            else if (button.Equals(UICtrlTextFileResetButton))
-            {
-                selectedType = UIControlType.TextFile;
-                saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
-            }
-            else if (button.Equals(UICtrlButtonPictureResetButton))
-            {
-                selectedType = UIControlType.Button;
-                saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-            }
-            else
-            {
-                throw new InvalidOperationException(internalErrorMsg);
-            }
-
-            Debug.Assert(m.SelectedUICtrl != null, internalErrorMsg);
-            Debug.Assert(m.SelectedUICtrl.Type == selectedType, internalErrorMsg);
-
-            UIControl uiCtrl = m.SelectedUICtrl;
-            string fileName = uiCtrl.Text;
-            if (selectedType == UIControlType.Button)
-            {
-                Debug.Assert(m.UICtrlButtonInfo != null, internalErrorMsg);
-                fileName = m.UICtrlButtonInfo.Picture;
-            }
-            Debug.Assert(fileName != null, internalErrorMsg);
-
-            if (m.InterfaceNotSaved)
-            {
-                MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                if (result == MessageBoxResult.Yes)
-                    m.WriteScriptInterface(false);
-                else
-                    return;
-            }
-
-            if (!EncodedFile.ContainsInterface(_sc, fileName))
-            { // Unable to find encoded image, so just remove image entry from uiCtrl
-                switch (selectedType)
-                {
-                    case UIControlType.Image:
-                        m.SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                        m.UICtrlImageSet = false;
-                        break;
-                    case UIControlType.TextFile:
-                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                        m.UICtrlTextFileSet = false;
-                        break;
-                    case UIControlType.Button:
-                        m.UICtrlButtonInfo.Picture = null;
-                        m.UICtrlButtonPictureSet = false;
-                        break;
-                }
-                m.InvokeUIControlEvent(false);
-
-                MessageBox.Show("Incorrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string errMsg;
-            (_sc, errMsg) = EncodedFile.DeleteFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
-            if (errMsg == null)
-            {
-                UIControl.ReplaceAddress(m.Renderer.UICtrls, _sc);
-
-                switch (selectedType)
-                {
-                    case UIControlType.Image:
-                        m.SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                        m.UICtrlImageSet = false;
-                        break;
-                    case UIControlType.TextFile:
-                        m.SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                        m.UICtrlTextFileSet = false;
-                        break;
-                    case UIControlType.Button:
-                        m.UICtrlButtonInfo.Picture = null;
-                        m.UICtrlButtonPictureSet = false;
-                        break;
-                }
-
-                m.InvokeUIControlEvent(false);
-                m.WriteScriptInterface(false);
-            }
-            else
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
         }
         #endregion
         #region For (Common) RunOptional
@@ -1004,7 +348,13 @@ namespace PEBakery.WPF
         public int TabIndex
         {
             get => _tabIndex;
-            set => SetProperty(ref _tabIndex, value);
+            set
+            {
+                _tabIndex = value;
+                OnPropertyUpdate(nameof(TabIndex));
+
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
         #endregion
 
@@ -1287,8 +637,6 @@ namespace PEBakery.WPF
         public bool InterfaceUpdated { get; set; } = false;
 
         // Canvas
-        // private EditCanvas _interfaceCanvas;
-        // public EditCanvas InterfaceCanvas
         private DragCanvas _interfaceCanvas;
         public DragCanvas InterfaceCanvas
         {
@@ -1319,6 +667,8 @@ namespace PEBakery.WPF
             {
                 _uiCtrlAddTypeIndex = value;
                 OnPropertyUpdate(nameof(UICtrlAddTypeIndex));
+
+                CommandManager.InvalidateRequerySuggested();
             }
         }
         private string _uiCtrlAddName;
@@ -1414,6 +764,8 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
                 OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
                 OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
+
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -1895,8 +1247,9 @@ namespace PEBakery.WPF
                 _uiCtrlRadioButtonInfo = value;
                 if (value == null)
                     return;
-
+                OnPropertyUpdate(nameof(UICtrlRadioButtonInfo));
                 OnPropertyUpdate(nameof(UICtrlRadioButtonSelectEnable));
+                CommandManager.InvalidateRequerySuggested();
             }
         }
         public bool UICtrlRadioButtonSelectEnable => !_uiCtrlRadioButtonInfo?.Selected ?? false;
@@ -2311,7 +1664,137 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Command - Logo
+        public ICommand ScriptLogoAttachCommand => new RelayCommand(ScriptLogoAttachCommand_Executed, CanExecuteFunc);
+        public ICommand ScriptLogoExtractCommand => new RelayCommand(ScriptLogoExtractCommand_Executed, ScriptLogoLoadedFunc);
+        public ICommand ScriptLogoDeleteCommand => new RelayCommand(ScriptLogoDeleteCommand_Executed, ScriptLogoLoadedFunc);
+
+        private bool ScriptLogoLoadedFunc(object parameter)
+        {
+            return CanExecuteCommand && ScriptLogoLoaded;
+        }
+
+        private void ScriptLogoAttachCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                OpenFileDialog dialog = new OpenFileDialog
+                {
+                    Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
+                };
+
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string srcFile = dialog.FileName;
+                try
+                {
+                    string srcFileName = Path.GetFileName(srcFile);
+                    _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
+                    MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    ScriptLogoUpdated = true;
+                    ReadScriptGeneral();
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void ScriptLogoExtractCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = true;
+            try
+            {
+                if (!EncodedFile.ContainsLogo(_sc))
+                {
+                    MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                {
+                    SaveFileDialog dialog = new SaveFileDialog
+                    {
+                        InitialDirectory = Global.BaseDir,
+                        OverwritePrompt = true,
+                        Filter = $"Image ({type.ToString().ToLower()})|*.{type}",
+                        DefaultExt = $".{type}",
+                        AddExtension = true,
+                    };
+
+                    if (dialog.ShowDialog() != true)
+                        return;
+
+                    string destPath = dialog.FileName;
+                    try
+                    {
+                        using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            ms.CopyTo(fs);
+                        }
+
+                        MessageBox.Show("Logo successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void ScriptLogoDeleteCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = true;
+            try
+            {
+                if (!EncodedFile.ContainsLogo(_sc))
+                {
+                    MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string errMsg;
+                (_sc, errMsg) = EncodedFile.DeleteLogo(_sc);
+                if (errMsg == null)
+                {
+                    MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    ScriptLogoUpdated = true;
+                    ReadScriptGeneral();
+                }
+                else
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
         #region Command - Interface Editor
+        #region For Add, Delete, Reload
         public ICommand UICtrlAddCommand => new RelayCommand(UICtrlAddCommand_Executed, UICtrlAddCommand_CanExecute);
         public ICommand UICtrlDeleteCommand => new RelayCommand(UICtrlDeleteCommand_Executed, UICtrlDeleteCommand_CanExecute);
         public ICommand UICtrlReloadCommand => new RelayCommand(UICtrlReloadCommand_Executed, UICtrlReloadCommand_CanExecute);
@@ -2428,6 +1911,676 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
+        #endregion
+        #region For Image
+        public ICommand UICtrlImageAutoResizeCommand => new RelayCommand(UICtrlImageAutoResizeCommand_Executed, CanExecuteFunc);
+
+        private async void UICtrlImageAutoResizeCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = true;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                Debug.Assert(SelectedUICtrl.Type == UIControlType.Image, internalErrorMsg);
+
+                UIControl uiCtrl = SelectedUICtrl;
+                string fileName = uiCtrl.Text;
+                string ext = Path.GetExtension(uiCtrl.Text);
+
+                Debug.Assert(fileName != null, internalErrorMsg);
+                Debug.Assert(ext != null, internalErrorMsg);
+
+                if (InterfaceNotSaved)
+                {
+                    MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.Yes)
+                        WriteScriptInterface(false);
+                    else
+                        return;
+                }
+
+                if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
+                {
+                    MessageBox.Show($"Unsupported image [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                using (MemoryStream ms = await EncodedFile.ExtractFileInMemAsync(_sc, ScriptSection.Names.InterfaceEncoded, fileName))
+                {
+                    int width, height;
+                    if (type == ImageHelper.ImageType.Svg)
+                        (width, height) = ImageHelper.GetSvgSizeInt(ms);
+                    else
+                        (width, height) = ImageHelper.GetImageSize(ms);
+
+                    uiCtrl.Width = width;
+                    uiCtrl.Height = height;
+                    InvokeUIControlEvent(false);
+                    WriteScriptInterface(false);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+        #region For RadioButton
+        public ICommand UICtrlRadioButtonSelectCommand => new RelayCommand(UICtrlRadioButtonSelectCommand_Executed, UICtrlRadioButtonSelectCommand_CanExecute);
+
+        private bool UICtrlRadioButtonSelectCommand_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && UICtrlRadioButtonSelectEnable;
+        }
+
+        private void UICtrlRadioButtonSelectCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelectCommand_Executed";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                Debug.Assert(SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
+                Debug.Assert(UICtrlRadioButtonInfo != null, internalErrorMsg);
+                Debug.Assert(UICtrlRadioButtonInfo.Selected == false, internalErrorMsg);
+                Debug.Assert(UICtrlRadioButtonList != null, internalErrorMsg);
+
+                foreach (UIControl uncheck in UICtrlRadioButtonList.Where(x => !x.Key.Equals(SelectedUICtrl.Key)))
+                {
+                    UIInfo_RadioButton subInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
+                    subInfo.Selected = false;
+                }
+                UICtrlRadioButtonInfo.Selected = true;
+
+                OnPropertyUpdate(nameof(UICtrlRadioButtonSelectEnable));
+                InvokeUIControlEvent(true);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+        #region For (Common) ListItemBox
+        public ICommand UICtrlListItemBoxUpCommand => new RelayCommand(UICtrlListItemBoxUpCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDownCommand => new RelayCommand(UICtrlListItemBoxDownCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxSelectCommand => new RelayCommand(UICtrlListItemBoxSelectCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDeleteCommand => new RelayCommand(UICtrlListItemBoxDeleteCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxAddCommand => new RelayCommand(UICtrlListItemBoxAddCommand_Executed, CanExecuteFunc);
+
+        private void UICtrlListItemBoxUpCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                List<string> items;
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
+                        items = UICtrlComboBoxInfo.Items;
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
+                        items = UICtrlRadioGroupInfo.Items;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+                Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+
+                int idx = UICtrlListItemBoxSelectedIndex;
+                if (0 < idx)
+                {
+                    string item = items[idx];
+                    items.RemoveAt(idx);
+                    items.Insert(idx - 1, item);
+
+                    string editItem = UICtrlListItemBoxItems[idx];
+                    UICtrlListItemBoxItems.RemoveAt(idx);
+                    UICtrlListItemBoxItems.Insert(idx - 1, editItem);
+
+                    switch (SelectedUICtrl.Type)
+                    {
+                        case UIControlType.ComboBox:
+                            if (UICtrlComboBoxInfo.Index == idx)
+                                UICtrlComboBoxInfo.Index = idx - 1;
+                            break;
+                        case UIControlType.RadioGroup:
+                            if (UICtrlRadioGroupInfo.Selected == idx)
+                                UICtrlRadioGroupInfo.Selected = idx - 1;
+                            break;
+                        default:
+                            throw new InvalidOperationException(internalErrorMsg);
+                    }
+
+                    UICtrlListItemBoxSelectedIndex = idx - 1;
+                    InvokeUIControlEvent(false);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void UICtrlListItemBoxDownCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDownCommand_Executed";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                List<string> items;
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
+                        items = UICtrlComboBoxInfo.Items;
+                        Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
+                        items = UICtrlRadioGroupInfo.Items;
+                        Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                int idx = UICtrlListItemBoxSelectedIndex;
+                if (idx + 1 < items.Count)
+                {
+                    string item = items[idx];
+                    items.RemoveAt(idx);
+                    items.Insert(idx + 1, item);
+
+                    string editItem = UICtrlListItemBoxItems[idx];
+                    UICtrlListItemBoxItems.RemoveAt(idx);
+                    UICtrlListItemBoxItems.Insert(idx + 1, editItem);
+
+                    switch (SelectedUICtrl.Type)
+                    {
+                        case UIControlType.ComboBox:
+                            if (UICtrlComboBoxInfo.Index == idx)
+                                UICtrlComboBoxInfo.Index = idx + 1;
+                            break;
+                        case UIControlType.RadioGroup:
+                            if (UICtrlRadioGroupInfo.Selected == idx)
+                                UICtrlRadioGroupInfo.Selected = idx + 1;
+                            break;
+                        default:
+                            throw new InvalidOperationException(internalErrorMsg);
+                    }
+
+                    UICtrlListItemBoxSelectedIndex = idx + 1;
+                    InvokeUIControlEvent(false);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void UICtrlListItemBoxSelectCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelect_Click";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
+                        Debug.Assert(UICtrlComboBoxInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+                        UICtrlComboBoxInfo.Index = UICtrlListItemBoxSelectedIndex;
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
+                        Debug.Assert(UICtrlRadioGroupInfo.Items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+                        UICtrlRadioGroupInfo.Selected = UICtrlListItemBoxSelectedIndex;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                InvokeUIControlEvent(false);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void UICtrlListItemBoxDeleteCommand_Executed(object paramaeter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDelete_Click";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                List<string> items;
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
+                        items = UICtrlComboBoxInfo.Items;
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
+                        items = UICtrlRadioGroupInfo.Items;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+                Debug.Assert(items.Count == UICtrlListItemBoxItems.Count, internalErrorMsg);
+
+                int idx = UICtrlListItemBoxSelectedIndex;
+
+                items.RemoveAt(idx);
+                UICtrlListItemBoxItems.RemoveAt(idx);
+
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        if (UICtrlComboBoxInfo.Index == idx)
+                            UICtrlComboBoxInfo.Index = 0;
+                        break;
+                    case UIControlType.RadioGroup:
+                        if (UICtrlRadioGroupInfo.Selected == idx)
+                            UICtrlRadioGroupInfo.Selected = 0;
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                UICtrlListItemBoxSelectedIndex = 0;
+                InvokeUIControlEvent(false);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void UICtrlListItemBoxAddCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAdd_Click";
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+
+                string newItem = UICtrlListItemBoxNewItem;
+                switch (SelectedUICtrl.Type)
+                {
+                    case UIControlType.ComboBox:
+                        Debug.Assert(UICtrlComboBoxInfo != null, internalErrorMsg);
+                        UICtrlComboBoxInfo.Items.Add(newItem);
+                        break;
+                    case UIControlType.RadioGroup:
+                        Debug.Assert(UICtrlRadioGroupInfo != null, internalErrorMsg);
+                        UICtrlRadioGroupInfo.Items.Add(newItem);
+                        break;
+                    default:
+                        throw new InvalidOperationException(internalErrorMsg);
+                }
+                UICtrlListItemBoxItems.Add(newItem);
+
+                InvokeUIControlEvent(false);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+        #region For (Common) InterfaceEncoded 
+        public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlInterfaceExtractCommand => new RelayCommand(UICtrlInterfaceExtractCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlInterfaceResetCommand => new RelayCommand(UICtrlInterfaceResetCommand_Executed, CanExecuteFunc);
+
+        private void UICtrlInterfaceAttachCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceAttachButton_Click";
+
+                if (!(parameter is string sender))
+                    throw new InvalidOperationException(internalErrorMsg);
+
+                UIControlType selectedType;
+                string saveConfirmMsg;
+                string extFilter;
+                if (sender.Equals("ImageAttach", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Image;
+                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                    extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+                }
+                else if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.TextFile;
+                    saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
+                    extFilter = "Text File|*.txt";
+                }
+                else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Button;
+                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                    extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+                }
+                else
+                {
+                    throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                Debug.Assert(SelectedUICtrl.Type == selectedType, internalErrorMsg);
+
+                if (InterfaceNotSaved)
+                {
+                    MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.Yes)
+                        WriteScriptInterface(false);
+                    else
+                        return;
+                }
+
+                OpenFileDialog dialog = new OpenFileDialog
+                {
+                    Filter = extFilter,
+                };
+
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string srcFilePath = dialog.FileName;
+                string srcFileName = Path.GetFileName(srcFilePath);
+                if (EncodedFile.ContainsInterface(_sc, srcFileName))
+                {
+                    (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, ScriptSection.Names.InterfaceEncoded, false);
+                    if (errMsg != null)
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                        MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
+                }
+
+                // Pratically PEBakery is capable of handling large files.
+                // -> But large file in interface requires lots of memory to decompress and make unreponsive time longer.
+                // -> Threshold is fully debatable.
+                long fileLen = new FileInfo(srcFilePath).Length;
+                if (EncodedFile.InterfaceSizeLimit < fileLen) // 4MB limit
+                {
+                    MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsive!\r\nContinue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.No)
+                        return;
+                }
+
+                try
+                {
+                    _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath, null);
+
+                    UIControl.ReplaceAddress(Renderer.UICtrls, _sc);
+
+                    switch (selectedType)
+                    {
+                        case UIControlType.Image:
+                            SelectedUICtrl.Text = srcFileName;
+                            UICtrlImageSet = true;
+                            break;
+                        case UIControlType.TextFile:
+                            SelectedUICtrl.Text = srcFileName;
+                            UICtrlTextFileSet = true;
+                            break;
+                        case UIControlType.Button:
+                            UICtrlButtonInfo.Picture = srcFileName;
+                            UICtrlButtonPictureSet = true;
+                            break;
+                    }
+
+                    InvokeUIControlEvent(false);
+                    WriteScriptInterface(false);
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private void UICtrlInterfaceExtractCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractCommand_Executed";
+
+                if (!(parameter is string sender))
+                    throw new InvalidOperationException(internalErrorMsg);
+
+                UIControlType selectedType;
+                string cannotFindFile;
+                if (sender.Equals("ImageExtract", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Image;
+                    cannotFindFile = "Unable to find image";
+                }
+                else if (sender.Equals("TextFileExtract", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.TextFile;
+                    cannotFindFile = "Unable to find text";
+                }
+                else if (sender.Equals("ButtonPictureExtract", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Button;
+                    cannotFindFile = "Unable to find image";
+                }
+                else
+                {
+                    throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                Debug.Assert(SelectedUICtrl.Type == selectedType, internalErrorMsg);
+
+                UIControl uiCtrl = SelectedUICtrl;
+                string fileName = uiCtrl.Text;
+                if (selectedType == UIControlType.Button)
+                {
+                    Debug.Assert(UICtrlButtonInfo != null, internalErrorMsg);
+                    fileName = UICtrlButtonInfo.Picture;
+                }
+                string ext = Path.GetExtension(fileName);
+
+                Debug.Assert(fileName != null, internalErrorMsg);
+                Debug.Assert(ext != null, internalErrorMsg);
+
+                string extFilter;
+                if (selectedType == UIControlType.TextFile)
+                    extFilter = $"Text File|*{ext}";
+                else
+                    extFilter = $"Image|*{ext}";
+
+                if (!EncodedFile.ContainsInterface(_sc, fileName))
+                {
+                    MessageBox.Show($"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                SaveFileDialog dialog = new SaveFileDialog
+                {
+                    OverwritePrompt = true,
+                    Filter = extFilter,
+                    DefaultExt = ext,
+                    AddExtension = true,
+                };
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string destPath = dialog.FileName;
+                using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+                {
+                    try
+                    {
+                        EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private async void UICtrlInterfaceResetCommand_Executed(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceResetButton_Click";
+
+                if (!(parameter is string sender))
+                    throw new InvalidOperationException(internalErrorMsg);
+
+                UIControlType selectedType;
+                string saveConfirmMsg;
+                if (sender.Equals("ImageReset", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Image;
+                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                }
+                else if (sender.Equals("TextFileReset", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.TextFile;
+                    saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
+                }
+                else if (sender.Equals("ButtonPictureReset", StringComparison.Ordinal))
+                {
+                    selectedType = UIControlType.Button;
+                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                }
+                else
+                {
+                    throw new InvalidOperationException(internalErrorMsg);
+                }
+
+                Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
+                Debug.Assert(SelectedUICtrl.Type == selectedType, internalErrorMsg);
+
+                UIControl uiCtrl = SelectedUICtrl;
+                string fileName = uiCtrl.Text;
+                if (selectedType == UIControlType.Button)
+                {
+                    Debug.Assert(UICtrlButtonInfo != null, internalErrorMsg);
+                    fileName = UICtrlButtonInfo.Picture;
+                }
+                Debug.Assert(fileName != null, internalErrorMsg);
+
+                if (InterfaceNotSaved)
+                {
+                    MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.Yes)
+                        WriteScriptInterface(false);
+                    else
+                        return;
+                }
+
+                if (!EncodedFile.ContainsInterface(_sc, fileName))
+                { // Unable to find encoded image, so just remove image entry from uiCtrl
+                    switch (selectedType)
+                    {
+                        case UIControlType.Image:
+                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
+                            UICtrlImageSet = false;
+                            break;
+                        case UIControlType.TextFile:
+                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
+                            UICtrlTextFileSet = false;
+                            break;
+                        case UIControlType.Button:
+                            UICtrlButtonInfo.Picture = null;
+                            UICtrlButtonPictureSet = false;
+                            break;
+                    }
+                    InvokeUIControlEvent(false);
+
+                    MessageBox.Show("Incorrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string errMsg;
+                (_sc, errMsg) = await EncodedFile.DeleteFileAsync(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
+                if (errMsg == null)
+                {
+                    UIControl.ReplaceAddress(Renderer.UICtrls, _sc);
+
+                    switch (selectedType)
+                    {
+                        case UIControlType.Image:
+                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
+                            UICtrlImageSet = false;
+                            break;
+                        case UIControlType.TextFile:
+                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
+                            UICtrlTextFileSet = false;
+                            break;
+                        case UIControlType.Button:
+                            UICtrlButtonInfo.Picture = null;
+                            UICtrlButtonPictureSet = false;
+                            break;
+                    }
+
+                    InvokeUIControlEvent(false);
+                    WriteScriptInterface(false);
+                }
+                else
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion 
         #endregion
 
         #region Command - IsWorking
