@@ -2729,7 +2729,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DeleteFolderCommand_Execute(object parameter)
+        private async void DeleteFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2749,7 +2749,7 @@ namespace PEBakery.WPF
                     return;
 
                 string errMsg;
-                (_sc, errMsg) = EncodedFile.DeleteFolder(_sc, item.Name);
+                (_sc, errMsg) = await EncodedFile.DeleteFolderAsync(_sc, item.Name);
                 if (errMsg == null)
                 {
                     ScriptAttachUpdated = true;

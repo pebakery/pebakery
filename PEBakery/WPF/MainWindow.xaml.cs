@@ -48,6 +48,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shell;
+using PEBakery.Core.ViewModels;
 
 namespace PEBakery.WPF
 {
@@ -2215,8 +2216,11 @@ namespace PEBakery.WPF
             }
             set
             {
+                if (_sc.Mandatory || _sc.Selected == SelectedState.None)
+                    return;
+
                 Global.MainViewModel.WorkInProgress = true;
-                if (!_sc.Mandatory && _sc.Selected != SelectedState.None)
+                try
                 {
                     if (value)
                     {
@@ -2243,7 +2247,7 @@ namespace PEBakery.WPF
                         // Set also child scripts (Top-down propagation)
                         // Disable for Project's MainScript
                         if (0 < Children.Count)
-                        { 
+                        {
                             foreach (ProjectTreeItemModel childModel in Children)
                                 childModel.Checked = value;
                         }
@@ -2253,7 +2257,10 @@ namespace PEBakery.WPF
 
                     OnPropertyUpdate(nameof(Checked));
                 }
-                Global.MainViewModel.WorkInProgress = false;
+                finally
+                {
+                    Global.MainViewModel.WorkInProgress = false;
+                }
             }
         }
 
@@ -2280,10 +2287,7 @@ namespace PEBakery.WPF
 
             if (!_sc.Mandatory && _sc.Selected != SelectedState.None)
             {
-                if (value)
-                    _sc.Selected = SelectedState.True;
-                else
-                    _sc.Selected = SelectedState.False;
+                _sc.Selected = value ? SelectedState.True : SelectedState.False;
             }
 
             OnPropertyUpdate(nameof(Checked));
@@ -2312,16 +2316,16 @@ namespace PEBakery.WPF
             foreach (string path in paths)
             {
                 int exist = sc.Project.AllScripts.Count(x => x.RealPath.Equals(path, StringComparison.OrdinalIgnoreCase));
-                if (exist == 1)
-                {
-                    IniReadWriter.WriteKey(path, "Main", "Selected", "False");
-                    ProjectTreeItemModel found = FindScriptByRealPath(path);
-                    if (found != null)
-                    {
-                        if (sc.Type != ScriptType.Directory && sc.Mandatory == false && sc.Selected != SelectedState.None)
-                            found.Checked = false;
-                    }
-                }
+                if (exist != 1)
+                    continue;
+
+                IniReadWriter.WriteKey(path, "Main", "Selected", "False");
+                ProjectTreeItemModel found = FindScriptByRealPath(path);
+                if (found == null)
+                    continue;
+
+                if (sc.Type != ScriptType.Directory && sc.Mandatory == false && sc.Selected != SelectedState.None)
+                    found.Checked = false;
             }
 
             return errorLogs;

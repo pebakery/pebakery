@@ -818,6 +818,7 @@ namespace PEBakery.Core
 
         public static (Script, string) DeleteFolder(Script sc, string folderName)
         {
+            // TODO: Optimize IniReadWriter call
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
             if (folderName == null)
@@ -1934,7 +1935,7 @@ namespace PEBakery.Core
                 encodeLen += block.Length;
 
                 // If buffer is full, decode ~64KB to ~48KB raw bytes
-                if (0 < i && (i + 1) % 16 == 0)
+                if (lineCount != i + 1 && (i + 1) % 16 == 0)
                 {
                     byte[] buffer = Convert.FromBase64String(b.ToString());
                     destStream.Write(buffer, 0, buffer.Length);

@@ -1030,6 +1030,8 @@ namespace PEBakery.Tests.Core
             Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, true);
             Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, false);
             Template("Type3.pdf", "Type3Enc1024S.txt", "Base64", false);
+            Template("Type5.bin", "Type5Enc4090.txt", string.Empty, true);
+            Template("Type5.bin", "Type5Enc4090.txt", string.Empty, false);
         }
         #endregion
     }
