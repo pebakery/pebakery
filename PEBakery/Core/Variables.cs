@@ -141,7 +141,7 @@ namespace PEBakery.Core
             logs.Add(SetValue(VarsType.Fixed, "BaseDir", _project.BaseDir.TrimEnd('\\')));
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
-            logs.Add(SetValue(VarsType.Fixed, "EngineVersion",Global.Version.ToString("000")));
+            logs.Add(SetValue(VarsType.Fixed, "EngineVersion", Global.Version.ToString("000")));
             logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
@@ -939,11 +939,39 @@ namespace PEBakery.Core
                         LogInfo log = s.Variables.SetValue(VarsType.Global, key, finalValue);
 
                         if (log.State == LogState.Success)
-                        { // SetValue success, write to IniFile
-                            if (IniReadWriter.WriteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                        { // SetValue success
+                            // Write to MainScript
+                            if (IniReadWriter.WriteKey(s.Project.MainScript.RealPath, ScriptSection.Names.Variables, $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));
+
+                            // https://github.com/pebakery/pebakery/issues/88
+                            // Update memory-cached MainScript's Variables section 
+                            if (s.Project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
+                            {
+                                ScriptSection varSect = s.Project.MainScript.Sections[ScriptSection.Names.Variables];
+
+                                // Update ScriptSection.Lines
+                                int lineIdx = Array.FindIndex(varSect.Lines, x => x.StartsWith($"%{key}%=", StringComparison.OrdinalIgnoreCase));
+                                if (0 <= lineIdx && lineIdx < varSect.Lines.Length) // Overwrite
+                                    varSect.Lines[lineIdx] = $"%{key}%={finalValue}";
+                                else // Append
+                                {
+                                    string[] lines = varSect.Lines;
+                                    Array.Resize(ref lines, lines.Length + 1);
+                                    lines[lines.Length - 1] = $"%{key}%={finalValue}";
+                                    varSect.Update(lines);
+                                }
+                            }
+                            else
+                            { // Create temp ScriptSection instance
+                                ScriptSection varSect = new ScriptSection(
+                                    s.Project.MainScript, ScriptSection.Names.Variables, SectionType.Variables,
+                                    new string[] { $"%{key}%={finalValue}" }, 0);
+                                s.Project.MainScript.Sections[ScriptSection.Names.Variables] = varSect;
+                            }
+
 
                             // Remove local variable if exist
                             s.Variables.Delete(VarsType.Local, key);

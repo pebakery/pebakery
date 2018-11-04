@@ -1935,6 +1935,8 @@ namespace PEBakery.Core
                 encodeLen += block.Length;
 
                 // If buffer is full, decode ~64KB to ~48KB raw bytes
+                // https://github.com/pebakery/pebakery/issues/90
+                // lineCount != i + 1 -> if this line is last line, pass this block
                 if (lineCount != i + 1 && (i + 1) % 16 == 0)
                 {
                     byte[] buffer = Convert.FromBase64String(b.ToString());

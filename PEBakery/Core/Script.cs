@@ -972,6 +972,23 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Update
+        /// <summary>
+        /// Update Lines property.
+        /// ScriptSection must not be SectionType.AttachEncodeLazy
+        /// </summary>
+        /// <param name="lines"></param>
+        public void Update(string[] lines)
+        {
+            // AttachEncodeLazy cannot be updated 
+            if (Type == SectionType.AttachEncodeLazy)
+                throw new InvalidOperationException("AttachEncodeLazy cannot be updated with ScriptSection.Update()");
+
+            _lines = lines;
+            _iniDict = null;
+        }
+        #endregion
+
         #region Equals, GetHashCode
         public override bool Equals(object obj)
         {

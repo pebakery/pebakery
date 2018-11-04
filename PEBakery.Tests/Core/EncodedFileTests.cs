@@ -950,6 +950,7 @@ namespace PEBakery.Tests.Core
 
             Template("BigData.bin", "BigDataEnc4090.txt");
             Template("Type3.pdf", "Type3Enc4090.txt");
+            Template("Type5.bin", "Type5Enc4090.txt");
         }
 
         [TestMethod]
@@ -1030,6 +1031,7 @@ namespace PEBakery.Tests.Core
             Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, true);
             Template("Type3.pdf", "Type3Enc1024.txt", string.Empty, false);
             Template("Type3.pdf", "Type3Enc1024S.txt", "Base64", false);
+            // https://github.com/pebakery/pebakery/issues/90
             Template("Type5.bin", "Type5Enc4090.txt", string.Empty, true);
             Template("Type5.bin", "Type5Enc4090.txt", string.Empty, false);
         }
