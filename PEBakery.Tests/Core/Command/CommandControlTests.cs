@@ -46,13 +46,14 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            Set_1(s);
-            Set_2(s);
-            Set_3(s);
-            Set_4(s);
+            SetLocal(s);
+            DelLocal(s);
+            SetGlobal(s);
+            DelGlobal(s);
+            SetDelPermanent(s);
         }
 
-        public void Set_1(EngineState s)
+        public void SetLocal(EngineState s)
         {
             const string rawCode = "Set,%Dest%,PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
@@ -62,10 +63,20 @@ namespace PEBakery.Tests.Core.Command
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Set_2(EngineState s)
+        public void DelLocal(EngineState s)
         {
-            const string rawCode = "Set,%Dest%,PEBakery,GLOBAL";
-            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            s.Variables["Dest"] = "PEBakery";
+
+            EngineTests.Eval(s, "Set,%Dest%,NIL", CodeType.Set, ErrorCheck.Success);
+
+            string comp = string.Empty;
+            string dest = s.Variables.GetValue(VarsType.Local, "Dest");
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public void SetGlobal(EngineState s)
+        {
+            EngineTests.Eval(s, "Set,%Dest%,PEBakery,GLOBAL", CodeType.Set, ErrorCheck.Success);
 
             const string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Dest");
@@ -74,34 +85,53 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.GetVarDict(VarsType.Global).Remove("PEBakery");
         }
 
-        public void Set_3(EngineState s)
+        public void DelGlobal(EngineState s)
         {
-            string pPath = s.Project.MainScript.RealPath;
-            IniReadWriter.DeleteKey(pPath, "Variables", "%Set_3%");
+            s.Variables.SetValue(VarsType.Global, "Dest", "PEBakery");
 
-            const string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
-            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-
-            const string comp = "PEBakery";
-            string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-
-            string permanent = IniReadWriter.ReadKey(pPath, "Variables", "%Set_3%");
-            Assert.IsTrue(dest.Equals(permanent, StringComparison.Ordinal));
-
-            IniReadWriter.DeleteKey(pPath, "Variables", "%Set_3%");
-        }
-
-        public void Set_4(EngineState s)
-        {
-            s.Variables["Dest"] = "PEBakery";
-
-            const string rawCode = "Set,%Dest%,NIL";
-            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineTests.Eval(s, "Set,%Dest%,NIL", CodeType.Set, ErrorCheck.Success);
 
             string comp = string.Empty;
-            string dest = s.Variables.GetValue(VarsType.Local, "Dest");
+            string dest = s.Variables.GetValue(VarsType.Global, "Dest");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public void SetDelPermanent(EngineState s)
+        {
+            string scPath = s.Project.MainScript.RealPath;
+            IniReadWriter.DeleteKey(scPath, "Variables", "%PermDest%");
+            try
+            {
+                // Set
+                EngineTests.Eval(s, "Set,%PermDest%,PEBakery,PERMANENT", CodeType.Set, ErrorCheck.Success);
+
+                string dest = s.Variables.GetValue(VarsType.Global, "PermDest");
+                Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
+
+                // Check memory-cached script section
+                ScriptSection varSect = s.Project.MainScript.Sections["Variables"];
+                int idx = Array.FindIndex(varSect.Lines, x => x.StartsWith("%PermDest%="));
+                Assert.AreNotEqual(-1, idx);
+
+                // Check script file
+                string permanent = IniReadWriter.ReadKey(scPath, "Variables", "%PermDest%");
+                Assert.IsTrue(dest.Equals(permanent, StringComparison.Ordinal));
+
+                // Delete
+                EngineTests.Eval(s, "Set,%PermDest%,NIL,PERMANENT", CodeType.Set, ErrorCheck.Success);
+
+                // Check memory-cached script section
+                idx = Array.FindIndex(varSect.Lines, x => x.StartsWith("%PermDest%="));
+                Assert.AreEqual(-1, idx);
+
+                // Check script file
+                permanent = IniReadWriter.ReadKey(scPath, "Variables", "%PermDest%");
+                Assert.IsNull(permanent);
+            }
+            finally
+            {
+                IniReadWriter.DeleteKey(scPath, "Variables", "%PermDest%");
+            }
         }
         #endregion
 

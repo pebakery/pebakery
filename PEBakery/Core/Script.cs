@@ -1042,9 +1042,11 @@ namespace PEBakery.Core
                 }
             }
 
-            if (targetIdx == -1)
+            if (targetIdx != -1)
             { // Delete target line
-                _lines = _lines.Where(x => !x.StartsWith($"%{key}%=", StringComparison.OrdinalIgnoreCase)).ToArray();
+                List<string> newLines = _lines.ToList();
+                newLines.RemoveAt(targetIdx);
+                _lines = newLines.ToArray();
             }
 
             return true;
