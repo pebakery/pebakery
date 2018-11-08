@@ -189,7 +189,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             if (includeKey)
             {
-                b.Append(StringEscaper.QuoteEscape(Key));
+                b.Append(Key);
                 b.Append("=");
             }
             b.Append(StringEscaper.QuoteEscape(Text));
@@ -213,9 +213,7 @@ namespace PEBakery.Core
         public bool Update()
         {
             // Update ScriptSection.Lines
-            int lineIdx = Array.FindIndex(Section.Lines, x => x.StartsWith($"{Key}=", StringComparison.OrdinalIgnoreCase));
-            if (0 <= lineIdx && lineIdx < Section.Lines.Length)
-                Section.Lines[lineIdx] = ForgeRawLine(true);
+            Section.UpdateIniKey(Key, ForgeRawLine(false));
 
             // Update actual file
             return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
@@ -232,13 +230,11 @@ namespace PEBakery.Core
             {
                 Debug.Assert(fullPath.Equals(uiCtrl.Section.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
+                // Update ScriptSection.Lines
+                uiCtrl.Section.UpdateIniKey(uiCtrl.Key, uiCtrl.ForgeRawLine(false));
+
                 // Prepare updating actual file
                 keys.Add(new IniKey(uiCtrl.Section.Name, uiCtrl.Key, uiCtrl.ForgeRawLine(false)));
-
-                // Update ScriptSection.Lines
-                int lineIdx = Array.FindIndex(uiCtrl.Section.Lines, x => x.StartsWith($"{uiCtrl.Key}=", StringComparison.OrdinalIgnoreCase));
-                if (0 <= lineIdx && lineIdx < uiCtrl.Section.Lines.Length)
-                    uiCtrl.Section.Lines[lineIdx] = uiCtrl.ForgeRawLine(true);
             }
 
             // Update actual file

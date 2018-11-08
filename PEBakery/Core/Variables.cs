@@ -854,11 +854,20 @@ namespace PEBakery.Core
                         bool globalResult = s.Variables.Delete(VarsType.Global, key);
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
-                        {
-                            if (IniReadWriter.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
+                        { 
+                            // Delete variable line from file
+                            if (IniReadWriter.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%"))
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             else
                                 logs.Add(new LogInfo(LogState.Success, globalResult ? $"Global variable [%{key}%] was deleted" : $"Local variable [%{key}%] was deleted"));
+
+                            // https://github.com/pebakery/pebakery/issues/88
+                            // Delete variable line from memory-cached MainScript
+                            if (s.Project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
+                            {
+                                ScriptSection varSect = s.Project.MainScript.Sections[ScriptSection.Names.Variables];
+                                varSect.DeleteIniKey($"%{key}%");
+                            }
                         }
                         else
                         {
@@ -951,18 +960,7 @@ namespace PEBakery.Core
                             if (s.Project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
                             {
                                 ScriptSection varSect = s.Project.MainScript.Sections[ScriptSection.Names.Variables];
-
-                                // Update ScriptSection.Lines
-                                int lineIdx = Array.FindIndex(varSect.Lines, x => x.StartsWith($"%{key}%=", StringComparison.OrdinalIgnoreCase));
-                                if (0 <= lineIdx && lineIdx < varSect.Lines.Length) // Overwrite
-                                    varSect.Lines[lineIdx] = $"%{key}%={finalValue}";
-                                else // Append
-                                {
-                                    string[] lines = varSect.Lines;
-                                    Array.Resize(ref lines, lines.Length + 1);
-                                    lines[lines.Length - 1] = $"%{key}%={finalValue}";
-                                    varSect.Update(lines);
-                                }
+                                varSect.UpdateIniKey($"%{key}%", finalValue);
                             }
                             else
                             { // Create temp ScriptSection instance
@@ -971,7 +969,6 @@ namespace PEBakery.Core
                                     new string[] { $"%{key}%={finalValue}" }, 0);
                                 s.Project.MainScript.Sections[ScriptSection.Names.Variables] = varSect;
                             }
-
 
                             // Remove local variable if exist
                             s.Variables.Delete(VarsType.Local, key);

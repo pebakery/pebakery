@@ -972,20 +972,82 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Update
+        #region UpdateIniKey, DeleteIniKey
         /// <summary>
         /// Update Lines property.
         /// ScriptSection must not be SectionType.AttachEncodeLazy
         /// </summary>
-        /// <param name="lines"></param>
-        public void Update(string[] lines)
+        /// <returns>true if succeeded</returns>
+        public bool UpdateIniKey(string key, string value)
         {
             // AttachEncodeLazy cannot be updated 
             if (Type == SectionType.AttachEncodeLazy)
-                throw new InvalidOperationException("AttachEncodeLazy cannot be updated with ScriptSection.Update()");
-
-            _lines = lines;
+                return false;
+            if (_lines == null)
+                return false;
             _iniDict = null;
+
+            bool updated = false;
+            for (int i = 0; i < _lines.Length; i++)
+            {
+                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
+                string line = _lines[i];
+                
+                int eIdx = line.IndexOf('=');
+                if (eIdx != -1 && eIdx != 0)
+                { // Key Found
+                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _lines[i] = $"{key}={value}";
+                        updated = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!updated)
+            { // Append to last line
+                Array.Resize(ref _lines, _lines.Length + 1);
+                _lines[_lines.Length - 1] = $"{key}={value}";
+            }
+
+            return true;
+        }
+
+        public bool DeleteIniKey(string key)
+        {
+            // AttachEncodeLazy cannot be updated 
+            if (Type == SectionType.AttachEncodeLazy)
+                return false;
+            if (_lines == null)
+                return false;
+            _iniDict = null;
+
+            int targetIdx = -1;
+            for (int i = 0; i < _lines.Length; i++)
+            {
+                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
+                string line = _lines[i];
+
+                int eIdx = line.IndexOf('=');
+                if (eIdx != -1 && eIdx != 0)
+                { // Key Found
+                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (targetIdx == -1)
+            { // Delete target line
+                _lines = _lines.Where(x => !x.StartsWith($"%{key}%=", StringComparison.OrdinalIgnoreCase)).ToArray();
+            }
+
+            return true;
         }
         #endregion
 
@@ -1047,4 +1109,3 @@ namespace PEBakery.Core
     }
     #endregion
 }
-

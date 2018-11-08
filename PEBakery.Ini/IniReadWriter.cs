@@ -63,7 +63,7 @@ namespace PEBakery.Ini
     }
     #endregion
 
-    #region IniUtil Class
+    #region IniReadWriter
     public static class IniReadWriter
     {
         #region Lock
@@ -164,7 +164,7 @@ namespace PEBakery.Ini
                             }
                             else
                             {
-                                // search if current section has end
+                                // search if current section reached its end
                                 if (line.StartsWith("[", StringComparison.Ordinal) &&
                                     line.EndsWith("]", StringComparison.Ordinal))
                                 {
