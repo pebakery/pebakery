@@ -3293,6 +3293,7 @@ namespace PEBakery.Core
         Abs = 80,
         Pow = 90,
         Hex = 100,
+        Rand = 110,
     }
 
     [Serializable]
@@ -3582,6 +3583,40 @@ namespace PEBakery.Core
             b.Append(Src);
             b.Append(",");
             b.Append(BitSize);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Rand : MathInfo
+    { // Math,Rand,<%DestVar%>[,Min,Max]
+        public string DestVar;
+        public string Min; // Optional, defaults to 0, must be zero or positive integer
+        public string Max; // Optional, defaults to 65535, maximum is int.MaxValue (2147483647)
+        // Min and Max must be used simultaneously.
+        // Returned value can be 'Min' to 'Max - 1'.
+
+        public MathInfo_Rand(string destVar, string min, string max)
+        {
+            DestVar = destVar;
+            Min = min;
+            Max = max;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            if (Min != null)
+            {
+                b.Append(",");
+                b.Append(Min);
+                if (Max != null)
+                {
+                    b.Append(",");
+                    b.Append(Max);
+                }
+            }
             return b.ToString();
         }
     }

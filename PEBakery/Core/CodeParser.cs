@@ -3305,6 +3305,27 @@ namespace PEBakery.Core
                         info = new MathInfo_Hex(destVar, args[1], bitSize);
                     }
                     break;
+                case MathType.Rand:
+                    { // Math,Rand,<DestVar>[,Min,Max]
+                        // Must have 1 or 3 arguments
+                        if (args.Count != 1 && args.Count != 3)
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [1] or [3] arguments", rawCode);
+
+                        string destVar = args[0];
+                        if (Variables.DetectType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        string min = null;
+                        string max = null;
+                        if (3 == args.Count)
+                        {
+                            min = args[1];
+                            max = args[2];
+                        }
+
+                        info = new MathInfo_Rand(destVar, min, max);
+                    }
+                    break;
                 // Error
                 default:
                     throw new InternalParserException($"Wrong MathType [{type}]");

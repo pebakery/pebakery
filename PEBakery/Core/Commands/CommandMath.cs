@@ -546,6 +546,39 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case MathType.Rand:
+                    {
+                        MathInfo_Rand subInfo = info.SubInfo.Cast<MathInfo_Rand>();
+
+                        int min = 0;
+                        if (subInfo.Min != null)
+                        {
+                            string minStr = StringEscaper.Preprocess(s, subInfo.Min);
+                            if (!NumberHelper.ParseInt32(minStr, out min))
+                                return LogInfo.LogErrorMessage(logs, $"[{minStr}] is not a valid integer");
+                            if (min < 0)
+                                return LogInfo.LogErrorMessage(logs, $"[{min}] must be positive integer");
+                        }
+
+                        int max = 65535;
+                        if (subInfo.Max != null)
+                        {
+                            string maxStr = StringEscaper.Preprocess(s, subInfo.Max);
+                            if (!NumberHelper.ParseInt32(maxStr, out max))
+                                return LogInfo.LogErrorMessage(logs, $"[{maxStr}] is not a valid integer");
+                            if (max < 0)
+                                return LogInfo.LogErrorMessage(logs, $"[{max}] must be positive integer");
+                            if (max <= min)
+                                return LogInfo.LogErrorMessage(logs, "Maximum bound must be larger than minimum value");
+                        }
+
+                        Random rand = new Random();
+                        int destInt = rand.Next() % (max - min) + min; 
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destInt.ToString());
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 default: // Error
                     throw new InternalException("Internal Logic Error at CommandMath.Math");
             }

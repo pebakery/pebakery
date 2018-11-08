@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using PEBakery.WPF.Controls;
@@ -21,7 +22,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using PEBakery.Core.ViewModels;
 
 // ReSharper disable InconsistentNaming
 
@@ -34,7 +34,6 @@ namespace PEBakery.WPF
         #region Field and Property
         public static int Count = 0;
 
-        private Script sc => m.Script;
         private readonly ScriptEditViewModel m;
         #endregion
 
@@ -48,7 +47,7 @@ namespace PEBakery.WPF
                 DataContext = m = new ScriptEditViewModel(sc, this);
 
                 InitializeComponent();
-                
+
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
                 m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlMoved;
                 m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlMoved;
@@ -120,7 +119,7 @@ namespace PEBakery.WPF
             // If script was updated, force MainWindow to refresh script
             DialogResult = m.ScriptHeaderUpdated || m.ScriptLogoUpdated || m.InterfaceUpdated || m.ScriptAttachUpdated;
 
-            Tag = sc;
+            Tag = m.Script;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -191,7 +190,7 @@ namespace PEBakery.WPF
                 case 1:
                     m.InterfaceCanvas.Mode = DragCanvas.DragMode.Resize;
                     m.InterfaceCanvas.BorderBrush = Brushes.Blue;
-                    break;   
+                    break;
             }
 
             m.InterfaceCanvas.ResetSelectedBorder();
@@ -2951,7 +2950,7 @@ namespace PEBakery.WPF
             {
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
-            }   
+            }
         }
 
         private void DeleteFileCommand_Execute(object parameter)

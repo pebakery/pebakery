@@ -918,7 +918,7 @@ namespace PEBakery.WPF
                 return;
 
             Script sc = CurMainTree.Script;
-            if (sc.Sections.ContainsKey("Process"))
+            if (sc.Sections.ContainsKey(ScriptSection.Names.Process))
             {
                 if (Engine.WorkingLock == 0)  // Start Build
                 {

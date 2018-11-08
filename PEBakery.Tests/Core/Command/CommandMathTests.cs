@@ -30,6 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using PEBakery.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -410,6 +411,39 @@ namespace PEBakery.Tests.Core.Command
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9,12", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,8", ErrorCheck.Error);
+        }
+        #endregion
+
+        #region Rand
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandMath")]
+        public void Rand()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void Template(string rawCode, int min, int max)
+            {
+                // Try many times to check proper bound of Math.Rand
+                for (int i = 0; i < 256; i++)
+                {
+                    EngineTests.Eval(s, rawCode, CodeType.Math, ErrorCheck.Success);
+                    string dest = s.Variables["Dest"];
+                    Assert.IsTrue(int.TryParse(dest, NumberStyles.Integer, CultureInfo.InvariantCulture, out int destInt));
+                    Assert.IsTrue(min <= destInt);
+                    Assert.IsTrue(destInt < max);
+                }
+            }
+
+            Template("Math,Rand,%Dest%", 0, 65535);
+            Template("Math,Rand,%Dest%,0,16", 0, 16);
+            Template("Math,Rand,%Dest%,16,64", 16, 64);
+            Template("Math,Rand,%Dest%,32768,65535", 32768, 65535);
+
+            // Test Error
+            ErrorTemplate(s, "Math,Rand", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,Rand,%Dest%,0,1,2", ErrorCheck.ParserError);
+            ErrorTemplate(s, $"Math,Rand,%Dest%,0,{(long)int.MaxValue + 16}", ErrorCheck.Error);
         }
         #endregion
 
