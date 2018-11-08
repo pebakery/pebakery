@@ -73,7 +73,7 @@ namespace PEBakery.WPF
             bool scriptSaved = false;
             if (m.ScriptHeaderNotSaved)
             {
-                switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show("The script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         if (m.WriteScriptGeneral(false))
@@ -97,7 +97,7 @@ namespace PEBakery.WPF
 
             if (m.InterfaceNotSaved)
             {
-                switch (MessageBox.Show("Script interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show("The interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
@@ -1681,7 +1681,7 @@ namespace PEBakery.WPF
             {
                 OpenFileDialog dialog = new OpenFileDialog
                 {
-                    Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
+                    Filter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
                 };
 
                 if (dialog.ShowDialog() != true)
@@ -1700,7 +1700,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Logo attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -1717,7 +1717,7 @@ namespace PEBakery.WPF
             {
                 if (!EncodedFile.ContainsLogo(Script))
                 {
-                    MessageBox.Show($"Script [{Script.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Script [{Script.Title}] does not have a logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -1727,7 +1727,7 @@ namespace PEBakery.WPF
                     {
                         InitialDirectory = Global.BaseDir,
                         OverwritePrompt = true,
-                        Filter = $"Image ({type.ToString().ToLower()})|*.{type}",
+                        Filter = $"{type.ToString().ToUpper().Replace(".",String.Empty)} Image|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
                     };
@@ -1748,7 +1748,7 @@ namespace PEBakery.WPF
                     catch (Exception ex)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Logo extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -1782,7 +1782,7 @@ namespace PEBakery.WPF
                 else
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"There was an issue while deleting logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"There was an issue with deleting the logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -1812,18 +1812,18 @@ namespace PEBakery.WPF
                 UIControlType type = UIControl.UIControlZeroBasedDict[UICtrlAddTypeIndex];
                 if (type == UIControlType.None)
                 {
-                    MessageBox.Show("Please select interface control's type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("You must specify a control type", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(UICtrlAddName))
                 {
-                    MessageBox.Show("New interface control's name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("The control's name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
                 string key = UICtrlAddName.Trim();
                 if (Renderer.UICtrls.Select(x => x.Key).Contains(key, StringComparer.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Interface key [{key}] is duplicated", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"The control [{key}] already exists", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -1934,7 +1934,7 @@ namespace PEBakery.WPF
 
                 if (InterfaceNotSaved)
                 {
-                    MessageBoxResult result = MessageBox.Show("Interface should be saved before editing image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show("The interface should be saved before editing an image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
                         WriteScriptInterface(false);
                     else
@@ -1943,7 +1943,7 @@ namespace PEBakery.WPF
 
                 if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
                 {
-                    MessageBox.Show($"Unsupported image [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"[{fileName}] is an unsupported image format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -2275,20 +2275,20 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-                    extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
-                    extFilter = "Text File|*.txt;*.rtf";
+                    saveConfirmMsg = "The interface should be saved before editing a text file.\r\nSave changes?";
+                    extFilter = "Text Files|*.txt;*.rtf";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
-                    extFilter = "Image|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
+                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else
                 {
@@ -2334,9 +2334,9 @@ namespace PEBakery.WPF
                 // -> But large file in interface requires lots of memory to decompress and make unreponsive time longer.
                 // -> Threshold is fully debatable.
                 long fileLen = new FileInfo(srcFilePath).Length;
-                if (EncodedFile.InterfaceSizeLimit < fileLen) // 4MB limit
+                if (EncodedFile.InterfaceSizeLimit <= fileLen) // 4MB limit
                 {
-                    MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsible!\r\nDo you really want to continue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show(string.Format("You are attaching a file that is larger than {0}MB.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", EncodedFile.InterfaceSizeLimit / 1024 / 1024), "Warning", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);                   
                     if (result == MessageBoxResult.No)
                         return;
                 }
@@ -2393,17 +2393,17 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageExtract", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    cannotFindFile = "Unable to find image";
+                    cannotFindFile = "Unable to find the encoded image";
                 }
                 else if (sender.Equals("TextFileExtract", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    cannotFindFile = "Unable to find text";
+                    cannotFindFile = "Unable to find the encoded text file";
                 }
                 else if (sender.Equals("ButtonPictureExtract", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    cannotFindFile = "Unable to find image";
+                    cannotFindFile = "Unable to find the encoded image";
                 }
                 else
                 {
@@ -2429,7 +2429,7 @@ namespace PEBakery.WPF
                 if (selectedType == UIControlType.TextFile)
                     extFilter = $"Text File|*{ext}";
                 else
-                    extFilter = $"Image|*{ext}";
+                    extFilter = $"{ext.ToUpper().Replace(".",String.Empty)} Image|*{ext}";
 
                 if (!EncodedFile.ContainsInterface(Script, fileName))
                 {
@@ -2482,17 +2482,17 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
                 }
                 else if (sender.Equals("TextFileReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface should be saved before editing text a file.\r\nSave changes?";
                 }
                 else if (sender.Equals("ButtonPictureReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "Interface should be saved before editing image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
                 }
                 else
                 {
@@ -2539,7 +2539,7 @@ namespace PEBakery.WPF
                     }
                     InvokeUIControlEvent(false);
 
-                    MessageBox.Show("Incorrect file entry deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("An incorrect file entry was deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -2607,7 +2607,7 @@ namespace PEBakery.WPF
 
                 if (folderName.Length == 0)
                 {
-                    MessageBox.Show("Folder name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("The folder name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -2615,7 +2615,7 @@ namespace PEBakery.WPF
                 {
                     if (EncodedFile.ContainsFolder(Script, folderName))
                     {
-                        MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"The folder [{folderName}] already exists!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
@@ -2684,7 +2684,7 @@ namespace PEBakery.WPF
                     bool proceedExtract = false;
                     if (fileOverwrited)
                     {
-                        MessageBoxResult owResult = MessageBox.Show($"File [{b}] would be overwrited.\r\nProceed with overwrite?",
+                        MessageBoxResult owResult = MessageBox.Show($"The file [{b}] will be overwritten.\r\nWould you like to proceed?",
                                                                     "Overwrite?",
                                                                     MessageBoxButton.YesNo,
                                                                     MessageBoxImage.Information);
@@ -2741,8 +2741,8 @@ namespace PEBakery.WPF
                 Debug.Assert(item.Detail == null);
 
                 MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure to delete [{item.Name}]?",
-                    "Delete Confirm",
+                    $"Are you sure you want to delete [{item.Name}]?",
+                    "Confirm Delete",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Error);
                 if (result == MessageBoxResult.No)
@@ -2846,7 +2846,7 @@ namespace PEBakery.WPF
                     if (EncodedFile.ContainsFile(Script, item.Name, AttachNewFileName))
                     {
                         MessageBoxResult result = MessageBox.Show(
-                            $"Attached file [{AttachNewFileName}] will be overwritten.\r\nContinue?",
+                            $"The attached file [{AttachNewFileName}] will be overwritten.\r\nWould you like to proceed?",
                             "Confirm",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Error);
@@ -2913,7 +2913,7 @@ namespace PEBakery.WPF
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
-                    Filter = $"{ext} file|*{ext}"
+                    Filter = $"{ext.ToUpper().Replace(".",String.Empty)} File|*{ext}"
                 };
 
                 if (dialog.ShowDialog() == true)
@@ -2966,8 +2966,8 @@ namespace PEBakery.WPF
                 EncodedFileInfo info = item.Detail;
 
                 MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure to delete [{info.FileName}]?",
-                    "Delete Confirm",
+                    $"Are you sure you want to delete [{info.FileName}]?",
+                    "Confirm Delete",
                     MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.No)
                     return;
@@ -3328,7 +3328,7 @@ namespace PEBakery.WPF
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Interface save failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Unable to save the script interface.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(e)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -3494,7 +3494,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region OnPropertyChnaged
+        #region OnPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
