@@ -34,7 +34,7 @@ namespace PEBakery.WPF
         #region Field and Property
         public static int Count = 0;
 
-        private Script _sc;
+        private Script sc => m.Script;
         private readonly ScriptEditViewModel m;
         #endregion
 
@@ -45,8 +45,7 @@ namespace PEBakery.WPF
 
             try
             {
-                _sc = sc ?? throw new ArgumentNullException(nameof(sc));
-                DataContext = m = new ScriptEditViewModel(_sc, this);
+                DataContext = m = new ScriptEditViewModel(sc, this);
 
                 InitializeComponent();
                 
@@ -79,7 +78,9 @@ namespace PEBakery.WPF
                 {
                     case MessageBoxResult.Yes:
                         if (m.WriteScriptGeneral(false))
+                        {
                             scriptSaved = true;
+                        }
                         else
                         {
                             e.Cancel = true; // Error while saving, do not close ScriptEditWindow
@@ -119,7 +120,7 @@ namespace PEBakery.WPF
             // If script was updated, force MainWindow to refresh script
             DialogResult = m.ScriptHeaderUpdated || m.ScriptLogoUpdated || m.InterfaceUpdated || m.ScriptAttachUpdated;
 
-            Tag = _sc;
+            Tag = sc;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -292,7 +293,7 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel(Script sc, Window window)
         {
-            _sc = sc;
+            Script = sc ?? throw new ArgumentNullException(nameof(sc));
             _window = window;
 
             DragCanvas canvas = new DragCanvas
@@ -326,7 +327,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Basic
-        private Script _sc;
+        public Script Script;
         private readonly Window _window;
         public UIRenderer Renderer { get; private set; }
         public string InterfaceSectionName { get; private set; }
@@ -1691,7 +1692,7 @@ namespace PEBakery.WPF
                 try
                 {
                     string srcFileName = Path.GetFileName(srcFile);
-                    _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
+                    Script = EncodedFile.AttachLogo(Script, srcFileName, srcFile);
                     MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     ScriptLogoUpdated = true;
@@ -1715,13 +1716,13 @@ namespace PEBakery.WPF
             CanExecuteCommand = true;
             try
             {
-                if (!EncodedFile.ContainsLogo(_sc))
+                if (!EncodedFile.ContainsLogo(Script))
                 {
-                    MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Script [{Script.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
                 {
                     SaveFileDialog dialog = new SaveFileDialog
                     {
@@ -1764,14 +1765,14 @@ namespace PEBakery.WPF
             CanExecuteCommand = true;
             try
             {
-                if (!EncodedFile.ContainsLogo(_sc))
+                if (!EncodedFile.ContainsLogo(Script))
                 {
                     MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 string errMsg;
-                (_sc, errMsg) = EncodedFile.DeleteLogo(_sc);
+                (Script, errMsg) = EncodedFile.DeleteLogo(Script);
                 if (errMsg == null)
                 {
                     MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1827,13 +1828,13 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                if (!_sc.Sections.ContainsKey(InterfaceSectionName))
+                if (!Script.Sections.ContainsKey(InterfaceSectionName))
                 { // No [Interface] section, so add it
-                    IniReadWriter.AddSection(_sc.DirectRealPath, InterfaceSectionName);
-                    _sc = _sc.Project.RefreshScript(_sc);
+                    IniReadWriter.AddSection(Script.DirectRealPath, InterfaceSectionName);
+                    Script = Script.Project.RefreshScript(Script);
                 }
 
-                ScriptSection ifaceSection = _sc.Sections[InterfaceSectionName];
+                ScriptSection ifaceSection = Script.Sections[InterfaceSectionName];
                 string line = UIControl.GetUIControlTemplate(type, key);
 
                 UIControl uiCtrl = UIParser.ParseStatement(line, ifaceSection, out List<LogInfo> errorLogs);
@@ -1947,7 +1948,7 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = await EncodedFile.ExtractFileInMemAsync(_sc, ScriptSection.Names.InterfaceEncoded, fileName))
+                using (MemoryStream ms = await EncodedFile.ExtractFileInMemAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName))
                 {
                     int width, height;
                     if (type == ImageHelper.ImageType.Svg)
@@ -2282,7 +2283,7 @@ namespace PEBakery.WPF
                 {
                     selectedType = UIControlType.TextFile;
                     saveConfirmMsg = "Interface should be saved before editing text file.\r\nSave changes?";
-                    extFilter = "Text File|*.txt";
+                    extFilter = "Text File|*.txt;*.rtf";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
@@ -2317,9 +2318,9 @@ namespace PEBakery.WPF
 
                 string srcFilePath = dialog.FileName;
                 string srcFileName = Path.GetFileName(srcFilePath);
-                if (EncodedFile.ContainsInterface(_sc, srcFileName))
+                if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
-                    (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(_sc, ScriptSection.Names.InterfaceEncoded, false);
+                    (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
                     if (errMsg != null)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -2336,16 +2337,16 @@ namespace PEBakery.WPF
                 long fileLen = new FileInfo(srcFilePath).Length;
                 if (EncodedFile.InterfaceSizeLimit < fileLen) // 4MB limit
                 {
-                    MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsive!\r\nContinue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show("File is too large, it can make PEBakery irresponsible!\r\nDo you really want to continue?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.No)
                         return;
                 }
 
                 try
                 {
-                    _sc = EncodedFile.AttachInterface(_sc, srcFileName, srcFilePath, null);
+                    Script = EncodedFile.AttachInterface(Script, srcFileName, srcFilePath, null);
 
-                    UIControl.ReplaceAddress(Renderer.UICtrls, _sc);
+                    UIControl.ReplaceAddress(Renderer.UICtrls, Script);
 
                     switch (selectedType)
                     {
@@ -2364,7 +2365,7 @@ namespace PEBakery.WPF
                     }
 
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(false);
+                    WriteScriptInterface(true);
                 }
                 catch (Exception ex)
                 {
@@ -2431,7 +2432,7 @@ namespace PEBakery.WPF
                 else
                     extFilter = $"Image|*{ext}";
 
-                if (!EncodedFile.ContainsInterface(_sc, fileName))
+                if (!EncodedFile.ContainsInterface(Script, fileName))
                 {
                     MessageBox.Show($"{cannotFindFile} [{fileName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -2452,7 +2453,7 @@ namespace PEBakery.WPF
                 {
                     try
                     {
-                        EncodedFile.ExtractFile(_sc, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
+                        EncodedFile.ExtractFile(Script, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
                     }
                     catch (Exception ex)
                     {
@@ -2520,7 +2521,7 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                if (!EncodedFile.ContainsInterface(_sc, fileName))
+                if (!EncodedFile.ContainsInterface(Script, fileName))
                 { // Unable to find encoded image, so just remove image entry from uiCtrl
                     switch (selectedType)
                     {
@@ -2544,10 +2545,10 @@ namespace PEBakery.WPF
                 }
 
                 string errMsg;
-                (_sc, errMsg) = await EncodedFile.DeleteFileAsync(_sc, ScriptSection.Names.InterfaceEncoded, fileName);
+                (Script, errMsg) = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName);
                 if (errMsg == null)
                 {
-                    UIControl.ReplaceAddress(Renderer.UICtrls, _sc);
+                    UIControl.ReplaceAddress(Renderer.UICtrls, Script);
 
                     switch (selectedType)
                     {
@@ -2566,7 +2567,7 @@ namespace PEBakery.WPF
                     }
 
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(false);
+                    WriteScriptInterface(true);
                 }
                 else
                 {
@@ -2613,13 +2614,13 @@ namespace PEBakery.WPF
 
                 try
                 {
-                    if (EncodedFile.ContainsFolder(_sc, folderName))
+                    if (EncodedFile.ContainsFolder(Script, folderName))
                     {
                         MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
-                    _sc = EncodedFile.AddFolder(_sc, folderName, false);
+                    Script = EncodedFile.AddFolder(Script, folderName, false);
                 }
                 catch (Exception ex)
                 {
@@ -2656,7 +2657,7 @@ namespace PEBakery.WPF
                 {
                     string destDir = dialog.SelectedPath;
 
-                    (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(_sc, item.Name, false);
+                    (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(Script, item.Name, false);
                     if (errMsg != null)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -2709,7 +2710,7 @@ namespace PEBakery.WPF
                             string destFile = Path.Combine(destDir, info.FileName);
                             using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                             {
-                                EncodedFile.ExtractFile(_sc, info.FolderName, info.FileName, fs, null);
+                                EncodedFile.ExtractFile(Script, info.FolderName, info.FileName, fs, null);
                             }
 
                             MessageBox.Show("File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -2749,7 +2750,7 @@ namespace PEBakery.WPF
                     return;
 
                 string errMsg;
-                (_sc, errMsg) = await EncodedFile.DeleteFolderAsync(_sc, item.Name);
+                (Script, errMsg) = await EncodedFile.DeleteFolderAsync(Script, item.Name);
                 if (errMsg == null)
                 {
                     ScriptAttachUpdated = true;
@@ -2843,7 +2844,7 @@ namespace PEBakery.WPF
 
                 try
                 {
-                    if (EncodedFile.ContainsFile(_sc, item.Name, AttachNewFileName))
+                    if (EncodedFile.ContainsFile(Script, item.Name, AttachNewFileName))
                     {
                         MessageBoxResult result = MessageBox.Show(
                             $"Attached file [{AttachNewFileName}] will be overwritten.\r\nContinue?",
@@ -2859,7 +2860,7 @@ namespace PEBakery.WPF
                         CanExecuteCommand = false;
                         AttachProgressValue = 0;
                         IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                        _sc = await EncodedFile.AttachFileAsync(_sc, item.Name, AttachNewFileName, srcFile, mode, progress);
+                        Script = await EncodedFile.AttachFileAsync(Script, item.Name, AttachNewFileName, srcFile, mode, progress);
                     }
                     finally
                     {
@@ -2928,7 +2929,7 @@ namespace PEBakery.WPF
                             IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
                             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
                             {
-                                await EncodedFile.ExtractFileAsync(_sc, info.FolderName, info.FileName, fs, progress);
+                                await EncodedFile.ExtractFileAsync(Script, info.FolderName, info.FileName, fs, progress);
                             }
                         }
                         finally
@@ -2973,7 +2974,7 @@ namespace PEBakery.WPF
                     return;
 
                 string errMsg;
-                (_sc, errMsg) = EncodedFile.DeleteFile(_sc, info.FolderName, info.FileName);
+                (Script, errMsg) = EncodedFile.DeleteFile(Script, info.FolderName, info.FileName);
                 if (errMsg == null)
                 {
                     ScriptAttachUpdated = true;
@@ -3014,7 +3015,7 @@ namespace PEBakery.WPF
                     return;
 
                 string errMsg;
-                (info, errMsg) = await EncodedFile.GetFileInfoAsync(_sc, dirName, fileName, true);
+                (info, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
                 if (errMsg == null)
                 {
                     item.Detail = info;
@@ -3039,12 +3040,12 @@ namespace PEBakery.WPF
         public void ReadScriptGeneral()
         {
             // Nested Function
-            string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
+            string GetStringValue(string key, string defaultValue = "") => Script.MainInfo.ContainsKey(key) ? Script.MainInfo[key] : defaultValue;
 
             // General
-            if (EncodedFile.ContainsLogo(_sc))
+            if (EncodedFile.ContainsLogo(Script))
             {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(_sc, true);
+                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(Script, true);
                 if (errMsg != null)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -3052,7 +3053,7 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
                 {
                     switch (type)
                     {
@@ -3077,14 +3078,14 @@ namespace PEBakery.WPF
                 ScriptLogoInfo = null;
             }
 
-            ScriptTitle = _sc.Title;
-            ScriptAuthor = _sc.Author;
-            ScriptVersion = _sc.Version;
+            ScriptTitle = Script.Title;
+            ScriptAuthor = Script.Author;
+            ScriptVersion = Script.Version;
             ScriptDate = GetStringValue("Date");
-            ScriptLevel = _sc.Level;
-            ScriptDescription = StringEscaper.Unescape(_sc.Description);
-            ScriptSelectedState = _sc.Selected;
-            ScriptMandatory = _sc.Mandatory;
+            ScriptLevel = Script.Level;
+            ScriptDescription = StringEscaper.Unescape(Script.Description);
+            ScriptSelectedState = Script.Selected;
+            ScriptMandatory = Script.Mandatory;
 
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
@@ -3092,10 +3093,10 @@ namespace PEBakery.WPF
 
         public void ReadScriptInterface()
         {
-            InterfaceSectionName = UIRenderer.GetInterfaceSectionName(_sc);
+            InterfaceSectionName = UIRenderer.GetInterfaceSectionName(Script);
 
             // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(_sc);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)
@@ -3112,7 +3113,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            Renderer = new UIRenderer(InterfaceCanvas, _window, _sc, uiCtrls.ToList(), 1, false, Global.Setting.Compat_IgnoreWidthOfWebLabel);
+            Renderer = new UIRenderer(InterfaceCanvas, _window, Script, uiCtrls.ToList(), 1, false, Global.Setting.Compat_IgnoreWidthOfWebLabel);
 
             InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             InterfaceUICtrlIndex = -1;
@@ -3129,7 +3130,7 @@ namespace PEBakery.WPF
             // Attachment
             AttachedFiles.Clear();
 
-            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(_sc, false);
+            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, false);
             if (errMsg != null)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -3201,14 +3202,14 @@ namespace PEBakery.WPF
                         UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
                         UICtrlImageInfo = info;
-                        UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        UICtrlImageSet = EncodedFile.ContainsInterface(Script, uiCtrl.Text);
                         break;
                     }
                 case UIControlType.TextFile:
                     {
                         Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                        UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        UICtrlTextFileSet = EncodedFile.ContainsInterface(Script, uiCtrl.Text);
                         break;
                     }
                 case UIControlType.Button:
@@ -3218,7 +3219,7 @@ namespace PEBakery.WPF
                         UICtrlButtonInfo = info;
                         UICtrlSectionToRun = info.SectionName;
                         UICtrlHideProgress = info.HideProgress;
-                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(Script, info.Picture);
                         break;
                     }
                 case UIControlType.WebLabel:
@@ -3270,7 +3271,7 @@ namespace PEBakery.WPF
         #region Methods - WriteScript
         public bool WriteScriptGeneral(bool refresh = true)
         {
-            if (_sc == null)
+            if (Script == null)
                 return false;
 
             // Check m.ScriptVersion
@@ -3295,8 +3296,8 @@ namespace PEBakery.WPF
                 new IniKey("Main", "Mandatory", ScriptMandatory.ToString()),
             };
 
-            IniReadWriter.WriteKeys(_sc.RealPath, keys);
-            _sc = _sc.Project.RefreshScript(_sc);
+            IniReadWriter.WriteKeys(Script.RealPath, keys);
+            Script = Script.Project.RefreshScript(Script);
 
             if (refresh)
                 RefreshMainWindow();
@@ -3318,13 +3319,13 @@ namespace PEBakery.WPF
                 UIControl.Update(Renderer.UICtrls);
                 UIControl.Delete(UICtrlToBeDeleted);
                 UICtrlToBeDeleted.Clear();
-                IniReadWriter.DeleteKeys(_sc.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
+                IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
+
+                Script = Script.Project.RefreshScript(Script);
 
                 if (refresh)
                     RefreshMainWindow();
-
-                _sc = _sc.Project.RefreshScript(_sc);
             }
             catch (Exception e)
             {
@@ -3341,7 +3342,7 @@ namespace PEBakery.WPF
             Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
             {
                 MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.DisplayScript(_sc);
+                w?.DisplayScript(Script);
             }));
         }
 
@@ -3370,21 +3371,21 @@ namespace PEBakery.WPF
                     {
                         Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
 
-                        UICtrlImageSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        UICtrlImageSet = EncodedFile.ContainsInterface(Script, uiCtrl.Text);
                         break;
                     }
                 case UIControlType.TextFile:
                     {
                         Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
 
-                        UICtrlTextFileSet = EncodedFile.ContainsInterface(_sc, uiCtrl.Text);
+                        UICtrlTextFileSet = EncodedFile.ContainsInterface(Script, uiCtrl.Text);
                         break;
                     }
                 case UIControlType.Button:
                     {
                         UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(_sc, info.Picture);
+                        UICtrlButtonPictureSet = info.Picture != null && EncodedFile.ContainsInterface(Script, info.Picture);
                         info.SectionName = string.IsNullOrWhiteSpace(UICtrlSectionToRun) ? null : UICtrlSectionToRun;
                         info.HideProgress = UICtrlHideProgress;
                         break;

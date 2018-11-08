@@ -42,6 +42,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -802,38 +803,74 @@ namespace PEBakery.WPF
         {
             UIInfo_TextFile info = uiCtrl.Info.Cast<UIInfo_TextFile>();
 
-            TextBox textBox = new TextBox
-            {
-                TextWrapping = TextWrapping.Wrap,
-                AcceptsReturn = true,
-                IsReadOnly = true,
-                FontSize = CalcFontPointScale(),
-            };
-            ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(textBox, true);
+            string encodedText = uiCtrl.Text;
+            TextBoxBase box;
 
-            if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
+            if (encodedText.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
-                if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
-                { // Wrong encoded text
-                    string errMsg = $"Unable to find encoded text [{uiCtrl.Text}]";
-                    textBox.Text = errMsg;
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
+                box = new TextBox { IsReadOnly = true };
+            }
+            else
+            {
+                string ext = Path.GetExtension(encodedText);
+                if (ext.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                { // TextBox
+                    TextBox textBox = new TextBox
+                    {
+                        TextWrapping = TextWrapping.Wrap,
+                        AcceptsReturn = true,
+                        IsReadOnly = true,
+                        FontSize = CalcFontPointScale(),
+                    };
+
+                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, encodedText))
+                    { // Wrong encoded text
+                        string errMsg = $"Unable to find encoded text [{encodedText}]";
+                        textBox.Text = errMsg;
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
+                    }
+                    else
+                    {
+                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                        using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
+                        {
+                            textBox.Text = sr.ReadToEnd();
+                        }
+                    }
+
+                    box = textBox;
+                }
+                else if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
+                { // RichTextBox
+                    RichTextBox rtfBox = new RichTextBox
+                    {
+                        AcceptsReturn = true,
+                        IsReadOnly = true,
+                        FontSize = CalcFontPointScale(),
+                    };
+
+                    TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                    {
+                        textRange.Load(ms, DataFormats.Rtf);
+                    }
+
+                    box = rtfBox;
                 }
                 else
                 {
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
-                    using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
-                    {
-                        textBox.Text = sr.ReadToEnd();
-                    }
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, "TextFile supports only [.txt] and [.rtf] file"));
+                    box = new TextBox { IsReadOnly = true };
                 }
             }
 
-            SetToolTip(textBox, info.ToolTip);
-            SetEditModeProperties(textBox, uiCtrl);
-            DrawToCanvas(textBox, uiCtrl);
+            ScrollViewer.SetHorizontalScrollBarVisibility(box, ScrollBarVisibility.Auto);
+            ScrollViewer.SetVerticalScrollBarVisibility(box, ScrollBarVisibility.Auto);
+            ScrollViewer.SetCanContentScroll(box, true);
+
+            SetToolTip(box, info.ToolTip);
+            SetEditModeProperties(box, uiCtrl);
+            DrawToCanvas(box, uiCtrl);
         }
         #endregion
 
@@ -906,7 +943,7 @@ namespace PEBakery.WPF
                                 HorizontalAlignment = HorizontalAlignment.Center,
                                 VerticalAlignment = VerticalAlignment.Center,
                                 UseLayoutRounding = true,
-                                
+
                                 Source = bitmap,
                             };
                             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);

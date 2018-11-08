@@ -91,13 +91,13 @@ namespace PEBakery.WPF.Controls
             FrameworkElement element = null;
             foreach (FrameworkElement child in Children)
             {
-                if (child.Tag is UIControl ctrl)
+                if (!(child.Tag is UIControl ctrl))
+                    continue;
+
+                if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                 {
-                    if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
-                    {
-                        element = child;
-                        break;
-                    }
+                    element = child;
+                    break;
                 }
             }
 
