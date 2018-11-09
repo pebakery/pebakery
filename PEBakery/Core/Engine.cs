@@ -34,6 +34,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -1046,6 +1047,7 @@ namespace PEBakery.Core
         public EngineMode RunMode;
         public LogMode LogMode = LogMode.NoDelay; // For performance (deferred logging)
         public MainViewModel MainViewModel;
+        public Random Random;
 
         // Property
         public string BaseDir => Project.BaseDir;
@@ -1170,6 +1172,13 @@ namespace PEBakery.Core
             CurrentSection = null;
             CurSectionInParams = new Dictionary<int, string>();
             MainViewModel = mainModel;
+
+            // Use secure random number generator to feed seed to pseudo random number generator.
+            byte[] seedArray = new byte[4];
+            RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider();
+            secureRandom.GetBytes(seedArray);
+            int seed = BitConverter.ToInt32(seedArray, 0);
+            Random = new Random(seed);
         }
         #endregion
 

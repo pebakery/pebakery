@@ -560,7 +560,7 @@ namespace PEBakery.Core.Commands
                                 return LogInfo.LogErrorMessage(logs, $"[{min}] must be positive integer");
                         }
 
-                        int max = 65535;
+                        int max = 65536;
                         if (subInfo.Max != null)
                         {
                             string maxStr = StringEscaper.Preprocess(s, subInfo.Max);
@@ -572,8 +572,7 @@ namespace PEBakery.Core.Commands
                                 return LogInfo.LogErrorMessage(logs, "Maximum bound must be larger than minimum value");
                         }
 
-                        Random rand = new Random();
-                        int destInt = rand.Next() % (max - min) + min; 
+                        int destInt = s.Random.Next() % (max - min) + min; 
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destInt.ToString());
                         logs.AddRange(varLogs);

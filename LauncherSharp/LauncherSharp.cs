@@ -23,29 +23,40 @@
     SOFTWARE.
 */
 
+// #define ENABLE_DOTNETFX_472
+
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace PEBakeryLauncher
 {
     public class Launcher
     {
+#if ENABLE_DOTNETFX_472
+        public const string DotNetFxVerStr = "4.7.2";
+        public const string DotNetFxInstallerUrl = "https://go.microsoft.com/fwlink/?LinkId=863265";
+        public const uint DotNetFxReleaseValue = 461808;
+#else
+        public const string DotNetFxVerStr = "4.7.1";
+        public const string DotNetFxInstallerUrl = "https://www.microsoft.com/en-us/download/details.aspx?id=56116";
+        public const uint DotNetFxReleaseValue = 461308;
+#endif
+
         public static void Main(string[] args)
         {
-            // Alert user to update .Net Framework to 4.7.1 if not installed.
+            // Alert user to install .Net Framework to 4.7.x if not installed.
             // The launcher itself runs in .Net Framework 4 Client Profile.
-            // TODO: Write in C, for maximum compatibility.
             if (!CheckNetFrameworkVersion())
             {
-                MessageBox.Show("PEBakery requires .Net Framework 4.7.1 or newer.", "Install .Net Framework 4.7.1", MessageBoxButton.OK, MessageBoxImage.Error);
-                Process.Start("https://www.microsoft.com/en-us/download/details.aspx?id=56116");
+                MessageBox.Show($"PEBakery requires .Net Framework {DotNetFxVerStr} or newer.", 
+                                $"Install .Net Framework {DotNetFxVerStr}", 
+                                MessageBoxButton.OK, 
+                                MessageBoxImage.Error);
+                Process.Start(DotNetFxInstallerUrl);
                 Environment.Exit(1);
             }
 
@@ -89,10 +100,10 @@ namespace PEBakeryLauncher
                 if (ndpKey == null)
                     return false;
 
-                int revision = (int)ndpKey.GetValue("Release", 0);
+                uint revision = (uint)ndpKey.GetValue("Release", 0);
 
-                // PEBakery requires .Net Framework 4.7.1 or later
-                return 461308 <= revision;
+                // PEBakery requires .Net Framework 4.7.x or later
+                return DotNetFxReleaseValue <= revision;
             }
         }
     }

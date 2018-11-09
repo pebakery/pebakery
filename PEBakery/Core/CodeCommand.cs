@@ -3592,7 +3592,7 @@ namespace PEBakery.Core
     { // Math,Rand,<%DestVar%>[,Min,Max]
         public string DestVar;
         public string Min; // Optional, defaults to 0, must be zero or positive integer
-        public string Max; // Optional, defaults to 65535, maximum is int.MaxValue (2147483647)
+        public string Max; // Optional, defaults to 65536, maximum is int.MaxValue (2147483647)
         // Min and Max must be used simultaneously.
         // Returned value can be 'Min' to 'Max - 1'.
 
