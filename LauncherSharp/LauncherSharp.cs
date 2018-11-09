@@ -48,7 +48,7 @@ namespace PEBakeryLauncher
 
         public static void Main(string[] args)
         {
-            // Alert user to update .Net Framework to 4.7.1 if not installed.
+            // Alert user to install .Net Framework to 4.7.x if not installed.
             // The launcher itself runs in .Net Framework 4 Client Profile.
             if (!CheckNetFrameworkVersion())
             {
@@ -102,7 +102,7 @@ namespace PEBakeryLauncher
 
                 uint revision = (uint)ndpKey.GetValue("Release", 0);
 
-                // PEBakery requires .Net Framework 4.7.1 or later
+                // PEBakery requires .Net Framework 4.7.x or later
                 return DotNetFxReleaseValue <= revision;
             }
         }

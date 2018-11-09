@@ -560,7 +560,7 @@ namespace PEBakery.Core.Commands
                                 return LogInfo.LogErrorMessage(logs, $"[{min}] must be positive integer");
                         }
 
-                        int max = 65535;
+                        int max = 65536;
                         if (subInfo.Max != null)
                         {
                             string maxStr = StringEscaper.Preprocess(s, subInfo.Max);
