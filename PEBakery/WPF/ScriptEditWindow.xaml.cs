@@ -1727,7 +1727,7 @@ namespace PEBakery.WPF
                     {
                         InitialDirectory = Global.BaseDir,
                         OverwritePrompt = true,
-                        Filter = $"{type.ToString().ToUpper().Replace(".",String.Empty)} Image|*.{type}",
+                        Filter = $"{type.ToString().ToUpper().Replace(".", String.Empty)} Image|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
                     };
@@ -2282,7 +2282,7 @@ namespace PEBakery.WPF
                 {
                     selectedType = UIControlType.TextFile;
                     saveConfirmMsg = "The interface should be saved before editing a text file.\r\nSave changes?";
-                    extFilter = "Text Files|*.txt;*.rtf";
+                    extFilter = "Text Files|*.txt;*.rtf|All Files|*.*";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
@@ -2330,13 +2330,13 @@ namespace PEBakery.WPF
                     srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
                 }
 
-                // Pratically PEBakery is capable of handling large files.
-                // -> But large file in interface requires lots of memory to decompress and make unreponsive time longer.
-                // -> Threshold is fully debatable.
+                // PEBakery can handle large encoded files.
+                // -> But large file in interface requires lots of memory to decompress and can cause unresponsive time.
+                // -> Threshold is debatable.
                 long fileLen = new FileInfo(srcFilePath).Length;
                 if (EncodedFile.InterfaceSizeLimit <= fileLen) // 4MB limit
                 {
-                    MessageBoxResult result = MessageBox.Show(string.Format("You are attaching a file that is larger than {0}MB.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", EncodedFile.InterfaceSizeLimit / 1024 / 1024), "Warning", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);                   
+                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {EncodedFile.InterfaceSizeLimit / 1024 / 1024}MB.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.No)
                         return;
                 }
@@ -2429,7 +2429,7 @@ namespace PEBakery.WPF
                 if (selectedType == UIControlType.TextFile)
                     extFilter = $"Text File|*{ext}";
                 else
-                    extFilter = $"{ext.ToUpper().Replace(".",String.Empty)} Image|*{ext}";
+                    extFilter = $"{ext.ToUpper().Replace(".", String.Empty)} Image|*{ext}";
 
                 if (!EncodedFile.ContainsInterface(Script, fileName))
                 {
@@ -2913,14 +2913,14 @@ namespace PEBakery.WPF
                     return;
 
                 Debug.Assert(item.Detail != null);
-
                 EncodedFileInfo info = item.Detail;
 
+                Debug.Assert(info.FileName != null);
                 string ext = Path.GetExtension(info.FileName);
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
-                    Filter = $"{ext.ToUpper().Replace(".",String.Empty)} File|*{ext}"
+                    Filter = $"{ext.ToUpper().Replace(".", string.Empty)} File|*{ext}"
                 };
 
                 if (dialog.ShowDialog() == true)

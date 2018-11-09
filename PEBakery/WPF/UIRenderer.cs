@@ -813,8 +813,26 @@ namespace PEBakery.WPF
             else
             {
                 string ext = Path.GetExtension(encodedText);
-                if (ext.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
+                { // RichTextBox
+                    RichTextBox rtfBox = new RichTextBox
+                    {
+                        AcceptsReturn = true,
+                        IsReadOnly = true,
+                        FontSize = CalcFontPointScale(),
+                    };
+
+                    TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                    {
+                        textRange.Load(ms, DataFormats.Rtf);
+                    }
+
+                    box = rtfBox;
+                }
+                else
                 { // TextBox
+                    // Even if a file extension is not a ".txt", just display.
                     TextBox textBox = new TextBox
                     {
                         TextWrapping = TextWrapping.Wrap,
@@ -839,28 +857,6 @@ namespace PEBakery.WPF
                     }
 
                     box = textBox;
-                }
-                else if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
-                { // RichTextBox
-                    RichTextBox rtfBox = new RichTextBox
-                    {
-                        AcceptsReturn = true,
-                        IsReadOnly = true,
-                        FontSize = CalcFontPointScale(),
-                    };
-
-                    TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
-                    {
-                        textRange.Load(ms, DataFormats.Rtf);
-                    }
-
-                    box = rtfBox;
-                }
-                else
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, "TextFile supports only [.txt] and [.rtf] file"));
-                    box = new TextBox { IsReadOnly = true };
                 }
             }
 
