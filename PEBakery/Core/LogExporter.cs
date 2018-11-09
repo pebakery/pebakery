@@ -97,7 +97,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportBuildLog
-
         public struct BuildLogOptions
         {
             public bool IncludeComments;
@@ -487,7 +486,13 @@ namespace PEBakery.Core
                 return null;
 
             DB_Script refScLog = refScLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
-            return refScLog == null ? "|-> Referenced unknown script" : $"|-> Referenced script [{refScLog.Name}] ({refScLog.TreePath})";
+            if (refScLog == null)
+                return "|-> Referenced unknown script";
+
+            string path = refScLog.TreePath;
+            if (path.Length == 0)
+                path = refScLog.RealPath;
+            return $"|-> Referenced script [{refScLog.Name}] ({path})";
         }
         #endregion
 
