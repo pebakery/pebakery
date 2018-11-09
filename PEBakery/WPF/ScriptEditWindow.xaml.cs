@@ -1705,14 +1705,14 @@ namespace PEBakery.WPF
             }
             finally
             {
-                CanExecuteCommand = false;
+                CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
         private void ScriptLogoExtractCommand_Executed(object parameter)
         {
-            CanExecuteCommand = true;
+            CanExecuteCommand = false;
             try
             {
                 if (!EncodedFile.ContainsLogo(Script))
@@ -1754,14 +1754,14 @@ namespace PEBakery.WPF
             }
             finally
             {
-                CanExecuteCommand = false;
+                CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
         private void ScriptLogoDeleteCommand_Executed(object parameter)
         {
-            CanExecuteCommand = true;
+            CanExecuteCommand = false;
             try
             {
                 if (!EncodedFile.ContainsLogo(Script))
@@ -1787,7 +1787,7 @@ namespace PEBakery.WPF
             }
             finally
             {
-                CanExecuteCommand = false;
+                CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -1917,7 +1917,7 @@ namespace PEBakery.WPF
 
         private async void UICtrlImageAutoResizeCommand_Executed(object parameter)
         {
-            CanExecuteCommand = true;
+            CanExecuteCommand = false;
             try
             {
                 const string internalErrorMsg = "Internal Logic Error at UICtrlImageAutoResizeButton_Click";
@@ -1963,7 +1963,7 @@ namespace PEBakery.WPF
             }
             finally
             {
-                CanExecuteCommand = false;
+                CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -2812,15 +2812,22 @@ namespace PEBakery.WPF
                 Debug.Assert(item.Detail == null);
 
                 string srcFile = AttachNewFilePath;
+
+                if (srcFile.Length == 0)
+                {
+                    MessageBox.Show("You must choose a file to attach", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 if (!File.Exists(srcFile))
                 {
-                    MessageBox.Show($"Unable to find file [{srcFile}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Invalid path:\r\n[{srcFile}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(AttachNewFileName))
                 {
-                    MessageBox.Show("File name is empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("The file name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
