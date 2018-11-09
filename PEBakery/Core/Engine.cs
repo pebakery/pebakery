@@ -1175,8 +1175,8 @@ namespace PEBakery.Core
 
             // Use secure random number generator to feed seed to pseudo random number generator.
             byte[] seedArray = new byte[4];
-            RNGCryptoServiceProvider provider = new RNGCryptoServiceProvider();
-            provider.GetBytes(seedArray);
+            RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider();
+            secureRandom.GetBytes(seedArray);
             int seed = BitConverter.ToInt32(seedArray, 0);
             Random = new Random(seed);
         }
