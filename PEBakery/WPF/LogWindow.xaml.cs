@@ -332,7 +332,7 @@ namespace PEBakery.WPF
                         .ToArray();
                     foreach (DB_Script sc in scripts)
                     {
-                        ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.Path})", sc.Id, (int)buildId));
+                        ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.TreePath})", sc.Id, (int)buildId));
                     }
 
                     if (showLastScript)

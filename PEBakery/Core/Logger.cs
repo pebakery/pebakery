@@ -350,11 +350,11 @@ namespace PEBakery.Core
     {
         public int CurrentScriptId;
         public DB_BuildInfo BuildInfo;
-        public List<DB_Script> ScriptLogPool;
-        public List<DB_Variable> VariablePool;
+        public List<DB_Script> ScriptLogPool; // Only used in FullDeferredLogging
+        public List<DB_Variable> VariablePool; // Only used in FullDeferredLogging
         public List<DB_BuildLog> BuildLogPool;
 
-        private readonly Dictionary<int, int> _scriptIdMatchDict;
+        private readonly Dictionary<int, int> _scriptIdMatchDict; // Only used in FullDeferredLogging
 
         public DeferredLogging(bool fullDelayed)
         {
@@ -370,7 +370,7 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Flush FullDeferrredLogging
+        /// Flush FullDeferredLogging
         /// </summary>
         /// <param name="s">EngineState</param>
         /// <returns>Real BuildId after written to database</returns>
@@ -379,10 +379,11 @@ namespace PEBakery.Core
             if (s.LogMode != LogMode.FullDefer)
                 return s.BuildId;
 
-            Debug.Assert(BuildInfo != null, "Internal Logic Error at DelayedLogging");
-            Debug.Assert(ScriptLogPool != null, "Internal Logic Error at DelayedLogging");
-            Debug.Assert(VariablePool != null, "Internal Logic Error at DelayedLogging");
-            Debug.Assert(BuildLogPool != null, "Internal Logic Error at DelayedLogging");
+            const string internalErrMsg = "Internal Logic Error at DeferredLogging.FlushFullDeferred";
+            Debug.Assert(BuildInfo != null, internalErrMsg);
+            Debug.Assert(ScriptLogPool != null, internalErrMsg);
+            Debug.Assert(VariablePool != null, internalErrMsg);
+            Debug.Assert(BuildLogPool != null, internalErrMsg);
 
             if (BuildInfo.Id <= 0)
             { // Write to database if it did not
@@ -393,7 +394,7 @@ namespace PEBakery.Core
 
             // Flush ScriptLogPool
             DB_Script[] newScriptLogPool = ScriptLogPool.Where(x => x.Id < 0).ToArray();
-            Dictionary<string, int> scriptOldIdDict = newScriptLogPool.ToDictionary(x => $"{x.Name}_{x.Path}", x => x.Id);
+            Dictionary<string, int> scriptOldIdDict = newScriptLogPool.ToDictionary(x => x.FullIdentifier, x => x.Id);
             foreach (DB_Script log in newScriptLogPool)
             {
                 log.Id = 0;
@@ -402,7 +403,7 @@ namespace PEBakery.Core
             s.Logger.Db.InsertAll(newScriptLogPool);
             foreach (DB_Script log in newScriptLogPool)
             {
-                int oldId = scriptOldIdDict[$"{log.Name}_{log.Path}"];
+                int oldId = scriptOldIdDict[log.FullIdentifier];
                 _scriptIdMatchDict[oldId] = log.Id;
             }
 
@@ -619,7 +620,9 @@ namespace PEBakery.Core
 
             _scriptRefIdDict.Clear();
         }
+        #endregion
 
+        #region Script Init/Finish
         public int BuildScriptInit(EngineState s, Script sc, int order, bool prepareBuild)
         {
             if (s.DisableLogger)
@@ -631,7 +634,8 @@ namespace PEBakery.Core
                 Level = sc.Level,
                 Order = order,
                 Name = sc.Title,
-                Path = sc.TreePath,
+                RealPath = sc.RealPath,
+                TreePath = sc.TreePath,
                 Version = sc.Version,
             };
 
@@ -734,7 +738,8 @@ namespace PEBakery.Core
                 Level = sc.Level,
                 Order = 0, // Reference script log must set this to 0 
                 Name = sc.Title,
-                Path = sc.TreePath,
+                RealPath = sc.RealPath,
+                TreePath = sc.TreePath,
                 Version = sc.Version,
                 ElapsedMilliSec = 0,
             };
@@ -1302,7 +1307,8 @@ namespace PEBakery.Core
         [MaxLength(256)]
         public string Name { get; set; }
         [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
-        public string Path { get; set; }
+        public string RealPath { get; set; }
+        public string TreePath { get; set; }
         public string Version { get; set; }
         public long ElapsedMilliSec { get; set; }
 
@@ -1310,6 +1316,8 @@ namespace PEBakery.Core
         {
             return $"{BuildId},{Id} = {Level} {Name} {Version}";
         }
+
+        public string FullIdentifier => $"{Level}_{RealPath}_{TreePath}";
     }
 
     public class DB_Variable

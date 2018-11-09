@@ -149,9 +149,9 @@ namespace PEBakery.Core
                             {
                                 DB_BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
                                 if (eLogs.Length == 1)
-                                    _w.WriteLine($"- [{eLogs.Length}] Error in script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{eLogs.Length}] Error in script [{scLog.Name}] ({scLog.TreePath})");
                                 else
-                                    _w.WriteLine($"- [{eLogs.Length}] Errors in script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{eLogs.Length}] Errors in script [{scLog.Name}] ({scLog.TreePath})");
 
                                 foreach (DB_BuildLog eLog in eLogs)
                                 {
@@ -186,9 +186,9 @@ namespace PEBakery.Core
                                 Debug.Assert(0 < wLogs.Length);
 
                                 if (wLogs.Length == 1)
-                                    _w.WriteLine($"- [{wLogs.Length}] Warning in script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{wLogs.Length}] Warning in script [{scLog.Name}] ({scLog.TreePath})");
                                 else
-                                    _w.WriteLine($"- [{wLogs.Length}] Warnings in script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{wLogs.Length}] Warnings in script [{scLog.Name}] ({scLog.TreePath})");
 
                                 foreach (DB_BuildLog wLog in wLogs)
                                 {
@@ -325,7 +325,7 @@ namespace PEBakery.Core
                                     ScriptHtmlModel scModel = new ScriptHtmlModel
                                     {
                                         Name = scLog.Name,
-                                        Path = scLog.Path,
+                                        Path = scLog.TreePath,
                                     };
 
                                     m.ErrorCodeDicts[scModel] = errors
@@ -359,7 +359,7 @@ namespace PEBakery.Core
                                     ScriptHtmlModel pModel = new ScriptHtmlModel
                                     {
                                         Name = scLog.Name,
-                                        Path = scLog.Path,
+                                        Path = scLog.TreePath,
                                     };
                                     m.WarnCodeDicts[pModel] = warns
                                         .Where(x => x.ScriptId == scLog.Id)
@@ -387,7 +387,7 @@ namespace PEBakery.Core
                                 {
                                     Index = idx,
                                     Name = scLog.Name,
-                                    Path = scLog.Path,
+                                    Path = scLog.TreePath,
                                     Version = $"v{scLog.Version}",
                                     TimeStr = $"{scLog.ElapsedMilliSec / 1000.0:0.000}s",
                                 });
@@ -436,7 +436,7 @@ namespace PEBakery.Core
                                 {
                                     Index = pIdx,
                                     Name = scLog.Name,
-                                    Path = scLog.Path,
+                                    Path = scLog.TreePath,
                                 };
 
                                 List<CodeLogHtmlModel> logModel = new List<CodeLogHtmlModel>(codeLogs.Length);
@@ -487,7 +487,7 @@ namespace PEBakery.Core
                 return null;
 
             DB_Script refScLog = refScLogs.FirstOrDefault(x => x.Id == bLog.RefScriptId);
-            return refScLog == null ? "|-> Referenced unknown script" : $"|-> Referenced script [{refScLog.Name}] ({refScLog.Path})";
+            return refScLog == null ? "|-> Referenced unknown script" : $"|-> Referenced script [{refScLog.Name}] ({refScLog.TreePath})";
         }
         #endregion
 
