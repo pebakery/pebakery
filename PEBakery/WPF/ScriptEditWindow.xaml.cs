@@ -2339,7 +2339,7 @@ namespace PEBakery.WPF
                                                                   "Confirm",
                                                                   MessageBoxButton.YesNo,
                                                                   MessageBoxImage.Question);
-                        // Abort 
+                        // Abort
                         if (result != MessageBoxResult.Yes)
                             return;
                     }
