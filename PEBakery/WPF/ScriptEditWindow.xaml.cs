@@ -2259,7 +2259,7 @@ namespace PEBakery.WPF
         public ICommand UICtrlInterfaceExtractCommand => new RelayCommand(UICtrlInterfaceExtractCommand_Executed, CanExecuteFunc);
         public ICommand UICtrlInterfaceResetCommand => new RelayCommand(UICtrlInterfaceResetCommand_Executed, CanExecuteFunc);
 
-        private void UICtrlInterfaceAttachCommand_Executed(object parameter)
+        private async void UICtrlInterfaceAttachCommand_Executed(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2317,6 +2317,34 @@ namespace PEBakery.WPF
 
                 string srcFilePath = dialog.FileName;
                 string srcFileName = Path.GetFileName(srcFilePath);
+
+                if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
+                {
+                    // Check if srcFilePath is a text or binary
+                    int bytesRead;
+                    byte[] buffer = new byte[16 * 1024]; // Read 16KB
+                    using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
+                    {
+                        bytesRead = fs.Read(buffer, 0, buffer.Length);
+                    }
+                    TextEncodingDetect detect = new TextEncodingDetect
+                    {
+                        NullSuggestsBinary = true,
+                    };
+
+                    TextEncodingDetect.Encoding encoding = detect.DetectEncoding(buffer, bytesRead);
+                    if (encoding == TextEncodingDetect.Encoding.None)
+                    { // File is expected to be binary
+                        MessageBoxResult result = MessageBox.Show($"{srcFileName} seems to be binary file.\r\nAttaching binary file can negatively impact rendering performance.\r\n\r\nAre you sure to continue?",
+                                                                  "Confirm",
+                                                                  MessageBoxButton.YesNo,
+                                                                  MessageBoxImage.Question);
+                        // Abort 
+                        if (result != MessageBoxResult.Yes)
+                            return;
+                    }
+                }
+
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
                     (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
@@ -2343,7 +2371,7 @@ namespace PEBakery.WPF
 
                 try
                 {
-                    Script = EncodedFile.AttachInterface(Script, srcFileName, srcFilePath, null);
+                    Script = await EncodedFile.AttachInterfaceAsync(Script, srcFileName, srcFilePath, null);
 
                     UIControl.ReplaceAddress(Renderer.UICtrls, Script);
 
@@ -2378,7 +2406,7 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private void UICtrlInterfaceExtractCommand_Executed(object parameter)
+        private async void UICtrlInterfaceExtractCommand_Executed(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2452,7 +2480,7 @@ namespace PEBakery.WPF
                 {
                     try
                     {
-                        EncodedFile.ExtractFile(Script, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
+                        await EncodedFile.ExtractFileAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName, fs, null);
                     }
                     catch (Exception ex)
                     {
