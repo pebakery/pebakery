@@ -22,6 +22,7 @@
     SOFTWARE.
 */
 
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Text;
@@ -80,18 +81,22 @@ namespace PEBakery.Helper.Tests
             Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
             targetFile = Path.Combine(srcDir, "Zero.bin");
             Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Console.WriteLine("ANSI test passed");
 
             // UTF-16 LE
             targetFile = Path.Combine(srcDir, "UTF16LE.txt");
             Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Console.WriteLine("UTF-16 LE test passed");
 
             // UTF-16 BE
             targetFile = Path.Combine(srcDir, "UTF16BE.txt");
             Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Console.WriteLine("UTF-16 BE test passed");
 
             // UTF-8
             targetFile = Path.Combine(srcDir, "UTF8.txt");
             Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Console.WriteLine("UTF8 test passed");
 
             // Binary
             targetFile = Path.Combine(srcDir, "Type3.pdf");
@@ -102,6 +107,7 @@ namespace PEBakery.Helper.Tests
             Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
             targetFile = Path.Combine(srcDir, "Banner.7z");
             Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
+            Console.WriteLine("Binary test passed");
         }
         #endregion
     }
