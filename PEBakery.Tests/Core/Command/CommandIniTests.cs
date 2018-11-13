@@ -766,7 +766,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 File.Create(testFile).Close();
 
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -797,7 +797,7 @@ namespace PEBakery.Tests.Core.Command
             File.Create(testFile).Close();
             try
             {
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -835,7 +835,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 File.Create(testFile).Close();
 
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -870,7 +870,7 @@ namespace PEBakery.Tests.Core.Command
             File.Create(testFile).Close();
             try
             {
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -908,12 +908,12 @@ namespace PEBakery.Tests.Core.Command
             {
                 File.Create(destFile).Close();
 
-                FileHelper.WriteTextBom(srcFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(srcFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(srcFile, true, Encoding.UTF8))
                 {
                     w.Write(srcSampleStr);
                 }
-                FileHelper.WriteTextBom(destFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(destFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(destFile, true, Encoding.UTF8))
                 {
                     w.Write(destSampleStr);

@@ -58,13 +58,6 @@ PEBakery/Helper
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery/Helper/TextEncodingDetect.cs
-    Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Copyright (c) Jonathan Bennett
-    https://github.com/AutoItConsulting/text-encoding-detect
-
 PEBakery/WPF/Controls/NumberBox.xaml
 PEBakery/WPF/Controls/NumberBox.xaml.cs
 PEBakery/WPF/Controls/DragCanvas.cs

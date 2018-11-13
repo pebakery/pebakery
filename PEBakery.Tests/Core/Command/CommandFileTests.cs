@@ -323,7 +323,7 @@ namespace PEBakery.Tests.Core.Command
                     if (check == ErrorCheck.Success)
                     {
                         Assert.IsTrue(File.Exists(destFullPath));
-                        Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath).Equals(encoding));
+                        Assert.IsTrue(EncodingHelper.DetectTextEncoding(destFullPath).Equals(encoding));
                     }
                 }
                 finally

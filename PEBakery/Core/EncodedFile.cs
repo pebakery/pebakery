@@ -162,7 +162,8 @@ namespace PEBakery.Core
         #endregion
 
         #region Const Strings, String Factory
-        public const long InterfaceSizeLimit = 4 * 1024 * 1024; // 4MB
+        public const long InterfaceImageSizeLimit = 4 * 1024 * 1024; // 4MB
+        public const long InterfaceTextSizeLimit = 16 * 1024; // 16KB
         private const long BufferSize = 64 * 1024; // 64KB
         private const long ReportInterval = 1024 * 1024; // 1MB
 
@@ -1205,7 +1206,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = FileHelper.DetectTextEncoding(scPath);
+                    Encoding encoding = EncodingHelper.DetectTextEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);
@@ -1593,7 +1594,7 @@ namespace PEBakery.Core
                 {
                     // [Stage 1] Concat sliced base64-encoded lines into one string
                     int decodeLen;
-                    Encoding encoding = FileHelper.DetectTextEncoding(scPath);
+                    Encoding encoding = EncodingHelper.DetectTextEncoding(scPath);
                     using (StreamReader tr = new StreamReader(scPath, encoding))
                     {
                         IniReadWriter.FastForwardTextReader(tr, section);

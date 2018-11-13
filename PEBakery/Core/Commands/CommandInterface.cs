@@ -1223,7 +1223,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     // Create dummy script instance
-                    FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
+                    EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
                     Script sc = cmd.Section.Project.LoadScriptRuntime(tempFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
 
                     // Encode binary file into script instance
@@ -1232,7 +1232,7 @@ namespace PEBakery.Core.Commands
 
                     // Read encoded text strings into memory
                     string txtStr;
-                    Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+                    Encoding encoding = EncodingHelper.DetectTextEncoding(tempFile);
                     using (StreamReader r = new StreamReader(tempFile, encoding))
                     {
                         txtStr = r.ReadToEnd();
@@ -1250,7 +1250,7 @@ namespace PEBakery.Core.Commands
             else
             { // Text Mode -> Just read with StreamReader
                 string txtStr;
-                Encoding encoding = FileHelper.DetectTextEncoding(srcFile);
+                Encoding encoding = EncodingHelper.DetectTextEncoding(srcFile);
                 using (StreamReader r = new StreamReader(srcFile, encoding))
                 {
                     txtStr = r.ReadToEnd();

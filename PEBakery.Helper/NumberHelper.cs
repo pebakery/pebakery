@@ -626,63 +626,63 @@ namespace PEBakery.Helper
 
         public static decimal HumanReadableStringToByteSize(string str)
         {
-            long multifier = 1;
+            long multiplier = 1;
             int subStrEndIdx = 0;
 
             if (str.EndsWith("PB", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = PB;
+                multiplier = PB;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("TB", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = TB;
+                multiplier = TB;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("GB", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = GB;
+                multiplier = GB;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = MB;
+                multiplier = MB;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("KB", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = KB;
+                multiplier = KB;
                 subStrEndIdx = 2;
             }
 
             if (str.EndsWith("P", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = PB;
+                multiplier = PB;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("T", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = TB;
+                multiplier = TB;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("G", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = GB;
+                multiplier = GB;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("M", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = MB;
+                multiplier = MB;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("K", StringComparison.OrdinalIgnoreCase))
             {
-                multifier = KB;
+                multiplier = KB;
                 subStrEndIdx = 1;
             }
 
             str = str.Substring(0, str.Length - subStrEndIdx);
-            return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
+            return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multiplier;
         }
         #endregion
 

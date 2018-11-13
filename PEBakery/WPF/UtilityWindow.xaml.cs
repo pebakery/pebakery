@@ -112,7 +112,7 @@ namespace PEBakery.WPF
         {
             Encoding encoding = Encoding.UTF8;
             if (File.Exists(_m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(_m.CodeFile);
+                encoding = EncodingHelper.DetectTextEncoding(_m.CodeFile);
 
             using (StreamWriter writer = new StreamWriter(_m.CodeFile, false, encoding))
             {
@@ -125,7 +125,7 @@ namespace PEBakery.WPF
         {
             Encoding encoding = Encoding.UTF8;
             if (File.Exists(_m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(_m.CodeFile);
+                encoding = EncodingHelper.DetectTextEncoding(_m.CodeFile);
 
             using (StreamWriter writer = new StreamWriter(_m.CodeFile, false, encoding))
             {
@@ -315,7 +315,7 @@ namespace PEBakery.WPF
                     CodeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
                     if (File.Exists(CodeFile))
                     {
-                        Encoding encoding = FileHelper.DetectTextEncoding(CodeFile);
+                        Encoding encoding = EncodingHelper.DetectTextEncoding(CodeFile);
                         using (StreamReader reader = new StreamReader(CodeFile, encoding))
                         {
                             CodeBox_Input = reader.ReadToEnd();

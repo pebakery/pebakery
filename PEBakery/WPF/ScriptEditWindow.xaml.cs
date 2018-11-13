@@ -2317,28 +2317,20 @@ namespace PEBakery.WPF
 
                 string srcFilePath = dialog.FileName;
                 string srcFileName = Path.GetFileName(srcFilePath);
+                string srcFileExt = Path.GetExtension(srcFileName);
 
-                if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
+                // Check if srcFilePath is a text or binary (only for TextFile)
+                // Check is skipped if file format is .txt or .rtf
+                if (sender.Equals("TextFileAttach", StringComparison.Ordinal) &&
+                    !srcFileExt.Equals(".txt", StringComparison.OrdinalIgnoreCase) &&
+                    !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Check if srcFilePath is a text or binary
-                    int bytesRead;
-                    byte[] buffer = new byte[16 * 1024]; // Read 16KB
-                    using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
-                    {
-                        bytesRead = fs.Read(buffer, 0, buffer.Length);
-                    }
-                    TextEncodingDetect detect = new TextEncodingDetect
-                    {
-                        NullSuggestsBinary = true,
-                    };
-
-                    TextEncodingDetect.Encoding encoding = detect.DetectEncoding(buffer, bytesRead);
-                    if (encoding == TextEncodingDetect.Encoding.None)
+                    if (!EncodingHelper.IsText(srcFilePath, 16 * 1024))
                     { // File is expected to be binary
                         MessageBoxResult result = MessageBox.Show($"{srcFileName} seems to be binary file.\r\nAttaching binary file can negatively impact rendering performance.\r\n\r\nAre you sure to continue?",
-                                                                  "Confirm",
-                                                                  MessageBoxButton.YesNo,
-                                                                  MessageBoxImage.Question);
+                            "Confirm",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
                         // Abort
                         if (result != MessageBoxResult.Yes)
                             return;
@@ -2361,10 +2353,21 @@ namespace PEBakery.WPF
                 // PEBakery can handle large encoded files.
                 // -> But large file in interface requires lots of memory to decompress and can cause unresponsive time.
                 // -> Threshold is debatable.
+                // Surprised to see render performance of text in TextFile is quite low. Keep lower threshold for text files.
                 long fileLen = new FileInfo(srcFilePath).Length;
-                if (EncodedFile.InterfaceSizeLimit <= fileLen) // 4MB limit
+                long sizeLimit;
+                if (sender.Equals("TextFileAttach", StringComparison.Ordinal) &&
+                    !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase)) // rtf file can include image, so do not use lower limit
+                    sizeLimit = EncodedFile.InterfaceTextSizeLimit;
+                else
+                    sizeLimit = EncodedFile.InterfaceImageSizeLimit;
+                if (sizeLimit <= fileLen)
                 {
-                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {EncodedFile.InterfaceSizeLimit / 1024 / 1024}MB.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
+                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", 
+                        "Warning", 
+                        MessageBoxButton.YesNo, 
+                        MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.No)
                         return;
                 }

@@ -304,7 +304,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 File.Create(testFile).Close();
 
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);
@@ -339,7 +339,7 @@ namespace PEBakery.Tests.Core.Command
             File.Create(testFile).Close();
             try
             {
-                FileHelper.WriteTextBom(testFile, Encoding.UTF8);
+                EncodingHelper.WriteTextBom(testFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(testFile, true, Encoding.UTF8))
                 {
                     w.Write(sampleStr);

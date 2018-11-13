@@ -63,7 +63,7 @@ namespace PEBakery.Core.Commands
             // If text does not exists, create blank file
             Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
-                encoding = FileHelper.DetectTextEncoding(fileName);
+                encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             if (mode == TXTAddLineMode.Prepend)
             {
@@ -87,7 +87,7 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        long bomLen = FileHelper.TextBomLength(fs);
+                        long bomLen = EncodingHelper.TextBomLength(fs);
                         byte[] lastChar = new byte[2];
                         if (2 + bomLen <= fs.Length)
                         {
@@ -137,7 +137,7 @@ namespace PEBakery.Core.Commands
             // If text does not exists, create blank file
             Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
-                encoding = FileHelper.DetectTextEncoding(fileName);
+                encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             string linesToWrite;
             if (mode == TXTAddLineMode.Prepend)
@@ -173,7 +173,7 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        long bomLen = FileHelper.TextBomLength(fs);
+                        long bomLen = EncodingHelper.TextBomLength(fs);
                         byte[] lastChar = new byte[2];
                         if (2 + bomLen <= fs.Length)
                         {
@@ -219,7 +219,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             string tempPath = Path.GetTempFileName();
             string txtStr;
@@ -267,7 +267,7 @@ namespace PEBakery.Core.Commands
                 prepReplace.Add((subCmd, oldStr, newStr));
             }
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             string tempPath = Path.GetTempFileName();
             string txtStr;
@@ -308,7 +308,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             int count = 0;
             string tempPath = Path.GetTempFileName();
@@ -358,7 +358,7 @@ namespace PEBakery.Core.Commands
                 prepDeleteLine.Add((subCmd, deleteLine));
             }
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             int count = 0;
             string tempPath = Path.GetTempFileName();
@@ -408,7 +408,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             int i = 0;
             string tempPath = Path.GetTempFileName();
@@ -449,7 +449,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
 
             int i = 0;
             string tempPath = Path.GetTempFileName();

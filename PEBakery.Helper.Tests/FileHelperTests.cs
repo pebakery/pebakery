@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
  
     MIT License
 
@@ -31,44 +31,9 @@ using System.Text;
 
 namespace PEBakery.Helper.Tests
 {
-    #region FileHelper
     [TestClass]
     public class FileHelperTests
     {
-        #region DetectTextEncoding
-        [TestMethod]
-        [TestCategory("Helper")]
-        [TestCategory("FileHelper")]
-        public void DetectTextEncoding()
-        {
-            string tempDir = FileHelper.GetTempDir();
-            string tempFile = Path.Combine(tempDir, "Sample.txt");
-
-            try
-            {
-                // Empty -> ANSI
-                File.Create(tempFile).Close();
-                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Default);
-
-                // UTF-16 LE
-                FileHelper.WriteTextBom(tempFile, Encoding.Unicode);
-                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Unicode);
-
-                // UTF-16 BE
-                FileHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
-                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.BigEndianUnicode);
-
-                // UTF-8
-                FileHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.UTF8);
-            }
-            finally
-            {
-                Directory.Delete(tempDir, true);
-            }
-        }
-        #endregion
-
         #region GetFilesEx
         [TestMethod]
         [TestCategory("Helper")]
@@ -252,5 +217,4 @@ namespace PEBakery.Helper.Tests
         }
         #endregion
     }
-    #endregion
 }

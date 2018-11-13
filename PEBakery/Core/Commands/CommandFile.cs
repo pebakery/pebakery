@@ -319,7 +319,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
-            FileHelper.WriteTextBom(filePath, encoding);
+            EncodingHelper.WriteTextBom(filePath, encoding);
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
 
             return logs;
