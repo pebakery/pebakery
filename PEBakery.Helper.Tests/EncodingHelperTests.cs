@@ -82,8 +82,11 @@ namespace PEBakery.Helper.Tests
                 Console.WriteLine($"{targetFile} test passed");
             }
 
-            // Test ANSI
-            // Cannot test non-ASCII ANSI encoding, will differ in various environment
+            // Print out system's default locale, for debug.
+            Console.WriteLine($"System Default Locale CodePage = {Encoding.Default.CodePage}");
+
+            // Test ASCII
+            // Cannot test non-ASCII ANSI encoding, results will change in various environment
             Template("Banner.svg", true);
             Console.WriteLine("ASCII test passed");
 
