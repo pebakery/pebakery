@@ -75,38 +75,39 @@ namespace PEBakery.Helper.Tests
             const int peekSize = 16 * 1024;
             string srcDir = Path.Combine(TestSetup.SampleDir, "EncodingHelper");
 
+            void Template(string fileName, bool result)
+            {
+                string targetFile = Path.Combine(srcDir, fileName);
+                Assert.AreEqual(result, EncodingHelper.IsText(targetFile, peekSize));
+                Console.WriteLine($"{targetFile} test passed");
+            }
+
             // Test ANSI
             // Cannot test non-ASCII ANSI encoding, will differ in various environment
-            string targetFile = Path.Combine(srcDir, "Banner.svg");
-            Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
-            targetFile = Path.Combine(srcDir, "Zero.bin");
-            Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
-            Console.WriteLine("ANSI test passed");
+            Template("Banner.svg", true);
+            Console.WriteLine("ASCII test passed");
 
             // UTF-16 LE
-            targetFile = Path.Combine(srcDir, "UTF16LE.txt");
-            Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Template("UTF16LE.txt", true);
             Console.WriteLine("UTF-16 LE test passed");
 
             // UTF-16 BE
-            targetFile = Path.Combine(srcDir, "UTF16BE.txt");
-            Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Template("UTF16BE.txt", true);
             Console.WriteLine("UTF-16 BE test passed");
 
             // UTF-8
-            targetFile = Path.Combine(srcDir, "UTF8.txt");
-            Assert.IsTrue(EncodingHelper.IsText(targetFile, peekSize));
+            Template("UTF8.txt", true);
             Console.WriteLine("UTF8 test passed");
 
             // Binary
-            targetFile = Path.Combine(srcDir, "Type3.pdf");
-            Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
-            targetFile = Path.Combine(srcDir, "Random.bin");
-            Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
-            targetFile = Path.Combine(srcDir, "Banner.zip");
-            Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
-            targetFile = Path.Combine(srcDir, "Banner.7z");
-            Assert.IsFalse(EncodingHelper.IsText(targetFile, peekSize));
+            // Result can change across locale, due to how EncodingHelper.IsText works.
+            // (Check if a buffer contains unused area of system default encoding)
+            // To counter it, it also use AutoIt.Common.TextEncodingDetect.
+            Template("Zero.bin", false);
+            Template("Type3.pdf", false);
+            Template("Random.bin", false);
+            Template("Banner.zip", false);
+            Template("Banner.7z", false);
             Console.WriteLine("Binary test passed");
         }
         #endregion

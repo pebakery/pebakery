@@ -26,6 +26,7 @@
 using System;
 using System.IO;
 using System.Text;
+using PEBakery.Helper.ThirdParty;
 
 namespace PEBakery.Helper
 {
@@ -159,7 +160,7 @@ namespace PEBakery.Helper
             s.Read(buffer, 0, buffer.Length);
             s.Position = posBak;
 
-            // Contains unicode BOM -> definitely text
+            // [Stage 1] Contains unicode BOM -> text
             if (buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
                 return true;
             if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
@@ -167,7 +168,9 @@ namespace PEBakery.Helper
             if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
                 return true;
 
-            // Check if a chunk can be decoded as system default ANSI locale
+            // [Stage 2] Check if a chunk can be decoded as system default ANSI locale.
+            // Many multibyte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
+            // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
             bool isText = true;
             Encoding ansiEnc = Encoding.GetEncoding(Encoding.Default.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());
             try
@@ -178,6 +181,30 @@ namespace PEBakery.Helper
             catch (DecoderFallbackException)
             { // Failure
                 isText = false;
+            }
+
+            // [Stage 3]
+            // Problem: Some encodings make use of 128-255 area, so every byte is valid. (e.g. Windows-1252 / CP437)
+            // To counter these issue, if file is seems to be text, check again with AutoIt.Common.TextEncodingDetect
+            if (isText)
+            {
+                TextEncodingDetect detect = new TextEncodingDetect();
+                switch (detect.DetectEncoding(buffer, buffer.Length))
+                {
+                    // Binary
+                    case TextEncodingDetect.Encoding.None:
+                    // PEBakery mandates unicode text to have BOM.
+                    // They must have been filtered out in stage 1.
+                    case TextEncodingDetect.Encoding.Utf16LeBom:
+                    case TextEncodingDetect.Encoding.Utf16BeBom:
+                    case TextEncodingDetect.Encoding.Utf8Bom:
+                    // Treat unicode text file without a BOM as a binary.
+                    case TextEncodingDetect.Encoding.Utf16LeNoBom:
+                    case TextEncodingDetect.Encoding.Utf16BeNoBom:
+                    case TextEncodingDetect.Encoding.Utf8NoBom:
+                        isText = false;
+                        break;
+                }
             }
 
             return isText;
