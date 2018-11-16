@@ -377,35 +377,35 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             // 8bit
-            SuccessTemplate(s, "Math,Hex,%Dest%,15,8", "0F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,8", "0F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1,8", "FF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255,8", "FF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,15,8", "0x0F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,8", "0x0F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,-1,8", "0xFF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,255,8", "0xFF");
             ErrorTemplate(s, "Math,Hex,%Dest%,2000,8", ErrorCheck.Error);
 
             // 16bit
-            SuccessTemplate(s, "Math,Hex,%Dest%,15,16", "000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,16", "000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1,16", "FFFF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255,16", "00FF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,15,16", "0x000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,16", "0x000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,-1,16", "0xFFFF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,255,16", "0x00FF");
 
             // 32bit
-            SuccessTemplate(s, "Math,Hex,%Dest%,15,32", "0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,32", "0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1,32", "FFFFFFFF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255,32", "000000FF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,15,32", "0x0000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,32", "0x0000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,-1,32", "0xFFFFFFFF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,255,32", "0x000000FF");
 
             // 32bit (default)
-            SuccessTemplate(s, "Math,Hex,%Dest%,15", "0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F", "0000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1", "FFFFFFFF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255", "000000FF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,15", "0x0000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F", "0x0000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,-1", "0xFFFFFFFF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,255", "0x000000FF");
 
             // 64bit
-            SuccessTemplate(s, "Math,Hex,%Dest%,15,64", "000000000000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,64", "000000000000000F");
-            SuccessTemplate(s, "Math,Hex,%Dest%,-1,64", "FFFFFFFFFFFFFFFF");
-            SuccessTemplate(s, "Math,Hex,%Dest%,255,64", "00000000000000FF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,15,64", "0x000000000000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,64", "0x000000000000000F");
+            SuccessTemplate(s, "Math,Hex,%Dest%,-1,64", "0xFFFFFFFFFFFFFFFF");
+            SuccessTemplate(s, "Math,Hex,%Dest%,255,64", "0x00000000000000FF");
 
             // Test Error
             ErrorTemplate(s, "Math,Hex,%Dest%", ErrorCheck.ParserError);

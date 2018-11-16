@@ -522,22 +522,22 @@ namespace PEBakery.Core.Commands
                             case 8:
                                 if (!NumberHelper.ParseSignedAsUInt8(intStr, out byte u8))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 8bit integer");
-                                dest = u8.ToString(info.Type == MathType.Hex ? "X2" : "D");
+                                dest = info.Type == MathType.Hex ? $"0x{u8:X2}" : u8.ToString();
                                 break;
                             case 16:
                                 if (!NumberHelper.ParseSignedAsUInt16(intStr, out ushort u16))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 16bit integer");
-                                dest = u16.ToString(info.Type == MathType.Hex ? "X4" : "D");
+                                dest = info.Type == MathType.Hex ? $"0x{u16:X4}" : u16.ToString();
                                 break;
                             case 32:
                                 if (!NumberHelper.ParseSignedAsUInt32(intStr, out uint u32))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 32bit integer");
-                                dest = u32.ToString(info.Type == MathType.Hex ? "X8" : "D");
+                                dest = info.Type == MathType.Hex ? $"0x{u32:X8}" : u32.ToString();
                                 break;
                             case 64:
                                 if (!NumberHelper.ParseSignedAsUInt64(intStr, out ulong u64))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 64bit integer");
-                                dest = u64.ToString(info.Type == MathType.Hex ? "X16" : "D");
+                                dest = info.Type == MathType.Hex ? $"0x{u64:X16}" : u64.ToString();
                                 break;
                             default:
                                 throw new InternalException($"Internal Logic Error at Math,{info.Type}");
