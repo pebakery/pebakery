@@ -511,35 +511,36 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case MathType.Hex:
+                case MathType.Dec:
                     {
-                        MathInfo_Hex subInfo = info.SubInfo.Cast<MathInfo_Hex>();
+                        MathInfo_HexDec subInfo = info.SubInfo.Cast<MathInfo_HexDec>();
 
                         string intStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string dest;
                         switch (subInfo.BitSize)
                         {
                             case 8:
-                                if (!NumberHelper.ParseSignedUInt8(intStr, out byte u8))
+                                if (!NumberHelper.ParseSignedAsUInt8(intStr, out byte u8))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 8bit integer");
-                                dest = u8.ToString("X2");
+                                dest = u8.ToString(info.Type == MathType.Hex ? "X2" : "D");
                                 break;
                             case 16:
-                                if (!NumberHelper.ParseSignedUInt16(intStr, out ushort u16))
+                                if (!NumberHelper.ParseSignedAsUInt16(intStr, out ushort u16))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 16bit integer");
-                                dest = u16.ToString("X4");
+                                dest = u16.ToString(info.Type == MathType.Hex ? "X4" : "D");
                                 break;
                             case 32:
-                                if (!NumberHelper.ParseSignedUInt32(intStr, out uint u32))
+                                if (!NumberHelper.ParseSignedAsUInt32(intStr, out uint u32))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 32bit integer");
-                                dest = u32.ToString("X8");
+                                dest = u32.ToString(info.Type == MathType.Hex ? "X8" : "D");
                                 break;
                             case 64:
-                                if (!NumberHelper.ParseSignedUInt64(intStr, out ulong u64))
+                                if (!NumberHelper.ParseSignedAsUInt64(intStr, out ulong u64))
                                     return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 64bit integer");
-                                dest = u64.ToString("X16");
+                                dest = u64.ToString(info.Type == MathType.Hex ? "X16" : "D");
                                 break;
                             default:
-                                throw new InternalException("Internal Logic Error at Math,Hex");
+                                throw new InternalException($"Internal Logic Error at Math,{info.Type}");
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest);

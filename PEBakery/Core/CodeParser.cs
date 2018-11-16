@@ -3276,7 +3276,10 @@ namespace PEBakery.Core
                     }
                     break;
                 case MathType.Hex:
-                    { // Math,Hex,<DestVar>,<Integer>,[BitSize]
+                case MathType.Dec:
+                    { 
+                        // Math,Hex,<DestVar>,<Integer>,[BitSize]
+                        // Math,Dec,<DestVar>,<Integer>,[BitSize]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -3302,7 +3305,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
-                        info = new MathInfo_Hex(destVar, args[1], bitSize);
+                        info = new MathInfo_HexDec(destVar, args[1], bitSize);
                     }
                     break;
                 case MathType.Rand:

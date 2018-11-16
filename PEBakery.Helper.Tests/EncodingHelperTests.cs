@@ -82,7 +82,7 @@ namespace PEBakery.Helper.Tests
                 Console.WriteLine($"[TEST] {targetFile} pass");
             }
 
-            void LogTemplate(string fileName, bool result)
+            void LogTemplate(string fileName)
             {
                 string targetFile = Path.Combine(srcDir, fileName);
                 if (EncodingHelper.IsText(targetFile, peekSize))
@@ -92,12 +92,12 @@ namespace PEBakery.Helper.Tests
             }
 
             // Print out system's default locale, for debug.
-            Console.WriteLine($"System Default Locale CodePage = {Encoding.Default.CodePage}");
+            Console.WriteLine($"System Default Locale CodePage = {EncodingHelper.DefaultAnsi.CodePage}");
 
             // Test ASCII
             // Cannot test non-ASCII ANSI encoding, results will change in various environments
             Console.WriteLine("* Testing ASCII...");
-            LogTemplate("Banner.svg", true);
+            LogTemplate("Banner.svg");
 
             // UTF-16 LE
             Console.WriteLine("* Testing UTF-16 LE...");
@@ -116,11 +116,11 @@ namespace PEBakery.Helper.Tests
             // (Check if a buffer contains unused area of system default encoding)
             // To counter it, it also use AutoIt.Common.TextEncodingDetect.
             Console.WriteLine("* Testing Binary...");
-            LogTemplate("Zero.bin", false);
-            LogTemplate("Type3.pdf", false);
-            LogTemplate("Random.bin", false);
-            LogTemplate("Banner.zip", false);
-            LogTemplate("Banner.7z", false);
+            LogTemplate("Zero.bin");
+            LogTemplate("Type3.pdf");
+            LogTemplate("Random.bin");
+            LogTemplate("Banner.zip");
+            LogTemplate("Banner.7z");
             
         }
         #endregion

@@ -251,12 +251,12 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region ParseSignedToUInt
+        #region ParseSignedAsUInt
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseSignedUInt8(string str, out byte value)
+        public static bool ParseSignedAsUInt8(string str, out byte value)
         {
             if (NumberHelper.ParseUInt8(str, out byte uInt))
             {
@@ -279,7 +279,7 @@ namespace PEBakery.Helper
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseSignedUInt16(string str, out ushort value)
+        public static bool ParseSignedAsUInt16(string str, out ushort value)
         {
             if (NumberHelper.ParseUInt16(str, out ushort uInt))
             {
@@ -302,7 +302,7 @@ namespace PEBakery.Helper
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseSignedUInt32(string str, out uint value)
+        public static bool ParseSignedAsUInt32(string str, out uint value)
         {
             if (NumberHelper.ParseUInt32(str, out uint uInt))
             {
@@ -325,7 +325,7 @@ namespace PEBakery.Helper
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseSignedUInt64(string str, out ulong value)
+        public static bool ParseSignedAsUInt64(string str, out ulong value)
         {
             if (NumberHelper.ParseUInt64(str, out ulong uInt))
             {

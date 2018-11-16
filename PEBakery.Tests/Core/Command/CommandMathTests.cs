@@ -368,7 +368,7 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region Hex
+        #region HexDec - Hex, Dec
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandMath")]
@@ -381,6 +381,7 @@ namespace PEBakery.Tests.Core.Command
             SuccessTemplate(s, "Math,Hex,%Dest%,0x0F,8", "0F");
             SuccessTemplate(s, "Math,Hex,%Dest%,-1,8", "FF");
             SuccessTemplate(s, "Math,Hex,%Dest%,255,8", "FF");
+            ErrorTemplate(s, "Math,Hex,%Dest%,2000,8", ErrorCheck.Error);
 
             // 16bit
             SuccessTemplate(s, "Math,Hex,%Dest%,15,16", "000F");
@@ -411,6 +412,46 @@ namespace PEBakery.Tests.Core.Command
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,9,12", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Hex,%Dest%,256,8", ErrorCheck.Error);
+        }
+
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandMath")]
+        public void Dec()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            // 8bit
+            SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,8", "15");
+            SuccessTemplate(s, "Math,Dec,%Dest%,0xFF,8", "255");
+            SuccessTemplate(s, "Math,Dec,%Dest%,-1,8", "255");
+            SuccessTemplate(s, "Math,Dec,%Dest%,255,8", "255");
+            ErrorTemplate(s, "Math,Dec,%Dest%,0xFFFF,8", ErrorCheck.Error);
+
+            // 16bit
+            SuccessTemplate(s, "Math,Dec,%Dest%,0x000F,16", "15");
+            SuccessTemplate(s, "Math,Dec,%Dest%,-1,16", "65535");
+            SuccessTemplate(s, "Math,Dec,%Dest%,0xFFFF,16", "65535");
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x10000,16", ErrorCheck.Error);
+
+            // 32bit
+            SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,32", "15");
+            SuccessTemplate(s, "Math,Dec,%Dest%,-1,32", "4294967295");
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000,32", ErrorCheck.Error);
+
+            // 32bit (default)
+            SuccessTemplate(s, "Math,Dec,%Dest%,0x0F", "15");
+            SuccessTemplate(s, "Math,Dec,%Dest%,-1", "4294967295");
+            ErrorTemplate(s, "Math,Dec,%Dest%,0x100000000", ErrorCheck.Error);
+
+            // 64bit
+            SuccessTemplate(s, "Math,Dec,%Dest%,0x0F,64", "15");
+            SuccessTemplate(s, "Math,Dec,%Dest%,-1,64", "18446744073709551615");
+
+            // Test Error
+            ErrorTemplate(s, "Math,Dec,%Dest%", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,Dec,%Dest%,256,9", ErrorCheck.ParserError);
+            ErrorTemplate(s, "Math,Dec,%Dest%,256,9,12", ErrorCheck.ParserError);
         }
         #endregion
 

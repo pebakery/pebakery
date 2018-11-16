@@ -3292,7 +3292,7 @@ namespace PEBakery.Core
         Ceil = 70, Floor, Round,
         Abs = 80,
         Pow = 90,
-        Hex = 100,
+        Hex = 100, Dec,
         Rand = 110,
     }
 
@@ -3562,13 +3562,15 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo_Hex : MathInfo
-    { // Math,Hex,<%DestVar%>,<Src>,[BitSize]
+    public class MathInfo_HexDec : MathInfo
+    {
+        // Math,Hex,<%DestVar%>,<Src>,[BitSize]
+        // Math,Dec,<%DestVar%>,<Src>,[BitSize]
         public string DestVar;
         public string Src;
         public uint BitSize; // Optional, [8|16|32|64]
 
-        public MathInfo_Hex(string destVar, string src, uint bitSize)
+        public MathInfo_HexDec(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
             Src = src;

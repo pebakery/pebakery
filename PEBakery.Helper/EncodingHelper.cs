@@ -196,7 +196,6 @@ namespace PEBakery.Helper
             // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
             bool isText = true;
             Encoding ansiEnc = Encoding.GetEncoding(DefaultAnsi.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());
-            // Encoding ansiEnc = Encoding.GetEncoding(1252, new EncoderExceptionFallback(), new DecoderExceptionFallback());
             try
             {
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
