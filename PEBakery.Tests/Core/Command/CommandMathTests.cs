@@ -435,10 +435,10 @@ namespace PEBakery.Tests.Core.Command
                 }
             }
 
-            Template("Math,Rand,%Dest%", 0, 65535);
+            Template("Math,Rand,%Dest%", 0, 65536);
             Template("Math,Rand,%Dest%,0,16", 0, 16);
             Template("Math,Rand,%Dest%,16,64", 16, 64);
-            Template("Math,Rand,%Dest%,32768,65535", 32768, 65535);
+            Template("Math,Rand,%Dest%,32768,65536", 32768, 65536);
 
             // Test Error
             ErrorTemplate(s, "Math,Rand", ErrorCheck.ParserError);

@@ -36,30 +36,58 @@ namespace PEBakery.Helper
         private static readonly byte[] Utf16LeBom = { 0xFF, 0xFE };
         private static readonly byte[] Utf16BeBom = { 0xFE, 0xFF };
 
-        public static Encoding DetectTextEncoding(string filePath)
+        private static readonly Encoding Utf8EncodingNoBom = new UTF8Encoding(false);
+        public static Encoding DefaultAnsi 
         {
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            get
             {
-                return DetectTextEncoding(fs);
+                // In .Net Framework, Encoding.Default is system's active code page.
+                // In .Net Core, System.Default is always UTF8.
+                // To prepare .Net Core migration, implement .Net Framework's Encoding.Default.
+                int codepage = NativeMethods.GetACP();
+                switch (codepage)
+                {
+                    case 65001:
+                        // If codepage is 65001, .Net Framework's Encoding.Default returns UTF8 without a BOM.
+                        return Utf8EncodingNoBom;
+                    default:
+                        // Encoding.GetEncoding internally caches instances. No need to cache myself.
+                        return Encoding.GetEncoding(codepage);
+                }
             }
         }
 
-        public static Encoding DetectTextEncoding(Stream s)
+        public static Encoding DetectBom(string filePath)
         {
-            byte[] bom = new byte[3];
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return DetectBom(fs);
+            }
+        }
 
-            long posBackup = s.Position;
-            s.Position = 0;
-            s.Read(bom, 0, bom.Length);
-            s.Position = posBackup;
+        public static Encoding DetectBom(Stream s)
+        {
+            byte[] buffer = new byte[3];
+            s.Read(buffer, 0, buffer.Length);
+            return DetectBom(buffer);
+        }
 
-            if (bom[0] == Utf8Bom[0] && bom[1] == Utf8Bom[1] && bom[2] == Utf8Bom[2])
-                return Encoding.UTF8;
-            if (bom[0] == Utf16LeBom[0] && bom[1] == Utf16LeBom[1])
-                return Encoding.Unicode;
-            if (bom[0] == Utf16BeBom[0] && bom[1] == Utf16BeBom[1])
-                return Encoding.BigEndianUnicode;
-            return Encoding.Default;
+        public static Encoding DetectBom(byte[] buffer)
+        {
+            Encoding encoding = null;
+            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
+            {
+                encoding = Encoding.UTF8;
+            }
+            else if (2 <= buffer.Length)
+            {
+                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                    encoding = Encoding.Unicode;
+                else if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                    encoding = Encoding.BigEndianUnicode;
+            }
+
+            return encoding ?? DefaultAnsi;
         }
 
         public static void WriteTextBom(string path, Encoding encoding)
@@ -77,33 +105,27 @@ namespace PEBakery.Helper
             if (encoding == null)
                 throw new ArgumentNullException(nameof(encoding));
 
-            long posBackup = stream.Position;
-            stream.Position = 0;
-
-            if (encoding.Equals(Encoding.UTF8))
+            // Encoding.Equals() checks equality of fallback as well as equality of codepage.
+            // Ignore fallback here, only check codepage id.
+            if (encoding.CodePage == Encoding.UTF8.CodePage)
             {
-                byte[] bom = { 0xEF, 0xBB, 0xBF };
-                stream.Write(bom, 0, bom.Length);
+                stream.Write(Utf8Bom, 0, Utf8Bom.Length);
             }
-            else if (encoding.Equals(Encoding.Unicode))
+            else if (encoding.CodePage == Encoding.Unicode.CodePage)
             {
-                byte[] bom = { 0xFF, 0xFE };
-                stream.Write(bom, 0, bom.Length);
+                stream.Write(Utf16LeBom, 0, Utf16LeBom.Length);
             }
-            else if (encoding.Equals(Encoding.BigEndianUnicode))
+            else if (encoding.CodePage == Encoding.BigEndianUnicode.CodePage)
             {
-                byte[] bom = { 0xFE, 0xFF };
-                stream.Write(bom, 0, bom.Length);
+                stream.Write(Utf16BeBom, 0, Utf16BeBom.Length);
             }
-            else if (!encoding.Equals(Encoding.Default))
+            else if (encoding.CodePage != DefaultAnsi.CodePage)
             { // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
             }
-
-            stream.Position = posBackup;
         }
 
-        public static long TextBomLength(string filePath)
+        public static int TextBomLength(string filePath)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -111,32 +133,29 @@ namespace PEBakery.Helper
             }
         }
 
-        public static long TextBomLength(Stream s)
+        public static int TextBomLength(Stream s)
         {
-            byte[] bom = new byte[3];
-
-            long posBackup = s.Position;
-            s.Position = 0;
-            s.Read(bom, 0, bom.Length);
-            s.Position = posBackup;
-
-            if (bom[0] == Utf8Bom[0] && bom[1] == Utf8Bom[1] && bom[2] == Utf8Bom[2])
-                return 3;
-            if (bom[0] == Utf16LeBom[0] && bom[1] == Utf16LeBom[1])
-                return 2;
-            if (bom[0] == Utf16BeBom[0] && bom[1] == Utf16BeBom[1])
-                return 2;
-            return 0;
+            byte[] buffer = new byte[3];
+            s.Read(buffer, 0, buffer.Length);
+            return TextBomLength(buffer);
         }
 
-        public static void ConvertEncoding(string srcFile, string destFile, Encoding destEnc)
+        public static int TextBomLength(byte[] buffer)
         {
-            Encoding srcEnc = EncodingHelper.DetectTextEncoding(srcFile);
-            using (StreamReader r = new StreamReader(srcFile, srcEnc))
-            using (StreamWriter w = new StreamWriter(destFile, false, destEnc))
+            int length = 0;
+            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
             {
-                w.Write(r.ReadToEnd());
+                length = Utf8Bom.Length;
             }
+            else if (2 <= buffer.Length)
+            {
+                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                    length = Utf16LeBom.Length;
+                else if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                    length = Utf16BeBom.Length;
+            }
+
+            return length;
         }
 
         public static bool IsText(string filePath, int peekSize)
@@ -153,26 +172,31 @@ namespace PEBakery.Helper
             if (peekSize < 4096)
                 peekSize = 4096;
 
-            // Read chunk into buffer
+            // Read buffer from Stream
             byte[] buffer = new byte[peekSize];
-            long posBak = s.Position;
-            s.Position = 0;
             s.Read(buffer, 0, buffer.Length);
-            s.Position = posBak;
+            return IsText(buffer);
+        }
 
+        public static bool IsText(byte[] buffer)
+        {
             // [Stage 1] Contains unicode BOM -> text
-            if (buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
+            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
                 return true;
-            if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
-                return true;
-            if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
-                return true;
-
+            if (2 <= buffer.Length)
+            {
+                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                    return true;
+                if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                    return true;
+            }
+            
             // [Stage 2] Check if a chunk can be decoded as system default ANSI locale.
             // Many multibyte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
             // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
             bool isText = true;
-            Encoding ansiEnc = Encoding.GetEncoding(Encoding.Default.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());
+            Encoding ansiEnc = Encoding.GetEncoding(DefaultAnsi.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());
+            // Encoding ansiEnc = Encoding.GetEncoding(1252, new EncoderExceptionFallback(), new DecoderExceptionFallback());
             try
             {
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed

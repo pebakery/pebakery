@@ -28,5 +28,10 @@ namespace PEBakery.Helper
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
         public static extern int StrCmpLogical(string psz1, string psz2);
         #endregion
+
+        #region EncodingHelper
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetACP();
+        #endregion
     }
 }

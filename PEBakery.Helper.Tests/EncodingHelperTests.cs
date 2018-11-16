@@ -45,19 +45,19 @@ namespace PEBakery.Helper.Tests
             {
                 // Empty -> ANSI
                 File.Create(tempFile).Close();
-                Assert.AreEqual(EncodingHelper.DetectTextEncoding(tempFile), Encoding.Default);
+                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Default);
 
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
-                Assert.AreEqual(EncodingHelper.DetectTextEncoding(tempFile), Encoding.Unicode);
+                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Unicode);
 
                 // UTF-16 BE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
-                Assert.AreEqual(EncodingHelper.DetectTextEncoding(tempFile), Encoding.BigEndianUnicode);
+                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.BigEndianUnicode);
 
                 // UTF-8
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                Assert.AreEqual(EncodingHelper.DetectTextEncoding(tempFile), Encoding.UTF8);
+                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.UTF8);
             }
             finally
             {
@@ -75,43 +75,53 @@ namespace PEBakery.Helper.Tests
             const int peekSize = 16 * 1024;
             string srcDir = Path.Combine(TestSetup.SampleDir, "EncodingHelper");
 
-            void Template(string fileName, bool result)
+            void TestTemplate(string fileName, bool result)
             {
                 string targetFile = Path.Combine(srcDir, fileName);
                 Assert.AreEqual(result, EncodingHelper.IsText(targetFile, peekSize));
-                Console.WriteLine($"{targetFile} test passed");
+                Console.WriteLine($"[TEST] {targetFile} pass");
+            }
+
+            void LogTemplate(string fileName, bool result)
+            {
+                string targetFile = Path.Combine(srcDir, fileName);
+                if (EncodingHelper.IsText(targetFile, peekSize))
+                    Console.WriteLine($"[LOG] {targetFile} is a text");
+                else
+                    Console.WriteLine($"[LOG] {targetFile} is a binary");
             }
 
             // Print out system's default locale, for debug.
             Console.WriteLine($"System Default Locale CodePage = {Encoding.Default.CodePage}");
 
             // Test ASCII
-            // Cannot test non-ASCII ANSI encoding, results will change in various environment
-            Template("Banner.svg", true);
-            Console.WriteLine("ASCII test passed");
+            // Cannot test non-ASCII ANSI encoding, results will change in various environments
+            Console.WriteLine("* Testing ASCII...");
+            LogTemplate("Banner.svg", true);
 
             // UTF-16 LE
-            Template("UTF16LE.txt", true);
-            Console.WriteLine("UTF-16 LE test passed");
+            Console.WriteLine("* Testing UTF-16 LE...");
+            TestTemplate("UTF16LE.txt", true);
 
             // UTF-16 BE
-            Template("UTF16BE.txt", true);
-            Console.WriteLine("UTF-16 BE test passed");
+            Console.WriteLine("* Testing UTF-16 BE...");
+            TestTemplate("UTF16BE.txt", true);
 
             // UTF-8
-            Template("UTF8.txt", true);
-            Console.WriteLine("UTF8 test passed");
+            Console.WriteLine("* Testing UTF-8...");
+            TestTemplate("UTF8.txt", true);
 
             // Binary
             // Result can change across locale, due to how EncodingHelper.IsText works.
             // (Check if a buffer contains unused area of system default encoding)
             // To counter it, it also use AutoIt.Common.TextEncodingDetect.
-            Template("Zero.bin", false);
-            Template("Type3.pdf", false);
-            Template("Random.bin", false);
-            Template("Banner.zip", false);
-            Template("Banner.7z", false);
-            Console.WriteLine("Binary test passed");
+            Console.WriteLine("* Testing Binary...");
+            LogTemplate("Zero.bin", false);
+            LogTemplate("Type3.pdf", false);
+            LogTemplate("Random.bin", false);
+            LogTemplate("Banner.zip", false);
+            LogTemplate("Banner.7z", false);
+            
         }
         #endregion
     }

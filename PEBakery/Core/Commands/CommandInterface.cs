@@ -1232,7 +1232,7 @@ namespace PEBakery.Core.Commands
 
                     // Read encoded text strings into memory
                     string txtStr;
-                    Encoding encoding = EncodingHelper.DetectTextEncoding(tempFile);
+                    Encoding encoding = EncodingHelper.DetectBom(tempFile);
                     using (StreamReader r = new StreamReader(tempFile, encoding))
                     {
                         txtStr = r.ReadToEnd();
@@ -1250,7 +1250,7 @@ namespace PEBakery.Core.Commands
             else
             { // Text Mode -> Just read with StreamReader
                 string txtStr;
-                Encoding encoding = EncodingHelper.DetectTextEncoding(srcFile);
+                Encoding encoding = EncodingHelper.DetectBom(srcFile);
                 using (StreamReader r = new StreamReader(srcFile, encoding))
                 {
                     txtStr = r.ReadToEnd();

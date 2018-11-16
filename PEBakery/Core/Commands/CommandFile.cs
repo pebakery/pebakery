@@ -300,7 +300,7 @@ namespace PEBakery.Core.Commands
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            Encoding encoding = Encoding.Default;
+            Encoding encoding = EncodingHelper.DefaultAnsi;
             if (info.Encoding != null)
                 encoding = info.Encoding;
 

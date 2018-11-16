@@ -61,9 +61,9 @@ namespace PEBakery.Core.Commands
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            Encoding encoding = Encoding.Default;
-            if (File.Exists(fileName))
-                encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = File.Exists(fileName)
+                ? EncodingHelper.DetectBom(fileName)
+                : EncodingHelper.DefaultAnsi;
 
             if (mode == TXTAddLineMode.Prepend)
             {
@@ -135,9 +135,9 @@ namespace PEBakery.Core.Commands
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            Encoding encoding = Encoding.Default;
-            if (File.Exists(fileName))
-                encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = File.Exists(fileName)
+                ? EncodingHelper.DetectBom(fileName)
+                : EncodingHelper.DefaultAnsi;
 
             string linesToWrite;
             if (mode == TXTAddLineMode.Prepend)
@@ -219,7 +219,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             string tempPath = Path.GetTempFileName();
             string txtStr;
@@ -267,7 +267,7 @@ namespace PEBakery.Core.Commands
                 prepReplace.Add((subCmd, oldStr, newStr));
             }
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             string tempPath = Path.GetTempFileName();
             string txtStr;
@@ -308,7 +308,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int count = 0;
             string tempPath = Path.GetTempFileName();
@@ -358,7 +358,7 @@ namespace PEBakery.Core.Commands
                 prepDeleteLine.Add((subCmd, deleteLine));
             }
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int count = 0;
             string tempPath = Path.GetTempFileName();
@@ -408,7 +408,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int i = 0;
             string tempPath = Path.GetTempFileName();
@@ -449,7 +449,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            Encoding encoding = EncodingHelper.DetectTextEncoding(fileName);
+            Encoding encoding = EncodingHelper.DetectBom(fileName);
 
             int i = 0;
             string tempPath = Path.GetTempFileName();

@@ -322,7 +322,7 @@ namespace PEBakery.Core
                     b.Append(",UTF16");
                 else if (Encoding.Equals(Encoding.BigEndianUnicode))
                     b.Append(",UTF16BE");
-                else if (Encoding.Equals(Encoding.Default))
+                else if (Encoding.Equals(EncodingHelper.DefaultAnsi))
                     b.Append(",ANSI");
                 else
                     throw new InternalException("Internal Logic Error at CodeInfo_FileCreateBlank");

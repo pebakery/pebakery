@@ -850,7 +850,7 @@ namespace PEBakery.WPF
                     else
                     {
                         using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
-                        using (StreamReader sr = new StreamReader(ms, EncodingHelper.DetectTextEncoding(ms)))
+                        using (StreamReader sr = new StreamReader(ms, EncodingHelper.DetectBom(ms)))
                         {
                             textBox.Text = sr.ReadToEnd();
                         }
