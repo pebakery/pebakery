@@ -113,7 +113,7 @@ namespace PEBakery.Core.Commands
 
                 if (files.Length == 0)
                 {
-                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
+                    logs.Add(new LogInfo(LogState.Error, $"No files are found in [{srcDirToFind}]", cmd));
                     return logs;
                 }
 
