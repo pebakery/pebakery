@@ -541,7 +541,7 @@ namespace PEBakery.Core
         #region Expand
         public string Expand(string str)
         {
-            int iter = 0;
+            int iteration = 0;
 
             MatchCollection matches;
             do
@@ -617,8 +617,8 @@ namespace PEBakery.Core
                 if (0 < matches.Count) // Copy it only if variable exists
                     str = b.ToString();
 
-                iter++;
-                if (32 < iter)
+                iteration++;
+                if (32 < iteration)
                     throw new VariableCircularReferenceException($"Circular reference by [{str}]");
             }
             while (0 < matches.Count);
@@ -718,7 +718,7 @@ namespace PEBakery.Core
         public const string VarKeyRegexVariable = @"^" + VarKeyRegexContainsVariable + @"$";
         public const string VarKeyRegexSectionInParams = @"^" + VarKeyRegexContainsSectionInParams + @"$";
         public const string VarKeyRegexSectionOutParams = @"^" + VarKeyRegexContainsSectionOutParams + @"$";
-        public enum VarKeyType { None, Variable, SectionInParams, SectionOutParams, ReturnValue }
+        public enum VarKeyType { None, Variable, SectionInParams, SectionOutParams, ReturnValue, LoopCounter }
         public static VarKeyType DetectType(string key)
         {
             if (Regex.Match(key, VarKeyRegexVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
@@ -727,8 +727,10 @@ namespace PEBakery.Core
                 return VarKeyType.SectionInParams;
             if (Regex.Match(key, VarKeyRegexSectionOutParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #o1, #o2, #o3, ...
                 return VarKeyType.SectionOutParams;
-            if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
+            if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Return Value
                 return VarKeyType.ReturnValue;
+            if (key.Equals("#c", StringComparison.OrdinalIgnoreCase)) // Loop Counter
+                return VarKeyType.LoopCounter;
             return VarKeyType.None;
         }
 
@@ -854,7 +856,7 @@ namespace PEBakery.Core
                         bool globalResult = s.Variables.Delete(VarsType.Global, key);
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
-                        { 
+                        {
                             // Delete variable line from file
                             if (IniReadWriter.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%"))
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
@@ -908,6 +910,10 @@ namespace PEBakery.Core
                     {
                         logs.Add(new LogInfo(LogState.Ignore, "ReturnValue [#r] is disabled by the compatibility option"));
                     }
+                }
+                else if (type == VarKeyType.LoopCounter)
+                { // #c
+                    logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be deleted"));
                 }
                 else
                 {
@@ -1006,6 +1012,40 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Warning, "ReturnValue [#r] is disabled by the compatibility option"));
                     }
                 }
+                else if (type == VarKeyType.LoopCounter)
+                { // #c
+                    if (!s.CompatOverridableLoopCounter)
+                    {
+                        logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be overriden"));
+                        return logs;
+                    }
+                        
+                    switch (s.LoopState)
+                    {
+                        case LoopState.OnIndex:
+                            if (!NumberHelper.ParseInt64(finalValue, out long ctr))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
+                                return logs;
+                            }
+                            s.LoopCounter = ctr;
+                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopCounter}]"));
+                            break;
+                        case LoopState.OnDriveLetter:
+                            bool valid = finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0]);
+                            if (!valid)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
+                                return logs;
+                            }
+                            s.LoopLetter = char.ToUpper(finalValue[0]);
+                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopLetter}]"));
+                            break;
+                        default:
+                            logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
+                            return logs;
+                    }
+                }
                 else
                 {
                     throw new InvalidCommandException($"Invalid variable name [{varKey}]");
@@ -1023,12 +1063,11 @@ namespace PEBakery.Core
         /// <returns>Return null at error</returns>
         public static bool? ContainsKey(EngineState s, string varKey)
         {
-            string key;
             VarKeyType type = DetectType(varKey);
             switch (type)
             {
                 case VarKeyType.Variable:
-                    key = TrimPercentMark(varKey);
+                    string key = TrimPercentMark(varKey);
                     return key != null && s.Variables.ContainsKey(key);
                 case VarKeyType.SectionInParams:
                     int siIdx = GetSectionInParamIndex(varKey);

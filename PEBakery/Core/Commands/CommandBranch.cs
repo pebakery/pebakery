@@ -238,8 +238,11 @@ namespace PEBakery.Core.Commands
                 {
                     case CodeType.Loop:
                     case CodeType.LoopEx:
-                        for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
+                        // for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
+                        for (long i = startIdx; i <= endIdx; i++)
                         { // Counter Variable is [#c]
+                            s.LoopCounter = i;
+
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
 
@@ -264,14 +267,23 @@ namespace PEBakery.Core.Commands
                             s.CurDepth = depthBackup;
                             s.RefScriptId = realScriptIdBackup;
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            string msg;
+                            if (s.LoopCounter == i)
+                                msg = $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})";
+                            else
+                                msg = $"End of Loop with [{s.LoopCounter}] (Overridden) ({loopIdx}/{loopCount})";
+
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, s.CurDepth));
                             loopIdx += 1;
                         }
                         break;
                     case CodeType.LoopLetter:
                     case CodeType.LoopLetterEx:
-                        for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
+                        // for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
+                        for (char ch = startLetter; ch <= endLetter; ch++)
                         { // Counter Variable is [#c]
+                            s.LoopLetter = ch;
+
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, newInParams, info.OutParams, cmd);
 
@@ -295,7 +307,13 @@ namespace PEBakery.Core.Commands
                             s.CurDepth = depthBackup;
                             s.RefScriptId = realScriptIdBackup;
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            string msg;
+                            if (s.LoopLetter == ch)
+                                msg = $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})";
+                            else
+                                msg = $"End of Loop with [{s.LoopLetter}] (Overridden) ({loopIdx}/{loopCount})";
+
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, s.CurDepth));
                             loopIdx += 1;
                         }
                         break;

@@ -25,13 +25,10 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Text;
-using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -573,7 +570,7 @@ namespace PEBakery.Core.Commands
                                 return LogInfo.LogErrorMessage(logs, "Maximum bound must be larger than minimum value");
                         }
 
-                        int destInt = s.Random.Next() % (max - min) + min; 
+                        int destInt = s.Random.Next() % (max - min) + min;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destInt.ToString());
                         logs.AddRange(varLogs);

@@ -537,6 +537,10 @@
                                       IsChecked="{Binding Compat_OverridableFixedVariables}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
+                                      Content="Overridable loop counter (#c)"
+                                      IsChecked="{Binding Compat_OverridableLoopCounter}" />
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
                                       Content="Enable environment variables"
                                       IsChecked="{Binding Compat_EnableEnvironmentVariables}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"

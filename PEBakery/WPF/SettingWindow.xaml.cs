@@ -27,12 +27,12 @@
 
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
@@ -204,7 +204,7 @@ namespace PEBakery.WPF
     /// <summary>
     /// TODO: Split Model and ViewModel
     /// </summary>
-    public class SettingViewModel : INotifyPropertyChanged
+    public class SettingViewModel : ViewModelBase
     {
         #region Field and Constructor
         private readonly string _settingFile;
@@ -830,33 +830,28 @@ namespace PEBakery.WPF
         public bool Compat_OverridableFixedVariables
         {
             get => compat_OverridableFixedVariables;
-            set
-            {
-                compat_OverridableFixedVariables = value;
-                OnPropertyUpdate(nameof(Compat_OverridableFixedVariables));
-            }
+            set => SetProperty(ref compat_OverridableFixedVariables, value);
+        }
+
+        private bool compat_OverridableLoopCounter;
+        public bool Compat_OverridableLoopCounter
+        {
+            get => compat_OverridableLoopCounter;
+            set => SetProperty(ref compat_OverridableLoopCounter, value);
         }
 
         private bool compat_EnableEnvironmentVariables;
         public bool Compat_EnableEnvironmentVariables
         {
             get => compat_EnableEnvironmentVariables;
-            set
-            {
-                compat_EnableEnvironmentVariables = value;
-                OnPropertyUpdate(nameof(Compat_EnableEnvironmentVariables));
-            }
+            set => SetProperty(ref compat_EnableEnvironmentVariables, value);
         }
 
         private bool compat_DisableExtendedSectionParams;
         public bool Compat_DisableExtendedSectionParams
         {
             get => compat_DisableExtendedSectionParams;
-            set
-            {
-                compat_DisableExtendedSectionParams = value;
-                OnPropertyUpdate(nameof(Compat_DisableExtendedSectionParams));
-            }
+            set => SetProperty(ref compat_DisableExtendedSectionParams, value);
         }
         #endregion
 
@@ -871,10 +866,7 @@ namespace PEBakery.WPF
 
             // Instance
             Global.MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
-            if (Interface_UseCustomTitle)
-                Global.MainViewModel.TitleBar = Interface_CustomTitle;
-            else
-                Global.MainViewModel.TitleBar = MainViewModel.DefaultTitleBar;
+            Global.MainViewModel.TitleBar = Interface_UseCustomTitle ? Interface_CustomTitle : MainViewModel.DefaultTitleBar;
         }
 
         public CodeParser.Options ExportCodeParserOptions()
@@ -956,11 +948,12 @@ namespace PEBakery.WPF
             Compat_LegacyRegWrite = false;
             Compat_AllowSetModifyInterface = false;
             Compat_LegacyInterfaceCommand = false;
+            Compat_LegacySectionParamCommand = false;
             Compat_IgnoreWidthOfWebLabel = false;
             Compat_OverridableFixedVariables = false;
+            Compat_OverridableLoopCounter = false;
             Compat_EnableEnvironmentVariables = false;
             Compat_DisableExtendedSectionParams = false;
-            Compat_LegacySectionParamCommand = false;
         }
         #endregion
 
@@ -973,6 +966,7 @@ namespace PEBakery.WPF
             if (!File.Exists(_settingFile))
                 return;
 
+            const string projectStr = "Project";
             const string generalStr = "General";
             const string interfaceStr = "Interface";
             const string scriptStr = "Script";
@@ -982,7 +976,7 @@ namespace PEBakery.WPF
             // General_CustomUserAgent
             IniKey[] keys =
             {
-                new IniKey("Project", "DefaultProject"), // String
+                new IniKey(projectStr, "DefaultProject"), // String
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr)), // Boolean
@@ -1011,13 +1005,14 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableLoopCounter), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
             };
-
+            
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
@@ -1125,16 +1120,18 @@ namespace PEBakery.WPF
             Compat_LegacyRegWrite = ParseBoolean(nameof(Compat_LegacyRegWrite), Compat_LegacyRegWrite);
             Compat_AllowSetModifyInterface = ParseBoolean(nameof(Compat_AllowSetModifyInterface), Compat_AllowSetModifyInterface);
             Compat_LegacyInterfaceCommand = ParseBoolean(nameof(Compat_LegacyInterfaceCommand), Compat_LegacyInterfaceCommand);
+            Compat_LegacySectionParamCommand = ParseBoolean(nameof(Compat_LegacySectionParamCommand), Compat_LegacySectionParamCommand);
             Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
             Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
+            Compat_OverridableLoopCounter = ParseBoolean(nameof(Compat_OverridableLoopCounter), Compat_OverridableLoopCounter);
             Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
             Compat_DisableExtendedSectionParams = ParseBoolean(nameof(Compat_DisableExtendedSectionParams), Compat_DisableExtendedSectionParams);
-            Compat_LegacySectionParamCommand = ParseBoolean(nameof(Compat_LegacySectionParamCommand), Compat_LegacySectionParamCommand);
         }
 
         public void WriteToFile()
         {
             const string generalStr = "General";
+            const string projectStr = "Project";
             const string interfaceStr = "Interface";
             const string scriptStr = "Script";
             const string logStr = "Log";
@@ -1162,7 +1159,7 @@ namespace PEBakery.WPF
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr), Log_DeferredLogging.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr), Log_MinifyHtmlExport.ToString()), // Boolean
-                new IniKey("Project", "DefaultProject", Project_Default), // String
+                new IniKey(projectStr, "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
@@ -1171,11 +1168,12 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr), Compat_LegacyRegWrite.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr), Compat_AllowSetModifyInterface.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr), Compat_LegacyInterfaceCommand.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableLoopCounter), compatStr), Compat_OverridableLoopCounter.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
             };
             IniReadWriter.WriteKeys(_settingFile, keys);
         }
@@ -1243,9 +1241,6 @@ namespace PEBakery.WPF
             Projects = Global.Projects;
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-
                 bool foundDefault = false;
                 List<string> projNameList = Projects.ProjectNames;
                 Project_List = new ObservableCollection<string>();
@@ -1262,14 +1257,6 @@ namespace PEBakery.WPF
                 if (!foundDefault)
                     Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
             });
-        }
-        #endregion
-
-        #region OnPropertyUpdate
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
     }

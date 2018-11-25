@@ -25,14 +25,11 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core;
 using System;
-using System.IO;
-using System.Linq;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using PEBakery.Core;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Tests.Core.Command
 {
@@ -47,7 +44,7 @@ namespace PEBakery.Tests.Core.Command
         public void Arithmetic()
         {
             EngineState s = EngineTests.CreateEngineState();
-            
+
             // Add
             SuccessTemplate(s, "Math,Add,%Dest%,100,200", "300");
             SuccessTemplate(s, "Math,Add,%Dest%,100.1,200", "300.1");
@@ -79,7 +76,7 @@ namespace PEBakery.Tests.Core.Command
             SuccessTemplate(s, "Math,Div,%Dest%,4.5,1.5", "3");
             SuccessTemplate(s, "Math,Div,%Dest%,4.5,-1.5", "-3");
             SuccessTemplate(s, "Math,Div,%Dest%,10,3", "3.3333333333333333333333333333"); // 28 numbers after dot
-            
+
             // Test Error
             ErrorTemplate(s, "Math,Add,Dest,4", ErrorCheck.ParserError);
             ErrorTemplate(s, "Math,Sub,3,4", ErrorCheck.ParserError);

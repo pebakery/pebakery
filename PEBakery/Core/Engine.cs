@@ -1067,7 +1067,7 @@ namespace PEBakery.Core
         public bool ElseFlag = false;
         public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
-        public char LoopLetter = ' ';
+        public char LoopLetter = ' '; // Use capital alphabet
         public bool InMacro = false;
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false;
@@ -1097,6 +1097,7 @@ namespace PEBakery.Core
         public bool CompatAllowLetterInLoop = false; // Compatibility
         public bool CompatAllowSetModifyInterface = false; // Compatibility
         public bool CompatDisableExtendedSectionParams = false; // Compatibility
+        public bool CompatOverridableLoopCounter; // Compatibility
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
@@ -1194,6 +1195,7 @@ namespace PEBakery.Core
             CompatAllowLetterInLoop = m.Compat_AllowLetterInLoop;
             CompatAllowSetModifyInterface = m.Compat_AllowSetModifyInterface;
             CompatDisableExtendedSectionParams = m.Compat_DisableExtendedSectionParams;
+            CompatOverridableLoopCounter = m.Compat_OverridableLoopCounter;
         }
         #endregion
 
