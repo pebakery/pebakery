@@ -23,7 +23,7 @@
     SOFTWARE.
 */
 
-// #define ENABLE_DOTNETFX_472
+#define ENABLE_DOTNETFX_472
 
 using Microsoft.Win32;
 using System;
