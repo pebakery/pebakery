@@ -25,8 +25,8 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
-using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

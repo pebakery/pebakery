@@ -28,6 +28,7 @@
 using MahApps.Metro.IconPacks;
 using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using System;

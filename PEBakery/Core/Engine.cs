@@ -37,6 +37,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
+using PEBakery.Core.ViewModels;
 
 namespace PEBakery.Core
 {

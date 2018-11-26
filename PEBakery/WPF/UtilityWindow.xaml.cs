@@ -26,6 +26,7 @@
 */
 
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;

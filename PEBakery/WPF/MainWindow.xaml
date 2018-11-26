@@ -35,6 +35,7 @@
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:viewModels="clr-namespace:PEBakery.Core.ViewModels"
         mc:Ignorable="d"
         FontSize="13"
         FontFamily="Segoe UI"
@@ -44,7 +45,7 @@
         MinWidth="800" MinHeight="600"
         Closing="Window_Closing">
     <Window.DataContext>
-        <local:MainViewModel/>
+        <viewModels:MainViewModel/>
     </Window.DataContext>
     <Window.Resources>
         <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
@@ -447,7 +448,7 @@
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type local:ProjectTreeItemModel}"
+                        <HierarchicalDataTemplate DataType="{x:Type viewModels:ProjectTreeItemModel}"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -495,7 +496,7 @@
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type local:ProjectTreeItemModel}"
+                        <HierarchicalDataTemplate DataType="{x:Type viewModels:ProjectTreeItemModel}"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>

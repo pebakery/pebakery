@@ -27,7 +27,7 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
-using PEBakery.WPF;
+using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

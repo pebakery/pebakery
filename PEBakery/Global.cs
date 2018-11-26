@@ -31,6 +31,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.IO;
+using PEBakery.Core.ViewModels;
 
 namespace PEBakery
 {
