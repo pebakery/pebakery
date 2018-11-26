@@ -113,7 +113,7 @@ namespace PEBakery.Core.Commands
 
                 if (files.Length == 0)
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"No files are found in [{srcDirToFind}]"));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"No files were found in [{srcDirToFind}]"));
                     return logs;
                 }
 
@@ -163,7 +163,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>"));
+                    logs.Add(new LogInfo(LogState.Error, "The file destination must be directory when using wildcards (? *) in the <SrcFile> name"));
                     return logs;
                 }
             }
