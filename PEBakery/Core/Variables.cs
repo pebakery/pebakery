@@ -429,20 +429,14 @@ namespace PEBakery.Core
         public string GetValue(string key)
         {
             bool result = TryGetValue(key, out string value);
-            if (result == false)
-                value = string.Empty;
-            return value;
+            return result ? value : string.Empty;
         }
 
         public string GetValue(VarsType type, string key)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             bool result = vars.TryGetValue(key, out string value);
-            if (result)
-                value = Expand(value);
-            else
-                value = string.Empty;
-            return value;
+            return result ? Expand(value) : string.Empty;
         }
 
         public bool Delete(VarsType type, string key)
@@ -900,7 +894,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Warning, "Section out parameters are disabled by the compatibility option"));
                 }
                 else if (type == VarKeyType.ReturnValue) // #r
-                { // s.SectionReturnValue's defalt value is string.Empty
+                { // s.SectionReturnValue's default value is string.Empty
                     if (!s.CompatDisableExtendedSectionParams)
                     {
                         s.SectionReturnValue = string.Empty;

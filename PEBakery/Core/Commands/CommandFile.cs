@@ -77,11 +77,11 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten"));
                             return logs;
                         }
 
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destFullPath}] will be overwritten", cmd));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destFullPath}] will be overwritten"));
                     }
 
                     File.Copy(srcFile, destFullPath, true);
@@ -94,11 +94,11 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten"));
                             return logs;
                         }
 
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] will be overwritten", cmd));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] will be overwritten"));
                     }
 
                     File.Copy(srcFile, destPath, true);
@@ -113,7 +113,7 @@ namespace PEBakery.Core.Commands
 
                 if (files.Length == 0)
                 {
-                    logs.Add(new LogInfo(LogState.Ignore, $"No files are found in [{srcDirToFind}]", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"No files are found in [{srcDirToFind}]"));
                     return logs;
                 }
 
@@ -133,13 +133,11 @@ namespace PEBakery.Core.Commands
                             {
                                 if (info.Preserve)
                                 {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite,
-                                        $"[{destFullPath}] will not be overwritten", cmd));
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten"));
                                     continue;
                                 }
 
-                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite,
-                                    $"[{destFullPath}] will be overwritten", cmd));
+                                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten"));
                             }
 
                             string destFullParent = Path.GetDirectoryName(destFullPath);
@@ -153,7 +151,7 @@ namespace PEBakery.Core.Commands
 
                             s.MainViewModel.BuildCommandProgressValue = i + 1;
 
-                            logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]", cmd));
+                            logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]"));
                         }
                     }
                     finally
@@ -161,11 +159,11 @@ namespace PEBakery.Core.Commands
                         s.MainViewModel.ResetBuildCommandProgress();
                     }
 
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
+                    logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>"));
                     return logs;
                 }
             }
