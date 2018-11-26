@@ -92,11 +92,11 @@ namespace PEBakery.Core.Commands
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
-                    if (!w.CurMainTree.Script.Equals(sc))
+                    if (!s.MainViewModel.CurMainTree.Script.Equals(sc))
                         return;
 
-                    w.CurMainTree.Script = sc;
-                    w.DisplayScript(w.CurMainTree.Script);
+                    s.MainViewModel.CurMainTree.Script = sc;
+                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
                 });
             }
 
@@ -170,11 +170,11 @@ namespace PEBakery.Core.Commands
             {
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                if (!w.CurMainTree.Script.Equals(sc))
+                if (!s.MainViewModel.CurMainTree.Script.Equals(sc))
                     return;
 
-                w.CurMainTree.Script = sc;
-                w.DisplayScript(w.CurMainTree.Script);
+                s.MainViewModel.CurMainTree.Script = sc;
+                w.DisplayScript(s.MainViewModel.CurMainTree.Script);
             });
 
             return logs;
@@ -1046,7 +1046,7 @@ namespace PEBakery.Core.Commands
             { // Application.Current is null in unit test
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                if (w.CurMainTree.Script.Equals(cmd.Section.Script))
+                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
                     w.DisplayScript(cmd.Section.Script);
             });
 
@@ -1115,7 +1115,7 @@ namespace PEBakery.Core.Commands
             { // Application.Current is null in unit test
                 if (!(Application.Current.MainWindow is MainWindow w))
                     return;
-                if (w.CurMainTree.Script.Equals(cmd.Section.Script))
+                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
                     w.DisplayScript(cmd.Section.Script);
             });
 

@@ -268,7 +268,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void SaveCommand_Execute(object sender, ExecutedRoutedEventArgs e)
         {
             switch (m.TabIndex)
             {
@@ -1665,16 +1665,16 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Logo
-        public ICommand ScriptLogoAttachCommand => new RelayCommand(ScriptLogoAttachCommand_Executed, CanExecuteFunc);
-        public ICommand ScriptLogoExtractCommand => new RelayCommand(ScriptLogoExtractCommand_Executed, ScriptLogoLoadedFunc);
-        public ICommand ScriptLogoDeleteCommand => new RelayCommand(ScriptLogoDeleteCommand_Executed, ScriptLogoLoadedFunc);
+        public ICommand ScriptLogoAttachCommand => new RelayCommand(ScriptLogoAttachCommand_Execute, CanExecuteFunc);
+        public ICommand ScriptLogoExtractCommand => new RelayCommand(ScriptLogoExtractCommand_Execute, ScriptLogoLoadedFunc);
+        public ICommand ScriptLogoDeleteCommand => new RelayCommand(ScriptLogoDeleteCommand_Execute, ScriptLogoLoadedFunc);
 
         private bool ScriptLogoLoadedFunc(object parameter)
         {
             return CanExecuteCommand && ScriptLogoLoaded;
         }
 
-        private void ScriptLogoAttachCommand_Executed(object parameter)
+        private void ScriptLogoAttachCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1710,7 +1710,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptLogoExtractCommand_Executed(object parameter)
+        private void ScriptLogoExtractCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1759,7 +1759,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptLogoDeleteCommand_Executed(object parameter)
+        private void ScriptLogoDeleteCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1795,16 +1795,16 @@ namespace PEBakery.WPF
 
         #region Command - Interface Editor
         #region For Add, Delete, Reload
-        public ICommand UICtrlAddCommand => new RelayCommand(UICtrlAddCommand_Executed, UICtrlAddCommand_CanExecute);
-        public ICommand UICtrlDeleteCommand => new RelayCommand(UICtrlDeleteCommand_Executed, UICtrlDeleteCommand_CanExecute);
-        public ICommand UICtrlReloadCommand => new RelayCommand(UICtrlReloadCommand_Executed, UICtrlReloadCommand_CanExecute);
+        public ICommand UICtrlAddCommand => new RelayCommand(UICtrlAddCommand_Execute, UICtrlAddCommand_CanExecute);
+        public ICommand UICtrlDeleteCommand => new RelayCommand(UICtrlDeleteCommand_Execute, UICtrlDeleteCommand_CanExecute);
+        public ICommand UICtrlReloadCommand => new RelayCommand(UICtrlReloadCommand_Execute, UICtrlReloadCommand_CanExecute);
 
         private bool UICtrlAddCommand_CanExecute(object sender)
         {
             return CanExecuteCommand && (int)UIControlType.None < UICtrlAddTypeIndex;
         }
 
-        private void UICtrlAddCommand_Executed(object sender)
+        private void UICtrlAddCommand_Execute(object sender)
         {
             CanExecuteCommand = false;
             try
@@ -1864,7 +1864,7 @@ namespace PEBakery.WPF
             return CanExecuteCommand && UICtrlEditEnabled;
         }
 
-        private void UICtrlDeleteCommand_Executed(object parameter)
+        private void UICtrlDeleteCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1898,7 +1898,7 @@ namespace PEBakery.WPF
             return CanExecuteCommand && TabIndex == 1;
         }
 
-        private void UICtrlReloadCommand_Executed(object parameter)
+        private void UICtrlReloadCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1913,9 +1913,9 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For Image
-        public ICommand UICtrlImageAutoResizeCommand => new RelayCommand(UICtrlImageAutoResizeCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlImageAutoResizeCommand => new RelayCommand(UICtrlImageAutoResizeCommand_Execute, CanExecuteFunc);
 
-        private async void UICtrlImageAutoResizeCommand_Executed(object parameter)
+        private async void UICtrlImageAutoResizeCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -1969,19 +1969,19 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For RadioButton
-        public ICommand UICtrlRadioButtonSelectCommand => new RelayCommand(UICtrlRadioButtonSelectCommand_Executed, UICtrlRadioButtonSelectCommand_CanExecute);
+        public ICommand UICtrlRadioButtonSelectCommand => new RelayCommand(UICtrlRadioButtonSelectCommand_Execute, UICtrlRadioButtonSelectCommand_CanExecute);
 
         private bool UICtrlRadioButtonSelectCommand_CanExecute(object parameter)
         {
             return CanExecuteCommand && UICtrlRadioButtonSelectEnable;
         }
 
-        private void UICtrlRadioButtonSelectCommand_Executed(object parameter)
+        private void UICtrlRadioButtonSelectCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelectCommand_Executed";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlRadioButtonSelectCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 Debug.Assert(SelectedUICtrl.Type == UIControlType.RadioButton, internalErrorMsg);
@@ -2007,13 +2007,13 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) ListItemBox
-        public ICommand UICtrlListItemBoxUpCommand => new RelayCommand(UICtrlListItemBoxUpCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDownCommand => new RelayCommand(UICtrlListItemBoxDownCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxSelectCommand => new RelayCommand(UICtrlListItemBoxSelectCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxDeleteCommand => new RelayCommand(UICtrlListItemBoxDeleteCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlListItemBoxAddCommand => new RelayCommand(UICtrlListItemBoxAddCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxUpCommand => new RelayCommand(UICtrlListItemBoxUpCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDownCommand => new RelayCommand(UICtrlListItemBoxDownCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxSelectCommand => new RelayCommand(UICtrlListItemBoxSelectCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxDeleteCommand => new RelayCommand(UICtrlListItemBoxDeleteCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlListItemBoxAddCommand => new RelayCommand(UICtrlListItemBoxAddCommand_Execute, CanExecuteFunc);
 
-        private void UICtrlListItemBoxUpCommand_Executed(object parameter)
+        private void UICtrlListItemBoxUpCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2073,12 +2073,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxDownCommand_Executed(object parameter)
+        private void UICtrlListItemBoxDownCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDownCommand_Executed";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxDownCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 List<string> items;
@@ -2134,7 +2134,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxSelectCommand_Executed(object parameter)
+        private void UICtrlListItemBoxSelectCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2167,7 +2167,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxDeleteCommand_Executed(object paramaeter)
+        private void UICtrlListItemBoxDeleteCommand_Execute(object paramaeter)
         {
             CanExecuteCommand = false;
             try
@@ -2220,7 +2220,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxAddCommand_Executed(object parameter)
+        private void UICtrlListItemBoxAddCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2255,11 +2255,11 @@ namespace PEBakery.WPF
         }
         #endregion
         #region For (Common) InterfaceEncoded 
-        public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlInterfaceExtractCommand => new RelayCommand(UICtrlInterfaceExtractCommand_Executed, CanExecuteFunc);
-        public ICommand UICtrlInterfaceResetCommand => new RelayCommand(UICtrlInterfaceResetCommand_Executed, CanExecuteFunc);
+        public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlInterfaceExtractCommand => new RelayCommand(UICtrlInterfaceExtractCommand_Execute, CanExecuteFunc);
+        public ICommand UICtrlInterfaceResetCommand => new RelayCommand(UICtrlInterfaceResetCommand_Execute, CanExecuteFunc);
 
-        private async void UICtrlInterfaceAttachCommand_Executed(object parameter)
+        private async void UICtrlInterfaceAttachCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2409,12 +2409,12 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private async void UICtrlInterfaceExtractCommand_Executed(object parameter)
+        private async void UICtrlInterfaceExtractCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractCommand_Executed";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlInterfaceExtractCommand_Execute";
 
                 if (!(parameter is string sender))
                     throw new InvalidOperationException(internalErrorMsg);
@@ -2498,7 +2498,7 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private async void UICtrlInterfaceResetCommand_Executed(object parameter)
+        private async void UICtrlInterfaceResetCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2930,11 +2930,11 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (File)
-        public ICommand ExtractFileCommand => new RelayCommand(ExtractFileCommand_Executed, CanExecuteFunc);
+        public ICommand ExtractFileCommand => new RelayCommand(ExtractFileCommand_Execute, CanExecuteFunc);
         public ICommand DeleteFileCommand => new RelayCommand(DeleteFileCommand_Execute, CanExecuteFunc);
         public ICommand InspectFileCommand => new RelayCommand(InspectFileCommand_Execute, CanExecuteFunc);
 
-        private async void ExtractFileCommand_Executed(object parameter)
+        private async void ExtractFileCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try

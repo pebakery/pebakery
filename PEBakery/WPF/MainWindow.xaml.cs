@@ -67,8 +67,6 @@ namespace PEBakery.WPF
         private int _scriptRefreshing = 0;
         private int _syntaxChecking = 0;
 
-        public ProjectTreeItemModel CurMainTree { get; private set; }
-        public ProjectTreeItemModel CurBuildTree { get; set; }
         private UIRenderer _renderer;
 
         public Logger Logger { get; }
@@ -329,14 +327,14 @@ namespace PEBakery.WPF
                             int pIdx = Global.Setting.Project_DefaultIndex;
                             if (0 <= pIdx && pIdx < Model.MainTreeItems.Count)
                             {
-                                CurMainTree = Model.MainTreeItems[pIdx];
-                                CurMainTree.IsExpanded = true;
+                                Model.CurMainTree = Model.MainTreeItems[pIdx];
+                                Model.CurMainTree.IsExpanded = true;
                                 if (Global.Projects[pIdx] != null)
                                     DisplayScript(Global.Projects[pIdx].MainScript);
                             }
                             else
                             {
-                                CurMainTree = null;
+                                Model.CurMainTree = null;
                             }
                         });
 
@@ -410,14 +408,14 @@ namespace PEBakery.WPF
 
         public Task StartRefreshScript()
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return Task.CompletedTask;
-            if (CurMainTree.Script.Type == ScriptType.Directory)
+            if (Model.CurMainTree.Script.Type == ScriptType.Directory)
                 return Task.CompletedTask;
             if (_scriptRefreshing != 0)
                 return Task.CompletedTask;
 
-            ProjectTreeItemModel node = CurMainTree;
+            ProjectTreeItemModel node = Model.CurMainTree;
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref _scriptRefreshing);
@@ -464,12 +462,12 @@ namespace PEBakery.WPF
 
         private Task StartSyntaxCheck(bool quiet)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return Task.CompletedTask;
             if (_syntaxChecking != 0)
                 return Task.CompletedTask;
 
-            Script sc = CurMainTree.Script;
+            Script sc = Model.CurMainTree.Script;
             if (sc.Type == ScriptType.Directory)
                 return Task.CompletedTask;
 
@@ -750,20 +748,20 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                if (CurMainTree?.Script == null || Model.WorkInProgress)
+                if (Model.CurMainTree?.Script == null || Model.WorkInProgress)
                 {
                     Interlocked.Decrement(ref Engine.WorkingLock);
                     return;
                 }
 
                 // Determine current project
-                Project p = CurMainTree.Script.Project;
+                Project p = Model.CurMainTree.Script.Project;
 
                 Model.BuildTreeItems.Clear();
                 ProjectTreeItemModel treeRoot = PopulateOneTreeItem(p.MainScript, null, null);
                 ScriptListToTreeViewModel(p, p.ActiveScripts, false, treeRoot);
                 Model.BuildTreeItems.Add(treeRoot);
-                CurBuildTree = null;
+                Model.CurBuildTree = null;
 
                 EngineState s = new EngineState(p, Logger, Model);
                 s.SetOptions(Global.Setting);
@@ -803,7 +801,7 @@ namespace PEBakery.WPF
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
                 Model.BuildTreeItems.Clear();
-                DisplayScript(CurMainTree.Script);
+                DisplayScript(Model.CurMainTree.Script);
 
                 if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
@@ -861,7 +859,7 @@ namespace PEBakery.WPF
                     // Scale Factor
                     double newScaleFactor = Global.Setting.Interface_ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                        DisplayScript(CurMainTree.Script);
+                        DisplayScript(Model.CurMainTree.Script);
 
                     // Script
                     if (!old_Script_EnableCache && Global.Setting.Script_EnableCache)
@@ -914,10 +912,10 @@ namespace PEBakery.WPF
         #region Script Buttons
         private async void ScriptRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null || Model.WorkInProgress)
+            if (Model.CurMainTree?.Script == null || Model.WorkInProgress)
                 return;
 
-            Script sc = CurMainTree.Script;
+            Script sc = Model.CurMainTree.Script;
             if (sc.Sections.ContainsKey(ScriptSection.Names.Process))
             {
                 if (Engine.WorkingLock == 0)  // Start Build
@@ -928,7 +926,7 @@ namespace PEBakery.WPF
                     Model.BuildTreeItems.Clear();
                     ProjectTreeItemModel rootItem = PopulateOneTreeItem(sc, null, null);
                     Model.BuildTreeItems.Add(rootItem);
-                    CurBuildTree = null;
+                    Model.CurBuildTree = null;
 
                     EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
                     s.SetOptions(Global.Setting);
@@ -962,7 +960,7 @@ namespace PEBakery.WPF
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
                     Model.BuildTreeItems.Clear();
-                    DisplayScript(CurMainTree.Script);
+                    DisplayScript(Model.CurMainTree.Script);
 
                     if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -986,7 +984,7 @@ namespace PEBakery.WPF
 
         private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
@@ -996,7 +994,7 @@ namespace PEBakery.WPF
 
         private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
@@ -1019,12 +1017,12 @@ namespace PEBakery.WPF
 
         private void ScriptInternalEditor_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
 
-            Script sc = CurMainTree.Script;
+            Script sc = Model.CurMainTree.Script;
             if (ScriptEditWindow.Count == 0)
             {
                 ScriptEditDialog = new ScriptEditWindow(sc) { Owner = this };
@@ -1037,19 +1035,19 @@ namespace PEBakery.WPF
                     Debug.Assert(sc != null, $"{nameof(sc)} != null");
 
                     DisplayScript(sc);
-                    CurMainTree.Script = sc;
+                    Model.CurMainTree.Script = sc;
                 }
             }
         }
 
         private void ScriptExternalEditor_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
 
-            Script sc = CurMainTree.Script;
+            Script sc = Model.CurMainTree.Script;
             switch (sc.Type)
             {
                 case ScriptType.Script:
@@ -1064,7 +1062,7 @@ namespace PEBakery.WPF
 
         private void ScriptUpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
@@ -1128,7 +1126,7 @@ namespace PEBakery.WPF
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
@@ -1139,12 +1137,12 @@ namespace PEBakery.WPF
 
         private void ScriptOpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurMainTree?.Script == null)
+            if (Model.CurMainTree?.Script == null)
                 return;
             if (Model.WorkInProgress)
                 return;
 
-            Script sc = CurMainTree.Script;
+            Script sc = Model.CurMainTree.Script;
             if (sc.Type == ScriptType.Directory)
                 OpenFolder(sc.RealPath);
             else
@@ -1269,9 +1267,9 @@ namespace PEBakery.WPF
 
             if (redrawProject)
             {
-                CurMainTree = projectRoot;
-                CurMainTree.IsExpanded = true;
-                DisplayScript(CurMainTree.Script);
+                Model.CurMainTree = projectRoot;
+                Model.CurMainTree.IsExpanded = true;
+                DisplayScript(Model.CurMainTree.Script);
             }
         }
 
@@ -1355,9 +1353,9 @@ namespace PEBakery.WPF
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel model)
+            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel itemModel)
             {
-                ProjectTreeItemModel item = CurMainTree = model;
+                ProjectTreeItemModel item = Model.CurMainTree = itemModel;
 
                 Dispatcher.Invoke(() =>
                 {
@@ -1366,7 +1364,7 @@ namespace PEBakery.WPF
                     DisplayScript(item.Script);
                     watch.Stop();
                     double msec = watch.Elapsed.TotalMilliseconds;
-                    string filename = Path.GetFileName(CurMainTree.Script.TreePath);
+                    string filename = Path.GetFileName(Model.CurMainTree.Script.TreePath);
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
@@ -1533,6 +1531,11 @@ namespace PEBakery.WPF
             Panel.SetZIndex(canvas, -1);
             MainCanvas = canvas;
         }
+        #endregion
+
+        #region
+        public ProjectTreeItemModel CurMainTree { get; set; }
+        public ProjectTreeItemModel CurBuildTree { get; set; }
         #endregion
 
         #region Normal Interface Properties
@@ -2107,6 +2110,11 @@ namespace PEBakery.WPF
             BuildCommandProgressText = string.Empty;
             BuildCommandProgressValue = 0;
         }
+        #endregion
+
+        #region Script Buttons
+        // public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
+
         #endregion
 
         #region OnPropertyUpdate

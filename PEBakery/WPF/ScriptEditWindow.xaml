@@ -46,7 +46,7 @@
     <Window.CommandBindings>
         <CommandBinding Command="local:ScriptEditCommands.Save"
                         CanExecute="SaveCommand_CanExecute"
-                        Executed="SaveCommand_Executed"/>
+                        Executed="SaveCommand_Execute"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Command="{Binding UICtrlReloadCommand}" Key="R" Modifiers="Ctrl"/>

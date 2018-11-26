@@ -72,7 +72,7 @@ namespace PEBakery.WPF
 
                     _m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
 
-                    if (proj.ProjectName.Equals(w.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
+                    if (proj.ProjectName.Equals(Global.MainViewModel.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
                         _m.CodeBox_SelectedProjectIndex = i;
                 }
             });
@@ -173,7 +173,7 @@ namespace PEBakery.WPF
                     MainWindow w = Application.Current.MainWindow as MainWindow;
                     Debug.Assert(w != null, "MainWindow != null");
 
-                    w.DisplayScript(w.CurMainTree.Script);
+                    w.DisplayScript(Global.MainViewModel.CurMainTree.Script);
 
                     if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow

@@ -326,10 +326,10 @@ namespace PEBakery.Core.Commands
                             w.UpdateScriptTree(s.Project, false, false);
                             foreach (Script sc in newScripts)
                             {
-                                if (sc.Equals(w.CurMainTree.Script))
+                                if (sc.Equals(s.MainViewModel.CurMainTree.Script))
                                 {
-                                    w.CurMainTree.Script = sc;
-                                    w.DisplayScript(w.CurMainTree.Script);
+                                    s.MainViewModel.CurMainTree.Script = sc;
+                                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
                                 }
                             }
                         });
@@ -407,10 +407,10 @@ namespace PEBakery.Core.Commands
                             w.UpdateScriptTree(s.Project, false);
                             foreach (Script sc in newScripts)
                             {
-                                if (sc.Equals(w.CurMainTree.Script))
+                                if (sc.Equals(s.MainViewModel.CurMainTree.Script))
                                 {
-                                    w.CurMainTree.Script = sc;
-                                    w.DisplayScript(w.CurMainTree.Script);
+                                    s.MainViewModel.CurMainTree.Script = sc;
+                                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
                                 }
                             }
                         });

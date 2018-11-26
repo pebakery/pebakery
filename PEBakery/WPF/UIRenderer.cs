@@ -1585,7 +1585,7 @@ namespace PEBakery.WPF
                         mainModel.BuildTreeItems.Clear();
                         ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(section.Script, null, null);
                         mainModel.BuildTreeItems.Add(itemRoot);
-                        w.CurBuildTree = null;
+                        mainModel.CurBuildTree = null;
                     }
                 });
 
@@ -1637,7 +1637,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w?.DisplayScript(w.CurMainTree.Script);
+                        w?.DisplayScript(mainModel.CurMainTree.Script);
                     });
                 }
             }
