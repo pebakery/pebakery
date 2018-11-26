@@ -63,10 +63,6 @@ namespace PEBakery.WPF
         #region Fields and Properties
         public string BaseDir => Global.BaseDir;
 
-        private int _projectsLoading = 0;
-        private int _scriptRefreshing = 0;
-        private int _syntaxChecking = 0;
-
         private UIRenderer _renderer;
 
         public Logger Logger { get; }
@@ -193,7 +189,7 @@ namespace PEBakery.WPF
         #region Background Tasks
         public Task StartLoadingProjects(bool quiet = false)
         {
-            if (_projectsLoading != 0)
+            if (Model.ProjectsLoading != 0)
                 return Task.CompletedTask;
 
             // Number of total scripts
@@ -255,7 +251,7 @@ namespace PEBakery.WPF
 
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref _projectsLoading);
+                Interlocked.Increment(ref Model.ProjectsLoading);
                 if (!quiet)
                     Model.WorkInProgress = true;
                 Model.SwitchStatusProgressBar = false; // Show Progress Bar
@@ -374,7 +370,7 @@ namespace PEBakery.WPF
                     if (!quiet)
                         Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
-                    Interlocked.Decrement(ref _projectsLoading);
+                    Interlocked.Decrement(ref Model.ProjectsLoading);
                 }
             });
         }
@@ -412,13 +408,13 @@ namespace PEBakery.WPF
                 return Task.CompletedTask;
             if (Model.CurMainTree.Script.Type == ScriptType.Directory)
                 return Task.CompletedTask;
-            if (_scriptRefreshing != 0)
+            if (Model.ScriptRefreshing != 0)
                 return Task.CompletedTask;
 
             ProjectTreeItemModel node = Model.CurMainTree;
             return Task.Run(() =>
             {
-                Interlocked.Increment(ref _scriptRefreshing);
+                Interlocked.Increment(ref Model.ScriptRefreshing);
                 Model.WorkInProgress = true;
                 try
                 {
@@ -444,7 +440,7 @@ namespace PEBakery.WPF
                 finally
                 {
                     Model.WorkInProgress = false;
-                    Interlocked.Decrement(ref _scriptRefreshing);
+                    Interlocked.Decrement(ref Model.ScriptRefreshing);
                 }
             });
         }
@@ -453,133 +449,10 @@ namespace PEBakery.WPF
         {
             node.Script = sc;
             node.ParentCheckedPropagation();
+            MainViewModel.UpdateTreeViewIcon(node);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                UpdateTreeViewIcon(node);
                 DisplayScript(node.Script);
-            });
-        }
-
-        private Task StartSyntaxCheck(bool quiet)
-        {
-            if (Model.CurMainTree?.Script == null)
-                return Task.CompletedTask;
-            if (_syntaxChecking != 0)
-                return Task.CompletedTask;
-
-            Script sc = Model.CurMainTree.Script;
-            if (sc.Type == ScriptType.Directory)
-                return Task.CompletedTask;
-
-            if (!quiet)
-                Model.WorkInProgress = true;
-
-            return Task.Run(() =>
-            {
-                Interlocked.Increment(ref _syntaxChecking);
-                try
-                {
-                    CodeValidator v = new CodeValidator(sc);
-                    (List<LogInfo> logs, CodeValidator.Result result) = v.Validate();
-                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
-                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
-
-                    int errorWarns = errorLogs.Length + warnLogs.Length;
-                    StringBuilder b = new StringBuilder();
-                    if (0 < errorLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < errorLogs.Length; i++)
-                            {
-                                LogInfo log = errorLogs[i];
-                                b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
-                    if (0 < warnLogs.Length)
-                    {
-                        if (!quiet)
-                        {
-                            b.AppendLine($"{warnLogs.Length} syntax warning detected at [{sc.TreePath}]");
-                            b.AppendLine();
-                            for (int i = 0; i < warnLogs.Length; i++)
-                            {
-                                LogInfo log = warnLogs[i];
-                                b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
-                                if (log.Command != null)
-                                {
-                                    b.Append($" ({log.Command})");
-                                    if (0 < log.Command.LineIdx)
-                                        b.Append($" (Line {log.Command.LineIdx})");
-                                }
-                                else if (log.UIControl != null)
-                                {
-                                    b.Append($" ({log.UIControl})");
-                                    if (0 < log.UIControl.LineIdx)
-                                        b.Append($" (Line {log.UIControl.LineIdx})");
-                                }
-                                b.AppendLine();
-                            }
-                            b.AppendLine();
-                        }
-                    }
-
-                    Model.ScriptCheckResult = result;
-                    if (!quiet)
-                    {
-                        switch (result)
-                        {
-                            case CodeValidator.Result.Clean:
-                                b.AppendLine("No syntax issue detected");
-                                b.AppendLine();
-                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-                                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
-                                break;
-                            case CodeValidator.Result.Warning:
-                            case CodeValidator.Result.Error:
-                                string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
-                                MessageBoxImage dialogIcon = result == CodeValidator.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
-                                MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
-                                if (dialogResult == MessageBoxResult.OK)
-                                {
-                                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-
-                                    string tempFile = Path.GetTempFileName();
-                                    File.Delete(tempFile);
-                                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
-                                        w.Write(b.ToString());
-
-                                    OpenTextFile(tempFile);
-                                }
-                                break;
-                        }
-
-                        Model.WorkInProgress = false;
-                    }
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref _syntaxChecking);
-                }
             });
         }
         #endregion
@@ -602,7 +475,7 @@ namespace PEBakery.WPF
                 // Run CodeValidator
                 // Do not use await, let it run in background
                 if (Global.Setting.Script_AutoSyntaxCheck)
-                    StartSyntaxCheck(true);
+                    Model.StartSyntaxCheck(true);
             }
 
             Model.IsTreeEntryFile = sc.Type != ScriptType.Directory;
@@ -820,7 +693,7 @@ namespace PEBakery.WPF
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_projectsLoading != 0)
+            if (Model.ProjectsLoading != 0)
                 return;
 
             (MainTreeView.DataContext as ProjectTreeItemModel)?.Children.Clear();
@@ -831,7 +704,7 @@ namespace PEBakery.WPF
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_projectsLoading != 0)
+            if (Model.ProjectsLoading != 0)
                 return;
 
             double old_Interface_ScaleFactor = Global.Setting.Interface_ScaleFactor;
@@ -870,7 +743,7 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_projectsLoading != 0)
+            if (Model.ProjectsLoading != 0)
                 return;
             if (0 < UtilityWindow.Count)
                 return;
@@ -1052,10 +925,10 @@ namespace PEBakery.WPF
             {
                 case ScriptType.Script:
                 case ScriptType.Link:
-                    OpenTextFile(sc.RealPath);
+                    MainViewModel.OpenTextFile(sc.RealPath);
                     break;
                 default:
-                    OpenFolder(sc.RealPath);
+                    MainViewModel.OpenFolder(sc.RealPath);
                     break;
             }
         }
@@ -1132,7 +1005,7 @@ namespace PEBakery.WPF
                 return;
 
             // Do not use await, let it run in background
-            StartSyntaxCheck(false);
+            Model.StartSyntaxCheck(false);
         }
 
         private void ScriptOpenFolderButton_Click(object sender, RoutedEventArgs e)
@@ -1144,9 +1017,9 @@ namespace PEBakery.WPF
 
             Script sc = Model.CurMainTree.Script;
             if (sc.Type == ScriptType.Directory)
-                OpenFolder(sc.RealPath);
+                MainViewModel.OpenFolder(sc.RealPath);
             else
-                OpenFolder(Path.GetDirectoryName(sc.RealPath));
+                MainViewModel.OpenFolder(Path.GetDirectoryName(sc.RealPath));
         }
         #endregion
 
@@ -1279,56 +1152,22 @@ namespace PEBakery.WPF
             {
                 Script = sc,
             };
-            UpdateTreeViewIcon(item);
+            MainViewModel.UpdateTreeViewIcon(item);
             parent?.Children.Add(item);
 
             return item;
         }
 
-        public static ProjectTreeItemModel UpdateTreeViewIcon(ProjectTreeItemModel item)
-        {
-            Script sc = item.Script;
-
-            if (sc.Type == ScriptType.Directory)
-            {
-                if (sc.IsDirLink)
-                    item.Icon = PackIconMaterialKind.FolderMove;
-                else
-                    item.Icon = PackIconMaterialKind.Folder;
-            }
-            else if (sc.Type == ScriptType.Script)
-            {
-                if (sc.IsMainScript)
-                    item.Icon = PackIconMaterialKind.Settings;
-                else
-                {
-                    if (sc.IsDirLink)
-                    {
-                        if (sc.Mandatory)
-                            item.Icon = PackIconMaterialKind.LockOutline;
-                        else
-                            item.Icon = PackIconMaterialKind.OpenInNew;
-                    }
-                    else
-                    {
-                        if (sc.Mandatory)
-                            item.Icon = PackIconMaterialKind.LockOutline;
-                        else
-                            item.Icon = PackIconMaterialKind.File;
-                    }
-                }
-            }
-            else if (sc.Type == ScriptType.Link)
-                item.Icon = PackIconMaterialKind.OpenInNew;
-            else // Error
-                item.Icon = PackIconMaterialKind.WindowClose;
-
-            return item;
-        }
+        
 
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
         {
             KeyDown += MainTreeView_KeyDown;
+        }
+
+        private void MainTreeView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            KeyDown -= MainTreeView_KeyDown;
         }
 
         /// <summary>
@@ -1383,62 +1222,6 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region OpenTextFile, OpenFolder
-        public void OpenTextFile(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                MessageBox.Show($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (Global.Setting.Interface_UseCustomEditor)
-            {
-                string ext = Path.GetExtension(Global.Setting.Interface_CustomEditorPath);
-                if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                if (!File.Exists(Global.Setting.Interface_CustomEditorPath))
-                {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                ProcessStartInfo info = new ProcessStartInfo
-                {
-                    UseShellExecute = false,
-                    FileName = Global.Setting.Interface_CustomEditorPath,
-                    Arguments = StringEscaper.Doublequote(filePath),
-                };
-
-                try { UACHelper.UACHelper.StartWithShell(info); }
-                catch { Process.Start(info); }
-            }
-            else
-            {
-                FileHelper.OpenPath(filePath);
-            }
-        }
-
-        public void OpenFolder(string filePath)
-        {
-            if (!Directory.Exists(filePath))
-            {
-                MessageBox.Show($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo(filePath)
-            };
-            proc.Start();
-        }
-        #endregion
-
         #region PrintBuildElapsedStatus
         public static Task PrintBuildElapsedStatus(string msg, EngineState s, CancellationToken token)
         {
@@ -1488,11 +1271,11 @@ namespace PEBakery.WPF
             }
 
             // TODO: Do this in more cleaner way
-            while (_scriptRefreshing != 0)
+            while (Model.ScriptRefreshing != 0)
                 await Task.Delay(500);
             while (ScriptCache.DbLock != 0)
                 await Task.Delay(500);
-            if (_projectsLoading != 0)
+            if (Model.ProjectsLoading != 0)
                 await Task.Delay(500);
 
             _scriptCache?.WaitClose();
@@ -1511,7 +1294,7 @@ namespace PEBakery.WPF
     #endregion
 
     #region MainViewModel
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : ViewModelBase
     {
         #region Constructor
         public MainViewModel()
@@ -1533,7 +1316,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region
+        #region MainWindow Migration
         public ProjectTreeItemModel CurMainTree { get; set; }
         public ProjectTreeItemModel CurBuildTree { get; set; }
         #endregion
@@ -2114,14 +1897,233 @@ namespace PEBakery.WPF
 
         #region Script Buttons
         // public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
-
         #endregion
 
-        #region OnPropertyUpdate
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
+        #region TreeView Methods
+        public static ProjectTreeItemModel UpdateTreeViewIcon(ProjectTreeItemModel item)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            Script sc = item.Script;
+
+            if (sc.Type == ScriptType.Directory)
+            {
+                if (sc.IsDirLink)
+                    item.Icon = PackIconMaterialKind.FolderMove;
+                else
+                    item.Icon = PackIconMaterialKind.Folder;
+            }
+            else if (sc.Type == ScriptType.Script)
+            {
+                if (sc.IsMainScript)
+                    item.Icon = PackIconMaterialKind.Settings;
+                else
+                {
+                    if (sc.IsDirLink)
+                    {
+                        if (sc.Mandatory)
+                            item.Icon = PackIconMaterialKind.LockOutline;
+                        else
+                            item.Icon = PackIconMaterialKind.OpenInNew;
+                    }
+                    else
+                    {
+                        if (sc.Mandatory)
+                            item.Icon = PackIconMaterialKind.LockOutline;
+                        else
+                            item.Icon = PackIconMaterialKind.File;
+                    }
+                }
+            }
+            else if (sc.Type == ScriptType.Link)
+                item.Icon = PackIconMaterialKind.OpenInNew;
+            else // Error
+                item.Icon = PackIconMaterialKind.WindowClose;
+
+            return item;
+        }
+        #endregion
+
+        #region Background Tasks
+        public int ProjectsLoading = 0;
+        public int ScriptRefreshing = 0;
+        public int SyntaxChecking = 0;
+
+        public Task StartSyntaxCheck(bool quiet)
+        {
+            if (CurMainTree?.Script == null)
+                return Task.CompletedTask;
+            if (SyntaxChecking != 0)
+                return Task.CompletedTask;
+
+            Script sc = CurMainTree.Script;
+            if (sc.Type == ScriptType.Directory)
+                return Task.CompletedTask;
+
+            if (!quiet)
+                WorkInProgress = true;
+
+            return Task.Run(() =>
+            {
+                Interlocked.Increment(ref SyntaxChecking);
+                try
+                {
+                    CodeValidator v = new CodeValidator(sc);
+                    (List<LogInfo> logs, CodeValidator.Result result) = v.Validate();
+                    LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+                    LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+
+                    int errorWarns = errorLogs.Length + warnLogs.Length;
+                    StringBuilder b = new StringBuilder();
+                    if (0 < errorLogs.Length)
+                    {
+                        if (!quiet)
+                        {
+                            b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
+                            b.AppendLine();
+                            for (int i = 0; i < errorLogs.Length; i++)
+                            {
+                                LogInfo log = errorLogs[i];
+                                b.Append($"[{i + 1}/{errorLogs.Length}] {log.Message}");
+                                if (log.Command != null)
+                                {
+                                    b.Append($" ({log.Command})");
+                                    if (0 < log.Command.LineIdx)
+                                        b.Append($" (Line {log.Command.LineIdx})");
+                                }
+                                else if (log.UIControl != null)
+                                {
+                                    b.Append($" ({log.UIControl})");
+                                    if (0 < log.UIControl.LineIdx)
+                                        b.Append($" (Line {log.UIControl.LineIdx})");
+                                }
+                                b.AppendLine();
+                            }
+                            b.AppendLine();
+                        }
+                    }
+
+                    if (0 < warnLogs.Length)
+                    {
+                        if (!quiet)
+                        {
+                            b.AppendLine($"{warnLogs.Length} syntax warning detected at [{sc.TreePath}]");
+                            b.AppendLine();
+                            for (int i = 0; i < warnLogs.Length; i++)
+                            {
+                                LogInfo log = warnLogs[i];
+                                b.Append($"[{i + 1}/{warnLogs.Length}] {log.Message}");
+                                if (log.Command != null)
+                                {
+                                    b.Append($" ({log.Command})");
+                                    if (0 < log.Command.LineIdx)
+                                        b.Append($" (Line {log.Command.LineIdx})");
+                                }
+                                else if (log.UIControl != null)
+                                {
+                                    b.Append($" ({log.UIControl})");
+                                    if (0 < log.UIControl.LineIdx)
+                                        b.Append($" (Line {log.UIControl.LineIdx})");
+                                }
+                                b.AppendLine();
+                            }
+                            b.AppendLine();
+                        }
+                    }
+
+                    ScriptCheckResult = result;
+                    if (!quiet)
+                    {
+                        switch (result)
+                        {
+                            case CodeValidator.Result.Clean:
+                                b.AppendLine("No syntax issue detected");
+                                b.AppendLine();
+                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                                break;
+                            case CodeValidator.Result.Warning:
+                            case CodeValidator.Result.Error:
+                                string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
+                                MessageBoxImage dialogIcon = result == CodeValidator.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
+                                MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
+                                if (dialogResult == MessageBoxResult.OK)
+                                {
+                                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                                    string tempFile = Path.GetTempFileName();
+                                    File.Delete(tempFile);
+                                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                        w.Write(b.ToString());
+
+                                    OpenTextFile(tempFile);
+                                }
+                                break;
+                        }
+
+                        WorkInProgress = false;
+                    }
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref SyntaxChecking);
+                }
+            });
+        }
+        #endregion
+
+        #region ShellExecute Alternative - OpenTextFile, OpenFolder
+        public static void OpenTextFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                MessageBox.Show($"File [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (Global.Setting.Interface_UseCustomEditor)
+            {
+                string ext = Path.GetExtension(Global.Setting.Interface_CustomEditorPath);
+                if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                if (!File.Exists(Global.Setting.Interface_CustomEditorPath))
+                {
+                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                ProcessStartInfo info = new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    FileName = Global.Setting.Interface_CustomEditorPath,
+                    Arguments = StringEscaper.Doublequote(filePath),
+                };
+
+                try { UACHelper.UACHelper.StartWithShell(info); }
+                catch { Process.Start(info); }
+            }
+            else
+            {
+                FileHelper.OpenPath(filePath);
+            }
+        }
+
+        public static void OpenFolder(string filePath)
+        {
+            if (!Directory.Exists(filePath))
+            {
+                MessageBox.Show($"Directory [{filePath}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo(filePath)
+            };
+            proc.Start();
         }
         #endregion
     }

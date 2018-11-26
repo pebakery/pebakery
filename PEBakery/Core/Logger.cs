@@ -1317,7 +1317,15 @@ namespace PEBakery.Core
             return $"{BuildId},{Id} = {Level} {Name} {Version}";
         }
 
-        public string FullIdentifier => $"{Level}_{RealPath}_{TreePath}";
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>
+        /// $"{Level}_{RealPath}_{TreePath}" is not enough.
+        /// MainScript's [Process] section is called prior to every build.
+        /// If one intended to run MainScript's another section, two DB_Script instance will have same FullIdentifier if Name is not included.
+        /// </remarks>
+        public string FullIdentifier => $"{Level}_{Name}_{RealPath}_{TreePath}";
     }
 
     public class DB_Variable

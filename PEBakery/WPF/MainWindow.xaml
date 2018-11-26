@@ -380,6 +380,7 @@
                           ItemsSource="{Binding MainTreeItems}"
                           BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
+                          Unloaded="MainTreeView_Unloaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"

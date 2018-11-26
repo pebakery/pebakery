@@ -142,7 +142,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    w.OpenTextFile(destFile);
+                    MainViewModel.OpenTextFile(destFile);
                 }
             });
 

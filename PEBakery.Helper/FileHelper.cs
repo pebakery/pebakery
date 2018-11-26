@@ -41,6 +41,7 @@ namespace PEBakery.Helper
     /// </summary>
     public static class FileHelper
     {
+        #region Get Program's Property
         /// <summary>
         /// Read program's version from assembly
         /// </summary>
@@ -54,7 +55,9 @@ namespace PEBakery.Helper
         {
             return RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory);
         }
+        #endregion
 
+        #region RemoveLastDirChar
         /// <summary>
         /// Remove last \ in the path.
         /// </summary>
@@ -66,7 +69,9 @@ namespace PEBakery.Helper
                 path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             return path;
         }
+        #endregion
 
+        #region Path Operations
         private static readonly object TempDirLock = new object();
         public static string GetTempDir()
         {
@@ -139,12 +144,23 @@ namespace PEBakery.Helper
             }
         }
 
+        public static string GetTempFileNameEx()
+        {
+            string path = Path.GetTempFileName();
+            File.Delete(path);
+            return path;
+        }
+        #endregion
+
+        #region GetFileSize
         public static long GetFileSize(string srcFile)
         {
             FileInfo info = new FileInfo(srcFile);
             return info.Length;
         }
+        #endregion
 
+        #region File Byte Operations
         public static bool FindByteSignature(string srcFile, byte[] signature, out long offset)
         {
             long size = FileHelper.GetFileSize(srcFile);
@@ -169,13 +185,6 @@ namespace PEBakery.Helper
             }
 
             return found;
-        }
-
-        public static string GetTempFileNameEx()
-        {
-            string path = Path.GetTempFileName();
-            File.Delete(path);
-            return path;
         }
 
         public static void CopyOffset(string srcFile, string destFile, long offset, long length)
@@ -206,6 +215,7 @@ namespace PEBakery.Helper
                 }
             }
         }
+        #endregion
 
         #region DirectoryCopy
         public struct DirCopyOptions
@@ -422,6 +432,76 @@ namespace PEBakery.Helper
         }
         #endregion
 
+        #region DOS 8.3 Path
+        private const int MaxLongPath = 32767;
+        private const string LongPathPrefix = @"\\?\";
+        private const string UseLegacyPathHandling = @"Switch.System.IO.UseLegacyPathHandling";
+
+        // Success of this depends on HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation
+        public static string GetShortPath(string longPath)
+        {
+            // Is long path (~32768) support enabled in .Net?
+            bool isLongPathDisabled;
+            try
+            {
+                // false - 32767, true - 260
+                AppContext.TryGetSwitch(UseLegacyPathHandling, out isLongPathDisabled);
+            }
+            catch
+            {
+                isLongPathDisabled = true;
+            }
+
+            if (!isLongPathDisabled)
+            {
+                if (!longPath.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    longPath = LongPathPrefix + longPath;
+            }
+
+            StringBuilder shortPath = new StringBuilder(MaxLongPath);
+            NativeMethods.GetShortPathName(longPath, shortPath, MaxLongPath);
+
+            string str = shortPath.ToString();
+            if (!isLongPathDisabled)
+            {
+                if (str.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    return str.Substring(LongPathPrefix.Length);
+            }
+            return str;
+        }
+
+        public static string GetLongPath(string shortPath)
+        {
+            // Is long path (~32768) support enabled in .Net?
+            bool isLongPathDisabled;
+            try
+            {
+                AppContext.TryGetSwitch(UseLegacyPathHandling, out isLongPathDisabled);
+            }
+            catch
+            {
+                isLongPathDisabled = true;
+            }
+            if (!isLongPathDisabled)
+            {
+                if (!shortPath.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    shortPath = LongPathPrefix + shortPath;
+            }
+
+            StringBuilder longPath = new StringBuilder(MaxLongPath);
+            NativeMethods.GetLongPathName(shortPath, longPath, MaxLongPath);
+
+            string str = longPath.ToString();
+            if (!isLongPathDisabled)
+            {
+                if (str.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+                    return str.Substring(LongPathPrefix.Length);
+            }
+            return str;
+        }
+        #endregion
+
+        #region Hyperlink and ShellExecute Alternative
         public static Process OpenUri(string uri)
         {
             try
@@ -469,86 +549,7 @@ namespace PEBakery.Helper
                 return proc;
             }
         }
-
-        private const int MAX_LONG_PATH = 32767;
-        private const string LONG_PATH_PREFIX = @"\\?\";
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern int GetShortPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string longPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder shortPath,
-            int cchBuffer
-        );
-
-        // Success of this depends on HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation
-        public static string GetShortPath(string longPath)
-        {
-            // Is long path (~32768) support enabled in .Net?
-            bool isLongPathDisabled;
-            try
-            {
-                // false - 32767, true - 260
-                AppContext.TryGetSwitch("Switch.System.IO.UseLegacyPathHandling", out isLongPathDisabled);
-            }
-            catch
-            {
-                isLongPathDisabled = true;
-            }
-
-            if (!isLongPathDisabled)
-            {
-                if (!longPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
-                    longPath = LONG_PATH_PREFIX + longPath;
-            }
-
-            StringBuilder shortPath = new StringBuilder(MAX_LONG_PATH);
-            GetShortPathName(longPath, shortPath, MAX_LONG_PATH);
-
-            string str = shortPath.ToString();
-            if (!isLongPathDisabled)
-            {
-                if (str.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
-                    return str.Substring(LONG_PATH_PREFIX.Length);
-            }
-            return str;
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern int GetLongPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string shortPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder longPath,
-            int cchBuffer
-        );
-
-        public static string GetLongPath(string shortPath)
-        {
-            // Is long path (~32768) support enabled in .Net?
-            bool isLongPathDisabled;
-            try
-            {
-                AppContext.TryGetSwitch("Switch.System.IO.UseLegacyPathHandling", out isLongPathDisabled);
-            }
-            catch
-            {
-                isLongPathDisabled = true;
-            }
-            if (isLongPathDisabled == false)
-            {
-                if (shortPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal) == false)
-                    shortPath = LONG_PATH_PREFIX + shortPath;
-            }
-
-            StringBuilder longPath = new StringBuilder(MAX_LONG_PATH);
-            GetLongPathName(shortPath, longPath, MAX_LONG_PATH);
-
-            string str = longPath.ToString();
-            if (isLongPathDisabled == false)
-            {
-                if (str.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
-                    return str.Substring(LONG_PATH_PREFIX.Length);
-            }
-            return str;
-        }
+        #endregion
     }
     #endregion
 }
