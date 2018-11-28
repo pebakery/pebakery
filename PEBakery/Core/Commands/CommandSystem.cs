@@ -305,7 +305,7 @@ namespace PEBakery.Core.Commands
                         s.MainViewModel.UpdateScriptTree(s.Project, false, false);
                         foreach (Script sc in newScripts)
                         {
-                            if (sc.Equals(s.MainViewModel.CurMainTree.Script))
+                            if (s.MainViewModel.CurMainTree != null && sc.Equals(s.MainViewModel.CurMainTree.Script))
                             {
                                 s.MainViewModel.CurMainTree.Script = sc;
                                 s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);

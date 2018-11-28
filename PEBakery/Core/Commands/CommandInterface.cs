@@ -88,16 +88,11 @@ namespace PEBakery.Core.Commands
                 }
 
                 // Re-render script
-                Application.Current?.Dispatcher.Invoke(() =>
+                if (s.MainViewModel.CurMainTree != null && sc.Equals(s.MainViewModel.CurMainTree.Script))
                 {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
-                    if (!s.MainViewModel.CurMainTree.Script.Equals(sc))
-                        return;
-
                     s.MainViewModel.CurMainTree.Script = sc;
                     s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
-                });
+                }
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Interface control [{info.UIControlKey}]'s visibility set to [{visibility}]"));
@@ -1036,9 +1031,12 @@ namespace PEBakery.Core.Commands
             // Update uiCtrl into file
             uiCtrl.Update();
 
-            // Render Script again
-            if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
-                s.MainViewModel.DisplayScript(cmd.Section.Script);
+            // Re-render script
+            if (s.MainViewModel.CurMainTree != null)
+            {
+                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+                    s.MainViewModel.DisplayScript(cmd.Section.Script);
+            }
 
             return logs;
         }
