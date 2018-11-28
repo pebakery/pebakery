@@ -177,7 +177,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             s.RunningSubProcess?.Kill();
             s.CmdHaltFlag = true;
 

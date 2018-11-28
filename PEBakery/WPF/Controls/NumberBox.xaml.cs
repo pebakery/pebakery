@@ -27,7 +27,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-
 namespace PEBakery.WPF.Controls
 {
     public partial class NumberBox : UserControl

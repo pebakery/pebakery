@@ -163,6 +163,7 @@ namespace PEBakery.WPF
             _m.Logger.VariableUpdated -= VariableUpdateEventHandler;
 
             Interlocked.Decrement(ref LogWindow.Count);
+            CommandManager.InvalidateRequerySuggested();
         }
         #endregion
 

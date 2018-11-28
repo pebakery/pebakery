@@ -502,6 +502,11 @@ namespace PEBakery.Helper
         #endregion
 
         #region Hyperlink and ShellExecute Alternative
+        /// <summary>
+        /// Open URI with default browser without Administrator privilege.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
         public static Process OpenUri(string uri)
         {
             try
@@ -524,6 +529,11 @@ namespace PEBakery.Helper
             }
         }
 
+        /// <summary>
+        /// ShellExecute without Administrator privilege.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public static Process OpenPath(string path)
         {
             if (path == null)

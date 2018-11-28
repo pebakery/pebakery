@@ -195,6 +195,7 @@
     </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView.cs" />
     <Compile Include="WPF\Controls\BringIntoViewBehavior.cs" />
+    <Compile Include="WPF\Controls\MainIconButton.cs" />
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox.cs" />
@@ -230,7 +231,7 @@
     <Compile Include="Core\StringEscaper.cs" />
     <Compile Include="Core\UIControl.cs" />
     <Compile Include="Core\UIParser.cs" />
-    <Compile Include="WPF\UIRenderer.cs" />
+    <Compile Include="Core\UIRenderer.cs" />
     <Compile Include="Core\Variables.cs" />
     <Compile Include="WPF\UtilityWindow.xaml.cs">
       <DependentUpon>UtilityWindow.xaml</DependentUpon>

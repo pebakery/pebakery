@@ -41,6 +41,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shell;
 
@@ -69,7 +70,15 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region MainWindow Migration
+        #region Constants
+        internal const int ScriptAuthorLenLimit = 35;
+        #endregion
+
+        #region UIRenderer Properties
+        private UIRenderer _renderer;
+        #endregion
+
+        #region TreeItem Properties
         public ProjectTreeItemModel CurMainTree { get; set; }
         public ProjectTreeItemModel CurBuildTree { get; set; }
         #endregion
@@ -83,6 +92,8 @@ namespace PEBakery.Core.ViewModels
             {
                 _workInProgress = value;
                 OnPropertyUpdate(nameof(WorkInProgress));
+
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -143,7 +154,7 @@ namespace PEBakery.Core.ViewModels
         }
 
         #region ScriptLogo
-        private PackIconMaterialKind? _scriptLogoIcon;
+        private PackIconMaterialKind? _scriptLogoIcon = PackIconMaterialKind.None;
         public PackIconMaterialKind? ScriptLogoIcon
         {
             get => _scriptLogoIcon;
@@ -351,7 +362,7 @@ namespace PEBakery.Core.ViewModels
                 { // To Normal View
                     BuildScriptProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
-                    TaskbarProgressState = TaskbarItemProgressState.None;
+                    TaskBarProgressState = TaskbarItemProgressState.None;
 
                     NormalInterfaceVisibility = Visibility.Visible;
                     BuildInterfaceVisibility = Visibility.Collapsed;
@@ -363,7 +374,7 @@ namespace PEBakery.Core.ViewModels
 
                     BuildScriptProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
-                    TaskbarProgressState = TaskbarItemProgressState.Normal;
+                    TaskBarProgressState = TaskbarItemProgressState.Normal;
 
                     NormalInterfaceVisibility = Visibility.Collapsed;
                     BuildInterfaceVisibility = Visibility.Visible;
@@ -619,13 +630,13 @@ namespace PEBakery.Core.ViewModels
         // Error - Red
         // Paused - Yellow
         private TaskbarItemProgressState _taskbarProgressState;
-        public TaskbarItemProgressState TaskbarProgressState
+        public TaskbarItemProgressState TaskBarProgressState
         {
             get => _taskbarProgressState;
             set
             {
                 _taskbarProgressState = value;
-                OnPropertyUpdate(nameof(TaskbarProgressState));
+                OnPropertyUpdate(nameof(TaskBarProgressState));
             }
         }
         #endregion
@@ -648,57 +659,234 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region Script Buttons
-        // public ICommand UICtrlInterfaceAttachCommand => new RelayCommand(UICtrlInterfaceAttachCommand_Execute, CanExecuteFunc);
-        #endregion
-
-        #region TreeView Methods
-        public static ProjectTreeItemModel UpdateTreeViewIcon(ProjectTreeItemModel item)
-        {
-            Script sc = item.Script;
-
-            if (sc.Type == ScriptType.Directory)
-            {
-                if (sc.IsDirLink)
-                    item.Icon = PackIconMaterialKind.FolderMove;
-                else
-                    item.Icon = PackIconMaterialKind.Folder;
-            }
-            else if (sc.Type == ScriptType.Script)
-            {
-                if (sc.IsMainScript)
-                    item.Icon = PackIconMaterialKind.Settings;
-                else
-                {
-                    if (sc.IsDirLink)
-                    {
-                        if (sc.Mandatory)
-                            item.Icon = PackIconMaterialKind.LockOutline;
-                        else
-                            item.Icon = PackIconMaterialKind.OpenInNew;
-                    }
-                    else
-                    {
-                        if (sc.Mandatory)
-                            item.Icon = PackIconMaterialKind.LockOutline;
-                        else
-                            item.Icon = PackIconMaterialKind.File;
-                    }
-                }
-            }
-            else if (sc.Type == ScriptType.Link)
-                item.Icon = PackIconMaterialKind.OpenInNew;
-            else // Error
-                item.Icon = PackIconMaterialKind.WindowClose;
-
-            return item;
-        }
-        #endregion
-
         #region Background Tasks
         public int ProjectsLoading = 0;
         public int ScriptRefreshing = 0;
         public int SyntaxChecking = 0;
+
+        public Task StartLoadingProjects(bool quiet = false)
+        {
+            if (ProjectsLoading != 0)
+                return Task.CompletedTask;
+
+            // Clear MainTreeItems
+            MainTreeItems.Clear();
+
+            // Number of total scripts
+            int totalScriptCount = 0;
+            int stage2LinkCount = 0;
+            int ifaceUpdateFreq = 1;
+
+            // Progress handler
+            int loadedScriptCount = 0;
+            int stage1CachedCount = 0;
+            int stage2LoadedCount = 0;
+            int stage2CachedCount = 0;
+            IProgress<(Project.LoadReport Type, string Path)> progress = new Progress<(Project.LoadReport Type, string Path)>(x =>
+            {
+                Interlocked.Increment(ref loadedScriptCount);
+                BottomProgressBarValue = loadedScriptCount;
+
+                int stage = 0;
+                string msg = string.Empty;
+                switch (x.Type)
+                {
+                    case Project.LoadReport.FindingScript:
+                        ScriptDescriptionText = "Finding script files";
+                        return;
+                    case Project.LoadReport.LoadingCache:
+                        ScriptDescriptionText = "Loading script cache";
+                        return;
+                    case Project.LoadReport.Stage1:
+                        stage = 1;
+                        msg = x.Path == null ? "Error" : $"{x.Path}";
+                        break;
+                    case Project.LoadReport.Stage1Cached:
+                        stage = 1;
+                        Interlocked.Increment(ref stage1CachedCount);
+                        msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                        break;
+                    case Project.LoadReport.Stage2:
+                        stage = 2;
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        msg = x.Path == null ? "Error" : $"{x.Path}";
+                        break;
+                    case Project.LoadReport.Stage2Cached:
+                        stage = 2;
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        Interlocked.Increment(ref stage2CachedCount);
+                        msg = x.Path == null ? "Cached - Error" : $"Cached - {x.Path}";
+                        break;
+                }
+
+                if (loadedScriptCount % ifaceUpdateFreq == 0)
+                {
+                    if (stage == 1)
+                        msg = $"Stage {stage} ({loadedScriptCount} / {totalScriptCount})\r\n{msg}";
+                    else
+                        msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
+                    ScriptDescriptionText = msg;
+                }
+            });
+
+            return Task.Run(() =>
+            {
+                Interlocked.Increment(ref ProjectsLoading);
+                if (!quiet)
+                    WorkInProgress = true;
+                SwitchStatusProgressBar = false; // Show Progress Bar
+                try
+                {
+                    Stopwatch watch = Stopwatch.StartNew();
+
+                    // Prepare PEBakery Loading Information
+                    if (!quiet)
+                    {
+                        ScriptTitleText = "PEBakery loading...";
+                        ScriptDescriptionText = string.Empty;
+                    }
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{Global.BaseDir}]"));
+
+                    // Load CommentProcessing Icon, Clear interfaces
+                    ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
+                    MainTreeItems.Clear();
+                    BuildTreeItems.Clear();
+                    Application.Current.Dispatcher.Invoke(ClearScriptInterface);
+
+                    BottomProgressBarMinimum = 0;
+                    BottomProgressBarMaximum = 100;
+                    BottomProgressBarValue = 0;
+
+                    // Init ProjectCollection
+                    if (Global.Setting.Script_EnableCache && Global.ScriptCache != null) // Use ScriptCache
+                    {
+                        if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir))
+                            Global.Projects = new ProjectCollection(Global.BaseDir, Global.ScriptCache);
+                        else // Cache is invalid
+                        {
+                            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
+                            {
+                                CacheInfo = false,
+                                ScriptCache = true,
+                            });
+                            Global.Projects = new ProjectCollection(Global.BaseDir, null);
+                        }
+                    }
+                    else // Do not use ScriptCache
+                    {
+                        Global.Projects = new ProjectCollection(Global.BaseDir, null);
+                    }
+
+                    // Prepare by getting script paths
+                    progress.Report((Project.LoadReport.FindingScript, null));
+                    (totalScriptCount, stage2LinkCount) = Global.Projects.PrepareLoad();
+                    ifaceUpdateFreq = totalScriptCount / 64 + 1;
+                    BottomProgressBarMaximum = totalScriptCount + stage2LinkCount;
+
+                    // Load projects in parallel
+                    List<LogInfo> errorLogs = Global.Projects.Load(progress);
+                    Global.Logger.SystemWrite(errorLogs);
+                    Global.Setting.UpdateProjectList();
+
+                    if (0 < Global.Projects.ProjectNames.Count)
+                    { // Load success
+                        // Populate TreeView
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            foreach (Project project in Global.Projects.ProjectList)
+                            {
+                                ProjectTreeItemModel projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
+                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, projectRoot);
+                                MainTreeItems.Add(projectRoot);
+                            }
+
+                            int pIdx = Global.Setting.Project_DefaultIndex;
+                            if (0 <= pIdx && pIdx < MainTreeItems.Count)
+                            {
+                                CurMainTree = MainTreeItems[pIdx];
+                                CurMainTree.IsExpanded = true;
+                                if (Global.Projects[pIdx] != null)
+                                    DisplayScript(Global.Projects[pIdx].MainScript);
+                            }
+                            else
+                            {
+                                CurMainTree = null;
+                            }
+                        });
+
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
+
+                        watch.Stop();
+                        double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                        string msg;
+                        if (Global.Setting.Script_EnableCache)
+                        {
+                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (totalScriptCount + stage2LinkCount);
+                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                            StatusBarText = msg;
+                        }
+                        else
+                        {
+                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s)";
+                            StatusBarText = msg;
+                        }
+
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Info, msg));
+                        Global.Logger.SystemWrite(Logger.LogSeperator);
+
+                        // If script cache is enabled, update cache.
+                        if (Global.Setting.Script_EnableCache)
+                            StartScriptCaching();
+                    }
+                    else
+                    { // Load failure
+                        ScriptTitleText = "Unable to find project.";
+                        ScriptDescriptionText = $"Please provide project in [{Global.Projects.ProjectRoot}]";
+                        StatusBarText = "Unable to find project.";
+                    }
+                }
+                finally
+                {
+                    if (!quiet)
+                        WorkInProgress = false;
+                    SwitchStatusProgressBar = true; // Show Status Bar
+                    Interlocked.Decrement(ref ProjectsLoading);
+
+                    // Enable Button/Context Menu Commands
+                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                }
+            });
+        }
+
+        public Task StartScriptCaching()
+        {
+            if (ScriptCache.DbLock != 0)
+                return Task.CompletedTask;
+
+            return Task.Run(() =>
+            {
+                Interlocked.Increment(ref ScriptCache.DbLock);
+                WorkInProgress = true;
+                try
+                {
+                    Stopwatch watch = Stopwatch.StartNew();
+                    (_, int updatedCount) = Global.ScriptCache.CacheScripts(Global.Projects, Global.BaseDir);
+                    watch.Stop();
+
+                    double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"{updatedCount} script cache updated ({t:0.###}s)"));
+                    Global.Logger.SystemWrite(Logger.LogSeperator);
+                }
+                finally
+                {
+                    WorkInProgress = false;
+                    Interlocked.Decrement(ref ScriptCache.DbLock);
+
+                    // Enable Button/Context Menu Commands
+                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                }
+            });
+        }
 
         public Task StartSyntaxCheck(bool quiet)
         {
@@ -819,12 +1007,437 @@ namespace PEBakery.Core.ViewModels
                 finally
                 {
                     Interlocked.Decrement(ref SyntaxChecking);
+
+                    // Enable Button/Context Menu Commands
+                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
+        }
+
+        public Task StartRefreshScript()
+        {
+            if (CurMainTree?.Script == null)
+                return Task.CompletedTask;
+            if (CurMainTree.Script.Type == ScriptType.Directory)
+                return Task.CompletedTask;
+            if (ScriptRefreshing != 0)
+                return Task.CompletedTask;
+
+            ProjectTreeItemModel node = CurMainTree;
+            return Task.Run(() =>
+            {
+                Interlocked.Increment(ref ScriptRefreshing);
+                WorkInProgress = true;
+                try
+                {
+                    Stopwatch watch = Stopwatch.StartNew();
+
+                    Script sc = node.Script;
+                    if (sc.Type != ScriptType.Directory)
+                        sc = sc.Project.RefreshScript(node.Script);
+
+                    watch.Stop();
+                    double t = watch.Elapsed.TotalSeconds;
+
+                    if (sc != null)
+                    {
+                        PostRefreshScript(node, sc);
+                        StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reloaded. ({t:0.000}s)";
+                    }
+                    else
+                    {
+                        StatusBarText = $"{Path.GetFileName(node.Script.TreePath)} reload failed. ({t:0.000}s)";
+                    }
+                }
+                finally
+                {
+                    WorkInProgress = false;
+                    Interlocked.Decrement(ref ScriptRefreshing);
+
+                    // Enable Button/Context Menu Commands
+                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                }
+            });
+        }
+
+        private void PostRefreshScript(ProjectTreeItemModel node, Script sc)
+        {
+            node.Script = sc;
+            node.ParentCheckedPropagation();
+            UpdateTreeViewIcon(node);
+            DisplayScript(node.Script);
+        }
+        #endregion
+
+        #region DisplayScript Methods
+        public void DisplayScript(Script sc)
+        {
+            DisplayScriptLogo(sc);
+            DisplayScriptTexts(sc, null);
+
+            ScriptCheckResult = CodeValidator.Result.Unknown;
+            if (sc.Type == ScriptType.Directory)
+            {
+                ClearScriptInterface();
+            }
+            else
+            {
+                DisplayScriptInterface(sc);
+
+                // Run CodeValidator
+                // Do not use await, let it run in background
+                if (Global.Setting.Script_AutoSyntaxCheck)
+                    StartSyntaxCheck(true);
+            }
+
+            IsTreeEntryFile = sc.Type != ScriptType.Directory;
+            OnPropertyUpdate(nameof(MainCanvas));
+        }
+
+        public void DisplayScriptInterface(Script sc)
+        {
+            // Current UIRenderer can only run in interface thread.
+            // Guard instance owner exception using Application.Current.Dispatcher.Invoke()
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Set scale factor
+                double scaleFactor = Global.Setting.Interface_ScaleFactor / 100;
+                ScaleTransform scale;
+                if (scaleFactor - 1 < double.Epsilon)
+                    scale = new ScaleTransform(1, 1);
+                else
+                    scale = new ScaleTransform(scaleFactor, scaleFactor);
+                MainCanvas.LayoutTransform = scale;
+
+                // Render script interface
+                ClearScriptInterface();
+
+                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, scaleFactor, true, Global.Setting.Compat_IgnoreWidthOfWebLabel);
+                _renderer.Render();
+            });
+        }
+
+        public void ClearScriptInterface()
+        {
+            if (_renderer == null)
+                return;
+
+            _renderer.Clear();
+            _renderer = null;
+        }
+
+        public void DisplayScriptLogo(Script sc)
+        {
+            if (sc.Type == ScriptType.Directory)
+            {
+                if (sc.IsDirLink)
+                    ScriptLogoIcon = PackIconMaterialKind.FolderMove;
+                else
+                    ScriptLogoIcon = PackIconMaterialKind.Folder;
+            }
+            else
+            {
+                try
+                {
+                    using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                    {
+                        switch (type)
+                        {
+                            case ImageHelper.ImageType.Svg:
+                                DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                Rect svgSize = svgDrawing.Bounds;
+                                (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
+                                ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                ScriptLogoSvgWidth = width;
+                                ScriptLogoSvgHeight = height;
+                                break;
+                            default:
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    // ReSharper disable once AccessToDisposedClosure
+                                    ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
+                                });
+                                break;
+                        }
+                    }
+                }
+                catch
+                { // No logo file - use default
+                    PackIconMaterialKind iconKind = PackIconMaterialKind.None;
+                    if (sc.Type == ScriptType.Script)
+                    {
+                        if (sc.IsDirLink)
+                            iconKind = PackIconMaterialKind.FileSend;
+                        else
+                            iconKind = PackIconMaterialKind.FileDocument;
+                    }
+                    else if (sc.Type == ScriptType.Link)
+                    {
+                        iconKind = PackIconMaterialKind.FileSend;
+                    }
+
+                    ScriptLogoIcon = iconKind;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Display script title, description, version and author
+        /// </summary>
+        /// <param name="sc">Source script to read information</param>
+        /// <param name="s">Set to non-null to notify running in build mode</param>
+        public void DisplayScriptTexts(Script sc, EngineState s)
+        {
+            if (sc.Type == ScriptType.Directory && s == null)
+            { // In build mode, there are no directory scripts
+                ScriptTitleText = StringEscaper.Unescape(sc.Title);
+                ScriptDescriptionText = string.Empty;
+                ScriptVersionText = string.Empty;
+                ScriptAuthorText = string.Empty;
+            }
+            else
+            {
+                // Script Title
+                if (s != null && s.RunMode == EngineMode.RunAll)
+                    ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
+                else
+                    ScriptTitleText = StringEscaper.Unescape(sc.Title);
+
+                // Script Description
+                ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
+
+                // Script Version
+                string verStr = StringEscaper.ProcessVersionString(sc.Version);
+                if (verStr == null)
+                {
+                    if (s != null)
+                    { // Normal mode -> Notify script developer to fix
+                        ScriptVersionText = "Error";
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
+                    }
+                    else
+                    { // Build mode -> Suppress error log
+                        ScriptVersionText = sc.Version;
+                    }
+                }
+                else
+                {
+                    ScriptVersionText = $"v{verStr}";
+                }
+
+                // Script Author
+                string author = StringEscaper.Unescape(sc.Author);
+                if (ScriptAuthorLenLimit < author.Length)
+                    ScriptAuthorText = author.Substring(0, ScriptAuthorLenLimit) + "...";
+                else
+                    ScriptAuthorText = author;
+            }
+        }
+        #endregion
+
+        #region TreeView Methods
+        public void UpdateScriptTree(Project project, bool redrawProject, bool assertDirExist = true)
+        {
+            ProjectTreeItemModel projectRoot = MainTreeItems.FirstOrDefault(x => x.Script.Project.Equals(project));
+            if (projectRoot == null)
+                return; // Unable to continue
+
+            projectRoot.Children.Clear();
+            ScriptListToTreeViewModel(project, project.VisibleScripts, assertDirExist, projectRoot);
+
+            if (redrawProject)
+            {
+                CurMainTree = projectRoot;
+                CurMainTree.IsExpanded = true;
+                DisplayScript(CurMainTree.Script);
+            }
+        }
+
+        public static ProjectTreeItemModel UpdateTreeViewIcon(ProjectTreeItemModel item)
+        {
+            Script sc = item.Script;
+
+            if (sc.Type == ScriptType.Directory)
+            {
+                if (sc.IsDirLink)
+                    item.Icon = PackIconMaterialKind.FolderMove;
+                else
+                    item.Icon = PackIconMaterialKind.Folder;
+            }
+            else if (sc.Type == ScriptType.Script)
+            {
+                if (sc.IsMainScript)
+                    item.Icon = PackIconMaterialKind.Settings;
+                else
+                {
+                    if (sc.IsDirLink)
+                    {
+                        if (sc.Mandatory)
+                            item.Icon = PackIconMaterialKind.LockOutline;
+                        else
+                            item.Icon = PackIconMaterialKind.OpenInNew;
+                    }
+                    else
+                    {
+                        if (sc.Mandatory)
+                            item.Icon = PackIconMaterialKind.LockOutline;
+                        else
+                            item.Icon = PackIconMaterialKind.File;
+                    }
+                }
+            }
+            else if (sc.Type == ScriptType.Link)
+                item.Icon = PackIconMaterialKind.OpenInNew;
+            else // Error
+                item.Icon = PackIconMaterialKind.WindowClose;
+
+            return item;
+        }
+
+        public static ProjectTreeItemModel PopulateOneTreeItem(Script sc, ProjectTreeItemModel projectRoot, ProjectTreeItemModel parent)
+        {
+            ProjectTreeItemModel item = new ProjectTreeItemModel(projectRoot, parent) { Script = sc };
+            UpdateTreeViewIcon(item);
+            parent?.Children.Add(item);
+
+            return item;
+        }
+
+        public static void ScriptListToTreeViewModel(Project project, List<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
+        {
+            Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
+
+            // Populate MainScript
+            if (projectRoot == null)
+                projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
+
+            foreach (Script sc in scList.Where(x => x.Type != ScriptType.Directory))
+            {
+                Debug.Assert(sc != null);
+
+                if (sc.Equals(project.MainScript))
+                    continue;
+
+                // Current Parent
+                ProjectTreeItemModel treeParent = projectRoot;
+
+                int idx = sc.TreePath.IndexOf('\\');
+                if (idx == -1)
+                    continue;
+                string[] paths = sc.TreePath
+                    .Substring(idx + 1)
+                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                // Ex) Apps\Network\Mozilla_Firefox_CR.script
+                for (int i = 0; i < paths.Length - 1; i++)
+                {
+                    string pathKey = Project.PathKeyGenerator(paths, i);
+                    string key = $"{sc.Level}_{pathKey}";
+                    if (dirDict.ContainsKey(key))
+                    {
+                        treeParent = dirDict[key];
+                    }
+                    else
+                    {
+                        string treePath = Path.Combine(project.ProjectName, pathKey);
+                        Script ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
+                        Script dirScript;
+
+                        if (assertDirExist)
+                            Debug.Assert(ts != null, $"{nameof(ts)} is null (MainWindow.ScriptListToTreeViewModel)");
+
+                        if (ts != null)
+                        {
+                            dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, project, sc.Level, false, false, ts.IsDirLink);
+                        }
+                        else
+                        {
+                            string fullTreePath = Path.Combine(project.ProjectRoot, treePath);
+                            dirScript = new Script(ScriptType.Directory, fullTreePath, treePath, project, sc.Level, false, false, sc.IsDirLink);
+                        }
+
+                        treeParent = PopulateOneTreeItem(dirScript, projectRoot, treeParent);
+                        dirDict[key] = treeParent;
+                    }
+                }
+
+                PopulateOneTreeItem(sc, projectRoot, treeParent);
+            }
+
+            // Reflect Directory's Selected value
+            RecursiveDecideDirectorySelectedValue(projectRoot);
+        }
+
+        private static SelectedState RecursiveDecideDirectorySelectedValue(ProjectTreeItemModel parent)
+        {
+            SelectedState final = SelectedState.None;
+            foreach (ProjectTreeItemModel item in parent.Children)
+            {
+                if (0 < item.Children.Count)
+                {
+                    // Has child scripts
+                    SelectedState state = RecursiveDecideDirectorySelectedValue(item);
+                    switch (state)
+                    {
+                        case SelectedState.True:
+                            final = item.Script.Selected = SelectedState.True;
+                            break;
+                        case SelectedState.False:
+                            if (final != SelectedState.True)
+                                final = SelectedState.False;
+                            if (item.Script.Selected != SelectedState.True)
+                                item.Script.Selected = SelectedState.False;
+                            break;
+                    }
+                }
+                else // Does not have child script
+                {
+                    switch (item.Script.Selected)
+                    {
+                        case SelectedState.True:
+                            final = SelectedState.True;
+                            break;
+                        case SelectedState.False:
+                            if (final == SelectedState.None)
+                                final = SelectedState.False;
+                            break;
+                    }
+                }
+            }
+
+            return final;
+        }
+        #endregion
+
+        #region PrintBuildElapsedStatus Method
+        public static Task PrintBuildElapsedStatus(string msg, EngineState s, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (s.StartTime == DateTime.MinValue)
+                    { // Engine not started yet
+                        s.MainViewModel.StatusBarText = msg;
+                        return;
+                    }
+
+                    TimeSpan t = DateTime.UtcNow - s.StartTime;
+                    s.MainViewModel.StatusBarText = $"{msg} ({t:h\\:mm\\:ss})";
+
+                    if (token.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(500);
+                }
+            }, token);
         }
         #endregion
 
         #region ShellExecute Alternative - OpenTextFile, OpenFolder
+        /// <summary>
+        /// Open text file using specified/default code editor, without Administrator privilege.
+        /// </summary>
+        /// <param name="filePath"></param>
         public static void OpenTextFile(string filePath)
         {
             if (!File.Exists(filePath))
@@ -864,6 +1477,10 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
+        /// <summary>
+        /// Open folder in explorer.
+        /// </summary>
+        /// <param name="filePath"></param>
         public static void OpenFolder(string filePath)
         {
             if (!Directory.Exists(filePath))
@@ -872,6 +1489,7 @@ namespace PEBakery.Core.ViewModels
                 return;
             }
 
+            // In most circumstances, explorer.exe is already running as a shell without Administrator privilege.
             Process proc = new Process
             {
                 StartInfo = new ProcessStartInfo(filePath)

@@ -131,6 +131,7 @@ namespace PEBakery.WPF
 
             m.Renderer.Clear();
             Interlocked.Decrement(ref Count);
+            CommandManager.InvalidateRequerySuggested();
         }
         #endregion
 
@@ -3376,11 +3377,7 @@ namespace PEBakery.WPF
 
         public void RefreshMainWindow()
         {
-            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w?.DisplayScript(Script);
-            }));
+            Global.MainViewModel.DisplayScript(Script);
         }
 
         public void WriteUIControlInfo(UIControl uiCtrl)

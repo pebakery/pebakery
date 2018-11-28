@@ -53,6 +53,7 @@ namespace PEBakery
         public static MainViewModel MainViewModel;
         public static SettingViewModel Setting;
         public static ProjectCollection Projects;
+        public static ScriptCache ScriptCache;
 
         // Load Native Libraries
         public static void NativeGlobalInit(string baseDir)

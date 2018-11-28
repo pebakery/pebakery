@@ -27,7 +27,6 @@
 
 using MahApps.Metro.IconPacks;
 using Ookii.Dialogs.Wpf;
-using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
@@ -49,7 +48,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 
-namespace PEBakery.WPF
+namespace PEBakery.Core
 {
     #region UIRenderer
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -1575,21 +1574,23 @@ namespace PEBakery.WPF
                 Logger logger = Global.Logger;
 
                 MainViewModel mainModel = Global.MainViewModel;
+                // Populate BuildTree
+                if (!hideProgress)
+                {
+                    mainModel.BuildTreeItems.Clear();
+                    ProjectTreeItemModel itemRoot = MainViewModel.PopulateOneTreeItem(section.Script, null, null);
+                    mainModel.BuildTreeItems.Add(itemRoot);
+                    mainModel.CurBuildTree = null;
+                }
+                /*
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
 
-                    // Populate BuildTree
-                    if (!hideProgress)
-                    {
-                        mainModel.BuildTreeItems.Clear();
-                        ProjectTreeItemModel itemRoot = w.PopulateOneTreeItem(section.Script, null, null);
-                        mainModel.BuildTreeItems.Add(itemRoot);
-                        mainModel.CurBuildTree = null;
-                    }
+                    
                 });
-
+                */
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
@@ -1605,7 +1606,7 @@ namespace PEBakery.WPF
 
                 // Set StatusBar Text
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainWindow.PrintBuildElapsedStatus(logMsg, s, ct.Token);
+                Task printStatus = MainViewModel.PrintBuildElapsedStatus(logMsg, s, ct.Token);
 
                 // Run
                 await Engine.WorkingEngine.Run(logMsg);
@@ -1637,8 +1638,7 @@ namespace PEBakery.WPF
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w?.DisplayScript(mainModel.CurMainTree.Script);
+                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
                     });
                 }
             }

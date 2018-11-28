@@ -26,7 +26,6 @@
 */
 
 using PEBakery.Helper;
-using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,7 +33,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace PEBakery.Core.Commands
@@ -212,16 +210,9 @@ namespace PEBakery.Core.Commands
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        Task refreshTask = Task.CompletedTask;
-                        Application.Current?.Dispatcher.Invoke(() =>
-                        {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
-                            refreshTask = w.StartRefreshScript();
-                        });
-                        refreshTask.Wait();
+                        s.MainViewModel.StartRefreshScript().Wait();
 
-                        logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Section.Script.Title}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Re-rendered script [{cmd.Section.Script.Title}]"));
                     }
                     break;
                 case SystemType.RescanScripts:
@@ -230,14 +221,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        Task scriptLoadTask = Task.CompletedTask;
-                        Application.Current?.Dispatcher.Invoke(() =>
-                        {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
-                            scriptLoadTask = w.StartLoadingProjects(true);
-                        });
-                        scriptLoadTask.Wait();
+                        s.MainViewModel.StartLoadingProjects(true).Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }
@@ -318,21 +302,15 @@ namespace PEBakery.Core.Commands
                         s.Project.SortAllScripts();
 
                         // Update MainWindow.MainTree and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        s.MainViewModel.UpdateScriptTree(s.Project, false, false);
+                        foreach (Script sc in newScripts)
                         {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
-
-                            w.UpdateScriptTree(s.Project, false, false);
-                            foreach (Script sc in newScripts)
+                            if (sc.Equals(s.MainViewModel.CurMainTree.Script))
                             {
-                                if (sc.Equals(s.MainViewModel.CurMainTree.Script))
-                                {
-                                    s.MainViewModel.CurMainTree.Script = sc;
-                                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
-                                }
+                                s.MainViewModel.CurMainTree.Script = sc;
+                                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
                             }
-                        });
+                        }
 
                         if (1 < files.Length)
                             logs.Add(new LogInfo(LogState.Success, $"Loaded [{successCount}] new scripts"));
@@ -399,21 +377,15 @@ namespace PEBakery.Core.Commands
                         }
 
                         // Update MainWindow and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        s.MainViewModel.UpdateScriptTree(s.Project, false);
+                        foreach (Script sc in newScripts)
                         {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
-
-                            w.UpdateScriptTree(s.Project, false);
-                            foreach (Script sc in newScripts)
+                            if (sc.Equals(s.MainViewModel.CurMainTree.Script))
                             {
-                                if (sc.Equals(s.MainViewModel.CurMainTree.Script))
-                                {
-                                    s.MainViewModel.CurMainTree.Script = sc;
-                                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
-                                }
+                                s.MainViewModel.CurMainTree.Script = sc;
+                                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
                             }
-                        });
+                        }
 
                         if (1 < files.Length)
                             logs.Add(new LogInfo(LogState.Success, $"Refresh [{successCount}] scripts"));

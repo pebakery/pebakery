@@ -96,7 +96,7 @@ namespace PEBakery.Core.Commands
                         return;
 
                     s.MainViewModel.CurMainTree.Script = sc;
-                    w.DisplayScript(s.MainViewModel.CurMainTree.Script);
+                    s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
                 });
             }
 
@@ -165,17 +165,12 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            // Rerender script
-            Application.Current?.Dispatcher.Invoke(() =>
+            // Render script
+            if (s.MainViewModel.CurMainTree.Script.Equals(sc))
             {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                if (!s.MainViewModel.CurMainTree.Script.Equals(sc))
-                    return;
-
                 s.MainViewModel.CurMainTree.Script = sc;
-                w.DisplayScript(s.MainViewModel.CurMainTree.Script);
-            });
+                s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);
+            }
 
             return logs;
         }
@@ -1041,14 +1036,9 @@ namespace PEBakery.Core.Commands
             // Update uiCtrl into file
             uiCtrl.Update();
 
-            // Rerender Script
-            Application.Current?.Dispatcher.Invoke(() =>
-            { // Application.Current is null in unit test
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
-                    w.DisplayScript(cmd.Section.Script);
-            });
+            // Render Script again
+            if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+                s.MainViewModel.DisplayScript(cmd.Section.Script);
 
             return logs;
         }
@@ -1110,14 +1100,9 @@ namespace PEBakery.Core.Commands
             // Update uiCtrl into file
             UIControl.Update(updatedUICtrls);
 
-            // Rerender Script
-            Application.Current?.Dispatcher.Invoke(() =>
-            { // Application.Current is null in unit test
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
-                    w.DisplayScript(cmd.Section.Script);
-            });
+            // Render Script again
+            if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+                s.MainViewModel.DisplayScript(cmd.Section.Script);
 
             if (1 < updatedUICtrls.Count)
                 logs.Add(new LogInfo(LogState.Success, $"Wrote [{updatedUICtrls.Count}] values from section [{section}] of [{scriptFile}]"));
@@ -1156,8 +1141,8 @@ namespace PEBakery.Core.Commands
                     throw new InternalException("Internal Logic Error at Message");
             }
 
-            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
-            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
 
             if (info.Timeout == null)
             {
@@ -1178,7 +1163,7 @@ namespace PEBakery.Core.Commands
                 });
             }
 
-            s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
+            s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
 
             string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             string firstLine = message;
@@ -1278,8 +1263,8 @@ namespace PEBakery.Core.Commands
                     {
                         UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
 
-                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
-                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
 
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
 
@@ -1345,7 +1330,7 @@ namespace PEBakery.Core.Commands
                                 return logs;
                         }
 
-                        s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
+                        s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
                         logs.AddRange(varLogs);

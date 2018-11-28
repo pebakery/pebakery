@@ -1011,8 +1011,8 @@ namespace PEBakery.Core.Commands
                                 defaultChoice = false;
                         }
 
-                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
-                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
 
                         if (autoTimeout)
                         {
@@ -1064,7 +1064,7 @@ namespace PEBakery.Core.Commands
                         if (c.NotFlag)
                             match = !match;
 
-                        s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
+                        s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
                     }
                     break;
                 default:

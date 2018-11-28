@@ -84,6 +84,7 @@ namespace PEBakery.WPF
         private void Window_Closed(object sender, EventArgs e)
         {
             Interlocked.Decrement(ref Count);
+            CommandManager.InvalidateRequerySuggested();
         }
         #endregion
 
@@ -155,7 +156,7 @@ namespace PEBakery.WPF
 
                 // Set StatusBar Text
                 CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainWindow.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
+                Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
@@ -174,7 +175,7 @@ namespace PEBakery.WPF
                     MainWindow w = Application.Current.MainWindow as MainWindow;
                     Debug.Assert(w != null, "MainWindow != null");
 
-                    w.DisplayScript(Global.MainViewModel.CurMainTree.Script);
+                    s.MainViewModel.DisplayScript(Global.MainViewModel.CurMainTree.Script);
 
                     if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow

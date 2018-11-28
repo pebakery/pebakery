@@ -37,6 +37,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using PEBakery.Core.ViewModels;
 
 namespace PEBakery.Core
@@ -128,7 +129,7 @@ namespace PEBakery.Core
 
             if (!prepareBuild || s.RunMode == EngineMode.RunAll)
             {
-                MainWindow.DisplayScriptTexts(sc, s.MainViewModel, s);
+                s.MainViewModel.DisplayScriptTexts(sc, s);
 
                 s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
 
@@ -137,7 +138,7 @@ namespace PEBakery.Core
                     if (!(Application.Current.MainWindow is MainWindow w))
                         return;
 
-                    w.DisplayScriptLogo(sc);
+                    s.MainViewModel.DisplayScriptLogo(sc);
 
                     if (0 < s.MainViewModel.BuildTreeItems.Count)
                     {
@@ -191,7 +192,7 @@ namespace PEBakery.Core
                     FinishRunScript(s);
 
                     if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
-                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
 
                     // OnScriptExit event callback
                     {
@@ -297,7 +298,7 @@ namespace PEBakery.Core
         #region ForceStop
         public void ForceStop()
         {
-            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             if (s.RunningSubProcess != null)
             {
                 try { s.RunningSubProcess.Kill(); }
