@@ -25,6 +25,10 @@
     not derived from or based on this program. 
 -->
 
+<!-- 
+    Enable Running Project Code to see run designer properly.
+    This is caused by cc:IconButton, which results in System.Runtime.Remoting.RemotingException.
+-->
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Name="Main"
         x:Class="PEBakery.WPF.MainWindow"
@@ -35,7 +39,6 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:viewModels="clr-namespace:PEBakery.Core.ViewModels"
         mc:Ignorable="d"
         FontSize="13"
@@ -122,25 +125,7 @@
         <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
         <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
-        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
-        <Style x:Key="BitmapButton" TargetType="Button">
-            <Setter Property="OverridesDefaultStyle" Value="True" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border BorderThickness="0" BorderBrush="Black" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -200,55 +185,55 @@
                              Margin="10"
                              HorizontalAlignment="Left"
                              IsActive="{Binding WorkInProgress}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="2" 
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.ProjectBuildStartCommand"
-                               IconMaterialKind="Play"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="3"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.ProjectRefreshCommand"
-                               IconMaterialKind="Refresh"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="4"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.SettingWindowCommand"
-                               IconMaterialKind="Settings"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="5"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.LogWindowCommand"
-                               IconMaterialKind="CommentCheck"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="6"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.UtilityWindowCommand"
-                               IconMaterialKind="Layers"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="7"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.ProjectUpdateCommand"
-                               IconMaterialKind="Download"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="8"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               Command="local:MainViewCommands.AboutWindowCommand"
-                               IconMaterialKind="Help"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="2" 
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectBuildStartCommand"
+                           IconMaterialKind="Play"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="3"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectRefreshCommand"
+                           IconMaterialKind="Refresh"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="4"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.SettingWindowCommand"
+                           IconMaterialKind="Settings"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="5"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.LogWindowCommand"
+                           IconMaterialKind="CommentCheck"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="6"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.UtilityWindowCommand"
+                           IconMaterialKind="Layers"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="7"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectUpdateCommand"
+                           IconMaterialKind="Download"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="8"
+                           Margin="4"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.AboutWindowCommand"
+                           IconMaterialKind="Help"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
 
             <TextBlock Text="Build"
                        Grid.Row="1" Grid.Column="2"
@@ -323,21 +308,21 @@
                              Margin="10"
                              HorizontalAlignment="Left"
                              IsActive="{Binding WorkInProgress}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="2"
+            <cc:IconButton Grid.Row="0" Grid.Column="2"
                                Margin="4"
                                Style="{StaticResource MainIconButtonStyle}"
                                IconMaterialKind="StopCircle"
                                Command="local:MainViewCommands.ProjectBuildStopCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="3"
+            <cc:IconButton Grid.Row="0" Grid.Column="3"
                                Margin="4"
                                Style="{StaticResource MainIconButtonStyle}"
                                IconMaterialKind="CommentCheck"
                                Command="local:MainViewCommands.LogWindowCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-            <cc:MainIconButton Grid.Row="0" Grid.Column="4"
+            <cc:IconButton Grid.Row="0" Grid.Column="4"
                                Margin="4"
                                Style="{StaticResource MainIconButtonStyle}"
                                IconMaterialKind="Help"
@@ -398,7 +383,7 @@
                             <cc:CorrectMenuItem Header="Run Script" 
                                                 Command="local:MainViewCommands.ScriptRunCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Play"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -406,7 +391,7 @@
                             <cc:CorrectMenuItem Header="Refresh Script" 
                                                 Command="local:MainViewCommands.ScriptRefreshCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Refresh"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -414,7 +399,7 @@
                             <cc:CorrectMenuItem Header="Edit Script Properties" 
                                                 Command="local:MainViewCommands.ScriptInternalEditorCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -422,7 +407,7 @@
                             <cc:CorrectMenuItem Header="Edit Script Source" 
                                                 Command="local:MainViewCommands.ScriptExternalEditorCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -430,7 +415,7 @@
                             <cc:CorrectMenuItem Header="Update Script" 
                                                 Command="local:MainViewCommands.ScriptUpdateCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Download"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -438,12 +423,12 @@
                             <cc:CorrectMenuItem Header="Syntax Check"
                                                 Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Magnify"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
-                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
+                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <cc:CorrectMenuItem Header="Open Script Folder"
                                                 Command="local:MainViewCommands.ScriptOpenFolderCommand"
                                                 Grid.IsSharedSizeScope="True" >
@@ -792,8 +777,8 @@
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Stretch"
                                      FontSize="12"
-                                     FontFamily="{Binding MonospaceFontFamily}"
-                                     FontWeight="{Binding MonospaceFontWeight}"
+                                     FontFamily="{Binding MonospacedFontFamily}"
+                                     FontWeight="{Binding MonospacedFontWeight}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      ScrollViewer.CanContentScroll="True"

@@ -32,22 +32,53 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         Title="Utility"
         FontFamily="Segoe UI"
         FontSize="13"
+        Loaded="Window_Loaded"
         Closed="Window_Closed"
         Width="800" Height="640"
         MinWidth="640" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
+    <Window.CommandBindings>
+        <!-- CodeBox -->
+        <CommandBinding x:Name="CodeBoxSaveCommand"
+                        Command="local:UtilityViewCommands.CodeBoxSaveCommand"
+                        CanExecute="CodeBoxCommands_CanExecute"
+                        Executed="CodeBoxSaveCommand_Executed"/>
+        <CommandBinding x:Name="CodeBoxRunCommand"
+                        Command="local:UtilityViewCommands.CodeBoxRunCommand"
+                        CanExecute="CodeBoxCommands_CanExecute"
+                        Executed="CodeBoxRunCommand_Executed"/>
+        <!-- String Escaper -->
+        <CommandBinding x:Name="EscapeStringCommand"
+                        Command="local:UtilityViewCommands.EscapeStringCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="EscapeStringCommand_Executed"/>
+        <CommandBinding x:Name="UnescapeStringCommand"
+                        Command="local:UtilityViewCommands.UnescapeStringCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="UnescapeStringCommand_Executed"/>
+        <CommandBinding x:Name="EscapeSequenceLegendCommand"
+                        Command="local:UtilityViewCommands.EscapeSequenceLegendCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="EscapeSequenceLegendCommand_Executed"/>
+        <!-- Syntax Checker -->
+        <CommandBinding x:Name="SyntaxCheckCommand"
+                        Command="local:UtilityViewCommands.SyntaxCheckCommand"
+                        CanExecute="SyntaxCheckCommand_CanExecute"
+                        Executed="SyntaxCheckCommand_Executed"/>
+    </Window.CommandBindings>
+    <!-- 
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="S" 
                     Command="{Binding CodeBoxSaveCommand}"/>
         <KeyBinding Key="F10" 
                     Command="{Binding CodeBoxRunCommand}"/>
     </Window.InputBindings>
+    -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -90,16 +121,16 @@
                                 x:Name="CodeBoxSaveButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Save"
-                                ToolTip="Ctrl + S"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Command="{Binding CodeBoxSaveCommand}"/>
+                                ToolTip="Ctrl + S"
+                                Command="local:UtilityViewCommands.CodeBoxSaveCommand"/>
                         <Button Grid.Column="2"
                                 x:Name="CodeBoxRunButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Run"
-                                ToolTip="Ctrl + R"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Command="{Binding CodeBoxRunCommand}"/>
+                                ToolTip="Ctrl + R"
+                                Command="local:UtilityViewCommands.CodeBoxRunCommand"/>
                     </Grid>
 
                     <TextBlock Grid.Row="3"
@@ -107,6 +138,7 @@
                                FontWeight="Bold"
                                Text="Script Code"/>
                     <TextBox Grid.Row="4"
+                             x:Name="CodeBoxInputTextBox"
                              FontFamily="{Binding MonoFontFamily}"
                              FontWeight="{Binding MonoFontWeight}"
                              FontSize="{Binding MonoFontSize}"
@@ -116,7 +148,7 @@
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="True"
-                             Text="{Binding CodeBoxInput, UpdateSourceTrigger=PropertyChanged}"/>
+                             Text="{Binding CodeBoxInput}"/>
                 </Grid>
             </TabItem>
             <TabItem Header="String Escaper">
@@ -160,12 +192,18 @@
 
                         <Button Grid.Column="0"
                                 Margin="0, 0, 10, 0"
+                                x:Name="EscapeButton"
                                 Content="Escape"
-                                Command="{Binding EscapeStringCommand}"/>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Ctrl + E"
+                                Command="local:UtilityViewCommands.EscapeStringCommand"/>
                         <Button Grid.Column="1"
                                 Margin="0, 0, 10, 0"
+                                x:Name="UnescapeButton"
                                 Content="Unescape"
-                                Command="{Binding UnescapeStringCommand}"/>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Ctrl + Shift + E"
+                                Command="local:UtilityViewCommands.UnescapeStringCommand"/>
                         <StackPanel Grid.Column="2"
                                     Margin="0, 0, 10, 0"
                                     Orientation="Horizontal">
@@ -175,8 +213,9 @@
                                       IsChecked="{Binding EscaperEscapePercentFlag}"/>
                         </StackPanel>
                         <Button Grid.Column="3"
+                                x:Name="PrintLegendButton"
                                 Content="Escape Sequence Legend"
-                                Command="{Binding EscapeSequenceLegendCommand}"/>
+                                Command="local:UtilityViewCommands.EscapeSequenceLegendCommand"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="10, 10, 10, 10">
@@ -191,6 +230,7 @@
                                    Text="Converted String">
                         </TextBlock>
                         <TextBox Grid.Row="1"
+                                 x:Name="ConvertedStringTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -237,8 +277,10 @@
                         
                         <Button Grid.Column="1"
                                 Margin="10, 0, 0, 0"
+                                x:Name="SyntaxCheckButton"
                                 Content="Syntax Check"
-                                Command="{Binding SyntaxCheckCommand}"/>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Command="local:UtilityViewCommands.SyntaxCheckCommand"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="0, 10, 0, 0">
@@ -273,8 +315,9 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Output"/>
+                                   Text="Result"/>
                         <TextBox Grid.Row="1"
+                                 x:Name="SyntaxCheckResultTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"

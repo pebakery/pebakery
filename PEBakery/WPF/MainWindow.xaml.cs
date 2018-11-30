@@ -119,7 +119,7 @@ namespace PEBakery.WPF
             // Setting File
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Global.Setting = new SettingViewModel(settingFile);
-            Model.MonospaceFont = Global.Setting.Interface_MonospaceFont;
+            Model.MonospacedFont = Global.Setting.Interface_MonospaceFont;
 
             // Custom Title
             if (Global.Setting.Interface_UseCustomTitle)

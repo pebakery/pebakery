@@ -195,7 +195,7 @@
     </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView.cs" />
     <Compile Include="WPF\Controls\BringIntoViewBehavior.cs" />
-    <Compile Include="WPF\Controls\MainIconButton.cs" />
+    <Compile Include="WPF\Controls\IconButton.cs" />
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox.cs" />

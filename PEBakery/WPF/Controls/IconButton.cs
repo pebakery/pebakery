@@ -30,35 +30,17 @@ using System.Windows.Media;
 
 namespace PEBakery.WPF.Controls
 {
-    public class MainIconButton : Button
+    public class IconButton : Button
     {
         #region Constructor
-        public MainIconButton()
-        {
-            _foreground = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
-
-            Loaded += MainIconButton_Loaded;
-
-            MouseEnter += MainIconButton_MouseEnter;
-            MouseLeave += MainIconButton_MouseLeave;
-            IsEnabledChanged += MainIconButton_IsEnabledChanged;
-        }
-
-        ~MainIconButton()
-        {
-            MouseEnter -= MainIconButton_MouseEnter;
-            MouseLeave -= MainIconButton_MouseLeave;
-            IsEnabledChanged -= MainIconButton_IsEnabledChanged;
-        }
-        #endregion
-
-        #region Event Handler
-        private void MainIconButton_Loaded(object sender, RoutedEventArgs e)
+        public IconButton()
         {
             BorderBrush = Brushes.Transparent;
             BorderThickness = new Thickness(0);
             Background = Brushes.Transparent;
             Foreground = Brushes.Transparent;
+            _foreground = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
+
             Content = _iconMaterial = new PackIconMaterial
             {
                 Width = double.NaN,
@@ -68,10 +50,20 @@ namespace PEBakery.WPF.Controls
                 Foreground = _foreground,
             };
 
-            // Need to be called only once
-            Loaded -= MainIconButton_Loaded;
+            MouseEnter += MainIconButton_MouseEnter;
+            MouseLeave += MainIconButton_MouseLeave;
+            IsEnabledChanged += MainIconButton_IsEnabledChanged;
         }
 
+        ~IconButton()
+        {
+            MouseEnter -= MainIconButton_MouseEnter;
+            MouseLeave -= MainIconButton_MouseLeave;
+            IsEnabledChanged -= MainIconButton_IsEnabledChanged;
+        }
+        #endregion
+
+        #region Event Handler
         private void MainIconButton_MouseEnter(object sender, MouseEventArgs e)
         {
             if (_iconMaterial == null)
@@ -107,7 +99,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region Property
-        private PackIconMaterial _iconMaterial;
+        private readonly PackIconMaterial _iconMaterial;
         private SolidColorBrush _foreground;
 
         private const PackIconMaterialKind DefaultIconMaterialKind = PackIconMaterialKind.None;
@@ -118,14 +110,15 @@ namespace PEBakery.WPF.Controls
         }
 
         public static readonly DependencyProperty IconMaterialKindProperty = DependencyProperty.Register(nameof(IconMaterialKind),
-            typeof(PackIconMaterialKind), typeof(PackIconMaterial), new FrameworkPropertyMetadata(DefaultIconMaterialKind, OnPropertyChanged));
+            typeof(PackIconMaterialKind), typeof(IconButton), new FrameworkPropertyMetadata(DefaultIconMaterialKind, OnPropertyChanged));
         #endregion
 
         #region Callbacks
         private static void OnPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            PackIconMaterial control = (PackIconMaterial)obj;
-            control.Kind = (PackIconMaterialKind)args.NewValue;
+            IconButton button = (IconButton)obj;
+            if (button.Content is PackIconMaterial control)
+                control.Kind = (PackIconMaterialKind)args.NewValue;
         }
         #endregion
     }

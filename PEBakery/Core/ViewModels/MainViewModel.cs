@@ -550,22 +550,22 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private FontHelper.FontInfo _monospaceFont;
-        public FontHelper.FontInfo MonospaceFont
+        private FontHelper.FontInfo _monospacedFont;
+        public FontHelper.FontInfo MonospacedFont
         {
-            get => _monospaceFont;
+            get => _monospacedFont;
             set
             {
-                _monospaceFont = value;
-                OnPropertyUpdate(nameof(MonospaceFont));
-                OnPropertyUpdate(nameof(MonospaceFontFamily));
-                OnPropertyUpdate(nameof(MonospaceFontWeight));
-                OnPropertyUpdate(nameof(MonospaceFontSize));
+                _monospacedFont = value;
+                OnPropertyUpdate(nameof(MonospacedFont));
+                OnPropertyUpdate(nameof(MonospacedFontFamily));
+                OnPropertyUpdate(nameof(MonospacedFontWeight));
+                OnPropertyUpdate(nameof(MonospacedFontSize));
             }
         }
-        public FontFamily MonospaceFontFamily => _monospaceFont.FontFamily;
-        public FontWeight MonospaceFontWeight => _monospaceFont.FontWeight;
-        public double MonospaceFontSize => _monospaceFont.FontSizeInDIP;
+        public FontFamily MonospacedFontFamily => _monospacedFont.FontFamily;
+        public FontWeight MonospacedFontWeight => _monospacedFont.FontWeight;
+        public double MonospacedFontSize => _monospacedFont.FontSizeInDIP;
 
         // Command Progress
         private string _buildCommandProgressTitle = string.Empty;

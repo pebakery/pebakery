@@ -2623,11 +2623,16 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (Folder)
-        public ICommand AddFolderCommand => new RelayCommand(AddFolderCommand_Execute, CanExecuteFunc);
-        public ICommand ExtractFolderCommand => new RelayCommand(ExtractFolderCommand_Execute, CanExecuteFunc);
-        public ICommand DeleteFolderCommand => new RelayCommand(DeleteFolderCommand_Execute, CanExecuteFunc);
-        public ICommand AttachNewFileChooseCommand => new RelayCommand(AttachNewFileChooseCommand_Execute, CanExecuteFunc);
-        public ICommand AttachFileCommand => new RelayCommand(AttachFileCommand_Execute, CanExecuteFunc);
+        private ICommand _addFolderCommand;
+        private ICommand _extractFolderCommand;
+        private ICommand _deleteFolderCommand;
+        private ICommand _attachNewFileChooseCommand;
+        private ICommand _attachFileCommand;
+        public ICommand AddFolderCommand => GetRelayCommand(ref _addFolderCommand, "Add folder", AddFolderCommand_Execute, CanExecuteFunc);
+        public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, CanExecuteFunc);
+        public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, CanExecuteFunc);
+        public ICommand AttachNewFileChooseCommand => GetRelayCommand(ref _attachNewFileChooseCommand, "Choose file to attach", AttachNewFileChooseCommand_Execute, CanExecuteFunc);
+        public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, CanExecuteFunc);
 
         private void AddFolderCommand_Execute(object parameter)
         {

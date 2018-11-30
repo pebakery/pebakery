@@ -36,6 +36,9 @@ namespace PEBakery.Core.ViewModels
         private readonly Action<object> _executeAction;
         private readonly Func<object, bool> _canExecuteFunc;
 
+        /// <summary>
+        /// Description for a command
+        /// </summary>
         public string Text { get; set; }
         #endregion
 
