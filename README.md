@@ -28,6 +28,11 @@ A nightly build is provided for the testing purpose.
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
 
+## Prerequiste
+
+If you are using Windows 10 v1803 or later, no action is necessary.  
+If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?LinkId=863262).
+
 ## License
 
 PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
@@ -38,14 +43,10 @@ Some parts of PEBakery is licensed under the MIT License and others.
 
 To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
-### Recommended
-
-- Visual Studio 2017 Community
-
 ### Requirement
 
-- C# 7.0 Compiler
-- .Net Framework 4.7.1 Developer Pack
+- [Visual Studio 2017](https://visualstudio.microsoft.com/ko/thank-you-downloading-visual-studio/?sku=Community&rel=15#) (or a version supports C# 7.1 Compiler)
+- [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338)
 
 ## Documentation
 
