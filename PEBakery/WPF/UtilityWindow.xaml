@@ -139,6 +139,7 @@
                                Text="Script Code"/>
                     <TextBox Grid.Row="4"
                              x:Name="CodeBoxInputTextBox"
+                             AutomationProperties.Name="CodeBoxInputTextBox"
                              FontFamily="{Binding MonoFontFamily}"
                              FontWeight="{Binding MonoFontWeight}"
                              FontSize="{Binding MonoFontSize}"
@@ -170,6 +171,7 @@
                                    FontWeight="Bold"
                                    Text="String to Convert"/>
                         <TextBox Grid.Row="1"
+                                 AutomationProperties.Name="StringToConvertTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -231,6 +233,7 @@
                         </TextBlock>
                         <TextBox Grid.Row="1"
                                  x:Name="ConvertedStringTextBox"
+                                 AutomationProperties.Name="ConvertedStringTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -294,6 +297,7 @@
                                    FontWeight="Bold"
                                    Text="Input Code"/>
                         <TextBox Grid.Row="1"
+                                 AutomationProperties.Name="SyntaxCheckInputTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -318,6 +322,7 @@
                                    Text="Result"/>
                         <TextBox Grid.Row="1"
                                  x:Name="SyntaxCheckResultTextBox"
+                                 AutomationProperties.Name="SyntaxCheckResultTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
