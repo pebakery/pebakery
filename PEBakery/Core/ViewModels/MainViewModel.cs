@@ -550,8 +550,8 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private FontHelper.WPFFont _monospaceFont;
-        public FontHelper.WPFFont MonospaceFont
+        private FontHelper.FontInfo _monospaceFont;
+        public FontHelper.FontInfo MonospaceFont
         {
             get => _monospaceFont;
             set

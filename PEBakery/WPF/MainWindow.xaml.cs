@@ -671,8 +671,6 @@ namespace PEBakery.WPF
 
 
         #endregion
-
-        
     }
     #endregion
 
@@ -707,7 +705,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Script Buttons and Context Menus
-        public static readonly RoutedCommand ScriptRunCommand = new RoutedUICommand("Edit Script Source", "ScriptRun", typeof(MainViewCommands));
+        public static readonly RoutedCommand ScriptRunCommand = new RoutedUICommand("Run Script", "ScriptRun", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptRefreshCommand = new RoutedUICommand("Refresh Script (Ctrl + F5)", "ScriptRefresh", typeof(MainViewCommands),
             new InputGestureCollection
             {

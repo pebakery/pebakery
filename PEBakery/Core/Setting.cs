@@ -27,7 +27,7 @@ namespace PEBakery.Core
         public struct Interface
         {
             public string MonospaceFontStr;
-            public FontHelper.WPFFont MonospaceFont;
+            public FontHelper.FontInfo MonospaceFont;
             public double ScaleFactor;
             public bool UseCustomEditor;
             public string CustomEditorPath;

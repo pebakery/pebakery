@@ -64,14 +64,14 @@ namespace PEBakery.Core
             logs = new List<LogInfo>();
 
             MacroEnabled = true;
-            if (!project.MainScript.Sections.ContainsKey("Variables"))
+            if (!project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
                 MacroEnabled = false;
                 logs.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
-            ScriptSection variablesSection = project.MainScript.Sections["Variables"];
+            ScriptSection variablesSection = project.MainScript.Sections[ScriptSection.Names.Variables];
 
             Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(variablesSection.Lines);
             if (!(varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")))

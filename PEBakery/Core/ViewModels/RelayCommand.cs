@@ -32,9 +32,11 @@ namespace PEBakery.Core.ViewModels
 {
     public class RelayCommand : ICommand
     {
-        #region Fields
+        #region Fields and Properties
         private readonly Action<object> _executeAction;
         private readonly Func<object, bool> _canExecuteFunc;
+
+        public string Text { get; set; }
         #endregion
 
         #region Constructor
@@ -42,10 +44,18 @@ namespace PEBakery.Core.ViewModels
         {
             _executeAction = execute;
             _canExecuteFunc = canExecute;
+            Text = string.Empty;
+        }
+
+        public RelayCommand(string text, Action<object> execute, Func<object, bool> canExecute = null)
+        {
+            _executeAction = execute;
+            _canExecuteFunc = canExecute;
+            Text = text;
         }
         #endregion
 
-        #region ICommand
+        #region ICommand Methods
         public event EventHandler CanExecuteChanged
         {
             add => CommandManager.RequerySuggested += value;

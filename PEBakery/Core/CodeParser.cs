@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -78,6 +79,16 @@ namespace PEBakery.Core
             {
                 return new CodeCommand(rawCode.Trim(), _section, CodeType.Error, new CodeInfo_Error(e), _section.LineIdx + idx + 1);
             }
+        }
+
+        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync()
+        {
+            return Task.Run(() => ParseStatements());
+        }
+
+        public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IList<string> lines)
+        {
+            return Task.Run(() => ParseStatements(lines));
         }
 
         public (CodeCommand[] cmds, List<LogInfo> errLogs) ParseStatements() => ParseStatements(_section.Lines);

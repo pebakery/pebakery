@@ -498,8 +498,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private FontHelper.WPFFont interface_MonospaceFont;
-        public FontHelper.WPFFont Interface_MonospaceFont
+        private FontHelper.FontInfo interface_MonospaceFont;
+        public FontHelper.FontInfo Interface_MonospaceFont
         {
             get => interface_MonospaceFont;
             set
@@ -917,7 +917,7 @@ namespace PEBakery.WPF
                 if (0 < fonts.Families.Count(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)))
                     fontFamily = "D2Coding";
 
-                Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily(fontFamily), FontWeights.Regular, 12);
+                Interface_MonospaceFont = new FontHelper.FontInfo(new FontFamily(fontFamily), FontWeights.Regular, 12);
             }
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteConOut = true;
@@ -1091,9 +1091,9 @@ namespace PEBakery.WPF
             if (dict[nameof(Interface_MonospaceFontFamily)] != null)
                 monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospaceFontFamily)]);
             if (dict[nameof(Interface_MonospaceFontWeight)] != null)
-                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(dict[nameof(Interface_MonospaceFontWeight)]);
+                monoFontWeight = FontHelper.ParseFontWeight(dict[nameof(Interface_MonospaceFontWeight)]);
             int monoFontSize = ParseInteger(nameof(Interface_MonospaceFontSize), Interface_MonospaceFont.FontSizeInPoint, 1, -1);
-            Interface_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
+            Interface_MonospaceFont = new FontHelper.FontInfo(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             Interface_ScaleFactor = ParseInteger(nameof(Interface_ScaleFactor), (int)Interface_ScaleFactor, 100, 200);
             Interface_UseCustomEditor = ParseBoolean(nameof(Interface_UseCustomEditor), Interface_UseCustomEditor);

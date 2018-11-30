@@ -46,7 +46,7 @@ namespace PEBakery.WPF
     // ReSharper disable once RedundantExtendsListEntry
     public partial class AboutWindow : Window
     {
-        public AboutWindow(FontHelper.WPFFont monoFont)
+        public AboutWindow(FontHelper.FontInfo monoFont)
         {
             InitializeComponent();
             DataContext = new AboutViewModel(monoFont);
@@ -62,12 +62,12 @@ namespace PEBakery.WPF
     public class AboutViewModel : INotifyPropertyChanged
     {
         #region Field, Property, Constructor
-        public FontHelper.WPFFont MonoFont { get; }
+        public FontHelper.FontInfo MonoFont { get; }
         public FontFamily MonoFontFamily => MonoFont.FontFamily;
         public FontWeight MonoFontWeight => MonoFont.FontWeight;
         public double MonoFontSize => MonoFont.FontSizeInDIP;
 
-        public AboutViewModel(FontHelper.WPFFont monoFont)
+        public AboutViewModel(FontHelper.FontInfo monoFont)
         {
             MonoFont = monoFont;
 

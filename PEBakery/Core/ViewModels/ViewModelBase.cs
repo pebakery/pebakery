@@ -25,10 +25,14 @@
     not derived from or based on this program. 
 */
 
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
+
 // ReSharper disable RedundantAssignment
 
 namespace PEBakery.Core.ViewModels
@@ -43,11 +47,25 @@ namespace PEBakery.Core.ViewModels
             Debug.Assert(GetType().GetRuntimeProperty(propertyName) != null);
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        #endregion
 
+        #region SetProperty
         protected virtual void SetProperty<T>(ref T fieldRef, T newValue, [CallerMemberName] string propertyName = null)
         {
             fieldRef = newValue;
             OnPropertyUpdate(propertyName);
+        }
+        #endregion
+
+        #region RelayCommand
+        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, Action<object> executeFunc, Func<object, bool> canExecuteFunc = null)
+        {
+            return cmdRef ?? (cmdRef = new RelayCommand(executeFunc, canExecuteFunc));
+        }
+
+        protected virtual ICommand GetRelayCommand(ref ICommand cmdRef, string text, Action<object> executeFunc, Func<object, bool> canExecuteFunc = null)
+        {
+            return cmdRef ?? (cmdRef = new RelayCommand(text, executeFunc, canExecuteFunc));
         }
         #endregion
     }
