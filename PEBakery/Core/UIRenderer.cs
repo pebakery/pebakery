@@ -1098,13 +1098,13 @@ namespace PEBakery.Core
             {
                 radio.Checked += RadioButton_Checked;
                 if (sectionName != null)
-                    radio.Click += Button_Click;
+                    radio.Click += RadioButton_Click;
             }
             else
             {
                 radio.Checked -= RadioButton_Checked;
                 if (sectionName != null)
-                    radio.Click -= Button_Click;
+                    radio.Click -= RadioButton_Click;
             }
         }
 
