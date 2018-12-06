@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
@@ -585,7 +586,8 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            Encoding cmdEncoding = Console.OutputEncoding;
+                            // Encoding cmdEncoding = Console.OutputEncoding;
+                            Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
 
                             proc.StartInfo.RedirectStandardOutput = true;
                             proc.StartInfo.StandardOutputEncoding = cmdEncoding;

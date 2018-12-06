@@ -83,8 +83,8 @@
     <Reference Include="MahApps.Metro.IconPacks, Version=2.3.0.4, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.IconPacks.2.3.0\lib\net46\MahApps.Metro.IconPacks.dll</HintPath>
     </Reference>
-    <Reference Include="ManagedWimLib, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ManagedWimLib.1.2.3\lib\net451\ManagedWimLib.dll</HintPath>
+    <Reference Include="ManagedWimLib, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ManagedWimLib.1.2.4\lib\net451\ManagedWimLib.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Build.Framework" />
@@ -99,8 +99,8 @@
     <Reference Include="NaturalSort.Extension, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NaturalSort.Extension.1.0.2\lib\net47\NaturalSort.Extension.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NUglify, Version=1.5.12.0, Culture=neutral, PublicKeyToken=15bc7810aec21b5e, processorArchitecture=MSIL">
       <HintPath>..\packages\NUglify.1.5.12\lib\net40\NUglify.dll</HintPath>
@@ -138,7 +138,7 @@
     </Reference>
     <Reference Include="System.Security" />
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.6\lib\net45\System.Web.Razor.dll</HintPath>
+      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.7\lib\net45\System.Web.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -396,7 +396,7 @@
     <Error Condition="!Exists('..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets'))" />
     <Error Condition="!Exists('..\packages\Joveler.Compression.ZLib.2.1.2\build\net451\Joveler.Compression.ZLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.ZLib.2.1.2\build\net451\Joveler.Compression.ZLib.targets'))" />
     <Error Condition="!Exists('..\packages\Joveler.Compression.XZ.1.1.2\build\net451\Joveler.Compression.XZ.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.Compression.XZ.1.1.2\build\net451\Joveler.Compression.XZ.targets'))" />
-    <Error Condition="!Exists('..\packages\ManagedWimLib.1.2.3\build\net451\ManagedWimLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ManagedWimLib.1.2.3\build\net451\ManagedWimLib.targets'))" />
+    <Error Condition="!Exists('..\packages\ManagedWimLib.1.2.4\build\net451\ManagedWimLib.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ManagedWimLib.1.2.4\build\net451\ManagedWimLib.targets'))" />
   </Target>
   <Import Project="..\packages\Timestamp.1.0.0\build\Timestamp.targets" Condition="Exists('..\packages\Timestamp.1.0.0\build\Timestamp.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.11\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" />
@@ -405,7 +405,7 @@
   <Import Project="..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets" Condition="Exists('..\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" />
   <Import Project="..\packages\Joveler.Compression.ZLib.2.1.2\build\net451\Joveler.Compression.ZLib.targets" Condition="Exists('..\packages\Joveler.Compression.ZLib.2.1.2\build\net451\Joveler.Compression.ZLib.targets')" />
   <Import Project="..\packages\Joveler.Compression.XZ.1.1.2\build\net451\Joveler.Compression.XZ.targets" Condition="Exists('..\packages\Joveler.Compression.XZ.1.1.2\build\net451\Joveler.Compression.XZ.targets')" />
-  <Import Project="..\packages\ManagedWimLib.1.2.3\build\net451\ManagedWimLib.targets" Condition="Exists('..\packages\ManagedWimLib.1.2.3\build\net451\ManagedWimLib.targets')" />
+  <Import Project="..\packages\ManagedWimLib.1.2.4\build\net451\ManagedWimLib.targets" Condition="Exists('..\packages\ManagedWimLib.1.2.4\build\net451\ManagedWimLib.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
