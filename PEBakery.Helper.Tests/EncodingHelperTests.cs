@@ -45,8 +45,7 @@ namespace PEBakery.Helper.Tests
             {
                 // Empty -> ANSI
                 File.Create(tempFile).Close();
-                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Default);
-
+                Assert.AreEqual(EncodingHelper.DetectBom(tempFile), EncodingHelper.DefaultAnsi);
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Unicode);

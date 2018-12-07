@@ -586,15 +586,15 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            // Encoding cmdEncoding = Console.OutputEncoding;
-                            Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+                            // Console.OutputEncoding returns ANSI encoding, do not use it
+                            Encoding oemEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
 
                             proc.StartInfo.RedirectStandardOutput = true;
-                            proc.StartInfo.StandardOutputEncoding = cmdEncoding;
+                            proc.StartInfo.StandardOutputEncoding = oemEncoding;
                             proc.OutputDataReceived += StdOutDataReceivedHandler;
 
                             proc.StartInfo.RedirectStandardError = true;
-                            proc.StartInfo.StandardErrorEncoding = cmdEncoding;
+                            proc.StartInfo.StandardErrorEncoding = oemEncoding;
                             proc.ErrorDataReceived += StdErrDataReceivedHandler;
 
                             // Without this, XCOPY.exe of Windows 7 will not work properly.

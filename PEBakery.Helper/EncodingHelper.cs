@@ -51,7 +51,7 @@ namespace PEBakery.Helper
                         // If codepage is 65001, .Net Framework's Encoding.Default returns UTF8 without a BOM.
                         return Utf8EncodingNoBom;
                     default:
-                        // Encoding.GetEncoding internally caches instances. No need to cache myself.
+                        // Encoding.GetEncoding() internally caches instances. No need to cache myself.
                         return Encoding.GetEncoding(codepage);
                 }
             }
@@ -68,22 +68,26 @@ namespace PEBakery.Helper
         public static Encoding DetectBom(Stream s)
         {
             byte[] buffer = new byte[3];
-            s.Read(buffer, 0, buffer.Length);
-            return DetectBom(buffer);
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+            return DetectBom(buffer, 0, bytesRead);
         }
 
-        public static Encoding DetectBom(byte[] buffer)
+        public static Encoding DetectBom(byte[] buffer, int offset, int count)
         {
             Encoding encoding = null;
-            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
+            if (buffer.Length < offset + count)
+                throw new ArgumentOutOfRangeException(nameof(buffer));
+
+            if (3 <= offset + count &&
+                buffer[offset] == Utf8Bom[0] && buffer[offset + 1] == Utf8Bom[1] && buffer[offset + 2] == Utf8Bom[2])
             {
                 encoding = Encoding.UTF8;
             }
-            else if (2 <= buffer.Length)
+            else if (2 <= offset + count)
             {
-                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                if (buffer[offset] == Utf16LeBom[0] && buffer[offset + 1] == Utf16LeBom[1])
                     encoding = Encoding.Unicode;
-                else if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                else if (buffer[offset] == Utf16BeBom[0] && buffer[offset + 1] == Utf16BeBom[1])
                     encoding = Encoding.BigEndianUnicode;
             }
 
@@ -136,22 +140,26 @@ namespace PEBakery.Helper
         public static int TextBomLength(Stream s)
         {
             byte[] buffer = new byte[3];
-            s.Read(buffer, 0, buffer.Length);
-            return TextBomLength(buffer);
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+            return TextBomLength(buffer, 0, bytesRead);
         }
 
-        public static int TextBomLength(byte[] buffer)
+        public static int TextBomLength(byte[] buffer, int offset, int count)
         {
             int length = 0;
-            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
+            if (buffer.Length < offset + count)
+                throw new ArgumentOutOfRangeException(nameof(buffer));
+
+            if (3 <= offset + count &&
+                buffer[offset] == Utf8Bom[0] && buffer[offset + 1] == Utf8Bom[1] && buffer[offset + 2] == Utf8Bom[2])
             {
                 length = Utf8Bom.Length;
             }
-            else if (2 <= buffer.Length)
+            else if (2 <= offset + count)
             {
-                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                if (buffer[offset] == Utf16LeBom[0] && buffer[offset + 1] == Utf16LeBom[1])
                     length = Utf16LeBom.Length;
-                else if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                else if (buffer[offset] == Utf16BeBom[0] && buffer[offset + 1] == Utf16BeBom[1])
                     length = Utf16BeBom.Length;
             }
 
@@ -174,23 +182,27 @@ namespace PEBakery.Helper
 
             // Read buffer from Stream
             byte[] buffer = new byte[peekSize];
-            s.Read(buffer, 0, buffer.Length);
-            return IsText(buffer);
+            int bytesRead = s.Read(buffer, 0, buffer.Length);
+            return IsText(buffer, 0, bytesRead);
         }
 
-        public static bool IsText(byte[] buffer)
+        public static bool IsText(byte[] buffer, int offset, int count)
         {
+            if (buffer.Length < offset + count)
+                throw new ArgumentOutOfRangeException(nameof(buffer));
+
             // [Stage 1] Contains unicode BOM -> text
-            if (3 <= buffer.Length && buffer[0] == Utf8Bom[0] && buffer[1] == Utf8Bom[1] && buffer[2] == Utf8Bom[2])
+            if (3 <= offset + count &&
+                buffer[offset] == Utf8Bom[0] && buffer[offset + 1] == Utf8Bom[1] && buffer[offset + 2] == Utf8Bom[2])
                 return true;
-            if (2 <= buffer.Length)
+            if (2 <= offset + count)
             {
-                if (buffer[0] == Utf16LeBom[0] && buffer[1] == Utf16LeBom[1])
+                if (buffer[offset] == Utf16LeBom[0] && buffer[offset + 1] == Utf16LeBom[1])
                     return true;
-                if (buffer[0] == Utf16BeBom[0] && buffer[1] == Utf16BeBom[1])
+                if (buffer[offset] == Utf16BeBom[0] && buffer[offset + 1] == Utf16BeBom[1])
                     return true;
             }
-            
+
             // [Stage 2] Check if a chunk can be decoded as system default ANSI locale.
             // Many multibyte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
             // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
@@ -199,7 +211,7 @@ namespace PEBakery.Helper
             try
             {
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-                ansiEnc.GetChars(buffer);
+                ansiEnc.GetChars(buffer, offset, count);
             }
             catch (DecoderFallbackException)
             { // Failure
@@ -212,7 +224,18 @@ namespace PEBakery.Helper
             if (isText)
             {
                 TextEncodingDetect detect = new TextEncodingDetect();
-                switch (detect.DetectEncoding(buffer, buffer.Length))
+                byte[] idxZeroBuffer;
+                if (offset == 0)
+                {
+                    idxZeroBuffer = buffer;
+                }
+                else
+                {
+                    idxZeroBuffer = new byte[count];
+                    Array.Copy(buffer, offset, idxZeroBuffer, 0, count);
+                }
+                    
+                switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
                 {
                     // Binary
                     case TextEncodingDetect.Encoding.None:
