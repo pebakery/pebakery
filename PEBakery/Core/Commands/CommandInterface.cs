@@ -1218,10 +1218,10 @@ namespace PEBakery.Core.Commands
                     Encoding encoding = EncodingHelper.DetectBom(tempFile);
                     using (StreamReader r = new StreamReader(tempFile, encoding))
                     {
-                        txtStr = r.ReadToEnd();
+                        txtStr = r.ReadToEnd().Trim();
                     }
 
-                    string logStr = $"Encoded File [{srcFile}]\r\n{txtStr.Trim()}\r\n";
+                    string logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
                     s.MainViewModel.BuildEchoMessage = logStr;
                     logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
                 }
@@ -1231,15 +1231,15 @@ namespace PEBakery.Core.Commands
                 }
             }
             else
-            { // Text Mode -> Just read with StreamReader
+            { // Text Mode -> Log with StreamReader
                 string txtStr;
                 Encoding encoding = EncodingHelper.DetectBom(srcFile);
                 using (StreamReader r = new StreamReader(srcFile, encoding))
                 {
-                    txtStr = r.ReadToEnd();
+                    txtStr = r.ReadToEnd().Trim();
                 }
 
-                string logStr = $"Encoded File [{srcFile}]\r\n{txtStr.Trim()}\r\n";
+                string logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
                 s.MainViewModel.BuildEchoMessage = logStr;
                 logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
             }

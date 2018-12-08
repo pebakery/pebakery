@@ -36,27 +36,35 @@ namespace PEBakery.Helper.Tests
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("EncodingHelper")]
-        public void DetectTextEncoding()
+        public void DetectBom()
         {
             string tempDir = FileHelper.GetTempDir();
             string tempFile = Path.Combine(tempDir, "Sample.txt");
+            string srcDir = Path.Combine(TestSetup.SampleDir, "EncodingHelper");
 
             try
             {
                 // Empty -> ANSI
                 File.Create(tempFile).Close();
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), EncodingHelper.DefaultAnsi);
+
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Unicode);
+                string srcFile = Path.Combine(srcDir, "UTF16LE.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), Encoding.Unicode);
 
                 // UTF-16 BE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.BigEndianUnicode);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.BigEndianUnicode);
+                srcFile = Path.Combine(srcDir, "UTF16BE.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), Encoding.BigEndianUnicode);
 
                 // UTF-8
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.UTF8);
+                srcFile = Path.Combine(srcDir, "UTF8.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), Encoding.UTF8);
             }
             finally
             {

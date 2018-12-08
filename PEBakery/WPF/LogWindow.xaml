@@ -42,6 +42,24 @@
         MinWidth="640" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding x:Name="CloseCommand"
+                        Command="local:LogViewCommands.CloseCommand"
+                        CanExecute="CloseCommand_CanExecute"
+                        Executed="CloseCommand_Executed"/>
+        <CommandBinding x:Name="RefreshCommand"
+                        Command="local:LogViewCommands.RefreshCommand"
+                        CanExecute="RefreshCommand_CanExecute"
+                        Executed="RefreshCommand_Executed"/>
+        <CommandBinding x:Name="ClearCommand"
+                        Command="local:LogViewCommands.ClearCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearCommand_Executed"/>
+        <CommandBinding x:Name="ExportCommand"
+                        Command="local:LogViewCommands.ExportCommand"
+                        CanExecute="ExportCommand_CanExecute"
+                        Executed="ExportCommand_Executed"/>
+    </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -65,7 +83,8 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="ListItemFocusColorOverride">
-            <Style.Resources> <!-- For Windows 7 Classic Theme -->
+            <Style.Resources>
+                <!-- For Windows 7 Classic Theme -->
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
             </Style.Resources>
         </Style>
@@ -283,25 +302,25 @@
                     Margin="10, 0, 0, 0"
                     IsDefault="True"
                     IsCancel="True"
-                    Click="CloseButton_Click"
+                    Command="local:LogViewCommands.CloseCommand"
                     Content="Close"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="RefreshButton_Click"
+                    Command="local:LogViewCommands.RefreshCommand"
                     Content="Refresh"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="ClearButton_Click"
+                    Command="local:LogViewCommands.ClearCommand"
                     Content="Clear"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="ExportButton_Click"
+                    Command="local:LogViewCommands.ExportCommand"
                     Content="Export"/>
             <StackPanel Orientation="Horizontal" 
                         Visibility="{Binding BuildLogSelected}">
