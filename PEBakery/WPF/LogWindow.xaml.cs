@@ -26,11 +26,10 @@
 */
 
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +37,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using PEBakery.Core.ViewModels;
 
 namespace PEBakery.WPF
 {
@@ -510,11 +508,7 @@ namespace PEBakery.WPF
         public int SystemLogsSelectedIndex
         {
             get => _systemLogsSelectedIndex;
-            set
-            {
-                _systemLogsSelectedIndex = value;
-                OnPropertyUpdate(nameof(SystemLogsSelectedIndex));
-            }
+            set => SetProperty(ref _systemLogsSelectedIndex, value);
         }
 
         private readonly object _systemLogsLock = new object();
@@ -522,12 +516,7 @@ namespace PEBakery.WPF
         public ObservableCollection<DB_SystemLog> SystemLogs
         {
             get => _systemLogs;
-            set
-            {
-                _systemLogs = value;
-                BindingOperations.EnableCollectionSynchronization(_systemLogs, _systemLogsLock);
-                OnPropertyUpdate(nameof(SystemLogs));
-            }
+            set => SetCollectionProperty(ref _systemLogs, _systemLogsLock, value);
         }
         #endregion
 
@@ -559,12 +548,7 @@ namespace PEBakery.WPF
         public ObservableCollection<Tuple<string, int>> BuildEntries
         {
             get => _buildEntries;
-            set
-            {
-                _buildEntries = value;
-                BindingOperations.EnableCollectionSynchronization(_buildEntries, _buildEntriesLock);
-                OnPropertyUpdate(nameof(BuildEntries));
-            }
+            set => SetCollectionProperty(ref _buildEntries, _buildEntriesLock, value);
         }
 
         public bool CheckSelectBulidIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
@@ -587,12 +571,7 @@ namespace PEBakery.WPF
         public ObservableCollection<Tuple<string, int, int>> ScriptEntries
         {
             get => _scriptEntries;
-            set
-            {
-                _scriptEntries = value;
-                BindingOperations.EnableCollectionSynchronization(_scriptEntries, _scriptEntriesLock);
-                OnPropertyUpdate(nameof(ScriptEntries));
-            }
+            set => SetCollectionProperty(ref _scriptEntries, _scriptEntriesLock, value);
         }
 
         private readonly object _logStatsLock = new object();
@@ -600,12 +579,7 @@ namespace PEBakery.WPF
         public ObservableCollection<Tuple<LogState, int>> LogStats
         {
             get => _logStats;
-            set
-            {
-                _logStats = value;
-                BindingOperations.EnableCollectionSynchronization(_logStats, _logStatsLock);
-                OnPropertyUpdate(nameof(LogStats));
-            }
+            set => SetCollectionProperty(ref _logStats, _logStatsLock, value);
         }
 
         private List<DB_BuildLog> _allBuildLogs = new List<DB_BuildLog>();
@@ -614,34 +588,21 @@ namespace PEBakery.WPF
         public ObservableCollection<DB_BuildLog> BuildLogs
         {
             get => _buildLogs;
-            set
-            {
-                _buildLogs = value;
-                BindingOperations.EnableCollectionSynchronization(_buildLogs, _buildLogsLock);
-                OnPropertyUpdate(nameof(BuildLogs));
-            }
+            set => SetCollectionProperty(ref _buildLogs, _buildLogsLock, value);
         }
 
         private int _simpleBuildLogSelectedIndex;
         public int SimpleBuildLogSelectedIndex
         {
             get => _simpleBuildLogSelectedIndex;
-            set
-            {
-                _simpleBuildLogSelectedIndex = value;
-                OnPropertyUpdate(nameof(SimpleBuildLogSelectedIndex));
-            }
+            set => SetProperty(ref _simpleBuildLogSelectedIndex, value);
         }
 
         private int _fullBuildLogSelectedIndex;
         public int FullBuildLogSelectedIndex
         {
             get => _fullBuildLogSelectedIndex;
-            set
-            {
-                _fullBuildLogSelectedIndex = value;
-                OnPropertyUpdate(nameof(FullBuildLogSelectedIndex));
-            }
+            set => SetProperty(ref _fullBuildLogSelectedIndex, value);
         }
 
         private readonly object _variableLogsLock = new object();
@@ -649,23 +610,14 @@ namespace PEBakery.WPF
         public ObservableCollection<DB_Variable> VariableLogs
         {
             get => _variableLogs;
-            set
-            {
-                _variableLogs = value;
-                BindingOperations.EnableCollectionSynchronization(_variableLogs, _variableLogsLock);
-                OnPropertyUpdate(nameof(VariableLogs));
-            }
+            set => SetCollectionProperty(ref _variableLogs, _variableLogsLock, value);
         }
 
         private int _variableLogSelectedIndex;
         public int VariableLogSelectedIndex
         {
             get => _variableLogSelectedIndex;
-            set
-            {
-                _variableLogSelectedIndex = value;
-                OnPropertyUpdate(nameof(VariableLogSelectedIndex));
-            }
+            set => SetProperty(ref _variableLogSelectedIndex, value);
         }
 
         private bool _buildLogShowComments = true;

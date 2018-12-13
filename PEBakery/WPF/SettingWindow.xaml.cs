@@ -33,15 +33,11 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
@@ -320,9 +316,6 @@ namespace PEBakery.WPF
     #endregion
 
     #region SettingViewModel
-    /// <summary>
-    /// TODO: Split Model and ViewModel
-    /// </summary>
     public class SettingViewModel : ViewModelBase
     {
         #region Field and Constructor
@@ -331,6 +324,7 @@ namespace PEBakery.WPF
         public SettingViewModel(Setting setting)
         {
             Setting = setting;
+            ProjectSourceDirs = new ObservableCollection<string>();
 
             ReadFromFile();
 
@@ -354,7 +348,12 @@ namespace PEBakery.WPF
         public int DefaultProjectIndex
         {
             get => _projectDefaultIndex;
-            set => SetProperty(ref _projectDefaultIndex, value);
+            set
+            {
+                _projectDefaultIndex = value;
+                OnPropertyUpdate(nameof(DefaultProjectIndex));
+                OnPropertyUpdate(nameof(DefaultProject));
+            }
         }
 
         public Project DefaultProject
@@ -374,47 +373,55 @@ namespace PEBakery.WPF
             get => _selectProjectIndex;
             set
             {
+                Project oldProject = SelectedProject;
                 _selectProjectIndex = value;
-
-                if (0 <= value && value < ProjectNames.Count)
-                {
-                    // Project 
-                    Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
-
-                    // SourceDir
-                    ProjectSourceDirs.Clear();
-                    if (infoDict.ContainsKey("SourceDir"))
-                    {
-                        string valStr = infoDict["SourceDir"];
-                        List<string> rawDirs = StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal);
-                        foreach (string rawDir in rawDirs)
-                        {
-                            string dir = rawDir.Trim();
-                            if (0 < dir.Length)
-                                ProjectSourceDirs.Add(dir);
-                        }
-                    }
-                    if (0 < ProjectSourceDirs.Count)
-                        ProjectSourceDirIndex = 0;
-
-                    // TargetDir
-                    if (infoDict.ContainsKey("TargetDir"))
-                        ProjectTargetDir = infoDict["TargetDir"];
-                    else
-                        ProjectTargetDir = string.Empty;
-
-                    // ISOFile
-                    if (infoDict.ContainsKey("ISOFile"))
-                        ProjectIsoFile = infoDict["ISOFile"];
-                    else
-                        ProjectIsoFile = string.Empty;
-
-                    // Compat Options
-                    LoadCompatOption(SelectedProject.Compat);
-                }
-
+                LoadSelectedProject(value, oldProject);
                 OnPropertyUpdate(nameof(SelectedProjectIndex));
+                OnPropertyUpdate(nameof(SelectedProject));
             }
+        }
+
+        public async void LoadSelectedProject(int newValue, Project oldProject)
+        {
+            if (newValue < 0 || ProjectNames.Count <= newValue)
+                return;
+
+            await Task.Run(() =>
+            {
+                // Project 
+                Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
+
+                // SourceDir
+                ProjectSourceDirs.Clear();
+                if (infoDict.ContainsKey("SourceDir"))
+                {
+                    string valStr = infoDict["SourceDir"];
+                    foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
+                    {
+                        string dir = rawDir.Trim();
+                        if (0 < dir.Length)
+                            ProjectSourceDirs.Add(dir);
+                    }
+                }
+                if (0 < ProjectSourceDirs.Count)
+                    ProjectSourceDirIndex = 0;
+
+                // TargetDir
+                if (infoDict.ContainsKey("TargetDir"))
+                    ProjectTargetDir = infoDict["TargetDir"];
+                else
+                    ProjectTargetDir = string.Empty;
+
+                // ISOFile
+                if (infoDict.ContainsKey("ISOFile"))
+                    ProjectIsoFile = infoDict["ISOFile"];
+                else
+                    ProjectIsoFile = string.Empty;
+
+                // Compat Options
+                SaveCompatOption(oldProject.Compat);
+                LoadCompatOption(SelectedProject.Compat);
+            });
         }
 
         public Project SelectedProject
@@ -427,12 +434,13 @@ namespace PEBakery.WPF
                     return null;
             }
         }
-
-        private ObservableCollection<string> _projectSourceDirs = new ObservableCollection<string>();
+        
+        private readonly object _projectSourceDirsLock = new object();
+        private ObservableCollection<string> _projectSourceDirs;
         public ObservableCollection<string> ProjectSourceDirs
         {
             get => _projectSourceDirs;
-            set => SetProperty(ref _projectSourceDirs, value);
+            set => SetCollectionProperty(ref _projectSourceDirs, _projectSourceDirsLock, value); 
         }
 
         private int _projectSourceDirIndex;
@@ -661,7 +669,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Compatibility
-        // Asterisk Bug
+        // Asterisk
         private bool _compatAsteriskBugDirCopy;
         public bool CompatAsteriskBugDirCopy
         {

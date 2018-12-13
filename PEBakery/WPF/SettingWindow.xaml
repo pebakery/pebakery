@@ -108,7 +108,7 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="Projects">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <Grid Margin="5, 5, 5, 0"
                           VerticalAlignment="Center">
                         <Grid.RowDefinitions>
@@ -247,7 +247,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="General">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Build"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -306,7 +306,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Interface">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Default Monospaced Font"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -421,7 +421,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Script">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Script Cache"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -463,7 +463,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Log">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Log Database"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -517,7 +517,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compat">
-                <StackPanel>
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <Grid Margin="5, 5, 5, 0"
                           Height="25"
                           VerticalAlignment="Center">

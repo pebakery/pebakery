@@ -12,14 +12,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -2365,9 +2363,9 @@ namespace PEBakery.WPF
                 if (sizeLimit <= fileLen)
                 {
                     string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
-                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?", 
-                        "Warning", 
-                        MessageBoxButton.YesNo, 
+                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?",
+                        "Warning",
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.No)
                         return;

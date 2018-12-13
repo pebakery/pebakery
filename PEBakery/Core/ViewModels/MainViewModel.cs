@@ -1103,7 +1103,7 @@ namespace PEBakery.Core.ViewModels
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 // Set scale factor
-                double scaleFactor = Global.Setting.Interface.ScaleFactor / 100;
+                double scaleFactor = Global.Setting.Interface.ScaleFactor / 100.0;
                 ScaleTransform scale;
                 if (scaleFactor - 1 < double.Epsilon)
                     scale = new ScaleTransform(1, 1);

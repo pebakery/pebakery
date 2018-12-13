@@ -26,11 +26,13 @@
 */
 
 using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Data;
 using System.Windows.Input;
 
 // ReSharper disable RedundantAssignment
@@ -53,6 +55,14 @@ namespace PEBakery.Core.ViewModels
         protected virtual void SetProperty<T>(ref T fieldRef, T newValue, [CallerMemberName] string propertyName = null)
         {
             fieldRef = newValue;
+            OnPropertyUpdate(propertyName);
+        }
+
+        protected virtual void SetCollectionProperty<T>(ref T fieldRef, object lockObject, T newValue, [CallerMemberName] string propertyName = null)
+            where T : IEnumerable
+        {
+            fieldRef = newValue;
+            BindingOperations.EnableCollectionSynchronization(fieldRef, lockObject);
             OnPropertyUpdate(propertyName);
         }
         #endregion

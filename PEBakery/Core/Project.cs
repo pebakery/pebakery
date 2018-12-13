@@ -50,7 +50,7 @@ namespace PEBakery.Core
 
         #region Fields
         private readonly string _baseDir;
-        private readonly Dictionary<string, Project> _projectDict = new Dictionary<string, Project>(StringComparer.Ordinal);
+        // private readonly Dictionary<string, Project> _projectDict = new Dictionary<string, Project>(StringComparer.Ordinal);
         private readonly ScriptCache _scriptCache;
 
         private readonly Dictionary<string, List<ScriptParseInfo>> _spiDict = new Dictionary<string, List<ScriptParseInfo>>();
@@ -60,17 +60,20 @@ namespace PEBakery.Core
 
         #region Properties
         public string ProjectRoot { get; }
-        public List<Project> ProjectList => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
-        public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
+        public List<Project> ProjectList { get; } = new List<Project>();
+        public List<string> ProjectNames => ProjectList.Select(x => x.ProjectName).ToList();
         public Project this[int i] => ProjectList[i];
-        public int Count => _projectDict.Count;
+        public int Count => ProjectList.Count;
+        // public List<Project> ProjectList => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
+        // public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
+        // public int Count => _projectDict.Count;
         #endregion
 
         #region Constructor
         public ProjectCollection(string baseDir, ScriptCache scriptCache)
         {
             _baseDir = baseDir;
-            ProjectRoot = Path.Combine(baseDir, "Projects");
+            ProjectRoot = Path.Combine(baseDir, Project.KnownPaths.Projects);
             _scriptCache = scriptCache;
         }
         #endregion
@@ -78,7 +81,7 @@ namespace PEBakery.Core
         #region PrepareLoad
         public (int TotalCount, int LinkCount) PrepareLoad()
         {
-            // Ex) projNameList = { "ChrisPE", "MistyPE", "Win10PESE" }
+            // Ex) projectNames = { "ChrisPE", "MistyPE", "Win10XPE", "Win7PESE" }
             // Ex) scriptPathDict = [script paths of ChrisPE, script paths of MistyPE, ... ]
             List<string> projectNames = GetProjectNames();
             (_, int linkCount) = GetScriptPaths(projectNames);
@@ -343,18 +346,19 @@ namespace PEBakery.Core
                     // Add Project.Scripts to ProjectCollections.Scripts
                     _allProjectScripts.AddRange(project.AllScripts);
 
-                    _projectDict[key] = project;
+                    ProjectList.Add(project);
                 }
+
+                // Sort ProjectList
+                ProjectList.Sort((x, y) => string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
 
                 // Populate *.link scripts
                 List<LogInfo> linkLogs = LoadLinks(progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
-                foreach (var kv in _projectDict)
-                {
-                    kv.Value.PostLoad();
-                }
+                foreach (Project p in ProjectList)
+                    p.PostLoad();
             }
             catch (SQLiteException e)
             { // Update failure
@@ -482,7 +486,7 @@ namespace PEBakery.Core
         #endregion
 
         #region GetEnumarator
-        public IEnumerator<Project> GetEnumerator() => _projectDict.OrderBy(x => x.Key).Select(x => x.Value).GetEnumerator();
+        public IEnumerator<Project> GetEnumerator() => ProjectList.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
@@ -495,7 +499,7 @@ namespace PEBakery.Core
         #region Consts
         public static class KnownPaths
         {
-            public const string ProjectsStr = "Projects";
+            public const string Projects = "Projects";
             public const string MainScriptFile = "script.project";
             public const string CompatFile = "PEBakeryCompat.ini";
         }
@@ -527,8 +531,8 @@ namespace PEBakery.Core
             LoadedScriptCount = 0;
             AllScriptCount = 0;
             ProjectName = projectName;
-            ProjectRoot = Path.Combine(baseDir, KnownPaths.ProjectsStr);
-            ProjectDir = Path.Combine(baseDir, KnownPaths.ProjectsStr, projectName);
+            ProjectRoot = Path.Combine(baseDir, KnownPaths.Projects);
+            ProjectDir = Path.Combine(baseDir, KnownPaths.Projects, projectName);
             BaseDir = baseDir;
         }
         #endregion
@@ -1002,7 +1006,7 @@ namespace PEBakery.Core
             string valStr = MainScript.MainInfo["PathSetting"];
             if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                 return true;
-            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+            else if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                 return false;
             else
                 return true;
