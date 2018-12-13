@@ -63,6 +63,15 @@ namespace PEBakery.Core
             // Compatibility
             public bool OverridableFixedVariables;
             public bool EnableEnvironmentVariables;
+
+            public static Options CreateOptions(CompatOption compat)
+            {
+                return new Options
+                {
+                    OverridableFixedVariables = compat.OverridableFixedVariables,
+                    EnableEnvironmentVariables = compat.EnableEnvironmentVariables,
+                };
+            }
         }
         #endregion
 
@@ -94,6 +103,18 @@ namespace PEBakery.Core
             _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _opts = opts;
+
+            LoadDefaultFixedVariables();
+            LoadDefaultGlobalVariables();
+        }
+
+        public Variables(Project project, CompatOption compat)
+        {
+            _project = project;
+            _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _opts = Options.CreateOptions(compat);
 
             LoadDefaultFixedVariables();
             LoadDefaultGlobalVariables();
@@ -1080,7 +1101,7 @@ namespace PEBakery.Core
         #region DeepCopy
         public Variables DeepCopy()
         {
-            Variables variables = new Variables(_project, Global.Setting.ExportVariablesOptions())
+            Variables variables = new Variables(_project, _opts)
             {
                 _fixedVars = new Dictionary<string, string>(_fixedVars, StringComparer.OrdinalIgnoreCase),
                 _globalVars = new Dictionary<string, string>(_globalVars, StringComparer.OrdinalIgnoreCase),

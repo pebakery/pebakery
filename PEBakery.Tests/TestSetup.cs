@@ -22,7 +22,7 @@ namespace PEBakery.Tests
             string emptyTempFile = Path.GetTempFileName();
             if (File.Exists(emptyTempFile))
                 File.Delete(emptyTempFile);
-            Global.Setting = new SettingViewModel(emptyTempFile); // Set to default
+            Global.Setting = new Setting(emptyTempFile); // Set to default
 
             // Load Project "TestSuite" (ScriptCache disabled)
             EngineTests.BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));

@@ -147,6 +147,24 @@ namespace PEBakery.WPF
     #endregion
 
     #region SettingWindow
+    public class ProjectPathEnabledConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            if (!(value is Project p))
+                return false;
+
+            return p.IsPathSettingEnabled();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class FontInfoDescriptionConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

@@ -225,7 +225,7 @@ namespace PEBakery.Core
                 new DB_CacheRevision { Key = EngineVersion, Value = Properties.Resources.EngineVersion },
                 new DB_CacheRevision { Key = BaseDir, Value = baseDir },
                 new DB_CacheRevision { Key = CacheRevision, Value = Properties.Resources.ScriptCacheRevision },
-                new DB_CacheRevision { Key = AsteriskBugDirLink, Value = Global.Setting.Compat_AsteriskBugDirLink.ToString() },
+                // new DB_CacheRevision { Key = AsteriskBugDirLink, Value = Global.Setting.Compat_AsteriskBugDirLink.ToString() },
             };
             InsertOrReplaceAll(infos);
         }
@@ -251,8 +251,8 @@ namespace PEBakery.Core
                 return false;
             if (!infoDict[CacheRevision].Equals(Properties.Resources.ScriptCacheRevision, StringComparison.Ordinal))
                 return false;
-            if (!infoDict[AsteriskBugDirLink].Equals(Global.Setting.Compat_AsteriskBugDirLink.ToString(), StringComparison.Ordinal))
-                return false;
+            // if (!infoDict[AsteriskBugDirLink].Equals(Global.Setting.Compat_AsteriskBugDirLink.ToString(), StringComparison.Ordinal))
+            //     return false;
 
             return true;
         }

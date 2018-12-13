@@ -112,19 +112,11 @@ namespace PEBakery.WPF
 
             Global.BaseDir = argBaseDir;
 
-            // Setting File
-            string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
-            Global.Setting = new SettingViewModel(settingFile);
-            Model.MonospacedFont = Global.Setting.Interface_MonospacedFont;
-
-            // Custom Title
-            if (Global.Setting.Interface_UseCustomTitle)
-                Model.TitleBar = Global.Setting.Interface_CustomTitle;
-
             // Database Directory
             string dbDir = Path.Combine(BaseDir, "Database");
             if (!Directory.Exists(dbDir))
                 Directory.CreateDirectory(dbDir);
+
 
             // Log Database
             string logDbFile = Path.Combine(dbDir, "PEBakeryLog.db");
@@ -139,10 +131,18 @@ namespace PEBakery.WPF
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
-            Global.Setting.LogDb = Logger.Db;
+
+            // Setting File
+            string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
+            Global.Setting = new Setting(settingFile);
+            Model.MonospacedFont = Global.Setting.Interface.MonospacedFont;
+
+            // Custom Title
+            if (Global.Setting.Interface.UseCustomTitle)
+                Model.TitleBar = Global.Setting.Interface.CustomTitle;
 
             // If script cache is enabled, generate cache after 5 seconds
-            if (Global.Setting.Script_EnableCache)
+            if (Global.Setting.Script.EnableCache)
             {
                 string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
                 try
@@ -156,8 +156,6 @@ namespace PEBakery.WPF
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     Application.Current.Shutdown(1);
                 }
-
-                Global.Setting.ScriptCache = Global.ScriptCache;
             }
             else
             {
@@ -196,7 +194,7 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 EngineState s = new EngineState(p, Logger, Model);
-                s.SetOptions(Global.Setting);
+                s.SetOptions(Global.Setting, p.Compat);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -235,7 +233,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Clear();
                 Model.DisplayScript(Model.CurMainTree.Script);
 
-                if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
                     LogDialog = new LogWindow(1);
                     LogDialog.Show();
@@ -282,34 +280,38 @@ namespace PEBakery.WPF
             // Force update of script interface
             SettingWindowButton.Focus();
 
-            double old_Interface_ScaleFactor = Global.Setting.Interface_ScaleFactor;
-            bool old_Compat_AsteriskBugDirLink = Global.Setting.Compat_AsteriskBugDirLink;
-            bool old_Compat_OverridableFixedVariables = Global.Setting.Compat_OverridableFixedVariables;
-            bool old_Compat_EnableEnvironmentVariables = Global.Setting.Compat_EnableEnvironmentVariables;
-            bool old_Script_EnableCache = Global.Setting.Script_EnableCache;
+            // Get current project
+            Project p = Model.CurMainTree.Script.Project;
 
-            SettingWindow dialog = new SettingWindow { Owner = this };
+            double old_Interface_ScaleFactor = Global.Setting.Interface.ScaleFactor;
+            bool old_Compat_AsteriskBugDirLink = p.Compat.AsteriskBugDirLink;
+            bool old_Compat_OverridableFixedVariables = p.Compat.OverridableFixedVariables;
+            bool old_Compat_EnableEnvironmentVariables = p.Compat.EnableEnvironmentVariables;
+            bool old_Script_EnableCache = Global.Setting.Script.EnableCache;
+
+            SettingViewModel svModel = new SettingViewModel(Global.Setting);
+            SettingWindow dialog = new SettingWindow(svModel) { Owner = this };
             if (dialog.ShowDialog() == true)
             {
                 // Apply
                 Global.Setting.ApplySetting();
 
                 // Refresh Projects
-                if (old_Compat_AsteriskBugDirLink != Global.Setting.Compat_AsteriskBugDirLink ||
-                    old_Compat_OverridableFixedVariables != Global.Setting.Compat_OverridableFixedVariables ||
-                    old_Compat_EnableEnvironmentVariables != Global.Setting.Compat_EnableEnvironmentVariables)
+                if (old_Compat_AsteriskBugDirLink != p.Compat.AsteriskBugDirLink ||
+                    old_Compat_OverridableFixedVariables != p.Compat.OverridableFixedVariables ||
+                    old_Compat_EnableEnvironmentVariables != p.Compat.EnableEnvironmentVariables)
                 {
                     Model.StartLoadingProjects();
                 }
                 else
                 {
                     // Scale Factor
-                    double newScaleFactor = Global.Setting.Interface_ScaleFactor;
+                    double newScaleFactor = Global.Setting.Interface.ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
                         Model.DisplayScript(Model.CurMainTree.Script);
 
                     // Script
-                    if (!old_Script_EnableCache && Global.Setting.Script_EnableCache)
+                    if (!old_Script_EnableCache && Global.Setting.Script.EnableCache)
                         Model.StartScriptCaching();
                 }
             }
@@ -325,7 +327,7 @@ namespace PEBakery.WPF
             // Force update of script interface
             UtilityWindowButton.Focus();
 
-            UtilityDialog = new UtilityWindow(Global.Setting.Interface_MonospacedFont) { Owner = this };
+            UtilityDialog = new UtilityWindow(Global.Setting.Interface.MonospacedFont) { Owner = this };
             UtilityDialog.Show();
         }
 
@@ -372,7 +374,7 @@ namespace PEBakery.WPF
 
         private void AboutWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(Global.Setting.Interface_MonospacedFont) { Owner = this };
+            AboutWindow dialog = new AboutWindow(Global.Setting.Interface.MonospacedFont) { Owner = this };
             dialog.ShowDialog();
         }
         #endregion
@@ -406,7 +408,7 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
-                s.SetOptions(Global.Setting);
+                s.SetOptions(Global.Setting, sc.Project.Compat);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -439,7 +441,7 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Clear();
                 Model.DisplayScript(Model.CurMainTree.Script);
 
-                if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
                     LogDialog = new LogWindow(1);
                     LogDialog.Show();

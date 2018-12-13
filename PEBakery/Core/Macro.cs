@@ -117,7 +117,7 @@ namespace PEBakery.Core
                     {
                         if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
                         { // Macro Name Validation
-                            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+                            CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
                             GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
                         }
                         else
@@ -144,7 +144,7 @@ namespace PEBakery.Core
                     {
                         if (Regex.Match(kv.Key, MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success)
                         { // Macro Name Validation
-                            CodeParser parser = new CodeParser(permaSection, Global.Setting.ExportCodeParserOptions());
+                            CodeParser parser = new CodeParser(permaSection, Global.Setting, permaSection.Project.Compat);
                             GlobalDict[kv.Key] = parser.ParseStatement(kv.Value);
                         }
                         else
@@ -203,7 +203,7 @@ namespace PEBakery.Core
                             continue;
                         }
 
-                        CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+                        CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
                         LocalDict[kv.Key] = parser.ParseStatement(kv.Value);
                         logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
                         count += 1;
@@ -239,7 +239,7 @@ namespace PEBakery.Core
             if (macroCommand != null)
             { // Insert
                 // Try parsing
-                CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+                CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
                 CodeCommand cmd = parser.ParseStatement(macroCommand);
                 if (cmd.Type == CodeType.Error)
                 {

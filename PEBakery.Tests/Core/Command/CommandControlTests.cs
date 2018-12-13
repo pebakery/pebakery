@@ -417,7 +417,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
         {
-            CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
             CodeCommand cmd = parser.ParseStatement(rawCode);
 
             CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();

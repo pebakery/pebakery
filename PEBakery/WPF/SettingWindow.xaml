@@ -95,6 +95,7 @@
                         Executed="ClearLogDatabaseCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
+        <local:ProjectPathEnabledConverter x:Key="ProjectPathEnabledConverter" />
         <local:FontInfoDescriptionConverter x:Key="FontInfoDescriptionConverter" />
         <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter" />
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
@@ -127,8 +128,8 @@
                         <ComboBox Grid.Row="0" Grid.Column="1"
                                   Margin="0, 0, 0, 5"
                                   VerticalAlignment="Center"
-                                  ItemsSource="{Binding Project_List}"
-                                  SelectedIndex="{Binding Project_DefaultIndex}"/>
+                                  ItemsSource="{Binding ProjectNames}"
+                                  SelectedIndex="{Binding DefaultProjectIndex}"/>
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    Margin="0, 0, 0, 5"
                                    FontSize="12"
@@ -137,13 +138,13 @@
                         <ComboBox Grid.Row="1" Grid.Column="1"
                                   Margin="0, 0, 0, 5"
                                   VerticalAlignment="Center"
-                                  ItemsSource="{Binding Project_List}"
-                                  SelectedIndex="{Binding Project_SelectedIndex}"/>
+                                  ItemsSource="{Binding ProjectNames}"
+                                  SelectedIndex="{Binding SelectedProjectIndex}"/>
                     </Grid>
                     <GroupBox Margin="5, 5, 5, 0"
                               Header="Source Setup (Legacy)"
                               BorderBrush="Gray">
-                        <StackPanel IsEnabled="{Binding Project_PathEnabled}">
+                        <StackPanel IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}">
                             <Grid Height="25"
                                   Margin="5, 5, 5, 0"
                                   VerticalAlignment="Center">
@@ -159,8 +160,8 @@
                                            Text="Source Directory"/>
                                 <ComboBox Grid.Column="1"
                                           Margin="0, 0, 5, 0"
-                                          ItemsSource="{Binding Project_SourceDirectoryList}"
-                                          SelectedIndex="{Binding Project_SourceDirectoryIndex}"/>
+                                          ItemsSource="{Binding ProjectSourceDirs}"
+                                          SelectedIndex="{Binding ProjectSourceDirIndex}"/>
                                 <Button Grid.Column="2"
                                         Margin="0, 0, 5, 0"
                                         x:Name="SelectSourceDirButton"
@@ -200,7 +201,7 @@
                                          Margin="0, 0, 5, 0"
                                          FontSize="12"
                                          VerticalContentAlignment="Center"
-                                         Text="{Binding Project_TargetDirectory}"/>
+                                         Text="{Binding ProjectTargetDir}"/>
                                 <Button Grid.Column="2"
                                         x:Name="SelectTargetDirButton"
                                         Command="local:SettingViewCommands.SelectTargetDirCommand"
@@ -228,7 +229,7 @@
                                 <TextBox Grid.Column="1"
                                          Margin="0, 0, 5, 0"
                                          VerticalContentAlignment="Center"
-                                         Text="{Binding Project_ISOFile}"/>
+                                         Text="{Binding ProjectIsoFile}"/>
                                 <Button Grid.Column="2"
                                         x:Name="SelectIsoFileButton"
                                         Command="local:SettingViewCommands.SelectIsoFileCommand"
@@ -254,15 +255,15 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Optimize code"
-                                      IsChecked="{Binding General_OptimizeCode}" />
+                                      IsChecked="{Binding GeneralOptimizeCode}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Show LogWindow after build"
-                                      IsChecked="{Binding General_ShowLogAfterBuild}" />
+                                      IsChecked="{Binding GeneralShowLogAfterBuild}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Stop build on error"
-                                      IsChecked="{Binding General_StopBuildOnError}" />
+                                      IsChecked="{Binding GeneralStopBuildOnError}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Path Length Limit"
@@ -275,7 +276,7 @@
                                       ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
                                       Command="local:SettingViewCommands.EnableLongFilePathCommand"
                                       AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                      IsChecked="{Binding General_EnableLongFilePath}" />
+                                      IsChecked="{Binding GeneralEnableLongFilePath}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="User-Agent"
@@ -285,7 +286,7 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Use custom User-Agent in WebGet"
-                                      IsChecked="{Binding General_UseCustomUserAgent}" />
+                                      IsChecked="{Binding GeneralUseCustomUserAgent}" />
                             <Grid Margin="0, 0, 0, 3">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
@@ -297,8 +298,8 @@
                                 <TextBox Grid.Column="1"
                                          FontSize="12"
                                          VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding General_UseCustomUserAgent}"
-                                         Text="{Binding General_CustomUserAgent}" />
+                                         IsEnabled="{Binding GeneralUseCustomUserAgent}"
+                                         Text="{Binding GeneralCustomUserAgent}" />
                             </Grid>
                         </StackPanel>
                     </GroupBox>
@@ -316,10 +317,10 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="0"
                                        VerticalAlignment="Center"
-                                       FontFamily="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
-                                       FontWeight="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
-                                       FontSize="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
-                                       Text="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
+                                       FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                                       FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                                       FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
+                                       Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
                             <Button Grid.Row="0"
                                     Grid.Column="1"
                                     Height="25"
@@ -352,7 +353,7 @@
                                     IsSnapToTickEnabled="True"
                                     Foreground="Black"
                                     x:Name="ScaleFactorSlider"
-                                    Value="{Binding Interface_ScaleFactor}" />
+                                    Value="{Binding InterfaceScaleFactor}" />
                         </DockPanel>
                     </GroupBox>
                     <GroupBox Header="Default Code Editor"
@@ -362,7 +363,7 @@
                             <CheckBox DockPanel.Dock="Left" 
                                       Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      IsChecked="{Binding Interface_UseCustomEditor}"
+                                      IsChecked="{Binding InterfaceUseCustomEditor}"
                                       Content="Use Custom Editor" />
                             <DockPanel Height="25">
                                 <Button DockPanel.Dock="Right"
@@ -378,8 +379,8 @@
                                 <TextBox DockPanel.Dock="Left"
                                          Margin="0, 0, 5, 0"
                                          VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding Interface_UseCustomEditor}"
-                                         Text="{Binding Interface_CustomEditorPath}" />
+                                         IsEnabled="{Binding InterfaceUseCustomEditor}"
+                                         Text="{Binding InterfaceCustomEditorPath}" />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -390,7 +391,7 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Display Console Output When Executing ShellExecute"
-                                      IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
+                                      IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="PEBakery Title"
@@ -400,7 +401,7 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Use custom title"
-                                      IsChecked="{Binding Interface_UseCustomTitle}" />
+                                      IsChecked="{Binding InterfaceUseCustomTitle}" />
                             <Grid Margin="0, 0, 0, 3">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
@@ -412,8 +413,8 @@
                                 <TextBox Grid.Column="1"
                                          FontSize="12"
                                          VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding Interface_UseCustomTitle}"
-                                         Text="{Binding Interface_CustomTitle}" />
+                                         IsEnabled="{Binding InterfaceUseCustomTitle}"
+                                         Text="{Binding InterfaceCustomTitle}" />
                             </Grid>
                         </StackPanel>
                     </GroupBox>
@@ -429,7 +430,7 @@
                                       VerticalContentAlignment="Center"
                                       VerticalAlignment="Center"
                                       Content="Enable Script Cache"
-                                      IsChecked="{Binding Script_EnableCache}" />
+                                      IsChecked="{Binding ScriptEnableCache}" />
                             <Grid Height="25"
                                   Margin="0, 0, 0, 3"
                                   VerticalAlignment="Center">
@@ -441,7 +442,7 @@
                                 <TextBlock Grid.Column="0"
                                            Margin="0, 0, 10, 0"
                                            VerticalAlignment="Center"
-                                           Text="{Binding Script_CacheState}"/>
+                                           Text="{Binding ScriptCacheState}"/>
                                 <Button Grid.Column="1"
                                         Content="Clear Cache Database"
                                         Command="local:SettingViewCommands.ClearCacheDatabaseCommand" 
@@ -456,7 +457,7 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Auto Check Syntax Error"
-                                      IsChecked="{Binding Script_AutoSyntaxCheck}" />
+                                      IsChecked="{Binding ScriptAutoSyntaxCheck}" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
@@ -476,24 +477,8 @@
                                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}" />
                             <TextBlock x:Name="TextBlock_LogDBState"
                                        VerticalAlignment="Center"
-                                       Text="{Binding Log_DBState}" />
+                                       Text="{Binding LogDatabaseState}" />
                         </DockPanel>
-                    </GroupBox>
-                    <GroupBox Header="Optimization"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="0, 0, 0, 5">
-                            <CheckBox Margin="5, 5, 5, 0"
-                                      VerticalContentAlignment="Center"
-                                      Content="Deferred Logging"
-                                      ToolTip="Deferred logging vastly improves performance."
-                                      IsChecked="{Binding Log_DeferredLogging}" />
-                            <CheckBox Margin="5, 5, 5, 0"
-                                      VerticalContentAlignment="Center"
-                                      Content="Compact Exported HTML Log"
-                                      ToolTip="Compact the size of HTML at the expense of memory."
-                                      IsChecked="{Binding Log_MinifyHtmlExport}" />
-                        </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Debug Level"
                               Margin="5, 5, 5, 0"
@@ -509,9 +494,25 @@
                                        Text="Log Debug Level" />
                             <ComboBox Grid.Column="1"
                                       x:Name="ComboBox_LogDebugLevel"
-                                      ItemsSource="{Binding Log_DebugLevelList}"
-                                      SelectedIndex="{Binding Log_DebugLevelIndex}"/>
+                                      ItemsSource="{Binding LogDebugLevels}"
+                                      SelectedIndex="{Binding LogDebugLevelIndex}"/>
                         </Grid>
+                    </GroupBox>
+                    <GroupBox Header="Optimization"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="0, 0, 0, 5">
+                            <CheckBox Margin="5, 5, 5, 0"
+                                      VerticalContentAlignment="Center"
+                                      Content="Deferred Logging"
+                                      ToolTip="Deferred logging vastly improves performance."
+                                      IsChecked="{Binding LogDeferredLogging}" />
+                            <CheckBox Margin="5, 5, 5, 0"
+                                      VerticalContentAlignment="Center"
+                                      Content="Compact Exported HTML Log"
+                                      ToolTip="Compact the size of HTML at the expense of memory."
+                                      IsChecked="{Binding LogMinifyHtmlExport}" />
+                        </StackPanel>
                     </GroupBox>
                 </StackPanel>
             </TabItem>
@@ -531,9 +532,8 @@
                                    Text="Project to Configure"/>
                         <ComboBox Grid.Column="1"
                                   VerticalAlignment="Center"
-                                  IsEnabled="False"
-                                  ItemsSource="{Binding Project_List}"
-                                  SelectedIndex="{Binding Project_SelectedIndex}"/>
+                                  ItemsSource="{Binding ProjectNames}"
+                                  SelectedIndex="{Binding SelectedProjectIndex}"/>
                     </Grid>
                     <GroupBox Header="Asterisk Bug"
                               Margin="5, 3, 5, 0"
@@ -542,11 +542,11 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Simulate WinBuilder's *.* bug in DirCopy"
-                                      IsChecked="{Binding Compat_AsteriskBugDirCopy}" />
+                                      IsChecked="{Binding CompatAsteriskBugDirCopy}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Simulate WinBuilder's *.* bug in folder.project"
-                                      IsChecked="{Binding Compat_AsteriskBugDirLink}" />
+                                      IsChecked="{Binding CompatAsteriskBugDirLink}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Command"
@@ -556,31 +556,31 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="FileRename and DirMove work like PathMove"
-                                      IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
+                                      IsChecked="{Binding CompatFileRenameCanMoveDir}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Allow letter in Loop"
-                                      IsChecked="{Binding Compat_AllowLetterInLoop}" />
+                                      IsChecked="{Binding CompatAllowLetterInLoop}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Enable deprecated legacy branch conditions"
-                                      IsChecked="{Binding Compat_LegacyBranchCondition}" />
+                                      IsChecked="{Binding CompatLegacyBranchCondition}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
-                                      IsChecked="{Binding Compat_LegacyRegWrite}" />
+                                      IsChecked="{Binding CompatLegacyRegWrite}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Allow Set to modify interface controls"
-                                      IsChecked="{Binding Compat_AllowSetModifyInterface}" />
+                                      IsChecked="{Binding CompatAllowSetModifyInterface}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Enable legacy interface commands (e.g. Visible)"
-                                      IsChecked="{Binding Compat_LegacyInterfaceCommand}" />
+                                      IsChecked="{Binding CompatLegacyInterfaceCommand}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
-                                      IsChecked="{Binding Compat_LegacySectionParamCommand}" />
+                                      IsChecked="{Binding CompatLegacySectionParamCommand}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Script Interface"
@@ -590,7 +590,7 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Ignore width of WebLabel"
-                                      IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
+                                      IsChecked="{Binding CompatIgnoreWidthOfWebLabel}" />
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Variable"
@@ -600,19 +600,19 @@
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Overridable fixed variables"
-                                      IsChecked="{Binding Compat_OverridableFixedVariables}" />
+                                      IsChecked="{Binding CompatOverridableFixedVariables}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Overridable loop counter (#c)"
-                                      IsChecked="{Binding Compat_OverridableLoopCounter}" />
+                                      IsChecked="{Binding CompatOverridableLoopCounter}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Enable environment variables"
-                                      IsChecked="{Binding Compat_EnableEnvironmentVariables}" />
+                                      IsChecked="{Binding CompatEnableEnvironmentVariables}" />
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
                                       Content="Disable extended section parameters (e.g. #a, #r)"
-                                      IsChecked="{Binding Compat_DisableExtendedSectionParams}" />
+                                      IsChecked="{Binding CompatDisableExtendedSectionParams}" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

@@ -492,6 +492,15 @@ namespace PEBakery.Core
     #region Project
     public class Project : IEquatable<Project>
     {
+        #region Consts
+        public static class KnownPaths
+        {
+            public const string ProjectsStr = "Projects";
+            public const string MainScriptFile = "script.project";
+            public const string CompatFile = "PEBakeryCompat.ini";
+        }
+        #endregion
+
         #region Fields
         private int _mainScriptIdx;
         #endregion
@@ -501,11 +510,13 @@ namespace PEBakery.Core
         public string BaseDir { get; }
         public string ProjectRoot { get; } // {BaseDir}\Projects
         public string ProjectDir { get; } // {BaseDir}\Projects\{ProjectDirName}
+        public CompatOption Compat { get; private set; }
         public Script MainScript => AllScripts[_mainScriptIdx];
         public List<Script> AllScripts { get; private set; }
         public List<Script> ActiveScripts => CollectActiveScripts(AllScripts);
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
         public Variables Variables { get; set; }
+
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
         #endregion
@@ -516,8 +527,8 @@ namespace PEBakery.Core
             LoadedScriptCount = 0;
             AllScriptCount = 0;
             ProjectName = projectName;
-            ProjectRoot = Path.Combine(baseDir, "Projects");
-            ProjectDir = Path.Combine(baseDir, "Projects", projectName);
+            ProjectRoot = Path.Combine(baseDir, KnownPaths.ProjectsStr);
+            ProjectDir = Path.Combine(baseDir, KnownPaths.ProjectsStr, projectName);
             BaseDir = baseDir;
         }
         #endregion
@@ -538,7 +549,7 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
-            string mainScriptPath = Path.Combine(ProjectDir, "script.project");
+            string mainScriptPath = Path.Combine(ProjectDir, KnownPaths.MainScriptFile);
             AllScripts = new List<Script>();
 
             DB_ScriptCache[] cachePool = null;
@@ -547,6 +558,10 @@ namespace PEBakery.Core
                 progress?.Report((LoadReport.LoadingCache, null));
                 cachePool = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
+
+            // Load per-project compat options
+            string compatFile = Path.Combine(ProjectDir, KnownPaths.CompatFile);
+            Compat = new CompatOption(compatFile);
 
             // Load scripts from disk or cache
             bool cacheValid = true;
@@ -611,7 +626,7 @@ namespace PEBakery.Core
         public void PostLoad()
         {
             SortAllScripts();
-            Variables = new Variables(this, Global.Setting.ExportVariablesOptions());
+            Variables = new Variables(this, Compat);
         }
 
         public void SortAllScripts()
@@ -974,6 +989,23 @@ namespace PEBakery.Core
             ScriptSection section = MainScript.RefreshSection(ScriptSection.Names.Variables);
             if (section != null)
                 Variables.AddVariables(VarsType.Global, section);
+        }
+        #endregion
+
+        #region IsPathSettingEnabled
+        public bool IsPathSettingEnabled()
+        {
+            // If key 'PathSetting' have invalid value or does not exist, default to true
+            if (!MainScript.MainInfo.ContainsKey("PathSetting"))
+                return true;
+
+            string valStr = MainScript.MainInfo["PathSetting"];
+            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                return false;
+            else
+                return true;
         }
         #endregion
 

@@ -349,7 +349,7 @@ namespace PEBakery.Core
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
 
-            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
             (CodeCommand[] cmds, _) = parser.ParseStatements();
 
             // Set CurrentSection
@@ -1186,18 +1186,18 @@ namespace PEBakery.Core
         #endregion
 
         #region SetOptions
-        public void SetOptions(SettingViewModel m)
+        public void SetOptions(Setting setting, CompatOption compat)
         {
-            CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
+            CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
 
-            LogMode = m.Log_DeferredLogging ? LogMode.PartDefer : LogMode.NoDelay;
+            LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDelay;
 
-            CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
-            CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
-            CompatAllowLetterInLoop = m.Compat_AllowLetterInLoop;
-            CompatAllowSetModifyInterface = m.Compat_AllowSetModifyInterface;
-            CompatDisableExtendedSectionParams = m.Compat_DisableExtendedSectionParams;
-            CompatOverridableLoopCounter = m.Compat_OverridableLoopCounter;
+            CompatDirCopyBug = compat.AsteriskBugDirCopy;
+            CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;
+            CompatAllowLetterInLoop = compat.AllowLetterInLoop;
+            CompatAllowSetModifyInterface = compat.AllowSetModifyInterface;
+            CompatDisableExtendedSectionParams = compat.DisableExtendedSectionParams;
+            CompatOverridableLoopCounter = compat.OverridableLoopCounter;
         }
         #endregion
 

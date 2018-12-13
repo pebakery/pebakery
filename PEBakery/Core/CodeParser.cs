@@ -54,6 +54,19 @@ namespace PEBakery.Core
             public bool AllowLegacyInterfaceCommand;
             public bool AllowLegacySectionParamCommand;
             public bool AllowExtendedSectionParams;
+
+            public static Options CreateOptions(Setting setting, CompatOption compat)
+            {
+                return new Options
+                {
+                    OptimizeCode = setting.General.OptimizeCode,
+                    AllowLegacyBranchCondition = compat.LegacyBranchCondition,
+                    AllowLegacyRegWrite = compat.LegacyRegWrite,
+                    AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
+                    AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
+                    AllowExtendedSectionParams = !compat.DisableExtendedSectionParams,
+                };
+            }
         }
         #endregion
 
@@ -63,6 +76,16 @@ namespace PEBakery.Core
             _section = section;
             _opts = options;
         }
+
+        public CodeParser(ScriptSection section, Setting setting, CompatOption compat)
+        {
+            _section = section;
+            _opts = Options.CreateOptions(setting, compat);
+        }
+        #endregion
+
+        #region ExportCodeParserOptions
+        
         #endregion
 
         #region ParseStatement, ParseStatements

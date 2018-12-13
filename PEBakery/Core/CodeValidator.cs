@@ -100,7 +100,7 @@ namespace PEBakery.Core
                 return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
             }
 
-            CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+            CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
             (CodeCommand[] cmds, List<LogInfo> logs) = parser.ParseStatements();
             InternalValidateCodes(cmds, logs);
 

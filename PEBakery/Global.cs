@@ -51,7 +51,7 @@ namespace PEBakery
         // Global Instances
         public static Logger Logger;
         public static MainViewModel MainViewModel;
-        public static SettingViewModel Setting;
+        public static Setting Setting;
         public static ProjectCollection Projects;
         public static ScriptCache ScriptCache;
 

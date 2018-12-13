@@ -758,7 +758,7 @@ namespace PEBakery.Core.ViewModels
                     BottomProgressBarValue = 0;
 
                     // Init ProjectCollection
-                    if (Global.Setting.Script_EnableCache && Global.ScriptCache != null) // Use ScriptCache
+                    if (Global.Setting.Script.EnableCache && Global.ScriptCache != null) // Use ScriptCache
                     {
                         if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir))
                             Global.Projects = new ProjectCollection(Global.BaseDir, Global.ScriptCache);
@@ -786,7 +786,7 @@ namespace PEBakery.Core.ViewModels
                     // Load projects in parallel
                     List<LogInfo> errorLogs = Global.Projects.Load(progress);
                     Global.Logger.SystemWrite(errorLogs);
-                    Global.Setting.UpdateProjectList();
+                    // Global.Setting.UpdateProjectList();
 
                     if (0 < Global.Projects.ProjectNames.Count)
                     { // Load success
@@ -800,17 +800,19 @@ namespace PEBakery.Core.ViewModels
                                 MainTreeItems.Add(projectRoot);
                             }
 
-                            int pIdx = Global.Setting.Project_DefaultIndex;
-                            if (0 <= pIdx && pIdx < MainTreeItems.Count)
+                            CurMainTree = null;
+                            string defaultProjectName = Global.Setting.Project.DefaultProject;
+                            for (int i = 0; i < MainTreeItems.Count; i++)
                             {
-                                CurMainTree = MainTreeItems[pIdx];
-                                CurMainTree.IsExpanded = true;
-                                if (Global.Projects[pIdx] != null)
-                                    DisplayScript(Global.Projects[pIdx].MainScript);
-                            }
-                            else
-                            {
-                                CurMainTree = null;
+                                ProjectTreeItemModel itemModel = MainTreeItems[i];
+                                string itemProjectName = itemModel.Script.Project.ProjectName;
+                                if (itemProjectName.Equals(defaultProjectName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    CurMainTree = itemModel;
+                                    CurMainTree.IsExpanded = true;
+                                    if (Global.Projects[i] != null)
+                                        DisplayScript(Global.Projects[i].MainScript);
+                                }
                             }
                         });
 
@@ -819,7 +821,7 @@ namespace PEBakery.Core.ViewModels
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg;
-                        if (Global.Setting.Script_EnableCache)
+                        if (Global.Setting.Script.EnableCache)
                         {
                             double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (totalScriptCount + stage2LinkCount);
                             msg = $"{totalScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
@@ -835,7 +837,7 @@ namespace PEBakery.Core.ViewModels
                         Global.Logger.SystemWrite(Logger.LogSeperator);
 
                         // If script cache is enabled, update cache.
-                        if (Global.Setting.Script_EnableCache)
+                        if (Global.Setting.Script.EnableCache)
                             StartScriptCaching();
                     }
                     else
@@ -1086,7 +1088,7 @@ namespace PEBakery.Core.ViewModels
 
                 // Run CodeValidator
                 // Do not use await, let it run in background
-                if (Global.Setting.Script_AutoSyntaxCheck)
+                if (Global.Setting.Script.AutoSyntaxCheck)
                     StartSyntaxCheck(true);
             }
 
@@ -1098,10 +1100,10 @@ namespace PEBakery.Core.ViewModels
         {
             // Current UIRenderer can only run in interface thread.
             // Guard instance owner exception using Application.Current.Dispatcher.Invoke()
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 // Set scale factor
-                double scaleFactor = Global.Setting.Interface_ScaleFactor / 100;
+                double scaleFactor = Global.Setting.Interface.ScaleFactor / 100;
                 ScaleTransform scale;
                 if (scaleFactor - 1 < double.Epsilon)
                     scale = new ScaleTransform(1, 1);
@@ -1112,7 +1114,7 @@ namespace PEBakery.Core.ViewModels
                 // Render script interface
                 ClearScriptInterface();
 
-                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, scaleFactor, true, Global.Setting.Compat_IgnoreWidthOfWebLabel);
+                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, scaleFactor, true, sc.Project.Compat.IgnoreWidthOfWebLabel);
                 _renderer.Render();
             });
         }
@@ -1446,25 +1448,25 @@ namespace PEBakery.Core.ViewModels
                 return;
             }
 
-            if (Global.Setting.Interface_UseCustomEditor)
+            if (Global.Setting.Interface.UseCustomEditor)
             {
-                string ext = Path.GetExtension(Global.Setting.Interface_CustomEditorPath);
+                string ext = Path.GetExtension(Global.Setting.Interface.CustomEditorPath);
                 if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (!File.Exists(Global.Setting.Interface_CustomEditorPath))
+                if (!File.Exists(Global.Setting.Interface.CustomEditorPath))
                 {
-                    MessageBox.Show($"Custom editor [{Global.Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Custom editor [{Global.Setting.Interface.CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 ProcessStartInfo info = new ProcessStartInfo
                 {
                     UseShellExecute = false,
-                    FileName = Global.Setting.Interface_CustomEditorPath,
+                    FileName = Global.Setting.Interface.CustomEditorPath,
                     Arguments = StringEscaper.Doublequote(filePath),
                 };
 

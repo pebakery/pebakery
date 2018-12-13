@@ -137,14 +137,12 @@ namespace PEBakery.WPF
                     Project project = _m.CurrentProject;
                     Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions());
 
-                    SettingViewModel setting = Global.Setting;
-
                     Global.MainViewModel.BuildTreeItems.Clear();
                     Global.MainViewModel.SwitchNormalBuildInterface = false;
                     Global.MainViewModel.WorkInProgress = true;
 
                     EngineState s = new EngineState(sc.Project, Global.Logger, Global.MainViewModel, EngineMode.RunMainAndOne, sc);
-                    s.SetOptions(setting);
+                    s.SetOptions(Global.Setting, sc.Project.Compat);
 
                     Engine.WorkingEngine = new Engine(s);
 
@@ -165,7 +163,7 @@ namespace PEBakery.WPF
                     Global.MainViewModel.BuildTreeItems.Clear();
 
                     s.MainViewModel.DisplayScript(Global.MainViewModel.CurMainTree.Script);
-                    if (Global.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
@@ -270,7 +268,7 @@ namespace PEBakery.WPF
                     }
 
                     // Run CodeParser to retrieve parsing errors
-                    CodeParser parser = new CodeParser(section, Global.Setting.ExportCodeParserOptions());
+                    CodeParser parser = new CodeParser(section, Global.Setting, sc.Project.Compat);
                     (CodeCommand[] cmds, List<LogInfo> errorLogs) = parser.ParseStatements(lines);
 
                     // Check macro commands
