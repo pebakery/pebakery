@@ -38,7 +38,7 @@ namespace PEBakery.Tests
             Global.NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
 
             // Use InMemory Database for Tests
-            Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
+            Logger.DebugLevel = LogDebugLevel.PrintExceptionStackTrace;
             EngineTests.Logger = new Logger(":memory:");
             EngineTests.Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
 

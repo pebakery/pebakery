@@ -187,6 +187,7 @@
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2" 
                            Margin="4"
+                           x:Name="ProjectBuildStartButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectBuildStartCommand"
                            IconMaterialKind="Play"
@@ -194,6 +195,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
                            Margin="4"
+                           x:Name="ProjectRefreshButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectRefreshCommand"
                            IconMaterialKind="Refresh"
@@ -201,6 +203,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
                            Margin="4"
+                           x:Name="SettingWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.SettingWindowCommand"
                            IconMaterialKind="Settings"
@@ -208,6 +211,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="5"
                            Margin="4"
+                           x:Name="LogWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.LogWindowCommand"
                            IconMaterialKind="CommentCheck"
@@ -215,6 +219,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="6"
                            Margin="4"
+                           x:Name="UtilityWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.UtilityWindowCommand"
                            IconMaterialKind="Layers"
@@ -222,6 +227,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="7"
                            Margin="4"
+                           x:Name="ProjectUpdateButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectUpdateCommand"
                            IconMaterialKind="Download"
@@ -229,6 +235,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="8"
                            Margin="4"
+                           x:Name="AboutWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.AboutWindowCommand"
                            IconMaterialKind="Help"
@@ -310,6 +317,7 @@
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2"
                                Margin="4"
+                               x:Name="ProjectBuildStopButton"
                                Style="{StaticResource MainIconButtonStyle}"
                                IconMaterialKind="StopCircle"
                                Command="local:MainViewCommands.ProjectBuildStopCommand"
@@ -660,24 +668,24 @@
                             <RowDefinition Height="25" />
                         </Grid.RowDefinitions>
 
-                        <Button Grid.Row="0"
-                                Grid.Column="0"
+                        <Button Grid.Row="0" Grid.Column="0"
+                                x:Name="ScriptRunButton"
                                 Command="local:MainViewCommands.ScriptRunCommand"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
-                        <Button Grid.Row="1"
-                                Grid.Column="0"
+                        <Button Grid.Row="1" Grid.Column="0"
+                                x:Name="ScriptRefreshButton"
                                 Command="local:MainViewCommands.ScriptRefreshCommand"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
                         </Button>
-                        <Button Grid.Row="2"
-                                Grid.Column="0"
+                        <Button Grid.Row="2" Grid.Column="0"
+                                x:Name="ScriptEditButton"
                                 Command="local:MainViewCommands.ScriptEditCommand"
                                 AutomationProperties.Name="{Binding OpenExternalButtonToolTip}"
                                 ToolTip="{Binding OpenExternalButtonToolTip}">
@@ -701,8 +709,8 @@
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
-                        <Button Grid.Row="3"
-                                Grid.Column="0"
+                        <Button Grid.Row="3" Grid.Column="0"
+                                x:Name="ScriptUpdateButton"
                                 Command="local:MainViewCommands.ScriptUpdateCommand"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 AutomationProperties.Name="{Binding ScriptUpdateButtonToolTip}"

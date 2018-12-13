@@ -2702,7 +2702,7 @@ namespace PEBakery.WPF
                     }
 
                     StringBuilder b = new StringBuilder();
-                    bool fileOverwrited = false;
+                    bool fileOverwrote = false;
                     for (int i = 0; i < fileInfos.Count; i++)
                     {
                         EncodedFileInfo info = fileInfos[i];
@@ -2710,7 +2710,7 @@ namespace PEBakery.WPF
                         string destFile = Path.Combine(destDir, info.FileName);
                         if (File.Exists(destFile))
                         {
-                            fileOverwrited = true;
+                            fileOverwrote = true;
 
                             b.Append(destFile);
                             if (i + 1 < fileInfos.Count)
@@ -2719,7 +2719,7 @@ namespace PEBakery.WPF
                     }
 
                     bool proceedExtract = false;
-                    if (fileOverwrited)
+                    if (fileOverwrote)
                     {
                         MessageBoxResult owResult = MessageBox.Show($"The file [{b}] will be overwritten.\r\nWould you like to proceed?",
                                                                     "Overwrite?",
@@ -3553,38 +3553,6 @@ namespace PEBakery.WPF
             new KeyGesture(Key.S, ModifierKeys.Control),
         });
         #endregion   
-    }
-    #endregion
-
-    #region Converters
-    public class AttachProgressValueToPercentConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (!(value is double progress))
-                return string.Empty;
-            return 0 < progress ? $"{progress * 100:0.0}%" : string.Empty;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return 0;
-        }
-    }
-
-    public class AttachProgressValueToEnabledConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (!(value is double progress))
-                return false;
-            return 0 <= progress;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return true;
-        }
     }
     #endregion
 }

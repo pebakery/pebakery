@@ -121,9 +121,14 @@ namespace PEBakery.Helper
                 FontWeight = fontWeight;
                 FontSizeInPoint = fontSize;
             }
+
+            public override string ToString()
+            {
+                return $"{FontFamily.Source}, {FontSizeInPoint}pt";
+            }
         }
 
-        public static FontInfo ChooseFontDialog(FontInfo font, Window window, bool useStyle = false, bool monospace = false)
+        public static FontInfo ChooseFontDialog(FontInfo font, Window window, bool useStyle = false, bool monospaced = false)
         {
             NativeMethods.LOGFONT logFont = new NativeMethods.LOGFONT
             {
@@ -145,7 +150,7 @@ namespace PEBakery.Helper
                         NativeMethods.ChooseFontFlags.CF_INITTOLOGFONTSTRUCT | // Use LOGFONT
                         NativeMethods.ChooseFontFlags.CF_SCALABLEONLY,
             };
-            if (monospace)
+            if (monospaced)
                 chosenFont.Flags |= NativeMethods.ChooseFontFlags.CF_FIXEDPITCHONLY;
             if (useStyle)
                 chosenFont.Flags |= NativeMethods.ChooseFontFlags.CF_EFFECTS;

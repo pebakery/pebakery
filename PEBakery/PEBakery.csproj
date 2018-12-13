@@ -213,6 +213,7 @@
       <DependentUpon>NumberBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\ProgressRing.cs" />
+    <Compile Include="WPF\Converter.cs" />
     <Compile Include="WPF\LogExportWindow.xaml.cs">
       <DependentUpon>LogExportWindow.xaml</DependentUpon>
     </Compile>

@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 -->
     
+<!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.LogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -303,24 +304,28 @@
                     IsDefault="True"
                     IsCancel="True"
                     Command="local:LogViewCommands.CloseCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Close"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
                     Command="local:LogViewCommands.RefreshCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Refresh"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
                     Command="local:LogViewCommands.ClearCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Clear"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
                     Command="local:LogViewCommands.ExportCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Export"/>
             <StackPanel Orientation="Horizontal" 
                         Visibility="{Binding BuildLogSelected}">

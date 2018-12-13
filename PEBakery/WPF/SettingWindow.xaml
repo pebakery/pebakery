@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 -->
 
+<!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.SettingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -41,6 +42,61 @@
         Width="600" Height="520"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
+    <Window.CommandBindings>
+        <!-- Global -->
+        <CommandBinding x:Name="DefaultSettingCommand"
+                        Command="local:SettingViewCommands.DefaultSettingCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="DefaultSettingCommand_Executed"/>
+        <CommandBinding x:Name="SaveSettingCommand"
+                        Command="local:SettingViewCommands.SaveSettingCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SaveSettingCommand_Executed"/>
+        <!-- Projects -->
+        <CommandBinding x:Name="SelectSourceDirCommand"
+                        Command="local:SettingViewCommands.SelectSourceDirCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SelectSourceDirCommand_Executed"/>
+        <CommandBinding x:Name="ResetSourceDirCommand"
+                        Command="local:SettingViewCommands.ResetSourceDirCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ResetSourceDirCommand_Executed"/>
+        <CommandBinding x:Name="SelectTargetDirCommand"
+                        Command="local:SettingViewCommands.SelectTargetDirCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SelectTargetDirCommand_Executed"/>
+        <CommandBinding x:Name="SelectIsoFileCommand"
+                        Command="local:SettingViewCommands.SelectIsoFileCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SelectIsoFileCommand_Executed"/>
+        <!-- General -->
+        <CommandBinding x:Name="EnableLongFilePathCommand"
+                        Command="local:SettingViewCommands.EnableLongFilePathCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="EnableLongFilePathCommand_Executed"/>
+        <!-- Interface -->
+        <CommandBinding x:Name="SelectMonospacedFontCommand"
+                        Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SelectMonospacedFontCommand_Executed"/>
+        <CommandBinding x:Name="SelectCustomEditorPathCommand"
+                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+                        CanExecute="SelectCustomEditorPathCommand_CanExecute"
+                        Executed="SelectCustomEditorPathCommand_Executed"/>
+        <!-- Script -->
+        <CommandBinding x:Name="ClearCacheDatabaseCommand"
+                        Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
+                        CanExecute="ClearCacheDatabaseCommand_CanExecute"
+                        Executed="ClearCacheDatabaseCommand_Executed"/>
+        <!-- Log -->
+        <CommandBinding x:Name="ClearLogDatabaseCommand"
+                        Command="local:SettingViewCommands.ClearLogDatabaseCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ClearLogDatabaseCommand_Executed"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+        <local:FontInfoDescriptionConverter x:Key="FontInfoDescriptionConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -104,8 +160,9 @@
                                           SelectedIndex="{Binding Project_SourceDirectoryIndex}"/>
                                 <Button Grid.Column="2"
                                         Margin="0, 0, 5, 0"
-                                        x:Name="Button_SourceDirectory"
-                                        Click="Button_SourceDirectory_Click">
+                                        x:Name="SelectSourceDirButton"
+                                        Command="local:SettingViewCommands.SelectSourceDirCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial Kind="FolderOpen"
                                                                     Width="Auto"
@@ -114,8 +171,9 @@
                                     </Button.Content>
                                 </Button>
                                 <Button Grid.Column="3"
-                                        x:Name="Button_ResetSourceDirectory"
-                                        Click="Button_ResetSourceDirectory_Click">
+                                        x:Name="ResetSourceDirButton"
+                                        Command="local:SettingViewCommands.ResetSourceDirCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial Kind="Close"
                                                                     Width="Auto"
@@ -141,8 +199,9 @@
                                          VerticalContentAlignment="Center"
                                          Text="{Binding Project_TargetDirectory}"/>
                                 <Button Grid.Column="2"
-                                        x:Name="Button_TargetDirectory"
-                                        Click="Button_TargetDirectory_Click">
+                                        x:Name="SelectTargetDirButton"
+                                        Command="local:SettingViewCommands.SelectTargetDirCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial Kind="FolderOpen"
                                                                     Width="Auto"
@@ -168,8 +227,9 @@
                                          VerticalContentAlignment="Center"
                                          Text="{Binding Project_ISOFile}"/>
                                 <Button Grid.Column="2"
-                                        x:Name="Button_ISOFile"
-                                        Click="Button_ISOFile_Click">
+                                        x:Name="SelectIsoFileButton"
+                                        Command="local:SettingViewCommands.SelectIsoFileCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial Kind="FolderOpen"
                                                                     Width="Auto"
@@ -210,7 +270,8 @@
                                       VerticalContentAlignment="Center"
                                       Content="Enable long file path support"
                                       ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
-                                      Click="CheckBox_EnableLongFilePath_Click"
+                                      Command="local:SettingViewCommands.EnableLongFilePathCommand"
+                                      AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                       IsChecked="{Binding General_EnableLongFilePath}" />
                         </StackPanel>
                     </GroupBox>
@@ -242,7 +303,7 @@
             </TabItem>
             <TabItem Header="Interface">
                 <StackPanel>
-                    <GroupBox Header="Default Monospace Font"
+                    <GroupBox Header="Default Monospaced Font"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
                         <Grid Margin="3, 3, 3, 3">
@@ -252,14 +313,15 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="0"
                                        VerticalAlignment="Center"
-                                       FontFamily="{Binding Interface_MonospaceFontFamily}"
-                                       FontWeight="{Binding Interface_MonospaceFontWeight}"
-                                       FontSize="{Binding Interface_MonospaceFontSize}"
-                                       Text="{Binding Interface_MonospaceFontStr}"/>
+                                       FontFamily="{Binding Interface_MonospacedFontFamily}"
+                                       FontWeight="{Binding Interface_MonospacedFontWeight}"
+                                       FontSize="{Binding Interface_MonospacedFontSize}"
+                                       Text="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
                             <Button Grid.Row="0"
                                     Grid.Column="1"
                                     Height="25"
-                                    Click="Button_MonospaceFont_Click">
+                                    Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                 <Button.Content>
                                     <iconPacks:PackIconMaterial Kind="FormatFont"
                                                                 Width="Auto"
@@ -304,8 +366,8 @@
                                         Width="25"
                                         VerticalContentAlignment="Center"
                                         HorizontalContentAlignment="Center"
-                                        IsEnabled="{Binding Interface_UseCustomEditor}"
-                                        Click="Button_CustomEditorPath_Click">
+                                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial Kind="FolderOpen"/>
                                     </Button.Content>
@@ -379,7 +441,8 @@
                                            Text="{Binding Script_CacheState}"/>
                                 <Button Grid.Column="1"
                                         Content="Clear Cache Database"
-                                        Click="Button_ClearCache_Click" />
+                                        Command="local:SettingViewCommands.ClearCacheDatabaseCommand" 
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                             </Grid>
                         </StackPanel>
                     </GroupBox>
@@ -397,6 +460,22 @@
             </TabItem>
             <TabItem Header="Log">
                 <StackPanel>
+                    <GroupBox Header="Log Database"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <DockPanel Height="25"
+                                   Margin="5, 5, 5, 5"
+                                   VerticalAlignment="Center">
+                            <Button DockPanel.Dock="Right"
+                                    Content="Clear Log Database"
+                                    Width="150"
+                                    Command="local:SettingViewCommands.ClearLogDatabaseCommand" 
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}" />
+                            <TextBlock x:Name="TextBlock_LogDBState"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding Log_DBState}" />
+                        </DockPanel>
+                    </GroupBox>
                     <GroupBox Header="Optimization"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -431,22 +510,6 @@
                                       SelectedIndex="{Binding Log_DebugLevelIndex}"/>
                         </Grid>
                     </GroupBox>
-                    <GroupBox Header="Log Database"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <DockPanel Height="25"
-                                   Margin="5, 5, 5, 5"
-                                   VerticalAlignment="Center">
-                            <Button DockPanel.Dock="Right"
-                                    Content="Clear Log Database"
-                                    Width="150"
-                                    Click="Button_ClearLog_Click" />
-                            <TextBlock x:Name="TextBlock_LogDBState"
-                                       VerticalAlignment="Center"
-                                       Text="{Binding Log_DBState}" />
-                        </DockPanel>
-                    </GroupBox>
-
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compat">
@@ -564,13 +627,15 @@
 
             <Button Grid.Row="0"
                     Grid.Column="0"
-                    x:Name="DefaultButton"
-                    Click="DefaultButton_Click"
+                    x:Name="DefaultSettingButton"
+                    Command="local:SettingViewCommands.DefaultSettingCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Default"/>
             <Button Grid.Row="0" Grid.Column="2"
                     IsDefault="True"
-                    x:Name="SaveButton"
-                    Click="SaveButton_Click"
+                    x:Name="SaveSettingButton"
+                    Command="local:SettingViewCommands.SaveSettingCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Save"/>
             <Button Grid.Row="0"
                     Grid.Column="4"

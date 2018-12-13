@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using MahApps.Metro.IconPacks;
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
@@ -34,15 +33,12 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
@@ -119,7 +115,7 @@ namespace PEBakery.WPF
             // Setting File
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Global.Setting = new SettingViewModel(settingFile);
-            Model.MonospacedFont = Global.Setting.Interface_MonospaceFont;
+            Model.MonospacedFont = Global.Setting.Interface_MonospacedFont;
 
             // Custom Title
             if (Global.Setting.Interface_UseCustomTitle)
@@ -183,6 +179,9 @@ namespace PEBakery.WPF
 
         private async void ProjectBuildStartCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ProjectBuildStartButton.Focus();
+
             // TODO: Better locking system?
             Interlocked.Increment(ref Engine.WorkingLock);
             try
@@ -257,6 +256,9 @@ namespace PEBakery.WPF
 
         private void ProjectBuildStopCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ProjectBuildStopButton.Focus();
+
             // Do not set Engine.WorkingEngine to null, it will take some time to finish a build.
             Engine.WorkingEngine?.ForceStop();
         }
@@ -268,12 +270,18 @@ namespace PEBakery.WPF
 
         private void ProjectRefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ProjectRefreshButton.Focus();
+
             Model.StartLoadingProjects();
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         private void SettingWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            SettingWindowButton.Focus();
+
             double old_Interface_ScaleFactor = Global.Setting.Interface_ScaleFactor;
             bool old_Compat_AsteriskBugDirLink = Global.Setting.Compat_AsteriskBugDirLink;
             bool old_Compat_OverridableFixedVariables = Global.Setting.Compat_OverridableFixedVariables;
@@ -314,7 +322,10 @@ namespace PEBakery.WPF
 
         private void UtilityWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            UtilityDialog = new UtilityWindow(Global.Setting.Interface_MonospaceFont) { Owner = this };
+            // Force update of script interface
+            UtilityWindowButton.Focus();
+
+            UtilityDialog = new UtilityWindow(Global.Setting.Interface_MonospacedFont) { Owner = this };
             UtilityDialog.Show();
         }
 
@@ -325,6 +336,9 @@ namespace PEBakery.WPF
 
         private void LogWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            LogWindowButton.Focus();
+
             LogDialog = new LogWindow { Owner = this };
             LogDialog.Show();
         }
@@ -336,6 +350,9 @@ namespace PEBakery.WPF
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ProjectUpdateButton.Focus();
+
             Model.WorkInProgress = true;
             try
             {
@@ -355,7 +372,7 @@ namespace PEBakery.WPF
 
         private void AboutWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(Global.Setting.Interface_MonospaceFont) { Owner = this };
+            AboutWindow dialog = new AboutWindow(Global.Setting.Interface_MonospacedFont) { Owner = this };
             dialog.ShowDialog();
         }
         #endregion
@@ -368,6 +385,9 @@ namespace PEBakery.WPF
 
         private async void ScriptRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptRunButton.Focus();
+
             Script sc = Model.CurMainTree.Script;
             if (!sc.Sections.ContainsKey(ScriptSection.Names.Process))
             {
@@ -436,11 +456,17 @@ namespace PEBakery.WPF
 
         private void ScriptRefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptRefreshButton.Focus();
+
             Model.StartRefreshScript();
         }
 
         private void ScriptEditCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptEditButton.Focus();
+
             if (Model.IsTreeEntryFile)
             { // Open Context Menu
                 if (e.Source is Button button && button.ContextMenu is ContextMenu menu)
@@ -457,6 +483,9 @@ namespace PEBakery.WPF
 
         private void ScriptInternalEditorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptEditButton.Focus();
+
             Script sc = Model.CurMainTree.Script;
             if (ScriptEditWindow.Count == 0)
             {
@@ -477,6 +506,9 @@ namespace PEBakery.WPF
 
         private void ScriptExternalEditorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptEditButton.Focus();
+
             Script sc = Model.CurMainTree.Script;
             switch (sc.Type)
             {
@@ -492,6 +524,9 @@ namespace PEBakery.WPF
 
         private void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            // Force update of script interface
+            ScriptUpdateButton.Focus();
+
             MessageBox.Show("To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
             /*
             Script sc = CurMainTree.Script;
@@ -718,115 +753,6 @@ namespace PEBakery.WPF
         public static readonly RoutedCommand ScriptSyntaxCheckCommand = new RoutedUICommand("Syntax Check", "ScriptSyntaxCheck", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptOpenFolderCommand = new RoutedUICommand("Open Script Folder", "ScriptOpenFolder", typeof(MainViewCommands));
         #endregion
-    }
-    #endregion
-
-    #region Converters
-    public class BuildConOutForegroundConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return Brushes.Black;
-            return (bool)value ? Brushes.Red : Brushes.Black;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class TaskBarProgressConverter : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            return (double)values[1] / (double)values[0];
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class ScriptLogoVisibilityConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value != null ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class CodeValidatorResultIconConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null || value.GetType() != typeof(CodeValidator.Result))
-                return null;
-
-            PackIconMaterialKind icon;
-            CodeValidator.Result result = (CodeValidator.Result)value;
-            switch (result)
-            {
-                case CodeValidator.Result.Clean:
-                    icon = PackIconMaterialKind.Check;
-                    break;
-                case CodeValidator.Result.Warning:
-                    icon = PackIconMaterialKind.Alert;
-                    break;
-                case CodeValidator.Result.Error:
-                    icon = PackIconMaterialKind.Close;
-                    break;
-                default:
-                    icon = PackIconMaterialKind.Magnify;
-                    break;
-            }
-            return icon;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class CodeValidatorResultColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null || value.GetType() != typeof(CodeValidator.Result))
-                return null;
-
-            Brush brush;
-            CodeValidator.Result result = (CodeValidator.Result)value;
-            switch (result)
-            {
-                case CodeValidator.Result.Clean:
-                    brush = new SolidColorBrush(Colors.Green);
-                    break;
-                case CodeValidator.Result.Warning:
-                    brush = new SolidColorBrush(Colors.OrangeRed);
-                    break;
-                case CodeValidator.Result.Error:
-                    brush = new SolidColorBrush(Colors.Red);
-                    break;
-                default:
-                    brush = new SolidColorBrush(Colors.Gray);
-                    break;
-            }
-            return brush;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
     }
     #endregion
 }

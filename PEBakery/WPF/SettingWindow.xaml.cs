@@ -33,13 +33,14 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace PEBakery.WPF
@@ -49,153 +50,265 @@ namespace PEBakery.WPF
     public partial class SettingWindow : Window
     {
         #region Field and Constructor
-        public SettingViewModel Model;
+        private readonly SettingViewModel _m;
 
         public SettingWindow()
         {
-            DataContext = Model = Global.Setting;
+            DataContext = _m = Global.Setting;
             InitializeComponent();
         }
         #endregion
 
+        #region Window Event Handler
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            _m.UpdateCacheDbState();
+            _m.UpdateLogDbState();
+            _m.UpdateProjectList();
+        }
+        #endregion
+
         #region Button Event Handler
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        #region Global Buttons
+        private void Command_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            Model.WriteToFile();
-            DialogResult = true;
+            e.CanExecute = _m != null && _m.CanExecuteCommand;
         }
 
-        private void DefaultButton_Click(object sender, RoutedEventArgs e)
+        private void DefaultSettingCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Model.SetToDefault();
-        }
-
-        private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
-        {
-            if (ScriptCache.DbLock == 0)
+            _m.CanExecuteCommand = false;
+            try
             {
-                Interlocked.Increment(ref ScriptCache.DbLock);
-                try
-                {
-                    Model.ClearCacheDb();
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref ScriptCache.DbLock);
-                }
+                _m.SetToDefault();
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
+        private async void SaveSettingCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Model.ClearLogDb();
+            _m.CanExecuteCommand = false;
+            try
+            {
+                await _m.WriteToFileAsync();
+                DialogResult = true;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Project Setting Commands
+        private void SelectSourceDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+                if (0 < _m.Project_SourceDirectoryList.Count)
+                    dialog.SelectedPath = _m.Project_SourceDirectoryList[_m.Project_SourceDirectoryIndex];
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    bool exist = false;
+                    for (int i = 0; i < _m.Project_SourceDirectoryList.Count; i++)
+                    {
+                        string projectName = _m.Project_SourceDirectoryList[i];
+                        if (projectName.Equals(dialog.SelectedPath, StringComparison.OrdinalIgnoreCase))
+                        { // Selected Path exists
+                            _m.Project_SourceDirectoryIndex = i;
+                            exist = true;
+                            break;
+                        }
+                    }
+
+                    if (!exist) // Add to list
+                    {
+                        _m.Project_SourceDirectoryList.Insert(0, dialog.SelectedPath);
+                        _m.Project_SourceDirectoryIndex = 0;
+                    }
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void ResetSourceDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Model.UpdateCacheDbState();
-            Model.UpdateLogDbState();
-            Model.UpdateProjectList();
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.Project_SourceDirectoryList.Clear();
+
+                int idx = _m.Project_SelectedIndex;
+                string fullPath = _m.Projects[idx].MainScript.RealPath;
+                IniReadWriter.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
-        private void CheckBox_EnableLongFilePath_Click(object sender, RoutedEventArgs e)
+        private void SelectTargetDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            if (Model.General_EnableLongFilePath)
+            _m.CanExecuteCommand = false;
+            try
+            {
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+                {
+                    SelectedPath = _m.Project_TargetDirectory,
+                };
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    _m.Project_TargetDirectory = dialog.SelectedPath;
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void SelectIsoFileCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "ISO File (*.iso)|*.iso",
+                    FileName = _m.Project_ISOFile,
+                };
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    _m.Project_ISOFile = dialog.FileName;
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region General Setting Commands
+        private void EnableLongFilePathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.General_EnableLongFilePath)
+                return;
+
+            _m.CanExecuteCommand = false;
+            try
             {
                 const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                Model.General_EnableLongFilePath = res == MessageBoxResult.Yes;
+                _m.General_EnableLongFilePath = res == MessageBoxResult.Yes;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Interface Setting Commands
+        private void SelectMonospacedFontCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.Interface_MonospacedFont = FontHelper.ChooseFontDialog(_m.Interface_MonospacedFont, this, monospaced: true);
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
+        private void SelectCustomEditorPathCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
-            if (0 < Model.Project_SourceDirectoryList.Count)
-                dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
+            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.Interface_UseCustomEditor;
+        }
 
-            if (dialog.ShowDialog(this) == true)
+        private void SelectCustomEditorPathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
             {
-                bool exist = false;
-                for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    string projName = Model.Project_SourceDirectoryList[i];
-                    if (projName.Equals(dialog.SelectedPath, StringComparison.OrdinalIgnoreCase))
-                    { // Selected Path exists
-                        exist = true;
-                        Model.Project_SourceDirectoryIndex = i;
-                        break;
-                    }
-                }
+                    Filter = "Executable|*.exe",
+                    FileName = _m.Interface_CustomEditorPath,
+                };
 
-                if (!exist) // Add to list
+                if (dialog.ShowDialog(this) == true)
                 {
-                    ObservableCollection<string> newSourceDirList = new ObservableCollection<string>
-                    {
-                        dialog.SelectedPath
-                    };
-                    foreach (string dir in Model.Project_SourceDirectoryList)
-                        newSourceDirList.Add(dir);
-                    Model.Project_SourceDirectoryList = newSourceDirList;
-                    Model.Project_SourceDirectoryIndex = 0;
+                    _m.Interface_CustomEditorPath = dialog.FileName;
                 }
             }
-        }
-
-        private void Button_ResetSourceDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            Model.Project_SourceDirectoryList = new ObservableCollection<string>();
-
-            int idx = Model.Project_SelectedIndex;
-            string fullPath = Model.Projects[idx].MainScript.RealPath;
-            IniReadWriter.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
-        }
-
-        private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+            finally
             {
-                SelectedPath = Model.Project_TargetDirectory,
-            };
-
-            if (dialog.ShowDialog(this) == true)
-            {
-                Model.Project_TargetDirectory = dialog.SelectedPath;
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
+        #endregion
 
-        private void Button_ISOFile_Click(object sender, RoutedEventArgs e)
+        #region Script Setting Commands
+        private void ClearCacheDatabaseCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
-            {
-                Filter = "ISO File (*.iso)|*.iso",
-                FileName = Model.Project_ISOFile,
-            };
+            e.CanExecute = _m != null && _m.CanExecuteCommand && ScriptCache.DbLock == 0;
+        }
 
-            if (dialog.ShowDialog(this) == true)
+        private async void ClearCacheDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (ScriptCache.DbLock != 0)
+                return;
+
+            Interlocked.Increment(ref ScriptCache.DbLock);
+            try
             {
-                Model.Project_ISOFile = dialog.FileName;
+                await Task.Run(() => { _m.ClearCacheDatabase(); });
+            }
+            finally
+            {
+                Interlocked.Decrement(ref ScriptCache.DbLock);
             }
         }
+        #endregion
 
-        private void Button_MonospaceFont_Click(object sender, RoutedEventArgs e)
+        #region Log Setting Commands
+        private async void ClearLogDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Model.Interface_MonospaceFont = FontHelper.ChooseFontDialog(Model.Interface_MonospaceFont, this, false, true);
-        }
-
-        private void Button_CustomEditorPath_Click(object sender, RoutedEventArgs e)
-        {
-            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+            Interlocked.Increment(ref ScriptCache.DbLock);
+            try
             {
-                Filter = "Executable|*.exe",
-                FileName = Model.Interface_CustomEditorPath,
-            };
-
-            if (dialog.ShowDialog(this) == true)
+                await Task.Run(() => { _m.ClearLogDatabase(); });
+            }
+            finally
             {
-                Model.Interface_CustomEditorPath = dialog.FileName;
+                Interlocked.Decrement(ref ScriptCache.DbLock);
             }
         }
+        #endregion
         #endregion
     }
     #endregion
@@ -221,48 +334,52 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region CanExecuteCommand
+        public bool CanExecuteCommand { get; set; } = true;
+        #endregion
+
         #region Property - Project
-        private string Project_DefaultStr;
+        private string _projectDefault;
         public string Project_Default
         {
             get
             {
-                if (0 <= project_DefaultIndex && project_DefaultIndex < Project_List.Count)
-                    return Project_List[project_DefaultIndex];
+                if (0 <= _projectDefaultIndex && _projectDefaultIndex < Project_List.Count)
+                    return Project_List[_projectDefaultIndex];
                 else
                     return string.Empty;
             }
         }
 
-        private ObservableCollection<string> project_List;
+        private ObservableCollection<string> _projectNames;
         public ObservableCollection<string> Project_List
         {
-            get => project_List;
+            get => _projectNames;
             set
             {
-                project_List = value;
+                _projectNames = value;
                 OnPropertyUpdate(nameof(Project_List));
             }
         }
 
-        private int project_DefaultIndex;
+        private int _projectDefaultIndex;
         public int Project_DefaultIndex
         {
-            get => project_DefaultIndex;
+            get => _projectDefaultIndex;
             set
             {
-                project_DefaultIndex = value;
+                _projectDefaultIndex = value;
                 OnPropertyUpdate(nameof(Project_DefaultIndex));
             }
         }
 
-        private int project_SelectedIndex;
+        private int _projectSelectedIndex;
         public int Project_SelectedIndex
         {
-            get => project_SelectedIndex;
+            get => _projectSelectedIndex;
             set
             {
-                project_SelectedIndex = value;
+                _projectSelectedIndex = value;
 
                 if (0 <= value && value < Project_List.Count)
                 {
@@ -297,19 +414,19 @@ namespace PEBakery.WPF
 
                     if (0 < Project_SourceDirectoryList.Count)
                     {
-                        project_SourceDirectoryIndex = 0;
+                        _projectSourceDirectoryIndex = 0;
                         OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
                     }
 
                     if (keys[1].Value != null)
                     {
-                        project_TargetDirectory = keys[1].Value;
+                        _projectTargetDirectory = keys[1].Value;
                         OnPropertyUpdate(nameof(Project_TargetDirectory));
                     }
 
                     if (keys[2].Value != null)
                     {
-                        project_ISOFile = keys[2].Value;
+                        _projectIsoFile = keys[2].Value;
                         OnPropertyUpdate(nameof(Project_ISOFile));
                     }
                 }
@@ -318,13 +435,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool project_PathEnabled = true;
+        private bool _projectPathEnabled = true;
         public bool Project_PathEnabled
         {
-            get => project_PathEnabled;
+            get => _projectPathEnabled;
             set
             {
-                project_PathEnabled = value;
+                _projectPathEnabled = value;
                 OnPropertyUpdate(nameof(Project_PathEnabled));
             }
         }
@@ -340,13 +457,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private int project_SourceDirectoryIndex;
+        private int _projectSourceDirectoryIndex;
         public int Project_SourceDirectoryIndex
         {
-            get => project_SourceDirectoryIndex;
+            get => _projectSourceDirectoryIndex;
             set
             {
-                project_SourceDirectoryIndex = value;
+                _projectSourceDirectoryIndex = value;
 
                 Project project = Projects[Project_SelectedIndex];
                 if (0 <= value && value < Project_SourceDirectoryList.Count)
@@ -369,41 +486,41 @@ namespace PEBakery.WPF
             }
         }
 
-        private string project_TargetDirectory;
+        private string _projectTargetDirectory;
         public string Project_TargetDirectory
         {
-            get => project_TargetDirectory;
+            get => _projectTargetDirectory;
             set
             {
-                if (!value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase))
+                if (!value.Equals(_projectTargetDirectory, StringComparison.OrdinalIgnoreCase))
                 {
-                    Project project = Projects[project_SelectedIndex];
+                    Project project = Projects[_projectSelectedIndex];
                     string fullPath = project.MainScript.RealPath;
                     IniReadWriter.WriteKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
 
-                project_TargetDirectory = value;
+                _projectTargetDirectory = value;
 
                 OnPropertyUpdate(nameof(Project_TargetDirectory));
             }
         }
 
-        private string project_ISOFile;
+        private string _projectIsoFile;
         public string Project_ISOFile
         {
-            get => project_ISOFile;
+            get => _projectIsoFile;
             set
             {
-                if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
+                if (value.Equals(_projectIsoFile, StringComparison.OrdinalIgnoreCase) == false)
                 {
-                    Project project = Projects[project_SelectedIndex];
+                    Project project = Projects[_projectSelectedIndex];
                     string fullPath = project.MainScript.RealPath;
                     IniReadWriter.WriteKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
 
-                project_ISOFile = value;
+                _projectIsoFile = value;
 
                 OnPropertyUpdate(nameof(Project_ISOFile));
             }
@@ -412,50 +529,50 @@ namespace PEBakery.WPF
 
         #region Property - General
         // Build
-        private bool general_OptimizeCode;
+        private bool _generalOptimizeCode;
         public bool General_OptimizeCode
         {
-            get => general_OptimizeCode;
+            get => _generalOptimizeCode;
             set
             {
-                general_OptimizeCode = value;
+                _generalOptimizeCode = value;
                 OnPropertyUpdate(nameof(General_OptimizeCode));
             }
         }
 
-        private bool general_ShowLogAfterBuild;
+        private bool _generalShowLogAfterBuild;
         public bool General_ShowLogAfterBuild
         {
-            get => general_ShowLogAfterBuild;
+            get => _generalShowLogAfterBuild;
             set
             {
-                general_ShowLogAfterBuild = value;
+                _generalShowLogAfterBuild = value;
                 OnPropertyUpdate(nameof(General_ShowLogAfterBuild));
             }
         }
 
-        private bool general_StopBuildOnError;
+        private bool _generalStopBuildOnError;
         public bool General_StopBuildOnError
         {
-            get => general_StopBuildOnError;
+            get => _generalStopBuildOnError;
             set
             {
-                general_StopBuildOnError = value;
+                _generalStopBuildOnError = value;
                 OnPropertyUpdate(nameof(General_StopBuildOnError));
             }
         }
 
         // Path Length Limit
-        private bool general_EnableLongFilePath;
+        private bool _generalEnableLongFilePath;
         public bool General_EnableLongFilePath
         {
-            get => general_EnableLongFilePath;
+            get => _generalEnableLongFilePath;
             set
             {
-                general_EnableLongFilePath = value;
+                _generalEnableLongFilePath = value;
 
                 // Enabled  = Path Length Limit = 32767
-                // Disabled = Path Legnth Limit = 260
+                // Disabled = Path Length Limit = 260
                 AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !value);
 
                 OnPropertyUpdate(nameof(General_EnableLongFilePath));
@@ -463,125 +580,112 @@ namespace PEBakery.WPF
         }
 
         // Custom User-Agent
-        private bool general_UseCustomUserAgent;
+        private bool _generalUseCustomUserAgent;
         public bool General_UseCustomUserAgent
         {
-            get => general_UseCustomUserAgent;
+            get => _generalUseCustomUserAgent;
             set
             {
-                general_UseCustomUserAgent = value;
+                _generalUseCustomUserAgent = value;
                 OnPropertyUpdate(nameof(General_UseCustomUserAgent));
             }
         }
 
-        private string general_CustomUserAgent;
+        private string _generalCustomUserAgent;
         public string General_CustomUserAgent
         {
-            get => general_CustomUserAgent;
+            get => _generalCustomUserAgent;
             set
             {
-                general_CustomUserAgent = value;
+                _generalCustomUserAgent = value;
                 OnPropertyUpdate(nameof(General_CustomUserAgent));
             }
         }
         #endregion
 
         #region Property - Interface
-        private string interface_MonospaceFontStr;
-        public string Interface_MonospaceFontStr
+        private FontHelper.FontInfo _interfaceMonospacedFont;
+        public FontHelper.FontInfo Interface_MonospacedFont
         {
-            get => interface_MonospaceFontStr;
+            get => _interfaceMonospacedFont;
             set
             {
-                interface_MonospaceFontStr = value;
-                OnPropertyUpdate(nameof(Interface_MonospaceFontStr));
+                _interfaceMonospacedFont = value;
+
+                OnPropertyUpdate(nameof(Interface_MonospacedFont));
+                OnPropertyUpdate(nameof(Interface_MonospacedFontFamily));
+                OnPropertyUpdate(nameof(Interface_MonospacedFontWeight));
+                OnPropertyUpdate(nameof(Interface_MonospacedFontSize));
             }
         }
 
-        private FontHelper.FontInfo interface_MonospaceFont;
-        public FontHelper.FontInfo Interface_MonospaceFont
-        {
-            get => interface_MonospaceFont;
-            set
-            {
-                interface_MonospaceFont = value;
+        public FontFamily Interface_MonospacedFontFamily => _interfaceMonospacedFont.FontFamily;
+        public FontWeight Interface_MonospacedFontWeight => _interfaceMonospacedFont.FontWeight;
+        public double Interface_MonospacedFontSize => _interfaceMonospacedFont.FontSizeInDIP;
 
-                OnPropertyUpdate(nameof(Interface_MonospaceFont));
-                Interface_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
-
-                OnPropertyUpdate(nameof(Interface_MonospaceFontFamily));
-                OnPropertyUpdate(nameof(Interface_MonospaceFontWeight));
-                OnPropertyUpdate(nameof(Interface_MonospaceFontSize));
-            }
-        }
-
-        public FontFamily Interface_MonospaceFontFamily => interface_MonospaceFont.FontFamily;
-        public FontWeight Interface_MonospaceFontWeight => interface_MonospaceFont.FontWeight;
-        public double Interface_MonospaceFontSize => interface_MonospaceFont.FontSizeInDIP;
-
-        private double interface_ScaleFactor;
+        private double _interfaceScaleFactor;
         public double Interface_ScaleFactor
         {
-            get => interface_ScaleFactor;
+            get => _interfaceScaleFactor;
             set
             {
-                interface_ScaleFactor = value;
+                _interfaceScaleFactor = value;
                 OnPropertyUpdate(nameof(Interface_ScaleFactor));
             }
         }
 
-        private bool interface_UseCustomEditor;
+        private bool _interfaceUseCustomEditor;
         public bool Interface_UseCustomEditor
         {
-            get => interface_UseCustomEditor;
+            get => _interfaceUseCustomEditor;
             set
             {
-                interface_UseCustomEditor = value;
+                _interfaceUseCustomEditor = value;
                 OnPropertyUpdate(nameof(Interface_UseCustomEditor));
             }
         }
 
-        private string interface_CustomEditorPath;
+        private string _interfaceCustomEditorPath;
         public string Interface_CustomEditorPath
         {
-            get => interface_CustomEditorPath;
+            get => _interfaceCustomEditorPath;
             set
             {
-                interface_CustomEditorPath = value;
+                _interfaceCustomEditorPath = value;
                 OnPropertyUpdate(nameof(Interface_CustomEditorPath));
             }
         }
 
-        private bool interface_DisplayShellExecuteConOut;
+        private bool _interfaceDisplayShellExecuteConOut;
         public bool Interface_DisplayShellExecuteConOut
         {
-            get => interface_DisplayShellExecuteConOut;
+            get => _interfaceDisplayShellExecuteConOut;
             set
             {
-                interface_DisplayShellExecuteConOut = value;
+                _interfaceDisplayShellExecuteConOut = value;
                 OnPropertyUpdate(nameof(Interface_DisplayShellExecuteConOut));
             }
         }
 
         // Custom Title
-        private bool interface_UseCustomTitle;
+        private bool _interfaceUseCustomTitle;
         public bool Interface_UseCustomTitle
         {
-            get => interface_UseCustomTitle;
+            get => _interfaceUseCustomTitle;
             set
             {
-                interface_UseCustomTitle = value;
+                _interfaceUseCustomTitle = value;
                 OnPropertyUpdate(nameof(Interface_UseCustomTitle));
             }
         }
 
-        private string interface_CustomTitle;
+        private string _interfaceCustomTitle;
         public string Interface_CustomTitle
         {
-            get => interface_CustomTitle;
+            get => _interfaceCustomTitle;
             set
             {
-                interface_CustomTitle = value;
+                _interfaceCustomTitle = value;
                 OnPropertyUpdate(nameof(Interface_CustomTitle));
             }
         }
@@ -625,9 +729,9 @@ namespace PEBakery.WPF
         #region Property - Logging
         private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>
         {
-            DebugLevel.Production.ToString(),
-            DebugLevel.PrintException.ToString(),
-            DebugLevel.PrintExceptionStackTrace.ToString()
+            LogDebugLevel.Production.ToString(),
+            LogDebugLevel.PrintException.ToString(),
+            LogDebugLevel.PrintExceptionStackTrace.ToString()
         };
         public ObservableCollection<string> Log_DebugLevelList
         {
@@ -650,28 +754,28 @@ namespace PEBakery.WPF
             }
         }
 
-        public DebugLevel Log_DebugLevel
+        public LogDebugLevel Log_DebugLevel
         {
             get
             {
                 switch (Log_DebugLevelIndex)
                 {
                     case 0:
-                        return DebugLevel.Production;
+                        return LogDebugLevel.Production;
                     case 1:
-                        return DebugLevel.PrintException;
+                        return LogDebugLevel.PrintException;
                     default:
-                        return DebugLevel.PrintExceptionStackTrace;
+                        return LogDebugLevel.PrintExceptionStackTrace;
                 }
             }
             set
             {
                 switch (value)
                 {
-                    case DebugLevel.Production:
+                    case LogDebugLevel.Production:
                         log_DebugLevelIndex = 0;
                         break;
-                    case DebugLevel.PrintException:
+                    case LogDebugLevel.PrintException:
                         log_DebugLevelIndex = 1;
                         break;
                     default:
@@ -896,7 +1000,7 @@ namespace PEBakery.WPF
         public void SetToDefault()
         {
             // Project
-            Project_DefaultStr = string.Empty;
+            _projectDefault = string.Empty;
 
             // General
             General_OptimizeCode = true;
@@ -908,17 +1012,8 @@ namespace PEBakery.WPF
             General_CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
 
             // Interface
-            using (InstalledFontCollection fonts = new InstalledFontCollection())
-            {
-                // Every Windows have Consolas installed
-                string fontFamily = "Consolas";
-
-                // Prefer D2Coding over Consolas
-                if (0 < fonts.Families.Count(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)))
-                    fontFamily = "D2Coding";
-
-                Interface_MonospaceFont = new FontHelper.FontInfo(new FontFamily(fontFamily), FontWeights.Regular, 12);
-            }
+            // Every Windows have Consolas installed
+            Interface_MonospacedFont = new FontHelper.FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteConOut = true;
             Interface_UseCustomEditor = false;
@@ -958,6 +1053,11 @@ namespace PEBakery.WPF
         #endregion
 
         #region ReadFromFile, WriteToFile
+        public async Task ReadFromFileAsync()
+        {
+            await Task.Run(() => { ReadFromFile(); });
+        }
+
         public void ReadFromFile()
         {
             // If key not specified or value malformed, default value will be used.
@@ -983,9 +1083,9 @@ namespace PEBakery.WPF
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr)), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontFamily), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontWeight), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontSize), interfaceStr)),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr)), // Integer 100 ~ 200
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr)), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
@@ -1012,7 +1112,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr)), // Boolean
             };
-            
+
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
@@ -1075,7 +1175,7 @@ namespace PEBakery.WPF
 
             // Project
             if (dict["Project_DefaultProject"] != null)
-                Project_DefaultStr = dict["Project_DefaultProject"];
+                _projectDefault = dict["Project_DefaultProject"];
 
             // General
             General_OptimizeCode = ParseBoolean(nameof(General_OptimizeCode), General_OptimizeCode);
@@ -1086,14 +1186,14 @@ namespace PEBakery.WPF
             General_CustomUserAgent = ParseString(nameof(General_CustomUserAgent), General_CustomUserAgent);
 
             // Interface
-            FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
-            FontWeight monoFontWeight = Interface_MonospaceFont.FontWeight;
-            if (dict[nameof(Interface_MonospaceFontFamily)] != null)
-                monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospaceFontFamily)]);
-            if (dict[nameof(Interface_MonospaceFontWeight)] != null)
-                monoFontWeight = FontHelper.ParseFontWeight(dict[nameof(Interface_MonospaceFontWeight)]);
-            int monoFontSize = ParseInteger(nameof(Interface_MonospaceFontSize), Interface_MonospaceFont.FontSizeInPoint, 1, -1);
-            Interface_MonospaceFont = new FontHelper.FontInfo(monoFontFamiliy, monoFontWeight, monoFontSize);
+            FontFamily monoFontFamiliy = Interface_MonospacedFont.FontFamily;
+            FontWeight monoFontWeight = Interface_MonospacedFont.FontWeight;
+            if (dict[nameof(Interface_MonospacedFontFamily)] != null)
+                monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospacedFontFamily)]);
+            if (dict[nameof(Interface_MonospacedFontWeight)] != null)
+                monoFontWeight = FontHelper.ParseFontWeight(dict[nameof(Interface_MonospacedFontWeight)]);
+            int monoFontSize = ParseInteger(nameof(Interface_MonospacedFontSize), Interface_MonospacedFont.FontSizeInPoint, 1, -1);
+            Interface_MonospacedFont = new FontHelper.FontInfo(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             Interface_ScaleFactor = ParseInteger(nameof(Interface_ScaleFactor), (int)Interface_ScaleFactor, 100, 200);
             Interface_UseCustomEditor = ParseBoolean(nameof(Interface_UseCustomEditor), Interface_UseCustomEditor);
@@ -1128,6 +1228,11 @@ namespace PEBakery.WPF
             Compat_DisableExtendedSectionParams = ParseBoolean(nameof(Compat_DisableExtendedSectionParams), Compat_DisableExtendedSectionParams);
         }
 
+        public async Task WriteToFileAsync()
+        {
+            await Task.Run(() => { WriteToFile(); });
+        }
+
         public void WriteToFile()
         {
             const string generalStr = "General";
@@ -1145,9 +1250,9 @@ namespace PEBakery.WPF
                 new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr), General_StopBuildOnError.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr), General_UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr), General_CustomUserAgent), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr), Interface_MonospaceFont.FontFamily.Source),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr), Interface_MonospaceFont.FontWeight.ToString()),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr), Interface_MonospaceFont.FontSizeInPoint.ToString()),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontFamily), interfaceStr), Interface_MonospacedFont.FontFamily.Source),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontWeight), interfaceStr), Interface_MonospacedFont.FontWeight.ToString()),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontSize), interfaceStr), Interface_MonospacedFont.FontSizeInPoint.ToString()),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr), Interface_ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr), Interface_UseCustomEditor.ToString()), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
@@ -1189,7 +1294,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Database Operation
-        public void ClearLogDb()
+        public void ClearLogDatabase()
         {
             LogDb.ClearTable(new LogDatabase.ClearTableOptions
             {
@@ -1202,7 +1307,7 @@ namespace PEBakery.WPF
             UpdateLogDbState();
         }
 
-        public void ClearCacheDb()
+        public void ClearCacheDatabase()
         {
             if (ScriptCache != null)
             {
@@ -1247,7 +1352,7 @@ namespace PEBakery.WPF
                 for (int i = 0; i < projNameList.Count; i++)
                 {
                     Project_List.Add(projNameList[i]);
-                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
+                    if (projNameList[i].Equals(_projectDefault, StringComparison.OrdinalIgnoreCase))
                     {
                         foundDefault = true;
                         Project_SelectedIndex = Project_DefaultIndex = i;
@@ -1258,6 +1363,40 @@ namespace PEBakery.WPF
                     Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
             });
         }
+        #endregion
+    }
+    #endregion
+
+    #region SettingViewCommands
+    public static class SettingViewCommands
+    {
+        #region Global
+        public static readonly RoutedCommand DefaultSettingCommand = new RoutedUICommand("Reset to default settings", "DefaultSetting", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SaveSettingCommand = new RoutedUICommand("Save settings", "SaveSetting", typeof(SettingViewCommands));
+        #endregion
+
+        #region Project Settings
+        public static readonly RoutedCommand SelectSourceDirCommand = new RoutedUICommand("Select source directory", "SelectSourceDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand ResetSourceDirCommand = new RoutedUICommand("Reset source directory", "ResetSourceDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectTargetDirCommand = new RoutedUICommand("Select target directory", "SelectTargetDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectIsoFileCommand = new RoutedUICommand("Select ISO file directory", "SelectIsoFile", typeof(SettingViewCommands));
+        #endregion
+
+        #region General Settting
+        public static readonly RoutedCommand EnableLongFilePathCommand = new RoutedUICommand("Enable long file path support", "EnableLongFilePath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Interface Setting
+        public static readonly RoutedCommand SelectMonospacedFontCommand = new RoutedUICommand("Select monospaced font", "SelectMonospacedFont", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectCustomEditorPathCommand = new RoutedUICommand("Select custom editor path", "SelectCustomEditorPath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Script Setting
+        public static readonly RoutedCommand ClearCacheDatabaseCommand = new RoutedUICommand("Clear cache database", "ClearCacheDatabase", typeof(SettingViewCommands));
+        #endregion
+
+        #region Log Setting
+        public static readonly RoutedCommand ClearLogDatabaseCommand = new RoutedUICommand("Clear log database", "ClearLogDatabase", typeof(SettingViewCommands));
         #endregion
     }
     #endregion

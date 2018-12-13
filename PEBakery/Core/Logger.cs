@@ -338,7 +338,7 @@ namespace PEBakery.Core
     /// <summary>
     /// How much information will be logged if an Exception is catched in ExecuteCommand?
     /// </summary>
-    public enum DebugLevel
+    public enum LogDebugLevel
     {
         Production = 0, // Only Exception message
         PrintException = 1, // Print Exception message with Exception type
@@ -449,7 +449,7 @@ namespace PEBakery.Core
         public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
-        public static DebugLevel DebugLevel;
+        public static LogDebugLevel DebugLevel;
         public static bool MinifyHtmlExport;
 
         private readonly ConcurrentDictionary<int, DB_BuildInfo> _buildDict = new ConcurrentDictionary<int, DB_BuildInfo>();
@@ -1186,7 +1186,7 @@ namespace PEBakery.Core
         {
             switch (Logger.DebugLevel)
             {
-                case DebugLevel.Production:
+                case LogDebugLevel.Production:
                     {
                         if (e is AggregateException aggEx)
                         {
@@ -1202,7 +1202,7 @@ namespace PEBakery.Core
                         }
                         return StringHelper.RemoveLastNewLine(e.Message);
                     }
-                case DebugLevel.PrintException:
+                case LogDebugLevel.PrintException:
                     {
                         if (e is AggregateException aggEx)
                         {
@@ -1222,7 +1222,7 @@ namespace PEBakery.Core
                         }
                         return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message);
                     }
-                case DebugLevel.PrintExceptionStackTrace:
+                case LogDebugLevel.PrintExceptionStackTrace:
                     {
                         if (e is AggregateException aggEx)
                         {
