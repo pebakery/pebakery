@@ -565,7 +565,7 @@ namespace PEBakery.Core.ViewModels
         }
         public FontFamily MonospacedFontFamily => _monospacedFont.FontFamily;
         public FontWeight MonospacedFontWeight => _monospacedFont.FontWeight;
-        public double MonospacedFontSize => _monospacedFont.FontSizeInDIP;
+        public double MonospacedFontSize => _monospacedFont.DeviceIndependentPixelSize;
 
         // Command Progress
         private string _buildCommandProgressTitle = string.Empty;

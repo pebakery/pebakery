@@ -164,6 +164,60 @@ namespace PEBakery.WPF
             throw new NotImplementedException();
         }
     }
+
+    public class FontInfoFamilyConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.FontFamily;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FontInfoWeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.FontWeight;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FontInfoSizeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.DeviceIndependentPixelSize;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     #endregion
 
     #region ScriptEditWindow

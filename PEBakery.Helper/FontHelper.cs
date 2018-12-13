@@ -111,20 +111,23 @@ namespace PEBakery.Helper
         {
             public FontFamily FontFamily;
             public FontWeight FontWeight;
-            public int FontSizeInPoint; // In Point (72DPI)
-            public int Win32FontSize => -(int)Math.Round(FontSizeInPoint * 96 / 72f);
-            public double FontSizeInDIP => FontSizeInPoint * 96 / 72f; // Device Independent Pixel (96DPI)
+            public int PointSize; // In Point (72DPI)
+            public double DeviceIndependentPixelSize => PointSize * 96 / 72f; // Device Independent Pixel (96DPI)
+            /// <summary>
+            /// For LOGFONT struct
+            /// </summary>
+            public int Win32Size => -(int)Math.Round(PointSize * 96 / 72f); 
 
             public FontInfo(FontFamily fontFamily, FontWeight fontWeight, int fontSize)
             {
                 FontFamily = fontFamily;
                 FontWeight = fontWeight;
-                FontSizeInPoint = fontSize;
+                PointSize = fontSize;
             }
 
             public override string ToString()
             {
-                return $"{FontFamily.Source}, {FontSizeInPoint}pt";
+                return $"{FontFamily.Source}, {PointSize}pt";
             }
         }
 
@@ -136,7 +139,7 @@ namespace PEBakery.Helper
                 lfPitchAndFamily = NativeMethods.LogFontPitchAndFamily.DEFAULT_PITCH | NativeMethods.LogFontPitchAndFamily.FF_DONTCARE,
                 lfFaceName = font.FontFamily.Source,
                 lfWeight = ConvertToLogFontWeight(font.FontWeight),
-                lfHeight = font.Win32FontSize,
+                lfHeight = font.Win32Size,
             };
             IntPtr pLogFont = Marshal.AllocHGlobal(Marshal.SizeOf(logFont));
             Marshal.StructureToPtr(logFont, pLogFont, false);

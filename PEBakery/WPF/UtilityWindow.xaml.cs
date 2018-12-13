@@ -328,7 +328,7 @@ namespace PEBakery.WPF
         public FontHelper.FontInfo MonoFont { get; }
         public FontFamily MonoFontFamily => MonoFont.FontFamily;
         public FontWeight MonoFontWeight => MonoFont.FontWeight;
-        public double MonoFontSize => MonoFont.FontSizeInDIP;
+        public double MonoFontSize => MonoFont.DeviceIndependentPixelSize;
         #endregion
 
         #region CanExecuteCommand

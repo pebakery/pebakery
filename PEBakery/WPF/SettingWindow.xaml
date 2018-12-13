@@ -96,6 +96,9 @@
     </Window.CommandBindings>
     <Window.Resources>
         <local:FontInfoDescriptionConverter x:Key="FontInfoDescriptionConverter" />
+        <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter" />
+        <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
+        <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -313,9 +316,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="0"
                                        VerticalAlignment="Center"
-                                       FontFamily="{Binding Interface_MonospacedFontFamily}"
-                                       FontWeight="{Binding Interface_MonospacedFontWeight}"
-                                       FontSize="{Binding Interface_MonospacedFontSize}"
+                                       FontFamily="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                                       FontWeight="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                                       FontSize="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
                                        Text="{Binding Interface_MonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
                             <Button Grid.Row="0"
                                     Grid.Column="1"

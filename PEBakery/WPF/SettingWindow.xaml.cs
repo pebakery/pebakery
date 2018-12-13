@@ -608,20 +608,8 @@ namespace PEBakery.WPF
         public FontHelper.FontInfo Interface_MonospacedFont
         {
             get => _interfaceMonospacedFont;
-            set
-            {
-                _interfaceMonospacedFont = value;
-
-                OnPropertyUpdate(nameof(Interface_MonospacedFont));
-                OnPropertyUpdate(nameof(Interface_MonospacedFontFamily));
-                OnPropertyUpdate(nameof(Interface_MonospacedFontWeight));
-                OnPropertyUpdate(nameof(Interface_MonospacedFontSize));
-            }
+            set => SetProperty(ref _interfaceMonospacedFont, value);
         }
-
-        public FontFamily Interface_MonospacedFontFamily => _interfaceMonospacedFont.FontFamily;
-        public FontWeight Interface_MonospacedFontWeight => _interfaceMonospacedFont.FontWeight;
-        public double Interface_MonospacedFontSize => _interfaceMonospacedFont.FontSizeInDIP;
 
         private double _interfaceScaleFactor;
         public double Interface_ScaleFactor
@@ -1083,9 +1071,9 @@ namespace PEBakery.WPF
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr)), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontFamily), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontWeight), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontSize), interfaceStr)),
+                new IniKey(interfaceStr, "MonospacedFontFamily", interfaceStr),
+                new IniKey(interfaceStr, "MonospacedFontWeight", interfaceStr),
+                new IniKey(interfaceStr, "MonospacedFontSize", interfaceStr),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr)), // Integer 100 ~ 200
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr)), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
@@ -1188,11 +1176,11 @@ namespace PEBakery.WPF
             // Interface
             FontFamily monoFontFamiliy = Interface_MonospacedFont.FontFamily;
             FontWeight monoFontWeight = Interface_MonospacedFont.FontWeight;
-            if (dict[nameof(Interface_MonospacedFontFamily)] != null)
-                monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospacedFontFamily)]);
-            if (dict[nameof(Interface_MonospacedFontWeight)] != null)
-                monoFontWeight = FontHelper.ParseFontWeight(dict[nameof(Interface_MonospacedFontWeight)]);
-            int monoFontSize = ParseInteger(nameof(Interface_MonospacedFontSize), Interface_MonospacedFont.FontSizeInPoint, 1, -1);
+            if (dict["Interface_MonospacedFontFamily"] != null)
+                monoFontFamiliy = new FontFamily(dict["Interface_MonospacedFontFamily"]);
+            if (dict["Interface_MonospacedFontWeight"] != null)
+                monoFontWeight = FontHelper.ParseFontWeight(dict["Interface_MonospacedFontWeight"]);
+            int monoFontSize = ParseInteger("Interface_MonospacedFontSize", Interface_MonospacedFont.PointSize, 1, -1);
             Interface_MonospacedFont = new FontHelper.FontInfo(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             Interface_ScaleFactor = ParseInteger(nameof(Interface_ScaleFactor), (int)Interface_ScaleFactor, 100, 200);
@@ -1250,9 +1238,9 @@ namespace PEBakery.WPF
                 new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr), General_StopBuildOnError.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr), General_UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr), General_CustomUserAgent), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontFamily), interfaceStr), Interface_MonospacedFont.FontFamily.Source),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontWeight), interfaceStr), Interface_MonospacedFont.FontWeight.ToString()),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospacedFontSize), interfaceStr), Interface_MonospacedFont.FontSizeInPoint.ToString()),
+                new IniKey(interfaceStr, "MonospacedFontFamily", Interface_MonospacedFont.FontFamily.Source),
+                new IniKey(interfaceStr, "MonospacedFontWeight", Interface_MonospacedFont.FontWeight.ToString()),
+                new IniKey(interfaceStr, "MonospacedFontSize", Interface_MonospacedFont.PointSize.ToString()),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr), Interface_ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr), Interface_UseCustomEditor.ToString()), // Boolean
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
