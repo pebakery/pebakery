@@ -47,16 +47,16 @@ namespace PEBakery.WPF
     public partial class MainWindow : Window
     {
         #region Fields and Properties
+        // Shortcut to Global
         public string BaseDir => Global.BaseDir;
-
-        public Logger Logger { get; }
-
+        public Logger Logger => Global.Logger;
         private static MainViewModel Model
         {
             get => Global.MainViewModel;
             set => Global.MainViewModel = value;
         }
 
+        // Window 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
         public ScriptEditWindow ScriptEditDialog = null;
@@ -66,106 +66,14 @@ namespace PEBakery.WPF
         public MainWindow()
         {
             InitializeComponent();
-            Model = DataContext as MainViewModel;
-            if (Model == null)
-            {
-                MessageBox.Show("MainViewModel is null", "Internal Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Environment.Exit(1);
-            }
+            DataContext = Model;
 
-            string[] args = Global.Args;
-            if (!NumberHelper.ParseInt32(Properties.Resources.EngineVersion, out Global.Version))
-            {
-                MessageBox.Show($"Invalid version [{Global.Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
-                Environment.Exit(1);
-            }
-
-            string argBaseDir = Environment.CurrentDirectory;
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i].Equals("/basedir", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (i + 1 < args.Length)
-                    {
-                        argBaseDir = Path.GetFullPath(args[i + 1]);
-                        if (!Directory.Exists(argBaseDir))
-                        {
-                            MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
-                            Environment.Exit(1); // Force Shutdown
-                        }
-                        Environment.CurrentDirectory = argBaseDir;
-                    }
-                    else
-                    {
-                        // ReSharper disable once LocalizableElement
-                        Console.WriteLine("\'/basedir\' must be used with path\r\n");
-                    }
-                }
-                else if (args[i].Equals("/?", StringComparison.OrdinalIgnoreCase) ||
-                         args[i].Equals("/help", StringComparison.OrdinalIgnoreCase) ||
-                         args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
-                {
-                    // ReSharper disable once LocalizableElement
-                    Console.WriteLine("Sorry, help message not implemented\r\n");
-                }
-            }
-
-            Global.BaseDir = argBaseDir;
-
-            // Database Directory
-            string dbDir = Path.Combine(BaseDir, "Database");
-            if (!Directory.Exists(dbDir))
-                Directory.CreateDirectory(dbDir);
-
-
-            // Log Database
-            string logDbFile = Path.Combine(dbDir, "PEBakeryLog.db");
-            try
-            {
-                Global.Logger = Logger = new Logger(logDbFile);
-                Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
-            }
-            catch (SQLiteException e)
-            { // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted.\r\nPlease delete PEBakeryLog.db and restart.";
-                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                Application.Current.Shutdown(1);
-            }
-
-            // Setting File
-            string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
-            Global.Setting = new Setting(settingFile);
-            Model.MonospacedFont = Global.Setting.Interface.MonospacedFont;
-
-            // Custom Title
-            if (Global.Setting.Interface.UseCustomTitle)
-                Model.TitleBar = Global.Setting.Interface.CustomTitle;
-
-            // If script cache is enabled, generate cache after 5 seconds
-            if (Global.Setting.Script.EnableCache)
-            {
-                string cacheDbFile = Path.Combine(dbDir, "PEBakeryCache.db");
-                try
-                {
-                    Global.ScriptCache = new ScriptCache(cacheDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {Global.ScriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
-                }
-                catch (SQLiteException e)
-                { // Update failure
-                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted.\r\nPlease delete PEBakeryCache.db and restart.";
-                    MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Application.Current.Shutdown(1);
-                }
-            }
-            else
-            {
-                Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
-            }
-
+            // Init global properties
+            Global.Init();
             CommandManager.InvalidateRequerySuggested();
 
             // Load Projects
-            Model.StartLoadingProjects();
+            Model.StartLoadingProjects(false, false);
         }
         #endregion
 
@@ -271,7 +179,7 @@ namespace PEBakery.WPF
             // Force update of script interface
             ProjectRefreshButton.Focus();
 
-            Model.StartLoadingProjects();
+            Model.StartLoadingProjects(true, false);
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -301,7 +209,7 @@ namespace PEBakery.WPF
                     old_Compat_OverridableFixedVariables != p.Compat.OverridableFixedVariables ||
                     old_Compat_EnableEnvironmentVariables != p.Compat.EnableEnvironmentVariables)
                 {
-                    Model.StartLoadingProjects();
+                    Model.StartLoadingProjects(true, false);
                 }
                 else
                 {

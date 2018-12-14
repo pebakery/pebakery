@@ -45,12 +45,10 @@
         FontFamily="Segoe UI"
         WindowStartupLocation="CenterScreen"
         Title="{Binding TitleBar}"
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
         Width="900" Height="720"
         MinWidth="800" MinHeight="600"
         Closing="Window_Closing">
-    <Window.DataContext>
-        <viewModels:MainViewModel/>
-    </Window.DataContext>
     <Window.CommandBindings>
         <!-- Main Buttons -->
         <CommandBinding x:Name="ProjectBuildStartCommand"

@@ -33,9 +33,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
@@ -225,7 +227,7 @@ namespace PEBakery.Core
                 new DB_CacheRevision { Key = EngineVersion, Value = Properties.Resources.EngineVersion },
                 new DB_CacheRevision { Key = BaseDir, Value = baseDir },
                 new DB_CacheRevision { Key = CacheRevision, Value = Properties.Resources.ScriptCacheRevision },
-                // new DB_CacheRevision { Key = AsteriskBugDirLink, Value = Global.Setting.Compat_AsteriskBugDirLink.ToString() },
+                new DB_CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink() },
             };
             InsertOrReplaceAll(infos);
         }
@@ -251,10 +253,38 @@ namespace PEBakery.Core
                 return false;
             if (!infoDict[CacheRevision].Equals(Properties.Resources.ScriptCacheRevision, StringComparison.Ordinal))
                 return false;
-            // if (!infoDict[AsteriskBugDirLink].Equals(Global.Setting.Compat_AsteriskBugDirLink.ToString(), StringComparison.Ordinal))
-            //     return false;
+            if (!infoDict[AsteriskBugDirLink].Equals(SerializeAsteriskBugDirLink(), StringComparison.Ordinal))
+                return false;
 
             return true;
+        }
+
+        public string SerializeAsteriskBugDirLink()
+        {
+            StringBuilder b = new StringBuilder();
+            if (Global.Projects.FullyLoaded)
+            { // Called by project refresh button
+                foreach (Project p in Global.Projects)
+                {
+                    string key = p.ProjectName;
+                    bool value = p.Compat.AsteriskBugDirLink;
+                    b.AppendLine($"{key}={value}");
+                }
+            }
+            else
+            { // Called by Global.Init()
+                foreach (string projectName in Global.Projects.ProjectNames)
+                {
+                    Debug.Assert(Global.Projects.CompatOptions.ContainsKey(projectName), "ProjectCollection error at ScriptCache.SerializeAsteriskBugDirLink");
+                    CompatOption compat = Global.Projects.CompatOptions[projectName];
+
+                    string key = projectName;
+                    bool value = compat.AsteriskBugDirLink;
+                    b.AppendLine($"{key}={value}");
+                }
+            }
+            
+            return b.ToString();
         }
         #endregion
 

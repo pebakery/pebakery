@@ -44,16 +44,13 @@ namespace PEBakery.Core
     #region ProjectCollection
     public class ProjectCollection : IReadOnlyCollection<Project>
     {
-        #region Static Fields
-        public static bool AsteriskBugDirLink = false;
-        #endregion
-
         #region Fields
         private readonly string _baseDir;
-        // private readonly Dictionary<string, Project> _projectDict = new Dictionary<string, Project>(StringComparer.Ordinal);
-        private readonly ScriptCache _scriptCache;
 
-        private readonly Dictionary<string, List<ScriptParseInfo>> _spiDict = new Dictionary<string, List<ScriptParseInfo>>();
+        // Fields are used only in loading time
+        private readonly List<string> _projectNames = new List<string>();
+        private readonly Dictionary<string, List<ScriptParseInfo>> _spiDict = new Dictionary<string, List<ScriptParseInfo>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, CompatOption> _compatDict = new Dictionary<string, CompatOption>(StringComparer.OrdinalIgnoreCase);
         private readonly List<Script> _allProjectScripts = new List<Script>();
         private readonly List<ScriptParseInfo> _allScriptPaths = new List<ScriptParseInfo>();
         #endregion
@@ -61,20 +58,58 @@ namespace PEBakery.Core
         #region Properties
         public string ProjectRoot { get; }
         public List<Project> ProjectList { get; } = new List<Project>();
-        public List<string> ProjectNames => ProjectList.Select(x => x.ProjectName).ToList();
+        public bool FullyLoaded { get; private set; } = false;
+
+        public List<string> ProjectNames => FullyLoaded ? ProjectList.Select(x => x.ProjectName).ToList() : _projectNames;
+        public Dictionary<string, CompatOption> CompatOptions => FullyLoaded ? ProjectList.ToDictionary(x => x.ProjectName, x => x.Compat) : _compatDict;
+
         public Project this[int i] => ProjectList[i];
         public int Count => ProjectList.Count;
-        // public List<Project> ProjectList => _projectDict.Values.OrderBy(x => x.ProjectName).ToList();
-        // public List<string> ProjectNames => _projectDict.Keys.OrderBy(x => x).ToList();
-        // public int Count => _projectDict.Count;
         #endregion
 
         #region Constructor
-        public ProjectCollection(string baseDir, ScriptCache scriptCache)
+        public ProjectCollection(string baseDir)
         {
             _baseDir = baseDir;
             ProjectRoot = Path.Combine(baseDir, Project.KnownPaths.Projects);
-            _scriptCache = scriptCache;
+
+            RefreshProjectEntries();
+        }
+        #endregion
+
+        #region RefreshProjectEntries
+        /// <summary>
+        /// Scan ProjectRoot to generate a list of projects and their compat options.
+        /// </summary>
+        public void RefreshProjectEntries()
+        {
+            ProjectNames.Clear();
+            FullyLoaded = false;
+
+            if (!Directory.Exists(ProjectRoot))
+                return; // No projects
+
+            // Ex) ProjectRoot = E:\WinPE\Win10XPE\Projects
+            // Ex) projectDir  = E:\WinPE\Win10XPE\Projects\Win10XPE
+            // Ex) projectPath = E:\WinPE\Win10XPE\Projects\Win10XPE\script.project
+            // Ex) projectName = Win10XPE
+            string[] projectDirs = Directory.GetDirectories(ProjectRoot);
+            foreach (string projectDir in projectDirs)
+            {
+                string mainScript = Path.Combine(projectDir, Project.KnownPaths.MainScriptFile);
+                if (File.Exists(mainScript))
+                {
+                    // Feed _projectNames.
+                    string projectName = Path.GetFileName(projectDir);
+                    ProjectNames.Add(projectName);
+
+                    // Load per-project compat options.
+                    // Even if compatFile does not exist, CompatOption class will deal with it.
+                    string compatFile = Path.Combine(projectDir, Project.KnownPaths.CompatFile);
+                    CompatOption compat = new CompatOption(compatFile);
+                    _compatDict[projectName] = compat;
+                }
+            }
         }
         #endregion
 
@@ -83,42 +118,10 @@ namespace PEBakery.Core
         {
             // Ex) projectNames = { "ChrisPE", "MistyPE", "Win10XPE", "Win7PESE" }
             // Ex) scriptPathDict = [script paths of ChrisPE, script paths of MistyPE, ... ]
-            List<string> projectNames = GetProjectNames();
-            (_, int linkCount) = GetScriptPaths(projectNames);
+            (_, int linkCount) = GetScriptPaths();
 
             // Return count of all scripts (all .script + dir link)
             return (_allScriptPaths.Count, linkCount);
-        }
-        #endregion
-
-        #region GetProjectNames
-        /// <summary>
-        /// Get project names
-        /// </summary>
-        /// <returns></returns>
-        public List<string> GetProjectNames()
-        {
-            if (Directory.Exists(ProjectRoot))
-            {
-                string[] projArray = Directory.GetDirectories(ProjectRoot);
-                List<string> projNameList = new List<string>(projArray.Length);
-                foreach (string projDir in projArray)
-                {
-                    // Ex) projectDir = E:\WinPE\Win10PESE\Projects
-                    // Ex) projPath   = E:\WinPE\Win10PESE\Projects\Win10PESE\script.project
-                    // Ex) projName -> E:\WinPE\Win10PESE\Projects\Win10PESE -> Win10PESE
-                    if (File.Exists(Path.Combine(projDir, "script.project")))
-                    {
-                        string projName = Path.GetFileName(projDir);
-                        projNameList.Add(projName);
-                    }
-                }
-
-                return projNameList;
-            }
-
-            // Cannot find projectRoot, return empty list
-            return new List<string>();
         }
         #endregion
 
@@ -126,11 +129,11 @@ namespace PEBakery.Core
         /// <summary>
         /// Get scriptPathDict and allScriptPathList
         /// </summary>
-        public (int AllCount, int LinkCount) GetScriptPaths(List<string> projectNames)
+        public (int AllCount, int LinkCount) GetScriptPaths()
         {
             int allCount = 0;
             int linkCount = 0;
-            foreach (string projectName in projectNames)
+            foreach (string projectName in ProjectNames)
             {
                 string projectDir = Path.Combine(ProjectRoot, projectName);
 
@@ -164,7 +167,7 @@ namespace PEBakery.Core
                     }).ToArray();
 
                 // Path of directory-linked scripts
-                List<ScriptParseInfo> dirLinks = GetDirLinks(projectDir);
+                List<ScriptParseInfo> dirLinks = GetDirLinks(projectDir, _compatDict[projectName].AsteriskBugDirLink);
 
                 int spiCount = 1 + scripts.Length + links.Length + dirLinks.Count;
                 List<ScriptParseInfo> spis = new List<ScriptParseInfo>(spiCount) { rootScript };
@@ -194,7 +197,7 @@ namespace PEBakery.Core
         #endregion
 
         #region GetDirLinks
-        private List<ScriptParseInfo> GetDirLinks(string projectDir)
+        private List<ScriptParseInfo> GetDirLinks(string projectDir, bool asteriskBugDirLink)
         {
             var dirLinks = new List<ScriptParseInfo>();
             var linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
@@ -218,7 +221,7 @@ namespace PEBakery.Core
                     Debug.Assert(path != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
 
                     bool isWildcard = StringHelper.IsWildcard(Path.GetFileName(path));
-                    if (AsteriskBugDirLink && isWildcard)
+                    if (asteriskBugDirLink && isWildcard)
                     { // Simulate WinBuilder *.* bug
                         string dirPath = Path.GetDirectoryName(path);
                         Debug.Assert(dirPath != null, "Internal Logic Error at ProjectCollection.GetDirLinks");
@@ -329,18 +332,18 @@ namespace PEBakery.Core
         #endregion
 
         #region Load, LoadLinks
-        public List<LogInfo> Load(IProgress<(Project.LoadReport Type, string Path)> progress)
+        public List<LogInfo> Load(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             try
             {
                 foreach (string key in _spiDict.Keys)
                 {
-                    Project project = new Project(_baseDir, key);
+                    Project project = new Project(_baseDir, key, _compatDict[key]);
 
                     // Load scripts
                     List<ScriptParseInfo> spis = _spiDict[key];
-                    List<LogInfo> errLogs = project.Load(spis, _scriptCache, progress);
+                    List<LogInfo> errLogs = project.Load(spis, scriptCache, progress);
                     logs.AddRange(errLogs);
 
                     // Add Project.Scripts to ProjectCollections.Scripts
@@ -350,37 +353,50 @@ namespace PEBakery.Core
                 }
 
                 // Sort ProjectList
-                ProjectList.Sort((x, y) => string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
+                ProjectList.Sort((x, y) =>
+                    string.Compare(x.ProjectName, y.ProjectName, StringComparison.OrdinalIgnoreCase));
 
                 // Populate *.link scripts
-                List<LogInfo> linkLogs = LoadLinks(progress);
+                List<LogInfo> linkLogs = LoadLinks(scriptCache, progress);
                 logs.AddRange(linkLogs);
 
                 // PostLoad scripts
                 foreach (Project p in ProjectList)
                     p.PostLoad();
+
+                FullyLoaded = true;
             }
             catch (SQLiteException e)
-            { // Update failure
-                string msg = $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
+            {
+                // Update failure
+                string msg =
+                    $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
+            }
+            finally
+            { // Load cleanup
+                _projectNames.Clear();
+                _spiDict.Clear();
+                _compatDict.Clear();
+                _allProjectScripts.Clear();
+                _allScriptPaths.Clear();
             }
 
             return logs;
         }
 
-        private List<LogInfo> LoadLinks(IProgress<(Project.LoadReport Type, string Path)> progress)
+        private List<LogInfo> LoadLinks(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
 
             // Doing this will consume memory, but also greatly increase performance.
             DB_ScriptCache[] cachePool = null;
-            if (_scriptCache != null)
+            if (scriptCache != null)
             {
                 progress?.Report((Project.LoadReport.LoadingCache, null));
-                cachePool = _scriptCache.Table<DB_ScriptCache>().ToArray();
+                cachePool = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
 
             string CheckLinkPath(Script sc, string linkRawPath)
@@ -436,7 +452,6 @@ namespace PEBakery.Core
 
                         if (linkTarget == null)
                         {
-                            // TODO : Lazy loading of link, takes too much time at start
                             ScriptType type = ScriptType.Script;
                             string ext = Path.GetExtension(linkRealPath);
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
@@ -514,19 +529,19 @@ namespace PEBakery.Core
         public string BaseDir { get; }
         public string ProjectRoot { get; } // {BaseDir}\Projects
         public string ProjectDir { get; } // {BaseDir}\Projects\{ProjectDirName}
-        public CompatOption Compat { get; private set; }
         public Script MainScript => AllScripts[_mainScriptIdx];
         public List<Script> AllScripts { get; private set; }
         public List<Script> ActiveScripts => CollectActiveScripts(AllScripts);
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
         public Variables Variables { get; set; }
+        public CompatOption Compat { get; private set; }
 
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
         #endregion
 
         #region Constructor
-        public Project(string baseDir, string projectName)
+        public Project(string baseDir, string projectName, CompatOption compat)
         {
             LoadedScriptCount = 0;
             AllScriptCount = 0;
@@ -534,6 +549,7 @@ namespace PEBakery.Core
             ProjectRoot = Path.Combine(baseDir, KnownPaths.Projects);
             ProjectDir = Path.Combine(baseDir, KnownPaths.Projects, projectName);
             BaseDir = baseDir;
+            Compat = compat;
         }
         #endregion
 
@@ -562,10 +578,6 @@ namespace PEBakery.Core
                 progress?.Report((LoadReport.LoadingCache, null));
                 cachePool = scriptCache.Table<DB_ScriptCache>().ToArray();
             }
-
-            // Load per-project compat options
-            string compatFile = Path.Combine(ProjectDir, KnownPaths.CompatFile);
-            Compat = new CompatOption(compatFile);
 
             // Load scripts from disk or cache
             bool cacheValid = true;
@@ -1016,7 +1028,7 @@ namespace PEBakery.Core
         #region Clone
         public Project PartialDeepCopy()
         {
-            Project project = new Project(BaseDir, ProjectName)
+            Project project = new Project(BaseDir, ProjectName, Compat)
             {
                 _mainScriptIdx = _mainScriptIdx,
                 AllScripts = new List<Script>(AllScripts),

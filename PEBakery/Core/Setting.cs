@@ -155,7 +155,7 @@ namespace PEBakery.Core
 #if DEBUG
                 DebugLevel = LogDebugLevel.PrintExceptionStackTrace;
 #else
-                LogLevel = LogDebugLevel.Production;
+                DebugLevel = LogDebugLevel.Production;
 #endif
                 DeferredLogging = true;
                 MinifyHtmlExport = true;
@@ -201,7 +201,6 @@ namespace PEBakery.Core
             Engine.StopBuildOnError = General.StopBuildOnError;
             Logger.DebugLevel = Log.DebugLevel;
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
-            // ProjectCollection.AsteriskBugDirLink = Compat.AsteriskBugDirLink;
 
             // Instance
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;

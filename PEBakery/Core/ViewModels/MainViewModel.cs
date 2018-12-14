@@ -664,7 +664,7 @@ namespace PEBakery.Core.ViewModels
         public int ScriptRefreshing = 0;
         public int SyntaxChecking = 0;
 
-        public Task StartLoadingProjects(bool quiet = false)
+        public Task StartLoadingProjects(bool refreshProjectEntries, bool quiet)
         {
             if (ProjectsLoading != 0)
                 return Task.CompletedTask;
@@ -757,46 +757,58 @@ namespace PEBakery.Core.ViewModels
                     BottomProgressBarMaximum = 100;
                     BottomProgressBarValue = 0;
 
-                    // Init ProjectCollection
-                    if (Global.Setting.Script.EnableCache && Global.ScriptCache != null) // Use ScriptCache
-                    {
+                    // Refresh project entries
+                    // By the PEBakery init, set to false (Global.Init() takes care of project entries)
+                    // By the refresh Button, set to true (Need to sense if any change was made in ProjectRoot)
+                    if (refreshProjectEntries) 
+                        Global.Projects.RefreshProjectEntries();
+
+                    // Get ScriptCache
+                    ScriptCache scriptCache;
+                    if (Global.Setting.Script.EnableCache && Global.ScriptCache != null)
+                    { // Use ScriptCache
                         if (Global.ScriptCache.CheckCacheRevision(Global.BaseDir))
-                            Global.Projects = new ProjectCollection(Global.BaseDir, Global.ScriptCache);
-                        else // Cache is invalid
                         {
+                            // Enable scriptCache
+                            scriptCache = Global.ScriptCache;
+                        }
+                        else
+                        { // Cache is invalid
+                            // Invalidate cache database for integrity
                             Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
                             {
                                 CacheInfo = false,
                                 ScriptCache = true,
                             });
-                            Global.Projects = new ProjectCollection(Global.BaseDir, null);
+                            // Disable scriptCache
+                            scriptCache = null;
                         }
                     }
-                    else // Do not use ScriptCache
+                    else
                     {
-                        Global.Projects = new ProjectCollection(Global.BaseDir, null);
+                        // Disable scriptCache
+                        scriptCache = null;
                     }
 
-                    // Prepare by getting script paths
+                    // Prepare loading by getting script paths
                     progress.Report((Project.LoadReport.FindingScript, null));
                     (totalScriptCount, stage2LinkCount) = Global.Projects.PrepareLoad();
                     ifaceUpdateFreq = totalScriptCount / 64 + 1;
                     BottomProgressBarMaximum = totalScriptCount + stage2LinkCount;
 
                     // Load projects in parallel
-                    List<LogInfo> errorLogs = Global.Projects.Load(progress);
+                    List<LogInfo> errorLogs = Global.Projects.Load(scriptCache, progress);
                     Global.Logger.SystemWrite(errorLogs);
-                    // Global.Setting.UpdateProjectList();
 
                     if (0 < Global.Projects.ProjectNames.Count)
                     { // Load success
                         // Populate TreeView
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            foreach (Project project in Global.Projects.ProjectList)
+                            foreach (Project p in Global.Projects)
                             {
-                                ProjectTreeItemModel projectRoot = PopulateOneTreeItem(project.MainScript, null, null);
-                                ScriptListToTreeViewModel(project, project.VisibleScripts, true, projectRoot);
+                                ProjectTreeItemModel projectRoot = PopulateOneTreeItem(p.MainScript, null, null);
+                                ScriptListToTreeViewModel(p, p.VisibleScripts, true, projectRoot);
                                 MainTreeItems.Add(projectRoot);
                             }
 
@@ -816,7 +828,7 @@ namespace PEBakery.Core.ViewModels
                             }
                         });
 
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.ProjectList.Select(x => x.ProjectName))}] loaded"));
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
 
                         watch.Stop();
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
