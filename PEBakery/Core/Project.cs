@@ -47,7 +47,7 @@ namespace PEBakery.Core
         #region Fields
         private readonly string _baseDir;
 
-        // Fields are used only in loading time
+        // These fields are being used only in preloading/loading stage
         private readonly List<string> _projectNames = new List<string>();
         private readonly Dictionary<string, List<ScriptParseInfo>> _spiDict = new Dictionary<string, List<ScriptParseInfo>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CompatOption> _compatDict = new Dictionary<string, CompatOption>(StringComparer.OrdinalIgnoreCase);
@@ -56,13 +56,20 @@ namespace PEBakery.Core
         #endregion
 
         #region Properties
+        // Auto properties
         public string ProjectRoot { get; }
         public List<Project> ProjectList { get; } = new List<Project>();
         public bool FullyLoaded { get; private set; } = false;
 
-        public List<string> ProjectNames => FullyLoaded ? ProjectList.Select(x => x.ProjectName).ToList() : _projectNames;
-        public Dictionary<string, CompatOption> CompatOptions => FullyLoaded ? ProjectList.ToDictionary(x => x.ProjectName, x => x.Compat) : _compatDict;
+        // Expose _projectNames and _compatDict to public
+        public List<string> ProjectNames => FullyLoaded ? 
+            ProjectList.Select(x => x.ProjectName).ToList() : 
+            new List<string>(_projectNames);
+        public Dictionary<string, CompatOption> CompatOptions => FullyLoaded ? 
+            ProjectList.ToDictionary(x => x.ProjectName, x => x.Compat) :
+            new Dictionary<string, CompatOption>(_compatDict, StringComparer.OrdinalIgnoreCase);
 
+        // Collection
         public Project this[int i] => ProjectList[i];
         public int Count => ProjectList.Count;
         #endregion
@@ -83,8 +90,9 @@ namespace PEBakery.Core
         /// </summary>
         public void RefreshProjectEntries()
         {
-            ProjectNames.Clear();
             FullyLoaded = false;
+            _projectNames.Clear();
+            ProjectList.Clear();
 
             if (!Directory.Exists(ProjectRoot))
                 return; // No projects
@@ -101,7 +109,7 @@ namespace PEBakery.Core
                 {
                     // Feed _projectNames.
                     string projectName = Path.GetFileName(projectDir);
-                    ProjectNames.Add(projectName);
+                    _projectNames.Add(projectName);
 
                     // Load per-project compat options.
                     // Even if compatFile does not exist, CompatOption class will deal with it.
@@ -133,15 +141,15 @@ namespace PEBakery.Core
         {
             int allCount = 0;
             int linkCount = 0;
-            foreach (string projectName in ProjectNames)
+            foreach (string projectName in _projectNames)
             {
                 string projectDir = Path.Combine(ProjectRoot, projectName);
 
                 // Path of root script
                 ScriptParseInfo rootScript = new ScriptParseInfo
                 {
-                    RealPath = Path.Combine(projectDir, "script.project"),
-                    TreePath = Path.Combine(projectName, "script.project"),
+                    RealPath = Path.Combine(projectDir, Project.KnownPaths.MainScriptFile),
+                    TreePath = Path.Combine(projectName, Project.KnownPaths.MainScriptFile),
                     IsDir = false,
                     IsDirLink = false,
                 };
@@ -188,7 +196,7 @@ namespace PEBakery.Core
                 _spiDict[projectName] = spis;
                 _allScriptPaths.AddRange(spis);
 
-                // For stage2, links should be added twice since processed twice
+                // For stage 2, links should be added twice because they are processed twice
                 allCount += spis.Count;
                 linkCount += spis.Count(x => x.RealPath.EndsWith(".link", StringComparison.OrdinalIgnoreCase));
             }
@@ -337,7 +345,7 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>(32);
             try
             {
-                foreach (string key in _spiDict.Keys)
+                foreach (string key in _projectNames)
                 {
                     Project project = new Project(_baseDir, key, _compatDict[key]);
 

@@ -748,6 +748,7 @@ namespace PEBakery.Core.ViewModels
                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{Global.BaseDir}]"));
 
                     // Load CommentProcessing Icon, Clear interfaces
+                    ScriptCheckResult = CodeValidator.Result.Unknown;
                     ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
                     MainTreeItems.Clear();
                     BuildTreeItems.Clear();

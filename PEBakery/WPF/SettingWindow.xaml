@@ -39,7 +39,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
-        Width="600" Height="520"
+        Width="600" Height="525"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>

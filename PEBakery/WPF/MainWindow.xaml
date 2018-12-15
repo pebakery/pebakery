@@ -26,7 +26,7 @@
 -->
 
 <!-- 
-    Enable Running Project Code to see run designer properly.
+    Enable "Running Project Code" to see run designer properly.
     This is caused by cc:IconButton, which results in System.Runtime.Remoting.RemotingException.
 -->
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
