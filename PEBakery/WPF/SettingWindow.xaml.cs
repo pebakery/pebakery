@@ -33,6 +33,7 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,8 +65,8 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Button Event Handler
-        #region Global Buttons
+        #region Commands
+        #region Global Button Commands
         private void Command_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = _m != null && _m.CanExecuteCommand;
@@ -236,7 +237,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                _m.Setting.Interface.MonospacedFont = FontHelper.ChooseFontDialog(_m.Setting.Interface.MonospacedFont, this, monospaced: true);
+                _m.InterfaceMonospacedFont = FontHelper.ChooseFontDialog(_m.Setting.Interface.MonospacedFont, this, monospaced: true);
             }
             finally
             {
@@ -263,7 +264,7 @@ namespace PEBakery.WPF
 
                 if (dialog.ShowDialog(this) == true)
                 {
-                    _m.Setting.Interface.CustomEditorPath = dialog.FileName;
+                    _m.InterfaceCustomEditorPath = dialog.FileName;
                 }
             }
             finally
@@ -522,7 +523,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-
+        
         #region Property - General
         public bool GeneralOptimizeCode
         {
@@ -840,10 +841,22 @@ namespace PEBakery.WPF
             Setting.ReadFromFile();
             foreach (Project p in Global.Projects)
                 p.Compat.ReadFromFile();
+
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            string defaultProjectName = Setting.Project.DefaultProject;
+            int defaultProjectIdx = Global.Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Global.Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
         }
 
         public void WriteToFile()
         {
+            // Set default project name
+            Setting.Project.DefaultProject = DefaultProject != null ? DefaultProject.ProjectName : string.Empty;
+
             Setting.WriteToFile();
             SaveCompatOption(SelectedProject.Compat);
             foreach (Project p in Global.Projects)

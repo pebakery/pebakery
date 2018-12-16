@@ -28,7 +28,6 @@
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
-using SQLite;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -50,11 +49,7 @@ namespace PEBakery.WPF
         // Shortcut to Global
         public string BaseDir => Global.BaseDir;
         public Logger Logger => Global.Logger;
-        private static MainViewModel Model
-        {
-            get => Global.MainViewModel;
-            set => Global.MainViewModel = value;
-        }
+        private static MainViewModel Model => Global.MainViewModel;
 
         // Window 
         public LogWindow LogDialog = null;
@@ -65,8 +60,8 @@ namespace PEBakery.WPF
         #region Constructor
         public MainWindow()
         {
+            DataContext = Global.MainViewModel = new MainViewModel();
             InitializeComponent();
-            DataContext = Model;
 
             // Init global properties
             Global.Init();
@@ -127,7 +122,7 @@ namespace PEBakery.WPF
                 });
 #endif
 
-                // Cancel and Wait until PrintBuildElapsedStatus stops
+                // Cancel and wait until PrintBuildElapsedStatus stops
                 // Report elapsed time
                 ct.Cancel();
                 await printStatus;
@@ -136,7 +131,7 @@ namespace PEBakery.WPF
                 // Turn off progress ring
                 Model.WorkInProgress = false;
 
-                // Build Ended, Switch to Normal View
+                // Build ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
                 Model.BuildTreeItems.Clear();
                 Model.DisplayScript(Model.CurMainTree.Script);

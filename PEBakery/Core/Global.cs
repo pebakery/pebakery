@@ -67,7 +67,9 @@ namespace PEBakery.Core
         /// <summary>
         /// Launch before Application.Current is loaded
         /// </summary>
-        public static void PreInit(string[] args)
+        /// <param name="args">Command-line argument</param>
+        /// <param name="initMainViewModel">Set this to true when PEBakery.Core is used outside of PEBakery</param>
+        public static void PreInit(string[] args, bool initMainViewModel)
         {
             // Process arguments
             Args = args;
@@ -79,7 +81,8 @@ namespace PEBakery.Core
             BuildDate = BuildTimestamp.ReadDateTime();
 
             // Create MainViewModel
-            MainViewModel = new MainViewModel();
+            if (initMainViewModel)
+                MainViewModel = new MainViewModel();
         }
 
         /// <summary>

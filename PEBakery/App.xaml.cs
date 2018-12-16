@@ -1,9 +1,5 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
+﻿using PEBakery.Core;
 using System.Windows;
-using PEBakery.Core;
 
 namespace PEBakery
 {
@@ -12,7 +8,7 @@ namespace PEBakery
     {
         internal void App_Startup(object sender, StartupEventArgs e)
         {
-            Global.PreInit(e.Args);
+            Global.PreInit(e.Args, false);
         }
     }
 }

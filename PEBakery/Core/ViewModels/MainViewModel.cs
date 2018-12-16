@@ -102,55 +102,35 @@ namespace PEBakery.Core.ViewModels
         public string TitleBar
         {
             get => _titleBar;
-            set
-            {
-                _titleBar = value;
-                OnPropertyUpdate(nameof(TitleBar));
-            }
+            set => SetProperty(ref _titleBar, value);
         }
 
         private string _scriptTitleText = "Welcome to PEBakery!";
         public string ScriptTitleText
         {
             get => _scriptTitleText;
-            set
-            {
-                _scriptTitleText = value;
-                OnPropertyUpdate(nameof(ScriptTitleText));
-            }
+            set => SetProperty(ref _scriptTitleText, value);
         }
 
         private string _scriptAuthorText = string.Empty;
         public string ScriptAuthorText
         {
             get => _scriptAuthorText;
-            set
-            {
-                _scriptAuthorText = value;
-                OnPropertyUpdate(nameof(ScriptAuthorText));
-            }
+            set => SetProperty(ref _scriptAuthorText, value);
         }
 
         private string _scriptVersionText = Properties.Resources.StringVersionFull;
         public string ScriptVersionText
         {
             get => _scriptVersionText;
-            set
-            {
-                _scriptVersionText = value;
-                OnPropertyUpdate(nameof(ScriptVersionText));
-            }
+            set => SetProperty(ref _scriptVersionText, value);
         }
 
         private string _scriptDescriptionText = "PEBakery is now loading, please wait...";
         public string ScriptDescriptionText
         {
             get => _scriptDescriptionText;
-            set
-            {
-                _scriptDescriptionText = value;
-                OnPropertyUpdate(nameof(ScriptDescriptionText));
-            }
+            set => SetProperty(ref _scriptDescriptionText, value);
         }
 
         #region ScriptLogo
@@ -203,22 +183,14 @@ namespace PEBakery.Core.ViewModels
         public double ScriptLogoSvgWidth
         {
             get => _scriptLogoSvgWidth;
-            set
-            {
-                _scriptLogoSvgWidth = value;
-                OnPropertyUpdate(nameof(ScriptLogoSvgWidth));
-            }
+            set => SetProperty(ref _scriptLogoSvgWidth, value);
         }
 
         private double _scriptLogoSvgHeight;
         public double ScriptLogoSvgHeight
         {
             get => _scriptLogoSvgHeight;
-            set
-            {
-                _scriptLogoSvgHeight = value;
-                OnPropertyUpdate(nameof(ScriptLogoSvgHeight));
-            }
+            set => SetProperty(ref _scriptLogoSvgHeight, value);
         }
         #endregion
 
@@ -263,15 +235,11 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        private string statusBarText = string.Empty;
+        private string _statusBarText = string.Empty;
         public string StatusBarText
         {
-            get => statusBarText;
-            set
-            {
-                statusBarText = value;
-                OnPropertyUpdate(nameof(StatusBarText));
-            }
+            get => _statusBarText;
+            set => SetProperty(ref _statusBarText, value);
         }
 
         // True - StatusBar, False - ProgressBar
@@ -299,55 +267,35 @@ namespace PEBakery.Core.ViewModels
         public Visibility BottomStatusBarVisibility
         {
             get => _bottomStatusBarVisibility;
-            set
-            {
-                _bottomStatusBarVisibility = value;
-                OnPropertyUpdate(nameof(BottomStatusBarVisibility));
-            }
+            set => SetProperty(ref _bottomStatusBarVisibility, value);
         }
 
         private double _bottomProgressBarMinimum = 0;
         public double BottomProgressBarMinimum
         {
             get => _bottomProgressBarMinimum;
-            set
-            {
-                _bottomProgressBarMinimum = value;
-                OnPropertyUpdate(nameof(BottomProgressBarMinimum));
-            }
+            set => SetProperty(ref _bottomProgressBarMinimum, value);
         }
 
         private double _bottomProgressBarMaximum = 100;
         public double BottomProgressBarMaximum
         {
             get => _bottomProgressBarMaximum;
-            set
-            {
-                _bottomProgressBarMaximum = value;
-                OnPropertyUpdate(nameof(BottomProgressBarMaximum));
-            }
+            set => SetProperty(ref _bottomProgressBarMaximum, value);
         }
 
         private double _bottomProgressBarValue = 0;
         public double BottomProgressBarValue
         {
             get => _bottomProgressBarValue;
-            set
-            {
-                _bottomProgressBarValue = value;
-                OnPropertyUpdate(nameof(BottomProgressBarValue));
-            }
+            set => SetProperty(ref _bottomProgressBarValue, value);
         }
 
-        private Visibility bottomProgressBarVisibility = Visibility.Visible;
+        private Visibility _bottomProgressBarVisibility = Visibility.Visible;
         public Visibility BottomProgressBarVisibility
         {
-            get => bottomProgressBarVisibility;
-            set
-            {
-                bottomProgressBarVisibility = value;
-                OnPropertyUpdate(nameof(BottomProgressBarVisibility));
-            }
+            get => _bottomProgressBarVisibility;
+            set => SetProperty(ref _bottomProgressBarVisibility, value);
         }
 
         // True - Normal, False - Build
@@ -423,11 +371,7 @@ namespace PEBakery.Core.ViewModels
         public Canvas MainCanvas
         {
             get => _mainCanvas;
-            set
-            {
-                _mainCanvas = value;
-                OnPropertyUpdate(nameof(MainCanvas));
-            }
+            set => SetProperty(ref _mainCanvas, value);
         }
         #endregion
 
@@ -437,34 +381,21 @@ namespace PEBakery.Core.ViewModels
         public ObservableCollection<ProjectTreeItemModel> BuildTreeItems
         {
             get => _buildTreeItems;
-            set
-            {
-                _buildTreeItems = value;
-                BindingOperations.EnableCollectionSynchronization(_buildTreeItems, _buildTreeItemsLock);
-                OnPropertyUpdate(nameof(BuildTreeItems));
-            }
+            set => SetCollectionProperty(ref _buildTreeItems, _buildTreeItemsLock, value);
         }
 
         private string _buildPosition = string.Empty;
         public string BuildPosition
         {
             get => _buildPosition;
-            set
-            {
-                _buildPosition = value;
-                OnPropertyUpdate(nameof(BuildPosition));
-            }
+            set => SetProperty(ref _buildPosition, value);
         }
 
         private string _buildEchoMessage = string.Empty;
         public string BuildEchoMessage
         {
             get => _buildEchoMessage;
-            set
-            {
-                _buildEchoMessage = value;
-                OnPropertyUpdate(nameof(BuildEchoMessage));
-            }
+            set => SetProperty(ref _buildEchoMessage, value);
         }
 
         // ProgressBar
@@ -472,55 +403,35 @@ namespace PEBakery.Core.ViewModels
         public double BuildScriptProgressBarMax
         {
             get => _buildScriptProgressBarMax;
-            set
-            {
-                _buildScriptProgressBarMax = value;
-                OnPropertyUpdate(nameof(BuildScriptProgressBarMax));
-            }
+            set => SetProperty(ref _buildScriptProgressBarMax, value);
         }
 
         private double _buildScriptProgressBarValue = 0;
         public double BuildScriptProgressBarValue
         {
             get => _buildScriptProgressBarValue;
-            set
-            {
-                _buildScriptProgressBarValue = value;
-                OnPropertyUpdate(nameof(BuildScriptProgressBarValue));
-            }
+            set => SetProperty(ref _buildScriptProgressBarValue, value);
         }
 
         private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
         public Visibility BuildScriptFullProgressVisibility
         {
             get => _buildScriptFullProgressVisibility;
-            set
-            {
-                _buildScriptFullProgressVisibility = value;
-                OnPropertyUpdate(nameof(BuildScriptFullProgressVisibility));
-            }
+            set => SetProperty(ref _buildScriptFullProgressVisibility, value);
         }
 
         private double _buildFullProgressBarMax = 100;
         public double BuildFullProgressBarMax
         {
             get => _buildFullProgressBarMax;
-            set
-            {
-                _buildFullProgressBarMax = value;
-                OnPropertyUpdate(nameof(BuildFullProgressBarMax));
-            }
+            set => SetProperty(ref _buildFullProgressBarMax, value);
         }
 
         private double _buildFullProgressBarValue = 0;
         public double BuildFullProgressBarValue
         {
             get => _buildFullProgressBarValue;
-            set
-            {
-                _buildFullProgressBarValue = value;
-                OnPropertyUpdate(nameof(BuildFullProgressBarValue));
-            }
+            set => SetProperty(ref _buildFullProgressBarValue, value);
         }
 
         // ShellExecute Console Output
@@ -529,12 +440,7 @@ namespace PEBakery.Core.ViewModels
         public ObservableCollection<Tuple<string, bool>> BuildConOutRedirectTextLines
         {
             get => _buildConOutRedirectTextLines;
-            set
-            {
-                _buildConOutRedirectTextLines = value;
-                BindingOperations.EnableCollectionSynchronization(_buildConOutRedirectTextLines, _buildConOutRedirectTextLinesLock);
-                OnPropertyUpdate(nameof(BuildConOutRedirectTextLines));
-            }
+            set => SetCollectionProperty(ref _buildConOutRedirectTextLines, _buildConOutRedirectTextLinesLock, value);
         }
 
         public bool DisplayShellExecuteConOut = true;
@@ -572,44 +478,28 @@ namespace PEBakery.Core.ViewModels
         public string BuildCommandProgressTitle
         {
             get => _buildCommandProgressTitle;
-            set
-            {
-                _buildCommandProgressTitle = value;
-                OnPropertyUpdate(nameof(BuildCommandProgressTitle));
-            }
+            set => SetProperty(ref _buildCommandProgressTitle, value);
         }
 
         private string _buildCommandProgressText = string.Empty;
         public string BuildCommandProgressText
         {
             get => _buildCommandProgressText;
-            set
-            {
-                _buildCommandProgressText = value;
-                OnPropertyUpdate(nameof(BuildCommandProgressText));
-            }
+            set => SetProperty(ref _buildCommandProgressText, value);
         }
 
         private double _buildCommandProgressMax = 100;
         public double BuildCommandProgressMax
         {
             get => _buildCommandProgressMax;
-            set
-            {
-                _buildCommandProgressMax = value;
-                OnPropertyUpdate(nameof(BuildCommandProgressMax));
-            }
+            set => SetProperty(ref _buildCommandProgressMax, value);
         }
 
         private double _buildCommandProgressValue = 0;
         public double BuildCommandProgressValue
         {
             get => _buildCommandProgressValue;
-            set
-            {
-                _buildCommandProgressValue = value;
-                OnPropertyUpdate(nameof(BuildCommandProgressValue));
-            }
+            set => SetProperty(ref _buildCommandProgressValue, value);
         }
 
         public Visibility BuildCommandProgressVisibility { get; private set; } = Visibility.Collapsed;
@@ -629,13 +519,13 @@ namespace PEBakery.Core.ViewModels
         // Normal - Green
         // Error - Red
         // Paused - Yellow
-        private TaskbarItemProgressState _taskbarProgressState;
+        private TaskbarItemProgressState _taskBarProgressState;
         public TaskbarItemProgressState TaskBarProgressState
         {
-            get => _taskbarProgressState;
+            get => _taskBarProgressState;
             set
             {
-                _taskbarProgressState = value;
+                _taskBarProgressState = value;
                 OnPropertyUpdate(nameof(TaskBarProgressState));
             }
         }
@@ -752,7 +642,9 @@ namespace PEBakery.Core.ViewModels
                     ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
                     MainTreeItems.Clear();
                     BuildTreeItems.Clear();
-                    Application.Current.Dispatcher.Invoke(ClearScriptInterface);
+                    CurMainTree = null;
+                    CurBuildTree = null;
+                    ClearScriptInterface();
 
                     BottomProgressBarMinimum = 0;
                     BottomProgressBarMaximum = 100;
@@ -813,20 +705,14 @@ namespace PEBakery.Core.ViewModels
                                 MainTreeItems.Add(projectRoot);
                             }
 
-                            CurMainTree = null;
+                            // Select default project
+                            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
                             string defaultProjectName = Global.Setting.Project.DefaultProject;
-                            for (int i = 0; i < MainTreeItems.Count; i++)
-                            {
-                                ProjectTreeItemModel itemModel = MainTreeItems[i];
-                                string itemProjectName = itemModel.Script.Project.ProjectName;
-                                if (itemProjectName.Equals(defaultProjectName, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    CurMainTree = itemModel;
-                                    CurMainTree.IsExpanded = true;
-                                    if (Global.Projects[i] != null)
-                                        DisplayScript(Global.Projects[i].MainScript);
-                                }
-                            }
+                            ProjectTreeItemModel itemModel = MainTreeItems
+                                .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
+                            CurMainTree = itemModel ?? MainTreeItems.Last();
+                            CurMainTree.IsExpanded = true;
+                            DisplayScript(CurMainTree.Script);
                         });
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
@@ -1137,8 +1023,11 @@ namespace PEBakery.Core.ViewModels
             if (_renderer == null)
                 return;
 
-            _renderer.Clear();
-            _renderer = null;
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                _renderer.Clear();
+                _renderer = null;
+            });
         }
 
         public void DisplayScriptLogo(Script sc)
@@ -1167,7 +1056,7 @@ namespace PEBakery.Core.ViewModels
                                 ScriptLogoSvgHeight = height;
                                 break;
                             default:
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     // ReSharper disable once AccessToDisposedClosure
                                     ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
@@ -1180,16 +1069,9 @@ namespace PEBakery.Core.ViewModels
                 { // No logo file - use default
                     PackIconMaterialKind iconKind = PackIconMaterialKind.None;
                     if (sc.Type == ScriptType.Script)
-                    {
-                        if (sc.IsDirLink)
-                            iconKind = PackIconMaterialKind.FileSend;
-                        else
-                            iconKind = PackIconMaterialKind.FileDocument;
-                    }
+                        iconKind = sc.IsDirLink ? PackIconMaterialKind.FileSend : PackIconMaterialKind.FileDocument;
                     else if (sc.Type == ScriptType.Link)
-                    {
                         iconKind = PackIconMaterialKind.FileSend;
-                    }
 
                     ScriptLogoIcon = iconKind;
                 }

@@ -169,7 +169,7 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="String to Convert"/>
+                                   Text="Source String"/>
                         <TextBox Grid.Row="1"
                                  AutomationProperties.Name="StringToConvertTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
@@ -229,7 +229,7 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Converted String">
+                                   Text="Result">
                         </TextBlock>
                         <TextBox Grid.Row="1"
                                  x:Name="ConvertedStringTextBox"
@@ -295,7 +295,7 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Input Code"/>
+                                   Text="Script Code"/>
                         <TextBox Grid.Row="1"
                                  AutomationProperties.Name="SyntaxCheckInputTextBox"
                                  FontFamily="{Binding MonoFontFamily}"

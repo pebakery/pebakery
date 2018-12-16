@@ -222,7 +222,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        s.MainViewModel.StartLoadingProjects(true, true).Wait();
+                        s.MainViewModel.StartLoadingProjects(true, true).Wait(); 
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }

@@ -42,7 +42,7 @@ using System.Windows;
 namespace PEBakery.Core
 {
     #region ProjectCollection
-    public class ProjectCollection : IReadOnlyCollection<Project>
+    public class ProjectCollection : IReadOnlyList<Project>
     {
         #region Fields
         private readonly string _baseDir;
@@ -512,6 +512,30 @@ namespace PEBakery.Core
         public IEnumerator<Project> GetEnumerator() => ProjectList.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        #endregion
+
+        #region IndexOf
+        public int IndexOf(Project targetProject)
+        {
+            for (int i = 0; i < ProjectList.Count; i++)
+            {
+                Project p = ProjectList[i];
+                if (p.Equals(targetProject))
+                    return i;
+            }
+            return -1;
+        }
+
+        public int IndexOf(string targetProjectName)
+        {
+            for (int i = 0; i < ProjectList.Count; i++)
+            {
+                Project p = ProjectList[i];
+                if (p.ProjectName.Equals(targetProjectName, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return -1;
+        }
         #endregion
     }
     #endregion
