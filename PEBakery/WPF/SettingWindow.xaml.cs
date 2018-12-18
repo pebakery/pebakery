@@ -420,7 +420,8 @@ namespace PEBakery.WPF
                     ProjectIsoFile = string.Empty;
 
                 // Compat Options
-                SaveCompatOption(oldProject.Compat);
+                if (!oldProject.Equals(SelectedProject))
+                    SaveCompatOption(oldProject.Compat);
                 LoadCompatOption(SelectedProject.Compat);
             });
         }
@@ -854,7 +855,7 @@ namespace PEBakery.WPF
 
         public void WriteToFile()
         {
-            // Set default project name
+            // Set default project
             Setting.Project.DefaultProject = DefaultProject != null ? DefaultProject.ProjectName : string.Empty;
 
             Setting.WriteToFile();
