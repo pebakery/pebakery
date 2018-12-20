@@ -400,6 +400,9 @@ namespace PEBakery.Core
                 Application.Current.Shutdown(1);
             }
 
+            // Loading a project without script cache generates a lot of Gen 2 heap object
+            GC.Collect();
+
             return logs;
         }
 
@@ -661,7 +664,14 @@ namespace PEBakery.Core
                     }
 
                     lock (listLock)
+                    {
                         AllScripts.Add(sc);
+
+                        // Loading a project without script cache generates a lot of Gen 2 heap object
+                        if (scriptCache == null && AllScripts.Count % 64 == 0)
+                            GC.Collect();
+                    }
+                        
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }

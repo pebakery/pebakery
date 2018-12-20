@@ -629,7 +629,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     Stopwatch watch = Stopwatch.StartNew();
 
-                    // Prepare PEBakery Loading Information
+                    // Prepare PEBakery loading information
                     if (!quiet)
                     {
                         ScriptTitleText = "PEBakery loading...";
