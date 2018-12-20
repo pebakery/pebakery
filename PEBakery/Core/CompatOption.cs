@@ -86,7 +86,6 @@ namespace PEBakery.Core
         #endregion
 
         #region SetToDefault
-
         public void SetToDefault()
         {
             // Asterisk
@@ -216,6 +215,33 @@ namespace PEBakery.Core
         public CompatOption Clone()
         {
             return new CompatOption(_compatFile, this);
+        }
+        #endregion
+
+        #region Diff
+        public Dictionary<string, bool> Diff(CompatOption other)
+        {
+            return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
+            { 
+                // Asterisk
+                [nameof(AsteriskBugDirCopy)] = AsteriskBugDirCopy != other.AsteriskBugDirCopy,
+                [nameof(AsteriskBugDirLink)] = AsteriskBugDirLink != other.AsteriskBugDirLink,
+                // Command
+                [nameof(FileRenameCanMoveDir)] = FileRenameCanMoveDir != other.FileRenameCanMoveDir,
+                [nameof(AllowLetterInLoop)] = AllowLetterInLoop != other.AllowLetterInLoop,
+                [nameof(LegacyBranchCondition)] = LegacyBranchCondition != other.LegacyBranchCondition,
+                [nameof(LegacyRegWrite)] = LegacyRegWrite != other.LegacyRegWrite,
+                [nameof(AllowSetModifyInterface)] = AllowSetModifyInterface != other.AllowSetModifyInterface,
+                [nameof(LegacyInterfaceCommand)] = LegacyInterfaceCommand != other.LegacyInterfaceCommand,
+                [nameof(LegacySectionParamCommand)] = LegacySectionParamCommand != other.LegacySectionParamCommand,
+                // Script Interface
+                [nameof(IgnoreWidthOfWebLabel)] = IgnoreWidthOfWebLabel != other.IgnoreWidthOfWebLabel,
+                // Variable
+                [nameof(OverridableFixedVariables)] = OverridableFixedVariables != other.OverridableFixedVariables,
+                [nameof(OverridableLoopCounter)] = OverridableLoopCounter != other.OverridableLoopCounter,
+                [nameof(EnableEnvironmentVariables)] = EnableEnvironmentVariables != other.EnableEnvironmentVariables,
+                [nameof(DisableExtendedSectionParams)] = DisableExtendedSectionParams != other.DisableExtendedSectionParams,
+            };
         }
         #endregion
     }

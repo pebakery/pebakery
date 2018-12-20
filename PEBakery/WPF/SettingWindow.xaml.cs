@@ -82,7 +82,9 @@ namespace PEBakery.WPF
                 const string msg = "All settings will be reset to default!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (res == MessageBoxResult.Yes)
+                {
                     _m.SetToDefault();
+                }
             }
             finally
             {
@@ -376,7 +378,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (0 <= SelectedProjectIndex && SelectedProjectIndex < ProjectNames.Count)
+                if (0 <= SelectedProjectIndex && SelectedProjectIndex < Projects.Count)
                     return Projects[DefaultProjectIndex];
                 else
                     return null;
@@ -854,7 +856,7 @@ namespace PEBakery.WPF
 
                 // Compat Options
                 if (_firstLoad && !oldProject.Equals(SelectedProject))
-                    SaveCompatOption(SelectedProject.Compat);
+                    SaveCompatOption(SelectedCompatOption);
                 CompatOption compat = SelectedCompatOption;
                 Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
                 LoadCompatOption(compat);
@@ -1053,12 +1055,21 @@ namespace PEBakery.WPF
             Setting.Log.MinifyHtmlExport = LogMinifyHtmlExport;
 
             // Compat options
-            if (SelectedProject != null)
-                SaveCompatOption(SelectedProject.Compat);
+            if (SelectedCompatOption != null)
+                SaveCompatOption(SelectedCompatOption);
             for (int i = 0; i < _compatOptions.Count; i++)
             {
                 CompatOption compat = _compatOptions[i];
                 Project p = Projects[i];
+
+                Dictionary<string, bool> diffDict = compat.Diff(p.Compat);
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.AsteriskBugDirLink)), "Invalid compat option field name");
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.OverridableFixedVariables)), "Invalid compat option field name");
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.EnableEnvironmentVariables)), "Invalid compat option field name");
+                if (diffDict[nameof(compat.AsteriskBugDirLink)] ||
+                    diffDict[nameof(compat.OverridableFixedVariables)] ||
+                    diffDict[nameof(compat.EnableEnvironmentVariables)])
+                    NeedProjectRefresh = true;
 
                 compat.CopyTo(p.Compat);
             }

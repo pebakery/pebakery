@@ -183,35 +183,23 @@ namespace PEBakery.WPF
             // Force update of script interface
             SettingWindowButton.Focus();
 
-            // Get current project
-            Project p = Model.CurMainTree.Script.Project;
-
-            double old_Interface_ScaleFactor = Global.Setting.Interface.ScaleFactor;
-            bool old_Compat_AsteriskBugDirLink = p.Compat.AsteriskBugDirLink;
-            bool old_Compat_OverridableFixedVariables = p.Compat.OverridableFixedVariables;
-            bool old_Compat_EnableEnvironmentVariables = p.Compat.EnableEnvironmentVariables;
-            bool old_Script_EnableCache = Global.Setting.Script.EnableCache;
-
             SettingViewModel svModel = new SettingViewModel(Global.Setting, Global.Projects);
             SettingWindow dialog = new SettingWindow(svModel) { Owner = this };
             if (dialog.ShowDialog() == true)
-            { // If SettingWindow returns true in DialogResult, refresh project
+            {
                 // Refresh Projects
-                if (old_Compat_AsteriskBugDirLink != p.Compat.AsteriskBugDirLink ||
-                    old_Compat_OverridableFixedVariables != p.Compat.OverridableFixedVariables ||
-                    old_Compat_EnableEnvironmentVariables != p.Compat.EnableEnvironmentVariables)
+                if (svModel.NeedProjectRefresh)
                 {
                     Model.StartLoadingProjects(true, false);
                 }
                 else
                 {
                     // Scale Factor
-                    double newScaleFactor = Global.Setting.Interface.ScaleFactor;
-                    if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                    if (svModel.NeedScriptRedraw)
                         Model.DisplayScript(Model.CurMainTree.Script);
 
                     // Script
-                    if (!old_Script_EnableCache && Global.Setting.Script.EnableCache)
+                    if (svModel.NeedScriptCaching)
                         Model.StartScriptCaching();
                 }
             }
