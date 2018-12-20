@@ -79,10 +79,10 @@ namespace PEBakery.Core
         }
 
         // Expose _projectNames and _compatDict to public
-        public List<string> ProjectNames => FullyLoaded ? 
-            ProjectList.Select(x => x.ProjectName).ToList() : 
+        public List<string> ProjectNames => FullyLoaded ?
+            ProjectList.Select(x => x.ProjectName).ToList() :
             new List<string>(_projectNames);
-        public Dictionary<string, CompatOption> CompatOptions => FullyLoaded ? 
+        public Dictionary<string, CompatOption> CompatOptions => FullyLoaded ?
             ProjectList.ToDictionary(x => x.ProjectName, x => x.Compat) :
             new Dictionary<string, CompatOption>(_compatDict, StringComparer.OrdinalIgnoreCase);
 

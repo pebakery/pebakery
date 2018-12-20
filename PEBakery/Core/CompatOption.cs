@@ -111,8 +111,8 @@ namespace PEBakery.Core
 
         #region ReadFromFile, WriteToFile
         public void ReadFromFile()
-        
-{
+
+        {
             // Use default value if key/value does not exist or malformed.
             SetToDefault();
 
@@ -222,7 +222,7 @@ namespace PEBakery.Core
         public Dictionary<string, bool> Diff(CompatOption other)
         {
             return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
-            { 
+            {
                 // Asterisk
                 [nameof(AsteriskBugDirCopy)] = AsteriskBugDirCopy != other.AsteriskBugDirCopy,
                 [nameof(AsteriskBugDirLink)] = AsteriskBugDirLink != other.AsteriskBugDirLink,

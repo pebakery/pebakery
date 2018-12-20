@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,7 +101,7 @@ namespace PEBakery.WPF
                 {
                     _m.WriteToSetting();
                     _m.WriteToFile();
-                    
+
                     _m.Setting.ApplySetting();
                 });
                 DialogResult = true;
@@ -336,9 +335,9 @@ namespace PEBakery.WPF
             Setting = setting;
             Projects = projects;
 
-            ProjectNames = new ObservableCollection<string>();
+            ProjectNames = new ObservableCollection<string>(Projects.Select(p => p.ProjectName));
             ProjectSourceDirs = new ObservableCollection<string>();
-            
+
             ReadFromSetting();
         }
         #endregion
@@ -354,13 +353,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Project
-        private readonly object _projectNamesLock = new object();
-        private ObservableCollection<string> _projectNames;
-        public ObservableCollection<string> ProjectNames
-        {
-            get => _projectNames;
-            set => SetCollectionProperty(ref _projectNames, _projectNamesLock, value);
-        }
+        public ObservableCollection<string> ProjectNames { get; private set; }
 
         private int _projectDefaultIndex;
         public int DefaultProjectIndex
@@ -403,19 +396,19 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (0 <= SelectedProjectIndex && SelectedProjectIndex < ProjectNames.Count)
+                if (0 <= SelectedProjectIndex && SelectedProjectIndex < Projects.Count)
                     return Projects[SelectedProjectIndex];
                 else
                     return null;
             }
         }
-        
+
         private readonly object _projectSourceDirsLock = new object();
         private ObservableCollection<string> _projectSourceDirs;
         public ObservableCollection<string> ProjectSourceDirs
         {
             get => _projectSourceDirs;
-            set => SetCollectionProperty(ref _projectSourceDirs, _projectSourceDirsLock, value); 
+            set => SetCollectionProperty(ref _projectSourceDirs, _projectSourceDirsLock, value);
         }
 
         private int _projectSourceDirIndex;
@@ -497,7 +490,7 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-        
+
         #region Property - General
         private bool _generalOptimizeCode;
         public bool GeneralOptimizeCode
@@ -753,7 +746,13 @@ namespace PEBakery.WPF
         public bool CompatIgnoreWidthOfWebLabel
         {
             get => _compatIgnoreWidthOfWebLabel;
-            set => SetProperty(ref _compatIgnoreWidthOfWebLabel, value);
+            set
+            {
+                if (_compatIgnoreWidthOfWebLabel != value)
+                    NeedScriptRedraw = true;
+                _compatIgnoreWidthOfWebLabel = value;
+                OnPropertyUpdate();
+            }
         }
 
         // Variable
@@ -789,22 +788,12 @@ namespace PEBakery.WPF
         #region LoadProjectEntries
         public void LoadProjectEntries()
         {
-            // Project Names
-            ProjectNames.Clear();
-            bool foundDefault = false;
-            List<string> pNames = Projects.ProjectNames;
-            for (int i = 0; i < pNames.Count; i++)
-            {
-                ProjectNames.Add(pNames[i]);
-                if (pNames[i].Equals(Setting.Project.DefaultProject, StringComparison.OrdinalIgnoreCase))
-                {
-                    foundDefault = true;
-                    SelectedProjectIndex = DefaultProjectIndex = i;
-                }
-            }
-
-            if (!foundDefault)
+            // Select default project
+            int idx = Projects.IndexOf(Setting.Project.DefaultProject);
+            if (idx == -1)
                 SelectedProjectIndex = DefaultProjectIndex = Projects.Count - 1;
+            else
+                SelectedProjectIndex = idx;
 
             // Compat Options
             _compatOptions.Clear();
@@ -819,7 +808,7 @@ namespace PEBakery.WPF
         #region LoadSelectedProject
         public async void LoadSelectedProject(int newValue, Project oldProject)
         {
-            if (newValue < 0 || ProjectNames.Count <= newValue)
+            if (newValue < 0 || Projects.Count <= newValue)
                 return;
 
             await Task.Run(() =>
