@@ -303,7 +303,10 @@ namespace PEBakery.Core.Commands
                         s.Project.SortAllScripts();
 
                         // Update MainWindow.MainTree and redraw Script
-                        s.MainViewModel.UpdateScriptTree(s.Project, false, false);
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            s.MainViewModel.UpdateScriptTree(s.Project, false, false);
+                        });
                         foreach (Script sc in newScripts)
                         {
                             if (s.MainViewModel.CurMainTree != null && sc.Equals(s.MainViewModel.CurMainTree.Script))
