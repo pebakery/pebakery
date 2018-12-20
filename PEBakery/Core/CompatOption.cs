@@ -71,6 +71,18 @@ namespace PEBakery.Core
 
             ReadFromFile();
         }
+
+        /// <summary>
+        /// Used for cloning
+        /// </summary>
+        /// <param name="compatFile"></param>
+        /// <param name="src"></param>
+        private CompatOption(string compatFile, CompatOption src)
+        {
+            _compatFile = compatFile;
+
+            src.CopyTo(this);
+        }
         #endregion
 
         #region SetToDefault
@@ -100,7 +112,8 @@ namespace PEBakery.Core
 
         #region ReadFromFile, WriteToFile
         public void ReadFromFile()
-        {
+        
+{
             // Use default value if key/value does not exist or malformed.
             SetToDefault();
 
@@ -172,6 +185,37 @@ namespace PEBakery.Core
                 new IniKey(SectionName, nameof(DisableExtendedSectionParams), DisableExtendedSectionParams.ToString()), // Boolean
             };
             IniReadWriter.WriteKeys(_compatFile, keys);
+        }
+        #endregion
+
+        #region CopyFrom
+        public void CopyTo(CompatOption dest)
+        {
+            // Asterisk
+            dest.AsteriskBugDirCopy = AsteriskBugDirCopy;
+            dest.AsteriskBugDirLink = AsteriskBugDirLink;
+            // Command
+            dest.FileRenameCanMoveDir = FileRenameCanMoveDir;
+            dest.AllowLetterInLoop = AllowLetterInLoop;
+            dest.LegacyBranchCondition = LegacyBranchCondition;
+            dest.LegacyRegWrite = LegacyRegWrite;
+            dest.AllowSetModifyInterface = AllowSetModifyInterface;
+            dest.LegacyInterfaceCommand = LegacyInterfaceCommand;
+            dest.LegacySectionParamCommand = LegacySectionParamCommand;
+            // Script Interface
+            dest.IgnoreWidthOfWebLabel = IgnoreWidthOfWebLabel;
+            // Variable
+            dest.OverridableFixedVariables = OverridableFixedVariables;
+            dest.OverridableLoopCounter = OverridableLoopCounter;
+            dest.EnableEnvironmentVariables = EnableEnvironmentVariables;
+            dest.DisableExtendedSectionParams = DisableExtendedSectionParams;
+        }
+        #endregion
+
+        #region Clone
+        public CompatOption Clone()
+        {
+            return new CompatOption(_compatFile, this);
         }
         #endregion
     }

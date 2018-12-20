@@ -48,6 +48,11 @@ namespace PEBakery.Core
 
             public string DefaultProject;
 
+            public ProjectSetting()
+            {
+                Default();
+            }
+
             public void Default()
             {
                 DefaultProject = string.Empty;

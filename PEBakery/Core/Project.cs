@@ -59,7 +59,24 @@ namespace PEBakery.Core
         // Auto properties
         public string ProjectRoot { get; }
         public List<Project> ProjectList { get; } = new List<Project>();
-        public bool FullyLoaded { get; private set; } = false;
+
+        private bool _fullyLoaded = false;
+        public bool FullyLoaded
+        {
+            get => _fullyLoaded;
+            set
+            {
+                _fullyLoaded = value;
+                if (value)
+                { // Load cleanup
+                    _projectNames.Clear();
+                    _spiDict.Clear();
+                    _compatDict.Clear();
+                    _allProjectScripts.Clear();
+                    _allScriptPaths.Clear();
+                }
+            }
+        }
 
         // Expose _projectNames and _compatDict to public
         public List<string> ProjectNames => FullyLoaded ? 
@@ -381,14 +398,6 @@ namespace PEBakery.Core
                     $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
-            }
-            finally
-            { // Load cleanup
-                _projectNames.Clear();
-                _spiDict.Clear();
-                _compatDict.Clear();
-                _allProjectScripts.Clear();
-                _allScriptPaths.Clear();
             }
 
             return logs;

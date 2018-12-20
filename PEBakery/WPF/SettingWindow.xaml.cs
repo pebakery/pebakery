@@ -33,7 +33,9 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +48,7 @@ namespace PEBakery.WPF
     // ReSharper disable once RedundantExtendsListEntry
     public partial class SettingWindow : Window
     {
-        #region Field and Constructor
+        #region Fields and Constructor
         private readonly SettingViewModel _m;
 
         public SettingWindow(SettingViewModel model)
@@ -61,7 +63,7 @@ namespace PEBakery.WPF
         {
             _m.UpdateCacheDbState();
             _m.UpdateLogDbState();
-            _m.UpdateProjectNames();
+            _m.LoadProjectEntries();
         }
         #endregion
 
@@ -96,7 +98,10 @@ namespace PEBakery.WPF
             {
                 await Task.Run(() =>
                 {
+                    _m.WriteToSetting();
                     _m.WriteToFile();
+                    
+                    _m.Setting.ApplySetting();
                 });
                 DialogResult = true;
             }
@@ -154,7 +159,7 @@ namespace PEBakery.WPF
                 _m.ProjectSourceDirs.Clear();
 
                 int idx = _m.SelectedProjectIndex;
-                string fullPath = Global.Projects[idx].MainScript.RealPath;
+                string fullPath = _m.Projects[idx].MainScript.RealPath;
                 IniReadWriter.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
             }
             finally
@@ -169,7 +174,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                 {
                     SelectedPath = _m.ProjectTargetDir,
                 };
@@ -321,15 +326,18 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         public Setting Setting { get; }
+        public ProjectCollection Projects { get; }
+        private bool _firstLoad = true;
 
-        public SettingViewModel(Setting setting)
+        public SettingViewModel(Setting setting, ProjectCollection projects)
         {
             Setting = setting;
+            Projects = projects;
+
+            ProjectNames = new ObservableCollection<string>();
             ProjectSourceDirs = new ObservableCollection<string>();
-
-            ReadFromFile();
-
-            ApplySetting();
+            
+            ReadFromSetting();
         }
         #endregion
 
@@ -337,12 +345,19 @@ namespace PEBakery.WPF
         public bool CanExecuteCommand { get; set; } = true;
         #endregion
 
+        #region Need Flags
+        public bool NeedProjectRefresh { get; private set; }
+        public bool NeedScriptRedraw { get; private set; }
+        public bool NeedScriptCaching { get; private set; }
+        #endregion
+
         #region Property - Project
-        private ObservableCollection<string> _projectNames = new ObservableCollection<string>();
+        private readonly object _projectNamesLock = new object();
+        private ObservableCollection<string> _projectNames;
         public ObservableCollection<string> ProjectNames
         {
             get => _projectNames;
-            set => SetProperty(ref _projectNames, value);
+            set => SetCollectionProperty(ref _projectNames, _projectNamesLock, value);
         }
 
         private int _projectDefaultIndex;
@@ -362,7 +377,7 @@ namespace PEBakery.WPF
             get
             {
                 if (0 <= SelectedProjectIndex && SelectedProjectIndex < ProjectNames.Count)
-                    return Global.Projects[DefaultProjectIndex];
+                    return Projects[DefaultProjectIndex];
                 else
                     return null;
             }
@@ -382,56 +397,12 @@ namespace PEBakery.WPF
             }
         }
 
-        public async void LoadSelectedProject(int newValue, Project oldProject)
-        {
-            if (newValue < 0 || ProjectNames.Count <= newValue)
-                return;
-
-            await Task.Run(() =>
-            {
-                // Project 
-                Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
-
-                // SourceDir
-                ProjectSourceDirs.Clear();
-                if (infoDict.ContainsKey("SourceDir"))
-                {
-                    string valStr = infoDict["SourceDir"];
-                    foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
-                    {
-                        string dir = rawDir.Trim();
-                        if (0 < dir.Length)
-                            ProjectSourceDirs.Add(dir);
-                    }
-                }
-                if (0 < ProjectSourceDirs.Count)
-                    ProjectSourceDirIndex = 0;
-
-                // TargetDir
-                if (infoDict.ContainsKey("TargetDir"))
-                    ProjectTargetDir = infoDict["TargetDir"];
-                else
-                    ProjectTargetDir = string.Empty;
-
-                // ISOFile
-                if (infoDict.ContainsKey("ISOFile"))
-                    ProjectIsoFile = infoDict["ISOFile"];
-                else
-                    ProjectIsoFile = string.Empty;
-
-                // Compat Options
-                if (!oldProject.Equals(SelectedProject))
-                    SaveCompatOption(oldProject.Compat);
-                LoadCompatOption(SelectedProject.Compat);
-            });
-        }
-
         public Project SelectedProject
         {
             get
             {
                 if (0 <= SelectedProjectIndex && SelectedProjectIndex < ProjectNames.Count)
-                    return Global.Projects[SelectedProjectIndex];
+                    return Projects[SelectedProjectIndex];
                 else
                     return null;
             }
@@ -526,88 +497,104 @@ namespace PEBakery.WPF
         #endregion
         
         #region Property - General
+        private bool _generalOptimizeCode;
         public bool GeneralOptimizeCode
         {
-            get => Setting.General.OptimizeCode;
-            set => SetProperty(ref Setting.General.OptimizeCode, value);
+            get => _generalOptimizeCode;
+            set => SetProperty(ref _generalOptimizeCode, value);
         }
 
+        private bool _generalShowLogAfterBuild;
         public bool GeneralShowLogAfterBuild
         {
-            get => Setting.General.ShowLogAfterBuild;
-            set => SetProperty(ref Setting.General.ShowLogAfterBuild, value);
+            get => _generalShowLogAfterBuild;
+            set => SetProperty(ref _generalShowLogAfterBuild, value);
         }
 
+        private bool _generalStopBuildOnError;
         public bool GeneralStopBuildOnError
         {
-            get => Setting.General.StopBuildOnError;
-            set => SetProperty(ref Setting.General.StopBuildOnError, value);
+            get => _generalStopBuildOnError;
+            set => SetProperty(ref _generalStopBuildOnError, value);
         }
 
+        private bool _generalEnableLongFilePath;
         public bool GeneralEnableLongFilePath
         {
-            get => Setting.General.EnableLongFilePath;
-            set => SetProperty(ref Setting.General.EnableLongFilePath, value);
+            get => _generalEnableLongFilePath;
+            set => SetProperty(ref _generalEnableLongFilePath, value);
         }
 
+        private bool _generalUseCustomUserAgent;
         public bool GeneralUseCustomUserAgent
         {
-            get => Setting.General.UseCustomUserAgent;
-            set => SetProperty(ref Setting.General.UseCustomUserAgent, value);
+            get => _generalUseCustomUserAgent;
+            set => SetProperty(ref _generalUseCustomUserAgent, value);
         }
 
+        private string _generalCustomUserAgent;
         public string GeneralCustomUserAgent
         {
-            get => Setting.General.CustomUserAgent;
-            set => SetProperty(ref Setting.General.CustomUserAgent, value);
+            get => _generalCustomUserAgent;
+            set => SetProperty(ref _generalCustomUserAgent, value);
         }
         #endregion
 
         #region Property - Interface
+        private FontHelper.FontInfo _interfaceMonospacedFont;
         public FontHelper.FontInfo InterfaceMonospacedFont
         {
-            get => Setting.Interface.MonospacedFont;
-            set => SetProperty(ref Setting.Interface.MonospacedFont, value);
+            get => _interfaceMonospacedFont;
+            set => SetProperty(ref _interfaceMonospacedFont, value);
         }
 
+        private int _interfaceScaleFactor;
         public double InterfaceScaleFactor
         {
-            get => Setting.Interface.ScaleFactor;
+            get => _interfaceScaleFactor;
             set
             {
-                Setting.Interface.ScaleFactor = (int)value;
+                int newVal = (int)value;
+                if (_interfaceScaleFactor != newVal)
+                    NeedScriptRedraw = true;
+                _interfaceScaleFactor = newVal;
                 OnPropertyUpdate(nameof(InterfaceScaleFactor));
             }
         }
 
+        private bool _interfaceUseCustomEditor;
         public bool InterfaceUseCustomEditor
         {
-            get => Setting.Interface.UseCustomEditor;
-            set => SetProperty(ref Setting.Interface.UseCustomEditor, value);
+            get => _interfaceUseCustomEditor;
+            set => SetProperty(ref _interfaceUseCustomEditor, value);
         }
 
+        private string _interfaceCustomEditorPath;
         public string InterfaceCustomEditorPath
         {
-            get => Setting.Interface.CustomEditorPath;
-            set => SetProperty(ref Setting.Interface.CustomEditorPath, value);
+            get => _interfaceCustomEditorPath;
+            set => SetProperty(ref _interfaceCustomEditorPath, value);
         }
 
+        private bool _interfaceDisplayShellExecuteConOut;
         public bool InterfaceDisplayShellExecuteConOut
         {
-            get => Setting.Interface.DisplayShellExecuteConOut;
-            set => SetProperty(ref Setting.Interface.DisplayShellExecuteConOut, value);
+            get => _interfaceDisplayShellExecuteConOut;
+            set => SetProperty(ref _interfaceDisplayShellExecuteConOut, value);
         }
 
+        private bool _interfaceUseCustomTitle;
         public bool InterfaceUseCustomTitle
         {
-            get => Setting.Interface.UseCustomTitle;
-            set => SetProperty(ref Setting.Interface.UseCustomTitle, value);
+            get => _interfaceUseCustomTitle;
+            set => SetProperty(ref _interfaceUseCustomTitle, value);
         }
 
+        private string _interfaceCustomTitle;
         public string InterfaceCustomTitle
         {
-            get => Setting.Interface.CustomTitle;
-            set => SetProperty(ref Setting.Interface.CustomTitle, value);
+            get => _interfaceCustomTitle;
+            set => SetProperty(ref _interfaceCustomTitle, value);
         }
         #endregion
 
@@ -619,16 +606,24 @@ namespace PEBakery.WPF
             set => SetProperty(ref _scriptCacheState, value);
         }
 
+        private bool _scriptEnableCache;
         public bool ScriptEnableCache
         {
-            get => Setting.Script.EnableCache;
-            set => SetProperty(ref Setting.Script.EnableCache, value);
+            get => _scriptEnableCache;
+            set
+            {
+                if (!_scriptEnableCache && value) // Was false, now true
+                    NeedScriptCaching = true; // Notify caller "You should generate cache!"
+                _scriptEnableCache = value;
+                OnPropertyUpdate(nameof(ScriptEnableCache));
+            }
         }
 
+        private bool _scriptAutoSyntaxCheck;
         public bool ScriptAutoSyntaxCheck
         {
-            get => Setting.Script.AutoSyntaxCheck;
-            set => SetProperty(ref Setting.Script.AutoSyntaxCheck, value);
+            get => _scriptAutoSyntaxCheck;
+            set => SetProperty(ref _scriptAutoSyntaxCheck, value);
         }
         #endregion
 
@@ -647,30 +642,45 @@ namespace PEBakery.WPF
             LogDebugLevel.PrintExceptionStackTrace.ToString()
         };
 
+        private LogDebugLevel _logDebugLevel;
         public int LogDebugLevelIndex
         {
-            get => (int)Setting.Log.DebugLevel;
+            get => (int)_logDebugLevel;
             set
             {
-                Setting.Log.DebugLevel = (LogDebugLevel)value;
+                _logDebugLevel = (LogDebugLevel)value;
                 OnPropertyUpdate(nameof(LogDebugLevelIndex));
             }
         }
 
+        private bool _logDeferredLogging;
         public bool LogDeferredLogging
         {
-            get => Global.Setting.Log.DeferredLogging;
-            set => SetProperty(ref Global.Setting.Log.DeferredLogging, value);
+            get => _logDeferredLogging;
+            set => SetProperty(ref _logDeferredLogging, value);
         }
 
+        private bool _logMinifyHtmlExport;
         public bool LogMinifyHtmlExport
         {
-            get => Global.Setting.Log.MinifyHtmlExport;
-            set => SetProperty(ref Global.Setting.Log.MinifyHtmlExport, value);
+            get => _logMinifyHtmlExport;
+            set => SetProperty(ref _logMinifyHtmlExport, value);
         }
         #endregion
 
         #region Property - Compatibility
+        private readonly List<CompatOption> _compatOptions = new List<CompatOption>();
+        public CompatOption SelectedCompatOption
+        {
+            get
+            {
+                if (_compatOptions != null && 0 <= SelectedProjectIndex && SelectedProjectIndex < _compatOptions.Count)
+                    return _compatOptions[SelectedProjectIndex];
+                else
+                    return null;
+            }
+        }
+
         // Asterisk
         private bool _compatAsteriskBugDirCopy;
         public bool CompatAsteriskBugDirCopy
@@ -774,6 +784,86 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region LoadProjectEntries
+        public void LoadProjectEntries()
+        {
+            // Project Names
+            ProjectNames.Clear();
+            bool foundDefault = false;
+            List<string> pNames = Projects.ProjectNames;
+            for (int i = 0; i < pNames.Count; i++)
+            {
+                ProjectNames.Add(pNames[i]);
+                if (pNames[i].Equals(Setting.Project.DefaultProject, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundDefault = true;
+                    SelectedProjectIndex = DefaultProjectIndex = i;
+                }
+            }
+
+            if (!foundDefault)
+                SelectedProjectIndex = DefaultProjectIndex = Projects.Count - 1;
+
+            // Compat Options
+            _compatOptions.Clear();
+            foreach (Project p in Projects)
+            {
+                CompatOption compat = p.Compat.Clone();
+                _compatOptions.Add(compat);
+            }
+        }
+        #endregion
+
+        #region LoadSelectedProject
+        public async void LoadSelectedProject(int newValue, Project oldProject)
+        {
+            if (newValue < 0 || ProjectNames.Count <= newValue)
+                return;
+
+            await Task.Run(() =>
+            {
+                // Project 
+                Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
+
+                // SourceDir
+                ProjectSourceDirs.Clear();
+                if (infoDict.ContainsKey("SourceDir"))
+                {
+                    string valStr = infoDict["SourceDir"];
+                    foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
+                    {
+                        string dir = rawDir.Trim();
+                        if (0 < dir.Length)
+                            ProjectSourceDirs.Add(dir);
+                    }
+                }
+                if (0 < ProjectSourceDirs.Count)
+                    ProjectSourceDirIndex = 0;
+
+                // TargetDir
+                if (infoDict.ContainsKey("TargetDir"))
+                    ProjectTargetDir = infoDict["TargetDir"];
+                else
+                    ProjectTargetDir = string.Empty;
+
+                // ISOFile
+                if (infoDict.ContainsKey("ISOFile"))
+                    ProjectIsoFile = infoDict["ISOFile"];
+                else
+                    ProjectIsoFile = string.Empty;
+
+                // Compat Options
+                if (_firstLoad && !oldProject.Equals(SelectedProject))
+                    SaveCompatOption(SelectedProject.Compat);
+                CompatOption compat = SelectedCompatOption;
+                Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
+                LoadCompatOption(compat);
+
+                _firstLoad = false;
+            });
+        }
+        #endregion
+
         #region LoadCompatOption, SaveCompatOption
         public void LoadCompatOption(CompatOption compat)
         {
@@ -823,44 +913,162 @@ namespace PEBakery.WPF
         #region SetToDefault
         public void SetToDefault()
         {
-            Setting.SetToDefault();
-            foreach (Project p in Global.Projects)
-                p.Compat.SetToDefault();
+            // When constructor of `Setting`'s subclass is called, default values are set.
+
+            // [Projects]
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            Setting.ProjectSetting newProject = new Setting.ProjectSetting();
+            string defaultProjectName = newProject.DefaultProject;
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
+
+            // [General]
+            Setting.GeneralSetting newGeneral = new Setting.GeneralSetting();
+            GeneralOptimizeCode = newGeneral.OptimizeCode;
+            GeneralShowLogAfterBuild = newGeneral.ShowLogAfterBuild;
+            GeneralStopBuildOnError = newGeneral.StopBuildOnError;
+            GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
+            GeneralUseCustomUserAgent = newGeneral.UseCustomUserAgent;
+
+            // [Interface]
+            Setting.InterfaceSetting newInterface = new Setting.InterfaceSetting();
+            InterfaceMonospacedFont = newInterface.MonospacedFont;
+            InterfaceScaleFactor = newInterface.ScaleFactor;
+            InterfaceUseCustomEditor = newInterface.UseCustomEditor;
+            InterfaceCustomEditorPath = newInterface.CustomEditorPath;
+            InterfaceDisplayShellExecuteConOut = newInterface.DisplayShellExecuteConOut;
+            InterfaceUseCustomTitle = newInterface.UseCustomTitle;
+            InterfaceCustomTitle = newInterface.CustomTitle;
+
+            // [Script]
+            Setting.ScriptSetting newScript = new Setting.ScriptSetting();
+            ScriptEnableCache = newScript.EnableCache;
+            ScriptAutoSyntaxCheck = newScript.AutoSyntaxCheck;
+
+            // [Log]
+            Setting.LogSetting newLog = new Setting.LogSetting();
+            LogDebugLevelIndex = (int)newLog.DebugLevel;
+            LogDeferredLogging = newLog.DeferredLogging;
+            LogMinifyHtmlExport = newLog.MinifyHtmlExport;
+
+            // Reset need flags
+            ResetNeedFlags();
+
+            // Do not touch compat options.
+            // TODO: The right way to handle compat options?
+        }
+
+        public void ResetNeedFlags()
+        {
+            NeedProjectRefresh = false;
+            NeedScriptRedraw = false;
+            NeedScriptCaching = false;
         }
         #endregion
 
-        #region ApplySetting
-        public void ApplySetting()
+        #region ReadFromSetting, WriteToSetting, WriteToFile
+        public void ReadFromSetting()
         {
-            Setting.ApplySetting();
-        }
-        #endregion
-
-        #region ReadFromFile, WriteToFile
-        public void ReadFromFile()
-        {
-            Setting.ReadFromFile();
-            foreach (Project p in Global.Projects)
-                p.Compat.ReadFromFile();
-
+            // [Projects]
             // Select default project
             // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
             string defaultProjectName = Setting.Project.DefaultProject;
-            int defaultProjectIdx = Global.Projects.IndexOf(defaultProjectName);
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
             if (defaultProjectIdx == -1)
-                DefaultProjectIndex = Global.Projects.Count - 1;
+                DefaultProjectIndex = Projects.Count - 1;
             else
                 DefaultProjectIndex = defaultProjectIdx;
+
+            // [General]
+            GeneralOptimizeCode = Setting.General.OptimizeCode;
+            GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
+            GeneralStopBuildOnError = Setting.General.StopBuildOnError;
+            GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
+            GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
+
+            // [Interface]
+            InterfaceMonospacedFont = Setting.Interface.MonospacedFont;
+            InterfaceScaleFactor = Setting.Interface.ScaleFactor;
+            InterfaceUseCustomEditor = Setting.Interface.UseCustomEditor;
+            InterfaceCustomEditorPath = Setting.Interface.CustomEditorPath;
+            InterfaceDisplayShellExecuteConOut = Setting.Interface.DisplayShellExecuteConOut;
+            InterfaceUseCustomTitle = Setting.Interface.UseCustomTitle;
+            InterfaceCustomTitle = Setting.Interface.CustomTitle;
+
+            // [Script]
+            ScriptEnableCache = Setting.Script.EnableCache;
+            ScriptAutoSyntaxCheck = Setting.Script.AutoSyntaxCheck;
+
+            // [Log]
+            LogDebugLevelIndex = (int)Setting.Log.DebugLevel;
+            LogDeferredLogging = Setting.Log.DeferredLogging;
+            LogMinifyHtmlExport = Setting.Log.MinifyHtmlExport;
+
+            ResetNeedFlags();
+        }
+
+        public void WriteToSetting()
+        {
+            // Set default project
+            Project defaultProject = DefaultProject;
+            Setting.Project.DefaultProject = defaultProject != null ? defaultProject.ProjectName : string.Empty;
+
+            // [Projects]
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            string defaultProjectName = Setting.Project.DefaultProject;
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
+
+            // [General]
+            Setting.General.OptimizeCode = GeneralOptimizeCode;
+            Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
+            Setting.General.StopBuildOnError = GeneralStopBuildOnError;
+            Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
+            Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
+
+            // [Interface]
+            Setting.Interface.MonospacedFont = InterfaceMonospacedFont;
+            Setting.Interface.ScaleFactor = _interfaceScaleFactor; // Need int, not double
+            Setting.Interface.UseCustomEditor = InterfaceUseCustomEditor;
+            Setting.Interface.CustomEditorPath = InterfaceCustomEditorPath;
+            Setting.Interface.DisplayShellExecuteConOut = InterfaceDisplayShellExecuteConOut;
+            Setting.Interface.UseCustomTitle = InterfaceUseCustomTitle;
+            Setting.Interface.CustomTitle = InterfaceCustomTitle;
+
+            // [Script]
+            Setting.Script.EnableCache = ScriptEnableCache;
+            Setting.Script.AutoSyntaxCheck = ScriptAutoSyntaxCheck;
+
+            // [Log]
+            Setting.Log.DebugLevel = _logDebugLevel; // LogDebugLevel
+            Setting.Log.DeferredLogging = LogDeferredLogging;
+            Setting.Log.MinifyHtmlExport = LogMinifyHtmlExport;
+
+            // Compat options
+            if (SelectedProject != null)
+                SaveCompatOption(SelectedProject.Compat);
+            for (int i = 0; i < _compatOptions.Count; i++)
+            {
+                CompatOption compat = _compatOptions[i];
+                Project p = Projects[i];
+
+                compat.CopyTo(p.Compat);
+            }
         }
 
         public void WriteToFile()
         {
-            // Set default project
-            Setting.Project.DefaultProject = DefaultProject != null ? DefaultProject.ProjectName : string.Empty;
-
+            // Write to file
             Setting.WriteToFile();
-            SaveCompatOption(SelectedProject.Compat);
-            foreach (Project p in Global.Projects)
+            foreach (Project p in Projects)
                 p.Compat.WriteToFile();
         }
         #endregion
@@ -913,30 +1121,6 @@ namespace PEBakery.WPF
                 int cacheCount = Global.ScriptCache.Table<DB_ScriptCache>().Count();
                 ScriptCacheState = $"{cacheCount} scripts cached";
             }
-        }
-        #endregion
-
-        #region UpdateProjectList
-        public void UpdateProjectNames()
-        {
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                bool foundDefault = false;
-                List<string> pNames = Global.Projects.ProjectNames;
-                ProjectNames.Clear();
-                for (int i = 0; i < pNames.Count; i++)
-                {
-                    ProjectNames.Add(pNames[i]);
-                    if (pNames[i].Equals(Setting.Project.DefaultProject, StringComparison.OrdinalIgnoreCase))
-                    {
-                        foundDefault = true;
-                        SelectedProjectIndex = DefaultProjectIndex = i;
-                    }
-                }
-
-                if (!foundDefault)
-                    SelectedProjectIndex = DefaultProjectIndex = Global.Projects.Count - 1;
-            });
         }
         #endregion
     }

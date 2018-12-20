@@ -192,13 +192,10 @@ namespace PEBakery.WPF
             bool old_Compat_EnableEnvironmentVariables = p.Compat.EnableEnvironmentVariables;
             bool old_Script_EnableCache = Global.Setting.Script.EnableCache;
 
-            SettingViewModel svModel = new SettingViewModel(Global.Setting);
+            SettingViewModel svModel = new SettingViewModel(Global.Setting, Global.Projects);
             SettingWindow dialog = new SettingWindow(svModel) { Owner = this };
             if (dialog.ShowDialog() == true)
-            {
-                // Apply
-                Global.Setting.ApplySetting();
-
+            { // If SettingWindow returns true in DialogResult, refresh project
                 // Refresh Projects
                 if (old_Compat_AsteriskBugDirLink != p.Compat.AsteriskBugDirLink ||
                     old_Compat_OverridableFixedVariables != p.Compat.OverridableFixedVariables ||
