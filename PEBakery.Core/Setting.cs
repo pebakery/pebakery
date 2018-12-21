@@ -82,8 +82,10 @@ namespace PEBakery.Core
                 StopBuildOnError = true;
                 EnableLongFilePath = false;
                 UseCustomUserAgent = false;
-                // Custom User-Agent is set to Edge's on Windows 10 v1809
+                // Default custom User-Agent is set to Edge's on Windows 10 v1809
                 CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
+                // Or Firefox 64?
+                // Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0
             }
         }
 
@@ -110,12 +112,12 @@ namespace PEBakery.Core
 
             public void Default()
             {
-                // Interface
-                // Every Windows PC has Consolas pre-installed
+                // Every Windows PC has Consolas pre-installed.
                 MonospacedFont = new FontHelper.FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
                 UseCustomEditor = false;
+                // Every Windows PC has notepad pre-installed.
                 CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
                 UseCustomTitle = false;
                 CustomTitle = string.Empty;
@@ -302,7 +304,7 @@ namespace PEBakery.Core
                 int monoFontSize = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, -1);
                 Interface.MonospacedFont = new FontHelper.FontInfo(monoFontFamily, monoFontWeight, monoFontSize);
 
-                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), (int)Interface.ScaleFactor, 100, 200);
+                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 100, 200);
                 Interface.UseCustomEditor = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
                 Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
                 Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);

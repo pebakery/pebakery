@@ -25,10 +25,7 @@
 */
 
 using System;
-using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,9 +34,8 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
-namespace PEBakery.WPF.Controls
+namespace PEBakery.Core.UIControls
 {
     /// <summary>
     /// Interaction logic for ModalDialog.xaml
@@ -222,7 +218,7 @@ namespace PEBakery.WPF.Controls
             TimeoutSecond = timeout;
             if (timeout == 0)
             { // No Timeout
-                
+
                 TextBlock_Timeout.Visibility = Visibility.Collapsed;
                 ProgressBar_Timeout.Visibility = Visibility.Collapsed;
             }

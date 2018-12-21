@@ -133,10 +133,6 @@
     <Compile Include="WPF\Controls\IconButton.cs" />
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
-    <Compile Include="WPF\Controls\CustomMessageBox.cs" />
-    <Compile Include="WPF\Controls\CustomMessageBoxWindow.xaml.cs">
-      <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WPF\Controls\DragCanvas.cs" />
     <Compile Include="WPF\Controls\NumberBox.xaml.cs">
       <DependentUpon>NumberBox.xaml</DependentUpon>
@@ -162,15 +158,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WPF\Controls\CustomMessageBoxWindow.xaml">
+    <Page Include="WPF\Controls\Donut.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="WPF\Controls\NumberBox.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="WPF\Controls\Donut.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -284,12 +276,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\LicenseSimple.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\BuildLogHtmlTemplate.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

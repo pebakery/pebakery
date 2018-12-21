@@ -26,7 +26,7 @@
 
 using System.Windows;
 
-namespace PEBakery.Core.CoreControls
+namespace PEBakery.Core.UIControls
 {
     /// <summary>
     /// Displays a message box.

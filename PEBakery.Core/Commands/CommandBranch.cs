@@ -27,6 +27,7 @@
 
 using ManagedWimLib;
 using Microsoft.Win32;
+using PEBakery.Core.UIControls;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
@@ -37,13 +38,12 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows;
-using PEBakery.Core.CoreControls;
 
 namespace PEBakery.Core.Commands
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurrentParams = false, bool forceLog = false)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
@@ -62,7 +62,7 @@ namespace PEBakery.Core.Commands
 
             // Section Parameter
             Dictionary<int, string> newInParams = new Dictionary<int, string>();
-            if (preserveCurParams)
+            if (preserveCurrentParams)
             {
                 newInParams = s.CurSectionInParams;
             }

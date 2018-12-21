@@ -137,11 +137,11 @@
     <Compile Include="Commands\CommandText.cs" />
     <Compile Include="Commands\CommandWim.cs" />
     <Compile Include="CompatOption.cs" />
-    <Compile Include="CoreControls\CustomMessageBox.cs" />
-    <Compile Include="CoreControls\CustomMessageBoxWindow.xaml.cs">
+    <Compile Include="UIControls\CustomMessageBox.cs" />
+    <Compile Include="UIControls\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CoreControls\NumberBox.xaml.cs">
+    <Compile Include="UIControls\NumberBox.xaml.cs">
       <DependentUpon>NumberBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="EncodedFile.cs" />
@@ -199,11 +199,11 @@
     <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="CoreControls\CustomMessageBoxWindow.xaml">
+    <Page Include="UIControls\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="CoreControls\NumberBox.xaml">
+    <Page Include="UIControls\NumberBox.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
