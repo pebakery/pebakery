@@ -1,0 +1,410 @@
+﻿@using System.Collections.Generic;
+@using PEBakery.Core;
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+        <title>@Model.BuildName</title>
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css" integrity="sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B" crossorigin="anonymous">
+
+        <!-- Custom CSS -->
+        <style>
+            .pb-table-content {
+                font-family: monospace;
+            }
+
+            table.pb-table-content td {
+                padding: .15rem;
+            }
+
+            table.pb-table-content th {
+                padding: .15rem;
+            }
+
+            .pb-table-codes {
+                font-family: monospace;
+                font-size: 14px;
+            }
+
+            table.pb-table-codes td {
+                padding: .10rem;
+            }
+
+            table.pb-table-codes th {
+                padding: .10rem;
+            }
+
+            .pb-whitespace {
+                white-space: pre-wrap;
+            }
+
+            .pb-monospace {
+                font-family: monospace;
+            }
+
+            .pb-footer {
+                font-family: 'D2Coding', monospace;
+                text-align: center;
+            }
+
+            .text-overwrite {
+                color: #ff6600;
+            }
+
+            .table-nonfluid {
+                width: auto !important;
+                word-wrap: break-word;
+            }
+        </style>
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.1/css/all.css" integrity="sha384-O8whS3fhG2OnA5Kas0Y9l3cfpmYjapjI0E4theH4iuMD+pLhbf6JI0jIMfYcK3yZ" crossorigin="anonymous">
+    </head>
+    <body id="page-top" data-spy="scroll">
+        <h1 class="container mt-2 text-center">PEBakery Build &lt;@Model.BuildName&gt;</h1>
+
+        <!-- Summary -->
+        <header id="summary" class="container-fluid">
+            <h2 class="mt-2">Summary</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>-</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th>Start</th>
+                            <td>@Model.BuildStartTimeStr</td>
+                        </tr>
+                        <tr>
+                            <th>Finish</th>
+                            <td>@Model.BuildEndTimeStr</td>
+                        </tr>
+                        <tr>
+                            <th>Elapsed</th>
+                            <td>@Model.BuildTookTimeStr</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </header>
+
+        <!-- Statistics -->
+        <section id="statistics" class="container-fluid mt-2">
+            <h2 class="mt-2">Log Statistics</h2>
+            <table class="table table-striped table-bordered pb-table-content table-nonfluid">
+                <thead class="thead-dark text-center">
+                    <tr>
+                        <th class="text-nowrap">LogState</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in @Model.LogStats)
+                    {
+                        <tr>
+                            <th class="text-nowrap">
+                                @if (@item.State == LogState.Success)
+                                {<i class="fas fa-fw fa-check text-success"></i> }
+                                else if (@item.State == LogState.Warning)
+                                { <i class="fas fa-fw fa-exclamation-triangle text-warning"></i> }
+                                else if (@item.State == LogState.Overwrite)
+                                { <i class="fas fa-fw fa-copy text-overwrite"></i> }
+                                else if (@item.State == LogState.Error)
+                                { <i class="fas fa-fw fa-times text-danger"></i> }
+                                else if (@item.State == LogState.Info)
+                                { <i class="fas fa-fw fa-info-circle text-info"></i> }
+                                else if (@item.State == LogState.Ignore)
+                                { <i class="fas fa-fw fa-file text-muted"></i> }
+                                else if (@item.State == LogState.Muted)
+                                { <i class="fas fa-fw fa-lock text-muted"></i>}
+                                @item.State
+                            </th>
+                            <td class="text-center">@item.Count</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ErrorSummary -->
+        @if (0 < @Model.ErrorCodeDicts.Count)
+        {
+            <section id="error_summary" class="container-fluid mt-2">
+                <h2 class="mt-2">Errors</h2>
+                @foreach (var kv in @Model.ErrorCodeDicts)
+                {
+                    <span class="pb-monospace">@kv.Value.Length Error in script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                            <thead class="thead-dark text-center">
+                                <tr>
+                                    <th class="text-nowrap">State</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in @kv.Value)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap bg-danger">
+                                            <a class="text-dark" href='@string.Format("#error_{0}", @item.Item1.Href)'>
+                                                <i class="fas fa-fw fa-times"></i>@item.Item1.State
+                                            </a>
+                                        </td>
+                                        @if (@item.Item2 != null)
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message<br>@item.Item2</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+
+        <!-- WarnSummary -->
+        @if (0 < @Model.WarnCodeDicts.Count)
+        {
+            <section id="warn_summary" class="container-fluid mt-2">
+                <h2 class="mt-2">Warnings</h2>
+                @foreach (var kv in @Model.WarnCodeDicts)
+                {
+                    <span class="pb-monospace">@kv.Value.Length Warning in Script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                            <thead class="thead-dark text-center">
+                                <tr>
+                                    <th class="text-nowrap">State</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in @kv.Value)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap bg-warning">
+                                            <a class="text-dark" href='@string.Format("#warn_{0}", @item.Item1.Href)'>
+                                                <i class="fas fa-fw fa-exclamation-triangle"></i>@item.Item1.State
+                                            </a>
+                                        </td>
+                                        @if (@item.Item2 != null)
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message<br>@item.Item2</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="pb-whitespace">@item.Item1.Message</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+
+        <!-- Script -->
+        <section id="script" class="container-fluid mt-2">
+            <h2>Scripts</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-content text-center table-nonfluid">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Index</th>
+                            <th>Script</th>
+                            <th>Version</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in @Model.Scripts)
+                        {
+                            <tr class="py-1">
+                                <td>@item.Index</td>
+                                <td class="text-left"><a href="#script-@item.Index">@item.Name</a></td>
+                                <td>@item.Version</td>
+                                <td>@item.TimeStr</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Variables -->
+        <section id="vars" class="container-fluid mt-2">
+            <h2>Variables</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th class="text-nowrap">Type</th>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in @Model.Vars)
+                        {
+                            <tr>
+                                @if (@item.Type == VarsType.Fixed)
+                                {
+                                    <td class="text-nowrap text-primary">
+                                        <i class="fas fa-fw fa-lock"></i>@item.Type
+                                    </td>
+                                }
+                                else if (@item.Type == VarsType.Global)
+                                {
+                                    <td class="text-nowrap text-success">
+                                        <i class="fas fa-fw fa-globe"></i>@item.Type
+                                    </td>
+                                }
+                                <td>@item.Key</td>
+                                <td>@item.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- Code Logs -->
+        <h2 class="container-fluid mt-2">Code Logs</h2>
+        @foreach (var tup in @Model.CodeLogs)
+        {
+            <div id="script-@tup.Item1.Index" class="container-fluid mt-2">
+                <span class="pb-monospace">&#91;@tup.Item1.Index&#47;@Model.CodeLogs.Count&#93; @tup.Item1.Name &#40;@tup.Item1.Path&#41;</span>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                        <thead class="thead-dark text-center">
+                            <tr>
+                                <th class="text-nowrap">State</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in @tup.Item2)
+                            {
+                                if (@item.State == LogState.Success)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Warning)
+                                {
+                                    <tr class="table-warning" id='@string.Format("warn_{0}", @item.Href)'>
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Overwrite)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Error)
+                                {
+                                    <tr class="table-danger" id='@string.Format("error_{0}", @item.Href)'>
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Info)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap text-info"><i class="fas fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Ignore)
+                                {
+                                    <tr class="text-muted">
+                                        <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else if (@item.State == LogState.Muted)
+                                {
+                                    <tr class="text-muted">
+                                        <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td class="text-nowrap"></td>
+                                        <td class="pb-whitespace">@item.Message</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (0 < @tup.Item3.Length)
+                {
+                    <span class="pb-monospace">Local Variables of Script &#91;@tup.Item1.Name&#93;</span>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered pb-table-codes table-nonfluid">
+                            <thead class="thead-dark text-center">
+                                <tr>
+                                    <th class="text-nowrap">Type</th>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in @tup.Item3)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap text-info"><i class="fas fa-fw fa-cube"></i>Local</td>
+                                        <td>@item.Key</td>
+                                        <td>@item.Value</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <a class="float-right" href="#page-top">[ Top ]</a>
+                <div class="clearfix"></div>
+            </div>
+        }
+
+        <!-- Footer -->
+        <hr>
+        <footer class="pb-footer">
+            PEBakery @Model.PEBakeryVersion<br>
+            <a href="https://github.com/pebakery/pebakery"><i class="fab fa-github"></i> Homepage</a>
+        </footer>
+        <br>
+
+        <!-- jQuery, Bootstrap JS, Popper -->
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js" integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em" crossorigin="anonymous"></script>
+    </body>
+</html>

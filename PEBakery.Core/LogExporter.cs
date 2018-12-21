@@ -73,7 +73,7 @@ namespace PEBakery.Core
                     {
                         ExportSystemLogHtmlModel m = new ExportSystemLogHtmlModel
                         {
-                            PEBakeryVersion = Properties.Resources.StringVersionFull,
+                            PEBakeryVersion = Global.Const.StringVersionFull,
                             SysLogs = new List<SystemLogHtmlModel>(),
                         };
 
@@ -285,7 +285,7 @@ namespace PEBakery.Core
                             dbBuild.EndTime = DateTime.UtcNow;
                         ExportBuildLogHtmlModel m = new ExportBuildLogHtmlModel
                         {
-                            PEBakeryVersion = Properties.Resources.StringVersionFull,
+                            PEBakeryVersion = Global.Const.StringVersionFull,
                             BuildName = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),

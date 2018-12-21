@@ -99,6 +99,10 @@
       <Project>{0ee27887-e06a-4c64-82a0-7c496eced946}</Project>
       <Name>NativeLibraries</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PEBakery.Core\PEBakery.Core.csproj">
+      <Project>{5074499a-1310-4df0-bbbc-f5178a480f14}</Project>
+      <Name>PEBakery.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PEBakery.Helper\PEBakery.Helper.csproj">
       <Project>{3e7bbc76-70c7-4514-8750-968981267738}</Project>
       <Name>PEBakery.Helper</Name>

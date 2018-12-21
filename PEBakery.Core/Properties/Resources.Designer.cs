@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace PEBakery.Properties {
+namespace PEBakery.Core.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace PEBakery.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PEBakery.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PEBakery.Core.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,23 +61,46 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   Unless specified, PEBakery is licensed under GPLv3 or any
-        ///later version with additional permission.
+        ///   @using System.Collections.Generic;
+        ///@using PEBakery.Core;
+        ///&lt;!DOCTYPE html&gt;
+        ///&lt;html&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
         ///
-        ///Some parts of PEBakery is licensed under various license,
-        ///specified on a per-file basis or LICENSE file placed in
-        ///a subdirectory.
-        ///-----------------------------------------------------------
-        ///Copyright (C) 2016-2018 Hajin Jang
+        ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
-        ///PEBakery is free software: you can redistribute it and/or
-        ///modify it under the terms of the GNU General Public License
-        ///as published by the Free Software Foundation, either
-        ///ve[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;link rel=&quot;styles[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
-        internal static string LicenseSimple {
+        internal static string BuildLogHtmlTemplate {
             get {
-                return ResourceManager.GetString("LicenseSimple", resourceCulture);
+                return ResourceManager.GetString("BuildLogHtmlTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   @using System.Collections.Generic;
+        ///@using PEBakery.Core;
+        ///&lt;!DOCTYPE html&gt;
+        ///&lt;html&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///
+        ///        &lt;title&gt;PEBakery System Log&lt;/title&gt;
+        ///
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;link rel=&quot;sty[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string SystemLogHtmlTemplate {
+            get {
+                return ResourceManager.GetString("SystemLogHtmlTemplate", resourceCulture);
             }
         }
     }

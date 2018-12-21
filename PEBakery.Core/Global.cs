@@ -25,6 +25,9 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.IO;
+using PEBakery.Core.ViewModels;
+using SQLite;
 using System;
 using System.Globalization;
 using System.IO;
@@ -32,20 +35,25 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Input;
-using Microsoft.IO;
-using PEBakery.Core.ViewModels;
-using PEBakery.Helper;
-using SQLite;
 
 namespace PEBakery.Core
 {
     #region Global
     public static class Global
     {
+        #region Const
+
+        public static class Const
+        {
+            public const int EngineVersion = 96;
+            public const string ScriptCacheRevision = "r9";
+            public const string StringVersion = "0.9.6";
+            public const string StringVersionFull = "0.9.6 beta6";
+        }
+        #endregion
+
         #region Fields and Properties
         // Build-time constant
-        public static int Version;
         public static DateTime BuildDate;
 
         // Start-time variables
@@ -90,11 +98,7 @@ namespace PEBakery.Core
         /// </summary>
         public static void Init()
         {
-            if (!NumberHelper.ParseInt32(Properties.Resources.EngineVersion, out Version))
-            {
-                MessageBox.Show($"Invalid version [{Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
-                Environment.Exit(1);
-            }
+
 
             string baseDir = Environment.CurrentDirectory;
             for (int i = 0; i < Args.Length; i++)

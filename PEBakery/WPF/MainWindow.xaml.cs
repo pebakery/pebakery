@@ -60,8 +60,8 @@ namespace PEBakery.WPF
         #region Constructor
         public MainWindow()
         {
-            DataContext = Global.MainViewModel = new MainViewModel();
             InitializeComponent();
+            Global.MainViewModel = DataContext as MainViewModel;
 
             // Init global properties
             Global.Init();
@@ -591,10 +591,6 @@ namespace PEBakery.WPF
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);
         }
-
-
-
-
         #endregion
     }
     #endregion

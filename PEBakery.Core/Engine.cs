@@ -26,7 +26,7 @@
 */
 
 using PEBakery.Core.Commands;
-using PEBakery.WPF;
+using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,8 +37,6 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
-using PEBakery.Core.ViewModels;
 
 namespace PEBakery.Core
 {
@@ -54,7 +52,7 @@ namespace PEBakery.Core
         public EngineState s;
         private Task<int> _task;
 
-        public static readonly string DefaultUserAgent = $"PEBakery/{Properties.Resources.EngineVersion}";
+        public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.EngineVersion}";
 
         public Engine(EngineState state)
         {
@@ -135,9 +133,6 @@ namespace PEBakery.Core
 
                 Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
                 {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
-
                     s.MainViewModel.DisplayScriptLogo(sc);
 
                     if (0 < s.MainViewModel.BuildTreeItems.Count)

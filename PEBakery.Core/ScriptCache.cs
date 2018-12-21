@@ -224,9 +224,9 @@ namespace PEBakery.Core
         {
             DB_CacheRevision[] infos =
             {
-                new DB_CacheRevision { Key = EngineVersion, Value = Properties.Resources.EngineVersion },
+                new DB_CacheRevision { Key = EngineVersion, Value = Global.Const.EngineVersion.ToString("000") },
                 new DB_CacheRevision { Key = BaseDir, Value = baseDir },
-                new DB_CacheRevision { Key = CacheRevision, Value = Properties.Resources.ScriptCacheRevision },
+                new DB_CacheRevision { Key = CacheRevision, Value = Global.Const.ScriptCacheRevision },
                 new DB_CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink() },
             };
             InsertOrReplaceAll(infos);
@@ -247,11 +247,11 @@ namespace PEBakery.Core
                 return false;
 
             // Does value match? (Used Ordinal instead of OrdinalIgnoreCase for cache safety)
-            if (!infoDict[EngineVersion].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal))
+            if (!infoDict[EngineVersion].Equals(Global.Const.EngineVersion.ToString("000"), StringComparison.Ordinal))
                 return false;
             if (!infoDict[BaseDir].Equals(baseDir, StringComparison.Ordinal))
                 return false;
-            if (!infoDict[CacheRevision].Equals(Properties.Resources.ScriptCacheRevision, StringComparison.Ordinal))
+            if (!infoDict[CacheRevision].Equals(Global.Const.ScriptCacheRevision, StringComparison.Ordinal))
                 return false;
             if (!infoDict[AsteriskBugDirLink].Equals(SerializeAsteriskBugDirLink(), StringComparison.Ordinal))
                 return false;

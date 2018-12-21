@@ -27,13 +27,13 @@
 
 using MahApps.Metro.IconPacks;
 using PEBakery.Core;
+using PEBakery.Helper;
 using System;
-using System.Linq;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using PEBakery.Helper;
 
 namespace PEBakery.WPF
 {
@@ -144,6 +144,42 @@ namespace PEBakery.WPF
             throw new NotImplementedException();
         }
     }
+
+    public class ScriptTitleConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is Script sc))
+                return null;
+
+            return sc.Title;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class SelectedStateToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is Script sc))
+                return null;
+
+            return sc.Selected == SelectedState.None ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     #endregion
 
     #region SettingWindow
@@ -157,78 +193,6 @@ namespace PEBakery.WPF
                 return false;
 
             return p.IsPathSettingEnabled();
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class FontInfoDescriptionConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return string.Empty;
-            if (!(value is FontHelper.FontInfo fi))
-                return string.Empty;
-
-            return fi.ToString();
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class FontInfoFamilyConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-            if (!(value is FontHelper.FontInfo fi))
-                return null;
-
-            return fi.FontFamily;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class FontInfoWeightConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-            if (!(value is FontHelper.FontInfo fi))
-                return null;
-
-            return fi.FontWeight;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class FontInfoSizeConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-            if (!(value is FontHelper.FontInfo fi))
-                return null;
-
-            return fi.DeviceIndependentPixelSize;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -355,6 +319,80 @@ namespace PEBakery.WPF
             if (str.Contains('M'))
                 flags |= DbBuildLogFlag.Macro;
             return flags;
+        }
+    }
+    #endregion
+
+    #region FontHelper
+    public class FontInfoDescriptionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return string.Empty;
+            if (!(value is FontHelper.FontInfo fi))
+                return string.Empty;
+
+            return fi.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FontInfoFamilyConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.FontFamily;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FontInfoWeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.FontWeight;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FontInfoSizeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is FontHelper.FontInfo fi))
+                return null;
+
+            return fi.DeviceIndependentPixelSize;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
     #endregion

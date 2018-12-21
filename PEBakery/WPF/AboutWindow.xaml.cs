@@ -41,6 +41,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 
 namespace PEBakery.WPF
 {
@@ -60,67 +61,44 @@ namespace PEBakery.WPF
     }
 
     #region AboutViewModel
-    public class AboutViewModel : INotifyPropertyChanged
+    public class AboutViewModel : ViewModelBase
     {
         #region Field, Property, Constructor
-        public FontHelper.FontInfo MonoFont { get; }
-        public FontFamily MonoFontFamily => MonoFont.FontFamily;
-        public FontWeight MonoFontWeight => MonoFont.FontWeight;
-        public double MonoFontSize => MonoFont.DeviceIndependentPixelSize;
+        public FontHelper.FontInfo MonospacedFont { get; }
 
-        public AboutViewModel(FontHelper.FontInfo monoFont)
+        public AboutViewModel(FontHelper.FontInfo monospacedFont)
         {
-            MonoFont = monoFont;
+            MonospacedFont = monospacedFont;
 
-            Info_PEBakeryVersion = Properties.Resources.StringVersionFull;
-            Info_BuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
+            InfoPEBakeryVersion = Global.Const.StringVersionFull;
+            InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
 
-            License_Text = Properties.Resources.LicenseSimple;
+            LicenseText = Properties.Resources.LicenseSimple;
         }
         #endregion
 
         #region Information
-        private string info_PEBakeryVersion = string.Empty;
-        public string Info_PEBakeryVersion
+        private string _infoPEBakeryVersion = string.Empty;
+        public string InfoPEBakeryVersion
         {
-            get => info_PEBakeryVersion;
-            set
-            {
-                info_PEBakeryVersion = value;
-                OnPropertyUpdate("Info_PEBakeryBanner");
-            }
+            get => _infoPEBakeryVersion;
+            set => SetProperty(ref _infoPEBakeryVersion, value);
         }
 
-        private string info_BuildDate = string.Empty;
-        public string Info_BuildDate
+        private string _infoBuildDate = string.Empty;
+        public string InfoBuildDate
         {
-            get => info_BuildDate;
-            set
-            {
-                info_BuildDate = value;
-                OnPropertyUpdate("Info_BuildDate");
-            }
+            get => _infoBuildDate;
+            set => SetProperty(ref _infoBuildDate, value);
         }
         #endregion
 
         #region License
-        private string license_Text = string.Empty;
-        public string License_Text
+        private string _licenseText = string.Empty;
+        public string LicenseText
         {
-            get => license_Text;
-            set
-            {
-                license_Text = value;
-                OnPropertyUpdate("License_Text");
-            }
-        }
-        #endregion
-
-        #region Utility
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get => _licenseText;
+            set => SetProperty(ref _licenseText, value);
         }
         #endregion
     }

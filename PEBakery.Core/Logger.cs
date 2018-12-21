@@ -1249,6 +1249,9 @@ namespace PEBakery.Core
             }
         }
         #endregion
+
+        #region Close
+        #endregion
     }
     #endregion
 

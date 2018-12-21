@@ -39,7 +39,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:viewModels="clr-namespace:PEBakery.Core.ViewModels"
+        xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
         mc:Ignorable="d"
         Closing="Window_Closing"
         Width="900" Height="720"
@@ -47,8 +47,10 @@
         FontSize="13"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
-        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
         WindowStartupLocation="CenterScreen">
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
     <Window.CommandBindings>
         <!-- Main Buttons -->
         <CommandBinding x:Name="ProjectBuildStartCommand"
@@ -123,6 +125,8 @@
         <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
         <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
+        <local:ScriptTitleConverter x:Key="ScriptTitleConverter" />
+        <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
@@ -445,7 +449,7 @@
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type viewModels:ProjectTreeItemModel}"
+                        <HierarchicalDataTemplate DataType="vm:ProjectTreeItemModel"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -459,7 +463,7 @@
 
                                 <CheckBox Grid.Row="0" Grid.Column="0"
                                           VerticalAlignment="Center"
-                                          Visibility="{Binding CheckBoxVisible}"
+                                          Visibility="{Binding Script, Converter={StaticResource SelectedStateToVisibilityConverter}}"
                                           IsChecked="{Binding Checked, Mode=TwoWay}"
                                           Focusable="False"/>
                                 <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="1"
@@ -473,7 +477,7 @@
                                 <TextBlock Grid.Row="0" Grid.Column="2"
                                            VerticalAlignment="Center"
                                            Margin="1, 0, 0, 0"
-                                           Text="{Binding Text}"/>
+                                           Text="{Binding Script, Converter={StaticResource ScriptTitleConverter}}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
@@ -493,7 +497,7 @@
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type viewModels:ProjectTreeItemModel}"
+                        <HierarchicalDataTemplate DataType="{x:Type vm:ProjectTreeItemModel}"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -516,7 +520,7 @@
                                            Margin="1, 0, 0, 0"
                                            VerticalAlignment="Center"
                                            FontWeight="{Binding BuildFontWeight}"
-                                           Text="{Binding Text}"/>
+                                           Text="{Binding Script, Converter={StaticResource ScriptTitleConverter}}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>

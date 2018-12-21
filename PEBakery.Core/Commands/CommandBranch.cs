@@ -29,7 +29,6 @@ using ManagedWimLib;
 using Microsoft.Win32;
 using PEBakery.Helper;
 using PEBakery.Ini;
-using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,6 +37,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows;
+using PEBakery.Core.CoreControls;
 
 namespace PEBakery.Core.Commands
 {

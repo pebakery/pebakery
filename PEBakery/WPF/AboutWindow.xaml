@@ -38,7 +38,13 @@
         ResizeMode="NoResize"
         Title="About PEBakery"
         Width="640" Height="480"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" 
+        d:DataContext="{d:DesignInstance local:AboutViewModel}">
+    <Window.Resources>
+        <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter"/>
+        <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter"/>
+        <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -69,7 +75,7 @@
                                    FontStyle="Italic" />
                         <TextBlock Grid.Row="0"
                                    Grid.Column="2"
-                                   Text="{Binding Info_PEBakeryVersion}"
+                                   Text="{Binding InfoPEBakeryVersion}"
                                    Margin="12, 0, 0, 10"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Bottom"
@@ -84,7 +90,7 @@
                     <TextBlock HorizontalAlignment="Center" 
                                Margin="0, 0, 0, 20"
                                FontSize="15"
-                               Text="{Binding Info_BuildDate}"/>
+                               Text="{Binding InfoBuildDate}"/>
                     <Grid Margin="0, 0, 0, 10"
                           HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -119,9 +125,9 @@
             </TabItem>
             <TabItem Header="License">
                 <Grid Margin="10, 10, 10, 10">
-                    <TextBox FontFamily="{Binding MonoFontFamily}"
-                             FontWeight="{Binding MonoFontWeight}"
-                             FontSize="{Binding MonoFontSize}"
+                    <TextBox FontFamily="{Binding MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                             FontWeight="{Binding MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                             FontSize="{Binding MonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
                              TextWrapping="Wrap"
                              AcceptsReturn="True"
                              VerticalContentAlignment="Stretch"
@@ -129,7 +135,7 @@
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="True"
                              IsReadOnly="True"
-                             Text="{Binding License_Text}"/>
+                             Text="{Binding LicenseText}"/>
                 </Grid>
             </TabItem>
         </TabControl>

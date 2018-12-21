@@ -119,7 +119,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _scriptAuthorText, value);
         }
 
-        private string _scriptVersionText = Properties.Resources.StringVersionFull;
+        private string _scriptVersionText = Global.Const.StringVersionFull;
         public string ScriptVersionText
         {
             get => _scriptVersionText;
@@ -134,8 +134,8 @@ namespace PEBakery.Core.ViewModels
         }
 
         #region ScriptLogo
-        private PackIconMaterialKind? _scriptLogoIcon = PackIconMaterialKind.None;
-        public PackIconMaterialKind? ScriptLogoIcon
+        private PackIconMaterialKind _scriptLogoIcon = PackIconMaterialKind.None;
+        public PackIconMaterialKind ScriptLogoIcon
         {
             get => _scriptLogoIcon;
             set
@@ -155,7 +155,7 @@ namespace PEBakery.Core.ViewModels
             get => _scriptLogoImage;
             set
             {
-                _scriptLogoIcon = null;
+                _scriptLogoIcon = PackIconMaterialKind.None;
                 _scriptLogoImage = value;
                 _scriptLogoSvg = null;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));
@@ -170,7 +170,7 @@ namespace PEBakery.Core.ViewModels
             get => _scriptLogoSvg;
             set
             {
-                _scriptLogoIcon = null;
+                _scriptLogoIcon = PackIconMaterialKind.None;
                 _scriptLogoImage = null;
                 _scriptLogoSvg = value;
                 OnPropertyUpdate(nameof(ScriptLogoIcon));
@@ -359,12 +359,7 @@ namespace PEBakery.Core.ViewModels
         public ObservableCollection<ProjectTreeItemModel> MainTreeItems
         {
             get => _mainTreeItems;
-            set
-            {
-                _mainTreeItems = value;
-                BindingOperations.EnableCollectionSynchronization(_mainTreeItems, _mainTreeItemsLock);
-                OnPropertyUpdate(nameof(MainTreeItems));
-            }
+            set => SetCollectionProperty(ref _mainTreeItems, _mainTreeItemsLock, value);
         }
 
         private Canvas _mainCanvas;
@@ -736,6 +731,7 @@ namespace PEBakery.Core.ViewModels
                         Global.Logger.SystemWrite(Logger.LogSeperator);
 
                         // If script cache is enabled, update cache.
+                        // Do not use await, let it run aside.
                         if (Global.Setting.Script.EnableCache)
                             StartScriptCaching();
                     }
@@ -1398,7 +1394,7 @@ namespace PEBakery.Core.ViewModels
     #endregion
 
     #region TreeViewModel
-    public class ProjectTreeItemModel : INotifyPropertyChanged
+    public class ProjectTreeItemModel : ViewModelBase
     {
         #region Basic Property and Constructor
         public ProjectTreeItemModel ProjectRoot { get; }
@@ -1408,6 +1404,9 @@ namespace PEBakery.Core.ViewModels
         {
             ProjectRoot = root ?? this;
             Parent = parent;
+
+            Children = new ObservableCollection<ProjectTreeItemModel>();
+            BindingOperations.EnableCollectionSynchronization(Children, _childrenLock);
         }
         #endregion
 
@@ -1423,8 +1422,6 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        public string Text => StringEscaper.Unescape(_sc.Title);
-
         private Script _sc;
         public Script Script
         {
@@ -1434,9 +1431,7 @@ namespace PEBakery.Core.ViewModels
                 _sc = value;
                 OnPropertyUpdate(nameof(Script));
                 OnPropertyUpdate(nameof(Checked));
-                OnPropertyUpdate(nameof(CheckBoxVisible));
-                OnPropertyUpdate(nameof(Text));
-                OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
+                // OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
             }
         }
 
@@ -1444,14 +1439,11 @@ namespace PEBakery.Core.ViewModels
         public PackIconMaterialKind Icon
         {
             get => _icon;
-            set
-            {
-                _icon = value;
-                OnPropertyUpdate(nameof(Icon));
-            }
+            set => SetProperty(ref _icon, value);
         }
 
-        public ObservableCollection<ProjectTreeItemModel> Children { get; private set; } = new ObservableCollection<ProjectTreeItemModel>();
+        private readonly object _childrenLock = new object();
+        public ObservableCollection<ProjectTreeItemModel> Children { get; private set; }
 
         public void SortChildren()
         {
@@ -1572,16 +1564,6 @@ namespace PEBakery.Core.ViewModels
             ParentCheckedPropagation();
         }
 
-        public Visibility CheckBoxVisible
-        {
-            get
-            {
-                if (_sc.Selected == SelectedState.None)
-                    return Visibility.Collapsed;
-                return Visibility.Visible;
-            }
-        }
-
         private List<LogInfo> DisableScripts(ProjectTreeItemModel root, Script sc)
         {
             if (root == null || sc == null)
@@ -1644,16 +1626,8 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region OnProperetyUpdate
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
-
         #region ToString
-        public override string ToString() => Text;
+        public override string ToString() => _sc.Title;
         #endregion
     }
     #endregion
