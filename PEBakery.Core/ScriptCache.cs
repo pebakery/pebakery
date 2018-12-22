@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -202,11 +203,19 @@ namespace PEBakery.Core
             { // Cache Hit
                 using (MemoryStream ms = new MemoryStream(scCache.Serialized))
                 {
-                    BinaryFormatter formatter = new BinaryFormatter();
-                    sc = formatter.Deserialize(ms) as Script;
+                    try
+                    {
+                        BinaryFormatter formatter = new BinaryFormatter();
+                        sc = formatter.Deserialize(ms) as Script;
+                    }
+                    catch (SerializationException) // Exception from BinaryFormatter.Deserialize()
+                    { // Cache is inconsistent, turn off script cache
+                        sc = null;
+                        cacheValid = false;
+                    }
 
                     // Deserialization failed, mostly schema of Script is changed
-                    if (sc == null)
+                    if (sc == null) // Casting failure
                         cacheValid = false;
                 }
             }

@@ -31,7 +31,6 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -648,7 +647,7 @@ namespace PEBakery.Core.ViewModels
                     // Refresh project entries
                     // By the PEBakery init, set to false (Global.Init() takes care of project entries)
                     // By the refresh Button, set to true (Need to sense if any change was made in ProjectRoot)
-                    if (refreshProjectEntries) 
+                    if (refreshProjectEntries)
                         Global.Projects.RefreshProjectEntries();
 
                     // Get ScriptCache

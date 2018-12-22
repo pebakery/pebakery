@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -670,8 +671,7 @@ namespace PEBakery.Core
                         // Loading a project without script cache generates a lot of Gen 2 heap object
                         if (scriptCache == null && AllScripts.Count % 64 == 0)
                             GC.Collect();
-                    }
-                        
+                    }       
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }

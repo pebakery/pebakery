@@ -25,7 +25,6 @@
 */
 
 using System;
-using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -188,24 +187,24 @@ namespace PEBakery.Core.UIControls
 
         private void DisplayImage(MessageBoxImage image)
         {
-            Icon icon;
+            System.Drawing.Icon icon;
 
             switch (image)
             {
                 case MessageBoxImage.Exclamation:       // Enumeration value 48 - also covers "Warning"
-                    icon = SystemIcons.Exclamation;
+                    icon = System.Drawing.SystemIcons.Exclamation;
                     break;
                 case MessageBoxImage.Error:             // Enumeration value 16, also covers "Hand" and "Stop"
-                    icon = SystemIcons.Hand;
+                    icon = System.Drawing.SystemIcons.Hand;
                     break;
                 case MessageBoxImage.Information:       // Enumeration value 64 - also covers "Asterisk"
-                    icon = SystemIcons.Information;
+                    icon = System.Drawing.SystemIcons.Information;
                     break;
                 case MessageBoxImage.Question:
-                    icon = SystemIcons.Question;
+                    icon = System.Drawing.SystemIcons.Question;
                     break;
                 default:
-                    icon = SystemIcons.Information;
+                    icon = System.Drawing.SystemIcons.Information;
                     break;
             }
 
@@ -260,12 +259,6 @@ namespace PEBakery.Core.UIControls
             if (TimeoutSecond == 0)
                 return; // Timeout not set
 
-            /*
-            // 
-            TextBlock_Timeout.Text = TimeoutSecond.ToString();
-            SetPercent(ProgressBar_Timeout, 100.0 / TimeoutSecond, TimeSpan.FromSeconds(1));
-            */
-
             // Setup ProgressBar Timer and let it run in background
             int elapsed = 0;
             while (true)
@@ -286,7 +279,7 @@ namespace PEBakery.Core.UIControls
         #endregion
 
         #region Utility
-        internal static ImageSource ToImageSource(Icon icon)
+        internal static ImageSource ToImageSource(System.Drawing.Icon icon)
         {
             ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
                 icon.Handle,
