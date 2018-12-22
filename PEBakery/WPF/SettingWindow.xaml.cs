@@ -384,9 +384,9 @@ namespace PEBakery.WPF
             get => _selectProjectIndex;
             set
             {
-                Project oldProject = SelectedProject;
+                int oldIndex = _selectProjectIndex;
                 _selectProjectIndex = value;
-                LoadSelectedProject(value, oldProject);
+                LoadSelectedProject(value, oldIndex);
                 OnPropertyUpdate(nameof(SelectedProjectIndex));
                 OnPropertyUpdate(nameof(SelectedProject));
             }
@@ -806,9 +806,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region LoadSelectedProject
-        public async void LoadSelectedProject(int newValue, Project oldProject)
+        public async void LoadSelectedProject(int newIndex, int oldIndex)
         {
-            if (newValue < 0 || Projects.Count <= newValue)
+            if (newIndex < 0 || Projects.Count <= newIndex)
                 return;
 
             await Task.Run(() =>
@@ -844,60 +844,61 @@ namespace PEBakery.WPF
                     ProjectIsoFile = string.Empty;
 
                 // Compat Options
-                if (_firstLoad && !oldProject.Equals(SelectedProject))
-                    SaveCompatOption(SelectedCompatOption);
+                if (!_firstLoad && newIndex != oldIndex &&
+                    0 <= oldIndex && oldIndex < _compatOptions.Count)
+                    SaveCompatOptionTo(_compatOptions[oldIndex]);
                 CompatOption compat = SelectedCompatOption;
                 Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
-                LoadCompatOption(compat);
+                LoadCompatOptionFrom(compat);
 
                 _firstLoad = false;
             });
         }
         #endregion
 
-        #region LoadCompatOption, SaveCompatOption
-        public void LoadCompatOption(CompatOption compat)
+        #region LoadCompatOptionFrom, SaveCompatOptionTo
+        public void LoadCompatOptionFrom(CompatOption src)
         {
             // Asterisk
-            CompatAsteriskBugDirCopy = compat.AsteriskBugDirCopy;
-            CompatAsteriskBugDirLink = compat.AsteriskBugDirLink;
+            CompatAsteriskBugDirCopy = src.AsteriskBugDirCopy;
+            CompatAsteriskBugDirLink = src.AsteriskBugDirLink;
             // Command
-            CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;
-            CompatAllowLetterInLoop = compat.AllowLetterInLoop;
-            CompatLegacyBranchCondition = compat.LegacyBranchCondition;
-            CompatLegacyRegWrite = compat.LegacyRegWrite;
-            CompatAllowSetModifyInterface = compat.AllowSetModifyInterface;
-            CompatLegacyInterfaceCommand = compat.LegacyInterfaceCommand;
-            CompatLegacySectionParamCommand = compat.LegacySectionParamCommand;
+            CompatFileRenameCanMoveDir = src.FileRenameCanMoveDir;
+            CompatAllowLetterInLoop = src.AllowLetterInLoop;
+            CompatLegacyBranchCondition = src.LegacyBranchCondition;
+            CompatLegacyRegWrite = src.LegacyRegWrite;
+            CompatAllowSetModifyInterface = src.AllowSetModifyInterface;
+            CompatLegacyInterfaceCommand = src.LegacyInterfaceCommand;
+            CompatLegacySectionParamCommand = src.LegacySectionParamCommand;
             // Script Interface
-            CompatIgnoreWidthOfWebLabel = compat.IgnoreWidthOfWebLabel;
+            CompatIgnoreWidthOfWebLabel = src.IgnoreWidthOfWebLabel;
             // Variable
-            CompatOverridableFixedVariables = compat.OverridableFixedVariables;
-            CompatOverridableLoopCounter = compat.OverridableLoopCounter;
-            CompatEnableEnvironmentVariables = compat.EnableEnvironmentVariables;
-            CompatDisableExtendedSectionParams = compat.DisableExtendedSectionParams;
+            CompatOverridableFixedVariables = src.OverridableFixedVariables;
+            CompatOverridableLoopCounter = src.OverridableLoopCounter;
+            CompatEnableEnvironmentVariables = src.EnableEnvironmentVariables;
+            CompatDisableExtendedSectionParams = src.DisableExtendedSectionParams;
         }
 
-        public void SaveCompatOption(CompatOption compat)
+        public void SaveCompatOptionTo(CompatOption dest)
         {
             // Asterisk
-            compat.AsteriskBugDirCopy = CompatAsteriskBugDirCopy;
-            compat.AsteriskBugDirLink = CompatAsteriskBugDirLink;
+            dest.AsteriskBugDirCopy = CompatAsteriskBugDirCopy;
+            dest.AsteriskBugDirLink = CompatAsteriskBugDirLink;
             // Command
-            compat.FileRenameCanMoveDir = CompatFileRenameCanMoveDir;
-            compat.AllowLetterInLoop = CompatAllowLetterInLoop;
-            compat.LegacyBranchCondition = CompatLegacyBranchCondition;
-            compat.LegacyRegWrite = CompatLegacyRegWrite;
-            compat.AllowSetModifyInterface = CompatAllowSetModifyInterface;
-            compat.LegacyInterfaceCommand = CompatLegacyInterfaceCommand;
-            compat.LegacySectionParamCommand = CompatLegacySectionParamCommand;
+            dest.FileRenameCanMoveDir = CompatFileRenameCanMoveDir;
+            dest.AllowLetterInLoop = CompatAllowLetterInLoop;
+            dest.LegacyBranchCondition = CompatLegacyBranchCondition;
+            dest.LegacyRegWrite = CompatLegacyRegWrite;
+            dest.AllowSetModifyInterface = CompatAllowSetModifyInterface;
+            dest.LegacyInterfaceCommand = CompatLegacyInterfaceCommand;
+            dest.LegacySectionParamCommand = CompatLegacySectionParamCommand;
             // Script Interface
-            compat.IgnoreWidthOfWebLabel = CompatIgnoreWidthOfWebLabel;
+            dest.IgnoreWidthOfWebLabel = CompatIgnoreWidthOfWebLabel;
             // Variable
-            compat.OverridableFixedVariables = CompatOverridableFixedVariables;
-            compat.OverridableLoopCounter = CompatOverridableLoopCounter;
-            compat.EnableEnvironmentVariables = CompatEnableEnvironmentVariables;
-            compat.DisableExtendedSectionParams = CompatDisableExtendedSectionParams;
+            dest.OverridableFixedVariables = CompatOverridableFixedVariables;
+            dest.OverridableLoopCounter = CompatOverridableLoopCounter;
+            dest.EnableEnvironmentVariables = CompatEnableEnvironmentVariables;
+            dest.DisableExtendedSectionParams = CompatDisableExtendedSectionParams;
         }
         #endregion
 
@@ -1045,7 +1046,7 @@ namespace PEBakery.WPF
 
             // Compat options
             if (SelectedCompatOption != null)
-                SaveCompatOption(SelectedCompatOption);
+                SaveCompatOptionTo(SelectedCompatOption);
             for (int i = 0; i < _compatOptions.Count; i++)
             {
                 CompatOption compat = _compatOptions[i];
