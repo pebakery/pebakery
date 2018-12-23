@@ -37,6 +37,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -442,6 +443,7 @@ namespace PEBakery.Core
                 return linkRealPath;
             }
 
+            int loadCount = 0;
             bool cacheValid = true;
             Script[] linkSources = _allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Debug.Assert(linkSources.Count(x => x.IsDirLink) == 0);
@@ -491,7 +493,7 @@ namespace PEBakery.Core
                         }
                         linkTarget = linkTarget.Link;
                     }
-                    while (linkTarget.Type != ScriptType.Script);
+                    while (linkTarget.Type != ScriptType.Script); 
                 }
                 catch (Exception e)
                 { // Parser Error
@@ -509,6 +511,14 @@ namespace PEBakery.Core
                     int idx = _allProjectScripts.IndexOf(sc);
                     removeIdxs.Add(idx);
                     progress?.Report((cached, null));
+                }
+
+                if (scriptCache == null)
+                {
+                    // Loading a project without script cache generates a lot of Gen 2 heap object
+                    int thisCount = Interlocked.Increment(ref loadCount);
+                    if (thisCount % Project.LoadGCInterval == 0)
+                        GC.Collect();
                 }
             });
 
@@ -556,13 +566,15 @@ namespace PEBakery.Core
     #region Project
     public class Project : IEquatable<Project>
     {
-        #region Consts
+        #region Constants
         public static class KnownPaths
         {
             public const string Projects = "Projects";
             public const string MainScriptFile = "script.project";
             public const string CompatFile = "PEBakeryCompat.ini";
         }
+
+        public const int LoadGCInterval = 64;
         #endregion
 
         #region Fields
@@ -669,7 +681,7 @@ namespace PEBakery.Core
                         AllScripts.Add(sc);
 
                         // Loading a project without script cache generates a lot of Gen 2 heap object
-                        if (scriptCache == null && AllScripts.Count % 64 == 0)
+                        if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
                             GC.Collect();
                     }       
 
