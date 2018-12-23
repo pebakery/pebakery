@@ -608,7 +608,7 @@ namespace PEBakery.Core.Commands
                             proc.StartInfo.RedirectStandardInput = true;
 
                             s.MainViewModel.BuildConOutRedirectTextLines.Clear();
-                            s.MainViewModel.BuildConOutRedirectShow = true;
+                            s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Visible;
                         }
                     }
                     else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
@@ -705,7 +705,7 @@ namespace PEBakery.Core.Commands
 
                     if (redirectStandardStream)
                     {
-                        s.MainViewModel.BuildConOutRedirectShow = false;
+                        s.MainViewModel.BuildConOutRedirectVisibility = Visibility.Collapsed;
                         s.MainViewModel.BuildConOutRedirectTextLines.Clear();
                     }
                 }

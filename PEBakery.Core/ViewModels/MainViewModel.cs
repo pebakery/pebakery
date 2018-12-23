@@ -450,15 +450,10 @@ namespace PEBakery.Core.ViewModels
 
         public bool DisplayShellExecuteConOut = true;
         private Visibility _buildConOutRedirectVisibility = Visibility.Collapsed;
-        public Visibility BuildConOutRedirectVisibility => DisplayShellExecuteConOut ? _buildConOutRedirectVisibility : Visibility.Collapsed;
-
-        public bool BuildConOutRedirectShow
+        public Visibility BuildConOutRedirectVisibility
         {
-            set
-            {
-                _buildConOutRedirectVisibility = value ? Visibility.Visible : Visibility.Collapsed;
-                OnPropertyUpdate(nameof(BuildConOutRedirectVisibility));
-            }
+            get => DisplayShellExecuteConOut ? _buildConOutRedirectVisibility : Visibility.Collapsed;
+            set => SetProperty(ref _buildConOutRedirectVisibility, value);
         }
 
         private FontHelper.FontInfo _monospacedFont;
@@ -507,14 +502,11 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildCommandProgressValue, value);
         }
 
-        public Visibility BuildCommandProgressVisibility { get; private set; } = Visibility.Collapsed;
-        public bool BuildCommandProgressShow
+        private Visibility _buildCommandProgressVisibility;
+        public Visibility BuildCommandProgressVisibility
         {
-            set
-            {
-                BuildCommandProgressVisibility = value ? Visibility.Visible : Visibility.Collapsed;
-                OnPropertyUpdate(nameof(BuildCommandProgressVisibility));
-            }
+            get => _buildCommandProgressVisibility;
+            set => SetProperty(ref _buildCommandProgressVisibility, value);
         }
 
         // Taskbar Progress State
@@ -542,12 +534,12 @@ namespace PEBakery.Core.ViewModels
             BuildCommandProgressTitle = title;
             BuildCommandProgressText = string.Empty;
             BuildCommandProgressMax = max;
-            BuildCommandProgressShow = true;
+            BuildCommandProgressVisibility = Visibility.Visible;
         }
 
         public void ResetBuildCommandProgress()
         {
-            BuildCommandProgressShow = false;
+            BuildCommandProgressVisibility = Visibility.Collapsed;
             BuildCommandProgressTitle = "Progress";
             BuildCommandProgressText = string.Empty;
             BuildCommandProgressValue = 0;
