@@ -365,7 +365,7 @@ namespace PEBakery.Core
 
         public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
         {
-            // Check if str need doublequote escaping
+            // Check if str need double-quote escaping
             bool needQuote = str.Contains(' ') || str.Contains(',');
 
             // Escape characters

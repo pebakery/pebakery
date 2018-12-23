@@ -34,6 +34,14 @@ namespace PEBakery.Core
 {
     public class Macro
     {
+        #region Constants
+        public class KnownVar
+        {
+            public const string APIVAR = "APIVAR";
+            public const string API = "API";
+        }
+        #endregion
+
         #region Field and Property
         public bool MacroEnabled { get; }
         /// <summary>
@@ -74,7 +82,7 @@ namespace PEBakery.Core
             ScriptSection variablesSection = project.MainScript.Sections[ScriptSection.Names.Variables];
 
             Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(variablesSection.Lines);
-            if (!(varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")))
+            if (!(varDict.ContainsKey(KnownVar.API) && varDict.ContainsKey(KnownVar.APIVAR)))
             {
                 MacroEnabled = false;
                 logs.Add(new LogInfo(LogState.Info, "Macro not defined"));
@@ -82,8 +90,8 @@ namespace PEBakery.Core
             }
 
             // Get macroScript
-            string rawScriptPath = varDict["API"];
-            string macroScriptPath = variables.Expand(varDict["API"]); // Need expansion
+            string rawScriptPath = varDict[KnownVar.API];
+            string macroScriptPath = variables.Expand(varDict[KnownVar.API]); // Need expansion
             MacroScript = project.AllScripts.Find(x => x.RealPath.Equals(macroScriptPath, StringComparison.OrdinalIgnoreCase));
             if (MacroScript == null)
             {
@@ -93,19 +101,19 @@ namespace PEBakery.Core
             }
 
             // Get macroScript
-            if (!MacroScript.Sections.ContainsKey(varDict["APIVAR"]))
+            if (!MacroScript.Sections.ContainsKey(varDict[KnownVar.APIVAR]))
             {
                 MacroEnabled = false;
                 logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
                 return;
             }
-            MacroSection = MacroScript.Sections[varDict["APIVAR"]];
-            variables.SetValue(VarsType.Global, "API", macroScriptPath);
+            MacroSection = MacroScript.Sections[varDict[KnownVar.APIVAR]];
+            variables.SetValue(VarsType.Global, KnownVar.API, macroScriptPath);
             if (MacroScript.Sections.ContainsKey(ScriptSection.Names.Variables))
-                variables.AddVariables(VarsType.Global, MacroScript.Sections[ScriptSection.Names.Variables]);
+                logs.AddRange(variables.AddVariables(VarsType.Global, MacroScript.Sections[ScriptSection.Names.Variables]));
 
             // Import Section [APIVAR]'s variables, such as '%Shc_Mode%=0'
-            variables.AddVariables(VarsType.Global, MacroSection);
+            logs.AddRange(variables.AddVariables(VarsType.Global, MacroSection));
 
             // Parse Section [APIVAR] into MacroDict
             {

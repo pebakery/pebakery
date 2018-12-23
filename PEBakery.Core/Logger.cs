@@ -37,7 +37,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
@@ -281,9 +280,16 @@ namespace PEBakery.Core
     public class SystemLogUpdateEventArgs : EventArgs
     {
         public DB_SystemLog Log { get; set; }
+        public DB_SystemLog[] Logs { get; set; }
+
         public SystemLogUpdateEventArgs(DB_SystemLog log)
         {
             Log = log;
+        }
+
+        public SystemLogUpdateEventArgs(DB_SystemLog[] logs)
+        {
+            Logs = logs;
         }
     }
     public class BuildInfoUpdateEventArgs : EventArgs
@@ -935,8 +941,20 @@ namespace PEBakery.Core
 
         public void SystemWrite(IEnumerable<LogInfo> logs)
         {
-            foreach (LogInfo log in logs)
-                SystemWrite(log);
+            DB_SystemLog[] dbLogs = logs.Select(log => new DB_SystemLog
+            {
+                Time = DateTime.UtcNow,
+                State = log.State,
+                Message = log.Message,
+            }).ToArray();
+
+            if (dbLogs.Length == 0)
+                return;
+
+            Db.InsertAll(dbLogs);
+
+            // Fire Event
+            SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLogs));
         }
         #endregion
 

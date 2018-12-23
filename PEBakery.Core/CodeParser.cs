@@ -174,7 +174,7 @@ namespace PEBakery.Core
                 int nextIdx = str.IndexOf('\"', 1);
                 while (true)
                 {
-                    if (nextIdx == -1) // Error, doublequote must be multiple of 2
+                    if (nextIdx == -1) // Error, double-quote must be multiple of 2
                         throw new InvalidCommandException("Doublequote's number should be an even number");
 
                     // Ignore ""
@@ -217,7 +217,7 @@ namespace PEBakery.Core
                     return (next, remainder);
                 }
             }
-            else // No doublequote for now
+            else // No double-quote for now
             { // Ex) FileCreateBlank,#3.au3
                 int pIdx = str.IndexOf(",", StringComparison.Ordinal);
                 if (pIdx == -1) // Last one
@@ -257,7 +257,7 @@ namespace PEBakery.Core
             // Parse CodeType
             CodeType type = ParseCodeType(codeTypeStr, out string macroType);
 
-            // Check doublequote's occurence - must be 2n
+            // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("Doublequote's number should be even", rawCode);
 

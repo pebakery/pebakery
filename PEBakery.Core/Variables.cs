@@ -645,16 +645,20 @@ namespace PEBakery.Core
         #region AddVariables
         public List<LogInfo> AddVariables(VarsType type, ScriptSection section)
         {
+            List<LogInfo> logs = new List<LogInfo>();
+
             string[] lines = section.Lines;
             if (lines == null)
-                throw new ExecuteException($"Unable to load section [{section.Name}]");
+            {
+                logs.Add(new LogInfo(LogState.Warning, $"Unable to load section [{section.Name}]"));
+                return logs;
+            }
 
             Dictionary<string, string> dict = IniReadWriter.ParseIniLinesVarStyle(lines);
             if (0 < dict.Keys.Count)
-                return InternalAddDictionary(type, dict);
+                logs.AddRange(InternalAddDictionary(type, dict));
 
-            // Empty
-            return new List<LogInfo>();
+            return logs;
         }
 
         public List<LogInfo> AddVariables(VarsType type, IEnumerable<string> lines)
@@ -690,10 +694,10 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarsType.Local:
-                    _localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    _localVars.Clear();
                     break;
                 case VarsType.Global:
-                    _globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    _globalVars.Clear();
                     break;
             }
         }

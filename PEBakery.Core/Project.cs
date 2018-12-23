@@ -1060,14 +1060,16 @@ namespace PEBakery.Core
         #endregion
 
         #region Variables
-        public void UpdateProjectVariables()
+        public List<LogInfo> UpdateProjectVariables()
         {
             if (Variables == null)
-                return;
+                return new List<LogInfo>();
 
             ScriptSection section = MainScript.RefreshSection(ScriptSection.Names.Variables);
             if (section != null)
-                Variables.AddVariables(VarsType.Global, section);
+                return Variables.AddVariables(VarsType.Global, section);
+
+            return new List<LogInfo>();
         }
         #endregion
 

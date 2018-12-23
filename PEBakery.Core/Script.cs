@@ -604,9 +604,9 @@ namespace PEBakery.Core
             if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
                 return null;
 
-            // Check doublequote's occurence - must be 2n
+            // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawLine, "\"") % 2 == 1)
-                throw new ExecuteException("Doublequote's number should be even number");
+                throw new ExecuteException("Double-quote's number should be even number");
 
             // Parse Arguments
             List<string> paths = new List<string>();
@@ -620,7 +620,11 @@ namespace PEBakery.Core
                     paths.Add(next);
                 }
             }
-            catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
+            catch (InvalidCommandException e)
+            {
+                LogInfo log = new LogInfo(LogState.Warning, $"{Logger.LogExceptionMessage(e)} ({rawLine})");
+                errorLogs.Add(log);
+            }
 
             // Filter out script itself
             List<string> filteredPaths = new List<string>(paths.Count);
@@ -629,10 +633,14 @@ namespace PEBakery.Core
                 try
                 {
                     string pPath = sc.Project.Variables.Expand(path);
-                    if (pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) == false)
+                    if (!pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase))
                         filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
-                catch (Exception e) { errorLogs.Add(new LogInfo(LogState.Success, Logger.LogExceptionMessage(e))); }
+                catch (Exception e)
+                {
+                    LogInfo log = new LogInfo(LogState.Warning, Logger.LogExceptionMessage(e));
+                    errorLogs.Add(log);
+                }
             }
 
             return filteredPaths.ToArray();
@@ -853,7 +861,8 @@ namespace PEBakery.Core
                 if (_lines != null)
                     return _lines;
 
-                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
+                // Load from file, do not keep in memory.
+                // AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
                 {
                     List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);

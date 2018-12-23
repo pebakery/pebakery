@@ -380,6 +380,7 @@
                           Background="PaleGreen"
                           FontSize="12"
                           ItemsSource="{Binding MainTreeItems}"
+                          IsEnabled="{Binding EnableTreeItems}"
                           BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
                           Unloaded="MainTreeView_Unloaded"

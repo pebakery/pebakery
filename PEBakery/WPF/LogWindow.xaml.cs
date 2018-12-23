@@ -74,14 +74,26 @@ namespace PEBakery.WPF
         #region Logger EventHandler
         public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
         {
+            if (e.Log != null)
+            {
+                _m.SystemLogs.Add(e.Log);   
+            }
+            else if (e.Logs != null)
+            {
+                // e.Logs
+                foreach (DB_SystemLog dbLog in e.Logs)
+                    _m.SystemLogs.Add(dbLog);
+            }
+
+            _m.SystemLogsSelectedIndex = _m.SystemLogs.Count - 1;
+
             Application.Current.Dispatcher.Invoke(() =>
             {
-                _m.SystemLogs.Add(e.Log);
-                _m.SystemLogsSelectedIndex = _m.SystemLogs.Count - 1;
                 SystemLogListView.UpdateLayout();
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogsSelectedIndex]);
             });
-            _m.OnPropertyUpdate(nameof(_m.SystemLogs));
+
+            // _m.OnPropertyUpdate(nameof(_m.SystemLogs));
         }
 
         public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)
