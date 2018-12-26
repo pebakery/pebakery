@@ -117,7 +117,7 @@ namespace PEBakery.WPF
 #if DEBUG
                 Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
                 {
-                    IncludeComments = true,
+                    IncludeComments = true, 
                     IncludeMacros = true,
                 });
 #endif

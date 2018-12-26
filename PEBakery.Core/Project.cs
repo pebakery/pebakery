@@ -813,7 +813,7 @@ namespace PEBakery.Core
 
             int aIdx = AllScripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
             if (aIdx == -1)
-            { // Even if idx is not found in Projects directory, just proceed to deal with monkey-patched scripts.
+            { // Even if idx is not found in Projects directory, just proceed to deal with runtime-loaded scripts.
                 sc = InternalLoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
             }
             else

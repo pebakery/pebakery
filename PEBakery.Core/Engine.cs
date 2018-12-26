@@ -964,29 +964,53 @@ namespace PEBakery.Core
         /// <summary>
         /// Get script instance from path string.
         /// </summary>
-        public static Script GetScriptInstance(EngineState s, string currentScriptPath, string loadScriptPath, out bool inCurrentScript)
+        public static Script GetScriptInstance(EngineState s, string currentScriptPath, string loadScriptPath, out bool isCurrentScript)
         {
-            inCurrentScript = loadScriptPath.Equals(currentScriptPath, StringComparison.OrdinalIgnoreCase) ||
+            isCurrentScript = loadScriptPath.Equals(currentScriptPath, StringComparison.OrdinalIgnoreCase) ||
                               loadScriptPath.Equals(Path.GetDirectoryName(currentScriptPath), StringComparison.OrdinalIgnoreCase);
 
-            string fullPath = loadScriptPath;
-            Script sc = s.Project.GetScriptByRealPath(fullPath);
+            string realPath = loadScriptPath;
+            Script sc = s.Project.GetScriptByRealPath(realPath);
             if (sc == null)
             { // Cannot Find Script in Project.AllScripts
                 // Try searching s.Scripts
-                sc = s.Scripts.Find(x => x.RealPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                sc = s.Scripts.Find(x => x.RealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase));
                 if (sc == null)
                 { // Still not found in s.Scripts
-                    if (!File.Exists(fullPath))
-                        throw new ExecuteException($"No script in [{fullPath}]");
+                    if (!File.Exists(realPath))
+                        throw new ExecuteException($"No script in [{realPath}]");
 
-                    sc = s.Project.LoadScriptRuntime(fullPath, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                    sc = s.Project.LoadScriptRuntime(realPath, new LoadScriptRuntimeOptions { IgnoreMain = true });
                     if (sc == null)
-                        throw new ExecuteException($"Unable to load script [{fullPath}]");
+                        throw new ExecuteException($"Unable to load script [{realPath}]");
                 }
             }
 
             return sc;
+        }
+
+        /// <summary>
+        /// Update script instance (e.g. Encode command).
+        /// Script must already exist in EngineState s and the s.Project.
+        /// </summary>
+        /// <param name="s">Current EngineState</param>
+        /// <param name="newScript">New instance to update</param>
+        /// <returns>True if succeed</returns>
+        public static bool UpdateScriptInstance(EngineState s, Script newScript)
+        {
+            int eIdx = s.Scripts.FindIndex(x => x.Equals(newScript));
+            if (eIdx != -1)
+                s.Scripts[eIdx] = newScript;
+            else
+                return false;
+
+            int pIdx = s.Project.AllScripts.FindIndex(x => x.Equals(newScript));
+            if (pIdx != -1)
+                s.Project.AllScripts[pIdx] = newScript;
+            else
+                return false;
+
+            return true;
         }
         #endregion
     }

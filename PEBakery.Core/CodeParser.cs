@@ -175,7 +175,7 @@ namespace PEBakery.Core
                 while (true)
                 {
                     if (nextIdx == -1) // Error, double-quote must be multiple of 2
-                        throw new InvalidCommandException("Doublequote's number should be an even number");
+                        throw new InvalidCommandException("Double-quote's number should be an even number");
 
                     // Ignore ""
                     // Ex) Echo,"Hello""World"

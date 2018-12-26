@@ -188,12 +188,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachFile, ContainsFile
-        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
+        public static Task AttachFileAsync(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
         {
             return Task.Run(() => AttachFile(sc, folderName, fileName, srcFilePath, type, progress));
         }
 
-        public static Script AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
+        public static void AttachFile(Script sc, string folderName, string fileName, string srcFilePath, EncodeMode type, IProgress<double> progress)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -205,16 +205,16 @@ namespace PEBakery.Core
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Encode(sc, folderName, fileName, fs, type, false, progress);
+                Encode(sc, folderName, fileName, fs, type, false, progress);
             }
         }
 
-        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type, IProgress<double> progress)
+        public static Task AttachFileAsync(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type, IProgress<double> progress)
         {
             return Task.Run(() => AttachFile(sc, folderName, fileName, srcStream, type, progress));
         }
 
-        public static Script AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type, IProgress<double> progress)
+        public static void AttachFile(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type, IProgress<double> progress)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -224,15 +224,15 @@ namespace PEBakery.Core
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
-            return Encode(sc, folderName, fileName, srcStream, type, false, progress);
+            Encode(sc, folderName, fileName, srcStream, type, false, progress);
         }
 
-        public static Task<Script> AttachFileAsync(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type, IProgress<double> progress)
+        public static Task AttachFileAsync(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type, IProgress<double> progress)
         {
             return Task.Run(() => AttachFile(sc, folderName, fileName, srcBuffer, type, progress));
         }
 
-        public static Script AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type, IProgress<double> progress)
+        public static void AttachFile(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type, IProgress<double> progress)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -242,7 +242,7 @@ namespace PEBakery.Core
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
-            return Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
+             Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
         }
 
         public static bool ContainsFile(Script sc, string folderName, string fileName)
@@ -262,12 +262,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachInterface, ContainsInterface
-        public static Task<Script> AttachInterfaceAsync(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
+        public static Task AttachInterfaceAsync(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
         {
             return Task.Run(() => AttachInterface(sc, fileName, srcFilePath, progress));
         }
 
-        public static Script AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
+        public static void AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
         {
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
@@ -279,7 +279,7 @@ namespace PEBakery.Core
                     type = ImageEncodeDict[imageType];
             }
 
-            return AttachFile(sc, ScriptSection.Names.InterfaceEncoded, fileName, srcFilePath, type, progress);
+            AttachFile(sc, ScriptSection.Names.InterfaceEncoded, fileName, srcFilePath, type, progress);
         }
 
         public static bool ContainsInterface(Script sc, string fileName)
@@ -289,12 +289,12 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachLogo, ContainsLogo
-        public static Task<Script> AttachLogoAsync(Script sc, string fileName, string srcFilePath)
+        public static Task AttachLogoAsync(Script sc, string fileName, string srcFilePath)
         {
             return Task.Run(() => AttachLogo(sc, fileName, srcFilePath));
         }
 
-        public static Script AttachLogo(Script sc, string fileName, string srcFilePath)
+        public static void AttachLogo(Script sc, string fileName, string srcFilePath)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -309,24 +309,24 @@ namespace PEBakery.Core
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Encode(sc, ScriptSection.Names.AuthorEncoded, fileName, fs, ImageEncodeDict[imageType], true, null);
+                Encode(sc, ScriptSection.Names.AuthorEncoded, fileName, fs, ImageEncodeDict[imageType], true, null);
             }
         }
 
-        public static Script AttachLogo(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type)
+        public static void AttachLogo(Script sc, string folderName, string fileName, Stream srcStream, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, folderName, fileName, srcStream, type, true, null);
+            Encode(sc, folderName, fileName, srcStream, type, true, null);
         }
 
-        public static Script AttachLogo(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type)
+        public static void AttachLogo(Script sc, string folderName, string fileName, byte[] srcBuffer, EncodeMode type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, folderName, fileName, srcBuffer, type, true, null);
+            Encode(sc, folderName, fileName, srcBuffer, type, true, null);
         }
 
         public static bool ContainsLogo(Script sc)
@@ -956,22 +956,32 @@ namespace PEBakery.Core
         #endregion
 
         #region Encode
-        private static Script Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
+        private static void Encode(Script sc, string folderName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
         {
             using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.Encode", input, 0, input.Length))
             {
-                return Encode(sc, folderName, fileName, ms, mode, encodeLogo, progress);
+                Encode(sc, folderName, fileName, ms, mode, encodeLogo, progress);
             }
         }
 
-        private static Script Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
+        /// <summary>
+        /// Encode a resource into a script.
+        /// Refreshes scripts automatically.
+        /// </summary>
+        /// <param name="sc"></param>
+        /// <param name="folderName"></param>
+        /// <param name="fileName"></param>
+        /// <param name="inputStream"></param>
+        /// <param name="mode"></param>
+        /// <param name="encodeLogo"></param>
+        /// <param name="progress"></param>
+        private static void Encode(Script sc, string folderName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo, IProgress<double> progress)
         {
             // Check filename
             byte[] fileNameUtf8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUtf8.Length == 0 || 512 <= fileNameUtf8.Length)
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
-
 
             // [Stage 1] Backup original script and prepare temp files
             string backupFile = Path.GetTempFileName();
@@ -1121,8 +1131,6 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     encodeStream.Position = 0;
 
-                    // if (fileOverwrite) // Delete existing encoded file section
-                    //    IniReadWriter.DeleteSection(sc.RealPath, section);
                     using (StreamReader tr = new StreamReader(backupFile, Encoding.UTF8, false))
                     using (StreamWriter tw = new StreamWriter(sc.RealPath, false, Encoding.UTF8))
                     {
@@ -1151,19 +1159,23 @@ namespace PEBakery.Core
                     if (sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
                     {
                         string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines;
-                        if (0 < folders.Count(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)))
+                        if (folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
                             writeFolderSection = false;
                     }
 
                     if (writeFolderSection &&
                         !folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                         !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                    { // Guaranteed that folderName does not exist in [EncodedFolders]
+                        // Update file
                         IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
+                    }
+                        
                 }
 
                 // Write file info into [{folderName}]
                 IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
-
+               
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
@@ -1191,7 +1203,7 @@ namespace PEBakery.Core
             }
 
             // [Stage 8] Refresh Script
-            return sc.Project.RefreshScript(sc);
+            sc.RefreshSections();
         }
         #endregion
 

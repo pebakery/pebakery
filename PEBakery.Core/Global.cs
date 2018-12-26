@@ -46,7 +46,7 @@ namespace PEBakery.Core
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r9";
+            public const string ScriptCacheRevision = "r10";
             public const string StringVersion = "0.9.6";
             public const string StringVersionFull = "0.9.6 beta6";
         }
@@ -98,8 +98,6 @@ namespace PEBakery.Core
         /// </summary>
         public static void Init()
         {
-
-
             string baseDir = Environment.CurrentDirectory;
             for (int i = 0; i < Args.Length; i++)
             {

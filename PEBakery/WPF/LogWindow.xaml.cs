@@ -92,8 +92,6 @@ namespace PEBakery.WPF
                 SystemLogListView.UpdateLayout();
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogsSelectedIndex]);
             });
-
-            // _m.OnPropertyUpdate(nameof(_m.SystemLogs));
         }
 
         public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)

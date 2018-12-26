@@ -121,6 +121,8 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandScript")]
         public void Encode()
         {
+            const string folderName = "FolderExample";
+
             EngineState s = EngineTests.CreateEngineState();
             string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
             string blankScript = Path.Combine(srcDir, "Blank.script");
@@ -145,21 +147,21 @@ namespace PEBakery.Tests.Core.Command
                         Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
                         // Check whether file was successfully encoded
-                        Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
-                        string[] folders = sc.Sections["EncodedFolders"].Lines
+                        Assert.IsTrue(sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders));
+                        string[] folders = sc.Sections[ScriptSection.Names.EncodedFolders].Lines
                             .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
                             .ToArray();
                         Assert.IsTrue(folders.Length == 2);
-                        Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
+                        Assert.IsTrue(folders[0].Equals(folderName, StringComparison.Ordinal));
 
-                        Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
-                        string[] fileInfos = sc.Sections["FolderExample"].Lines
+                        Assert.IsTrue(sc.Sections.ContainsKey(folderName));
+                        string[] fileInfos = sc.Sections[folderName].Lines
                             .Where(x => !x.Equals(string.Empty, StringComparison.Ordinal))
                             .ToArray();
                         Assert.IsTrue(fileInfos[0].StartsWith($"{srcFileName}=", StringComparison.Ordinal));
 
-                        Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{srcFileName}"));
-                        string[] encodedFile = sc.Sections[$"EncodedFile-FolderExample-{srcFileName}"].Lines
+                        Assert.IsTrue(sc.Sections.ContainsKey(ScriptSection.Names.GetEncodedSectionName(folderName, srcFileName)));
+                        string[] encodedFile = sc.Sections[ScriptSection.Names.GetEncodedSectionName(folderName, srcFileName)].Lines
                             .Where(x => x.Length != 0)
                             .ToArray();
                         Assert.IsTrue(1 < encodedFile.Length);
@@ -169,7 +171,7 @@ namespace PEBakery.Tests.Core.Command
                         byte[] extractDigest;
                         using (MemoryStream ms = new MemoryStream())
                         {
-                            EncodedFile.ExtractFile(sc, "FolderExample", srcFileName, ms, null);
+                            EncodedFile.ExtractFile(sc, folderName, srcFileName, ms, null);
                             ms.Position = 0;
                             extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
                         }
@@ -184,10 +186,10 @@ namespace PEBakery.Tests.Core.Command
                     }
                 }
 
-                SingleTemplate($@"Encode,{destScript},FolderExample,{srcDir}\Type1.jpg,Deflate", "Type1.jpg"); // Type 1
-                SingleTemplate($@"Encode,{destScript},FolderExample,{srcDir}\Type2.7z,None", "Type2.7z"); // Type 2
-                SingleTemplate($@"Encode,{destScript},FolderExample,{srcDir}\Type3.pdf,LZMA2", "Type3.pdf"); // Type 3
-                SingleTemplate($@"Encode,{destScript},FolderExample,{srcDir}\PEBakeryAlphaMemory.jpg", "PEBakeryAlphaMemory.jpg");
+                SingleTemplate($@"Encode,{destScript},{folderName},{srcDir}\Type1.jpg,Deflate", "Type1.jpg"); // Type 1
+                SingleTemplate($@"Encode,{destScript},{folderName},{srcDir}\Type2.7z,None", "Type2.7z"); // Type 2
+                SingleTemplate($@"Encode,{destScript},{folderName},{srcDir}\Type3.pdf,LZMA2", "Type3.pdf"); // Type 3
+                SingleTemplate($@"Encode,{destScript},{folderName},{srcDir}\PEBakeryAlphaMemory.jpg", "PEBakeryAlphaMemory.jpg");
             }
             finally
             {

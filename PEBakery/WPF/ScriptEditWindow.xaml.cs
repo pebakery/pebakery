@@ -1690,7 +1690,7 @@ namespace PEBakery.WPF
                 try
                 {
                     string srcFileName = Path.GetFileName(srcFile);
-                    Script = EncodedFile.AttachLogo(Script, srcFileName, srcFile);
+                    EncodedFile.AttachLogo(Script, srcFileName, srcFile);
                     MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     ScriptLogoUpdated = true;
@@ -2373,7 +2373,7 @@ namespace PEBakery.WPF
 
                 try
                 {
-                    Script = await EncodedFile.AttachInterfaceAsync(Script, srcFileName, srcFilePath, null);
+                    await EncodedFile.AttachInterfaceAsync(Script, srcFileName, srcFilePath, null);
 
                     UIControl.ReplaceAddress(Renderer.UICtrls, Script);
 
@@ -2727,7 +2727,7 @@ namespace PEBakery.WPF
                         if (owResult == MessageBoxResult.Yes)
                             proceedExtract = true;
                         else if (owResult != MessageBoxResult.No)
-                            throw new InternalException("Internal Logic Error at ScriptEditWindow.ExtractFolderButton_Click");
+                            throw new InternalException($"Internal Logic Error at {nameof(ExtractFolderCommand_Execute)}");
                     }
                     else
                     {
@@ -2901,7 +2901,7 @@ namespace PEBakery.WPF
                         CanExecuteCommand = false;
                         AttachProgressValue = 0;
                         IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                        Script = await EncodedFile.AttachFileAsync(Script, item.Name, AttachNewFileName, srcFile, mode, progress);
+                        await EncodedFile.AttachFileAsync(Script, item.Name, AttachNewFileName, srcFile, mode, progress);
                     }
                     finally
                     {

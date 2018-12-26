@@ -536,15 +536,15 @@ namespace PEBakery.Core.Commands
                     b.Append(parameters);
                 }
 
-                string pathVarBackup = null;
+                string pathVarBak = null;
                 if (info.WorkDir != null)
                 {
                     string workDir = StringEscaper.Preprocess(s, info.WorkDir);
                     proc.StartInfo.WorkingDirectory = workDir;
 
                     // Set PATH environment variable (only for this process)
-                    pathVarBackup = Environment.GetEnvironmentVariable("PATH");
-                    Environment.SetEnvironmentVariable("PATH", workDir + ";" + pathVarBackup);
+                    pathVarBak = Environment.GetEnvironmentVariable("PATH");
+                    Environment.SetEnvironmentVariable("PATH", workDir + ";" + pathVarBak);
                 }
 
                 bool redirectStandardStream = false;
@@ -700,8 +700,8 @@ namespace PEBakery.Core.Commands
                 finally
                 {
                     // Restore PATH environment variable
-                    if (pathVarBackup != null)
-                        Environment.SetEnvironmentVariable("PATH", pathVarBackup);
+                    if (pathVarBak != null)
+                        Environment.SetEnvironmentVariable("PATH", pathVarBak);
 
                     if (redirectStandardStream)
                     {

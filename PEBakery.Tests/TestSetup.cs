@@ -31,8 +31,8 @@ namespace PEBakery.Tests
             projects.Load(null, null);
 
             // Should be only one project named TestSuite
-            EngineTests.Project = projects.ProjectList[0];
-            Assert.IsTrue(projects.ProjectList.Count == 1);
+            EngineTests.Project = projects[0];
+            Assert.IsTrue(projects.Count == 1);
 
             // Init NativeAssembly
             Global.NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);

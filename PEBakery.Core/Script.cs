@@ -55,7 +55,8 @@ namespace PEBakery.Core
         private readonly string _treePath;
         private bool _fullyParsed;
         private readonly bool _isMainScript;
-        private readonly Dictionary<string, ScriptSection> _sections;
+        private readonly bool _ignoreMain;
+        private Dictionary<string, ScriptSection> _sections;
         private readonly ScriptType _type;
         [NonSerialized]
         private Project _project;
@@ -65,13 +66,13 @@ namespace PEBakery.Core
         private bool _linkLoaded;
         [NonSerialized]
         private bool _isDirLink;
-        private readonly string _title = string.Empty;
-        private readonly string _author = string.Empty;
-        private readonly string _description = string.Empty;
-        private readonly string _version = "0";
-        private readonly int _level;
+        private string _title = string.Empty;
+        private string _author = string.Empty;
+        private string _description = string.Empty;
+        private string _version = "0";
+        private int _level;
         private SelectedState _selected = SelectedState.None;
-        private readonly bool _mandatory = false;
+        private bool _mandatory = false;
         private readonly List<string> _interfaceList = new List<string>();
         #endregion
 
@@ -114,6 +115,7 @@ namespace PEBakery.Core
         }
 
         public bool IsMainScript => _isMainScript;
+        public bool IgnoreMain => _ignoreMain;
         public ScriptType Type => _type;
         public Script Link { get => _link; set => _link = value; }
         public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
@@ -221,153 +223,34 @@ namespace PEBakery.Core
             _isMainScript = isMainScript;
             _linkLoaded = false;
             _isDirLink = isDirLink;
+            _ignoreMain = ignoreMain;
 
-            switch (type)
-            {
-                case ScriptType.Directory:
-                    {
-                        int dirLevel;
-                        if (level is int lv)
-                            dirLevel = lv;
-                        else
-                            dirLevel = 0;
+            if (level is int lv)
+                _level = lv;
+            else
+                _level = 0;
 
-                        // Mandatory Entries
-                        _title = Path.GetFileName(treePath);
-                        _description = $"[Directory] {_title}";
-                        _level = dirLevel;
-
-                        // Optional Entries
-                        _author = string.Empty;
-                        _version = "0";
-                        _selected = SelectedState.None; // This value should be adjusted later!
-                        _mandatory = false;
-                        _link = null;
-
-                        string[] mainSectionLines =
-                        {
-                            $"Title={_title}",
-                            $"Description={_description}",
-                            $"Level={_level}",
-                        };
-
-                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, mainSectionLines, 1)
-                        };
-                    }
-                    break;
-                case ScriptType.Link:
-                    { // Parse only [Main] Section
-                        _sections = ParseScript();
-                        CheckMainSection(ScriptType.Link);
-                        ScriptSection mainSection = _sections["Main"];
-
-                        if (!mainSection.IniDict.ContainsKey("Link"))
-                            throw new ScriptParseException($"Invalid link path in script {realPath}");
-
-                        if (mainSection.IniDict.ContainsKey("Selected"))
-                        {
-                            string value = mainSection.IniDict["Selected"];
-                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                _selected = SelectedState.True;
-                            else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                _selected = SelectedState.False;
-                            else
-                                _selected = SelectedState.None;
-                        }
-                    }
-                    break;
-                case ScriptType.Script:
-                    {
-                        _sections = ParseScript();
-                        InspectTypeOfUninspectedCodeSection();
-                        if (!ignoreMain)
-                        {
-                            CheckMainSection(ScriptType.Script);
-                            ScriptSection mainSection = _sections["Main"];
-
-                            // Mandatory Entry
-                            _title = mainSection.IniDict["Title"];
-                            if (mainSection.IniDict.ContainsKey("Description"))
-                                _description = mainSection.IniDict["Description"];
-                            else
-                                _description = string.Empty;
-                            if (level == null)
-                            {
-                                if (mainSection.IniDict.ContainsKey("Level"))
-                                {
-                                    if (!int.TryParse(mainSection.IniDict["Level"], out _level))
-                                        _level = 0;
-                                }
-                                else
-                                {
-                                    _level = 0;
-                                }
-                            }
-                            else
-                            {
-                                _level = (int)level;
-                            }
-
-                            if (mainSection.IniDict.ContainsKey("Author"))
-                                _author = mainSection.IniDict["Author"];
-                            if (mainSection.IniDict.ContainsKey("Version"))
-                                _version = mainSection.IniDict["Version"];
-                            if (mainSection.IniDict.ContainsKey("Selected"))
-                            {
-                                string src = mainSection.IniDict["Selected"];
-                                if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    _selected = SelectedState.True;
-                                else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    _selected = SelectedState.False;
-                                else
-                                    _selected = SelectedState.None;
-                            }
-                            if (mainSection.IniDict.ContainsKey("Mandatory"))
-                            {
-                                if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    _mandatory = true;
-                                else
-                                    _mandatory = false;
-                            }
-                            if (mainSection.IniDict.ContainsKey("InterfaceList"))
-                            {
-                                string rawList = mainSection.IniDict["InterfaceList"];
-                                if (rawList.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    try
-                                    {
-                                        string remainder = rawList;
-                                        while (remainder != null)
-                                        {
-                                            string next;
-                                            (next, remainder) = CodeParser.GetNextArgument(remainder);
-                                            _interfaceList.Add(next);
-                                        }
-                                    }
-                                    catch (InvalidCommandException) { } // Just Ignore
-                                }
-                            } // InterfaceList
-                            _link = null;
-                        }
-                        else
-                        {
-                            _title = Path.GetFileName(realPath);
-                            _description = string.Empty;
-                            _level = 0;
-                        }
-                    }
-                    break;
-                default:
-                    Debug.Assert(false, "Internal Error at Script constructor"); // Internal Error
-                    break;
-            }
+            ReadMainSection(true);
         }
         #endregion
 
-        #region ParseScript
-        public Dictionary<string, ScriptSection> ParseScript()
+        #region RefreshSections
+        public void RefreshSections()
+        {
+            // If script a directory entry, do nothing.
+            if (Type == ScriptType.Directory)
+                return;
+
+            // Reload sections
+            _sections = ParseSections();
+
+            // Recheck [Main]
+            ReadMainSection(true);
+        }
+        #endregion
+
+        #region ParseSections
+        private Dictionary<string, ScriptSection> ParseSections()
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
@@ -515,7 +398,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ScriptSection
+        #region CreateScriptSectionInstance, RefreshSection
         private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, string[] lines, int lineIdx)
         {
             switch (type)
@@ -561,12 +444,146 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region CheckMainSection
+        #region ReadMainSection, CheckMainSection
+        private void ReadMainSection(bool autoDetectLevel)
+        {
+            switch (Type)
+            {
+                case ScriptType.Directory:
+                    {
+                        // Mandatory Entries
+                        _title = Path.GetFileName(TreePath);
+                        _description = $"[Directory] {_title}";
+
+                        // Optional Entries
+                        _author = string.Empty;
+                        _version = "0";
+                        _selected = SelectedState.None; // This value should be adjusted later!
+                        _mandatory = false;
+                        _link = null;
+
+                        string[] mainSectionLines =
+                        {
+                            $"Title={_title}",
+                            $"Description={_description}",
+                            $"Level={_level}",
+                        };
+
+                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            [ScriptSection.Names.Main] = CreateScriptSectionInstance(ScriptSection.Names.Main, SectionType.Main, mainSectionLines, 1)
+                        };
+                    }
+                    break;
+                case ScriptType.Link:
+                    { // Parse only [Main] Section
+                        _sections = ParseSections();
+                        CheckMainSection(ScriptType.Link);
+                        ScriptSection mainSection = _sections[ScriptSection.Names.Main];
+
+                        if (!mainSection.IniDict.ContainsKey("Link"))
+                            throw new ScriptParseException($"Invalid link path in script {RealPath}");
+
+                        if (mainSection.IniDict.ContainsKey("Selected"))
+                        {
+                            string value = mainSection.IniDict["Selected"];
+                            if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                _selected = SelectedState.True;
+                            else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                _selected = SelectedState.False;
+                            else
+                                _selected = SelectedState.None;
+                        }
+                    }
+                    break;
+                case ScriptType.Script:
+                    {
+                        _sections = ParseSections();
+                        InspectTypeOfUninspectedCodeSection();
+                        if (!_ignoreMain)
+                        {
+                            CheckMainSection(ScriptType.Script);
+                            ScriptSection mainSection = _sections[ScriptSection.Names.Main];
+
+                            // Mandatory Entry
+                            _title = mainSection.IniDict["Title"];
+                            if (mainSection.IniDict.ContainsKey("Description"))
+                                _description = mainSection.IniDict["Description"];
+                            else
+                                _description = string.Empty;
+                            if (autoDetectLevel)
+                            {
+                                if (mainSection.IniDict.ContainsKey("Level"))
+                                {
+                                    if (!int.TryParse(mainSection.IniDict["Level"], out _level))
+                                        _level = 0;
+                                }
+                                else
+                                {
+                                    _level = 0;
+                                }
+                            }
+
+                            if (mainSection.IniDict.ContainsKey("Author"))
+                                _author = mainSection.IniDict["Author"];
+                            if (mainSection.IniDict.ContainsKey("Version"))
+                                _version = mainSection.IniDict["Version"];
+                            if (mainSection.IniDict.ContainsKey("Selected"))
+                            {
+                                string src = mainSection.IniDict["Selected"];
+                                if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    _selected = SelectedState.True;
+                                else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                    _selected = SelectedState.False;
+                                else
+                                    _selected = SelectedState.None;
+                            }
+                            if (mainSection.IniDict.ContainsKey("Mandatory"))
+                            {
+                                if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    _mandatory = true;
+                                else
+                                    _mandatory = false;
+                            }
+                            if (mainSection.IniDict.ContainsKey("InterfaceList"))
+                            {
+                                string rawList = mainSection.IniDict["InterfaceList"];
+                                if (rawList.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    try
+                                    {
+                                        string remainder = rawList;
+                                        while (remainder != null)
+                                        {
+                                            string next;
+                                            (next, remainder) = CodeParser.GetNextArgument(remainder);
+                                            _interfaceList.Add(next);
+                                        }
+                                    }
+                                    catch (InvalidCommandException) { } // Just Ignore
+                                }
+                            } // InterfaceList
+                            _link = null;
+                        }
+                        else
+                        {
+                            _title = Path.GetFileName(RealPath);
+                            _description = string.Empty;
+                            _level = 0;
+                        }
+                    }
+                    break;
+                default:
+                    Debug.Assert(false, "Internal Error at Script constructor"); // Internal Error
+                    break;
+            }
+        }
+
         private void CheckMainSection(ScriptType type)
         {
-            if (!_sections.ContainsKey("Main"))
+            if (!_sections.ContainsKey(ScriptSection.Names.Main))
                 throw new ScriptParseException($"[{_realPath}] is invalid, please Add [Main] Section");
-            Dictionary<string, string> mainDict = _sections["Main"].IniDict;
+            Dictionary<string, string> mainDict = _sections[ScriptSection.Names.Main].IniDict;
 
             bool invalid = false;
             switch (type)

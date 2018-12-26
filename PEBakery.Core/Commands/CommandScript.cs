@@ -42,7 +42,7 @@ namespace PEBakery.Core.Commands
          * WB082 Behavior
          * ExtractFile : DestDir must be Directory, create if not exists.
          * Ex) (...),README.txt,%BaseDir%\Temp\Hello
-         *   -> No Hello : Create direcotry "Hello" and extract files into new directory.
+         *   -> No Hello : Create directory "Hello" and extract files into new directory.
          *   -> Hello is a file : Failure
          *   -> Hello is a directory : Extract files into directory.
          * 
@@ -50,7 +50,7 @@ namespace PEBakery.Core.Commands
          * Ex) (...),Fonts,%BaseDir%\Temp\Hello
          *   -> No Hello : Failure
          *   -> Hello is a file : Failure
-         *   -> Hello is a direcotry : Extract files into directory.
+         *   -> Hello is a directory : Extract files into directory.
          * 
          * PEBakery Behavior
          * ExtractFile/ExtractAllFiles : DestDir must be Directory, create if not exists.
@@ -313,7 +313,7 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
             }
 
-            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool isCurrentScript);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -339,6 +339,7 @@ namespace PEBakery.Core.Commands
                     });
 
                     EncodedFile.AttachFile(sc, dirName, Path.GetFileName(filePath), filePath, mode, progress);
+
                     logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{sc.RealPath}]", cmd));
                 }
                 finally
@@ -382,6 +383,11 @@ namespace PEBakery.Core.Commands
 
                         i += 1;
                     }
+
+                    // Update EngineState and Project if it already exists in one of them.
+                    Engine.UpdateScriptInstance(s, sc);
+                    if (isCurrentScript)
+                        s.CurrentScript = sc;
 
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
