@@ -67,7 +67,7 @@ namespace PEBakery.Tests.Core
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
                     string originFile = Path.Combine(srcDir, fileName);
-                    sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
+                    EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode, null);
 
                     // Check whether file was successfully encoded
                     Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));

@@ -235,6 +235,10 @@ namespace PEBakery.Core
         #endregion
 
         #region RefreshSections
+        /// <summary>
+        /// Refresh sections of a script.
+        /// While Project.RefreshScript create new script instance, Script.RefreshSections refresh only sections.
+        /// </summary>
         public void RefreshSections()
         {
             // If script a directory entry, do nothing.

@@ -804,6 +804,10 @@ namespace PEBakery.Core
         #endregion
 
         #region RefreshScript
+        /// <summary>
+        /// Create new script instance from old one.
+        /// While Project.RefreshScript create new script instance, Script.RefreshSections refresh only sections.
+        /// </summary>
         public Script RefreshScript(Script sc, EngineState s = null)
         {
             if (sc == null)

@@ -384,11 +384,6 @@ namespace PEBakery.Core.Commands
                         i += 1;
                     }
 
-                    // Update EngineState and Project if it already exists in one of them.
-                    Engine.UpdateScriptInstance(s, sc);
-                    if (isCurrentScript)
-                        s.CurrentScript = sc;
-
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
                 finally
