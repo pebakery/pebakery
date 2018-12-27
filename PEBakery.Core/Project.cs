@@ -749,10 +749,12 @@ namespace PEBakery.Core
                     {
                         // Find ts, a Script instance of directory
                         string treePath = Path.Combine(ProjectName, pathKey);
-                        Script ts = scripts.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
+                        Script ts = scripts.FirstOrDefault(x => 
+                            x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase) &&
+                            x.IsDirLink == sc.IsDirLink);
                         Debug.Assert(ts != null, $"Unable to find proper directory for {sc.TreePath}");
 
-                        Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, sc.Level, false, false, ts.IsDirLink);
+                        Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, sc.Level, false, false, sc.IsDirLink);
                         nodeId = scTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
                     }
