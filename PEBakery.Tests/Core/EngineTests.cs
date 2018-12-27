@@ -306,10 +306,10 @@ namespace PEBakery.Tests.Core
             Task<int> t = engine.Run($"Test [{sc.Title}]");
             t.Wait();
             int buildId = t.Result;
-            List<DB_BuildLog> buildLogs = s.Logger.Db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId).ToList();
+            List<LogModel.BuildLog> buildLogs = s.Logger.Db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId).ToList();
 
             List<LogInfo> logs = new List<LogInfo>(buildLogs.Count);
-            foreach (DB_BuildLog buildLog in buildLogs)
+            foreach (LogModel.BuildLog buildLog in buildLogs)
                 logs.Add(new LogInfo(buildLog));
 
             CheckErrorLogs(logs, check);

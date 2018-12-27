@@ -163,8 +163,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Constructor - DB_BuildLog
-        public LogInfo(DB_BuildLog buildLog)
+        #region Constructor - LogModel.BuildLog
+        public LogInfo(LogModel.BuildLog buildLog)
         {
             State = buildLog.State;
             Message = buildLog.Message;
@@ -279,47 +279,47 @@ namespace PEBakery.Core
     #region EventHandlers
     public class SystemLogUpdateEventArgs : EventArgs
     {
-        public DB_SystemLog Log { get; set; }
-        public DB_SystemLog[] Logs { get; set; }
+        public LogModel.SystemLog Log { get; set; }
+        public LogModel.SystemLog[] Logs { get; set; }
 
-        public SystemLogUpdateEventArgs(DB_SystemLog log)
+        public SystemLogUpdateEventArgs(LogModel.SystemLog log)
         {
             Log = log;
         }
 
-        public SystemLogUpdateEventArgs(DB_SystemLog[] logs)
+        public SystemLogUpdateEventArgs(LogModel.SystemLog[] logs)
         {
             Logs = logs;
         }
     }
     public class BuildInfoUpdateEventArgs : EventArgs
     {
-        public DB_BuildInfo Log { get; set; }
-        public BuildInfoUpdateEventArgs(DB_BuildInfo log)
+        public LogModel.BuildInfo Log { get; set; }
+        public BuildInfoUpdateEventArgs(LogModel.BuildInfo log)
         {
             Log = log;
         }
     }
     public class BuildLogUpdateEventArgs : EventArgs
     {
-        public DB_BuildLog Log { get; set; }
-        public BuildLogUpdateEventArgs(DB_BuildLog log)
+        public LogModel.BuildLog Log { get; set; }
+        public BuildLogUpdateEventArgs(LogModel.BuildLog log)
         {
             Log = log;
         }
     }
     public class ScriptUpdateEventArgs : EventArgs
     {
-        public DB_Script Log { get; set; }
-        public ScriptUpdateEventArgs(DB_Script log)
+        public LogModel.Script Log { get; set; }
+        public ScriptUpdateEventArgs(LogModel.Script log)
         {
             Log = log;
         }
     }
     public class VariableUpdateEventArgs : EventArgs
     {
-        public DB_Variable Log { get; set; }
-        public VariableUpdateEventArgs(DB_Variable log)
+        public LogModel.Variable Log { get; set; }
+        public VariableUpdateEventArgs(LogModel.Variable log)
         {
             Log = log;
         }
@@ -356,10 +356,10 @@ namespace PEBakery.Core
     public class DeferredLogging
     {
         public int CurrentScriptId;
-        public DB_BuildInfo BuildInfo;
-        public List<DB_Script> ScriptLogPool; // Only used in FullDeferredLogging
-        public List<DB_Variable> VariablePool; // Only used in FullDeferredLogging
-        public List<DB_BuildLog> BuildLogPool;
+        public LogModel.BuildInfo BuildInfo;
+        public List<LogModel.Script> ScriptLogPool; // Only used in FullDeferredLogging
+        public List<LogModel.Variable> VariablePool; // Only used in FullDeferredLogging
+        public List<LogModel.BuildLog> BuildLogPool;
 
         private readonly Dictionary<int, int> _scriptIdMatchDict; // Only used in FullDeferredLogging
 
@@ -367,11 +367,11 @@ namespace PEBakery.Core
         {
             CurrentScriptId = 0;
             BuildInfo = null;
-            BuildLogPool = new List<DB_BuildLog>(1024);
+            BuildLogPool = new List<LogModel.BuildLog>(1024);
             if (fullDeferred)
             {
-                ScriptLogPool = new List<DB_Script>(64);
-                VariablePool = new List<DB_Variable>(128);
+                ScriptLogPool = new List<LogModel.Script>(64);
+                VariablePool = new List<LogModel.Variable>(128);
                 _scriptIdMatchDict = new Dictionary<int, int>(64) { [0] = 0 };
             }
         }
@@ -400,15 +400,15 @@ namespace PEBakery.Core
             int buildId = BuildInfo.Id;
 
             // Flush ScriptLogPool
-            DB_Script[] newScriptLogPool = ScriptLogPool.Where(x => x.Id < 0).ToArray();
+            LogModel.Script[] newScriptLogPool = ScriptLogPool.Where(x => x.Id < 0).ToArray();
             Dictionary<string, int> scriptOldIdDict = newScriptLogPool.ToDictionary(x => x.FullIdentifier, x => x.Id);
-            foreach (DB_Script log in newScriptLogPool)
+            foreach (LogModel.Script log in newScriptLogPool)
             {
                 log.Id = 0;
                 log.BuildId = buildId;
             }
             s.Logger.Db.InsertAll(newScriptLogPool);
-            foreach (DB_Script log in newScriptLogPool)
+            foreach (LogModel.Script log in newScriptLogPool)
             {
                 int oldId = scriptOldIdDict[log.FullIdentifier];
                 _scriptIdMatchDict[oldId] = log.Id;
@@ -419,8 +419,8 @@ namespace PEBakery.Core
             // s.ScriptId is -N -> local variables
 
             // Flush VariablePool
-            DB_Variable[] newVariablePool = VariablePool.Where(x => x.Id == 0).ToArray();
-            foreach (DB_Variable log in newVariablePool)
+            LogModel.Variable[] newVariablePool = VariablePool.Where(x => x.Id == 0).ToArray();
+            foreach (LogModel.Variable log in newVariablePool)
             {
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
@@ -428,8 +428,8 @@ namespace PEBakery.Core
             s.Logger.Db.InsertAll(newVariablePool);
 
             // Flush BuildLogPool
-            DB_BuildLog[] newBuildLogPool = BuildLogPool.Where(x => x.Id == 0).ToArray();
-            foreach (DB_BuildLog log in newBuildLogPool)
+            LogModel.BuildLog[] newBuildLogPool = BuildLogPool.Where(x => x.Id == 0).ToArray();
+            foreach (LogModel.BuildLog log in newBuildLogPool)
             {
                 log.BuildId = buildId;
                 log.ScriptId = _scriptIdMatchDict[log.ScriptId];
@@ -458,8 +458,8 @@ namespace PEBakery.Core
         public static LogDebugLevel DebugLevel;
         public static bool MinifyHtmlExport;
 
-        private readonly ConcurrentDictionary<int, DB_BuildInfo> _buildDict = new ConcurrentDictionary<int, DB_BuildInfo>();
-        private readonly ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<DB_Script, Stopwatch>>();
+        private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
+        private readonly ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>>();
         private readonly ConcurrentDictionary<string, int> _scriptRefIdDict = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
@@ -540,7 +540,7 @@ namespace PEBakery.Core
                 return 0;
 
             // Build Id
-            DB_BuildInfo dbBuild = new DB_BuildInfo
+            LogModel.BuildInfo dbBuild = new LogModel.BuildInfo
             {
                 StartTime = s.StartTime,
                 Name = name,
@@ -571,13 +571,13 @@ namespace PEBakery.Core
             _buildDict[dbBuild.Id] = dbBuild;
 
             // Variables - Fixed, Global, Local
-            List<DB_Variable> varLogs = new List<DB_Variable>();
+            List<LogModel.Variable> varLogs = new List<LogModel.Variable>();
             foreach (VarsType type in Enum.GetValues(typeof(VarsType)))
             {
                 Dictionary<string, string> dict = s.Variables.GetVarDict(type);
                 foreach (var kv in dict)
                 {
-                    DB_Variable dbVar = new DB_Variable
+                    LogModel.Variable dbVar = new LogModel.Variable
                     {
                         BuildId = s.BuildId,
                         Type = type,
@@ -607,9 +607,9 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            _buildDict.TryRemove(s.BuildId, out DB_BuildInfo dbBuild);
+            _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
             if (dbBuild == null)
-                throw new KeyNotFoundException($"Unable to find DB_BuildInfo instance, id = {s.BuildId}");
+                throw new KeyNotFoundException($"Unable to find LogModel.BuildInfo instance, id = {s.BuildId}");
 
             dbBuild.EndTime = s.EndTime;
             switch (s.LogMode)
@@ -635,7 +635,7 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return 0;
 
-            DB_Script dbScript = new DB_Script
+            LogModel.Script dbScript = new LogModel.Script
             {
                 BuildId = s.BuildId,
                 Level = sc.Level,
@@ -663,7 +663,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptWatchDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
+            _scriptWatchDict[dbScript.Id] = new Tuple<LogModel.Script, Stopwatch>(dbScript, Stopwatch.StartNew());
 
             // Fire Event
             if (s.LogMode == LogMode.NoDefer)
@@ -687,21 +687,21 @@ namespace PEBakery.Core
             int scriptId = s.ScriptId;
 
             // Scripts 
-            _scriptWatchDict.TryRemove(scriptId, out Tuple<DB_Script, Stopwatch> tuple);
+            _scriptWatchDict.TryRemove(scriptId, out Tuple<LogModel.Script, Stopwatch> tuple);
             if (tuple == null)
-                throw new KeyNotFoundException($"Unable to find DB_Script Instance, id = {scriptId}");
+                throw new KeyNotFoundException($"Unable to find LogModel.Script Instance, id = {scriptId}");
 
-            DB_Script dbScript = tuple.Item1;
+            LogModel.Script dbScript = tuple.Item1;
             Stopwatch watch = tuple.Item2;
             watch.Stop();
 
             dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
             if (localVars != null)
             {
-                List<DB_Variable> varLogs = new List<DB_Variable>(localVars.Count);
+                List<LogModel.Variable> varLogs = new List<LogModel.Variable>(localVars.Count);
                 foreach (var kv in localVars)
                 {
-                    DB_Variable dbVar = new DB_Variable
+                    LogModel.Variable dbVar = new LogModel.Variable
                     {
                         BuildId = buildId,
                         ScriptId = scriptId,
@@ -739,7 +739,7 @@ namespace PEBakery.Core
             if (_scriptRefIdDict.ContainsKey(sc.FullIdentifier))
                 return _scriptRefIdDict[sc.FullIdentifier];
 
-            DB_Script dbScript = new DB_Script
+            LogModel.Script dbScript = new LogModel.Script
             {
                 BuildId = s.BuildId,
                 Level = sc.Level,
@@ -768,7 +768,7 @@ namespace PEBakery.Core
         #endregion
 
         #region BuildWrite
-        private void InternalBuildWrite(EngineState s, DB_BuildLog dbCode)
+        private void InternalBuildWrite(EngineState s, LogModel.BuildLog dbCode)
         {
             if (s == null)
             {
@@ -800,14 +800,14 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            DB_BuildLog dbCode = new DB_BuildLog
+            LogModel.BuildLog dbCode = new LogModel.BuildLog
             {
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
                 RefScriptId = s.RefScriptId,
                 Message = message,
-                Flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None,
+                Flags = s.InMacro ? LogModel.BuildLogFlag.Macro : LogModel.BuildLogFlag.None,
             };
 
             InternalBuildWrite(s, dbCode);
@@ -829,7 +829,7 @@ namespace PEBakery.Core
             else
                 state = log.State;
 
-            DB_BuildLog dbCode = new DB_BuildLog
+            LogModel.BuildLog dbCode = new LogModel.BuildLog
             {
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
@@ -839,7 +839,7 @@ namespace PEBakery.Core
                 State = state,
             };
 
-            DbBuildLogFlag flags = s.InMacro ? DbBuildLogFlag.Macro : DbBuildLogFlag.None;
+            LogModel.BuildLogFlag flags = s.InMacro ? LogModel.BuildLogFlag.Macro : LogModel.BuildLogFlag.None;
             if (log.Command == null)
             {
                 dbCode.Flags = flags;
@@ -848,7 +848,7 @@ namespace PEBakery.Core
             else
             {
                 if (log.Command.Type == CodeType.Comment)
-                    flags |= DbBuildLogFlag.Comment;
+                    flags |= LogModel.BuildLogFlag.Comment;
                 dbCode.Flags = flags;
 
                 if (log.Message.Length == 0)
@@ -876,7 +876,7 @@ namespace PEBakery.Core
         {
             foreach (LogInfo log in logs)
             {
-                DB_BuildLog dbCode = new DB_BuildLog
+                LogModel.BuildLog dbCode = new LogModel.BuildLog
                 {
                     Time = DateTime.UtcNow,
                     BuildId = buildId,
@@ -888,12 +888,12 @@ namespace PEBakery.Core
 
                 if (log.Command == null)
                 {
-                    dbCode.Flags = DbBuildLogFlag.None;
+                    dbCode.Flags = LogModel.BuildLogFlag.None;
                     dbCode.Message = log.Message;
                 }
                 else
                 {
-                    dbCode.Flags = log.Command.Type == CodeType.Comment ? DbBuildLogFlag.Comment : DbBuildLogFlag.None;
+                    dbCode.Flags = log.Command.Type == CodeType.Comment ? LogModel.BuildLogFlag.Comment : LogModel.BuildLogFlag.None;
 
                     if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
@@ -911,7 +911,7 @@ namespace PEBakery.Core
         #region SystemWrite
         public void SystemWrite(string message)
         {
-            DB_SystemLog dbLog = new DB_SystemLog
+            LogModel.SystemLog dbLog = new LogModel.SystemLog
             {
                 Time = DateTime.UtcNow,
                 State = LogState.None,
@@ -926,7 +926,7 @@ namespace PEBakery.Core
 
         public void SystemWrite(LogInfo log)
         {
-            DB_SystemLog dbLog = new DB_SystemLog
+            LogModel.SystemLog dbLog = new LogModel.SystemLog
             {
                 Time = DateTime.UtcNow,
                 State = log.State,
@@ -941,7 +941,7 @@ namespace PEBakery.Core
 
         public void SystemWrite(IEnumerable<LogInfo> logs)
         {
-            DB_SystemLog[] dbLogs = logs.Select(log => new DB_SystemLog
+            LogModel.SystemLog[] dbLogs = logs.Select(log => new LogModel.SystemLog
             {
                 Time = DateTime.UtcNow,
                 State = log.State,
@@ -1274,201 +1274,204 @@ namespace PEBakery.Core
     #endregion
 
     #region SQLite Model
-    public class DB_SystemLog
+    public class LogModel
     {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-        public DateTime Time { get; set; }
-        public LogState State { get; set; }
-        [MaxLength(65535)]
-        public string Message { get; set; }
-
-        // Used in LogWindow
-        [Ignore]
-        public string StateStr => State == LogState.None ? string.Empty : State.ToString();
-
-        [Ignore]
-        public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-
-        public override string ToString()
+        public class SystemLog
         {
-            return $"{Id} = [{State}] {Message}";
-        }
-    }
+            [PrimaryKey, AutoIncrement]
+            public int Id { get; set; }
+            public DateTime Time { get; set; }
+            public LogState State { get; set; }
+            [MaxLength(65535)]
+            public string Message { get; set; }
 
-    public class DB_BuildInfo
-    {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
-        [MaxLength(256)]
-        public string Name { get; set; }
+            // Used in LogWindow
+            [Ignore]
+            public string StateStr => State == LogState.None ? string.Empty : State.ToString();
 
-        [Ignore]
-        public string TimeStr => StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-        [Ignore]
-        public string Text => $"[{TimeStr}] {Name} ({Id})";
+            [Ignore]
+            public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
 
-        public override string ToString()
-        {
-            return $"{Id} = {Name}";
-        }
-    }
-
-    public class DB_Script
-    {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-        [Indexed]
-        public int BuildId { get; set; }
-        // Referenced scripts   : Set to 0 (Usually macro script)
-        // Active build scripts : Starts from 1
-        public int Order { get; set; }
-        public int Level { get; set; }
-        [MaxLength(256)]
-        public string Name { get; set; }
-        [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
-        public string RealPath { get; set; }
-        public string TreePath { get; set; }
-        public string Version { get; set; }
-        public long ElapsedMilliSec { get; set; }
-
-        public override string ToString()
-        {
-            return $"{BuildId},{Id} = {Level} {Name} {Version}";
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <remarks>
-        /// $"{Level}_{RealPath}_{TreePath}" is not enough.
-        /// MainScript's [Process] section is called prior to every build.
-        /// If one intended to run MainScript's another section, two DB_Script instance will have same FullIdentifier.
-        /// To handle this, add Order and Name as a safeguard.
-        /// </remarks>
-        public string FullIdentifier => $"{Level}_{Order}_{Name}_{RealPath}_{TreePath}";
-    }
-
-    public class DB_Variable
-    {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-        [Indexed]
-        public int BuildId { get; set; }
-        [Indexed]
-        public int ScriptId { get; set; }
-        public VarsType Type { get; set; }
-        [MaxLength(256)]
-        public string Key { get; set; }
-        [MaxLength(65535)]
-        public string Value { get; set; }
-
-        public override string ToString()
-        {
-            return $"{BuildId},{Id} = ({Type}) {Key}={Value}";
-        }
-    }
-
-    [Flags]
-    public enum DbBuildLogFlag
-    {
-        None = 0x00,
-        Comment = 0x01,
-        Macro = 0x02
-    }
-
-    public class DB_BuildLog
-    {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-        public DateTime Time { get; set; }
-        [Indexed]
-        public int BuildId { get; set; }
-        [Indexed]
-        public int ScriptId { get; set; } // Where the command was called
-        public int RefScriptId { get; set; } // Where the command resides in (Run/Exec). 0 if invalid.
-        public int Depth { get; set; }
-        public LogState State { get; set; }
-        [MaxLength(65535)]
-        public string Message { get; set; }
-        public int LineIdx { get; set; }
-        [MaxLength(65535)]
-        public string RawCode { get; set; }
-        public DbBuildLogFlag Flags { get; set; }
-
-        [Ignore]
-        public string Text => Export(LogExportType.Text, true);
-        public string Export(LogExportType type, bool logDepth)
-        {
-            string str = string.Empty;
-            switch (type)
+            public override string ToString()
             {
-                #region Text
-                case LogExportType.Text:
-                    {
-                        StringBuilder b = new StringBuilder();
+                return $"{Id} = [{State}] {Message}";
+            }
+        }
 
-                        if (logDepth)
+        public class BuildInfo
+        {
+            [PrimaryKey, AutoIncrement]
+            public int Id { get; set; }
+            public DateTime StartTime { get; set; }
+            public DateTime EndTime { get; set; }
+            [MaxLength(256)]
+            public string Name { get; set; }
+
+            [Ignore]
+            public string TimeStr => StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+            [Ignore]
+            public string Text => $"[{TimeStr}] {Name} ({Id})";
+
+            public override string ToString()
+            {
+                return $"{Id} = {Name}";
+            }
+        }
+
+        public class Script
+        {
+            [PrimaryKey, AutoIncrement]
+            public int Id { get; set; }
+            [Indexed]
+            public int BuildId { get; set; }
+            // Referenced scripts   : Set to 0 (Usually macro script)
+            // Active build scripts : Starts from 1
+            public int Order { get; set; }
+            public int Level { get; set; }
+            [MaxLength(256)]
+            public string Name { get; set; }
+            [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
+            public string RealPath { get; set; }
+            public string TreePath { get; set; }
+            public string Version { get; set; }
+            public long ElapsedMilliSec { get; set; }
+
+            public override string ToString()
+            {
+                return $"{BuildId},{Id} = {Level} {Name} {Version}";
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <remarks>
+            /// $"{Level}_{RealPath}_{TreePath}" is not enough.
+            /// MainScript's [Process] section is called prior to every build.
+            /// If one intended to run MainScript's another section, two LogModel.Script instance will have same FullIdentifier.
+            /// To handle this, add Order and Name as a safeguard.
+            /// </remarks>
+            public string FullIdentifier => $"{Level}_{Order}_{Name}_{RealPath}_{TreePath}";
+        }
+
+        public class Variable
+        {
+            [PrimaryKey, AutoIncrement]
+            public int Id { get; set; }
+            [Indexed]
+            public int BuildId { get; set; }
+            [Indexed]
+            public int ScriptId { get; set; }
+            public VarsType Type { get; set; }
+            [MaxLength(256)]
+            public string Key { get; set; }
+            [MaxLength(65535)]
+            public string Value { get; set; }
+
+            public override string ToString()
+            {
+                return $"{BuildId},{Id} = ({Type}) {Key}={Value}";
+            }
+        }
+
+        [Flags]
+        public enum BuildLogFlag
+        {
+            None = 0x00,
+            Comment = 0x01,
+            Macro = 0x02
+        }
+
+        public class BuildLog
+        {
+            [PrimaryKey, AutoIncrement]
+            public int Id { get; set; }
+            public DateTime Time { get; set; }
+            [Indexed]
+            public int BuildId { get; set; }
+            [Indexed]
+            public int ScriptId { get; set; } // Where the command was called
+            public int RefScriptId { get; set; } // Where the command resides in (Run/Exec). 0 if invalid.
+            public int Depth { get; set; }
+            public LogState State { get; set; }
+            [MaxLength(65535)]
+            public string Message { get; set; }
+            public int LineIdx { get; set; }
+            [MaxLength(65535)]
+            public string RawCode { get; set; }
+            public LogModel.BuildLogFlag Flags { get; set; }
+
+            [Ignore]
+            public string Text => Export(LogExportType.Text, true);
+            public string Export(LogExportType type, bool logDepth)
+            {
+                string str = string.Empty;
+                switch (type)
+                {
+                    #region Text
+                    case LogExportType.Text:
                         {
-                            for (int i = 0; i < Depth; i++)
-                                b.Append("  ");
-                        }
+                            StringBuilder b = new StringBuilder();
 
-                        if (State == LogState.None)
-                        { // No State
+                            if (logDepth)
+                            {
+                                for (int i = 0; i < Depth; i++)
+                                    b.Append("  ");
+                            }
+
+                            if (State == LogState.None)
+                            { // No State
+                                if (RawCode == null)
+                                    b.Append(Message);
+                                else
+                                    b.Append($"{Message} ({RawCode})");
+                            }
+                            else
+                            { // Has State
+                                if (RawCode == null)
+                                    b.Append($"[{State}] {Message}");
+                                else
+                                    b.Append($"[{State}] {Message} ({RawCode})");
+                            }
+
+                            if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
+                                b.Append($" (Line {LineIdx})");
+
+                            str = b.ToString();
+                        }
+                        break;
+                    #endregion
+                    #region HTML
+                    case LogExportType.Html:
+                        {
+                            StringBuilder b = new StringBuilder();
+
+                            if (logDepth)
+                            {
+                                for (int i = 0; i < Depth; i++)
+                                    b.Append("  ");
+                            }
+
                             if (RawCode == null)
                                 b.Append(Message);
                             else
                                 b.Append($"{Message} ({RawCode})");
+
+                            if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
+                                b.Append($" (Line {LineIdx})");
+
+                            str = b.ToString();
                         }
-                        else
-                        { // Has State
-                            if (RawCode == null)
-                                b.Append($"[{State}] {Message}");
-                            else
-                                b.Append($"[{State}] {Message} ({RawCode})");
-                        }
+                        break;
+                        #endregion
+                }
 
-                        if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
-                            b.Append($" (Line {LineIdx})");
-
-                        str = b.ToString();
-                    }
-                    break;
-                #endregion
-                #region HTML
-                case LogExportType.Html:
-                    {
-                        StringBuilder b = new StringBuilder();
-
-                        if (logDepth)
-                        {
-                            for (int i = 0; i < Depth; i++)
-                                b.Append("  ");
-                        }
-
-                        if (RawCode == null)
-                            b.Append(Message);
-                        else
-                            b.Append($"{Message} ({RawCode})");
-
-                        if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
-                            b.Append($" (Line {LineIdx})");
-
-                        str = b.ToString();
-                    }
-                    break;
-                    #endregion
+                return str;
             }
 
-            return str;
-        }
-
-        public override string ToString()
-        {
-            return $"{BuildId}, {Id} = [{State}, {Depth}] {Message} ({RawCode})";
+            public override string ToString()
+            {
+                return $"{BuildId}, {Id} = [{State}, {Depth}] {Message} ({RawCode})";
+            }
         }
     }
     #endregion
@@ -1479,11 +1482,11 @@ namespace PEBakery.Core
         public LogDatabase(string path)
             : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
-            CreateTable<DB_SystemLog>();
-            CreateTable<DB_BuildInfo>();
-            CreateTable<DB_Script>();
-            CreateTable<DB_Variable>();
-            CreateTable<DB_BuildLog>();
+            CreateTable<LogModel.SystemLog>();
+            CreateTable<LogModel.BuildInfo>();
+            CreateTable<LogModel.Script>();
+            CreateTable<LogModel.Variable>();
+            CreateTable<LogModel.BuildLog>();
         }
 
         #region ClearTable
@@ -1499,15 +1502,15 @@ namespace PEBakery.Core
         public void ClearTable(ClearTableOptions opts)
         {
             if (opts.SystemLog)
-                DeleteAll<DB_SystemLog>();
+                DeleteAll<LogModel.SystemLog>();
             if (opts.BuildInfo)
-                DeleteAll<DB_BuildInfo>();
+                DeleteAll<LogModel.BuildInfo>();
             if (opts.Script)
-                DeleteAll<DB_Script>();
+                DeleteAll<LogModel.Script>();
             if (opts.BuildLog)
-                DeleteAll<DB_BuildLog>();
+                DeleteAll<LogModel.BuildLog>();
             if (opts.Variable)
-                DeleteAll<DB_Variable>();
+                DeleteAll<LogModel.Variable>();
             Execute("VACUUM");
         }
         #endregion

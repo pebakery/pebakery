@@ -414,11 +414,11 @@ namespace PEBakery.Core
             List<int> removeIdxs = new List<int>();
 
             // Doing this will consume memory, but also greatly increase performance.
-            DB_ScriptCache[] cachePool = null;
+            CacheModel.ScriptCache[] cachePool = null;
             if (scriptCache != null)
             {
                 progress?.Report((Project.LoadReport.LoadingCache, null));
-                cachePool = scriptCache.Table<DB_ScriptCache>().ToArray();
+                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
             }
 
             string CheckLinkPath(Script sc, string linkRawPath)
@@ -629,11 +629,11 @@ namespace PEBakery.Core
             string mainScriptPath = Path.Combine(ProjectDir, KnownPaths.MainScriptFile);
             AllScripts = new List<Script>();
 
-            DB_ScriptCache[] cachePool = null;
+            CacheModel.ScriptCache[] cachePool = null;
             if (scriptCache != null)
             {
                 progress?.Report((LoadReport.LoadingCache, null));
-                cachePool = scriptCache.Table<DB_ScriptCache>().ToArray();
+                cachePool = scriptCache.Table<CacheModel.ScriptCache>().ToArray();
             }
 
             // Load scripts from disk or cache

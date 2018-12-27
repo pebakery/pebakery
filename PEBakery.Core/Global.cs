@@ -46,7 +46,7 @@ namespace PEBakery.Core
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r10";
+            public const string ScriptCacheRevision = "r11";
             public const string StringVersion = "0.9.6";
             public const string StringVersionFull = "0.9.6 beta6";
         }
@@ -171,7 +171,7 @@ namespace PEBakery.Core
                 try
                 {
                     ScriptCache = new ScriptCache(cacheDbFile);
-                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {ScriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {ScriptCache.Table<CacheModel.ScriptCache>().Count()} cached scripts found"));
                 }
                 catch (SQLiteException e)
                 { // Load failure

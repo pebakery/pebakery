@@ -81,7 +81,7 @@ namespace PEBakery.WPF
             else if (e.Logs != null)
             {
                 // e.Logs
-                foreach (DB_SystemLog dbLog in e.Logs)
+                foreach (LogModel.SystemLog dbLog in e.Logs)
                     _m.SystemLogs.Add(dbLog);
             }
 
@@ -183,7 +183,7 @@ namespace PEBakery.WPF
             if (_m.FullBuildLogSelectedIndex < 0 || _m.BuildLogs.Count <= _m.FullBuildLogSelectedIndex)
                 return;
 
-            DB_BuildLog log = _m.BuildLogs[_m.FullBuildLogSelectedIndex];
+            LogModel.BuildLog log = _m.BuildLogs[_m.FullBuildLogSelectedIndex];
             Clipboard.SetText(log.Export(LogExportType.Text, false));
         }
 
@@ -192,7 +192,7 @@ namespace PEBakery.WPF
             if (_m.SimpleBuildLogSelectedIndex < 0 || _m.BuildLogs.Count <= _m.SimpleBuildLogSelectedIndex)
                 return;
 
-            DB_BuildLog log = _m.BuildLogs[_m.SimpleBuildLogSelectedIndex];
+            LogModel.BuildLog log = _m.BuildLogs[_m.SimpleBuildLogSelectedIndex];
             Clipboard.SetText(log.Export(LogExportType.Text, false));
         }
 
@@ -201,7 +201,7 @@ namespace PEBakery.WPF
             if (_m.VariableLogSelectedIndex < 0 || _m.VariableLogs.Count <= _m.VariableLogSelectedIndex)
                 return;
 
-            DB_Variable log = _m.VariableLogs[_m.VariableLogSelectedIndex];
+            LogModel.Variable log = _m.VariableLogs[_m.VariableLogSelectedIndex];
             Clipboard.SetText($"[{log.Type}] %{log.Key}%={log.Value}");
         }
         #endregion
@@ -329,12 +329,12 @@ namespace PEBakery.WPF
             Logger = Global.Logger;
 
             // Set ObservableCollection
-            SystemLogs = new ObservableCollection<DB_SystemLog>();
+            SystemLogs = new ObservableCollection<LogModel.SystemLog>();
             BuildEntries = new ObservableCollection<Tuple<string, int>>();
             ScriptEntries = new ObservableCollection<Tuple<string, int, int>>();
             LogStats = new ObservableCollection<Tuple<LogState, int>>();
-            BuildLogs = new ObservableCollection<DB_BuildLog>();
-            VariableLogs = new ObservableCollection<DB_Variable>();
+            BuildLogs = new ObservableCollection<LogModel.BuildLog>();
+            VariableLogs = new ObservableCollection<LogModel.Variable>();
 
             // Prepare Logs
             RefreshSystemLog();
@@ -350,7 +350,7 @@ namespace PEBakery.WPF
         public void RefreshSystemLog()
         {
             SystemLogs.Clear();
-            foreach (DB_SystemLog log in LogDb.Table<DB_SystemLog>())
+            foreach (LogModel.SystemLog log in LogDb.Table<LogModel.SystemLog>())
             {
                 log.Time = log.Time.ToLocalTime();
                 SystemLogs.Add(log);
@@ -364,7 +364,7 @@ namespace PEBakery.WPF
             VariableLogs.Clear();
 
             // Populate SelectBuildEntries
-            DB_BuildInfo[] buildEntries = LogDb.Table<DB_BuildInfo>()
+            LogModel.BuildInfo[] buildEntries = LogDb.Table<LogModel.BuildInfo>()
                 .OrderByDescending(x => x.StartTime)
                 .ToArray();
             BuildEntries = new ObservableCollection<Tuple<string, int>>(
@@ -386,11 +386,11 @@ namespace PEBakery.WPF
             {
                 // Populate SelectScriptEntries
                 ScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
-                DB_Script[] scripts = LogDb.Table<DB_Script>()
+                LogModel.Script[] scripts = LogDb.Table<LogModel.Script>()
                     .Where(x => x.BuildId == buildId && 0 < x.Order)
                     .OrderBy(x => x.Order)
                     .ToArray();
-                foreach (DB_Script sc in scripts)
+                foreach (LogModel.Script sc in scripts)
                 {
                     ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.TreePath})", sc.Id, (int)buildId));
                 }
@@ -415,15 +415,15 @@ namespace PEBakery.WPF
                 if (scriptId == -1)
                 { // Summary
                   // BuildLog
-                    _allBuildLogs = new List<DB_BuildLog>();
+                    _allBuildLogs = new List<LogModel.BuildLog>();
                     foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning })
                     {
-                        var bLogs = LogDb.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == state);
+                        var bLogs = LogDb.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == state);
                         _allBuildLogs.AddRange(bLogs);
                     }
                     if (_allBuildLogs.Count == 0)
                     {
-                        _allBuildLogs.Add(new DB_BuildLog
+                        _allBuildLogs.Add(new LogModel.BuildLog
                         {
                             BuildId = buildId,
                             State = LogState.Info,
@@ -431,14 +431,14 @@ namespace PEBakery.WPF
                             Time = DateTime.MinValue,
                         });
                     }
-                    BuildLogs = new ObservableCollection<DB_BuildLog>(_allBuildLogs);
+                    BuildLogs = new ObservableCollection<LogModel.BuildLog>(_allBuildLogs);
 
                     // Variables
-                    var varLogs = LogDb.Table<DB_Variable>()
+                    var varLogs = LogDb.Table<LogModel.Variable>()
                         .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
                         .OrderBy(x => x.Type)
                         .ThenBy(x => x.Key);
-                    VariableLogs = new ObservableCollection<DB_Variable>(varLogs);
+                    VariableLogs = new ObservableCollection<LogModel.Variable>(varLogs);
 
                     // Statistics
                     List<Tuple<LogState, int>> fullStat = new List<Tuple<LogState, int>>();
@@ -446,7 +446,7 @@ namespace PEBakery.WPF
                     foreach (LogState state in existStates)
                     {
                         int count = LogDb
-                            .Table<DB_BuildLog>()
+                            .Table<LogModel.BuildLog>()
                             .Count(x => x.BuildId == buildId && x.State == state);
 
                         fullStat.Add(new Tuple<LogState, int>(state, count));
@@ -456,25 +456,25 @@ namespace PEBakery.WPF
                 else
                 { // Per Script
                   // BuildLog
-                    var builds = LogDb.Table<DB_BuildLog>()
+                    var builds = LogDb.Table<LogModel.BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
                     if (!BuildLogShowComments)
-                        builds = builds.Where(x => (x.Flags & DbBuildLogFlag.Comment) != DbBuildLogFlag.Comment);
+                        builds = builds.Where(x => (x.Flags & LogModel.BuildLogFlag.Comment) != LogModel.BuildLogFlag.Comment);
                     if (!BuildLogShowMacros)
-                        builds = builds.Where(x => (x.Flags & DbBuildLogFlag.Macro) != DbBuildLogFlag.Macro);
-                    _allBuildLogs = new List<DB_BuildLog>(builds);
-                    BuildLogs = new ObservableCollection<DB_BuildLog>(_allBuildLogs);
+                        builds = builds.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
+                    _allBuildLogs = new List<LogModel.BuildLog>(builds);
+                    BuildLogs = new ObservableCollection<LogModel.BuildLog>(_allBuildLogs);
 
                     // Variables
-                    List<DB_Variable> varLogs = new List<DB_Variable>();
-                    varLogs.AddRange(LogDb.Table<DB_Variable>()
+                    List<LogModel.Variable> varLogs = new List<LogModel.Variable>();
+                    varLogs.AddRange(LogDb.Table<LogModel.Variable>()
                         .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
                         .OrderBy(x => x.Type)
                         .ThenBy(x => x.Key));
-                    varLogs.AddRange(LogDb.Table<DB_Variable>()
+                    varLogs.AddRange(LogDb.Table<LogModel.Variable>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId && x.Type == VarsType.Local)
                         .OrderBy(x => x.Key));
-                    VariableLogs = new ObservableCollection<DB_Variable>(varLogs);
+                    VariableLogs = new ObservableCollection<LogModel.Variable>(varLogs);
 
                     // Statistics
                     List<Tuple<LogState, int>> fullStat = new List<Tuple<LogState, int>>();
@@ -482,7 +482,7 @@ namespace PEBakery.WPF
                     foreach (LogState state in existStates)
                     {
                         int count = LogDb
-                            .Table<DB_BuildLog>()
+                            .Table<LogModel.BuildLog>()
                             .Count(x => x.BuildId == buildId && x.ScriptId == scriptId && x.State == state);
 
                         fullStat.Add(new Tuple<LogState, int>(state, count));
@@ -492,7 +492,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                BuildLogs = new ObservableCollection<DB_BuildLog>();
+                BuildLogs = new ObservableCollection<LogModel.BuildLog>();
             }
         }
         #endregion
@@ -522,8 +522,8 @@ namespace PEBakery.WPF
         }
 
         private readonly object _systemLogsLock = new object();
-        private ObservableCollection<DB_SystemLog> _systemLogs;
-        public ObservableCollection<DB_SystemLog> SystemLogs
+        private ObservableCollection<LogModel.SystemLog> _systemLogs;
+        public ObservableCollection<LogModel.SystemLog> SystemLogs
         {
             get => _systemLogs;
             set => SetCollectionProperty(ref _systemLogs, _systemLogsLock, value);
@@ -592,10 +592,10 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _logStats, _logStatsLock, value);
         }
 
-        private List<DB_BuildLog> _allBuildLogs = new List<DB_BuildLog>();
+        private List<LogModel.BuildLog> _allBuildLogs = new List<LogModel.BuildLog>();
         private readonly object _buildLogsLock = new object();
-        private ObservableCollection<DB_BuildLog> _buildLogs;
-        public ObservableCollection<DB_BuildLog> BuildLogs
+        private ObservableCollection<LogModel.BuildLog> _buildLogs;
+        public ObservableCollection<LogModel.BuildLog> BuildLogs
         {
             get => _buildLogs;
             set => SetCollectionProperty(ref _buildLogs, _buildLogsLock, value);
@@ -616,8 +616,8 @@ namespace PEBakery.WPF
         }
 
         private readonly object _variableLogsLock = new object();
-        private ObservableCollection<DB_Variable> _variableLogs;
-        public ObservableCollection<DB_Variable> VariableLogs
+        private ObservableCollection<LogModel.Variable> _variableLogs;
+        public ObservableCollection<LogModel.Variable> VariableLogs
         {
             get => _variableLogs;
             set => SetCollectionProperty(ref _variableLogs, _variableLogsLock, value);

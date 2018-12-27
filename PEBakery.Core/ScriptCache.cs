@@ -38,7 +38,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
@@ -52,8 +51,8 @@ namespace PEBakery.Core
         #region Constructor
         public ScriptCache(string path) : base(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)
         {
-            CreateTable<DB_CacheRevision>();
-            CreateTable<DB_ScriptCache>();
+            CreateTable<CacheModel.CacheRevision>();
+            CreateTable<CacheModel.ScriptCache>();
         }
         #endregion
 
@@ -89,8 +88,8 @@ namespace PEBakery.Core
                         .Distinct(new ScriptComparer())
                         .ToArray();
 
-                    DB_ScriptCache[] cachePool = Table<DB_ScriptCache>().ToArray();
-                    List<DB_ScriptCache> updatePool = new List<DB_ScriptCache>();
+                    CacheModel.ScriptCache[] cachePool = Table<CacheModel.ScriptCache>().ToArray();
+                    List<CacheModel.ScriptCache> updatePool = new List<CacheModel.ScriptCache>();
                     Parallel.ForEach(uniqueScripts, sc =>
                     {
                         bool updated = SerializeScript(sc, cachePool, updatePool);
@@ -120,7 +119,7 @@ namespace PEBakery.Core
 
         #region SerializeScript, DeserializeScript
         /// <returns>Return true if cache is updated</returns>
-        private bool SerializeScript(Script sc, DB_ScriptCache[] cachePool, List<DB_ScriptCache> updatePool)
+        private bool SerializeScript(Script sc, CacheModel.ScriptCache[] cachePool, List<CacheModel.ScriptCache> updatePool)
         {
             if (cachePool == null)
                 throw new ArgumentNullException(nameof(cachePool));
@@ -135,12 +134,12 @@ namespace PEBakery.Core
 
             // Retrieve Cache
             bool updated = false;
-            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == sc.DirectRealPath.GetHashCode());
+            CacheModel.ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == sc.DirectRealPath.GetHashCode());
 
             // Update Cache into updateDB
             if (scCache == null)
             { // Cache not exists
-                scCache = new DB_ScriptCache
+                scCache = new CacheModel.ScriptCache
                 {
                     Hash = sc.DirectRealPath.GetHashCode(),
                     RealPath = sc.DirectRealPath,
@@ -189,13 +188,13 @@ namespace PEBakery.Core
             return updated;
         }
 
-        public static (Script sc, bool cacheValid) DeserializeScript(string realPath, DB_ScriptCache[] cachePool)
+        public static (Script sc, bool cacheValid) DeserializeScript(string realPath, CacheModel.ScriptCache[] cachePool)
         {
             Script sc = null;
             bool cacheValid = true;
 
             FileInfo f = new FileInfo(realPath);
-            DB_ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == realPath.GetHashCode());
+            CacheModel.ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == realPath.GetHashCode());
             if (scCache != null &&
                 scCache.RealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase) &&
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
@@ -231,19 +230,19 @@ namespace PEBakery.Core
         private const string AsteriskBugDirLink = "AsteriskBugDirLink";
         public void SaveCacheRevision(string baseDir)
         {
-            DB_CacheRevision[] infos =
+            CacheModel.CacheRevision[] infos =
             {
-                new DB_CacheRevision { Key = EngineVersion, Value = Global.Const.EngineVersion.ToString("000") },
-                new DB_CacheRevision { Key = BaseDir, Value = baseDir },
-                new DB_CacheRevision { Key = CacheRevision, Value = Global.Const.ScriptCacheRevision },
-                new DB_CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink() },
+                new CacheModel.CacheRevision { Key = EngineVersion, Value = Global.Const.EngineVersion.ToString("000") },
+                new CacheModel.CacheRevision { Key = BaseDir, Value = baseDir },
+                new CacheModel.CacheRevision { Key = CacheRevision, Value = Global.Const.ScriptCacheRevision },
+                new CacheModel.CacheRevision { Key = AsteriskBugDirLink, Value = SerializeAsteriskBugDirLink() },
             };
             InsertOrReplaceAll(infos);
         }
 
         public bool CheckCacheRevision(string baseDir)
         {
-            Dictionary<string, string> infoDict = Table<DB_CacheRevision>().ToDictionary(x => x.Key, x => x.Value);
+            Dictionary<string, string> infoDict = Table<CacheModel.CacheRevision>().ToDictionary(x => x.Key, x => x.Value);
 
             // Does key exist?
             if (!infoDict.ContainsKey(EngineVersion))
@@ -292,7 +291,7 @@ namespace PEBakery.Core
                     b.AppendLine($"{key}={value}");
                 }
             }
-            
+
             return b.ToString();
         }
         #endregion
@@ -322,9 +321,9 @@ namespace PEBakery.Core
         public void ClearTable(ClearTableOptions opts)
         {
             if (opts.CacheInfo)
-                DeleteAll<DB_CacheRevision>();
+                DeleteAll<CacheModel.CacheRevision>();
             if (opts.ScriptCache)
-                DeleteAll<DB_ScriptCache>();
+                DeleteAll<CacheModel.ScriptCache>();
             Execute("VACUUM");
         }
         #endregion
@@ -332,32 +331,35 @@ namespace PEBakery.Core
     #endregion
 
     #region Model
-    public class DB_CacheRevision
+    public class CacheModel
     {
-        [PrimaryKey]
-        public string Key { get; set; }
-        public string Value { get; set; }
+        public class CacheRevision
+        {
+            [PrimaryKey]
+            public string Key { get; set; }
+            public string Value { get; set; }
 
-        public override string ToString() => $"Key [{Key}] = {Value}";
-    }
+            public override string ToString() => $"Key [{Key}] = {Value}";
+        }
 
-    public class DB_ScriptCache
-    {
-        /// <summary>
-        /// RealPath.GetHashCode()
-        /// </summary>
-        [PrimaryKey]
-        public int Hash { get; set; }
-        /// <summary>
-        /// Equivalent to Script.DirectRealPath
-        /// </summary>
-        [MaxLength(32768)]
-        public string RealPath { get; set; }
-        public DateTime LastWriteTimeUtc { get; set; }
-        public long FileSize { get; set; }
-        public byte[] Serialized { get; set; }
+        public class ScriptCache
+        {
+            /// <summary>
+            /// RealPath.GetHashCode()
+            /// </summary>
+            [PrimaryKey]
+            public int Hash { get; set; }
+            /// <summary>
+            /// Equivalent to Script.DirectRealPath
+            /// </summary>
+            [MaxLength(32768)]
+            public string RealPath { get; set; }
+            public DateTime LastWriteTimeUtc { get; set; }
+            public long FileSize { get; set; }
+            public byte[] Serialized { get; set; }
 
-        public override string ToString() => $"[{Hash}] {RealPath}";
+            public override string ToString() => $"[{Hash}] {RealPath}";
+        }
     }
     #endregion
 }

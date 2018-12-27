@@ -297,11 +297,11 @@ namespace PEBakery.WPF
             if (value == null)
                 return string.Empty;
 
-            DbBuildLogFlag flags = (DbBuildLogFlag)value;
+            LogModel.BuildLogFlag flags = (LogModel.BuildLogFlag)value;
             string result = string.Empty;
-            if ((flags & DbBuildLogFlag.Comment) == DbBuildLogFlag.Comment)
+            if ((flags & LogModel.BuildLogFlag.Comment) == LogModel.BuildLogFlag.Comment)
                 result += 'C';
-            if ((flags & DbBuildLogFlag.Macro) == DbBuildLogFlag.Macro)
+            if ((flags & LogModel.BuildLogFlag.Macro) == LogModel.BuildLogFlag.Macro)
                 result += 'M';
             return result;
         }
@@ -313,11 +313,11 @@ namespace PEBakery.WPF
             if (!(value is string str))
                 return null;
 
-            DbBuildLogFlag flags = DbBuildLogFlag.None;
+            LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
             if (str.Contains('C'))
-                flags |= DbBuildLogFlag.Comment;
+                flags |= LogModel.BuildLogFlag.Comment;
             if (str.Contains('M'))
-                flags |= DbBuildLogFlag.Macro;
+                flags |= LogModel.BuildLogFlag.Macro;
             return flags;
         }
     }

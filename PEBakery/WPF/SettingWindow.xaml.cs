@@ -1106,8 +1106,8 @@ namespace PEBakery.WPF
 
         public void UpdateLogDbState()
         {
-            int systemLogCount = Global.Logger.Db.Table<DB_SystemLog>().Count();
-            int codeLogCount = Global.Logger.Db.Table<DB_BuildLog>().Count();
+            int systemLogCount = Global.Logger.Db.Table<LogModel.SystemLog>().Count();
+            int codeLogCount = Global.Logger.Db.Table<LogModel.BuildLog>().Count();
             LogDatabaseState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 
@@ -1119,7 +1119,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                int cacheCount = Global.ScriptCache.Table<DB_ScriptCache>().Count();
+                int cacheCount = Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
                 ScriptCacheState = $"{cacheCount} scripts cached";
             }
         }
