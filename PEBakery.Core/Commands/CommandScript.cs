@@ -313,7 +313,7 @@ namespace PEBakery.Core.Commands
                     return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
             }
 
-            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out bool isCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, s.CurrentScript.RealPath, scriptFile, out _);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -327,14 +327,10 @@ namespace PEBakery.Core.Commands
                         lock (progressLock)
                         {
                             s.MainViewModel.BuildCommandProgressValue = x;
-                            if (x < EncodedFile.CompReportFactor)
-                            { // [Stage 1] Compress
+                            if (x < EncodedFile.CompReportFactor) // [Stage 1] Compress
                                 s.MainViewModel.BuildCommandProgressText = $"Compressing \"{filePath}\"\r\n({x * 100:0.0}%)";
-                            }
-                            else
-                            { // [Stage 2] Base64
+                            else // [Stage 2] Base64
                                 s.MainViewModel.BuildCommandProgressText = $"Writing \"{filePath}\" to script\r\n({x * 100:0.0}%)";
-                            }
                         }
                     });
 

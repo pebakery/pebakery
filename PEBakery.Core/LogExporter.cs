@@ -268,7 +268,7 @@ namespace PEBakery.Core
                                     _w.WriteLine($"- Local Variables of Script [{scLog.Name}]");
                                     foreach (DB_Variable vLog in vLogs)
                                         _w.WriteLine($"%{vLog.Key}% = {vLog.Value}");
-                                    _w.WriteLine(Logger.LogSeperator);
+                                    _w.WriteLine(Logger.LogSeparator);
                                 }
 
                                 _w.WriteLine();

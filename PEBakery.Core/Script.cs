@@ -166,6 +166,8 @@ namespace PEBakery.Core
                 return _version;
             }
         }
+
+        public string TidyVersion => StringEscaper.ProcessVersionString(Version) ?? Version;
         public int Level
         {
             get

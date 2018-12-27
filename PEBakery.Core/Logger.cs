@@ -325,13 +325,13 @@ namespace PEBakery.Core
         }
     }
 
-    // For NoDelay, PartDelay
+    // For NoDefer, PartDefer
     public delegate void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e);
     public delegate void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e);
     public delegate void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e);
     public delegate void ScriptUpdateEventHandler(object sender, ScriptUpdateEventArgs e);
     public delegate void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e);
-    // For FullDelay
+    // For FullDefer
     public delegate void FullRefreshEventHandler(object sender, EventArgs e);
     #endregion
 
@@ -363,12 +363,12 @@ namespace PEBakery.Core
 
         private readonly Dictionary<int, int> _scriptIdMatchDict; // Only used in FullDeferredLogging
 
-        public DeferredLogging(bool fullDelayed)
+        public DeferredLogging(bool fullDeferred)
         {
             CurrentScriptId = 0;
             BuildInfo = null;
             BuildLogPool = new List<DB_BuildLog>(1024);
-            if (fullDelayed)
+            if (fullDeferred)
             {
                 ScriptLogPool = new List<DB_Script>(64);
                 VariablePool = new List<DB_Variable>(128);
@@ -469,7 +469,7 @@ namespace PEBakery.Core
         public event VariableUpdateEventHandler VariableUpdated;
         public event FullRefreshEventHandler FullRefresh;
 
-        public const string LogSeperator = "--------------------------------------------------------------------------------";
+        public const string LogSeparator = "--------------------------------------------------------------------------------";
 
         // DelayedLogging
         private DeferredLogging _deferred;
@@ -618,7 +618,7 @@ namespace PEBakery.Core
                     Flush(s);
                     Db.Update(dbBuild);
                     break;
-                case LogMode.NoDelay:
+                case LogMode.NoDefer:
                     Db.Update(dbBuild);
                     break;
             }
@@ -643,7 +643,7 @@ namespace PEBakery.Core
                 Name = sc.Title,
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
-                Version = sc.Version,
+                Version = sc.TidyVersion,
             };
 
             if (prepareBuild)
@@ -666,7 +666,7 @@ namespace PEBakery.Core
             _scriptWatchDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
 
             // Fire Event
-            if (s.LogMode == LogMode.NoDelay)
+            if (s.LogMode == LogMode.NoDefer)
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
 
             return dbScript.Id;
@@ -785,7 +785,7 @@ namespace PEBakery.Core
                     case LogMode.PartDefer:
                         _deferred.BuildLogPool.Add(dbCode);
                         break;
-                    case LogMode.NoDelay:
+                    case LogMode.NoDefer:
                         Db.Insert(dbCode);
                         // Fire Event
                         BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));

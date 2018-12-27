@@ -730,7 +730,7 @@ namespace PEBakery.Core.ViewModels
                         }
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, msg));
-                        Global.Logger.SystemWrite(Logger.LogSeperator);
+                        Global.Logger.SystemWrite(Logger.LogSeparator);
 
                         // If script cache is enabled, update cache.
                         // Do not use await, let it run aside.
@@ -774,7 +774,7 @@ namespace PEBakery.Core.ViewModels
 
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"{updatedCount} script cache updated ({t:0.###}s)"));
-                    Global.Logger.SystemWrite(Logger.LogSeperator);
+                    Global.Logger.SystemWrite(Logger.LogSeparator);
                 }
                 finally
                 {

@@ -37,6 +37,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace PEBakery.Core.Commands
 {
@@ -1260,81 +1261,85 @@ namespace PEBakery.Core.Commands
                     {
                         UserInputInfo_DirFile subInfo = info.SubInfo.Cast<UserInputInfo_DirFile>();
 
-                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
-                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
-
-                        string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
-
-                        Debug.Assert(initPath != null, $"{nameof(initPath)} != null");
-
-                        string selectedPath = initPath;
-                        if (type == UserInputType.FilePath)
+                        TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+                        s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
+                        try
                         {
-                            string filter = "All Files|*.*";
-                            string initFile = Path.GetFileName(initPath);
-                            if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))
-                            { // If wildcard exists, apply to filter.
-                                string ext = Path.GetExtension(initFile);
-                                if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
-                                    ext = ext.Substring(1);
-                                filter = $"{ext} Files|{initFile}";
-                            }
+                            string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
 
-                            string initDir = Path.GetDirectoryName(initPath);
-                            if (initDir == null)
-                                throw new InternalException("Internal Logic Error at UserInput");
-                            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
+                            Debug.Assert(initPath != null, $"{nameof(initPath)} != null");
+
+                            string selectedPath = initPath;
+                            if (type == UserInputType.FilePath)
                             {
-                                Filter = filter,
-                                InitialDirectory = initDir,
-                            };
+                                string filter = "All Files|*.*";
+                                string initFile = Path.GetFileName(initPath);
+                                if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))
+                                { // If wildcard exists, apply to filter.
+                                    string ext = Path.GetExtension(initFile);
+                                    if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
+                                        ext = ext.Substring(1);
+                                    filter = $"{ext} Files|{initFile}";
+                                }
 
-                            bool? result = dialog.ShowDialog();
+                                string initDir = Path.GetDirectoryName(initPath);
+                                if (initDir == null)
+                                    throw new InternalException("Internal Logic Error at UserInput");
+                                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
+                                {
+                                    Filter = filter,
+                                    InitialDirectory = initDir,
+                                };
 
-                            if (result == true)
-                            {
-                                selectedPath = dialog.FileName;
-                                logs.Add(new LogInfo(LogState.Success, $"File path [{selectedPath}] was chosen by user"));
+                                bool? result = dialog.ShowDialog();
+
+                                if (result == true)
+                                {
+                                    selectedPath = dialog.FileName;
+                                    logs.Add(new LogInfo(LogState.Success, $"File path [{selectedPath}] was chosen by user"));
+                                }
+                                else
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, "File path was not chosen by user"));
+                                    return logs;
+                                }
                             }
                             else
                             {
-                                logs.Add(new LogInfo(LogState.Error, "File path was not chosen by user"));
-                                return logs;
+                                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
+                                {
+                                    SelectedPath = initPath,
+                                };
+
+                                bool? result = dialog.ShowDialog();
+
+                                bool failure = false;
+                                if (result == true)
+                                {
+                                    selectedPath = dialog.SelectedPath;
+                                    logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                                }
+                                else
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
+                                    failure = true;
+                                }
+
+                                if (failure)
+                                    return logs;
                             }
+
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
+                            logs.AddRange(varLogs);
                         }
-                        else
+                        finally
                         {
-                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
-                            {
-                                SelectedPath = initPath,
-                            };
-
-                            bool? result = dialog.ShowDialog();
-
-                            bool failure = false;
-                            if (result == true)
-                            {
-                                selectedPath = dialog.SelectedPath;
-                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
-                            }
-                            else
-                            {
-                                logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
-                                failure = true;
-                            }
-
-                            if (failure)
-                                return logs;
+                            s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;
                         }
-
-                        s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
-
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
-                        logs.AddRange(varLogs);
                     }
                     break;
                 default: // Error
-                    throw new InternalException("Internal Logic Error at CommandInterface.UserInput");
+                    throw new InternalException($"Internal Logic Error at CommandInterface.{nameof(UserInput)}");
             }
 
             return logs;

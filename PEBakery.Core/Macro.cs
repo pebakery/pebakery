@@ -222,7 +222,7 @@ namespace PEBakery.Core
                     }
                 }
                 logs.Add(new LogInfo(LogState.Info, $"Imported {count} Local Macro", 0));
-                logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                logs.Add(new LogInfo(LogState.None, Logger.LogSeparator, 0));
             }
 
             return logs;

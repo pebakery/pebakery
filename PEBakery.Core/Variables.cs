@@ -289,7 +289,7 @@ namespace PEBakery.Core
             if (_project.MainScript.Sections.ContainsKey("Variables"))
             {
                 logs = AddVariables(VarsType.Global, _project.MainScript.Sections["Variables"]);
-                logs.Add(new LogInfo(LogState.None, Logger.LogSeperator));
+                logs.Add(new LogInfo(LogState.None, Logger.LogSeparator));
             }
             #endregion
 
@@ -314,7 +314,7 @@ namespace PEBakery.Core
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
                     logs.AddRange(LogInfo.AddDepth(subLogs, 1));
                     logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
-                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                    logs.Add(new LogInfo(LogState.None, Logger.LogSeparator, 0));
                 }
             }
 
@@ -328,7 +328,7 @@ namespace PEBakery.Core
                     logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSectionName}]", 0));
                     logs.AddRange(LogInfo.AddDepth(subLogs, 1));
                     logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
-                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                    logs.Add(new LogInfo(LogState.None, Logger.LogSeparator, 0));
                 }
             }
 

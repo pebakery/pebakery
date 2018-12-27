@@ -96,7 +96,7 @@ namespace PEBakery.Core
             else
                 msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{sc.TreePath}]";
             s.Logger.BuildWrite(s, msg);
-            s.Logger.BuildWrite(s, Logger.LogSeperator);
+            s.Logger.BuildWrite(s, Logger.LogSeparator);
 
             // Load Default Per-Script Variables
             s.Variables.ResetVariables(VarsType.Local);
@@ -151,7 +151,7 @@ namespace PEBakery.Core
         {
             // Finish Per-Script Log
             s.Logger.BuildWrite(s, $"End of Script [{s.CurrentScript.TreePath}]");
-            s.Logger.BuildWrite(s, Logger.LogSeperator);
+            s.Logger.BuildWrite(s, Logger.LogSeparator);
             s.Logger.BuildScriptFinish(s, s.Variables.GetVarDict(VarsType.Local));
         }
         #endregion
@@ -230,7 +230,7 @@ namespace PEBakery.Core
                         if (s.UserHaltFlag)
                         {
                             s.MainViewModel.ScriptDescriptionText = "Build stop requested by user";
-                            s.Logger.BuildWrite(s, Logger.LogSeperator);
+                            s.Logger.BuildWrite(s, Logger.LogSeparator);
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Build stop requested by user"));
                         }
 
@@ -857,7 +857,7 @@ namespace PEBakery.Core
             }
 
             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
-            s.Logger.BuildWrite(s, Logger.LogSeperator);
+            s.Logger.BuildWrite(s, Logger.LogSeparator);
             cbCmd = null;
         }
 
@@ -1035,21 +1035,21 @@ namespace PEBakery.Core
     {
         /// <summary>
         /// For debugging
-        /// - Worst performance impact
+        /// - Worst performance
         /// - Write to database without any delays
         /// </summary>
-        NoDelay,
+        NoDefer,
         /// <summary>
-        /// For normal usecase
-        /// - Medium performance impact
-        /// - Write to database when script is finised
+        /// For normal use-case
+        /// - Medium performance
+        /// - Write to database when script is finished
         /// </summary>
         PartDefer,
         /// <summary>
         /// For interface button
-        /// - Minimize performance impact
+        /// - Maximum performance
         /// - Disable trivial LogWindow event
-        /// - Write to database after bulid is finished
+        /// - Write to database after build is finished
         /// </summary>
         FullDefer,
     }
@@ -1066,7 +1066,7 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
-        public LogMode LogMode = LogMode.NoDelay; // For performance (deferred logging)
+        public LogMode LogMode = LogMode.NoDefer; // For performance (deferred logging)
         public MainViewModel MainViewModel;
         public Random Random;
 
@@ -1209,7 +1209,7 @@ namespace PEBakery.Core
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
 
-            LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDelay;
+            LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDefer;
 
             CompatDirCopyBug = compat.AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;

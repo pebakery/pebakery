@@ -736,15 +736,15 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region VersionString
+        #region ProcessScriptVersionString
         public static string ProcessVersionString(string str)
         {
             // Integer - Ex) 001 -> 1
             if (NumberHelper.ParseInt32(str, out int intVal))
                 return intVal.ToString();
 
-            // Semantic Versioning - Ex) 5.1.2600 
-            // If does not conform to Semantic Versioning, return null
+            // Semantic versioning - Ex) 5.1.2600 
+            // If does not conform to semantic versioning, return null
             NumberHelper.VersionEx semVer = NumberHelper.VersionEx.Parse(str);
             return semVer?.ToString();
         }

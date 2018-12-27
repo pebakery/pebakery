@@ -80,7 +80,7 @@ namespace PEBakery.Tests.Core
                     s = new EngineState(Project, Logger, model, EngineMode.RunOne, sc, entrySection);
             }
 
-            s.LogMode = LogMode.NoDelay;
+            s.LogMode = LogMode.NoDefer;
             s.TestMode = true;
 
             return s;
