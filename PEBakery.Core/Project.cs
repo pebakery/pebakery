@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -493,7 +492,7 @@ namespace PEBakery.Core
                         }
                         linkTarget = linkTarget.Link;
                     }
-                    while (linkTarget.Type != ScriptType.Script); 
+                    while (linkTarget.Type != ScriptType.Script);
                 }
                 catch (Exception e)
                 { // Parser Error
@@ -683,7 +682,7 @@ namespace PEBakery.Core
                         // Loading a project without script cache generates a lot of Gen 2 heap object
                         if (scriptCache == null && AllScripts.Count % LoadGCInterval == 0)
                             GC.Collect();
-                    }       
+                    }
 
                     progress?.Report((cached, Path.GetDirectoryName(sc.TreePath)));
                 }
@@ -723,7 +722,7 @@ namespace PEBakery.Core
 
             foreach (Script sc in scripts.Where(x => x.Type != ScriptType.Directory))
             {
-                Debug.Assert(sc != null, "Internal Logic Error at InternalSortScripts");
+                Debug.Assert(sc != null, $"Internal Logic Error at {nameof(InternalSortScripts)}");
 
                 if (sc.IsMainScript)
                     continue;

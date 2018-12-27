@@ -52,7 +52,7 @@ namespace PEBakery.Core
         public EngineState s;
         private Task<int> _task;
 
-        public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.EngineVersion}";
+        public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.StringVersion}";
 
         public Engine(EngineState state)
         {

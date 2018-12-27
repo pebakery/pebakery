@@ -309,9 +309,9 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return string.Empty;
+                return LogModel.BuildLogFlag.None;
             if (!(value is string str))
-                return null;
+                return LogModel.BuildLogFlag.None;
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
             if (str.Contains('C'))

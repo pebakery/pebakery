@@ -693,24 +693,21 @@ namespace PEBakery.Core.ViewModels
                     if (0 < Global.Projects.ProjectNames.Count)
                     { // Load success
                         // Populate TreeView
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        foreach (Project p in Global.Projects)
                         {
-                            foreach (Project p in Global.Projects)
-                            {
-                                ProjectTreeItemModel projectRoot = PopulateOneTreeItem(p.MainScript, null, null);
-                                ScriptListToTreeViewModel(p, p.VisibleScripts, true, projectRoot);
-                                MainTreeItems.Add(projectRoot);
-                            }
+                            ProjectTreeItemModel projectRoot = PopulateOneTreeItem(p.MainScript, null, null);
+                            ScriptListToTreeViewModel(p, p.VisibleScripts, true, projectRoot);
+                            MainTreeItems.Add(projectRoot);
+                        }
 
-                            // Select default project
-                            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
-                            string defaultProjectName = Global.Setting.Project.DefaultProject;
-                            ProjectTreeItemModel itemModel = MainTreeItems
-                                .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
-                            CurMainTree = itemModel ?? MainTreeItems.Last();
-                            CurMainTree.IsExpanded = true;
-                            DisplayScript(CurMainTree.Script);
-                        });
+                        // Select default project
+                        // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+                        string defaultProjectName = Global.Setting.Project.DefaultProject;
+                        ProjectTreeItemModel itemModel = MainTreeItems
+                            .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
+                        CurMainTree = itemModel ?? MainTreeItems.Last();
+                        CurMainTree.IsExpanded = true;
+                        Application.Current?.Dispatcher.Invoke(() => { DisplayScript(CurMainTree.Script); });
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
 
@@ -1000,13 +997,18 @@ namespace PEBakery.Core.ViewModels
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 // Set scale factor
-                double scaleFactor = Global.Setting.Interface.ScaleFactor / 100.0;
-                ScaleTransform scale;
-                if (scaleFactor - 1 < double.Epsilon)
-                    scale = new ScaleTransform(1, 1);
+                ScaleTransform transform;
+                int scaleFactor = Global.Setting.Interface.ScaleFactor;
+                if (scaleFactor == 100)
+                {
+                    transform = new ScaleTransform(1, 1);
+                }
                 else
-                    scale = new ScaleTransform(scaleFactor, scaleFactor);
-                MainCanvas.LayoutTransform = scale;
+                {
+                    double scale = scaleFactor / 100.0;
+                    transform = new ScaleTransform(scale, scale);
+                }
+                MainCanvas.LayoutTransform = transform;
 
                 // Render script interface
                 ClearScriptInterface();
