@@ -28,7 +28,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace PEBakery.Tree
 {
@@ -78,8 +77,7 @@ namespace PEBakery.Tree
                 _idList.Add(id);
                 KwayTreeNode<T> parent = SearchNode(parentId);
                 Debug.Assert(parent != null);
-                if (parent == null)
-                    return -1;
+
                 KwayTreeNode<T> node = new KwayTreeNode<T>(parentId, id, data, parent.Child);
                 parent.Child.Add(node);
                 Count++;
@@ -292,15 +290,15 @@ namespace PEBakery.Tree
                     RecursiveGetEnumeratorDFS(node.Child, qFinal);
             }
         }
-#endregion
+        #endregion
 
-#region Sort
+        #region Sort
         public void Sort(Comparison<KwayTreeNode<T>> sortFunc)
         {
             RecursiveSort(sortFunc, Root);
         }
 
-        private void RecursiveSort(Comparison<KwayTreeNode<T>> sortFunc, List<KwayTreeNode<T>> list)
+        private static void RecursiveSort(Comparison<KwayTreeNode<T>> sortFunc, List<KwayTreeNode<T>> list)
         {
             list.Sort(sortFunc);
 
@@ -310,11 +308,11 @@ namespace PEBakery.Tree
                     RecursiveSort(sortFunc, node.Child);
             }
         }
-#endregion
+        #endregion
     }
-#endregion
+    #endregion
 
-#region class KwayTreeNode
+    #region class KwayTreeNode
     public class KwayTreeNode<T>
     {
         public int Id;
@@ -337,5 +335,5 @@ namespace PEBakery.Tree
             return $"Node ({Id}, {Data}, {Child.Count})";
         }
     }
-#endregion
+    #endregion
 }

@@ -665,7 +665,7 @@ namespace PEBakery.Core
                         // TODO : Lazy loading of link, takes too much time at start
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
-                        if (spi.IsDir) // level information is empty, will be modified in InternalSortScripts
+                        if (spi.IsDir) // Skeleton directory script instance (empty level information)
                             sc = new Script(ScriptType.Directory, spi.RealPath, spi.TreePath, this, null, false, false, spi.IsDirLink);
                         else if (Path.GetExtension(spi.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
                             sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, null, isMainScript, false, false);
@@ -718,12 +718,10 @@ namespace PEBakery.Core
             KwayTree<Script> scTree = new KwayTree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-            int rootId = scTree.AddNode(0, MainScript); // Root is script.project
+            int rootId = scTree.AddNode(0, MainScript); // Root == script.project
 
             foreach (Script sc in scripts.Where(x => x.Type != ScriptType.Directory))
             {
-                Debug.Assert(sc != null, $"Internal Logic Error at {nameof(InternalSortScripts)}");
-
                 if (sc.IsMainScript)
                     continue;
 
@@ -733,7 +731,7 @@ namespace PEBakery.Core
                 // Ex) paths = { "TestSuite", "Samples", "SVG.script" }
                 // Project name should be ignored -> Use index starting from 1 in for loop
                 string[] paths = sc.TreePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                Debug.Assert(1 <= paths.Length, "Invalid TreePath");
+                Debug.Assert(1 <= paths.Length, $"Invalid TreePath ({sc.TreePath})");
                 paths = paths.Skip(1).ToArray();
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
@@ -747,13 +745,14 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        // Find ts, a Script instance of directory
+                        // Find ts, script instance of the directory
                         string treePath = Path.Combine(ProjectName, pathKey);
                         Script ts = scripts.FirstOrDefault(x => 
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase) &&
                             x.IsDirLink == sc.IsDirLink);
-                        Debug.Assert(ts != null, $"Unable to find proper directory for {sc.TreePath}");
+                        Debug.Assert(ts != null, $"Unable to find proper directory ({sc.TreePath})");
 
+                        // Create new directory script instance from a skeleton directory script instance
                         Script dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, this, sc.Level, false, false, sc.IsDirLink);
                         nodeId = scTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
@@ -798,8 +797,8 @@ namespace PEBakery.Core
 
         public void SetMainScriptIdx()
         {
-            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
             Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
+            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
             Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
         }
         #endregion
