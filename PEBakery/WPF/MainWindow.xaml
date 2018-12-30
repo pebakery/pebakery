@@ -255,17 +255,17 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Margin="5,0" />
-            <TextBlock Text="Setting"
+            <TextBlock Text="Settings"
                        Grid.Row="1" Grid.Column="4"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Margin="5,0" />
-            <TextBlock Text="Log"
+            <TextBlock Text="Logs"
                        Grid.Row="1" Grid.Column="5"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Margin="5,0" />
-            <TextBlock Text="Utility"
+            <TextBlock Text="Utilities"
                        Grid.Row="1" Grid.Column="6"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"

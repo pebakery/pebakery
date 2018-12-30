@@ -33,7 +33,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
-        Title="Utility"
+        Title="PEBakery Utilities"
         FontFamily="Segoe UI"
         FontSize="13"
         Loaded="Window_Loaded"
