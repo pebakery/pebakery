@@ -52,7 +52,8 @@ namespace PEBakery.Core
     {
         #region Fields
         private readonly string _realPath;
-        private readonly string _treePath;
+        [NonSerialized]
+        private string _treePath; // No readonly for script caching
         private bool _fullyParsed;
         private readonly bool _isMainScript;
         private readonly bool _ignoreMain;
@@ -65,7 +66,7 @@ namespace PEBakery.Core
         [NonSerialized]
         private bool _linkLoaded;
         [NonSerialized]
-        private bool _isDirLink;
+        private bool _isDirLink; // No readonly for script caching
         private string _title = string.Empty;
         private string _author = string.Empty;
         private string _description = string.Empty;
@@ -90,7 +91,12 @@ namespace PEBakery.Core
             }
         }
         public string DirectRealPath => _realPath;
-        public string TreePath => _treePath;
+        public string TreePath
+        {
+            get => _treePath;
+            // For script caching
+            set => _treePath = value;
+        }
         public Dictionary<string, ScriptSection> Sections
         {
             get
@@ -784,6 +790,9 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            // _treePath must not changed after loading. 
+            // No readonly for _treePath because of script caching.
             return _realPath.GetHashCode() ^ _treePath.GetHashCode();
         }
         #endregion

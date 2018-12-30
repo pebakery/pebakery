@@ -142,7 +142,7 @@ namespace PEBakery.Core
                 scCache = new CacheModel.ScriptCache
                 {
                     Hash = sc.DirectRealPath.GetHashCode(),
-                    RealPath = sc.DirectRealPath,
+                    DirectRealPath = sc.DirectRealPath,
                     LastWriteTimeUtc = f.LastWriteTimeUtc,
                     FileSize = f.Length,
                 };
@@ -160,7 +160,7 @@ namespace PEBakery.Core
                     updated = true;
                 }
             }
-            else if (scCache.RealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
+            else if (scCache.DirectRealPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) &&
                      (!DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -196,7 +196,7 @@ namespace PEBakery.Core
             FileInfo f = new FileInfo(realPath);
             CacheModel.ScriptCache scCache = cachePool.FirstOrDefault(x => x.Hash == realPath.GetHashCode());
             if (scCache != null &&
-                scCache.RealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase) &&
+                scCache.DirectRealPath.Equals(realPath, StringComparison.OrdinalIgnoreCase) &&
                 DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
                 scCache.FileSize == f.Length)
             { // Cache Hit
@@ -207,14 +207,17 @@ namespace PEBakery.Core
                         BinaryFormatter formatter = new BinaryFormatter();
                         sc = formatter.Deserialize(ms) as Script;
                     }
-                    catch (SerializationException) // Exception from BinaryFormatter.Deserialize()
-                    { // Cache is inconsistent, turn off script cache
+                    catch (SerializationException)
+                    { // Exception from BinaryFormatter.Deserialize()
+                        // Cache is inconsistent, turn off script cache.
+                        // Ex) `Script` class moved to different assembly
                         sc = null;
                         cacheValid = false;
                     }
 
-                    // Deserialization failed, mostly schema of Script is changed
-                    if (sc == null) // Casting failure
+                    // Deserialization failed (Casting failure)
+                    // Ex) Field of the `Script` class changed without revision update
+                    if (sc == null)
                         cacheValid = false;
                 }
             }
@@ -345,7 +348,7 @@ namespace PEBakery.Core
         public class ScriptCache
         {
             /// <summary>
-            /// RealPath.GetHashCode()
+            /// DirectRealPath.GetHashCode() ^ TreePath.GetHashCode()
             /// </summary>
             [PrimaryKey]
             public int Hash { get; set; }
@@ -353,12 +356,12 @@ namespace PEBakery.Core
             /// Equivalent to Script.DirectRealPath
             /// </summary>
             [MaxLength(32768)]
-            public string RealPath { get; set; }
+            public string DirectRealPath { get; set; }
             public DateTime LastWriteTimeUtc { get; set; }
             public long FileSize { get; set; }
             public byte[] Serialized { get; set; }
 
-            public override string ToString() => $"[{Hash}] {RealPath}";
+            public override string ToString() => $"[{Hash}] {DirectRealPath}";
         }
     }
     #endregion

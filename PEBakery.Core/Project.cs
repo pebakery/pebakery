@@ -466,6 +466,7 @@ namespace PEBakery.Core
                             (linkTarget, cacheValid) = ScriptCache.DeserializeScript(linkRealPath, cachePool);
                             if (linkTarget != null)
                             {
+                                linkTarget.TreePath = string.Empty;
                                 linkTarget.Project = sc.Project;
                                 linkTarget.IsDirLink = false;
                                 cached = Project.LoadReport.Stage2Cached;
@@ -652,6 +653,7 @@ namespace PEBakery.Core
                         (sc, cacheValid) = ScriptCache.DeserializeScript(spi.RealPath, cachePool);
                         if (sc != null)
                         {
+                            sc.TreePath = spi.TreePath;
                             sc.Project = this;
                             sc.IsDirLink = spi.IsDirLink;
                             cached = LoadReport.Stage1Cached;
@@ -661,7 +663,6 @@ namespace PEBakery.Core
                     if (sc == null)
                     { // Cache Miss
                         bool isMainScript = spi.RealPath.Equals(mainScriptPath, StringComparison.OrdinalIgnoreCase);
-                        
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
                         if (spi.IsDir) // Skeleton directory script instance (empty level information)
@@ -744,7 +745,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        // Find ts, script instance of the directory
+                        // Find ts, skeleton script instance of the directory
                         string treePath = Path.Combine(ProjectName, pathKey);
                         Script ts = scripts.FirstOrDefault(x => 
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase) &&

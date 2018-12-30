@@ -150,6 +150,18 @@ namespace PEBakery.Helper
             File.Delete(path);
             return path;
         }
+
+        public static string RemoveFirstDir(string src, int removeNumber)
+        {
+            int idx = src.IndexOf(Path.DirectorySeparatorChar);
+            return idx == -1 ? null : src.Substring(idx + 1);
+        }
+
+        public static string RemoveLastDir(string src, int removeNumber)
+        {
+            int idx = src.LastIndexOf(Path.DirectorySeparatorChar);
+            return idx == -1 ? null : src.Substring(0, idx);
+        }
         #endregion
 
         #region GetFileSize
