@@ -560,8 +560,8 @@ namespace PEBakery.Core.ViewModels
             MainTreeItems.Clear();
 
             // Number of total scripts
-            int totalScriptCount = 0;
-            int stage2LinkCount = 0;
+            int scriptCount = 0;
+            int linkCount = 0;
             int ifaceUpdateFreq = 1;
 
             // Progress handler
@@ -609,9 +609,9 @@ namespace PEBakery.Core.ViewModels
                 if (loadedScriptCount % ifaceUpdateFreq == 0)
                 {
                     if (stage == 1)
-                        msg = $"Stage {stage} ({loadedScriptCount} / {totalScriptCount})\r\n{msg}";
+                        msg = $"Stage {stage} ({loadedScriptCount} / {scriptCount + linkCount})\r\n{msg}";
                     else
-                        msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinkCount})\r\n{msg}";
+                        msg = $"Stage {stage} ({stage2LoadedCount} / {linkCount})\r\n{msg}";
                     ScriptDescriptionText = msg;
                 }
             });
@@ -682,9 +682,10 @@ namespace PEBakery.Core.ViewModels
 
                     // Prepare loading by getting script paths
                     progress.Report((Project.LoadReport.FindingScript, null));
-                    (totalScriptCount, stage2LinkCount) = Global.Projects.PrepareLoad();
-                    ifaceUpdateFreq = totalScriptCount / 64 + 1;
-                    BottomProgressBarMaximum = totalScriptCount + stage2LinkCount;
+                    (scriptCount, linkCount) = Global.Projects.PrepareLoad();
+                    ifaceUpdateFreq = (scriptCount + linkCount) / 64 + 1;
+                    // Links are loaded twice, so add linkCount once again
+                    BottomProgressBarMaximum = scriptCount + 2 * linkCount;
 
                     // Load projects in parallel
                     List<LogInfo> errorLogs = Global.Projects.Load(scriptCache, progress);
@@ -716,13 +717,13 @@ namespace PEBakery.Core.ViewModels
                         string msg;
                         if (Global.Setting.Script.EnableCache)
                         {
-                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (totalScriptCount + stage2LinkCount);
-                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                            double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (scriptCount + 2 * linkCount);
+                            msg = $"{scriptCount + linkCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                             StatusBarText = msg;
                         }
                         else
                         {
-                            msg = $"{totalScriptCount} scripts loaded ({t:0.#}s)";
+                            msg = $"{scriptCount + linkCount} scripts loaded ({t:0.#}s)";
                             StatusBarText = msg;
                         }
 

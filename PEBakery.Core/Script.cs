@@ -1125,7 +1125,7 @@ namespace PEBakery.Core
     #endregion
 
     #region Struct ScriptParseInfo
-    public struct ScriptParseInfo
+    public struct ScriptParseInfo : IEquatable<ScriptParseInfo>
     {
         public string RealPath;
         public string TreePath;
@@ -1133,16 +1133,38 @@ namespace PEBakery.Core
         public bool IsDirLink;
 
         public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
+
+        public bool Equals(ScriptParseInfo y)
+        { 
+            // IsDir, IsDirLink
+            if (IsDir != y.IsDir || IsDirLink != y.IsDirLink)
+                return false;
+
+            // RealPath
+            if (RealPath != null && y.RealPath == null ||
+                RealPath == null && y.RealPath != null)
+                return false;
+            if (RealPath != null && y.RealPath != null &&
+                !RealPath.Equals(y.RealPath, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // TreePath
+            if (TreePath != null && y.TreePath == null ||
+                TreePath == null && y.TreePath != null)
+                return false;
+            if (TreePath != null && y.TreePath != null &&
+                !TreePath.Equals(y.TreePath, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return true;
+        }
     }
 
     public class ScriptParseInfoComparer : IEqualityComparer<ScriptParseInfo>
     {
         public bool Equals(ScriptParseInfo x, ScriptParseInfo y)
         {
-            return x.RealPath.Equals(y.RealPath, StringComparison.OrdinalIgnoreCase) &&
-                   x.TreePath.Equals(y.TreePath, StringComparison.OrdinalIgnoreCase) &&
-                   x.IsDir == y.IsDir &&
-                   x.IsDirLink == y.IsDirLink;
+            return x.Equals(y);
         }
 
         public int GetHashCode(ScriptParseInfo x)
