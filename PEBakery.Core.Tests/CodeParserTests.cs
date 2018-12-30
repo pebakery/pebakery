@@ -26,11 +26,10 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System;
 using System.Collections.Generic;
 
-namespace PEBakery.Tests.Core
+namespace PEBakery.Core.Tests
 {
     [TestClass]
     public class CodeParserTests
@@ -53,15 +52,11 @@ namespace PEBakery.Tests.Core
 
             foreach (Tuple<string, string> testcase in testcases)
             {
-                var tuple = CodeParser.GetNextArgument(remainder);
-                string next = tuple.Item1;
-                remainder = tuple.Item2;
+                string next;
+                (next, remainder) = CodeParser.GetNextArgument(remainder);
 
                 Console.WriteLine(next);
-                if (remainder != null)
-                    Console.WriteLine(remainder);
-                else
-                    Console.WriteLine("null");
+                Console.WriteLine(remainder ?? "null");
 
                 Assert.IsTrue(next.Equals(testcase.Item1, StringComparison.Ordinal));
                 if (remainder != null)

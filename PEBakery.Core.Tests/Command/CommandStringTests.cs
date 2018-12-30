@@ -26,10 +26,9 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     public class CommandStringTests

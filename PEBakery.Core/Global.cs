@@ -152,7 +152,6 @@ namespace PEBakery.Core
 
             // Init ProjectCollection
             Projects = new ProjectCollection(BaseDir);
-            Projects.PrepareLoad();
 
             // Setting File
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");

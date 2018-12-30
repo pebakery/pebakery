@@ -25,14 +25,11 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
+using System;
+using System.Diagnostics.CodeAnalysis;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]

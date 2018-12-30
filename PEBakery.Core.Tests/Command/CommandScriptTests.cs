@@ -1,12 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Helper;
 using System;
 using System.IO;
 using System.Linq;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     public class CommandScriptTests

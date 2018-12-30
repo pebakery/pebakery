@@ -26,12 +26,11 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]

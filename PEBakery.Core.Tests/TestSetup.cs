@@ -1,12 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Core.ViewModels;
-using PEBakery.Tests.Core;
-using PEBakery.WPF;
 using System;
 using System.IO;
 
-namespace PEBakery.Tests
+namespace PEBakery.Core.Tests
 {
     [TestClass]
     public class TestSetup

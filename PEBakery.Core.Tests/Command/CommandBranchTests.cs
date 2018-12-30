@@ -26,7 +26,6 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Core.Commands;
 using System;
 using System.Collections.Generic;
@@ -34,7 +33,7 @@ using System.IO;
 using System.Text;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     public class CommandBranchTests

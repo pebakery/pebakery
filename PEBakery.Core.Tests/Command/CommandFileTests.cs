@@ -26,18 +26,14 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Helper;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
@@ -515,7 +511,7 @@ namespace PEBakery.Tests.Core.Command
                             CopySubDirs = true,
                             Overwrite = true,
                         });
-                    } 
+                    }
 
                     EngineTests.Eval(s, rawCode, CodeType.DirDelete, check);
 

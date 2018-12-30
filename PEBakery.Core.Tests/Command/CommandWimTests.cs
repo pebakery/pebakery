@@ -25,19 +25,17 @@
     not derived from or based on this program. 
 */
 
-
+using ManagedWimLib;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using PEBakery.Core;
-using ManagedWimLib;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     [SuppressMessage("ReSharper", "LocalizableElement")]
@@ -829,7 +827,7 @@ namespace PEBakery.Tests.Core.Command
                 $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\가,\다",
                 $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt",
                 $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABDE,\RENAME"
-            }, "LZX.wim", new(string, bool)[]
+            }, "LZX.wim", new (string, bool)[]
             {
                 (@"\다", true),
                 (@"\ACDE.txt", false),
@@ -841,7 +839,7 @@ namespace PEBakery.Tests.Core.Command
                 $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\가,\다",
                 $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt,REBUILD",
                 $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABDE,\RENAME"
-            }, "LZX.wim", new(string, bool)[]
+            }, "LZX.wim", new (string, bool)[]
             {
                 (@"\다", true),
                 (@"\ACDE.txt", false),

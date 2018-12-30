@@ -26,14 +26,13 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Helper;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
-namespace PEBakery.Tests.Core.Command
+namespace PEBakery.Core.Tests.Command
 {
     [TestClass]
     [SuppressMessage("ReSharper", "InconsistentNaming")]

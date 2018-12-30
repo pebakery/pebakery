@@ -25,16 +25,14 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Text;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
+using System.Text;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
-namespace PEBakery.Tests.Core
+namespace PEBakery.Core.Tests
 {
     [TestClass]
     public class StringEscaperTests
@@ -309,7 +307,7 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
-            string[] srcs = 
+            string[] srcs =
             {
                 "A_%A%",
                 "B_%B%",
@@ -317,7 +315,7 @@ namespace PEBakery.Tests.Core
                 "D_#2"
             };
             List<string> dests = StringEscaper.ExpandSectionParams(s, srcs);
-            string[] comps = 
+            string[] comps =
             {
                 "A_%A%",
                 "B_%B%",

@@ -161,7 +161,7 @@ namespace PEBakery.Core
         /// <returns>
         /// (Count of the .script/.link files, count of the .link files)
         /// </returns>
-        public (int ScriptCount, int LinkCount) GetScriptPaths()
+        private (int ScriptCount, int LinkCount) GetScriptPaths()
         {
             int scriptCount = 0;
             int linkCount = 0;

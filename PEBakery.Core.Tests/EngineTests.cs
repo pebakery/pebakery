@@ -26,7 +26,6 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -36,7 +35,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace PEBakery.Tests.Core
+namespace PEBakery.Core.Tests
 {
     public enum ErrorCheck
     {

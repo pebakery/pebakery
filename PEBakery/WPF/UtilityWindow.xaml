@@ -71,14 +71,6 @@
                         CanExecute="SyntaxCheckCommand_CanExecute"
                         Executed="SyntaxCheckCommand_Executed"/>
     </Window.CommandBindings>
-    <!-- 
-    <Window.InputBindings>
-        <KeyBinding Modifiers="Ctrl" Key="S" 
-                    Command="{Binding CodeBoxSaveCommand}"/>
-        <KeyBinding Key="F10" 
-                    Command="{Binding CodeBoxRunCommand}"/>
-    </Window.InputBindings>
-    -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>

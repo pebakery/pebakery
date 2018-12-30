@@ -28,7 +28,6 @@
 // #define DEBUG_MIDDLE_FILE
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
@@ -37,7 +36,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace PEBakery.Tests.Core
+namespace PEBakery.Core.Tests
 {
     [TestClass]
     public class EncodedFileTests

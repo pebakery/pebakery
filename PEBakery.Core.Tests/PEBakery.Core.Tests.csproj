@@ -7,8 +7,8 @@
     <ProjectGuid>{6C82656D-3413-4E49-88A5-D60E48DE3BEB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PEBakery.Tests</RootNamespace>
-    <AssemblyName>PEBakery.Tests</AssemblyName>
+    <RootNamespace>PEBakery.Core.Tests</RootNamespace>
+    <AssemblyName>PEBakery.Core.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -69,28 +69,26 @@
     <Reference Include="System.Data.DataSetExtensions" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Command\CommandScriptTests.cs" />
-    <Compile Include="Core\Command\CommandArchiveTests.cs" />
-    <Compile Include="Core\Command\CommandBranchTests.cs" />
-    <Compile Include="Core\Command\CommandFileTests.cs" />
-    <Compile Include="Core\Command\CommandHashTests.cs" />
-    <Compile Include="Core\Command\CommandControlTests.cs" />
-    <Compile Include="Core\Command\CommandIniTests.cs" />
-    <Compile Include="Core\Command\CommandInterfaceTests.cs" />
-    <Compile Include="Core\Command\CommandListTests.cs" />
-    <Compile Include="Core\Command\CommandNetworkTests.cs" />
-    <Compile Include="Core\Command\CommandMathTests.cs" />
-    <Compile Include="Core\Command\CommandRegistryTests.cs" />
-    <Compile Include="Core\Command\CommandStringTests.cs" />
-    <Compile Include="Core\CodeParserTests.cs" />
-    <Compile Include="Core\Command\CommandSystemTests.cs" />
-    <Compile Include="Core\Command\CommandTextTests.cs" />
-    <Compile Include="Core\Command\CommandWimTests.cs" />
-    <Compile Include="Core\EncodedFileTests.cs" />
-    <Compile Include="Core\EngineTests.cs" />
-    <Compile Include="Core\ScriptTests.cs" />
-    <Compile Include="Core\StringEscaperTests.cs" />
-    <Compile Include="Core\UIParserTests.cs" />
+    <Compile Include="Command\CommandScriptTests.cs" />
+    <Compile Include="Command\CommandArchiveTests.cs" />
+    <Compile Include="Command\CommandBranchTests.cs" />
+    <Compile Include="Command\CommandFileTests.cs" />
+    <Compile Include="Command\CommandHashTests.cs" />
+    <Compile Include="Command\CommandControlTests.cs" />
+    <Compile Include="Command\CommandIniTests.cs" />
+    <Compile Include="Command\CommandInterfaceTests.cs" />
+    <Compile Include="Command\CommandListTests.cs" />
+    <Compile Include="Command\CommandNetworkTests.cs" />
+    <Compile Include="Command\CommandMathTests.cs" />
+    <Compile Include="Command\CommandRegistryTests.cs" />
+    <Compile Include="Command\CommandStringTests.cs" />
+    <Compile Include="CodeParserTests.cs" />
+    <Compile Include="Command\CommandSystemTests.cs" />
+    <Compile Include="Command\CommandTextTests.cs" />
+    <Compile Include="Command\CommandWimTests.cs" />
+    <Compile Include="EncodedFileTests.cs" />
+    <Compile Include="EngineTests.cs" />
+    <Compile Include="StringEscaperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestSetup.cs" />
   </ItemGroup>
@@ -110,10 +108,6 @@
     <ProjectReference Include="..\PEBakery.Ini\PEBakery.Ini.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.Ini</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PEBakery\PEBakery.csproj">
-      <Project>{d6224dce-02d5-4005-88fb-00a8e00cace1}</Project>
-      <Name>PEBakery</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

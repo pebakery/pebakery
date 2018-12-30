@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery", "PEBakery\PEBake
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherSharp", "LauncherSharp\LauncherSharp.csproj", "{DD6AF70C-7AA4-49EE-BF7D-E4583D52B767}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.Tests", "PEBakery.Tests\PEBakery.Tests.csproj", "{6C82656D-3413-4E49-88A5-D60E48DE3BEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.Core.Tests", "PEBakery.Core.Tests\PEBakery.Core.Tests.csproj", "{6C82656D-3413-4E49-88A5-D60E48DE3BEB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.Ini.Tests", "PEBakery.Ini.Tests\PEBakery.Ini.Tests.csproj", "{18F8E497-F76A-48DF-A7E2-F4FA958F99F7}"
 EndProject
