@@ -86,7 +86,7 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="CodeBox">
+            <TabItem Header="CodeBox" Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="22"/>
@@ -152,7 +152,7 @@
                              Text="{Binding CodeBoxInput}"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="String Escaper">
+            <TabItem Header="String Escaper" Width="120">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition></RowDefinition>
@@ -249,7 +249,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Syntax Checker">
+            <TabItem Header="Syntax Checker" Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="22"/>

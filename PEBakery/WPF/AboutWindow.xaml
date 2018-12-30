@@ -51,7 +51,7 @@
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Header="Information">
+            <TabItem Header="Information" Width="100">
                 <StackPanel>
                     <Grid Margin="0, 20, 0, 20"
                           HorizontalAlignment="Center">
@@ -123,7 +123,7 @@
                     
                 </StackPanel>
             </TabItem>
-            <TabItem Header="License">
+            <TabItem Header="License" Width="100">
                 <Grid Margin="10, 10, 10, 10">
                     <TextBox FontFamily="{Binding MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
                              FontWeight="{Binding MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"

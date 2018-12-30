@@ -102,7 +102,7 @@
         <TabControl Grid.Row="0"
                     Name="MainTab"
                     SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="System Log">
+            <TabItem Header="System Log" Width="100">
                 <Grid>
                     <ListView Name="SystemLogListView"
                               HorizontalContentAlignment="Stretch"
@@ -127,7 +127,7 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Build Log">
+            <TabItem Header="Build Log" Width="100">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

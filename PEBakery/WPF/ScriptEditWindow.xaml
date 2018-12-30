@@ -64,7 +64,9 @@
         <TabControl Grid.Row="0"
                     Background="White"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="General" IsEnabled="{Binding CanExecuteCommand}">
+            <TabItem Header="General" 
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <StackPanel Margin="10, 0, 10, 10">
                     <GroupBox Header="Header"
                               BorderBrush="Gray">
@@ -343,7 +345,9 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Interface" IsEnabled="{Binding CanExecuteCommand}">
+            <TabItem Header="Interface" 
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
@@ -1206,7 +1210,9 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Attachment" IsEnabled="{Binding CanExecuteCommand}">
+            <TabItem Header="Attachment"
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"

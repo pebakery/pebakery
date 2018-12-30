@@ -93,6 +93,11 @@
                         Command="local:SettingViewCommands.ClearLogDatabaseCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ClearLogDatabaseCommand_Executed"/>
+        <!-- Compat -->
+        <CommandBinding x:Name="ToggleCompatOptionsCommand"
+                        Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ToggleCompatOptionsCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <local:ProjectPathEnabledConverter x:Key="ProjectPathEnabledConverter" />
@@ -107,7 +112,7 @@
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Header="Projects">
+            <TabItem Header="Projects" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <Grid Margin="5, 5, 5, 0"
                           VerticalAlignment="Center">
@@ -246,7 +251,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="General">
+            <TabItem Header="General" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Build"
                               Margin="5, 5, 5, 0"
@@ -305,7 +310,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Interface">
+            <TabItem Header="Interface" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Default Monospaced Font"
                               Margin="5, 5, 5, 0"
@@ -420,7 +425,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Script">
+            <TabItem Header="Script" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Script Cache"
                               Margin="5, 5, 5, 0"
@@ -462,7 +467,7 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Log">
+            <TabItem Header="Log" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <GroupBox Header="Log Database"
                               Margin="5, 5, 5, 0"
@@ -516,14 +521,15 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Compat">
+            <TabItem Header="Compat" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
                     <Grid Margin="5, 5, 5, 0"
                           Height="25"
                           VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="125"/>
                             <ColumnDefinition/>
+                            <ColumnDefinition Width="75"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
@@ -531,9 +537,15 @@
                                    VerticalAlignment="Center"
                                    Text="Project to Configure"/>
                         <ComboBox Grid.Column="1"
+                                  Margin="0, 0, 10, 0"
                                   VerticalAlignment="Center"
                                   ItemsSource="{Binding ProjectNames}"
                                   SelectedIndex="{Binding SelectedProjectIndex}"/>
+                        <Button Grid.Column="2" 
+                                VerticalAlignment="Stretch"
+                                Content="Toggle"
+                                Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                     </Grid>
                     <GroupBox Header="Asterisk Bug"
                               Margin="5, 3, 5, 0"

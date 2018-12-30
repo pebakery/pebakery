@@ -318,6 +318,22 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
+        #region Compat Options Commands
+        private void ToggleCompatOptionsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.ToggleCompatOption();
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
         #endregion
     }
     #endregion
@@ -902,6 +918,58 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region ToggleCompatOption
+        /// <summary>
+        /// If all compat options are true, set them to false.
+        /// If some compat options are true, set them to true.
+        /// If none of compat option is true, set them to true.
+        /// </summary>
+        public void ToggleCompatOption()
+        {
+            // Get current state
+            bool currentState = true;
+            // Asterisk
+            currentState &= CompatAsteriskBugDirCopy;
+            currentState &= CompatAsteriskBugDirLink;
+            // Command
+            currentState &= CompatFileRenameCanMoveDir;
+            currentState &= CompatAllowLetterInLoop;
+            currentState &= CompatLegacyBranchCondition;
+            currentState &= CompatLegacyRegWrite;
+            currentState &= CompatAllowSetModifyInterface;
+            currentState &= CompatLegacyInterfaceCommand;
+            currentState &= CompatLegacySectionParamCommand;
+            // Script Interface
+            currentState &= CompatIgnoreWidthOfWebLabel;
+            // Variable
+            currentState &= CompatOverridableFixedVariables;
+            currentState &= CompatOverridableLoopCounter;
+            currentState &= CompatEnableEnvironmentVariables;
+            currentState &= CompatDisableExtendedSectionParams;
+
+            // Toggle!
+            bool nextState = !currentState;
+            // Asterisk
+            CompatAsteriskBugDirCopy = nextState;
+            CompatAsteriskBugDirLink = nextState;
+            // Command
+            CompatFileRenameCanMoveDir = nextState;
+            CompatAllowLetterInLoop = nextState;
+            CompatLegacyBranchCondition = nextState;
+            CompatLegacyRegWrite = nextState;
+            CompatAllowSetModifyInterface = nextState;
+            CompatLegacyInterfaceCommand = nextState;
+            CompatLegacySectionParamCommand = nextState;
+            // Script Interface
+            CompatIgnoreWidthOfWebLabel = nextState;
+            // Variable
+            CompatOverridableFixedVariables = nextState;
+            CompatOverridableLoopCounter = nextState;
+            CompatEnableEnvironmentVariables = nextState;
+            CompatDisableExtendedSectionParams = nextState;
+        }
+        #endregion
+
         #region SetToDefault
         public void SetToDefault()
         {
@@ -1157,6 +1225,10 @@ namespace PEBakery.WPF
 
         #region Log Setting
         public static readonly RoutedCommand ClearLogDatabaseCommand = new RoutedUICommand("Clear log database", "ClearLogDatabase", typeof(SettingViewCommands));
+        #endregion
+
+        #region Compat Setting
+        public static readonly RoutedCommand ToggleCompatOptionsCommand = new RoutedUICommand("Toggle compat options", "ToggleCompatOptions", typeof(SettingViewCommands));
         #endregion
     }
     #endregion
