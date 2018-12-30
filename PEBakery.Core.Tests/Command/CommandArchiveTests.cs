@@ -148,11 +148,70 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
+            void AppendTemplate(string arcType, string srcFilePath, string appendFilePath, ArchiveFile.CompressLevel? level)
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
+                EngineState s = EngineTests.CreateEngineState();
+                string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                string srcFileName = Path.GetFileName(srcFilePath);
+                string appendFullPath = Path.Combine(srcDir, appendFilePath);
+                string appendFileName = Path.GetFileName(appendFilePath);
+                string destDir = FileHelper.GetTempFileNameEx();
+                string destArchive = Path.Combine(destDir, $"{srcFileName}.{arcType}");
+                string decompDir = FileHelper.GetTempFileNameEx();
+
+                try
+                {
+                    Directory.CreateDirectory(destDir);
+                    Directory.CreateDirectory(decompDir);
+
+                    // Create sample archive file
+                    string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcFilePath}"",""{destArchive}""";
+                    EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
+
+                    // Append file to sample archive file
+                    rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{appendFilePath}"",""{destArchive}""";
+                    switch (level)
+                    {
+                        case ArchiveFile.CompressLevel.Best:
+                            rawCode += ",BEST";
+                            break;
+                        case ArchiveFile.CompressLevel.Fastest:
+                            rawCode += ",FASTEST";
+                            break;
+                        case ArchiveFile.CompressLevel.Normal:
+                            rawCode += ",NORMAL";
+                            break;
+                        case ArchiveFile.CompressLevel.Store:
+                            rawCode += ",STORE";
+                            break;
+                    }
+                    EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
+                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+
+                    using (FileStream srcStream = new FileStream(appendFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream destStream = new FileStream(Path.Combine(decompDir, appendFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                        Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                    }
+                }
+                finally
+                {
+                    Directory.Delete(destDir, true);
+                    Directory.Delete(decompDir, true);
+                }
+            }
+
+            // Create archives
             DirTemplate("Zip", "France", ArchiveFile.CompressLevel.Store);
             DirTemplate("7z", "Korea", ArchiveFile.CompressLevel.Normal);
             DirTemplate("Zip", "Korea", ArchiveFile.CompressLevel.Best);
             FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Normal);
             FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Best);
+
+            // Append to zip archives
+            AppendTemplate("Zip", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Best);
         }
         #endregion
 

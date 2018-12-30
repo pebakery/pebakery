@@ -74,12 +74,21 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Check if a file or directory exist under name of destArchive 
+            bool appendMode = false;
             if (Directory.Exists(destArchive))
                 return LogInfo.LogErrorMessage(logs, $"[{destArchive}] should be a file, not a directory");
             if (File.Exists(destArchive))
             {
-                logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
-                File.Delete(destArchive);
+                if (info.Format == ArchiveFile.ArchiveCompressFormat.Zip)
+                {
+                    logs.Add(new LogInfo(LogState.Overwrite, $"Archive [{destArchive}] will be appended"));
+                    appendMode = true;
+                }
+                else
+                {
+                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
+                    File.Delete(destArchive);
+                }
             }
 
             // If parent directory of destArchive does not exist, create it
@@ -89,7 +98,7 @@ namespace PEBakery.Core.Commands
             SevenZipCompressor compressor = new SevenZipCompressor
             {
                 ArchiveFormat = outFormat,
-                CompressionMode = CompressionMode.Create,
+                CompressionMode = appendMode ? CompressionMode.Append : CompressionMode.Create,
                 CompressionLevel = compLevel,
             };
 
@@ -112,10 +121,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("Compress Progress");
                 try
                 {
-                    using (FileStream fs = new FileStream(destArchive, FileMode.Create))
-                    {
-                        compressor.CompressFiles(fs, srcPath);
-                    }
+                    compressor.CompressFiles(destArchive, srcPath);
                 }
                 finally
                 {
@@ -137,10 +143,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("Compress Progress");
                 try
                 {
-                    using (FileStream fs = new FileStream(destArchive, FileMode.Create))
-                    {
-                        compressor.CompressDirectory(srcPath, fs);
-                    }
+                    compressor.CompressDirectory(srcPath, destArchive);
                 }
                 finally
                 {
