@@ -42,7 +42,6 @@ namespace PEBakery.Core
     public static class Global
     {
         #region Const
-
         public static class Const
         {
             public const int EngineVersion = 96;

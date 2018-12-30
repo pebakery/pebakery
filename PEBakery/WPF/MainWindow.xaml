@@ -43,7 +43,7 @@
         mc:Ignorable="d"
         Closing="Window_Closing"
         Width="900" Height="720"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
         FontSize="13"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
