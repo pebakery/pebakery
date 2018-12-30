@@ -640,8 +640,8 @@ namespace PEBakery.Core
             object listLock = new object();
             Parallel.ForEach(spis, spi =>
             {
-                Debug.Assert(spi.RealPath != null, "spi.RealPath is wrong");
-                Debug.Assert(spi.TreePath != null, "spi.TreePath is wrong");
+                Debug.Assert(spi.RealPath != null, "spi.RealPath is null");
+                Debug.Assert(spi.TreePath != null, "spi.TreePath is null");
 
                 LoadReport cached = LoadReport.Stage1;
                 Script sc = null;
@@ -661,8 +661,7 @@ namespace PEBakery.Core
                     if (sc == null)
                     { // Cache Miss
                         bool isMainScript = spi.RealPath.Equals(mainScriptPath, StringComparison.OrdinalIgnoreCase);
-
-                        // TODO : Lazy loading of link, takes too much time at start
+                        
                         // Directory scripts will not be directly used (so level information is dummy)
                         // They are mainly used to store RealPath and TreePath information.
                         if (spi.IsDir) // Skeleton directory script instance (empty level information)

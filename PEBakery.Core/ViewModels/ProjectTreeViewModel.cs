@@ -34,6 +34,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace PEBakery.Core.ViewModels
 {
@@ -181,6 +182,7 @@ namespace PEBakery.Core.ViewModels
             {
                 Global.MainViewModel.EnableTreeItems = true;
                 Global.MainViewModel.WorkInProgress = false;
+                Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
             }
         }
 
