@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
          * PEBakery Behavior
          * ExtractFile/ExtractAllFiles : DestDir must be Directory, create if not exists.
          * Ex) (...),README.txt,%BaseDir%\Temp\Hello
-         *   -> No Hello : Create direcotry "Hello" and extract files into new directory.
+         *   -> No Hello : Create directory "Hello" and extract files into new directory.
          *   -> Hello is a file : Failure
          *   -> Hello is a directory : Extract files into directory.
          */

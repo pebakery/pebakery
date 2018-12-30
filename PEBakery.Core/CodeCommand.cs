@@ -2644,16 +2644,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_EchoFile : CodeInfo
-    { // EchoFile,<SrcFile>,[WARN],[ENCODE]
+    { // EchoFile,<SrcFile>,[WARN]
         public string SrcFile;
         public bool Warn;
-        public bool Encode;
 
-        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
+        public CodeInfo_EchoFile(string srcFile, bool warn)
         {
             SrcFile = srcFile;
             Warn = warn;
-            Encode = encode;
         }
 
         public override string ToString()
@@ -2662,8 +2660,6 @@ namespace PEBakery.Core
             b.Append(SrcFile);
             if (Warn)
                 b.Append(",WARN");
-            if (Encode)
-                b.Append(",ENCODE");
             return b.ToString();
         }
     }

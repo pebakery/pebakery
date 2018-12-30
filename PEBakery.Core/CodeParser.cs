@@ -1993,14 +1993,13 @@ namespace PEBakery.Core
                         return new CodeInfo_Echo(args[0], warn);
                     }
                 case CodeType.EchoFile:
-                    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+                    { // EchoFile,<SrcFile>[,WARN]
                         const int minArgCount = 1;
-                        const int maxArgCount = 3;
+                        const int maxArgCount = 2;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool warn = false;
-                        bool encode = false;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2010,17 +2009,11 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 warn = true;
                             }
-                            else if (arg.Equals("ENCODE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (encode)
-                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
-                                encode = true;
-                            }
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_EchoFile(args[0], warn, encode);
+                        return new CodeInfo_EchoFile(args[0], warn);
                     }
                 case CodeType.UserInput:
                     return ParseCodeInfoUserInput(rawCode, args);

@@ -1196,53 +1196,20 @@ namespace PEBakery.Core.Commands
 
             if (!File.Exists(srcFile))
             {
-                logs.Add(new LogInfo(LogState.Warning, $"File [{srcFile}] does not exist", cmd));
+                logs.Add(new LogInfo(LogState.Warning, $"File [{srcFile}] does not exist"));
                 return logs;
             }
 
-            if (info.Encode)
-            { // Binary Mode -> encode files into log database
-                string tempFile = Path.GetRandomFileName();
-                try
-                {
-                    // Create dummy script instance
-                    EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);
-                    Script sc = cmd.Section.Project.LoadScriptRuntime(tempFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
-
-                    // Encode binary file into script instance
-                    string fileName = Path.GetFileName(srcFile);
-                    EncodedFile.AttachFile(sc, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib, null);
-
-                    // Read encoded text strings into memory
-                    string txtStr;
-                    Encoding encoding = EncodingHelper.DetectBom(tempFile);
-                    using (StreamReader r = new StreamReader(tempFile, encoding))
-                    {
-                        txtStr = r.ReadToEnd().Trim();
-                    }
-
-                    string logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
-                    s.MainViewModel.BuildEchoMessage = logStr;
-                    logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
-                }
-                finally
-                {
-                    File.Delete(tempFile);
-                }
+            string txtStr;
+            Encoding encoding = EncodingHelper.DetectBom(srcFile);
+            using (StreamReader r = new StreamReader(srcFile, encoding))
+            {
+                txtStr = r.ReadToEnd().Trim();
             }
-            else
-            { // Text Mode -> Log with StreamReader
-                string txtStr;
-                Encoding encoding = EncodingHelper.DetectBom(srcFile);
-                using (StreamReader r = new StreamReader(srcFile, encoding))
-                {
-                    txtStr = r.ReadToEnd().Trim();
-                }
 
-                string logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
-                s.MainViewModel.BuildEchoMessage = logStr;
-                logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
-            }
+            s.MainViewModel.BuildEchoMessage = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
+            logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, $"Encoded File [{srcFile}]", cmd));
+            logs.Add(new LogInfo(LogState.Info, txtStr, cmd));
 
             return logs;
         }

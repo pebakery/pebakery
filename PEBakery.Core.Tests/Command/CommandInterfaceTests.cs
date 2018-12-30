@@ -30,6 +30,10 @@ using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using PEBakery.Core.Commands;
+using PEBakery.Helper;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
@@ -43,8 +47,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region Visible
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandInterface")]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
         public void Visible()
         {
             string srcFile = Path.Combine(EngineTests.Project.ProjectDir, TestSuiteInterface, "ReadInterface.script");
@@ -140,8 +144,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region ReadInterface
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandInterface")]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
         public void ReadInterface()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -354,8 +358,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region WriteInterface
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandInterface")]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
         public void WriteInterface()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -558,38 +562,10 @@ namespace PEBakery.Core.Tests.Command
         }
         #endregion
 
-        #region Echo
-        [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandInterface")]
-        public void Echo()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            void SingleTemplate(string rawCode, string msg, bool warn, ErrorCheck check = ErrorCheck.Success)
-            {
-                List<LogInfo> logs = EngineTests.Eval(s, rawCode, CodeType.Echo, check);
-                if (check == ErrorCheck.Success)
-                {
-                    Assert.AreEqual(1, logs.Count);
-
-                    LogInfo log = logs[0];
-                    if (warn)
-                        Assert.AreEqual(LogState.Warning, log.State);
-                    else
-                        Assert.AreEqual(LogState.Success, log.State);
-                    Assert.IsTrue(log.Message.Equals(msg, StringComparison.Ordinal));
-                }
-            }
-
-            SingleTemplate(@"Echo,Hello World!", @"Hello World!", false, ErrorCheck.Success);
-            SingleTemplate(@"Echo,PEBakery,WARN", @"PEBakery", true, ErrorCheck.Warning);
-        }
-        #endregion
-
         #region AddInterface
         [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandInterface")]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
         public void AddInterface()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -637,6 +613,94 @@ namespace PEBakery.Core.Tests.Command
                 ("V_pFileBox1", @"C:\Windows\notepad.exe"),
                 ("V_pFileBox2", @"E:\WinPE\"),
             });
+        }
+        #endregion
+
+        #region Echo
+        [TestMethod]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
+        public void Echo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            void SingleTemplate(string rawCode, string msg, bool warn, ErrorCheck check = ErrorCheck.Success)
+            {
+                List<LogInfo> logs = EngineTests.Eval(s, rawCode, CodeType.Echo, check);
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.AreEqual(1, logs.Count);
+
+                    LogInfo log = logs[0];
+                    Assert.AreEqual(warn ? LogState.Warning : LogState.Success, log.State);
+                    Assert.IsTrue(log.Message.Equals(msg, StringComparison.Ordinal));
+                }
+            }
+
+            SingleTemplate(@"Echo,Hello World!", @"Hello World!", false, ErrorCheck.Success);
+            SingleTemplate(@"Echo,PEBakery,WARN", @"PEBakery", true, ErrorCheck.Warning);
+        }
+        #endregion
+
+        #region EchoFile
+        [TestMethod]
+        [TestCategory(nameof(Command))]
+        [TestCategory(nameof(CommandInterface))]
+        public void EchoFile()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string srcFile = Path.GetTempFileName();
+            string noFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("A");
+                b.AppendLine("B");
+                b.AppendLine("C");
+                b.AppendLine("가");
+                b.AppendLine("나");
+                b.AppendLine("다");
+                string sampleStr = b.ToString();
+
+                using (StreamWriter w = new StreamWriter(srcFile, false, Encoding.UTF8))
+                {
+                    w.Write(sampleStr);
+                }
+
+                void SuccessTemplate(string rawCode, string msg, ErrorCheck check = ErrorCheck.Success)
+                {
+                    List<LogInfo> logs = EngineTests.Eval(s, rawCode, CodeType.EchoFile, check);
+                    if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                    {
+                        Assert.AreEqual(2, logs.Count);
+
+                        if (check == ErrorCheck.Success)
+                            Assert.AreEqual(LogState.Success, logs[0].State);
+                        else if (check == ErrorCheck.Warning)
+                            Assert.AreEqual(LogState.Warning, logs[0].State);
+                        Assert.AreEqual(LogState.Info, logs[1].State);
+                        Assert.IsTrue(logs[1].Message.Equals(msg.Trim(), StringComparison.Ordinal));
+                    }
+                }
+
+                void FailTemplate(string rawCode)
+                {
+                    List<LogInfo> logs = EngineTests.Eval(s, rawCode, CodeType.EchoFile, ErrorCheck.Warning);
+                    Assert.AreEqual(1, logs.Count);
+
+                    LogInfo log = logs[0];
+                    Assert.AreEqual(LogState.Warning, log.State);
+                }
+
+                SuccessTemplate($@"EchoFile,{srcFile}", sampleStr, ErrorCheck.Success);
+                SuccessTemplate($@"EchoFile,{srcFile},WARN", sampleStr, ErrorCheck.Warning);
+                FailTemplate($@"EchoFile,{noFile}");
+            }
+            finally
+            {
+                if (File.Exists(srcFile))
+                    File.Delete(srcFile);
+            }
         }
         #endregion
     }
