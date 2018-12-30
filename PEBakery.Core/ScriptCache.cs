@@ -348,7 +348,7 @@ namespace PEBakery.Core
         public class ScriptCache
         {
             /// <summary>
-            /// DirectRealPath.GetHashCode() ^ TreePath.GetHashCode()
+            /// DirectRealPath.GetHashCode()
             /// </summary>
             [PrimaryKey]
             public int Hash { get; set; }

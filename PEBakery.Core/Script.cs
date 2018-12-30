@@ -94,7 +94,8 @@ namespace PEBakery.Core
         public string TreePath
         {
             get => _treePath;
-            // For script caching
+            // _treePath can be changed only right after deserialized from cache.
+            // No readonly for _treePath because of script caching.
             set => _treePath = value;
         }
         public Dictionary<string, ScriptSection> Sections
@@ -791,8 +792,7 @@ namespace PEBakery.Core
         public override int GetHashCode()
         {
             // ReSharper disable once NonReadonlyMemberInGetHashCode
-            // _treePath must not changed after loading. 
-            // No readonly for _treePath because of script caching.
+            // _treePath can be changed only right after deserialized from cache.
             return _realPath.GetHashCode() ^ _treePath.GetHashCode();
         }
         #endregion
