@@ -150,6 +150,11 @@ namespace PEBakery.Core.Commands
                 {
                     return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
                 }
+
+                if (File.Exists(destArchive))
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
+                else
+                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
             }
             else
             { // With wildcard
@@ -168,18 +173,22 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     compressor.CompressFiles(destArchive, files);
+                    foreach (string f in files)
+                    {
+                        logs.Add(new LogInfo(LogState.Success, $"Compressed [{f}]"));
+                    }
                 }
                 finally
                 {
                     compressor.Compressing -= ReportCompressProgress;
                     s.MainViewModel.ResetBuildCommandProgress();
                 }
-            }
 
-            if (File.Exists(destArchive))
-                logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
-            else
-                logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+                if (File.Exists(destArchive))
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files compressed to [{destArchive}]"));
+                else
+                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+            }
 
             return logs;
         }

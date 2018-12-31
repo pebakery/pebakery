@@ -623,6 +623,7 @@ namespace PEBakery.Core
                     break;
             }
 
+            BuildInfoUpdated?.Invoke(this, new BuildInfoUpdateEventArgs(dbBuild));
             SystemWrite(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished ({s.Elapsed:h\\:mm\\:ss})"));
 
             _scriptRefIdDict.Clear();

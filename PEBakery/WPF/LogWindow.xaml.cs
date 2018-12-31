@@ -36,7 +36,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 
 namespace PEBakery.WPF
@@ -382,6 +381,8 @@ namespace PEBakery.WPF
             });
 
             SelectedBuildIndex = 0;
+            // Print summary
+            SelectedScriptIndex = 0;
         }
 
         public void RefreshScript(int? buildId, bool showLastScript)

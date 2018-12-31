@@ -85,7 +85,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     File.Copy(srcFile, destFullPath, true);
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]"));
                 }
                 else // DestPath not exist, or it is a file
                 {
@@ -102,7 +102,7 @@ namespace PEBakery.Core.Commands
                     }
 
                     File.Copy(srcFile, destPath, true);
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));
                 }
             }
             else
