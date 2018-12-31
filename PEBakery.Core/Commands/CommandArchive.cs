@@ -79,16 +79,8 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"[{destArchive}] should be a file, not a directory");
             if (File.Exists(destArchive))
             {
-                if (info.Format == ArchiveFile.ArchiveCompressFormat.Zip)
-                {
-                    logs.Add(new LogInfo(LogState.Overwrite, $"Archive [{destArchive}] will be appended"));
-                    appendMode = true;
-                }
-                else
-                {
-                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
-                    File.Delete(destArchive);
-                }
+                logs.Add(new LogInfo(LogState.Overwrite, $"Archive [{destArchive}] will be appended"));
+                appendMode = true;
             }
 
             // If parent directory of destArchive does not exist, create it
@@ -102,7 +94,8 @@ namespace PEBakery.Core.Commands
                 CompressionLevel = compLevel,
             };
 
-            // Set filename encoding
+            // Set filename encoding to UTF-8
+            // 7z files always use Unicode filename, so no action is required.
             switch (outFormat)
             {
                 case OutArchiveFormat.Zip:

@@ -212,6 +212,7 @@ namespace PEBakery.Core.Tests.Command
 
             // Append to zip archives
             AppendTemplate("Zip", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Best);
+            AppendTemplate("7z", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Store);
         }
         #endregion
 
