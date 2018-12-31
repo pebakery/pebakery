@@ -86,13 +86,13 @@ namespace PEBakery.Core.Commands
             // If parent directory of destArchive does not exist, create it
             Directory.CreateDirectory(FileHelper.GetDirNameEx(destArchive));
 
-            // Call SevenZipSharp
+            // Prepare SevenZipSharp compressor
             SevenZipCompressor compressor = new SevenZipCompressor
             {
                 ArchiveFormat = outFormat,
                 CompressionMode = appendMode ? CompressionMode.Append : CompressionMode.Create,
                 CompressionLevel = compLevel,
-            };
+            };            
 
             // Set filename encoding to UTF-8
             // 7z files always use Unicode filename, so no action is required.
@@ -103,28 +103,59 @@ namespace PEBakery.Core.Commands
                     break;
             }
 
-            if (File.Exists(srcPath))
-            {
-                // Compressor Options
-                compressor.DirectoryStructure = false;
-
-                // Compressor Callbacks
-                compressor.Compressing += ReportCompressProgress;
-
-                s.MainViewModel.SetBuildCommandProgress("Compress Progress");
-                try
+            string wildcard = Path.GetFileName(srcPath);
+            if (!StringHelper.IsWildcard(wildcard))
+            { // No wildcard
+                if (File.Exists(srcPath))
                 {
-                    compressor.CompressFiles(destArchive, srcPath);
-                }
-                finally
-                {
-                    compressor.Compressing -= ReportCompressProgress;
-                    s.MainViewModel.ResetBuildCommandProgress();
-                }
+                    // Compressor Options
+                    compressor.DirectoryStructure = false;
 
+                    // Compressor Callbacks
+                    compressor.Compressing += ReportCompressProgress;
+
+                    s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                    try
+                    {
+                        compressor.CompressFiles(destArchive, srcPath);
+                    }
+                    finally
+                    {
+                        compressor.Compressing -= ReportCompressProgress;
+                        s.MainViewModel.ResetBuildCommandProgress();
+                    }
+                }
+                else if (Directory.Exists(srcPath))
+                {
+                    // Compressor Options
+                    compressor.DirectoryStructure = true;
+                    compressor.PreserveDirectoryRoot = true;
+                    compressor.IncludeEmptyDirectories = true;
+
+                    // Compressor Callbacks
+                    compressor.Compressing += ReportCompressProgress;
+
+                    s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                    try
+                    {
+                        compressor.CompressDirectory(srcPath, destArchive);
+                    }
+                    finally
+                    {
+                        compressor.Compressing -= ReportCompressProgress;
+                        s.MainViewModel.ResetBuildCommandProgress();
+                    }
+                }
+                else
+                {
+                    return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
+                }
             }
-            else if (Directory.Exists(srcPath))
-            {
+            else
+            { // With wildcard
+                string srcDirToFind = Path.GetDirectoryName(srcPath);
+                string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
+
                 // Compressor Options
                 compressor.DirectoryStructure = true;
                 compressor.PreserveDirectoryRoot = true;
@@ -136,17 +167,13 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.SetBuildCommandProgress("Compress Progress");
                 try
                 {
-                    compressor.CompressDirectory(srcPath, destArchive);
+                    compressor.CompressFiles(destArchive, files);
                 }
                 finally
                 {
                     compressor.Compressing -= ReportCompressProgress;
                     s.MainViewModel.ResetBuildCommandProgress();
                 }
-            }
-            else
-            {
-                return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
             }
 
             if (File.Exists(destArchive))

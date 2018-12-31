@@ -30,6 +30,7 @@ using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,7 +77,7 @@ namespace PEBakery.WPF
         {
             if (e.Log != null)
             {
-                _m.SystemLogs.Add(e.Log);   
+                _m.SystemLogs.Add(e.Log);
             }
             else if (e.Logs != null)
             {
@@ -84,11 +85,14 @@ namespace PEBakery.WPF
                 foreach (LogModel.SystemLog dbLog in e.Logs)
                     _m.SystemLogs.Add(dbLog);
             }
-
-            _m.SystemLogsSelectedIndex = _m.SystemLogs.Count - 1;
+            else
+            {
+                Debug.Assert(false, $"Invalid {nameof(SystemLogUpdateEventArgs)}");
+            }
 
             Application.Current.Dispatcher.Invoke(() =>
             {
+                _m.SystemLogsSelectedIndex = SystemLogListView.Items.Count - 1;
                 SystemLogListView.UpdateLayout();
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogsSelectedIndex]);
             });
@@ -360,16 +364,22 @@ namespace PEBakery.WPF
 
         public void RefreshBuildLog()
         {
-            LogStats.Clear();
-            VariableLogs.Clear();
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                // I don't know why, but LogStats.Clear throws thread exception even though EnableCollectionSynchronization is used.
+                // Reproduce: Remove Dispatcher.Invoke, and run CodeBox three times in a row (without closing LogWindow).
+                // TODO: This is a quick dirty fix. Apply better patch later.
+                LogStats.Clear();
+                VariableLogs.Clear();
 
-            // Populate SelectBuildEntries
-            LogModel.BuildInfo[] buildEntries = LogDb.Table<LogModel.BuildInfo>()
-                .OrderByDescending(x => x.StartTime)
-                .ToArray();
-            BuildEntries = new ObservableCollection<Tuple<string, int>>(
-                buildEntries.Select(x => new Tuple<string, int>(x.Text, x.Id))
-            );
+                // Populate SelectBuildEntries
+                LogModel.BuildInfo[] buildEntries = LogDb.Table<LogModel.BuildInfo>()
+                    .OrderByDescending(x => x.StartTime)
+                    .ToArray();
+                BuildEntries = new ObservableCollection<Tuple<string, int>>(
+                    buildEntries.Select(x => new Tuple<string, int>(x.Text, x.Id))
+                );
+            });
 
             SelectedBuildIndex = 0;
         }

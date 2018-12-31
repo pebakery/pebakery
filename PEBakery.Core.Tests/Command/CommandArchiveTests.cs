@@ -47,9 +47,9 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(srcDir, srcDirName);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
                 string destArchive = Path.Combine(destDir, $"{srcDirName}.{arcType}");
-                string decompDir = FileHelper.GetTempFileNameEx();
+                string decompDir = FileHelper.GetTempDir();
 
                 try
                 {
@@ -105,9 +105,9 @@ namespace PEBakery.Core.Tests.Command
                 string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(srcDir, srcFilePath);
                 string srcFileName = Path.GetFileName(srcFilePath);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
                 string destArchive = Path.Combine(destDir, $"{srcFileName}.{arcType}");
-                string decompDir = FileHelper.GetTempFileNameEx();
+                string decompDir = FileHelper.GetTempDir();
 
                 try
                 {
@@ -155,14 +155,12 @@ namespace PEBakery.Core.Tests.Command
                 string srcFileName = Path.GetFileName(srcFilePath);
                 string appendFullPath = Path.Combine(srcDir, appendFilePath);
                 string appendFileName = Path.GetFileName(appendFilePath);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
                 string destArchive = Path.Combine(destDir, $"{srcFileName}.{arcType}");
-                string decompDir = FileHelper.GetTempFileNameEx();
+                string decompDir = FileHelper.GetTempDir();
 
                 try
                 {
-                    Directory.CreateDirectory(destDir);
-                    Directory.CreateDirectory(decompDir);
 
                     // Create sample archive file
                     string rawCode = $@"Compress,{arcType},""%TestBench%\CommandArchive\{srcFilePath}"",""{destArchive}""";
@@ -203,6 +201,63 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
+            void WildcardTemplate(string arcType, string wildcard, ArchiveFile.CompressLevel level)
+            { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel]
+                EngineState s = EngineTests.CreateEngineState();
+                string srcDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile", "SrcDir"));
+                string destDir = FileHelper.GetTempDir();
+                string destArchive = Path.Combine(destDir, $"Wildcard.{arcType}");
+                string decompDir = FileHelper.GetTempDir();
+
+                try
+                {
+                    Directory.CreateDirectory(destDir);
+                    Directory.CreateDirectory(decompDir);
+
+                    string rawCode = $@"Compress,{arcType},""%TestBench%\CommandFile\SrcDir\{wildcard}"",""{destArchive}""";
+                    switch (level)
+                    {
+                        case ArchiveFile.CompressLevel.Best:
+                            rawCode += ",BEST";
+                            break;
+                        case ArchiveFile.CompressLevel.Fastest:
+                            rawCode += ",FASTEST";
+                            break;
+                        case ArchiveFile.CompressLevel.Normal:
+                            rawCode += ",NORMAL";
+                            break;
+                        case ArchiveFile.CompressLevel.Store:
+                            rawCode += ",STORE";
+                            break;
+                    }
+                    EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
+                    string exeDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
+                    EngineTests.ExtractWith7z(exeDir, destArchive, decompDir);
+
+                    string[] srcFiles = Directory.GetFiles(srcDir, wildcard, SearchOption.AllDirectories);
+                    string[] destFiles = Directory.GetFiles(decompDir, wildcard, SearchOption.AllDirectories);
+                    Assert.IsTrue(srcFiles.Length == destFiles.Length);
+
+                    for (int i = 0; i < srcFiles.Length; i++)
+                    {
+                        using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            byte[] srcDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, destStream);
+                            Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                        }
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                    if (Directory.Exists(decompDir))
+                        Directory.Delete(decompDir, true);
+                }
+            }
+
             // Create archives
             DirTemplate("Zip", "France", ArchiveFile.CompressLevel.Store);
             DirTemplate("7z", "Korea", ArchiveFile.CompressLevel.Normal);
@@ -210,9 +265,12 @@ namespace PEBakery.Core.Tests.Command
             FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Normal);
             FileTemplate("7z", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), ArchiveFile.CompressLevel.Best);
 
-            // Append to zip archives
+            // Append to archives
             AppendTemplate("Zip", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Best);
             AppendTemplate("7z", Path.Combine("Korea", "대한민국.png"), Path.Combine("Korea", "대한민국.txt"), ArchiveFile.CompressLevel.Store);
+
+            // Wildcard tests
+            WildcardTemplate("Zip", "*.txt", ArchiveFile.CompressLevel.Normal);
         }
         #endregion
 

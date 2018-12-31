@@ -392,7 +392,7 @@ namespace PEBakery.Core.Tests
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden,
                     FileName = binary,
-                    Arguments = $"x {Path.Combine(srcArchive)} -o{destDir}",
+                    Arguments = $"x {srcArchive} -o{destDir}",
                 }
             };
             proc.Start();

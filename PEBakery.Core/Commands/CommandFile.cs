@@ -67,7 +67,7 @@ namespace PEBakery.Core.Commands
 
             // Check srcFileName contains wildcard
             string wildcard = Path.GetFileName(srcFile);
-            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
+            if (!StringHelper.IsWildcard(wildcard))
             { // No Wildcard
                 if (destPathIsDir) // DestPath exists, and it is directory
                 {
@@ -186,7 +186,7 @@ namespace PEBakery.Core.Commands
 
             // Check srcFileName contains wildcard
             string wildcard = Path.GetFileName(filePath);
-            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
+            if (!StringHelper.IsWildcard(wildcard))
             { // No Wildcard
                 if (File.Exists(filePath))
                 { // Delete File
@@ -401,7 +401,7 @@ namespace PEBakery.Core.Commands
 
             // Check if srcDir contains wildcard
             string wildcard = Path.GetFileName(srcDir);
-            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
+            if (!StringHelper.IsWildcard(wildcard))
             { // No Wildcard
                 string destFullPath = Path.Combine(destDir, Path.GetFileName(srcDir));
                 if (Directory.Exists(destFullPath))
