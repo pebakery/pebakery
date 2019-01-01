@@ -200,6 +200,22 @@ namespace PEBakery.WPF
             throw new NotImplementedException();
         }
     }
+
+    public class CompatOptionToggleButtonContentConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            bool nextState = (bool)value;
+            return nextState ? "Select All" : "Select None";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     #endregion
 
     #region ScriptEditWindow

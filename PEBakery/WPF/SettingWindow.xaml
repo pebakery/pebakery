@@ -105,6 +105,7 @@
         <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter" />
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
+        <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -529,7 +530,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="125"/>
                             <ColumnDefinition/>
-                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
@@ -543,7 +544,7 @@
                                   SelectedIndex="{Binding SelectedProjectIndex}"/>
                         <Button Grid.Column="2" 
                                 VerticalAlignment="Stretch"
-                                Content="Toggle"
+                                Content="{Binding ToggleNextState, Converter={StaticResource CompatOptionToggleButtonContentConverter}}"
                                 Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                     </Grid>

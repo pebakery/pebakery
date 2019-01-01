@@ -325,7 +325,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                _m.ToggleCompatOption();
+                _m.ApplyCompatToggleNextState(_m.ToggleNextState);
             }
             finally
             {
@@ -692,19 +692,37 @@ namespace PEBakery.WPF
             }
         }
 
+        // Toggle Button
+        private bool _toggleNextState;
+        public bool ToggleNextState
+        {
+            get => _toggleNextState;
+            set => SetProperty(ref _toggleNextState, value);
+        }
+
         // Asterisk
         private bool _compatAsteriskBugDirCopy;
         public bool CompatAsteriskBugDirCopy
         {
             get => _compatAsteriskBugDirCopy;
-            set => SetProperty(ref _compatAsteriskBugDirCopy, value);
+            set
+            {
+                _compatAsteriskBugDirCopy = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatAsteriskBugDirLink;
         public bool CompatAsteriskBugDirLink
         {
             get => _compatAsteriskBugDirLink;
-            set => SetProperty(ref _compatAsteriskBugDirLink, value);
+            set
+            {
+                _compatAsteriskBugDirLink = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         // Command
@@ -712,49 +730,84 @@ namespace PEBakery.WPF
         public bool CompatFileRenameCanMoveDir
         {
             get => _compatFileRenameCanMoveDir;
-            set => SetProperty(ref _compatFileRenameCanMoveDir, value);
+            set
+            {
+                _compatFileRenameCanMoveDir = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatAllowLetterInLoop;
         public bool CompatAllowLetterInLoop
         {
             get => _compatAllowLetterInLoop;
-            set => SetProperty(ref _compatAllowLetterInLoop, value);
+            set
+            {
+                _compatAllowLetterInLoop = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatLegacyBranchCondition;
         public bool CompatLegacyBranchCondition
         {
             get => _compatLegacyBranchCondition;
-            set => SetProperty(ref _compatLegacyBranchCondition, value);
+            set
+            {
+                _compatLegacyBranchCondition = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatLegacyRegWrite;
         public bool CompatLegacyRegWrite
         {
             get => _compatLegacyRegWrite;
-            set => SetProperty(ref _compatLegacyRegWrite, value);
+            set
+            {
+                _compatLegacyRegWrite = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatAllowSetModifyInterface;
         public bool CompatAllowSetModifyInterface
         {
             get => _compatAllowSetModifyInterface;
-            set => SetProperty(ref _compatAllowSetModifyInterface, value);
+            set
+            {
+                _compatAllowSetModifyInterface = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatLegacyInterfaceCommand;
         public bool CompatLegacyInterfaceCommand
         {
             get => _compatLegacyInterfaceCommand;
-            set => SetProperty(ref _compatLegacyInterfaceCommand, value);
+            set
+            {
+                _compatLegacyInterfaceCommand = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatLegacySectionParamCommand;
         public bool CompatLegacySectionParamCommand
         {
             get => _compatLegacySectionParamCommand;
-            set => SetProperty(ref _compatLegacySectionParamCommand, value);
+            set
+            {
+                _compatLegacySectionParamCommand = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         // Script Interface
@@ -767,6 +820,7 @@ namespace PEBakery.WPF
                 if (_compatIgnoreWidthOfWebLabel != value)
                     NeedScriptRedraw = true;
                 _compatIgnoreWidthOfWebLabel = value;
+                GetCompatToggleNextState();
                 OnPropertyUpdate();
             }
         }
@@ -776,28 +830,48 @@ namespace PEBakery.WPF
         public bool CompatOverridableFixedVariables
         {
             get => _compatOverridableFixedVariables;
-            set => SetProperty(ref _compatOverridableFixedVariables, value);
+            set
+            {
+                _compatOverridableFixedVariables = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatOverridableLoopCounter;
         public bool CompatOverridableLoopCounter
         {
             get => _compatOverridableLoopCounter;
-            set => SetProperty(ref _compatOverridableLoopCounter, value);
+            set
+            {
+                _compatOverridableLoopCounter = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatEnableEnvironmentVariables;
         public bool CompatEnableEnvironmentVariables
         {
             get => _compatEnableEnvironmentVariables;
-            set => SetProperty(ref _compatEnableEnvironmentVariables, value);
+            set
+            {
+                _compatEnableEnvironmentVariables = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
 
         private bool _compatDisableExtendedSectionParams;
         public bool CompatDisableExtendedSectionParams
         {
             get => _compatDisableExtendedSectionParams;
-            set => SetProperty(ref _compatDisableExtendedSectionParams, value);
+            set
+            {
+                _compatDisableExtendedSectionParams = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
         }
         #endregion
 
@@ -920,14 +994,15 @@ namespace PEBakery.WPF
 
         #region ToggleCompatOption
         /// <summary>
-        /// If all compat options are true, set them to false.
-        /// If some compat options are true, set them to true.
-        /// If none of compat option is true, set them to true.
+        /// If all compat options are true, set ToggleNextState to false.
+        /// If some compat options are true, set ToggleNextState to true.
+        /// If none of compat option is true, set ToggleNextState to true.
         /// </summary>
-        public void ToggleCompatOption()
+        public void GetCompatToggleNextState()
         {
             // Get current state
             bool currentState = true;
+
             // Asterisk
             currentState &= CompatAsteriskBugDirCopy;
             currentState &= CompatAsteriskBugDirLink;
@@ -947,8 +1022,14 @@ namespace PEBakery.WPF
             currentState &= CompatEnableEnvironmentVariables;
             currentState &= CompatDisableExtendedSectionParams;
 
-            // Toggle!
-            bool nextState = !currentState;
+            ToggleNextState = !currentState;
+        }
+
+        /// <summary>
+        /// Apply ToggleNextState to compat options
+        /// </summary>
+        public void ApplyCompatToggleNextState(bool nextState)
+        {
             // Asterisk
             CompatAsteriskBugDirCopy = nextState;
             CompatAsteriskBugDirLink = nextState;
