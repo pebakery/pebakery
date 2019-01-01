@@ -404,14 +404,14 @@
                                        Width="25" 
                                        Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
                                        TextAlignment="Right" />
-                            <Slider Minimum="100"
+                            <Slider Minimum="70"
                                     Maximum="200"
                                     TickPlacement="BottomRight"
                                     TickFrequency="10"
                                     IsSnapToTickEnabled="True"
                                     Foreground="Black"
                                     x:Name="ScaleFactorSlider"
-                                    Value="{Binding InterfaceScaleFactor}" />
+                                    Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
                         </DockPanel>
                     </GroupBox>
                     <GroupBox Header="Build Mode Interface"

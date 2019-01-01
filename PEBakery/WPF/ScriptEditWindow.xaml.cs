@@ -646,8 +646,8 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceCanvas));
             }
         }
-        private double _interfaceScaleFactor = 100;
-        public double InterfaceScaleFactor
+        private int _interfaceScaleFactor = 100;
+        public int InterfaceScaleFactor
         {
             get => _interfaceScaleFactor;
             set
@@ -3453,11 +3453,17 @@ namespace PEBakery.WPF
             if (Renderer == null)
                 return;
 
-            double scaleFactor = InterfaceScaleFactor / 100;
-            if (scaleFactor - 1 < double.Epsilon)
-                scaleFactor = 1;
-            Renderer.ScaleFactor = scaleFactor;
-            InterfaceCanvas.LayoutTransform = new ScaleTransform(scaleFactor, scaleFactor);
+            ScaleTransform transform;
+            if (InterfaceScaleFactor == 100)
+            {
+                transform = new ScaleTransform(1, 1);
+            }
+            else
+            {
+                double scale = InterfaceScaleFactor / 100.0;
+                transform = new ScaleTransform(scale, scale);
+            }
+            InterfaceCanvas.LayoutTransform = transform;
 
             Renderer.Render();
             InterfaceLoaded = true;
