@@ -610,7 +610,7 @@ namespace PEBakery.WPF
 
         public ObservableCollection<Setting.InterfaceSize> InterfaceSizes { get; } = new ObservableCollection<Setting.InterfaceSize>
         {
-            Setting.InterfaceSize.Automatic,
+            Setting.InterfaceSize.Adaptive,
             Setting.InterfaceSize.Standard,
             Setting.InterfaceSize.Small,
         };

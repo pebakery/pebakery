@@ -156,7 +156,9 @@ namespace PEBakery.Core
             // Setting File
             string settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new Setting(settingFile);
-            MainViewModel.MonospacedFont = Setting.Interface.MonospacedFont;
+            Setting.ApplySetting();
+            // MainViewModel.MonospacedFont = Setting.Interface.MonospacedFont;
+            // MainViewModel.UpdateTopInterfaceSize();
 
             // Custom Title
             if (Setting.Interface.UseCustomTitle)

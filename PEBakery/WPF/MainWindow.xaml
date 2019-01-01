@@ -249,39 +249,32 @@
             <TextBlock Text="Build"
                        Grid.Row="1" Grid.Column="2"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Refresh"
                        Grid.Row="1"
                        Grid.Column="3"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Settings"
                        Grid.Row="1" Grid.Column="4"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Logs"
                        Grid.Row="1" Grid.Column="5"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Utilities"
                        Grid.Row="1" Grid.Column="6"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center" />
             <TextBlock Text="Update"
                        Grid.Row="1" Grid.Column="7"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="8"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Top"
               Height="80"

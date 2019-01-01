@@ -91,7 +91,7 @@ namespace PEBakery.Core
 
         public enum InterfaceSize
         {
-            Automatic = 0,
+            Adaptive = 0,
             Standard = 1,
             Small = 2,
         }
@@ -129,7 +129,7 @@ namespace PEBakery.Core
                 MonospacedFont = new FontHelper.FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
-                InterfaceSize = InterfaceSize.Automatic;
+                InterfaceSize = InterfaceSize.Adaptive;
             }
         }
 
@@ -219,6 +219,7 @@ namespace PEBakery.Core
 
             // Instance
             Global.MainViewModel.TitleBar = Interface.UseCustomTitle ? Interface.CustomTitle : MainViewModel.DefaultTitleBar;
+            Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
         }

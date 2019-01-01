@@ -108,14 +108,15 @@ namespace PEBakery.Core.ViewModels
 
         #region InterfaceSize
         // InterfaceSize
-        private Setting.InterfaceSize _interfaceSize;
+        private Setting.InterfaceSize _interfaceSize = Setting.InterfaceSize.Adaptive;
         public Setting.InterfaceSize InterfaceSize
         {
             get => _interfaceSize;
             set
             {
                 _interfaceSize = value;
-                OnPropertyUpdate(nameof(InterfaceSize));
+                OnPropertyUpdate();
+                UpdateTopInterfaceSize();
             }
         }
 
@@ -126,13 +127,7 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _windowWidth = value;
-                // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
-                OnPropertyUpdate(nameof(GlobalFontSize));
-                OnPropertyUpdate(nameof(BannerFontSize));
-                OnPropertyUpdate(nameof(BannerMargin));
-                OnPropertyUpdate(nameof(MainIconButtonSize));
-                OnPropertyUpdate(nameof(MainIconButtonMargin));
-                OnPropertyUpdate(nameof(MainProgressRingMargin));
+                UpdateTopInterfaceSize();
             }
         }
         private const int WindowWidthThreshold = 700;
@@ -141,12 +136,24 @@ namespace PEBakery.Core.ViewModels
         {
             switch (InterfaceSize)
             {
-                case Setting.InterfaceSize.Automatic when WindowWidth <= WindowWidthThreshold:
+                case Setting.InterfaceSize.Adaptive when WindowWidth <= WindowWidthThreshold:
                 case Setting.InterfaceSize.Small:
                     return small;
                 default:
                     return standard;
             }
+        }
+
+        public void UpdateTopInterfaceSize()
+        {
+            // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
+            // Tried Converters, but declaring too many converters made code too complicated.
+            OnPropertyUpdate(nameof(GlobalFontSize));
+            OnPropertyUpdate(nameof(BannerFontSize));
+            OnPropertyUpdate(nameof(BannerMargin));
+            OnPropertyUpdate(nameof(MainIconButtonSize));
+            OnPropertyUpdate(nameof(MainIconButtonMargin));
+            OnPropertyUpdate(nameof(MainProgressRingMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
