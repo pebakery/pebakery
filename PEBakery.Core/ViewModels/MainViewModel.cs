@@ -106,6 +106,57 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region InterfaceSize
+        // InterfaceSize
+        private Setting.InterfaceSize _interfaceSize;
+        public Setting.InterfaceSize InterfaceSize
+        {
+            get => _interfaceSize;
+            set
+            {
+                _interfaceSize = value;
+                OnPropertyUpdate(nameof(InterfaceSize));
+            }
+        }
+
+        private int _windowWidth = 900;
+        public int WindowWidth
+        {
+            get => _windowWidth;
+            set
+            {
+                _windowWidth = value;
+                // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
+                OnPropertyUpdate(nameof(GlobalFontSize));
+                OnPropertyUpdate(nameof(BannerFontSize));
+                OnPropertyUpdate(nameof(BannerMargin));
+                OnPropertyUpdate(nameof(MainIconButtonSize));
+                OnPropertyUpdate(nameof(MainIconButtonMargin));
+                OnPropertyUpdate(nameof(MainProgressRingMargin));
+            }
+        }
+        private const int WindowWidthThreshold = 700;
+
+        private T GetAdaptiveSize<T>(T standard, T small)
+        {
+            switch (InterfaceSize)
+            {
+                case Setting.InterfaceSize.Automatic when WindowWidth <= WindowWidthThreshold:
+                case Setting.InterfaceSize.Small:
+                    return small;
+                default:
+                    return standard;
+            }
+        }
+
+        public int GlobalFontSize => GetAdaptiveSize(13, 12);
+        public int BannerFontSize => GetAdaptiveSize(40, 32);
+        public Thickness BannerMargin => GetAdaptiveSize(new Thickness(0, 0, 15, 0), new Thickness(0, 0, 0, 0));
+        public int MainIconButtonSize => GetAdaptiveSize(60, 48);
+        public int MainIconButtonMargin => GetAdaptiveSize(4, 2);
+        public Thickness MainProgressRingMargin => GetAdaptiveSize(new Thickness(10, 0, 0, 0), new Thickness(8, 0, 0, 0));
+        #endregion
+
         #region Normal Interface Properties
         public const string DefaultTitleBar = "PEBakery";
         private string _titleBar = DefaultTitleBar;
@@ -245,6 +296,7 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
+        // Status Bar
         private string _statusBarText = string.Empty;
         public string StatusBarText
         {
@@ -509,10 +561,10 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildCommandProgressVisibility, value);
         }
 
-        // Taskbar Progress State
+        // TaskBar Progress State
         //
         // None - Hidden
-        // Inderterminate - Pulsing green indicator
+        // Indeterminate - Pulsing green indicator
         // Normal - Green
         // Error - Red
         // Paused - Yellow

@@ -559,18 +559,18 @@ namespace PEBakery.WPF
             set => SetProperty(ref _interfaceMonospacedFont, value);
         }
 
-        private int _interfaceScaleFactor;
-        public double InterfaceScaleFactor
+        private bool _interfaceUseCustomTitle;
+        public bool InterfaceUseCustomTitle
         {
-            get => _interfaceScaleFactor;
-            set
-            {
-                int newVal = (int)value;
-                if (_interfaceScaleFactor != newVal)
-                    NeedScriptRedraw = true;
-                _interfaceScaleFactor = newVal;
-                OnPropertyUpdate(nameof(InterfaceScaleFactor));
-            }
+            get => _interfaceUseCustomTitle;
+            set => SetProperty(ref _interfaceUseCustomTitle, value);
+        }
+
+        private string _interfaceCustomTitle;
+        public string InterfaceCustomTitle
+        {
+            get => _interfaceCustomTitle;
+            set => SetProperty(ref _interfaceCustomTitle, value);
         }
 
         private bool _interfaceUseCustomEditor;
@@ -587,6 +587,20 @@ namespace PEBakery.WPF
             set => SetProperty(ref _interfaceCustomEditorPath, value);
         }
 
+        private int _interfaceScaleFactor;
+        public double InterfaceScaleFactor
+        {
+            get => _interfaceScaleFactor;
+            set
+            {
+                int newVal = (int)value;
+                if (_interfaceScaleFactor != newVal)
+                    NeedScriptRedraw = true;
+                _interfaceScaleFactor = newVal;
+                OnPropertyUpdate(nameof(InterfaceScaleFactor));
+            }
+        }
+
         private bool _interfaceDisplayShellExecuteConOut;
         public bool InterfaceDisplayShellExecuteConOut
         {
@@ -594,18 +608,18 @@ namespace PEBakery.WPF
             set => SetProperty(ref _interfaceDisplayShellExecuteConOut, value);
         }
 
-        private bool _interfaceUseCustomTitle;
-        public bool InterfaceUseCustomTitle
+        public ObservableCollection<Setting.InterfaceSize> InterfaceSizes { get; } = new ObservableCollection<Setting.InterfaceSize>
         {
-            get => _interfaceUseCustomTitle;
-            set => SetProperty(ref _interfaceUseCustomTitle, value);
-        }
+            Setting.InterfaceSize.Automatic,
+            Setting.InterfaceSize.Standard,
+            Setting.InterfaceSize.Small,
+        };
 
-        private string _interfaceCustomTitle;
-        public string InterfaceCustomTitle
+        private Setting.InterfaceSize _interfaceSize;
+        public Setting.InterfaceSize InterfaceSize
         {
-            get => _interfaceCustomTitle;
-            set => SetProperty(ref _interfaceCustomTitle, value);
+            get => _interfaceSize;
+            set => SetProperty(ref _interfaceSize, value);
         }
         #endregion
 
@@ -646,22 +660,18 @@ namespace PEBakery.WPF
             set => SetProperty(ref _logDatabaseState, value);
         }
 
-        public ObservableCollection<string> LogDebugLevels { get; } = new ObservableCollection<string>
+        public ObservableCollection<LogDebugLevel> LogDebugLevels { get; } = new ObservableCollection<LogDebugLevel>
         {
-            LogDebugLevel.Production.ToString(),
-            LogDebugLevel.PrintException.ToString(),
-            LogDebugLevel.PrintExceptionStackTrace.ToString()
+            LogDebugLevel.Production,
+            LogDebugLevel.PrintException,
+            LogDebugLevel.PrintExceptionStackTrace,
         };
 
-        private LogDebugLevel _logDebugLevel;
-        public int LogDebugLevelIndex
+        private LogDebugLevel _logSelectedDebugLevel;
+        public LogDebugLevel LogSelectedDebugLevel
         {
-            get => (int)_logDebugLevel;
-            set
-            {
-                _logDebugLevel = (LogDebugLevel)value;
-                OnPropertyUpdate(nameof(LogDebugLevelIndex));
-            }
+            get => _logSelectedDebugLevel;
+            set => SetProperty(ref _logSelectedDebugLevel, value);
         }
 
         private bool _logDeferredLogging;
@@ -1092,7 +1102,7 @@ namespace PEBakery.WPF
 
             // [Log]
             Setting.LogSetting newLog = new Setting.LogSetting();
-            LogDebugLevelIndex = (int)newLog.DebugLevel;
+            LogSelectedDebugLevel = newLog.DebugLevel;
             LogDeferredLogging = newLog.DeferredLogging;
             LogMinifyHtmlExport = newLog.MinifyHtmlExport;
 
@@ -1132,20 +1142,21 @@ namespace PEBakery.WPF
             GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
 
             // [Interface]
-            InterfaceMonospacedFont = Setting.Interface.MonospacedFont;
-            InterfaceScaleFactor = Setting.Interface.ScaleFactor;
-            InterfaceUseCustomEditor = Setting.Interface.UseCustomEditor;
-            InterfaceCustomEditorPath = Setting.Interface.CustomEditorPath;
-            InterfaceDisplayShellExecuteConOut = Setting.Interface.DisplayShellExecuteConOut;
             InterfaceUseCustomTitle = Setting.Interface.UseCustomTitle;
             InterfaceCustomTitle = Setting.Interface.CustomTitle;
+            InterfaceUseCustomEditor = Setting.Interface.UseCustomEditor;
+            InterfaceCustomEditorPath = Setting.Interface.CustomEditorPath;
+            InterfaceMonospacedFont = Setting.Interface.MonospacedFont;
+            InterfaceScaleFactor = Setting.Interface.ScaleFactor;
+            InterfaceDisplayShellExecuteConOut = Setting.Interface.DisplayShellExecuteConOut;
+            InterfaceSize = Setting.Interface.InterfaceSize;
 
             // [Script]
             ScriptEnableCache = Setting.Script.EnableCache;
             ScriptAutoSyntaxCheck = Setting.Script.AutoSyntaxCheck;
 
             // [Log]
-            LogDebugLevelIndex = (int)Setting.Log.DebugLevel;
+            LogSelectedDebugLevel = Setting.Log.DebugLevel;
             LogDeferredLogging = Setting.Log.DeferredLogging;
             LogMinifyHtmlExport = Setting.Log.MinifyHtmlExport;
 
@@ -1176,20 +1187,21 @@ namespace PEBakery.WPF
             Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
 
             // [Interface]
-            Setting.Interface.MonospacedFont = InterfaceMonospacedFont;
-            Setting.Interface.ScaleFactor = _interfaceScaleFactor; // Need int, not double
-            Setting.Interface.UseCustomEditor = InterfaceUseCustomEditor;
-            Setting.Interface.CustomEditorPath = InterfaceCustomEditorPath;
-            Setting.Interface.DisplayShellExecuteConOut = InterfaceDisplayShellExecuteConOut;
             Setting.Interface.UseCustomTitle = InterfaceUseCustomTitle;
             Setting.Interface.CustomTitle = InterfaceCustomTitle;
+            Setting.Interface.UseCustomEditor = InterfaceUseCustomEditor;
+            Setting.Interface.CustomEditorPath = InterfaceCustomEditorPath;
+            Setting.Interface.MonospacedFont = InterfaceMonospacedFont;
+            Setting.Interface.ScaleFactor = _interfaceScaleFactor;
+            Setting.Interface.DisplayShellExecuteConOut = InterfaceDisplayShellExecuteConOut;
+            Setting.Interface.InterfaceSize = InterfaceSize;
 
             // [Script]
             Setting.Script.EnableCache = ScriptEnableCache;
             Setting.Script.AutoSyntaxCheck = ScriptAutoSyntaxCheck;
 
             // [Log]
-            Setting.Log.DebugLevel = _logDebugLevel; // LogDebugLevel
+            Setting.Log.DebugLevel = _logSelectedDebugLevel; // LogDebugLevel
             Setting.Log.DeferredLogging = LogDeferredLogging;
             Setting.Log.MinifyHtmlExport = LogMinifyHtmlExport;
 

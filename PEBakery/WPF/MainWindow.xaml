@@ -42,9 +42,9 @@
         xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
         mc:Ignorable="d"
         Closing="Window_Closing"
-        Width="900" Height="720"
+        Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
         MinWidth="600" MinHeight="480"
-        FontSize="13"
+        FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
         WindowStartupLocation="CenterScreen">
@@ -148,23 +148,22 @@
     </Window.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top"
-              Height="80"
               Background="LightBlue"
               Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60" />
+                <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}" />
                 <RowDefinition Height="20" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
@@ -173,10 +172,10 @@
                 <Image Margin="15, 15, 5, 15"
                        Source="{StaticResource DonutSvgImage}"/>
                 <TextBlock Text="PEBakery"
-                           Margin="0, 0, 15, 0"
+                           Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           FontSize="40" 
+                           FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
                            FontWeight="SemiBold"
                            FontStretch="Condensed"
                            FontStyle="Italic"/>
@@ -184,11 +183,14 @@
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                              Grid.Column="1"
-                             Margin="10"
+                             Margin="{Binding MainProgressRingMargin, Mode=OneWay, FallbackValue=10}"
+                             Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              HorizontalAlignment="Left"
+                             VerticalAlignment="Center"
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2" 
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="ProjectBuildStartButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectBuildStartCommand"
@@ -196,7 +198,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="ProjectRefreshButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectRefreshCommand"
@@ -204,7 +206,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="SettingWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.SettingWindowCommand"
@@ -212,7 +214,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="5"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="LogWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.LogWindowCommand"
@@ -220,7 +222,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="6"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="UtilityWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.UtilityWindowCommand"
@@ -228,7 +230,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="7"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="ProjectUpdateButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectUpdateCommand"
@@ -236,7 +238,7 @@
                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="8"
-                           Margin="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                            x:Name="AboutWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.AboutWindowCommand"
@@ -363,6 +365,7 @@
                          Value="{Binding BottomProgressBarValue}"
                          Visibility="{Binding BottomProgressBarVisibility}"/>
             <TextBlock Background="#dfdfdf" 
+                       FontSize="13"
                        Text="{Binding StatusBarText}"
                        Visibility="{Binding BottomStatusBarVisibility}"/>
         </Grid>
@@ -494,6 +497,7 @@
                   Visibility="{Binding BuildInterfaceVisibility}">
                 <TreeView Background="PaleGreen"
                           ItemsSource="{Binding BuildTreeItems}"
+                          FontSize="12"
                           BorderThickness="0"
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">

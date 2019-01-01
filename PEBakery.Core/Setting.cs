@@ -89,17 +89,25 @@ namespace PEBakery.Core
             }
         }
 
+        public enum InterfaceSize
+        {
+            Automatic = 0,
+            Standard = 1,
+            Small = 2,
+        }
+
         public class InterfaceSetting
         {
             public const string SectionName = "Interface";
 
-            public FontHelper.FontInfo MonospacedFont;
-            public int ScaleFactor;
-            public bool UseCustomEditor;
-            public string CustomEditorPath;
-            public bool DisplayShellExecuteConOut;
             public bool UseCustomTitle;
             public string CustomTitle;
+            public bool UseCustomEditor;
+            public string CustomEditorPath;
+            public FontHelper.FontInfo MonospacedFont;
+            public int ScaleFactor;
+            public bool DisplayShellExecuteConOut;
+            public InterfaceSize InterfaceSize;
 
             public FontFamily MonospacedFontFamily => MonospacedFont.FontFamily;
             public FontWeight MonospacedFontWeight => MonospacedFont.FontWeight;
@@ -112,15 +120,16 @@ namespace PEBakery.Core
 
             public void Default()
             {
+                UseCustomTitle = false;
+                CustomTitle = string.Empty;
+                // Every Windows PC has notepad pre-installed.
+                UseCustomEditor = false;
+                CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
                 // Every Windows PC has Consolas pre-installed.
                 MonospacedFont = new FontHelper.FontInfo(new FontFamily("Consolas"), FontWeights.Regular, 12);
                 ScaleFactor = 100;
                 DisplayShellExecuteConOut = true;
-                UseCustomEditor = false;
-                // Every Windows PC has notepad pre-installed.
-                CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
-                UseCustomTitle = false;
-                CustomTitle = string.Empty;
+                InterfaceSize = InterfaceSize.Automatic;
             }
         }
 
@@ -196,7 +205,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ApplySetting
-
         public void ApplySetting()
         {
             // AppContext
@@ -210,8 +218,9 @@ namespace PEBakery.Core
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
 
             // Instance
-            Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.TitleBar = Interface.UseCustomTitle ? Interface.CustomTitle : MainViewModel.DefaultTitleBar;
+            Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
+            Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
         }
         #endregion
 
@@ -227,7 +236,6 @@ namespace PEBakery.Core
         #endregion
 
         #region ReadFromFile, WriteToFile
-
         public void ReadFromFile()
         {
             // Use default value if key/value does not exist or malformed.
@@ -245,18 +253,19 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent)), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle)), // Boolean
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle)), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor)), // Boolean
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomEditorPath)), // String
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontFamily)), // FontFamily
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontWeight)), // FontWeight
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize)), // FontSize
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer 100 ~ 200
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor)), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomEditorPath)), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (100 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle)), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle)), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Integer (0 - 2)
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache)), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck)), // Boolean
-                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Integer
+                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Integer (0 - 2)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
             };
@@ -304,12 +313,13 @@ namespace PEBakery.Core
                 int monoFontSize = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, -1);
                 Interface.MonospacedFont = new FontHelper.FontInfo(monoFontFamily, monoFontWeight, monoFontSize);
 
-                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 100, 200);
-                Interface.UseCustomEditor = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
-                Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
-                Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
                 Interface.UseCustomTitle = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle);
                 Interface.CustomTitle = DictParser.ParseString(ifaceDict, nameof(Interface.CustomTitle), Interface.CustomTitle);
+                Interface.UseCustomEditor = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
+                Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
+                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 100, 200);
+                Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
+                Interface.InterfaceSize = (InterfaceSize)DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), (int)Interface.InterfaceSize, 0, Enum.GetValues(typeof(InterfaceSize)).Length - 1);
             }
 
             // Script
@@ -326,7 +336,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> logDict = keyDict[LogSetting.SectionName];
 
-                Log.DebugLevel = (LogDebugLevel)DictParser.ParseInteger(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), (int)Log.DebugLevel, 0, 2);
+                Log.DebugLevel = (LogDebugLevel)DictParser.ParseInteger(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), (int)Log.DebugLevel, 0, Enum.GetValues(typeof(LogDebugLevel)).Length - 1);
                 Log.DeferredLogging = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
                 Log.MinifyHtmlExport = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
             }
@@ -343,15 +353,16 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent), General.CustomUserAgent), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle.ToString()), // Boolean
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle), Interface.CustomTitle), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor.ToString()), // Boolean
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath), // String
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontFamily), Interface.MonospacedFont.FontFamily.Source),
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontWeight), Interface.MonospacedFont.FontWeight.ToString()),
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize.ToString()),
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor.ToString()), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath), // String
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle.ToString()), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle), Interface.CustomTitle), // String
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache.ToString()), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel), ((int)Log.DebugLevel).ToString()), // Integer

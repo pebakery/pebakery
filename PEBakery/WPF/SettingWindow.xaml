@@ -313,6 +313,58 @@
             </TabItem>
             <TabItem Header="Interface" Width="70">
                 <StackPanel IsEnabled="{Binding CanExecuteCommand}">
+                    <GroupBox Header="PEBakery Title"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      Content="Use custom title"
+                                      IsChecked="{Binding InterfaceUseCustomTitle}" />
+                            <Grid Margin="0, 0, 0, 3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           FontSize="12"
+                                           Text="Custom Title" />
+                                <TextBox Grid.Column="1"
+                                         FontSize="12"
+                                         VerticalContentAlignment="Center"
+                                         IsEnabled="{Binding InterfaceUseCustomTitle}"
+                                         Text="{Binding InterfaceCustomTitle}" />
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Default Code Editor"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox DockPanel.Dock="Left" 
+                                      Margin="0, 0, 0, 3" FontSize="12"
+                                      VerticalContentAlignment="Center"
+                                      IsChecked="{Binding InterfaceUseCustomEditor}"
+                                      Content="Use custom editor" />
+                            <DockPanel Height="25">
+                                <Button DockPanel.Dock="Right"
+                                        Width="25"
+                                        VerticalContentAlignment="Center"
+                                        HorizontalContentAlignment="Center"
+                                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                                    <Button.Content>
+                                        <iconPacks:PackIconMaterial Kind="FolderOpen"/>
+                                    </Button.Content>
+                                </Button>
+                                <TextBox DockPanel.Dock="Left"
+                                         Margin="0, 0, 5, 0"
+                                         VerticalContentAlignment="Center"
+                                         IsEnabled="{Binding InterfaceUseCustomEditor}"
+                                         Text="{Binding InterfaceCustomEditorPath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <GroupBox Header="Default Monospaced Font"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
@@ -362,65 +414,36 @@
                                     Value="{Binding InterfaceScaleFactor}" />
                         </DockPanel>
                     </GroupBox>
-                    <GroupBox Header="Default Code Editor"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox DockPanel.Dock="Left" 
-                                      Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      IsChecked="{Binding InterfaceUseCustomEditor}"
-                                      Content="Use Custom Editor" />
-                            <DockPanel Height="25">
-                                <Button DockPanel.Dock="Right"
-                                        Width="25"
-                                        VerticalContentAlignment="Center"
-                                        HorizontalContentAlignment="Center"
-                                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="FolderOpen"/>
-                                    </Button.Content>
-                                </Button>
-                                <TextBox DockPanel.Dock="Left"
-                                         Margin="0, 0, 5, 0"
-                                         VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding InterfaceUseCustomEditor}"
-                                         Text="{Binding InterfaceCustomEditorPath}" />
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
                     <GroupBox Header="Build Mode Interface"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
                                       VerticalContentAlignment="Center"
-                                      Content="Display Console Output When Executing ShellExecute"
+                                      Content="Display console output in ShellExecute"
                                       IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="PEBakery Title"
+                    <GroupBox Header="Program Interface"
                               Margin="5, 5, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Use custom title"
-                                      IsChecked="{Binding InterfaceUseCustomTitle}" />
                             <Grid Margin="0, 0, 0, 3">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
+
                                 <TextBlock Grid.Column="0"
                                            FontSize="12"
-                                           Text="Custom Title" />
-                                <TextBox Grid.Column="1"
-                                         FontSize="12"
-                                         VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding InterfaceUseCustomTitle}"
-                                         Text="{Binding InterfaceCustomTitle}" />
+                                           Text="Interface Size"
+                                           VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="1"
+                                          FontSize="12"
+                                          VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding InterfaceSizes}"
+                                          SelectedItem="{Binding InterfaceSize}">
+                                </ComboBox>
                             </Grid>
                         </StackPanel>
                     </GroupBox>
@@ -499,9 +522,9 @@
                                        VerticalAlignment="Center"
                                        Text="Log Debug Level" />
                             <ComboBox Grid.Column="1"
-                                      x:Name="ComboBox_LogDebugLevel"
+                                      x:Name="LogDebugLevelComboBox"
                                       ItemsSource="{Binding LogDebugLevels}"
-                                      SelectedIndex="{Binding LogDebugLevelIndex}"/>
+                                      SelectedItem="{Binding LogSelectedDebugLevel}"/>
                         </Grid>
                     </GroupBox>
                     <GroupBox Header="Optimization"
