@@ -183,7 +183,7 @@
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                              Grid.Column="1"
-                             Margin="{Binding MainProgressRingMargin, Mode=OneWay, FallbackValue=10}"
+                             Margin="10, 0, 0, 0"
                              Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              HorizontalAlignment="Left"
@@ -251,8 +251,7 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Refresh"
-                       Grid.Row="1"
-                       Grid.Column="3"
+                       Grid.Row="1" Grid.Column="3"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Settings"
@@ -277,19 +276,18 @@
                        VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Top"
-              Height="80"
               Background="LightBlue"
               Visibility="{Binding BuildInterfaceVisibility}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60" />
+                <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
                 <RowDefinition Height="20" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
@@ -298,10 +296,10 @@
                 <Image Margin="15, 15, 5, 15"
                        Source="{StaticResource DonutSvgImage}"/>
                 <TextBlock Text="PEBakery"
-                           Margin="0, 0, 15, 0"
+                           Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           FontSize="40" 
+                           FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
                            FontWeight="SemiBold"
                            FontStretch="Condensed"
                            FontStyle="Italic"/>
@@ -309,44 +307,46 @@
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                              Grid.Column="1"
-                             Margin="10"
+                             Margin="10, 0, 0, 0"
+                             Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              HorizontalAlignment="Left"
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2"
-                               Margin="4"
-                               x:Name="ProjectBuildStopButton"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               IconMaterialKind="StopCircle"
-                               Command="local:MainViewCommands.ProjectBuildStopCommand"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           x:Name="ProjectBuildStopButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="StopCircle"
+                           Command="local:MainViewCommands.ProjectBuildStopCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               IconMaterialKind="CommentCheck"
-                               Command="local:MainViewCommands.LogWindowCommand"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="CommentCheck"
+                           Command="local:MainViewCommands.LogWindowCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
-                               Margin="4"
-                               Style="{StaticResource MainIconButtonStyle}"
-                               IconMaterialKind="Help"
-                               Command="local:MainViewCommands.AboutWindowCommand"
-                               AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="Help"
+                           Command="local:MainViewCommands.AboutWindowCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
 
             <TextBlock Text="Stop"
                        Grid.Row="1" Grid.Column="2"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Log" 
                        Grid.Row="1" Grid.Column="3"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="4"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
+                       VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Bottom"
               Height="20"

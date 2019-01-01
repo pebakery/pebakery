@@ -153,7 +153,6 @@ namespace PEBakery.Core.ViewModels
             OnPropertyUpdate(nameof(BannerMargin));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
-            OnPropertyUpdate(nameof(MainProgressRingMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
@@ -161,7 +160,6 @@ namespace PEBakery.Core.ViewModels
         public Thickness BannerMargin => GetAdaptiveSize(new Thickness(0, 0, 15, 0), new Thickness(0, 0, 0, 0));
         public int MainIconButtonSize => GetAdaptiveSize(60, 48);
         public int MainIconButtonMargin => GetAdaptiveSize(4, 2);
-        public Thickness MainProgressRingMargin => GetAdaptiveSize(new Thickness(10, 0, 0, 0), new Thickness(8, 0, 0, 0));
         #endregion
 
         #region Normal Interface Properties
