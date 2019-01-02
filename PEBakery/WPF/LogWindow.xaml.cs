@@ -133,7 +133,7 @@ namespace PEBakery.WPF
 
         public void ScriptUpdateEventHandler(object sender, ScriptUpdateEventArgs e)
         {
-            _m.RefreshScript(e.Log.BuildId, true);
+            _m.RefreshScripts(e.Log.BuildId, true);
         }
 
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
@@ -385,32 +385,38 @@ namespace PEBakery.WPF
             SelectedScriptIndex = 0;
         }
 
-        public void RefreshScript(int? buildId, bool showLastScript)
+        public void RefreshScripts(int? buildId, bool showLastScript)
         {
-            ScriptEntries.Clear();
-
-            if (buildId == null)
-            {  // Clear
-                SelectedScriptIndex = 0;
-            }
-            else
+            // Without dispatcher, ScriptEntries.Clear sets SelectedScriptIndex to -1 too late.
+            Application.Current?.Dispatcher.Invoke(() =>
             {
-                // Populate SelectScriptEntries
-                ScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
-                LogModel.Script[] scripts = LogDb.Table<LogModel.Script>()
-                    .Where(x => x.BuildId == buildId && 0 < x.Order)
-                    .OrderBy(x => x.Order)
-                    .ToArray();
-                foreach (LogModel.Script sc in scripts)
+                ScriptEntries.Clear();
+                    
+                if (buildId == null)
                 {
-                    ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.TreePath})", sc.Id, (int)buildId));
+                    // Clear
+                    SelectedScriptIndex = -1;
                 }
-
-                if (showLastScript)
-                    SelectedScriptIndex = ScriptEntries.Count - 1; // Last Script, which is just added
                 else
-                    SelectedScriptIndex = 0;
-            }
+                {
+                    // Populate SelectScriptEntries
+                    ScriptEntries.Add(new Tuple<string, int, int>("Total Summary", -1, (int)buildId));
+                    LogModel.Script[] scripts = LogDb.Table<LogModel.Script>()
+                        .Where(x => x.BuildId == buildId && 0 < x.Order)
+                        .OrderBy(x => x.Order)
+                        .ToArray();
+                    foreach (LogModel.Script sc in scripts)
+                    {
+                        ScriptEntries.Add(new Tuple<string, int, int>($"[{sc.Order}/{scripts.Length}] {sc.Name} ({sc.TreePath})", sc.Id, (int)buildId));
+                    }
+
+                    if (showLastScript)
+                        SelectedScriptIndex = ScriptEntries.Count - 1; // Display Last Script
+                    else
+                        SelectedScriptIndex = 0; // Summary is always index 0
+                }
+            });
+            
         }
 
         /// <summary>
@@ -424,8 +430,8 @@ namespace PEBakery.WPF
                 int buildId = _scriptEntries[scriptIdx].Item3;
 
                 if (scriptId == -1)
-                { // Summary
-                  // BuildLog
+                { // Total Summary
+                    // BuildLog
                     _allBuildLogs = new List<LogModel.BuildLog>();
                     foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning })
                     {
@@ -466,7 +472,7 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Per Script
-                  // BuildLog
+                    // BuildLog
                     var builds = LogDb.Table<LogModel.BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
                     if (!BuildLogShowComments)
@@ -550,20 +556,21 @@ namespace PEBakery.WPF
             {
                 _selectBuildIndex = value;
 
-                if (-1 < value && 0 < _buildEntries.Count)
+                if (0 <= value && 0 < _buildEntries.Count)
                 {
                     int buildId = _buildEntries[value].Item2;
-                    RefreshScript(buildId, false);
+                    RefreshScripts(buildId, false);
                 }
                 else
                 {
-                    RefreshScript(null, false);
+                    RefreshScripts(null, false);
                 }
 
                 OnPropertyUpdate(nameof(SelectedBuildIndex));
             }
         }
 
+        // Build Name, Build Id
         private readonly object _buildEntriesLock = new object();
         private ObservableCollection<Tuple<string, int>> _buildEntries;
         public ObservableCollection<Tuple<string, int>> BuildEntries
