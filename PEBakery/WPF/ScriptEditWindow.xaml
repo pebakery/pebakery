@@ -1210,7 +1210,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Attachment"
+            <TabItem Header="Attachments"
                      IsEnabled="{Binding CanExecuteCommand}"
                      Width="100">
                 <Grid Margin="10, 10, 10, 10">

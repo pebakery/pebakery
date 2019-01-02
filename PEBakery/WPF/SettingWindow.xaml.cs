@@ -63,6 +63,7 @@ namespace PEBakery.WPF
             _m.UpdateCacheDbState();
             _m.UpdateLogDbState();
             _m.LoadProjectEntries();
+            _m.ApplyCompatToggleNextState(_m.ToggleNextState);
         }
         #endregion
 

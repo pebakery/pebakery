@@ -2326,10 +2326,10 @@ namespace PEBakery.WPF
                 {
                     if (!EncodingHelper.IsText(srcFilePath, 16 * 1024))
                     { // File is expected to be binary
-                        MessageBoxResult result = MessageBox.Show($"{srcFileName} seems to be binary file.\r\nAttaching binary file can negatively impact rendering performance.\r\n\r\nAre you sure to continue?",
-                            "Confirm",
+                        MessageBoxResult result = MessageBox.Show($"{srcFileName} appears to be a binary file.\r\n\r\nBinary files may not display correctly and can negatively impact rendering performance.\r\n\r\nDo you want to continue?",
+                            "Warning",
                             MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
+                            MessageBoxImage.Exclamation);
                         // Abort
                         if (result != MessageBoxResult.Yes)
                             return;
@@ -2363,7 +2363,7 @@ namespace PEBakery.WPF
                 if (sizeLimit <= fileLen)
                 {
                     string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
-                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?",
+                    MessageBoxResult result = MessageBox.Show($"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?",
                         "Warning",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Exclamation);
