@@ -195,7 +195,7 @@ namespace PEBakery.WPF
                 else
                 {
                     // Scale Factor
-                    if (svModel.NeedScriptRedraw)
+                    if (svModel.NeedScriptRedraw && Model.CurMainTree?.Script != null)
                         Model.DisplayScript(Model.CurMainTree.Script);
 
                     // Script

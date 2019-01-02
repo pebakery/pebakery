@@ -1203,7 +1203,7 @@ namespace PEBakery.Core
         #region LogExceptionMessage
         public static string LogExceptionMessage(Exception e)
         {
-            switch (Logger.DebugLevel)
+            switch (DebugLevel)
             {
                 case LogDebugLevel.Production:
                     {
@@ -1267,9 +1267,6 @@ namespace PEBakery.Core
                     return "Internal Logic Error";
             }
         }
-        #endregion
-
-        #region Close
         #endregion
     }
     #endregion

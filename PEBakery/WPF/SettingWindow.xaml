@@ -39,7 +39,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Settings"
-        Width="600" Height="525"
+        Width="600" Height="530"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
@@ -572,7 +572,7 @@
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                     </Grid>
                     <GroupBox Header="Asterisk Bug"
-                              Margin="5, 3, 5, 0"
+                              Margin="5, 0, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
@@ -586,7 +586,7 @@
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Command"
-                              Margin="5, 3, 5, 0"
+                              Margin="5, 0, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0" >
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
@@ -621,7 +621,7 @@
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Script Interface"
-                              Margin="5, 3, 5, 0"
+                              Margin="5, 0, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
@@ -631,7 +631,7 @@
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="Variable"
-                              Margin="5, 3, 5, 0"
+                              Margin="5, 0, 5, 0"
                               BorderBrush="Gray">
                         <StackPanel Margin="3, 3, 3, 0">
                             <CheckBox Margin="0, 0, 0, 3" FontSize="12"
@@ -652,6 +652,10 @@
                                       IsChecked="{Binding CompatDisableExtendedSectionParams}" />
                         </StackPanel>
                     </GroupBox>
+                    <TextBlock Margin="10, 0, 10, 0"
+                               VerticalAlignment="Center"
+                               Foreground="Red"
+                               Text="Delete project temp files after changing compatibility options!"/>
                 </StackPanel>
             </TabItem>
         </TabControl>
