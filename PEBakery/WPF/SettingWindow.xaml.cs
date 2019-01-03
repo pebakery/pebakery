@@ -63,7 +63,9 @@ namespace PEBakery.WPF
             _m.UpdateCacheDbState();
             _m.UpdateLogDbState();
             _m.LoadProjectEntries();
-            _m.ApplyCompatToggleNextState(_m.ToggleNextState);
+
+            // Calculate proper state for compat option toggle button
+            _m.GetCompatToggleNextState();
         }
         #endregion
 

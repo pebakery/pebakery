@@ -148,7 +148,7 @@
     </Window.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top"
-              Background="LightBlue"
+              Background="{Binding TopPanelBackground, FallbackValue=LightBlue}"
               Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}" />
@@ -169,9 +169,11 @@
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
-                <Image Margin="15, 15, 5, 15"
-                       Source="{StaticResource DonutSvgImage}"/>
+                <ContentControl Margin="15, 15, 5, 15"
+                                ContentTemplate="{StaticResource DonutLogo}"
+                                Content="{Binding TopPanelForeground, FallbackValue=Black}"/>
                 <TextBlock Text="PEBakery"
+                           Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                            Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
@@ -186,11 +188,13 @@
                              Margin="10, 0, 0, 0"
                              Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Center"
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2" 
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="ProjectBuildStartButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectBuildStartCommand"
@@ -199,6 +203,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="ProjectRefreshButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectRefreshCommand"
@@ -207,6 +212,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="SettingWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.SettingWindowCommand"
@@ -215,6 +221,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="5"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="LogWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.LogWindowCommand"
@@ -223,6 +230,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="6"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="UtilityWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.UtilityWindowCommand"
@@ -231,6 +239,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="7"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="ProjectUpdateButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectUpdateCommand"
@@ -239,6 +248,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="8"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="AboutWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.AboutWindowCommand"
@@ -248,35 +258,42 @@
 
             <TextBlock Text="Build"
                        Grid.Row="1" Grid.Column="2"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Refresh"
                        Grid.Row="1" Grid.Column="3"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Settings"
                        Grid.Row="1" Grid.Column="4"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Logs"
                        Grid.Row="1" Grid.Column="5"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Utilities"
                        Grid.Row="1" Grid.Column="6"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
             <TextBlock Text="Update"
                        Grid.Row="1" Grid.Column="7"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="8"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Top"
-              Background="LightBlue"
+              Background="{Binding TopPanelBackground, FallbackValue=LightBlue}"
               Visibility="{Binding BuildInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
@@ -293,10 +310,12 @@
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
-                <Image Margin="15, 15, 5, 15"
-                       Source="{StaticResource DonutSvgImage}"/>
+                <ContentControl Margin="15, 15, 5, 15"
+                                ContentTemplate="{StaticResource DonutLogo}"
+                                Content="{Binding TopPanelForeground, FallbackValue=White}"/>
                 <TextBlock Text="PEBakery"
                            Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
+                           Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
@@ -307,6 +326,7 @@
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                              Grid.Column="1"
+                             Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                              Margin="10, 0, 0, 0"
                              Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
@@ -314,6 +334,7 @@
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            x:Name="ProjectBuildStopButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="StopCircle"
@@ -322,6 +343,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="CommentCheck"
                            Command="local:MainViewCommands.LogWindowCommand"
@@ -329,6 +351,7 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="Help"
                            Command="local:MainViewCommands.AboutWindowCommand"
@@ -337,14 +360,17 @@
 
             <TextBlock Text="Stop"
                        Grid.Row="1" Grid.Column="2"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Log" 
                        Grid.Row="1" Grid.Column="3"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="4"
+                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
         </Grid>
@@ -357,9 +383,10 @@
                          Maximum="{Binding BottomProgressBarMaximum}"
                          Value="{Binding BottomProgressBarValue}"
                          Visibility="{Binding BottomProgressBarVisibility}"/>
-            <TextBlock Background="#dfdfdf" 
-                       FontSize="13"
+            <TextBlock FontSize="13"
                        Text="{Binding StatusBarText}"
+                       Background="{Binding StatusBarBackground, FallbackValue=LightGray}"
+                       Foreground="{Binding StatusBarForeground, FallbackValue=Black}"
                        Visibility="{Binding BottomStatusBarVisibility}"/>
         </Grid>
         <Grid>
@@ -373,7 +400,8 @@
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
                 <TreeView x:Name="MainTreeView"
-                          Background="PaleGreen"
+                          Background="{Binding TreeViewBackground, FallbackValue=LimeGreen}"
+                          Foreground="{Binding TreeViewForeground, FallbackValue=Black}"
                           FontSize="12"
                           ItemsSource="{Binding MainTreeItems}"
                           IsEnabled="{Binding EnableTreeItems}"
@@ -481,14 +509,17 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                            <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
+
                 </TreeView>
             </Grid>
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding BuildInterfaceVisibility}">
-                <TreeView Background="PaleGreen"
+                <TreeView Background="{Binding TreeViewBackground, FallbackValue=LimeGreen}"
+                          Foreground="{Binding TreeViewForeground, FallbackValue=Black}"
                           ItemsSource="{Binding BuildTreeItems}"
                           FontSize="12"
                           BorderThickness="0"
@@ -530,7 +561,7 @@
                             <Setter Property="IsSelected" Value="{Binding BuildFocus, Mode=OneWay}" />
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Foreground" Value="Red"/>
+                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlightForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
                                 </Trigger>
                             </Style.Triggers>
                             <Style.Resources>
@@ -563,7 +594,7 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Background="LightYellow">
+                      Background="{Binding ScriptDescBackground, FallbackValue=LightYellow}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
@@ -611,12 +642,14 @@
                                        Margin="0, 0, 0, 1"
                                        Name="ScriptVersion"
                                        Text="{Binding ScriptVersionText}"
+                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
                                        FontWeight="Bold"
                                        FontSize="14" 
                                        VerticalAlignment="Bottom"/>
                             <TextBlock DockPanel.Dock="Right"
                                        Name="ScriptAuthor"
                                        Text="{Binding ScriptAuthorText}" 
+                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
                                        Margin="0, 0, 5, 2"
                                        FontSize="12"
                                        VerticalAlignment="Bottom"
@@ -627,6 +660,7 @@
                                        Name="ScriptTitle"
                                        FontStretch="SemiCondensed"
                                        Text="{Binding ScriptTitleText}" 
+                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
                                        FontWeight="Bold" FontSize="16"
                                        VerticalAlignment="Bottom"
                                        TextWrapping="Wrap"/>
@@ -652,10 +686,10 @@
                                    FontWeight="Medium"
                                    Name="ScriptDescription"
                                    Text="{Binding ScriptDescriptionText}"
+                                   Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
                                    FontStretch="SemiCondensed"
                                    VerticalAlignment="Center"
-                                   TextWrapping="Wrap">
-                        </TextBlock>
+                                   TextWrapping="Wrap"/>
                     </Grid>
                     <Grid Grid.Row="0"
                           Grid.Column="2"

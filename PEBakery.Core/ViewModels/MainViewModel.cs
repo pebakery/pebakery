@@ -106,8 +106,7 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
-        #region InterfaceSize
-        // InterfaceSize
+        #region Adaptive Interface Size
         private Setting.InterfaceSize _interfaceSize = Setting.InterfaceSize.Adaptive;
         public Setting.InterfaceSize InterfaceSize
         {
@@ -160,6 +159,71 @@ namespace PEBakery.Core.ViewModels
         public Thickness BannerMargin => GetAdaptiveSize(new Thickness(0, 0, 15, 0), new Thickness(0, 0, 0, 0));
         public int MainIconButtonSize => GetAdaptiveSize(60, 48);
         public int MainIconButtonMargin => GetAdaptiveSize(4, 2);
+        #endregion
+
+        #region Color Theme
+        private SolidColorBrush _topPanelBackground = new SolidColorBrush(Colors.Black);
+        public SolidColorBrush TopPanelBackground
+        {
+            get => _topPanelBackground;
+            set => SetProperty(ref _topPanelBackground, value);
+        }
+
+        private SolidColorBrush _topPanelForeground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
+        public SolidColorBrush TopPanelForeground
+        {
+            get => _topPanelForeground;
+            set => SetProperty(ref _topPanelForeground, value);
+        }
+
+        private SolidColorBrush _treeViewBackground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
+        public SolidColorBrush TreeViewBackground
+        {
+            get => _treeViewBackground;
+            set => SetProperty(ref _treeViewBackground, value);
+        }
+
+        private SolidColorBrush _treeViewForeground = new SolidColorBrush(Colors.Black);
+        public SolidColorBrush TreeViewForeground
+        {
+            get => _treeViewForeground;
+            set => SetProperty(ref _treeViewForeground, value);
+        }
+
+        private SolidColorBrush _treeViewHighlightForeground = new SolidColorBrush(Colors.Red);
+        public SolidColorBrush TreeViewHighlightForeground
+        {
+            get => _treeViewHighlightForeground;
+            set => SetProperty(ref _treeViewHighlightForeground, value);
+        }
+
+        private SolidColorBrush _scriptDescBackground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
+        public SolidColorBrush ScriptDescBackground
+        {
+            get => _scriptDescBackground;
+            set => SetProperty(ref _scriptDescBackground, value);
+        }
+
+        private SolidColorBrush _scriptDescForeground = new SolidColorBrush(Colors.Black);
+        public SolidColorBrush ScriptDescForeground
+        {
+            get => _scriptDescForeground;
+            set => SetProperty(ref _scriptDescForeground, value);
+        }
+
+        private SolidColorBrush _statusBarBackground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
+        public SolidColorBrush StatusBarBackground
+        {
+            get => _statusBarBackground;
+            set => SetProperty(ref _statusBarBackground, value);
+        }
+
+        private SolidColorBrush _statusBarForeground = new SolidColorBrush(Colors.Black);
+        public SolidColorBrush StatusBarForeground
+        {
+            get => _statusBarForeground;
+            set => SetProperty(ref _statusBarForeground, value);
+        }
         #endregion
 
         #region Normal Interface Properties

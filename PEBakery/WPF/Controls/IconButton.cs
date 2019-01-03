@@ -39,7 +39,6 @@ namespace PEBakery.WPF.Controls
             BorderThickness = new Thickness(0);
             Background = Brushes.Transparent;
             Foreground = Brushes.Transparent;
-            _foreground = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0));
 
             Content = _iconMaterial = new PackIconMaterial
             {
@@ -47,7 +46,7 @@ namespace PEBakery.WPF.Controls
                 Height = double.NaN,
                 Margin = new Thickness(4),
                 Kind = IconMaterialKind,
-                Foreground = _foreground,
+                Foreground = BaseForeground,
             };
 
             MouseEnter += MainIconButton_MouseEnter;
@@ -65,19 +64,20 @@ namespace PEBakery.WPF.Controls
 
         #region Event Handler
         private void MainIconButton_MouseEnter(object sender, MouseEventArgs e)
-        {
+        { // Focused
             if (_iconMaterial == null)
                 return;
-            Color c = _foreground.Color;
-            _iconMaterial.Foreground = _foreground = new SolidColorBrush(Color.FromArgb(127, c.R, c.G, c.B));
+
+            Color c = BaseForeground.Color;
+            _iconMaterial.Foreground = new SolidColorBrush(Color.FromArgb(153, c.R, c.G, c.B));
         }
 
         private void MainIconButton_MouseLeave(object sender, MouseEventArgs e)
-        {
+        { // Default
             if (_iconMaterial == null)
                 return;
-            Color c = _foreground.Color;
-            _iconMaterial.Foreground = _foreground = new SolidColorBrush(Color.FromArgb(255, c.R, c.G, c.B));
+
+            _iconMaterial.Foreground = BaseForeground;
         }
 
         private void MainIconButton_IsEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -86,13 +86,12 @@ namespace PEBakery.WPF.Controls
                 return;
             if ((bool)e.NewValue)
             { // Enabled
-                Color c = _foreground.Color;
-                _iconMaterial.Foreground = _foreground = new SolidColorBrush(Color.FromArgb(c.A, 0, 0, 0));
+                _iconMaterial.Foreground = BaseForeground;
             }
             else
             { // Disabled
-                Color c = _foreground.Color;
-                _iconMaterial.Foreground = _foreground = new SolidColorBrush(Color.FromArgb(c.A, 128, 128, 128));
+                Color c = BaseForeground.Color;
+                _iconMaterial.Foreground = new SolidColorBrush(Color.FromArgb(102, c.R, c.G, c.B));
             }
         }
 
@@ -100,8 +99,9 @@ namespace PEBakery.WPF.Controls
 
         #region Property
         private readonly PackIconMaterial _iconMaterial;
-        private SolidColorBrush _foreground;
 
+        public static readonly DependencyProperty IconMaterialKindProperty = DependencyProperty.Register(nameof(IconMaterialKind),
+            typeof(PackIconMaterialKind), typeof(IconButton), new FrameworkPropertyMetadata(DefaultIconMaterialKind, OnPackIconMaterialPropertyChanged));
         private const PackIconMaterialKind DefaultIconMaterialKind = PackIconMaterialKind.None;
         public PackIconMaterialKind IconMaterialKind
         {
@@ -109,16 +109,34 @@ namespace PEBakery.WPF.Controls
             set => SetValue(IconMaterialKindProperty, value);
         }
 
-        public static readonly DependencyProperty IconMaterialKindProperty = DependencyProperty.Register(nameof(IconMaterialKind),
-            typeof(PackIconMaterialKind), typeof(IconButton), new FrameworkPropertyMetadata(DefaultIconMaterialKind, OnPropertyChanged));
+        public static readonly DependencyProperty BaseForegroundProperty = DependencyProperty.Register(nameof(BaseForeground),
+            typeof(SolidColorBrush), typeof(IconButton), new FrameworkPropertyMetadata(new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)), OnBaseForegroundPropertyChanged));
+        public SolidColorBrush BaseForeground
+        {
+            get => (SolidColorBrush)GetValue(BaseForegroundProperty);
+            set => SetValue(BaseForegroundProperty, value);
+        }
         #endregion
 
         #region Callbacks
-        private static void OnPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+        private static void OnPackIconMaterialPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            IconButton button = (IconButton)obj;
+            if (!(obj is IconButton button))
+                return;
+
             if (button.Content is PackIconMaterial control)
                 control.Kind = (PackIconMaterialKind)args.NewValue;
+        }
+
+        private static void OnBaseForegroundPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+        {
+            if (!(obj is IconButton button))
+                return;
+            if (!(args.NewValue is SolidColorBrush newBrush))
+                return;
+
+            if (button.Content is PackIconMaterial control)
+                control.Foreground = newBrush;
         }
         #endregion
     }
