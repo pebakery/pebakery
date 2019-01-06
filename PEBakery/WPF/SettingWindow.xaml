@@ -34,6 +34,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         FontSize="12"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
@@ -84,6 +85,11 @@
                         Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
                         CanExecute="SelectCustomEditorPathCommand_CanExecute"
                         Executed="SelectCustomEditorPathCommand_Executed"/>
+        <!-- Theme -->
+        <CommandBinding x:Name="SelectThemeCommand"
+                        Command="local:SettingViewCommands.SelectThemeCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="SelectThemeCommand_Executed"/>
         <!-- Script -->
         <CommandBinding x:Name="ClearCacheDatabaseCommand"
                         Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
@@ -107,7 +113,7 @@
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
-        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <local:ThemeTypeIsCustomConverter x:Key="ThemeTypeIsCustomConverter"/>
         <local:AddPercentConverter x:Key="AddPercentConverter"/>
     </Window.Resources>
     <Grid>
@@ -515,23 +521,69 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
-                                   Text="Preset"/>
-                        <ComboBox Grid.Column="1"
-                                  VerticalContentAlignment="Center"
-                                  SelectedIndex="{Binding ThemePresetIndex}"
-                                  IsEnabled="{Binding ThemeUseCustomTheme, Converter={StaticResource InverseBoolConverter}}">
-                            <ComboBoxItem Content="Black"
-                                          Foreground="Black"/>
-                            <ComboBoxItem Content="Red"
-                                          Foreground="Red"/>
-                            <ComboBoxItem Content="Green"
-                                          Foreground="Green"/>
-                            <ComboBoxItem Content="Blue"
-                                          Foreground="Blue"/>
-                        </ComboBox>
+                                   Text="Select Theme"/>
+                        <TextBlock Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Text="{Binding ThemeType}"/>
+                        <Button Grid.Column="2" 
+                                x:Name="BlackThemeButton"
+                                Background="Black"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Black">
+                            <Button.CommandParameter>
+                                <s:Int32>0</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="3" 
+                                Background="DarkRed"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Red">
+                            <Button.CommandParameter>
+                                <s:Int32>1</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="4" 
+                                Background="DarkBlue"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Blue">
+                            <Button.CommandParameter>
+                                <s:Int32>2</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="5" 
+                                Background="DarkGreen"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Green">
+                            <Button.CommandParameter>
+                                <s:Int32>3</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="6" 
+                                Background="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Custom">
+                            <Button.CommandParameter>
+                                <s:Int32>255</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
                     </Grid>
 
                     <TextBlock FontWeight="Bold"
@@ -542,10 +594,6 @@
                                SnapsToDevicePixels="True"
                                BorderBrush="Black"
                                BorderThickness="2"/>
-                    <CheckBox Content="Use custom theme"
-                              Height="20"
-                              Margin="5, 0, 5, 0"
-                              IsChecked="{Binding ThemeUseCustomTheme}"/>
                     <Grid Margin="5, 0, 5, 0">
                         <Grid.RowDefinitions>
                             <RowDefinition/>
@@ -590,7 +638,7 @@
                         <cc:ColorEditor Grid.Row="0" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTopPanelBackground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="1" Grid.Column="1"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
@@ -598,7 +646,7 @@
                         <cc:ColorEditor Grid.Row="1" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTopPanelForeground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="2" Grid.Column="0"
                                    Grid.RowSpan="3"
                                    VerticalAlignment="Center"
@@ -611,21 +659,21 @@
                         <cc:ColorEditor Grid.Row="2" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelBackground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="3" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="3" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelForeground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="4" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Highlight"/>
                         <cc:ColorEditor Grid.Row="4" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelHighlight, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="5" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
@@ -638,14 +686,14 @@
                         <cc:ColorEditor Grid.Row="5" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelBackground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="6" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="6" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelForeground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="7" Grid.Column="0"
                                    Grid.RowSpan="2"
                                    VerticalAlignment="Center"
@@ -658,14 +706,14 @@
                         <cc:ColorEditor Grid.Row="7" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarBackground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                         <TextBlock Grid.Row="8" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="8" Grid.Column="2"
                                         Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarForeground, Mode=TwoWay}"
-                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                                        IsEnabled="{Binding ThemeType, Converter={StaticResource ThemeTypeIsCustomConverter}}"/>
                     </Grid>
                 </StackPanel>
             </TabItem>

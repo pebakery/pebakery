@@ -39,6 +39,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -308,6 +309,25 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Theme Setting Commands
+        private void SelectThemeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                Setting.ThemeType newTheme = (Setting.ThemeType)e.Parameter;
+                Debug.Assert(Enum.IsDefined(typeof(Setting.ThemeType), newTheme), "Check SettingWindow.xaml's theme tab.");
+
+                _m.ThemeType = newTheme;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
         #region Log Setting Commands
         private async void ClearLogDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
@@ -338,7 +358,10 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
         #endregion
+
+        
     }
     #endregion
 
@@ -628,33 +651,15 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Theme
-        private Setting.ThemePreset _themePreset;
-        public Setting.ThemePreset ThemePreset
+        private Setting.ThemeType _themeType;
+        public Setting.ThemeType ThemeType
         {
-            get => _themePreset;
+            get => _themeType;
             set
             {
-                _themePreset = value;
-                OnPropertyUpdate(nameof(ThemePreset));
-                OnPropertyUpdate(nameof(ThemePresetIndex));
+                _themeType = value;
+                OnPropertyUpdate(nameof(ThemeType));
             }
-        }
-        public int ThemePresetIndex
-        {
-            get => (int)_themePreset;
-            set
-            {
-                _themePreset = (Setting.ThemePreset)value;
-                OnPropertyUpdate(nameof(ThemePreset));
-                OnPropertyUpdate(nameof(ThemePresetIndex));
-            }
-        }
-
-        private bool _themeUseCustomTheme;
-        public bool ThemeUseCustomTheme
-        {
-            get => _themeUseCustomTheme;
-            set => SetProperty(ref _themeUseCustomTheme, value);
         }
 
         private Color _themeCustomTopPanelBackground;
@@ -1195,8 +1200,7 @@ namespace PEBakery.WPF
 
             // [Theme]
             Setting.ThemeSetting newTheme = new Setting.ThemeSetting();
-            ThemePreset = newTheme.Preset;
-            ThemeUseCustomTheme = newTheme.UseCustomTheme;
+            ThemeType = newTheme.ThemeType;
             ThemeCustomTopPanelBackground = newTheme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = newTheme.CustomTopPanelForeground;
             ThemeCustomTreePanelBackground = newTheme.CustomTreePanelBackground;
@@ -1264,8 +1268,7 @@ namespace PEBakery.WPF
             InterfaceSize = Setting.Interface.InterfaceSize;
 
             // [Theme]
-            ThemePreset = Setting.Theme.Preset;
-            ThemeUseCustomTheme = Setting.Theme.UseCustomTheme;
+            ThemeType = Setting.Theme.ThemeType;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
             ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
@@ -1322,8 +1325,7 @@ namespace PEBakery.WPF
             Setting.Interface.InterfaceSize = InterfaceSize;
 
             // [Theme]
-            Setting.Theme.Preset = ThemePreset;
-            Setting.Theme.UseCustomTheme = ThemeUseCustomTheme;
+            Setting.Theme.ThemeType = ThemeType;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
             Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
@@ -1448,6 +1450,10 @@ namespace PEBakery.WPF
         #region Interface Setting
         public static readonly RoutedCommand SelectMonospacedFontCommand = new RoutedUICommand("Select monospaced font", "SelectMonospacedFont", typeof(SettingViewCommands));
         public static readonly RoutedCommand SelectCustomEditorPathCommand = new RoutedUICommand("Select custom editor path", "SelectCustomEditorPath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Theme Setting
+        public static readonly RoutedCommand SelectThemeCommand = new RoutedUICommand("Select theme", "SelectThemePath", typeof(SettingViewCommands));
         #endregion
 
         #region Script Setting

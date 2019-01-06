@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
@@ -35,7 +36,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
-using PEBakery.Core.ViewModels;
 
 namespace PEBakery.Core
 {
@@ -134,12 +134,13 @@ namespace PEBakery.Core
             }
         }
 
-        public enum ThemePreset
+        public enum ThemeType
         {
             Black = 0,
             Red = 1,
             Green = 2,
             Blue = 3,
+            Custom = 255,
         }
 
         public class ThemeSetting
@@ -147,9 +148,8 @@ namespace PEBakery.Core
             public const string SectionName = "Theme";
 
             // Preset
-            public ThemePreset Preset;
+            public ThemeType ThemeType;
             // Custom
-            public bool UseCustomTheme;
             public Color CustomTopPanelBackground;
             public Color CustomTopPanelForeground;
             public Color CustomTreePanelBackground;
@@ -167,16 +167,16 @@ namespace PEBakery.Core
 
             public void Default()
             {
-                Preset = ThemePreset.Black;
-                UseCustomTheme = false;
-                CustomTopPanelBackground = Colors.Black;
-                CustomTopPanelForeground = Color.FromRgb(238, 238, 238);
-                CustomTreePanelBackground = Color.FromRgb(204, 204, 204);
+                ThemeType = ThemeType.Black;
+                // Apply Classic Theme to Custom Properties
+                CustomTopPanelBackground = Colors.LightBlue;
+                CustomTopPanelForeground = Colors.Black;
+                CustomTreePanelBackground = Colors.LightGreen;
                 CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
-                CustomScriptPanelBackground = Color.FromRgb(238, 238, 238);
+                CustomScriptPanelBackground = Colors.LightYellow;
                 CustomScriptPanelForeground = Colors.Black;
-                CustomStatusBarBackground = Color.FromRgb(238, 238, 238);
+                CustomStatusBarBackground = Colors.LightGray;
                 CustomStatusBarForeground = Colors.Black;
             }
 
@@ -185,18 +185,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomTopPanelBackground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Colors.Black;
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Colors.DarkRed;
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Colors.DarkGreen;
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Colors.DarkBlue;
+                        case ThemeType.Custom:
+                            return CustomTopPanelBackground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -206,18 +206,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomTopPanelForeground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Color.FromRgb(238, 238, 238);
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Colors.White;
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Colors.White;
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Colors.White;
+                        case ThemeType.Custom:
+                            return CustomTopPanelForeground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -227,18 +227,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomTreePanelBackground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Color.FromRgb(204, 204, 204);
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Color.FromRgb(255, 211, 94);
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Color.FromRgb(180, 255, 180);
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Color.FromRgb(180, 180, 255);
+                        case ThemeType.Custom:
+                            return CustomTreePanelBackground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -248,15 +248,15 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomTreePanelForeground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
-                        case ThemePreset.Red:
-                        case ThemePreset.Green:
-                        case ThemePreset.Blue:
+                        case ThemeType.Black:
+                        case ThemeType.Red:
+                        case ThemeType.Green:
+                        case ThemeType.Blue:
                             return Colors.Black;
+                        case ThemeType.Custom:
+                            return CustomTreePanelForeground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -266,18 +266,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomTreePanelHighlight;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Colors.Red;
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Colors.DarkRed;
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Colors.DarkGreen;
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Colors.DarkBlue;
+                        case ThemeType.Custom:
+                            return CustomTreePanelHighlight;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -287,18 +287,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomScriptPanelBackground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Color.FromRgb(238, 238, 238);
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Color.FromRgb(255, 255, 192);
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Color.FromRgb(230, 255, 230);
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Color.FromRgb(230, 230, 255);
+                        case ThemeType.Custom:
+                            return CustomScriptPanelBackground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -308,15 +308,15 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomScriptPanelForeground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
-                        case ThemePreset.Red:
-                        case ThemePreset.Green:
-                        case ThemePreset.Blue:
+                        case ThemeType.Black:
+                        case ThemeType.Red:
+                        case ThemeType.Green:
+                        case ThemeType.Blue:
                             return Colors.Black;
+                        case ThemeType.Custom:
+                            return CustomScriptPanelForeground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -326,18 +326,18 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomStatusBarBackground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
+                        case ThemeType.Black:
                             return Color.FromRgb(238, 238, 238);
-                        case ThemePreset.Red:
+                        case ThemeType.Red:
                             return Color.FromRgb(255, 232, 208);
-                        case ThemePreset.Green:
+                        case ThemeType.Green:
                             return Color.FromRgb(210, 255, 210);
-                        case ThemePreset.Blue:
+                        case ThemeType.Blue:
                             return Color.FromRgb(210, 210, 255);
+                        case ThemeType.Custom:
+                            return CustomStatusBarBackground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -347,15 +347,15 @@ namespace PEBakery.Core
             {
                 get
                 {
-                    if (UseCustomTheme)
-                        return CustomStatusBarForeground;
-                    switch (Preset)
+                    switch (ThemeType)
                     {
-                        case ThemePreset.Black:
-                        case ThemePreset.Red:
-                        case ThemePreset.Green:
-                        case ThemePreset.Blue:
+                        case ThemeType.Black:
+                        case ThemeType.Red:
+                        case ThemeType.Green:
+                        case ThemeType.Blue:
                             return Colors.Black;
+                        case ThemeType.Custom:
+                            return CustomStatusBarForeground;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -512,8 +512,7 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Integer (0 - 2)
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.Preset)), // Integer
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme)), // Boolean
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Integer
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
@@ -535,7 +534,7 @@ namespace PEBakery.Core
             Dictionary<string, Dictionary<string, string>> keyDict = keys
                 .GroupBy(x => x.Section)
                 .ToDictionary(
-                    x => x.Key, 
+                    x => x.Key,
                     y => y.ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase),
                     StringComparer.OrdinalIgnoreCase);
 
@@ -589,8 +588,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                Theme.Preset = (ThemePreset)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.Preset), (int)Theme.Preset, 0, Enum.GetValues(typeof(ThemePreset)).Length - 1);
-                Theme.UseCustomTheme = DictParser.ParseBoolean(scDict, ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme);
+                Theme.ThemeType = (ThemeType)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), (int)Theme.ThemeType, 0, Enum.GetValues(typeof(ThemeType)).Length - 1);
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
                 Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
@@ -649,8 +647,7 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.Preset), ((int)Theme.Preset).ToString()), // Integer
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme.ToString()), // Boolean
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), ((int)Theme.ThemeType).ToString()), // Integer
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color

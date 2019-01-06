@@ -29,6 +29,7 @@ using MahApps.Metro.IconPacks;
 using PEBakery.Core;
 using PEBakery.Helper;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -240,13 +241,15 @@ namespace PEBakery.WPF
         }
     }
 
-    public class InverseBoolConverter : IValueConverter
+    public class ThemeTypeIsCustomConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
                 return false;
-            return !(bool)value;
+            Setting.ThemeType type = (Setting.ThemeType)value;
+            Debug.Assert(Enum.IsDefined(typeof(Setting.ThemeType), type), "Check SettingWindow.xaml's theme tab.");
+            return type == Setting.ThemeType.Custom;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -465,6 +468,25 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
+        }
+    }
+    #endregion
+
+    #region InverseBool
+    public class InverseBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            return !(bool)value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            return !(bool)value;
         }
     }
     #endregion
