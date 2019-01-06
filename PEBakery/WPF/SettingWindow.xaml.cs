@@ -243,6 +243,20 @@ namespace PEBakery.WPF
         #endregion
 
         #region Interface Setting Commands
+        private void ResetScaleFactorCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.InterfaceScaleFactor = 100;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         private void SelectMonospacedFontCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             _m.CanExecuteCommand = false;
@@ -357,6 +371,7 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
+
         #endregion
 
         #endregion
@@ -1187,6 +1202,7 @@ namespace PEBakery.WPF
             GeneralStopBuildOnError = newGeneral.StopBuildOnError;
             GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
             GeneralUseCustomUserAgent = newGeneral.UseCustomUserAgent;
+            GeneralCustomUserAgent = newGeneral.CustomUserAgent;
 
             // [Interface]
             Setting.InterfaceSetting newInterface = new Setting.InterfaceSetting();
@@ -1256,6 +1272,7 @@ namespace PEBakery.WPF
             GeneralStopBuildOnError = Setting.General.StopBuildOnError;
             GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
             GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
+            GeneralCustomUserAgent = Setting.General.CustomUserAgent;
 
             // [Interface]
             InterfaceUseCustomTitle = Setting.Interface.UseCustomTitle;
@@ -1313,6 +1330,7 @@ namespace PEBakery.WPF
             Setting.General.StopBuildOnError = GeneralStopBuildOnError;
             Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
             Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
+            Setting.General.CustomUserAgent = GeneralCustomUserAgent;
 
             // [Interface]
             Setting.Interface.UseCustomTitle = InterfaceUseCustomTitle;
@@ -1448,6 +1466,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Interface Setting
+        public static readonly RoutedCommand ResetScaleFactorCommand = new RoutedUICommand("Reset scale factor", "ResetScaleFactor", typeof(SettingViewCommands));
         public static readonly RoutedCommand SelectMonospacedFontCommand = new RoutedUICommand("Select monospaced font", "SelectMonospacedFont", typeof(SettingViewCommands));
         public static readonly RoutedCommand SelectCustomEditorPathCommand = new RoutedUICommand("Select custom editor path", "SelectCustomEditorPath", typeof(SettingViewCommands));
         #endregion

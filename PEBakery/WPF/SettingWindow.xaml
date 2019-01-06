@@ -77,6 +77,10 @@
                         CanExecute="Command_CanExecute"
                         Executed="EnableLongFilePathCommand_Executed"/>
         <!-- Interface -->
+        <CommandBinding x:Name="ResetScaleFactorCommand"
+                        Command="local:SettingViewCommands.ResetScaleFactorCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ResetScaleFactorCommand_Executed"/>
         <CommandBinding x:Name="SelectMonospacedFontCommand"
                         Command="local:SettingViewCommands.SelectMonospacedFontCommand"
                         CanExecute="Command_CanExecute"
@@ -114,7 +118,7 @@
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
         <local:ThemeTypeIsCustomConverter x:Key="ThemeTypeIsCustomConverter"/>
-        <local:AddPercentConverter x:Key="AddPercentConverter"/>
+        <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -337,19 +341,20 @@
                                BorderBrush="Black"
                                BorderThickness="2"/>
                     <StackPanel Margin="5, 0, 5, 0">
-                        <CheckBox Height="20"
-                                  VerticalContentAlignment="Center"
-                                  Content="Use custom User-Agent in WebGet"
-                                  IsChecked="{Binding GeneralUseCustomUserAgent}" />
                         <Grid Height="25" Margin="0, 0, 0, 3">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="20"/>
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
                                        VerticalAlignment="Center"
-                                       Text="Custom User-Agent" />
-                            <TextBox Grid.Column="1"
+                                       Text="Custom User-Agent for WebGet" />
+                            <CheckBox Grid.Column="1"
+                                      Height="20"
+                                      VerticalContentAlignment="Center"
+                                      IsChecked="{Binding GeneralUseCustomUserAgent}" />
+                            <TextBox Grid.Column="2"
                                      VerticalContentAlignment="Center"
                                      IsEnabled="{Binding GeneralUseCustomUserAgent}"
                                      Text="{Binding GeneralCustomUserAgent}" />
@@ -377,23 +382,31 @@
                                   IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="25"/>
-                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="20"/>
                                 <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <!-- Custom Title -->
                             <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Margin="0, 0, 0, 5"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        Text="Custom Title" />
                             <CheckBox Grid.Row="0" Grid.Column="1"
+                                      Grid.ColumnSpan="2"
+                                      Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
                                       IsChecked="{Binding InterfaceUseCustomTitle}" />
                             <TextBox Grid.Row="0" Grid.Column="2"
+                                     Grid.ColumnSpan="2"
+                                     Margin="0, 0, 0, 5"
                                      FontSize="12"
                                      VerticalContentAlignment="Center"
                                      IsEnabled="{Binding InterfaceUseCustomTitle}"
@@ -401,19 +414,69 @@
                             <!-- Interface Size -->
                             <TextBlock Grid.Row="1" Grid.Column="0"
                                        Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
                                        Text="Interface Size"
                                        VerticalAlignment="Center"/>
                             <ComboBox Grid.Row="1" Grid.Column="2"
+                                      Grid.ColumnSpan="2"
+                                      Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
                                       ItemsSource="{Binding InterfaceSizes}"
                                       SelectedItem="{Binding InterfaceSize}"/>
+                            <!-- Script Interface Scale Factor -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" 
+                                       Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       Text="Script Scale Factor (%)"/>
+                            <cc:NumberBox Grid.Row="2" Grid.Column="2"
+                                          Margin="0, 0, 0, 5"
+                                          Height="25"
+                                          VerticalContentAlignment="Center"
+                                          Minimum="50"
+                                          Maximum="200"
+                                          IncrementUnit="5"
+                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"/>
+                            <Button Grid.Row="2" Grid.Column="3"
+                                    Margin="5, 0, 0, 5"
+                                    Width="25"
+                                    Command="local:SettingViewCommands.ResetScaleFactorCommand"
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                                <Button.Content>
+                                    <iconPacks:Material Kind="Refresh"/>
+                                </Button.Content>
+                            </Button>
+                            <!-- Monospaced Font -->
+                            <TextBlock Grid.Row="3" Grid.Column="0" 
+                                       Grid.ColumnSpan="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       Text="Monospaced Font"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Margin="0, 0, 0, 5"
+                                       VerticalAlignment="Center"
+                                       FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                                       FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                                       FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
+                                       Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
+                            <Button Grid.Row="3" Grid.Column="3"
+                                    Margin="5, 0, 0, 5"
+                                    Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                                <Button.Content>
+                                    <iconPacks:PackIconMaterial Kind="FormatFont"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="2"/>
+                                </Button.Content>
+                            </Button>
                         </Grid>
                     </StackPanel>
 
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
                                FontSize="13"
-                               Text="Default Code Editor"/>
+                               Text="External Code Editor"/>
                     <Separator Margin="0, 0, 0, 5"
                                BorderBrush="Black"
                                BorderThickness="2"/>
@@ -446,62 +509,6 @@
                             </Button.Content>
                         </Button>
                     </Grid>
-
-                    <TextBlock Margin="0, 10, 0, 5"
-                               FontWeight="Bold"
-                               FontSize="13"
-                               Text="Default Monospaced Font"/>
-                    <Separator Margin="0, 0, 0, 5"
-                               BorderBrush="Black"
-                               BorderThickness="2"/>
-                    <Grid Height="25" Margin="5, 0, 5, 0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="25"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
-                                   FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
-                                   FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
-                                   Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Command="local:SettingViewCommands.SelectMonospacedFontCommand"
-                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="FormatFont"
-                                                            Width="Auto"
-                                                            Height="Auto"
-                                                            Margin="2"/>
-                            </Button.Content>
-                        </Button>
-                    </Grid>
-
-                    <TextBlock Margin="0, 10, 0, 5"
-                               FontWeight="Bold"
-                               FontSize="13"
-                               Text="Scale Factor for Script Interface"/>
-                    <Separator Margin="0, 0, 0, 5"
-                               BorderBrush="Black"
-                               BorderThickness="2"/>
-                    <Grid Margin="5, 0, 5, 0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="32"/>
-                        </Grid.ColumnDefinitions>
-                        <Slider Grid.Column="0"
-                                Minimum="70"
-                                Maximum="200"
-                                TickPlacement="BottomRight"
-                                TickFrequency="10"
-                                IsSnapToTickEnabled="True"
-                                Foreground="Black"
-                                x:Name="ScaleFactorSlider"
-                                Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding InterfaceScaleFactor, Mode=OneWay, Converter={StaticResource AddPercentConverter}}"
-                                   TextAlignment="Right" />
-                    </Grid>
                 </StackPanel>
             </TabItem>
             <TabItem Width="70">
@@ -517,7 +524,7 @@
                                SnapsToDevicePixels="True"
                                BorderBrush="Black"
                                BorderThickness="2"/>
-                    <Grid Height="25">
+                    <Grid Height="25" Margin="5, 0, 5, 0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
@@ -575,9 +582,9 @@
                                 <s:Int32>3</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        
                         <Button Grid.Column="6" 
-                                Background="White"
+                                Background="{Binding ThemeCustomTopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
+                                Foreground="{Binding ThemeCustomTopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Custom">
