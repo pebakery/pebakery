@@ -22,17 +22,13 @@
 	SOFTWARE.
 */
 
+using PEBakery.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using PEBakery.Core;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.WPF.Controls
@@ -40,19 +36,20 @@ namespace PEBakery.WPF.Controls
     public class EditCanvas : Canvas
     {
         #region Fields
-        private FrameworkElement _selectedElement;
-        private Border _selectedBorder;
+        protected FrameworkElement _selectedElement;
+        protected Border _selectedBorder;
+        public SolidColorBrush BorderBrush { get; set; } = Brushes.Red;
         #endregion
 
         #region Properties
-        private int MaxZIndex
+        protected int MaxZIndex
         {
             get
             {
-                int max = Canvas.GetZIndex(this);
+                int max = GetZIndex(this);
                 foreach (UIElement element in Children)
                 {
-                    int z = Canvas.GetZIndex(element);
+                    int z = GetZIndex(element);
                     if (max < z)
                         max = z;
                 }
@@ -76,25 +73,7 @@ namespace PEBakery.WPF.Controls
         public event UIControlSelectedEventHandler UIControlSelected;
         #endregion
 
-        #region Event Handler
-        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
-        {
-            ResetSelectedBorder();
-
-            FrameworkElement element = null;
-            if (e.Source is DependencyObject dObj)
-            {
-                element = FindRootFrameworkElement(dObj);
-            }
-
-            if (element == null)
-                return;
-
-            DrawSelectedBorder(element);
-
-            e.Handled = true;
-        }
-
+        #region SelectedBorder
         public void ResetSelectedBorder()
         {
             if (_selectedBorder != null)
@@ -106,16 +85,19 @@ namespace PEBakery.WPF.Controls
 
         public void DrawSelectedBorder(UIControl uiCtrl)
         {
+            if (uiCtrl == null)
+                return;
+
             FrameworkElement element = null;
             foreach (FrameworkElement child in Children)
             {
-                if (child.Tag is UIControl ctrl)
+                if (!(child.Tag is UIControl ctrl))
+                    continue;
+
+                if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
                 {
-                    if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
-                    {
-                        element = child;
-                        break;
-                    }
+                    element = child;
+                    break;
                 }
             }
 
@@ -130,22 +112,36 @@ namespace PEBakery.WPF.Controls
             _selectedElement = element;
             if (_selectedElement.Tag is UIControl uiCtrl)
             {
-                // Set Z Index to top
-                Canvas.SetZIndex(_selectedElement, MaxZIndex + 1);
-
                 _selectedBorder = new Border
                 {
                     Opacity = 0.75,
-                    BorderBrush = Brushes.Red,
+                    BorderBrush = BorderBrush,
                     BorderThickness = new Thickness(2),
+                    Focusable = false,
                 };
-                Canvas.SetZIndex(_selectedBorder, MaxZIndex + 1);
-                UIRenderer.DrawToCanvas(this, _selectedBorder, uiCtrl.Rect);
+
+                // Set Z Index to top
+                if (uiCtrl.Type != UIControlType.Bevel)
+                {
+                    SetZIndex(_selectedElement, MaxZIndex + 1);
+                    SetZIndex(_selectedBorder, MaxZIndex + 1);
+                }
+
+                Rect rect = new Rect
+                {
+                    X = GetLeft(_selectedElement),
+                    Y = GetTop(_selectedElement),
+                    Width = _selectedElement.Width,
+                    Height = _selectedElement.Height,
+                };
+                UIRenderer.DrawToCanvas(this, _selectedBorder, rect);
 
                 UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
             }
         }
+        #endregion
 
+        #region Utility
         public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
@@ -159,6 +155,24 @@ namespace PEBakery.WPF.Controls
                     dObj = LogicalTreeHelper.GetParent(dObj);
             }
             return null;
+        }
+        #endregion
+
+        #region Event Handler
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            ResetSelectedBorder();
+
+            FrameworkElement element = null;
+            if (e.Source is DependencyObject dObj)
+                element = FindRootFrameworkElement(dObj);
+
+            if (element == null)
+                return;
+
+            DrawSelectedBorder(element);
+
+            e.Handled = true;
         }
         #endregion
     }

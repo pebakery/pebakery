@@ -25,22 +25,23 @@
     not derived from or based on this program. 
 */
 
+using Ookii.Dialogs.Wpf;
+using PEBakery.Core;
+using PEBakery.Core.ViewModels;
+using PEBakery.Helper;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.IO;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 using System.Threading;
-using System.Collections.ObjectModel;
-using System.Drawing.Text;
-using PEBakery.IniLib;
-using PEBakery.Core;
-using PEBakery.Helper;
-using Ookii.Dialogs.Wpf;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
@@ -48,1087 +49,1329 @@ namespace PEBakery.WPF
     // ReSharper disable once RedundantExtendsListEntry
     public partial class SettingWindow : Window
     {
-        #region Field and Constructor
-        public SettingViewModel Model;
+        #region Fields and Constructor
+        private readonly SettingViewModel _m;
 
         public SettingWindow(SettingViewModel model)
         {
-            Model = model;
-            DataContext = Model;
+            DataContext = _m = model;
             InitializeComponent();
         }
         #endregion
 
-        #region Button Event Handler
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            Model.WriteToFile();
-            DialogResult = true;
-        }
-
-        private void DefaultButton_Click(object sender, RoutedEventArgs e)
-        {
-            Model.SetToDefault();
-        }
-
-        private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
-        {
-            if (ScriptCache.DbLock == 0)
-            {
-                Interlocked.Increment(ref ScriptCache.DbLock);
-                try
-                {
-                    Model.ClearCacheDb();
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref ScriptCache.DbLock);
-                }
-            }
-        }
-
-        private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
-        {
-            Model.ClearLogDb();
-        }
-
+        #region Window Event Handler
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            Model.UpdateCacheDbState();
-            Model.UpdateLogDbState();
-            Model.UpdateProjectList();
+            _m.UpdateCacheDbState();
+            _m.UpdateLogDbState();
+            _m.LoadProjectEntries();
+
+            // Calculate proper state for compat option toggle button
+            _m.GetCompatToggleNextState();
+        }
+        #endregion
+
+        #region Commands
+        #region Global Button Commands
+        private void Command_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.CanExecuteCommand;
         }
 
-        private void CheckBox_EnableLongFilePath_Click(object sender, RoutedEventArgs e)
+        private void DefaultSettingCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            if (Model.General_EnableLongFilePath)
+            _m.CanExecuteCommand = false;
+            try
             {
-                const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                const string msg = "All settings will be reset to default!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                Model.General_EnableLongFilePath = res == MessageBoxResult.Yes;
-            }
-        }
-
-        private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
-            if (0 < Model.Project_SourceDirectoryList.Count)
-                dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
-
-            if (dialog.ShowDialog(this) == true)
-            {
-                bool exist = false;
-                for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
+                if (res == MessageBoxResult.Yes)
                 {
-                    string projName = Model.Project_SourceDirectoryList[i];
-                    if (projName.Equals(dialog.SelectedPath, StringComparison.OrdinalIgnoreCase))
-                    { // Selected Path exists
-                        exist = true;
-                        Model.Project_SourceDirectoryIndex = i;
-                        break;
-                    }
-                }
-
-                if (!exist) // Add to list
-                {
-                    ObservableCollection<string> newSourceDirList = new ObservableCollection<string>
-                    {
-                        dialog.SelectedPath
-                    };
-                    foreach (string dir in Model.Project_SourceDirectoryList)
-                        newSourceDirList.Add(dir);
-                    Model.Project_SourceDirectoryList = newSourceDirList;
-                    Model.Project_SourceDirectoryIndex = 0;
+                    _m.SetToDefault();
                 }
             }
-        }
-
-        private void Button_ResetSourceDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            Model.Project_SourceDirectoryList = new ObservableCollection<string>();
-
-            int idx = Model.Project_SelectedIndex;
-            string fullPath = Model.Projects[idx].MainScript.RealPath;
-            Ini.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
-        }
-
-        private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+            finally
             {
-                SelectedPath = Model.Project_TargetDirectory,
-            };
-
-            if (dialog.ShowDialog(this) == true)
-            {
-                Model.Project_TargetDirectory = dialog.SelectedPath;
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        private void Button_ISOFile_Click(object sender, RoutedEventArgs e)
+        private async void SaveSettingCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+            _m.CanExecuteCommand = false;
+            try
             {
-                Filter = "ISO File (*.iso)|*.iso",
-                FileName = Model.Project_ISOFile,
-            };
+                await Task.Run(() =>
+                {
+                    _m.WriteToSetting();
+                    _m.WriteToFile();
 
-            if (dialog.ShowDialog(this) == true)
-            {
-                Model.Project_ISOFile = dialog.FileName;
+                    _m.Setting.ApplySetting();
+                });
+                DialogResult = true;
             }
-        }
-
-        private void Button_MonospaceFont_Click(object sender, RoutedEventArgs e)
-        {
-            Model.Interface_MonospaceFont = FontHelper.ChooseFontDialog(Model.Interface_MonospaceFont, this, false, true);
-        }
-
-        private void Button_CustomEditorPath_Click(object sender, RoutedEventArgs e)
-        {
-            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+            finally
             {
-                Filter = "Executable|*.exe",
-                FileName = Model.Interface_CustomEditorPath,
-            };
-
-            if (dialog.ShowDialog(this) == true)
-            {
-                Model.Interface_CustomEditorPath = dialog.FileName;
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
             }
         }
         #endregion
+
+        #region Project Setting Commands
+        private void SelectSourceDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+                if (0 < _m.ProjectSourceDirs.Count)
+                    dialog.SelectedPath = _m.ProjectSourceDirs[_m.ProjectSourceDirIndex];
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    bool exist = false;
+                    for (int i = 0; i < _m.ProjectSourceDirs.Count; i++)
+                    {
+                        string projectName = _m.ProjectSourceDirs[i];
+                        if (projectName.Equals(dialog.SelectedPath, StringComparison.OrdinalIgnoreCase))
+                        { // Selected Path exists
+                            _m.ProjectSourceDirIndex = i;
+                            exist = true;
+                            break;
+                        }
+                    }
+
+                    if (!exist) // Add to list
+                    {
+                        _m.ProjectSourceDirs.Insert(0, dialog.SelectedPath);
+                        _m.ProjectSourceDirIndex = 0;
+                    }
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void ResetSourceDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.ProjectSourceDirs.Clear();
+
+                int idx = _m.SelectedProjectIndex;
+                string fullPath = _m.Projects[idx].MainScript.RealPath;
+                IniReadWriter.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void SelectTargetDirCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
+                {
+                    SelectedPath = _m.ProjectTargetDir,
+                };
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    _m.ProjectTargetDir = dialog.SelectedPath;
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void SelectIsoFileCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "ISO File (*.iso)|*.iso",
+                    FileName = _m.ProjectIsoFile,
+                };
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    _m.ProjectIsoFile = dialog.FileName;
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region General Setting Commands
+        private void EnableLongFilePathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.GeneralEnableLongFilePath)
+                return;
+
+            _m.CanExecuteCommand = false;
+            try
+            {
+                const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                _m.GeneralEnableLongFilePath = res == MessageBoxResult.Yes;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Interface Setting Commands
+        private void SelectMonospacedFontCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.InterfaceMonospacedFont = FontHelper.ChooseFontDialog(_m.Setting.Interface.MonospacedFont, this, monospaced: true);
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void SelectCustomEditorPathCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.Setting.Interface.UseCustomEditor;
+        }
+
+        private void SelectCustomEditorPathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Executable|*.exe",
+                    FileName = _m.Setting.Interface.CustomEditorPath,
+                };
+
+                if (dialog.ShowDialog(this) == true)
+                {
+                    _m.InterfaceCustomEditorPath = dialog.FileName;
+                }
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Script Setting Commands
+        private void ClearCacheDatabaseCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.CanExecuteCommand && ScriptCache.DbLock == 0;
+        }
+
+        private async void ClearCacheDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (ScriptCache.DbLock != 0)
+                return;
+
+            Interlocked.Increment(ref ScriptCache.DbLock);
+            try
+            {
+                await Task.Run(() => { _m.ClearCacheDatabase(); });
+            }
+            finally
+            {
+                Interlocked.Decrement(ref ScriptCache.DbLock);
+            }
+        }
+        #endregion
+
+        #region Theme Setting Commands
+        private void SelectThemeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                Setting.ThemeType newTheme = (Setting.ThemeType)e.Parameter;
+                Debug.Assert(Enum.IsDefined(typeof(Setting.ThemeType), newTheme), "Check SettingWindow.xaml's theme tab.");
+
+                _m.ThemeType = newTheme;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #region Log Setting Commands
+        private async void ClearLogDatabaseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Interlocked.Increment(ref ScriptCache.DbLock);
+            try
+            {
+                await Task.Run(() => { _m.ClearLogDatabase(); });
+            }
+            finally
+            {
+                Interlocked.Decrement(ref ScriptCache.DbLock);
+            }
+        }
+        #endregion
+
+        #region Compat Options Commands
+        private void ToggleCompatOptionsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.ApplyCompatToggleNextState(_m.ToggleNextState);
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
+        #endregion
+
+        
     }
     #endregion
 
     #region SettingViewModel
-    public class SettingViewModel : INotifyPropertyChanged
+    public class SettingViewModel : ViewModelBase
     {
         #region Field and Constructor
-        private readonly string _settingFile;
-        public LogDatabase LogDb { get; set; }
-        public ScriptCache CacheDb { get; set; }
-        public ProjectCollection Projects { get; private set; }
+        public Setting Setting { get; }
+        public ProjectCollection Projects { get; }
+        private bool _firstLoad = true;
 
-        public SettingViewModel(string settingFile)
+        public SettingViewModel(Setting setting, ProjectCollection projects)
         {
-            _settingFile = settingFile;
-            ReadFromFile();
+            Setting = setting;
+            Projects = projects;
 
-            ApplySetting();
+            ProjectNames = new ObservableCollection<string>(Projects.Select(p => p.ProjectName));
+            ProjectSourceDirs = new ObservableCollection<string>();
+
+            ReadFromSetting();
         }
         #endregion
 
+        #region CanExecuteCommand
+        public bool CanExecuteCommand { get; set; } = true;
+        #endregion
+
+        #region Need Flags
+        public bool NeedProjectRefresh { get; private set; }
+        public bool NeedScriptRedraw { get; private set; }
+        public bool NeedScriptCaching { get; private set; }
+        #endregion
+
         #region Property - Project
-        private string Project_DefaultStr;
-        public string Project_Default
+        public ObservableCollection<string> ProjectNames { get; private set; }
+
+        private int _projectDefaultIndex;
+        public int DefaultProjectIndex
+        {
+            get => _projectDefaultIndex;
+            set
+            {
+                _projectDefaultIndex = value;
+                OnPropertyUpdate(nameof(DefaultProjectIndex));
+                OnPropertyUpdate(nameof(DefaultProject));
+            }
+        }
+
+        public Project DefaultProject
         {
             get
             {
-                if (0 <= project_DefaultIndex && project_DefaultIndex < Project_List.Count)
-                    return Project_List[project_DefaultIndex];
+                if (0 <= SelectedProjectIndex && SelectedProjectIndex < Projects.Count)
+                    return Projects[DefaultProjectIndex];
                 else
-                    return string.Empty;
+                    return null;
             }
         }
 
-        private ObservableCollection<string> project_List;
-        public ObservableCollection<string> Project_List
+        private int _selectProjectIndex;
+        public int SelectedProjectIndex
         {
-            get => project_List;
+            get => _selectProjectIndex;
             set
             {
-                project_List = value;
-                OnPropertyUpdate(nameof(Project_List));
+                int oldIndex = _selectProjectIndex;
+                _selectProjectIndex = value;
+                LoadSelectedProject(value, oldIndex);
+                OnPropertyUpdate(nameof(SelectedProjectIndex));
+                OnPropertyUpdate(nameof(SelectedProject));
             }
         }
 
-        private int project_DefaultIndex;
-        public int Project_DefaultIndex
+        public Project SelectedProject
         {
-            get => project_DefaultIndex;
-            set
+            get
             {
-                project_DefaultIndex = value;
-                OnPropertyUpdate(nameof(Project_DefaultIndex));
+                if (0 <= SelectedProjectIndex && SelectedProjectIndex < Projects.Count)
+                    return Projects[SelectedProjectIndex];
+                else
+                    return null;
             }
         }
 
-        private int project_SelectedIndex;
-        public int Project_SelectedIndex
+        private readonly object _projectSourceDirsLock = new object();
+        private ObservableCollection<string> _projectSourceDirs;
+        public ObservableCollection<string> ProjectSourceDirs
         {
-            get => project_SelectedIndex;
+            get => _projectSourceDirs;
+            set => SetCollectionProperty(ref _projectSourceDirs, _projectSourceDirsLock, value);
+        }
+
+        private int _projectSourceDirIndex;
+        public int ProjectSourceDirIndex
+        {
+            get => _projectSourceDirIndex;
             set
             {
-                project_SelectedIndex = value;
+                _projectSourceDirIndex = value;
 
-                if (0 <= value && value < Project_List.Count)
+                Project p = DefaultProject;
+                if (0 <= value && value < ProjectSourceDirs.Count)
                 {
-                    string fullPath = Projects[value].MainScript.RealPath;
-                    IniKey[] keys = new IniKey[]
-                    {
-                        new IniKey("Main", "SourceDir"),
-                        new IniKey("Main", "TargetDir"),
-                        new IniKey("Main", "ISOFile"),
-                        new IniKey("Main", "PathSetting"),
-                    };
-                    keys = Ini.ReadKeys(fullPath, keys);
+                    p.Variables.SetValue(VarsType.Fixed, "SourceDir", ProjectSourceDirs[value]);
 
-                    // PathSetting
-                    if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
-                        Project_PathEnabled = false;
-                    else
-                        Project_PathEnabled = true;
-
-                    // SourceDir
-                    Project_SourceDirectoryList = new ObservableCollection<string>();
-                    if (keys[0].Value != null)
-                    {
-                        string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string rawDir in rawDirList)
-                        {
-                            string dir = rawDir.Trim();
-                            if (0 < dir.Length)
-                                Project_SourceDirectoryList.Add(dir);
-                        }
-                    }
-
-                    if (0 < Project_SourceDirectoryList.Count)
-                    {
-                        project_SourceDirectoryIndex = 0;
-                        OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
-                    }
-
-                    if (keys[1].Value != null)
-                    {
-                        project_TargetDirectory = keys[1].Value;
-                        OnPropertyUpdate(nameof(Project_TargetDirectory));
-                    }
-
-                    if (keys[2].Value != null)
-                    {
-                        project_ISOFile = keys[2].Value;
-                        OnPropertyUpdate(nameof(Project_ISOFile));
-                    }
-                }
-
-                OnPropertyUpdate(nameof(Project_SelectedIndex));
-            }
-        }
-
-        private bool project_PathEnabled = true;
-        public bool Project_PathEnabled
-        {
-            get => project_PathEnabled;
-            set
-            {
-                project_PathEnabled = value;
-                OnPropertyUpdate(nameof(Project_PathEnabled));
-            }
-        }
-
-        private ObservableCollection<string> project_SourceDirectoryList;
-        public ObservableCollection<string> Project_SourceDirectoryList
-        {
-            get => project_SourceDirectoryList;
-            set
-            {
-                project_SourceDirectoryList = value;
-                OnPropertyUpdate(nameof(Project_SourceDirectoryList));
-            }
-        }
-
-        private int project_SourceDirectoryIndex;
-        public int Project_SourceDirectoryIndex
-        {
-            get => project_SourceDirectoryIndex;
-            set
-            {
-                project_SourceDirectoryIndex = value;
-
-                Project project = Projects[Project_SelectedIndex];
-                if (0 <= value && value < Project_SourceDirectoryList.Count)
-                {
-                    project.Variables.SetValue(VarsType.Fixed, "SourceDir", Project_SourceDirectoryList[value]);
-
-                    StringBuilder b = new StringBuilder(Project_SourceDirectoryList[value]);
-                    for (int x = 0; x < Project_SourceDirectoryList.Count; x++)
+                    // Generate new SourceDir string, with selected source dir being first.
+                    StringBuilder b = new StringBuilder(ProjectSourceDirs[value]);
+                    for (int x = 0; x < ProjectSourceDirs.Count; x++)
                     {
                         if (x == value)
                             continue;
-
                         b.Append(",");
-                        b.Append(Project_SourceDirectoryList[x]);
+                        b.Append(ProjectSourceDirs[x]);
                     }
-                    Ini.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
+                    string newVal = b.ToString();
+
+                    IniReadWriter.WriteKey(p.MainScript.RealPath, "Main", "SourceDir", newVal);
+                    p.Variables.SetValue(VarsType.Fixed, "SourceDir", newVal);
+                    p.MainScript.MainInfo["SourceDir"] = newVal;
                 }
 
-                OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
+                OnPropertyUpdate(nameof(ProjectSourceDirIndex));
             }
         }
 
-        private string project_TargetDirectory;
-        public string Project_TargetDirectory
+        private string _projectTargetDir;
+        public string ProjectTargetDir
         {
-            get => project_TargetDirectory;
+            get => _projectTargetDir;
             set
             {
-                if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
+                if (!value.Equals(_projectTargetDir, StringComparison.OrdinalIgnoreCase))
                 {
-                    Project project = Projects[project_SelectedIndex];
-                    string fullPath = project.MainScript.RealPath;
-                    Ini.WriteKey(fullPath, "Main", "TargetDir", value);
-                    project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
+                    Project p = SelectedProject;
+                    if (p != null)
+                    {
+                        string fullPath = p.MainScript.RealPath;
+                        IniReadWriter.WriteKey(fullPath, "Main", "TargetDir", value);
+                        p.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
+                        p.MainScript.MainInfo["TargetDir"] = value;
+                    }
                 }
 
-                project_TargetDirectory = value;
-
-                OnPropertyUpdate(nameof(Project_TargetDirectory));
+                _projectTargetDir = value;
+                OnPropertyUpdate(nameof(ProjectTargetDir));
             }
         }
 
-        private string project_ISOFile;
-        public string Project_ISOFile
+        private string _projectIsoFile;
+        public string ProjectIsoFile
         {
-            get => project_ISOFile;
+            get => _projectIsoFile;
             set
             {
-                if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
+                if (!value.Equals(_projectIsoFile, StringComparison.OrdinalIgnoreCase))
                 {
-                    Project project = Projects[project_SelectedIndex];
-                    string fullPath = project.MainScript.RealPath;
-                    Ini.WriteKey(fullPath, "Main", "ISOFile", value);
-                    project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
+                    Project p = SelectedProject;
+                    if (p != null)
+                    {
+                        string fullPath = p.MainScript.RealPath;
+                        IniReadWriter.WriteKey(fullPath, "Main", "ISOFile", value);
+                        p.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
+                        p.MainScript.MainInfo["ISOFile"] = value;
+                    }
                 }
 
-                project_ISOFile = value;
-
-                OnPropertyUpdate(nameof(Project_ISOFile));
+                _projectIsoFile = value;
+                OnPropertyUpdate(nameof(ProjectIsoFile));
             }
         }
         #endregion
 
         #region Property - General
-        // Build
-        private bool general_OptimizeCode;
-        public bool General_OptimizeCode
+        private bool _generalOptimizeCode;
+        public bool GeneralOptimizeCode
         {
-            get => general_OptimizeCode;
-            set
-            {
-                general_OptimizeCode = value;
-                OnPropertyUpdate(nameof(General_OptimizeCode));
-            }
+            get => _generalOptimizeCode;
+            set => SetProperty(ref _generalOptimizeCode, value);
         }
 
-        private bool general_ShowLogAfterBuild;
-        public bool General_ShowLogAfterBuild
+        private bool _generalShowLogAfterBuild;
+        public bool GeneralShowLogAfterBuild
         {
-            get => general_ShowLogAfterBuild;
-            set
-            {
-                general_ShowLogAfterBuild = value;
-                OnPropertyUpdate(nameof(General_ShowLogAfterBuild));
-            }
+            get => _generalShowLogAfterBuild;
+            set => SetProperty(ref _generalShowLogAfterBuild, value);
         }
 
-        private bool general_StopBuildOnError;
-        public bool General_StopBuildOnError
+        private bool _generalStopBuildOnError;
+        public bool GeneralStopBuildOnError
         {
-            get => general_StopBuildOnError;
-            set
-            {
-                general_StopBuildOnError = value;
-                OnPropertyUpdate(nameof(General_StopBuildOnError));
-            }
+            get => _generalStopBuildOnError;
+            set => SetProperty(ref _generalStopBuildOnError, value);
         }
 
-        // Path Length Limit
-        private bool general_EnableLongFilePath;
-        public bool General_EnableLongFilePath
+        private bool _generalEnableLongFilePath;
+        public bool GeneralEnableLongFilePath
         {
-            get => general_EnableLongFilePath;
-            set
-            {
-                general_EnableLongFilePath = value;
-
-                // Enabled  = Path Length Limit = 32767
-                // Disabled = Path Legnth Limit = 260
-                AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !value);
-
-                OnPropertyUpdate(nameof(General_EnableLongFilePath));
-            }
+            get => _generalEnableLongFilePath;
+            set => SetProperty(ref _generalEnableLongFilePath, value);
         }
 
-        // Custom User-Agent
-        private bool general_UseCustomUserAgent;
-        public bool General_UseCustomUserAgent
+        private bool _generalUseCustomUserAgent;
+        public bool GeneralUseCustomUserAgent
         {
-            get => general_UseCustomUserAgent;
-            set
-            {
-                general_UseCustomUserAgent = value;
-                OnPropertyUpdate(nameof(General_UseCustomUserAgent));
-            }
+            get => _generalUseCustomUserAgent;
+            set => SetProperty(ref _generalUseCustomUserAgent, value);
         }
 
-        private string general_CustomUserAgent;
-        public string General_CustomUserAgent
+        private string _generalCustomUserAgent;
+        public string GeneralCustomUserAgent
         {
-            get => general_CustomUserAgent;
-            set
-            {
-                general_CustomUserAgent = value;
-                OnPropertyUpdate(nameof(General_CustomUserAgent));
-            }
+            get => _generalCustomUserAgent;
+            set => SetProperty(ref _generalCustomUserAgent, value);
         }
         #endregion
 
         #region Property - Interface
-        private string interface_MonospaceFontStr;
-        public string Interface_MonospaceFontStr
+        private FontHelper.FontInfo _interfaceMonospacedFont;
+        public FontHelper.FontInfo InterfaceMonospacedFont
         {
-            get => interface_MonospaceFontStr;
+            get => _interfaceMonospacedFont;
+            set => SetProperty(ref _interfaceMonospacedFont, value);
+        }
+
+        private bool _interfaceUseCustomTitle;
+        public bool InterfaceUseCustomTitle
+        {
+            get => _interfaceUseCustomTitle;
+            set => SetProperty(ref _interfaceUseCustomTitle, value);
+        }
+
+        private string _interfaceCustomTitle;
+        public string InterfaceCustomTitle
+        {
+            get => _interfaceCustomTitle;
+            set => SetProperty(ref _interfaceCustomTitle, value);
+        }
+
+        private bool _interfaceUseCustomEditor;
+        public bool InterfaceUseCustomEditor
+        {
+            get => _interfaceUseCustomEditor;
+            set => SetProperty(ref _interfaceUseCustomEditor, value);
+        }
+
+        private string _interfaceCustomEditorPath;
+        public string InterfaceCustomEditorPath
+        {
+            get => _interfaceCustomEditorPath;
+            set => SetProperty(ref _interfaceCustomEditorPath, value);
+        }
+
+        private int _interfaceScaleFactor;
+        public double InterfaceScaleFactor
+        {
+            get => _interfaceScaleFactor;
             set
             {
-                interface_MonospaceFontStr = value;
-                OnPropertyUpdate(nameof(Interface_MonospaceFontStr));
+                int newVal = (int)value;
+                if (_interfaceScaleFactor != newVal)
+                    NeedScriptRedraw = true;
+                _interfaceScaleFactor = newVal;
+                OnPropertyUpdate(nameof(InterfaceScaleFactor));
             }
         }
 
-        private FontHelper.WPFFont interface_MonospaceFont;
-        public FontHelper.WPFFont Interface_MonospaceFont
+        private bool _interfaceDisplayShellExecuteConOut;
+        public bool InterfaceDisplayShellExecuteConOut
         {
-            get => interface_MonospaceFont;
+            get => _interfaceDisplayShellExecuteConOut;
+            set => SetProperty(ref _interfaceDisplayShellExecuteConOut, value);
+        }
+
+        public ObservableCollection<Setting.InterfaceSize> InterfaceSizes { get; } = new ObservableCollection<Setting.InterfaceSize>
+        {
+            Setting.InterfaceSize.Adaptive,
+            Setting.InterfaceSize.Standard,
+            Setting.InterfaceSize.Small,
+        };
+
+        private Setting.InterfaceSize _interfaceSize;
+        public Setting.InterfaceSize InterfaceSize
+        {
+            get => _interfaceSize;
+            set => SetProperty(ref _interfaceSize, value);
+        }
+        #endregion
+
+        #region Property - Theme
+        private Setting.ThemeType _themeType;
+        public Setting.ThemeType ThemeType
+        {
+            get => _themeType;
             set
             {
-                interface_MonospaceFont = value;
-
-                OnPropertyUpdate(nameof(Interface_MonospaceFont));
-                Interface_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
-
-                OnPropertyUpdate(nameof(Interface_MonospaceFontFamily));
-                OnPropertyUpdate(nameof(Interface_MonospaceFontWeight));
-                OnPropertyUpdate(nameof(Interface_MonospaceFontSize));
+                _themeType = value;
+                OnPropertyUpdate(nameof(ThemeType));
             }
         }
 
-        public FontFamily Interface_MonospaceFontFamily => interface_MonospaceFont.FontFamily;
-        public FontWeight Interface_MonospaceFontWeight => interface_MonospaceFont.FontWeight;
-        public double Interface_MonospaceFontSize => interface_MonospaceFont.FontSizeInDIP;
-
-        private double interface_ScaleFactor;
-        public double Interface_ScaleFactor
+        private Color _themeCustomTopPanelBackground;
+        public Color ThemeCustomTopPanelBackground
         {
-            get => interface_ScaleFactor;
-            set
-            {
-                interface_ScaleFactor = value;
-                OnPropertyUpdate(nameof(Interface_ScaleFactor));
-            }
+            get => _themeCustomTopPanelBackground;
+            set => SetProperty(ref _themeCustomTopPanelBackground, value);
         }
 
-        private bool interface_UseCustomEditor;
-        public bool Interface_UseCustomEditor
+        private Color _themeCustomTopPanelForeground;
+        public Color ThemeCustomTopPanelForeground
         {
-            get => interface_UseCustomEditor;
-            set
-            {
-                interface_UseCustomEditor = value;
-                OnPropertyUpdate(nameof(Interface_UseCustomEditor));
-            }
+            get => _themeCustomTopPanelForeground;
+            set => SetProperty(ref _themeCustomTopPanelForeground, value);
         }
 
-        private string interface_CustomEditorPath;
-        public string Interface_CustomEditorPath
+        private Color _themeCustomTreePanelBackground;
+        public Color ThemeCustomTreePanelBackground
         {
-            get => interface_CustomEditorPath;
-            set
-            {
-                interface_CustomEditorPath = value;
-                OnPropertyUpdate(nameof(Interface_CustomEditorPath));
-            }
+            get => _themeCustomTreePanelBackground;
+            set => SetProperty(ref _themeCustomTreePanelBackground, value);
         }
 
-        private bool interface_DisplayShellExecuteConOut;
-        public bool Interface_DisplayShellExecuteConOut
+        private Color _themeCustomTreePanelForeground;
+        public Color ThemeCustomTreePanelForeground
         {
-            get => interface_DisplayShellExecuteConOut;
-            set
-            {
-                interface_DisplayShellExecuteConOut = value;
-                OnPropertyUpdate(nameof(Interface_DisplayShellExecuteConOut));
-            }
+            get => _themeCustomTreePanelForeground;
+            set => SetProperty(ref _themeCustomTreePanelForeground, value);
+        }
+
+        private Color _themeCustomTreePanelHighlight;
+        public Color ThemeCustomTreePanelHighlight
+        {
+            get => _themeCustomTreePanelHighlight;
+            set => SetProperty(ref _themeCustomTreePanelHighlight, value);
+        }
+
+        private Color _themeCustomScriptPanelBackground;
+        public Color ThemeCustomScriptPanelBackground
+        {
+            get => _themeCustomScriptPanelBackground;
+            set => SetProperty(ref _themeCustomScriptPanelBackground, value);
+        }
+
+        private Color _themeCustomScriptPanelForeground;
+        public Color ThemeCustomScriptPanelForeground
+        {
+            get => _themeCustomScriptPanelForeground;
+            set => SetProperty(ref _themeCustomScriptPanelForeground, value);
+        }
+
+        private Color _themeCustomStatusBarBackground;
+        public Color ThemeCustomStatusBarBackground
+        {
+            get => _themeCustomStatusBarBackground;
+            set => SetProperty(ref _themeCustomStatusBarBackground, value);
+        }
+
+        private Color _themeCustomStatusBarForeground;
+        public Color ThemeCustomStatusBarForeground
+        {
+            get => _themeCustomStatusBarForeground;
+            set => SetProperty(ref _themeCustomStatusBarForeground, value);
         }
         #endregion
 
         #region Property - Script
         private string _scriptCacheState;
-        public string Script_CacheState
+        public string ScriptCacheState
         {
             get => _scriptCacheState;
-            set
-            {
-                _scriptCacheState = value;
-                OnPropertyUpdate(nameof(Script_CacheState));
-            }
+            set => SetProperty(ref _scriptCacheState, value);
         }
 
         private bool _scriptEnableCache;
-        public bool Script_EnableCache
+        public bool ScriptEnableCache
         {
             get => _scriptEnableCache;
             set
             {
+                if (!_scriptEnableCache && value) // Was false, now true
+                    NeedScriptCaching = true; // Notify caller "You should generate cache!"
                 _scriptEnableCache = value;
-                OnPropertyUpdate(nameof(Script_EnableCache));
+                OnPropertyUpdate(nameof(ScriptEnableCache));
             }
         }
 
         private bool _scriptAutoSyntaxCheck;
-        public bool Script_AutoSyntaxCheck
+        public bool ScriptAutoSyntaxCheck
         {
             get => _scriptAutoSyntaxCheck;
-            set
-            {
-                _scriptAutoSyntaxCheck = value;
-                OnPropertyUpdate(nameof(Script_AutoSyntaxCheck));
-            }
+            set => SetProperty(ref _scriptAutoSyntaxCheck, value);
         }
         #endregion
 
         #region Property - Logging
-        private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
+        private string _logDatabaseState;
+        public string LogDatabaseState
         {
-            DebugLevel.Production.ToString(),
-            DebugLevel.PrintException.ToString(),
-            DebugLevel.PrintExceptionStackTrace.ToString()
+            get => _logDatabaseState;
+            set => SetProperty(ref _logDatabaseState, value);
+        }
+
+        public ObservableCollection<LogDebugLevel> LogDebugLevels { get; } = new ObservableCollection<LogDebugLevel>
+        {
+            LogDebugLevel.Production,
+            LogDebugLevel.PrintException,
+            LogDebugLevel.PrintExceptionStackTrace,
         };
-        public ObservableCollection<string> Log_DebugLevelList
+
+        private LogDebugLevel _logSelectedDebugLevel;
+        public LogDebugLevel LogSelectedDebugLevel
         {
-            get => log_DebugLevelList;
-            set
-            {
-                log_DebugLevelList = value;
-                OnPropertyUpdate(nameof(Log_DebugLevelList));
-            }
+            get => _logSelectedDebugLevel;
+            set => SetProperty(ref _logSelectedDebugLevel, value);
         }
 
-        private int log_DebugLevelIndex;
-        public int Log_DebugLevelIndex
+        private bool _logDeferredLogging;
+        public bool LogDeferredLogging
         {
-            get => log_DebugLevelIndex;
-            set
-            {
-                log_DebugLevelIndex = value;
-                OnPropertyUpdate(nameof(Log_DebugLevelIndex));
-            }
+            get => _logDeferredLogging;
+            set => SetProperty(ref _logDeferredLogging, value);
         }
 
-        public DebugLevel Log_DebugLevel
+        private bool _logMinifyHtmlExport;
+        public bool LogMinifyHtmlExport
         {
-            get
-            {
-                switch (Log_DebugLevelIndex)
-                {
-                    case 0:
-                        return DebugLevel.Production;
-                    case 1:
-                        return DebugLevel.PrintException;
-                    default:
-                        return DebugLevel.PrintExceptionStackTrace;
-                }
-            }
-            set
-            {
-                switch (value)
-                {
-                    case DebugLevel.Production:
-                        log_DebugLevelIndex = 0;
-                        break;
-                    case DebugLevel.PrintException:
-                        log_DebugLevelIndex = 1;
-                        break;
-                    default:
-                        log_DebugLevelIndex = 2;
-                        break;
-                }
-            }
-        }
-
-        private string log_DBState;
-        public string Log_DBState
-        {
-            get => log_DBState;
-            set
-            {
-                log_DBState = value;
-                OnPropertyUpdate(nameof(Log_DBState));
-            }
-        }
-
-        private bool log_DeferredLogging;
-        public bool Log_DeferredLogging
-        {
-            get => log_DeferredLogging;
-            set
-            {
-                log_DeferredLogging = value;
-                OnPropertyUpdate(nameof(Log_DeferredLogging));
-            }
-        }
-
-        private bool log_MinifyHtmlExport;
-        public bool Log_MinifyHtmlExport
-        {
-            get => log_MinifyHtmlExport;
-            set
-            {
-                log_MinifyHtmlExport = value;
-                OnPropertyUpdate(nameof(Log_MinifyHtmlExport));
-            }
+            get => _logMinifyHtmlExport;
+            set => SetProperty(ref _logMinifyHtmlExport, value);
         }
         #endregion
 
         #region Property - Compatibility
-        private bool compat_AsteriskBugDirCopy;
-        public bool Compat_AsteriskBugDirCopy
+        private readonly List<CompatOption> _compatOptions = new List<CompatOption>();
+        public CompatOption SelectedCompatOption
         {
-            get => compat_AsteriskBugDirCopy;
-            set
+            get
             {
-                compat_AsteriskBugDirCopy = value;
-                OnPropertyUpdate(nameof(Compat_AsteriskBugDirCopy));
+                if (_compatOptions != null && 0 <= SelectedProjectIndex && SelectedProjectIndex < _compatOptions.Count)
+                    return _compatOptions[SelectedProjectIndex];
+                else
+                    return null;
             }
         }
 
-        private bool compat_AsteriskBugDirLink;
-        public bool Compat_AsteriskBugDirLink
+        // Toggle Button
+        private bool _toggleNextState;
+        public bool ToggleNextState
         {
-            get => compat_AsteriskBugDirLink;
+            get => _toggleNextState;
+            set => SetProperty(ref _toggleNextState, value);
+        }
+
+        // Asterisk
+        private bool _compatAsteriskBugDirCopy;
+        public bool CompatAsteriskBugDirCopy
+        {
+            get => _compatAsteriskBugDirCopy;
             set
             {
-                compat_AsteriskBugDirLink = value;
-                OnPropertyUpdate(nameof(Compat_AsteriskBugDirLink));
+                _compatAsteriskBugDirCopy = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_FileRenameCanMoveDir;
-        public bool Compat_FileRenameCanMoveDir
+        private bool _compatAsteriskBugDirLink;
+        public bool CompatAsteriskBugDirLink
         {
-            get => compat_FileRenameCanMoveDir;
+            get => _compatAsteriskBugDirLink;
             set
             {
-                compat_FileRenameCanMoveDir = value;
-                OnPropertyUpdate(nameof(Compat_FileRenameCanMoveDir));
+                _compatAsteriskBugDirLink = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_AllowLetterInLoop;
-        public bool Compat_AllowLetterInLoop
+        // Command
+        private bool _compatFileRenameCanMoveDir;
+        public bool CompatFileRenameCanMoveDir
         {
-            get => compat_AllowLetterInLoop;
+            get => _compatFileRenameCanMoveDir;
             set
             {
-                compat_AllowLetterInLoop = value;
-                OnPropertyUpdate(nameof(Compat_AllowLetterInLoop));
+                _compatFileRenameCanMoveDir = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_LegacyBranchCondition;
-        public bool Compat_LegacyBranchCondition
+        private bool _compatAllowLetterInLoop;
+        public bool CompatAllowLetterInLoop
         {
-            get => compat_LegacyBranchCondition;
+            get => _compatAllowLetterInLoop;
             set
             {
-                compat_LegacyBranchCondition = value;
-                OnPropertyUpdate(nameof(Compat_LegacyBranchCondition));
+                _compatAllowLetterInLoop = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_LegacyRegWrite;
-        public bool Compat_LegacyRegWrite
+        private bool _compatLegacyBranchCondition;
+        public bool CompatLegacyBranchCondition
         {
-            get => compat_LegacyRegWrite;
+            get => _compatLegacyBranchCondition;
             set
             {
-                compat_LegacyRegWrite = value;
-                OnPropertyUpdate(nameof(Compat_LegacyRegWrite));
+                _compatLegacyBranchCondition = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_AllowSetModifyInterface;
-        public bool Compat_AllowSetModifyInterface
+        private bool _compatLegacyRegWrite;
+        public bool CompatLegacyRegWrite
         {
-            get => compat_AllowSetModifyInterface;
+            get => _compatLegacyRegWrite;
             set
             {
-                compat_AllowSetModifyInterface = value;
-                OnPropertyUpdate(nameof(Compat_AllowSetModifyInterface));
+                _compatLegacyRegWrite = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_LegacyInterfaceCommand;
-        public bool Compat_LegacyInterfaceCommand
+        private bool _compatAllowSetModifyInterface;
+        public bool CompatAllowSetModifyInterface
         {
-            get => compat_LegacyInterfaceCommand;
+            get => _compatAllowSetModifyInterface;
             set
             {
-                compat_LegacyInterfaceCommand = value;
-                OnPropertyUpdate(nameof(Compat_LegacyInterfaceCommand));
+                _compatAllowSetModifyInterface = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_LegacySectionParamCommand;
-        public bool Compat_LegacySectionParamCommand
+        private bool _compatLegacyInterfaceCommand;
+        public bool CompatLegacyInterfaceCommand
         {
-            get => compat_LegacySectionParamCommand;
+            get => _compatLegacyInterfaceCommand;
             set
             {
-                compat_LegacySectionParamCommand = value;
-                OnPropertyUpdate(nameof(Compat_LegacySectionParamCommand));
+                _compatLegacyInterfaceCommand = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_IgnoreWidthOfWebLabel;
-        public bool Compat_IgnoreWidthOfWebLabel
+        private bool _compatLegacySectionParamCommand;
+        public bool CompatLegacySectionParamCommand
         {
-            get => compat_IgnoreWidthOfWebLabel;
+            get => _compatLegacySectionParamCommand;
             set
             {
-                compat_IgnoreWidthOfWebLabel = value;
-                OnPropertyUpdate(nameof(Compat_IgnoreWidthOfWebLabel));
+                _compatLegacySectionParamCommand = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_OverridableFixedVariables;
-        public bool Compat_OverridableFixedVariables
+        // Script Interface
+        private bool _compatIgnoreWidthOfWebLabel;
+        public bool CompatIgnoreWidthOfWebLabel
         {
-            get => compat_OverridableFixedVariables;
+            get => _compatIgnoreWidthOfWebLabel;
             set
             {
-                compat_OverridableFixedVariables = value;
-                OnPropertyUpdate(nameof(Compat_OverridableFixedVariables));
+                if (_compatIgnoreWidthOfWebLabel != value)
+                    NeedScriptRedraw = true;
+                _compatIgnoreWidthOfWebLabel = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_EnableEnvironmentVariables;
-        public bool Compat_EnableEnvironmentVariables
+        // Variable
+        private bool _compatOverridableFixedVariables;
+        public bool CompatOverridableFixedVariables
         {
-            get => compat_EnableEnvironmentVariables;
+            get => _compatOverridableFixedVariables;
             set
             {
-                compat_EnableEnvironmentVariables = value;
-                OnPropertyUpdate(nameof(Compat_EnableEnvironmentVariables));
+                _compatOverridableFixedVariables = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
 
-        private bool compat_DisableExtendedSectionParams;
-        public bool Compat_DisableExtendedSectionParams
+        private bool _compatOverridableLoopCounter;
+        public bool CompatOverridableLoopCounter
         {
-            get => compat_DisableExtendedSectionParams;
+            get => _compatOverridableLoopCounter;
             set
             {
-                compat_DisableExtendedSectionParams = value;
-                OnPropertyUpdate(nameof(Compat_DisableExtendedSectionParams));
+                _compatOverridableLoopCounter = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
+        }
+
+        private bool _compatEnableEnvironmentVariables;
+        public bool CompatEnableEnvironmentVariables
+        {
+            get => _compatEnableEnvironmentVariables;
+            set
+            {
+                _compatEnableEnvironmentVariables = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
+            }
+        }
+
+        private bool _compatDisableExtendedSectionParams;
+        public bool CompatDisableExtendedSectionParams
+        {
+            get => _compatDisableExtendedSectionParams;
+            set
+            {
+                _compatDisableExtendedSectionParams = value;
+                GetCompatToggleNextState();
+                OnPropertyUpdate();
             }
         }
         #endregion
 
-        #region ApplySetting
-        public void ApplySetting()
+        #region LoadProjectEntries
+        public void LoadProjectEntries()
         {
-            CodeParser.OptimizeCode = General_OptimizeCode;
-            Engine.StopBuildOnError = General_StopBuildOnError;
-            Logger.DebugLevel = Log_DebugLevel;
-            Logger.MinifyHtmlExport = Log_MinifyHtmlExport;
-            MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
-            ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
-            CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
-            CodeParser.AllowLegacyRegWrite = Compat_LegacyRegWrite;
-            CodeParser.AllowLegacySectionParamCommand = Compat_LegacySectionParamCommand;
-            CodeParser.AllowExtendedSectionParams = !Compat_DisableExtendedSectionParams;
-            UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
-            Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
-            Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
+            // Select default project
+            int idx = Projects.IndexOf(Setting.Project.DefaultProject);
+            if (idx == -1)
+                SelectedProjectIndex = DefaultProjectIndex = Projects.Count - 1;
+            else
+                SelectedProjectIndex = idx;
+
+            // Compat Options
+            _compatOptions.Clear();
+            foreach (Project p in Projects)
+            {
+                CompatOption compat = p.Compat.Clone();
+                _compatOptions.Add(compat);
+            }
+        }
+        #endregion
+
+        #region LoadSelectedProject
+        public async void LoadSelectedProject(int newIndex, int oldIndex)
+        {
+            if (newIndex < 0 || Projects.Count <= newIndex)
+                return;
+
+            await Task.Run(() =>
+            {
+                // Project 
+                Dictionary<string, string> infoDict = SelectedProject.MainScript.MainInfo;
+
+                // SourceDir
+                ProjectSourceDirs.Clear();
+                if (infoDict.ContainsKey("SourceDir"))
+                {
+                    string valStr = infoDict["SourceDir"];
+                    foreach (string rawDir in StringHelper.SplitEx(valStr, ",", StringComparison.Ordinal))
+                    {
+                        string dir = rawDir.Trim();
+                        if (0 < dir.Length)
+                            ProjectSourceDirs.Add(dir);
+                    }
+                }
+                if (0 < ProjectSourceDirs.Count)
+                    ProjectSourceDirIndex = 0;
+
+                // TargetDir
+                if (infoDict.ContainsKey("TargetDir"))
+                    ProjectTargetDir = infoDict["TargetDir"];
+                else
+                    ProjectTargetDir = string.Empty;
+
+                // ISOFile
+                if (infoDict.ContainsKey("ISOFile"))
+                    ProjectIsoFile = infoDict["ISOFile"];
+                else
+                    ProjectIsoFile = string.Empty;
+
+                // Compat Options
+                if (!_firstLoad && newIndex != oldIndex &&
+                    0 <= oldIndex && oldIndex < _compatOptions.Count)
+                    SaveCompatOptionTo(_compatOptions[oldIndex]);
+                CompatOption compat = SelectedCompatOption;
+                Debug.Assert(compat != null, "Invalid SelectedProjectIndex");
+                LoadCompatOptionFrom(compat);
+
+                _firstLoad = false;
+            });
+        }
+        #endregion
+
+        #region LoadCompatOptionFrom, SaveCompatOptionTo
+        public void LoadCompatOptionFrom(CompatOption src)
+        {
+            // Asterisk
+            CompatAsteriskBugDirCopy = src.AsteriskBugDirCopy;
+            CompatAsteriskBugDirLink = src.AsteriskBugDirLink;
+            // Command
+            CompatFileRenameCanMoveDir = src.FileRenameCanMoveDir;
+            CompatAllowLetterInLoop = src.AllowLetterInLoop;
+            CompatLegacyBranchCondition = src.LegacyBranchCondition;
+            CompatLegacyRegWrite = src.LegacyRegWrite;
+            CompatAllowSetModifyInterface = src.AllowSetModifyInterface;
+            CompatLegacyInterfaceCommand = src.LegacyInterfaceCommand;
+            CompatLegacySectionParamCommand = src.LegacySectionParamCommand;
+            // Script Interface
+            CompatIgnoreWidthOfWebLabel = src.IgnoreWidthOfWebLabel;
+            // Variable
+            CompatOverridableFixedVariables = src.OverridableFixedVariables;
+            CompatOverridableLoopCounter = src.OverridableLoopCounter;
+            CompatEnableEnvironmentVariables = src.EnableEnvironmentVariables;
+            CompatDisableExtendedSectionParams = src.DisableExtendedSectionParams;
+        }
+
+        public void SaveCompatOptionTo(CompatOption dest)
+        {
+            // Asterisk
+            dest.AsteriskBugDirCopy = CompatAsteriskBugDirCopy;
+            dest.AsteriskBugDirLink = CompatAsteriskBugDirLink;
+            // Command
+            dest.FileRenameCanMoveDir = CompatFileRenameCanMoveDir;
+            dest.AllowLetterInLoop = CompatAllowLetterInLoop;
+            dest.LegacyBranchCondition = CompatLegacyBranchCondition;
+            dest.LegacyRegWrite = CompatLegacyRegWrite;
+            dest.AllowSetModifyInterface = CompatAllowSetModifyInterface;
+            dest.LegacyInterfaceCommand = CompatLegacyInterfaceCommand;
+            dest.LegacySectionParamCommand = CompatLegacySectionParamCommand;
+            // Script Interface
+            dest.IgnoreWidthOfWebLabel = CompatIgnoreWidthOfWebLabel;
+            // Variable
+            dest.OverridableFixedVariables = CompatOverridableFixedVariables;
+            dest.OverridableLoopCounter = CompatOverridableLoopCounter;
+            dest.EnableEnvironmentVariables = CompatEnableEnvironmentVariables;
+            dest.DisableExtendedSectionParams = CompatDisableExtendedSectionParams;
+        }
+        #endregion
+
+        #region ToggleCompatOption
+        /// <summary>
+        /// If all compat options are true, set ToggleNextState to false.
+        /// If some compat options are true, set ToggleNextState to true.
+        /// If none of compat option is true, set ToggleNextState to true.
+        /// </summary>
+        public void GetCompatToggleNextState()
+        {
+            // Get current state
+            bool currentState = true;
+
+            // Asterisk
+            currentState &= CompatAsteriskBugDirCopy;
+            currentState &= CompatAsteriskBugDirLink;
+            // Command
+            currentState &= CompatFileRenameCanMoveDir;
+            currentState &= CompatAllowLetterInLoop;
+            currentState &= CompatLegacyBranchCondition;
+            currentState &= CompatLegacyRegWrite;
+            currentState &= CompatAllowSetModifyInterface;
+            currentState &= CompatLegacyInterfaceCommand;
+            currentState &= CompatLegacySectionParamCommand;
+            // Script Interface
+            currentState &= CompatIgnoreWidthOfWebLabel;
+            // Variable
+            currentState &= CompatOverridableFixedVariables;
+            currentState &= CompatOverridableLoopCounter;
+            currentState &= CompatEnableEnvironmentVariables;
+            currentState &= CompatDisableExtendedSectionParams;
+
+            ToggleNextState = !currentState;
+        }
+
+        /// <summary>
+        /// Apply ToggleNextState to compat options
+        /// </summary>
+        public void ApplyCompatToggleNextState(bool nextState)
+        {
+            // Asterisk
+            CompatAsteriskBugDirCopy = nextState;
+            CompatAsteriskBugDirLink = nextState;
+            // Command
+            CompatFileRenameCanMoveDir = nextState;
+            CompatAllowLetterInLoop = nextState;
+            CompatLegacyBranchCondition = nextState;
+            CompatLegacyRegWrite = nextState;
+            CompatAllowSetModifyInterface = nextState;
+            CompatLegacyInterfaceCommand = nextState;
+            CompatLegacySectionParamCommand = nextState;
+            // Script Interface
+            CompatIgnoreWidthOfWebLabel = nextState;
+            // Variable
+            CompatOverridableFixedVariables = nextState;
+            CompatOverridableLoopCounter = nextState;
+            CompatEnableEnvironmentVariables = nextState;
+            CompatDisableExtendedSectionParams = nextState;
         }
         #endregion
 
         #region SetToDefault
         public void SetToDefault()
         {
-            // Project
-            Project_DefaultStr = string.Empty;
+            // When constructor of `Setting`'s subclass is called, default values are set.
 
-            // General
-            General_OptimizeCode = true;
-            General_ShowLogAfterBuild = true;
-            General_StopBuildOnError = true;
-            General_EnableLongFilePath = false;
-            General_UseCustomUserAgent = false;
-            // Custom User-Agent is set to Edge's on Windows 10 v1709
-            General_CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299";
+            // [Projects]
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            Setting.ProjectSetting newProject = new Setting.ProjectSetting();
+            string defaultProjectName = newProject.DefaultProject;
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
 
-            // Interface
-            using (InstalledFontCollection fonts = new InstalledFontCollection())
-            {
-                // Every Windows have Consolas installed
-                string fontFamily = "Consolas";
+            // [General]
+            Setting.GeneralSetting newGeneral = new Setting.GeneralSetting();
+            GeneralOptimizeCode = newGeneral.OptimizeCode;
+            GeneralShowLogAfterBuild = newGeneral.ShowLogAfterBuild;
+            GeneralStopBuildOnError = newGeneral.StopBuildOnError;
+            GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
+            GeneralUseCustomUserAgent = newGeneral.UseCustomUserAgent;
 
-                // Prefer D2Coding over Consolas
-                if (0 < fonts.Families.Count(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)))
-                    fontFamily = "D2Coding";
+            // [Interface]
+            Setting.InterfaceSetting newInterface = new Setting.InterfaceSetting();
+            InterfaceMonospacedFont = newInterface.MonospacedFont;
+            InterfaceScaleFactor = newInterface.ScaleFactor;
+            InterfaceUseCustomEditor = newInterface.UseCustomEditor;
+            InterfaceCustomEditorPath = newInterface.CustomEditorPath;
+            InterfaceDisplayShellExecuteConOut = newInterface.DisplayShellExecuteConOut;
+            InterfaceUseCustomTitle = newInterface.UseCustomTitle;
+            InterfaceCustomTitle = newInterface.CustomTitle;
 
-                Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily(fontFamily), FontWeights.Regular, 12);
-            }
-            Interface_ScaleFactor = 100;
-            Interface_DisplayShellExecuteConOut = true;
-            Interface_UseCustomEditor = false;
-            Interface_CustomEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
+            // [Theme]
+            Setting.ThemeSetting newTheme = new Setting.ThemeSetting();
+            ThemeType = newTheme.ThemeType;
+            ThemeCustomTopPanelBackground = newTheme.CustomTopPanelBackground;
+            ThemeCustomTopPanelForeground = newTheme.CustomTopPanelForeground;
+            ThemeCustomTreePanelBackground = newTheme.CustomTreePanelBackground;
+            ThemeCustomTreePanelForeground = newTheme.CustomTreePanelForeground;
+            ThemeCustomTreePanelHighlight = newTheme.CustomTreePanelHighlight;
+            ThemeCustomScriptPanelBackground = newTheme.CustomScriptPanelBackground;
+            ThemeCustomScriptPanelForeground = newTheme.CustomScriptPanelForeground;
+            ThemeCustomStatusBarBackground = newTheme.CustomStatusBarBackground;
+            ThemeCustomStatusBarForeground = newTheme.CustomStatusBarForeground;
 
-            // Script
-            Script_EnableCache = true;
-            Script_AutoSyntaxCheck = true;
+            // [Script]
+            Setting.ScriptSetting newScript = new Setting.ScriptSetting();
+            ScriptEnableCache = newScript.EnableCache;
+            ScriptAutoSyntaxCheck = newScript.AutoSyntaxCheck;
 
-            // Log
-#if DEBUG
-            Log_DebugLevelIndex = 2;
-#else
-            Log_DebugLevelIndex = 0;
-#endif
-            Log_DeferredLogging = true;
-            Log_MinifyHtmlExport = true;
+            // [Log]
+            Setting.LogSetting newLog = new Setting.LogSetting();
+            LogSelectedDebugLevel = newLog.DebugLevel;
+            LogDeferredLogging = newLog.DeferredLogging;
+            LogMinifyHtmlExport = newLog.MinifyHtmlExport;
 
-            // Compatibility
-            Compat_AsteriskBugDirCopy = false;
-            Compat_AsteriskBugDirLink = false;
-            Compat_FileRenameCanMoveDir = false;
-            Compat_AllowLetterInLoop = false;
-            Compat_LegacyBranchCondition = false;
-            Compat_LegacyRegWrite = false;
-            Compat_AllowSetModifyInterface = false;
-            Compat_LegacyInterfaceCommand = false;
-            Compat_IgnoreWidthOfWebLabel = false;
-            Compat_OverridableFixedVariables = false;
-            Compat_EnableEnvironmentVariables = false;
-            Compat_DisableExtendedSectionParams = false;
-            Compat_LegacySectionParamCommand = false;
+            // Reset need flags
+            ResetNeedFlags();
+
+            // Do not touch compat options.
+            // TODO: The right way to handle compat options?
+        }
+
+        public void ResetNeedFlags()
+        {
+            NeedProjectRefresh = false;
+            NeedScriptRedraw = false;
+            NeedScriptCaching = false;
         }
         #endregion
 
-        #region ReadFromFile, WriteToFile
-        public void ReadFromFile()
+        #region ReadFromSetting, WriteToSetting, WriteToFile
+        public void ReadFromSetting()
         {
-            // If key not specified or value malformed, default value will be used.
-            SetToDefault();
+            // [Projects]
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            string defaultProjectName = Setting.Project.DefaultProject;
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
 
-            if (File.Exists(_settingFile) == false)
-                return;
+            // [General]
+            GeneralOptimizeCode = Setting.General.OptimizeCode;
+            GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
+            GeneralStopBuildOnError = Setting.General.StopBuildOnError;
+            GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
+            GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
 
-            const string generalStr = "General";
-            const string interfaceStr = "Interface";
-            const string scriptStr = "Script";
-            const string logStr = "Log";
-            const string compatStr = "Compat";
+            // [Interface]
+            InterfaceUseCustomTitle = Setting.Interface.UseCustomTitle;
+            InterfaceCustomTitle = Setting.Interface.CustomTitle;
+            InterfaceUseCustomEditor = Setting.Interface.UseCustomEditor;
+            InterfaceCustomEditorPath = Setting.Interface.CustomEditorPath;
+            InterfaceMonospacedFont = Setting.Interface.MonospacedFont;
+            InterfaceScaleFactor = Setting.Interface.ScaleFactor;
+            InterfaceDisplayShellExecuteConOut = Setting.Interface.DisplayShellExecuteConOut;
+            InterfaceSize = Setting.Interface.InterfaceSize;
 
-            // General_CustomUserAgent
-            IniKey[] keys =
+            // [Theme]
+            ThemeType = Setting.Theme.ThemeType;
+            ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
+            ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
+            ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
+            ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
+            ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
+            ThemeCustomScriptPanelBackground = Setting.Theme.CustomScriptPanelBackground;
+            ThemeCustomScriptPanelForeground = Setting.Theme.CustomScriptPanelForeground;
+            ThemeCustomStatusBarBackground = Setting.Theme.CustomStatusBarBackground;
+            ThemeCustomStatusBarForeground = Setting.Theme.CustomStatusBarForeground;
+
+            // [Script]
+            ScriptEnableCache = Setting.Script.EnableCache;
+            ScriptAutoSyntaxCheck = Setting.Script.AutoSyntaxCheck;
+
+            // [Log]
+            LogSelectedDebugLevel = Setting.Log.DebugLevel;
+            LogDeferredLogging = Setting.Log.DeferredLogging;
+            LogMinifyHtmlExport = Setting.Log.MinifyHtmlExport;
+
+            ResetNeedFlags();
+        }
+
+        public void WriteToSetting()
+        {
+            // Set default project
+            Project defaultProject = DefaultProject;
+            Setting.Project.DefaultProject = defaultProject != null ? defaultProject.ProjectName : string.Empty;
+
+            // [Projects]
+            // Select default project
+            // If default project is not set, use last project (Some PE projects starts with 'W' from Windows)
+            string defaultProjectName = Setting.Project.DefaultProject;
+            int defaultProjectIdx = Projects.IndexOf(defaultProjectName);
+            if (defaultProjectIdx == -1)
+                DefaultProjectIndex = Projects.Count - 1;
+            else
+                DefaultProjectIndex = defaultProjectIdx;
+
+            // [General]
+            Setting.General.OptimizeCode = GeneralOptimizeCode;
+            Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
+            Setting.General.StopBuildOnError = GeneralStopBuildOnError;
+            Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
+            Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
+
+            // [Interface]
+            Setting.Interface.UseCustomTitle = InterfaceUseCustomTitle;
+            Setting.Interface.CustomTitle = InterfaceCustomTitle;
+            Setting.Interface.UseCustomEditor = InterfaceUseCustomEditor;
+            Setting.Interface.CustomEditorPath = InterfaceCustomEditorPath;
+            Setting.Interface.MonospacedFont = InterfaceMonospacedFont;
+            Setting.Interface.ScaleFactor = _interfaceScaleFactor;
+            Setting.Interface.DisplayShellExecuteConOut = InterfaceDisplayShellExecuteConOut;
+            Setting.Interface.InterfaceSize = InterfaceSize;
+
+            // [Theme]
+            Setting.Theme.ThemeType = ThemeType;
+            Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
+            Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
+            Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
+            Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
+            Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;
+            Setting.Theme.CustomScriptPanelBackground = ThemeCustomScriptPanelBackground;
+            Setting.Theme.CustomScriptPanelForeground = ThemeCustomScriptPanelForeground;
+            Setting.Theme.CustomStatusBarBackground = ThemeCustomStatusBarBackground;
+            Setting.Theme.CustomStatusBarForeground = ThemeCustomStatusBarForeground;
+
+            // [Script]
+            Setting.Script.EnableCache = ScriptEnableCache;
+            Setting.Script.AutoSyntaxCheck = ScriptAutoSyntaxCheck;
+
+            // [Log]
+            Setting.Log.DebugLevel = _logSelectedDebugLevel; // LogDebugLevel
+            Setting.Log.DeferredLogging = LogDeferredLogging;
+            Setting.Log.MinifyHtmlExport = LogMinifyHtmlExport;
+
+            // Compat options
+            if (SelectedCompatOption != null)
+                SaveCompatOptionTo(SelectedCompatOption);
+            for (int i = 0; i < _compatOptions.Count; i++)
             {
-                new IniKey("Project", "DefaultProject"), // String
-                new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr)), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr)), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr)), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr)), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr)),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr)), // Integer 100 ~ 200
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr)), // Boolean
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr)), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr)), // Boolean
-            };
+                CompatOption compat = _compatOptions[i];
+                Project p = Projects[i];
 
-            keys = Ini.ReadKeys(_settingFile, keys);
-            Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
+                Dictionary<string, bool> diffDict = compat.Diff(p.Compat);
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.AsteriskBugDirLink)), "Invalid compat option field name");
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.OverridableFixedVariables)), "Invalid compat option field name");
+                Debug.Assert(diffDict.ContainsKey(nameof(compat.EnableEnvironmentVariables)), "Invalid compat option field name");
+                if (diffDict[nameof(compat.AsteriskBugDirLink)] ||
+                    diffDict[nameof(compat.OverridableFixedVariables)] ||
+                    diffDict[nameof(compat.EnableEnvironmentVariables)])
+                    NeedProjectRefresh = true;
 
-            #region Parse Helpers
-            (string Section, string Key) SplitSectionKey(string varName)
-            {
-                int sIdx = varName.IndexOf('_');
-                string section = varName.Substring(0, sIdx);
-                string key = varName.Substring(sIdx + 1);
-                return (section, key);
+                compat.CopyTo(p.Compat);
             }
-
-            string ParseString(string varName, string defaultValue) => dict[varName] ?? defaultValue;
-
-            bool ParseBoolean(string varName, bool defaultValue)
-            {
-                string valStr = dict[varName];
-                if (valStr == null) // No warning, just use default value
-                    return defaultValue;
-
-                if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                    return true;
-                if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                    return false;
-
-                (string section, string key) = SplitSectionKey(varName);
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-                return defaultValue;
-            }
-
-            int ParseInteger(string varName, int defaultValue, int min, int max)
-            {
-                string valStr = dict[varName];
-                if (valStr == null) // No warning, just use default value
-                    return defaultValue;
-
-                if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-                {
-                    if (min == -1)
-                    { // No Min
-                        if (max == -1) // No Max
-                            return valInt;
-                        if (valInt <= max) // Have Min
-                            return valInt;
-                    }
-                    else
-                    { // Have Min
-                        if (max == -1 && min <= valInt) // No Max
-                            return valInt;
-                        if (min <= valInt && valInt <= max) // Have Min
-                            return valInt;
-                    }
-                }
-
-                (string section, string key) = SplitSectionKey(varName);
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-                return defaultValue;
-            }
-            #endregion
-
-            // Project
-            if (dict["Project_DefaultProject"] != null)
-                Project_DefaultStr = dict["Project_DefaultProject"];
-
-            // General
-            General_OptimizeCode = ParseBoolean(nameof(General_OptimizeCode), General_OptimizeCode);
-            General_ShowLogAfterBuild = ParseBoolean(nameof(General_ShowLogAfterBuild), General_ShowLogAfterBuild);
-            General_StopBuildOnError = ParseBoolean(nameof(General_StopBuildOnError), General_StopBuildOnError);
-            General_EnableLongFilePath = ParseBoolean(nameof(General_EnableLongFilePath), General_EnableLongFilePath);
-            General_UseCustomUserAgent = ParseBoolean(nameof(General_UseCustomUserAgent), General_UseCustomUserAgent);
-            General_CustomUserAgent = ParseString(nameof(General_CustomUserAgent), General_CustomUserAgent);
-
-            // Interface
-            FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
-            FontWeight monoFontWeight = Interface_MonospaceFont.FontWeight;
-            if (dict[nameof(Interface_MonospaceFontFamily)] != null)
-                monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospaceFontFamily)]);
-            if (dict[nameof(Interface_MonospaceFontWeight)] != null)
-                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(dict[nameof(Interface_MonospaceFontWeight)]);
-            int monoFontSize = ParseInteger(nameof(Interface_MonospaceFontSize), Interface_MonospaceFont.FontSizeInPoint, 1, -1);
-            Interface_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
-
-            Interface_ScaleFactor = ParseInteger(nameof(Interface_ScaleFactor), (int)Interface_ScaleFactor, 100, 200);
-            Interface_UseCustomEditor = ParseBoolean(nameof(Interface_UseCustomEditor), Interface_UseCustomEditor);
-            Interface_CustomEditorPath = ParseString(nameof(Interface_CustomEditorPath), Interface_CustomEditorPath);
-            Interface_DisplayShellExecuteConOut = ParseBoolean(nameof(Interface_DisplayShellExecuteConOut), Interface_DisplayShellExecuteConOut);
-
-            // Script
-            Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
-            Script_AutoSyntaxCheck = ParseBoolean(nameof(Script_AutoSyntaxCheck), Script_AutoSyntaxCheck);
-
-            // Log
-            Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
-            Log_DeferredLogging = ParseBoolean(nameof(Log_DeferredLogging), Log_DeferredLogging);
-            Log_MinifyHtmlExport = ParseBoolean(nameof(Log_MinifyHtmlExport), Log_MinifyHtmlExport);
-
-            // Compatibility
-            Compat_AsteriskBugDirCopy = ParseBoolean(nameof(Compat_AsteriskBugDirCopy), Compat_AsteriskBugDirCopy);
-            Compat_AsteriskBugDirLink = ParseBoolean(nameof(Compat_AsteriskBugDirLink), Compat_AsteriskBugDirLink);
-            Compat_FileRenameCanMoveDir = ParseBoolean(nameof(Compat_FileRenameCanMoveDir), Compat_FileRenameCanMoveDir);
-            Compat_AllowLetterInLoop = ParseBoolean(nameof(Compat_AllowLetterInLoop), Compat_AllowLetterInLoop);
-            Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
-            Compat_LegacyRegWrite = ParseBoolean(nameof(Compat_LegacyRegWrite), Compat_LegacyRegWrite);
-            Compat_AllowSetModifyInterface = ParseBoolean(nameof(Compat_AllowSetModifyInterface), Compat_AllowSetModifyInterface);
-            Compat_LegacyInterfaceCommand = ParseBoolean(nameof(Compat_LegacyInterfaceCommand), Compat_LegacyInterfaceCommand);
-            Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
-            Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
-            Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
-            Compat_DisableExtendedSectionParams = ParseBoolean(nameof(Compat_DisableExtendedSectionParams), Compat_DisableExtendedSectionParams);
-            Compat_LegacySectionParamCommand = ParseBoolean(nameof(Compat_LegacySectionParamCommand), Compat_LegacySectionParamCommand);
         }
 
         public void WriteToFile()
         {
-            const string generalStr = "General";
-            const string interfaceStr = "Interface";
-            const string scriptStr = "Script";
-            const string logStr = "Log";
-            const string compatStr = "Compat";
-
-            IniKey[] keys =
-            {
-                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr), General_EnableLongFilePath.ToString()), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr), General_OptimizeCode.ToString()), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr), General_ShowLogAfterBuild.ToString()), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr), General_StopBuildOnError.ToString()), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr), General_UseCustomUserAgent.ToString()), // Boolean
-                new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr), General_CustomUserAgent), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr), Interface_MonospaceFont.FontFamily.Source),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr), Interface_MonospaceFont.FontWeight.ToString()),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr), Interface_MonospaceFont.FontSizeInPoint.ToString()),
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr), Interface_ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr), Interface_UseCustomEditor.ToString()), // Boolean
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
-                new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
-                new IniKey(logStr, KeyPart(nameof(Log_DeferredLogging), logStr), Log_DeferredLogging.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_MinifyHtmlExport), logStr), Log_MinifyHtmlExport.ToString()), // Boolean
-                new IniKey("Project", "DefaultProject", Project_Default), // String
-                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AllowLetterInLoop), compatStr), Compat_AllowLetterInLoop.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyRegWrite), compatStr), Compat_LegacyRegWrite.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_AllowSetModifyInterface), compatStr), Compat_AllowSetModifyInterface.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyInterfaceCommand), compatStr), Compat_LegacyInterfaceCommand.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_DisableExtendedSectionParams), compatStr), Compat_DisableExtendedSectionParams.ToString()), // Boolean
-                new IniKey(compatStr, KeyPart(nameof(Compat_LegacySectionParamCommand), compatStr), Compat_LegacySectionParamCommand.ToString()), // Boolean
-            };
-            Ini.WriteKeys(_settingFile, keys);
-        }
-
-        private static string KeyPart(string str, string section)
-        {
-            return str.Substring(section.Length + 1);
+            // Write to file
+            Setting.WriteToFile();
+            foreach (Project p in Projects)
+                p.Compat.WriteToFile();
         }
         #endregion
 
@@ -1137,9 +1380,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region Database Operation
-        public void ClearLogDb()
+        public void ClearLogDatabase()
         {
-            LogDb.ClearTable(new LogDatabase.ClearTableOptions
+            Global.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
             {
                 SystemLog = true,
                 BuildInfo = true,
@@ -1150,72 +1393,79 @@ namespace PEBakery.WPF
             UpdateLogDbState();
         }
 
-        public void ClearCacheDb()
+        public void ClearCacheDatabase()
         {
-            if (CacheDb != null)
+            if (Global.ScriptCache == null)
+                return;
+
+            Global.ScriptCache.ClearTable(new ScriptCache.ClearTableOptions
             {
-                CacheDb.ClearTable(new ScriptCache.ClearTableOptions
-                {
-                    ScriptCache = true,
-                });
-                UpdateCacheDbState();
-            }
+                ScriptCache = true,
+            });
+            UpdateCacheDbState();
         }
 
         public void UpdateLogDbState()
         {
-            int systemLogCount = LogDb.Table<DB_SystemLog>().Count();
-            int codeLogCount = LogDb.Table<DB_BuildLog>().Count();
-            Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
+            int systemLogCount = Global.Logger.Db.Table<LogModel.SystemLog>().Count();
+            int codeLogCount = Global.Logger.Db.Table<LogModel.BuildLog>().Count();
+            LogDatabaseState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 
         public void UpdateCacheDbState()
         {
-            if (CacheDb == null)
+            if (Global.ScriptCache == null)
             {
-                Script_CacheState = "Cache not enabled";
+                ScriptCacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = CacheDb.Table<DB_ScriptCache>().Count();
-                Script_CacheState = $"{cacheCount} scripts cached";
+                int cacheCount = Global.ScriptCache.Table<CacheModel.ScriptCache>().Count();
+                ScriptCacheState = $"{cacheCount} scripts cached";
             }
         }
+        #endregion
+    }
+    #endregion
 
-        public void UpdateProjectList()
-        {
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-
-                Projects = w.Projects;
-
-                bool foundDefault = false;
-                List<string> projNameList = Projects.ProjectNames;
-                Project_List = new ObservableCollection<string>();
-                for (int i = 0; i < projNameList.Count; i++)
-                {
-                    Project_List.Add(projNameList[i]);
-                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
-                    {
-                        foundDefault = true;
-                        Project_SelectedIndex = Project_DefaultIndex = i;
-                    }
-                }
-
-                if (!foundDefault)
-                    Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
-            });
-        }
+    #region SettingViewCommands
+    public static class SettingViewCommands
+    {
+        #region Global
+        public static readonly RoutedCommand DefaultSettingCommand = new RoutedUICommand("Reset to default settings", "DefaultSetting", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SaveSettingCommand = new RoutedUICommand("Save settings", "SaveSetting", typeof(SettingViewCommands));
         #endregion
 
-        #region OnPropertyUpdate
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        #region Project Settings
+        public static readonly RoutedCommand SelectSourceDirCommand = new RoutedUICommand("Select source directory", "SelectSourceDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand ResetSourceDirCommand = new RoutedUICommand("Reset source directory", "ResetSourceDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectTargetDirCommand = new RoutedUICommand("Select target directory", "SelectTargetDir", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectIsoFileCommand = new RoutedUICommand("Select ISO file directory", "SelectIsoFile", typeof(SettingViewCommands));
+        #endregion
+
+        #region General Settting
+        public static readonly RoutedCommand EnableLongFilePathCommand = new RoutedUICommand("Enable long file path support", "EnableLongFilePath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Interface Setting
+        public static readonly RoutedCommand SelectMonospacedFontCommand = new RoutedUICommand("Select monospaced font", "SelectMonospacedFont", typeof(SettingViewCommands));
+        public static readonly RoutedCommand SelectCustomEditorPathCommand = new RoutedUICommand("Select custom editor path", "SelectCustomEditorPath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Theme Setting
+        public static readonly RoutedCommand SelectThemeCommand = new RoutedUICommand("Select theme", "SelectThemePath", typeof(SettingViewCommands));
+        #endregion
+
+        #region Script Setting
+        public static readonly RoutedCommand ClearCacheDatabaseCommand = new RoutedUICommand("Clear cache database", "ClearCacheDatabase", typeof(SettingViewCommands));
+        #endregion
+
+        #region Log Setting
+        public static readonly RoutedCommand ClearLogDatabaseCommand = new RoutedUICommand("Clear log database", "ClearLogDatabase", typeof(SettingViewCommands));
+        #endregion
+
+        #region Compat Setting
+        public static readonly RoutedCommand ToggleCompatOptionsCommand = new RoutedUICommand("Toggle compat options", "ToggleCompatOptions", typeof(SettingViewCommands));
         #endregion
     }
     #endregion

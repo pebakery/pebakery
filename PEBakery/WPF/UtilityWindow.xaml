@@ -24,30 +24,52 @@
     resulting work. An external library is a library which is
     not derived from or based on this program. 
 -->
-    
+
+<!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.UtilityWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
-        Title="Utility"
+        Title="PEBakery Utilities"
         FontFamily="Segoe UI"
         FontSize="13"
+        Loaded="Window_Loaded"
         Closed="Window_Closed"
         Width="800" Height="640"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
     <Window.CommandBindings>
-        <CommandBinding Command="ApplicationCommands.Save"
-                        Executed="CodeBoxSave_Executed"
-                        CanExecute="CodeBox_CanExecute"/>
-        <CommandBinding Command="local:UtilityWindow.CodeBoxSaveCommand"
-                        Executed="CodeBoxRun_Executed"
-                        CanExecute="CodeBox_CanExecute"/>
+        <!-- CodeBox -->
+        <CommandBinding x:Name="CodeBoxSaveCommand"
+                        Command="local:UtilityViewCommands.CodeBoxSaveCommand"
+                        CanExecute="CodeBoxCommands_CanExecute"
+                        Executed="CodeBoxSaveCommand_Executed"/>
+        <CommandBinding x:Name="CodeBoxRunCommand"
+                        Command="local:UtilityViewCommands.CodeBoxRunCommand"
+                        CanExecute="CodeBoxCommands_CanExecute"
+                        Executed="CodeBoxRunCommand_Executed"/>
+        <!-- String Escaper -->
+        <CommandBinding x:Name="EscapeStringCommand"
+                        Command="local:UtilityViewCommands.EscapeStringCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="EscapeStringCommand_Executed"/>
+        <CommandBinding x:Name="UnescapeStringCommand"
+                        Command="local:UtilityViewCommands.UnescapeStringCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="UnescapeStringCommand_Executed"/>
+        <CommandBinding x:Name="EscapeSequenceLegendCommand"
+                        Command="local:UtilityViewCommands.EscapeSequenceLegendCommand"
+                        CanExecute="StringEscaperCommands_CanExecute"
+                        Executed="EscapeSequenceLegendCommand_Executed"/>
+        <!-- Syntax Checker -->
+        <CommandBinding x:Name="SyntaxCheckCommand"
+                        Command="local:UtilityViewCommands.SyntaxCheckCommand"
+                        CanExecute="SyntaxCheckCommand_CanExecute"
+                        Executed="SyntaxCheckCommand_Executed"/>
     </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -56,7 +78,7 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="CodeBox">
+            <TabItem Header="CodeBox" Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="22"/>
@@ -69,8 +91,7 @@
                     <TextBlock Grid.Row="0"
                                VerticalAlignment="Center"
                                FontWeight="Bold"
-                               Text="Environment">
-                    </TextBlock>
+                               Text="Project Environment"/>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
@@ -79,8 +100,8 @@
                         </Grid.ColumnDefinitions>
 
                         <ComboBox Grid.Column="0"
-                                  SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
-                                  ItemsSource="{Binding CodeBox_Projects}">
+                                  SelectedIndex="{Binding SelectedProjectIndex}"
+                                  ItemsSource="{Binding Projects}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -92,38 +113,25 @@
                                 x:Name="CodeBoxSaveButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Save"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 ToolTip="Ctrl + S"
-                                Click="CodeBoxSaveButton_Click">
-                            <Button.InputBindings>
-                                <KeyBinding Key="S"
-                                            Modifiers="Ctrl" 
-                                            Command="ApplicationCommands.Save" />
-                            </Button.InputBindings>
-                        </Button>
-
+                                Command="local:UtilityViewCommands.CodeBoxSaveCommand"/>
                         <Button Grid.Column="2"
                                 x:Name="CodeBoxRunButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Run"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 ToolTip="Ctrl + R"
-                                Click="CodeBoxRunButton_Click">
-                            <!-- "{x:Static local:UtilityWindow.CodeBoxSaveCommand}"> -->
-                            <!--
-                            <Button.InputBindings>
-                                <KeyBinding Key="R"
-                                            Modifiers="Ctrl" 
-                                            Command="local:UtilityWindow.CodeBoxSaveCommand" />
-                            </Button.InputBindings>
-                            -->
-                        </Button>
+                                Command="local:UtilityViewCommands.CodeBoxRunCommand"/>
                     </Grid>
 
                     <TextBlock Grid.Row="3"
                                VerticalAlignment="Center"
                                FontWeight="Bold"
-                               Text="Script Code">
-                    </TextBlock>
+                               Text="Script Code"/>
                     <TextBox Grid.Row="4"
+                             x:Name="CodeBoxInputTextBox"
+                             AutomationProperties.Name="CodeBoxInputTextBox"
                              FontFamily="{Binding MonoFontFamily}"
                              FontWeight="{Binding MonoFontWeight}"
                              FontSize="{Binding MonoFontSize}"
@@ -133,11 +141,10 @@
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="True"
-                             Text="{Binding CodeBox_Input}">
-                    </TextBox>
+                             Text="{Binding CodeBoxInput}"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="String Escaper">
+            <TabItem Header="String Escaper" Width="120">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition></RowDefinition>
@@ -154,9 +161,9 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="String to Convert">
-                        </TextBlock>
+                                   Text="Source String"/>
                         <TextBox Grid.Row="1"
+                                 AutomationProperties.Name="StringToConvertTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -166,8 +173,7 @@
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.CanContentScroll="True"
-                                 Text="{Binding Escaper_StringToConvert}">
-                        </TextBox>
+                                 Text="{Binding EscaperStringToConvert}"/>
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="10, 10, 10, 10">
@@ -180,23 +186,30 @@
 
                         <Button Grid.Column="0"
                                 Margin="0, 0, 10, 0"
+                                x:Name="EscapeButton"
                                 Content="Escape"
-                                Click="EscapeButton_Click"/>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Ctrl + E"
+                                Command="local:UtilityViewCommands.EscapeStringCommand"/>
                         <Button Grid.Column="1"
                                 Margin="0, 0, 10, 0"
+                                x:Name="UnescapeButton"
                                 Content="Unescape"
-                                Click="UnescapeButton_Click"/>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                ToolTip="Ctrl + Shift + E"
+                                Command="local:UtilityViewCommands.UnescapeStringCommand"/>
                         <StackPanel Grid.Column="2"
                                     Margin="0, 0, 10, 0"
                                     Orientation="Horizontal">
                             <CheckBox Margin="0, 0, 10, 0"
                                       VerticalAlignment="Center"
                                       Content="Escape %"
-                                      IsChecked="{Binding Escaper_EscapePercent}"/>
+                                      IsChecked="{Binding EscaperEscapePercentFlag}"/>
                         </StackPanel>
                         <Button Grid.Column="3"
+                                x:Name="PrintLegendButton"
                                 Content="Escape Sequence Legend"
-                                Click="EscapeSequenceLegend_Click"/>
+                                Command="local:UtilityViewCommands.EscapeSequenceLegendCommand"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="10, 10, 10, 10">
@@ -208,9 +221,11 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Converted String">
+                                   Text="Result">
                         </TextBlock>
                         <TextBox Grid.Row="1"
+                                 x:Name="ConvertedStringTextBox"
+                                 AutomationProperties.Name="ConvertedStringTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -221,12 +236,12 @@
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.CanContentScroll="True"
                                  IsReadOnly="True"
-                                 Text="{Binding Escaper_ConvertedString}">
+                                 Text="{Binding EscaperConvertedString}">
                         </TextBox>
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Syntax Checker">
+            <TabItem Header="Syntax Checker" Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="22"/>
@@ -238,8 +253,7 @@
                     <TextBlock Grid.Row="0"
                                VerticalAlignment="Center"
                                FontWeight="Bold"
-                               Text="Environment">
-                    </TextBlock>
+                               Text="Project Environment"/>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
@@ -247,8 +261,8 @@
                         </Grid.ColumnDefinitions>
 
                         <ComboBox Grid.Column="0"
-                                  SelectedIndex="{Binding CodeBox_SelectedProjectIndex}"
-                                  ItemsSource="{Binding CodeBox_Projects}">
+                                  SelectedIndex="{Binding SelectedProjectIndex}"
+                                  ItemsSource="{Binding Projects}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Item1}"/>
@@ -258,9 +272,10 @@
                         
                         <Button Grid.Column="1"
                                 Margin="10, 0, 0, 0"
+                                x:Name="SyntaxCheckButton"
                                 Content="Syntax Check"
-                                Click="SyntaxCheckButton_Click">
-                        </Button>
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Command="local:UtilityViewCommands.SyntaxCheckCommand"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="0, 10, 0, 0">
@@ -272,9 +287,9 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Input Code">
-                        </TextBlock>
+                                   Text="Script Code"/>
                         <TextBox Grid.Row="1"
+                                 AutomationProperties.Name="SyntaxCheckInputTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -284,8 +299,7 @@
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.CanContentScroll="True"
-                                 Text="{Binding Syntax_InputCode}">
-                        </TextBox>
+                                 Text="{Binding SyntaxInputCode}"/>
                     </Grid>
 
                     <Grid Grid.Row="3" Margin="0, 10, 0, 0">
@@ -297,9 +311,10 @@
                         <TextBlock Grid.Row="0"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Text="Output">
-                        </TextBlock>
+                                   Text="Result"/>
                         <TextBox Grid.Row="1"
+                                 x:Name="SyntaxCheckResultTextBox"
+                                 AutomationProperties.Name="SyntaxCheckResultTextBox"
                                  FontFamily="{Binding MonoFontFamily}"
                                  FontWeight="{Binding MonoFontWeight}"
                                  FontSize="{Binding MonoFontSize}"
@@ -310,8 +325,7 @@
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.CanContentScroll="True"
                                  IsReadOnly="True"
-                                 Text="{Binding Syntax_Output}">
-                        </TextBox>
+                                 Text="{Binding SyntaxCheckResult}"/>
                     </Grid>
                 </Grid>
             </TabItem>
@@ -325,8 +339,7 @@
             <Button Grid.Row="0" Grid.Column="1"
                     IsCancel="True"
                     Content="Close"
-                    Click="CloseButton_Click">
-            </Button>
+                    Click="CloseButton_Click"/>
         </Grid>
     </Grid>
 </Window>

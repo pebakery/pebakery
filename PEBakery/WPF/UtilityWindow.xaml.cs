@@ -26,24 +26,19 @@
 */
 
 using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
@@ -53,40 +48,42 @@ namespace PEBakery.WPF
         #region Field and Constructor
         public static int Count = 0;
 
-        private readonly UtilityViewModel m;
+        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
+        private readonly UtilityViewModel _m;
 
-        public UtilityWindow(FontHelper.WPFFont monoFont)
+        public UtilityWindow(FontHelper.FontInfo monoFont)
         {
             Interlocked.Increment(ref Count);
 
-            m = new UtilityViewModel(monoFont);
+            _m = new UtilityViewModel(monoFont);
 
             InitializeComponent();
-            DataContext = m;
+            DataContext = _m;
 
-            Application.Current.Dispatcher.Invoke(() =>
+            // Populate projects
+            List<Project> projects = Global.Projects.ProjectList;
+            for (int i = 0; i < projects.Count; i++)
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                Debug.Assert(w != null, "MainWindow != null");
+                Project p = projects[i];
 
-                List<Project> projList = w.Projects.ProjectList;
-                for (int i = 0; i < projList.Count; i++)
-                {
-                    Project proj = projList[i];
+                _m.Projects.Add(new Tuple<string, Project>(p.ProjectName, p));
 
-                    m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
-
-                    if (proj.ProjectName.Equals(w.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
-                        m.CodeBox_SelectedProjectIndex = i;
-                }
-            });
+                if (p.ProjectName.Equals(Global.MainViewModel.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
+                    _m.SelectedProjectIndex = i;
+            }
         }
         #endregion
 
         #region Window Event
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            CommandManager.InvalidateRequerySuggested();
+        }
+
         private void Window_Closed(object sender, EventArgs e)
         {
             Interlocked.Decrement(ref Count);
+            CommandManager.InvalidateRequerySuggested();
         }
         #endregion
 
@@ -95,240 +92,306 @@ namespace PEBakery.WPF
         {
             Close();
         }
+        #endregion
 
-        private void EscapeButton_Click(object sender, RoutedEventArgs e)
+        #region Commands - CodeBox
+        private void CodeBoxCommands_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            m.Escaper_ConvertedString = StringEscaper.QuoteEscape(m.Escaper_StringToConvert, false, m.Escaper_EscapePercent);
+            e.CanExecute = _m != null && _m.TabIndex == 0 && _m.CanExecuteCommand && Engine.WorkingLock == 0;
         }
 
-        private void UnescapeButton_Click(object sender, RoutedEventArgs e)
+        private void CodeBoxSaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
-            m.Escaper_ConvertedString = m.Escaper_EscapePercent ? StringEscaper.UnescapePercent(str) : str;
-        }
+            CodeBoxSaveButton.Focus();
 
-        private void EscapeSequenceLegend_Click(object sender, RoutedEventArgs e)
-        {
-            m.Escaper_ConvertedString = StringEscaper.Legend;
-        }
-
-        private void CodeBoxSaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            Encoding encoding = Encoding.UTF8;
-            if (File.Exists(m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
-
-            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            _m.CanExecuteCommand = false;
+            Global.MainViewModel.WorkInProgress = true;
+            try
             {
-                writer.Write(m.CodeBox_Input);
-                writer.Close();
+                _m.SaveCodeBox();
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                Global.MainViewModel.WorkInProgress = false;
+                CommandManager.InvalidateRequerySuggested();
+
+                CodeBoxInputTextBox.Focus();
             }
         }
 
-        private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
+        private async void CodeBoxRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            Encoding encoding = Encoding.UTF8;
-            if (File.Exists(m.CodeFile))
-                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+            CodeBoxRunButton.Focus();
 
-            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            _m.CanExecuteCommand = false;
+            try
             {
-                writer.Write(m.CodeBox_Input);
-                writer.Close();
-            }
+                // Save CodeBox first
+                _m.SaveCodeBox();
 
-            if (Engine.WorkingLock == 0)  // Start Build
-            {
+                // Run Engine
                 Interlocked.Increment(ref Engine.WorkingLock);
-
-                Project project = m.CodeBox_CurrentProject;
-                Script sc = project.LoadScriptRuntime(m.CodeFile, new LoadScriptRuntimeOptions());
-
-                Logger logger = null;
-                SettingViewModel setting = null;
-                MainViewModel mainModel = null;
-                Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    Debug.Assert(w != null, "MainWindow != null");
+                    Project project = _m.CurrentProject;
+                    Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions());
 
-                    logger = w.Logger;
-                    setting = w.Setting;
-                    mainModel = w.Model;
-                });
+                    Global.MainViewModel.BuildTreeItems.Clear();
+                    Global.MainViewModel.SwitchNormalBuildInterface = false;
+                    Global.MainViewModel.WorkInProgress = true;
 
-                mainModel.BuildTree.Children.Clear();
-                mainModel.SwitchNormalBuildInterface = false;
-                mainModel.WorkInProgress = true;
+                    EngineState s = new EngineState(sc.Project, Global.Logger, Global.MainViewModel, EngineMode.RunMainAndOne, sc);
+                    s.SetOptions(Global.Setting, sc.Project.Compat);
 
-                EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
-                s.SetOptions(setting);
+                    Engine.WorkingEngine = new Engine(s);
 
-                Engine.WorkingEngine = new Engine(s);
+                    // Set StatusBar Text
+                    CancellationTokenSource ct = new CancellationTokenSource();
+                    Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
-                await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+                    await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
-                mainModel.WorkInProgress = false;
-                mainModel.SwitchNormalBuildInterface = true;
-                mainModel.BuildTree.Children.Clear();
+                    // Cancel and Wait until PrintBuildElapsedStatus stops
+                    // Report elapsed build time
+                    ct.Cancel();
+                    await printStatus;
+                    Global.MainViewModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    Debug.Assert(w != null, "MainWindow != null");
+                    Global.MainViewModel.WorkInProgress = false;
+                    Global.MainViewModel.SwitchNormalBuildInterface = true;
+                    Global.MainViewModel.BuildTreeItems.Clear();
 
-                    w.DrawScript(w.CurMainTree.Script);
-
-                    if (w.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    s.MainViewModel.DisplayScript(Global.MainViewModel.CurMainTree.Script);
+                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
-                        w.LogDialog = new LogWindow(1);
-                        w.LogDialog.Show();
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            if (!(Application.Current.MainWindow is MainWindow w))
+                                return;
+
+                            w.LogDialog = new LogWindow(1);
+                            w.LogDialog.Show();
+                        });
                     }
-                });
-
-                Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
-            }
-            else
-            {
-                MessageBox.Show("Engine is already running", "Build Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (m.Syntax_InputCode.Equals(string.Empty, StringComparison.Ordinal))
-            {
-                m.Syntax_Output = "No Code";
-                return;
-            }
-
-            Project project = m.CodeBox_CurrentProject;
-
-            Script sc = project.MainScript;
-            ScriptSection section;
-            if (project.MainScript.Sections.ContainsKey("Process"))
-                section = sc.Sections["Process"];
-            else
-                section = new ScriptSection(sc, "Process", SectionType.Code, new List<string>(), 1);
-            SectionAddress addr = new SectionAddress(sc, section);
-
-            List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);
-
-            // Check Macros
-            Macro macro = new Macro(project, project.Variables, out _);
-            if (macro.MacroEnabled)
-            {
-                foreach (CodeCommand cmd in cmds)
+                }
+                finally
                 {
-                    if (cmd.Type != CodeType.Macro)
-                        continue;
-
-                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
-                    CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
-                    Debug.Assert(info != null, "Invalid CodeInfo");
-
-                    if (!macro.GlobalDict.ContainsKey(info.MacroType))
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
+                    Engine.WorkingEngine = null;
+                    Interlocked.Decrement(ref Engine.WorkingLock);
                 }
             }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
 
-            if (0 < errorLogs.Count)
-            {
-                StringBuilder b = new StringBuilder();
-                for (int i = 0; i < errorLogs.Count; i++)
-                {
-                    LogInfo log = errorLogs[i];
-                    b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
-                }
-                m.Syntax_Output = b.ToString();
-            }
-            else
-            {
-                m.Syntax_Output = "No Error";
+                CodeBoxInputTextBox.Focus();
             }
         }
         #endregion
 
-        #region InputBinding Event
-        public static RoutedUICommand CodeBoxSaveCommand { get; } = new RoutedUICommand("Save", "Save", typeof(UtilityWindow));
-        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow),
-            new InputGestureCollection { new KeyGesture(Key.F5, ModifierKeys.Control) });
-
-        private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        #region Commands - String Escaper
+        private void StringEscaperCommands_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = m.TabIndex == 0;
+            e.CanExecute = _m != null && _m.TabIndex == 1;
         }
 
-        private void CodeBoxSave_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void EscapeStringCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            CodeBoxSaveButton.Focus();
-            CodeBoxSaveButton_Click(sender, e);
+            EscapeButton.Focus();
+
+            _m.EscaperConvertedString = StringEscaper.QuoteEscape(_m.EscaperStringToConvert, false, _m.EscaperEscapePercentFlag);
+
+            ConvertedStringTextBox.Focus();
         }
 
-        private void CodeBoxRun_Executed(object sender, ExecutedRoutedEventArgs e)
+        private void UnescapeStringCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            CodeBoxRunButton.Focus();
-            CodeBoxRunButton_Click(sender, e);
+            UnescapeButton.Focus();
+
+            string str = StringEscaper.QuoteUnescape(_m.EscaperStringToConvert);
+            _m.EscaperConvertedString = _m.EscaperEscapePercentFlag ? StringEscaper.UnescapePercent(str) : str;
+
+            ConvertedStringTextBox.Focus();
         }
 
+        private void EscapeSequenceLegendCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // No need to focus button, since _m.EscaperStringToConvert is not required here
+            _m.EscaperConvertedString = StringEscaper.Legend;
+            ConvertedStringTextBox.Focus();
+        }
+        #endregion
+
+        #region Commands - Syntax Checker
+        private void SyntaxCheckCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.TabIndex == 2 && _m.CanExecuteCommand;
+        }
+
+        private async void SyntaxCheckCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_m.SyntaxInputCode.Length == 0)
+            {
+                _m.SyntaxCheckResult = "Please input code.";
+                return;
+            }
+
+            SyntaxCheckButton.Focus();
+            _m.CanExecuteCommand = false;
+            try
+            {
+                _m.SyntaxCheckResult = "Checking...";
+
+                await Task.Run(() =>
+                {
+                    Project p = _m.CurrentProject;
+
+                    Script sc = p.MainScript;
+                    ScriptSection section;
+                    if (p.MainScript.Sections.ContainsKey(ScriptSection.Names.Process))
+                        section = sc.Sections[ScriptSection.Names.Process];
+                    else // Create dummy [Process] section instance
+                        section = new ScriptSection(sc, ScriptSection.Names.Process, SectionType.Code, new string[0], 1);
+
+                    // Split lines from SyntaxInputCode
+                    List<string> lines = new List<string>();
+                    using (StringReader r = new StringReader(_m.SyntaxInputCode))
+                    {
+                        string line;
+                        while ((line = r.ReadLine()) != null)
+                        {
+                            line = line.Trim();
+                            lines.Add(line);
+                        }
+                    }
+
+                    // Run CodeParser to retrieve parsing errors
+                    CodeParser parser = new CodeParser(section, Global.Setting, sc.Project.Compat);
+                    (CodeCommand[] cmds, List<LogInfo> errorLogs) = parser.ParseStatements(lines);
+
+                    // Check macro commands
+                    Macro macro = new Macro(p, p.Variables, out _);
+                    if (macro.MacroEnabled)
+                    {
+                        foreach (CodeCommand cmd in cmds.Where(x => x.Type == CodeType.Macro))
+                        {
+                            CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
+
+                            if (!macro.GlobalDict.ContainsKey(info.MacroType))
+                                errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
+                        }
+                    }
+
+                    // Print results
+                    if (0 < errorLogs.Count)
+                    {
+                        StringBuilder b = new StringBuilder();
+                        for (int i = 0; i < errorLogs.Count; i++)
+                        {
+                            LogInfo log = errorLogs[i];
+                            b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
+                        }
+                        _m.SyntaxCheckResult = b.ToString();
+                    }
+                    else
+                    {
+                        _m.SyntaxCheckResult = "Error not found.";
+                    }
+                });
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+
+                SyntaxCheckResultTextBox.Focus();
+            }
+        }
         #endregion
     }
 
     #region UtilityViewModel
-    public class UtilityViewModel : INotifyPropertyChanged
+    public class UtilityViewModel : ViewModelBase
     {
-        public FontHelper.WPFFont MonoFont { get; }
-        public FontFamily MonoFontFamily => MonoFont.FontFamily;
-        public FontWeight MonoFontWeight => MonoFont.FontWeight;
-        public double MonoFontSize => MonoFont.FontSizeInDIP;
-
-        public UtilityViewModel(FontHelper.WPFFont monoFont)
+        #region Constructor
+        public UtilityViewModel(FontHelper.FontInfo monoFont)
         {
             MonoFont = monoFont;
         }
+        #endregion
+
+        #region Monospaced Font Properties
+        public FontHelper.FontInfo MonoFont { get; }
+        public FontFamily MonoFontFamily => MonoFont.FontFamily;
+        public FontWeight MonoFontWeight => MonoFont.FontWeight;
+        public double MonoFontSize => MonoFont.DeviceIndependentPixelSize;
+        #endregion
+
+        #region CanExecuteCommand
+        public bool CanExecuteCommand = true;
+        #endregion
 
         #region Tab Index
         private int _tabIndex = 0;
         public int TabIndex
         {
             get => _tabIndex;
-            set
-            {
-                _tabIndex = value;
-                OnPropertyUpdate(nameof(TabIndex));
-            }
+            set => SetProperty(ref _tabIndex, value);
         }
         #endregion
 
-        #region CodeBox
-        public string CodeFile { get; private set; }
-
-        private int codeBox_SelectedProjectIndex;
-        public int CodeBox_SelectedProjectIndex
+        #region Project Environment
+        private int _selectedProjectIndex;
+        public int SelectedProjectIndex
         {
-            get => codeBox_SelectedProjectIndex;
+            get => _selectedProjectIndex;
             set
             {
-                if (0 <= value && value < codeBox_Projects.Count)
-                {
-                    codeBox_SelectedProjectIndex = value;
+                _selectedProjectIndex = value;
+                LoadCodeBoxFile();
+                OnPropertyUpdate(nameof(SelectedProjectIndex));
+            }
+        }
 
-                    Project proj = codeBox_Projects[value].Item2;
-                    CodeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
-                    if (File.Exists(CodeFile))
-                    {
-                        Encoding encoding = FileHelper.DetectTextEncoding(CodeFile);
-                        using (StreamReader reader = new StreamReader(CodeFile, encoding))
-                        {
-                            CodeBox_Input = reader.ReadToEnd();
-                            OnPropertyUpdate("CodeBox_Input");
-                        }
-                    }
-                    else
-                    {
-                        CodeBox_Input = @"[Main]
+        private ObservableCollection<Tuple<string, Project>> _projects = new ObservableCollection<Tuple<string, Project>>();
+        public ObservableCollection<Tuple<string, Project>> Projects
+        {
+            get => _projects;
+            set => SetProperty(ref _projects, value);
+        }
+
+        public Project CurrentProject
+        {
+            get
+            {
+                int i = _selectedProjectIndex;
+                if (0 <= i && i < _projects.Count)
+                    return _projects[i].Item2;
+                else
+                    return null;
+            }
+        }
+
+        public async void LoadCodeBoxFile()
+        {
+            if (0 > _selectedProjectIndex || _projects.Count <= _selectedProjectIndex)
+                return;
+
+            Project p = _projects[_selectedProjectIndex].Item2;
+            CodeFile = Path.Combine(p.ProjectDir, "CodeBox.txt");
+            if (File.Exists(CodeFile))
+            {
+                Encoding encoding = EncodingHelper.DetectBom(CodeFile);
+                using (StreamReader r = new StreamReader(CodeFile, encoding))
+                {
+                    CodeBoxInput = await r.ReadToEndAsync();
+                }
+            }
+            else
+            {
+                CodeBoxInput = @"[Main]
 Title=CodeBox
 Description=Test Commands
 
@@ -339,143 +402,107 @@ Description=Test Commands
 //--------------------
 
 ";
-                    }
-                }
-
-                OnPropertyUpdate("CodeBox_SelectedProjectIndex");
             }
         }
+        #endregion
 
-        private ObservableCollection<Tuple<string, Project>> codeBox_Projects = new ObservableCollection<Tuple<string, Project>>();
-        public ObservableCollection<Tuple<string, Project>> CodeBox_Projects
+        #region CodeBox
+        public string CodeFile { get; private set; }
+
+        private string _codeBoxInput = string.Empty;
+        public string CodeBoxInput
         {
-            get => codeBox_Projects;
-            set
-            {
-                codeBox_Projects = value;
-                OnPropertyUpdate("CodeBox_Projects");
-            }
-        }
-        public Project CodeBox_CurrentProject
-        {
-            get
-            {
-                int i = codeBox_SelectedProjectIndex;
-                if (0 <= i && i < codeBox_Projects.Count)
-                    return codeBox_Projects[i].Item2;
-                else
-                    return null;
-            }
+            get => _codeBoxInput;
+            set => SetProperty(ref _codeBoxInput, value);
         }
 
-        private string codeBox_Input = string.Empty;
-        public string CodeBox_Input
+        public async void SaveCodeBox()
         {
-            get => codeBox_Input;
-            set
+            Encoding encoding = Encoding.UTF8;
+            if (File.Exists(CodeFile))
+                encoding = EncodingHelper.DetectBom(CodeFile);
+            using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
-                codeBox_Input = value;
-                OnPropertyUpdate("CodeBox_Input");
+                await w.WriteAsync(CodeBoxInput);
             }
         }
         #endregion
 
         #region String Escaper
-        private string escaper_StringToConvert = string.Empty;
-        public string Escaper_StringToConvert
+        private string _stringToConvert = string.Empty;
+        public string EscaperStringToConvert
         {
-            get => escaper_StringToConvert;
-            set
-            {
-                escaper_StringToConvert = value;
-                OnPropertyUpdate("Escaper_StringToConvert");
-            }
+            get => _stringToConvert;
+            set => SetProperty(ref _stringToConvert, value);
         }
 
-        private string escaper_ConvertedString = string.Empty;
-        public string Escaper_ConvertedString
+        private string _convertedString = string.Empty;
+        public string EscaperConvertedString
         {
-            get => escaper_ConvertedString;
-            set
-            {
-                escaper_ConvertedString = value;
-                OnPropertyUpdate("Escaper_ConvertedString");
-            }
+            get => _convertedString;
+            set => SetProperty(ref _convertedString, value);
         }
 
-        private bool escaper_EscapePercent = false;
-        public bool Escaper_EscapePercent
+        private bool _escapePercent = false;
+        public bool EscaperEscapePercentFlag
         {
-            get => escaper_EscapePercent;
-            set
-            {
-                escaper_EscapePercent = value;
-                OnPropertyUpdate("Escaper_EscapePercent");
-            }
+            get => _escapePercent;
+            set => SetProperty(ref _escapePercent, value);
         }
         #endregion
 
         #region Syntax Checker
-        private string syntax_InputCode = string.Empty;
-        public string Syntax_InputCode
+        private string _syntaxInputCode = string.Empty;
+        public string SyntaxInputCode
         {
-            get => syntax_InputCode;
-            set
-            {
-                syntax_InputCode = value;
-                OnPropertyUpdate("Syntax_InputCode");
-            }
+            get => _syntaxInputCode;
+            set => SetProperty(ref _syntaxInputCode, value);
         }
 
-        private string syntax_Output = string.Empty;
-        public string Syntax_Output
+        private string _syntaxCheckResult = string.Empty;
+        public string SyntaxCheckResult
         {
-            get => syntax_Output;
-            set
-            {
-                syntax_Output = value;
-                OnPropertyUpdate("Syntax_Output");
-            }
-        }
-        #endregion
-
-        #region Utility
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get => _syntaxCheckResult;
+            set => SetProperty(ref _syntaxCheckResult, value);
         }
         #endregion
     }
     #endregion
 
-    #region WindowCommand
-    public class WindowCommand : ICommand
+    #region UtilityViewCommands
+    public static class UtilityViewCommands
     {
-        private readonly Action<object> _onExecute;
-        private readonly Predicate<object> _onCanExecute;
+        #region CodeBox
+        public static readonly RoutedCommand CodeBoxSaveCommand = new RoutedUICommand("Save CodeBox", "CodeBoxSave", typeof(UtilityViewCommands),
+            new InputGestureCollection
+            {
+                new KeyGesture(Key.S, ModifierKeys.Control),
+            });
+        public static readonly RoutedCommand CodeBoxRunCommand = new RoutedUICommand("Run CodeBox", "CodeBoxSave", typeof(UtilityViewCommands),
+            new InputGestureCollection
+            {
+                new KeyGesture(Key.F10),
+            });
+        #endregion
 
-        public WindowCommand(Action<object> onExecute, Predicate<object> onCanExecuteDelegate)
-        {
-            _onExecute = onExecute;
-            _onCanExecute = onCanExecuteDelegate;
-        }
+        #region String Escaper
+        public static readonly RoutedCommand EscapeStringCommand = new RoutedUICommand("Escape string", "EscapeString", typeof(UtilityViewCommands),
+            new InputGestureCollection
+            {
+                new KeyGesture(Key.E, ModifierKeys.Control),
+            });
+        public static readonly RoutedCommand UnescapeStringCommand = new RoutedUICommand("Unescape string", "UnescapeString", typeof(UtilityViewCommands),
+            new InputGestureCollection
+            {
+                new KeyGesture(Key.E, ModifierKeys.Control | ModifierKeys.Shift),
+            });
+        public static readonly RoutedCommand EscapeSequenceLegendCommand = new RoutedUICommand("Print escape sequence legend", "EscapeSequenceLegend",
+            typeof(UtilityViewCommands));
+        #endregion
 
-        public void Execute(object parameter) => _onExecute?.Invoke(parameter);
-
-        public bool CanExecute(object parameter) => _onCanExecute == null || _onCanExecute(parameter);
-
-        public event EventHandler CanExecuteChanged;
-        /*
-        public event EventHandler CanExecuteChanged
-        {
-            add => CommandManager.RequerySuggested += value;
-            remove => CommandManager.RequerySuggested -= value;
-        }
-        */
-
-        public void OnCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-
+        #region Syntax Checker
+        public static readonly RoutedCommand SyntaxCheckCommand = new RoutedUICommand("Run syntax check", "SyntaxCheck", typeof(UtilityViewCommands));
+        #endregion
     }
     #endregion
 }

@@ -37,15 +37,21 @@
         FontFamily="Segoe UI"
         ResizeMode="NoResize"
         Title="About PEBakery"
-        Width="600" Height="480"
-        WindowStartupLocation="CenterOwner">
+        Width="640" Height="480"
+        WindowStartupLocation="CenterOwner" 
+        d:DataContext="{d:DesignInstance local:AboutViewModel}">
+    <Window.Resources>
+        <local:FontInfoFamilyConverter x:Key="FontInfoFamilyConverter"/>
+        <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter"/>
+        <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Header="Information">
+            <TabItem Header="Information" Width="100">
                 <StackPanel>
                     <Grid Margin="0, 20, 0, 20"
                           HorizontalAlignment="Center">
@@ -54,11 +60,11 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Image Grid.Row="0"
-                               Grid.Column="0"
-                               Source="{StaticResource DonutSvgImage}" />
-                        <TextBlock Grid.Row="0"
-                                   Grid.Column="1"
+
+                        <ContentControl Grid.Row="0" Grid.Column="0"
+                                        ContentTemplate="{StaticResource DonutLogo}"
+                                        Content="Black"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1"
                                    Text="PEBakery"
                                    Margin="5, 0, 0, 5"
                                    HorizontalAlignment="Left"
@@ -67,9 +73,8 @@
                                    FontWeight="SemiBold"
                                    FontStretch="Condensed"
                                    FontStyle="Italic" />
-                        <TextBlock Grid.Row="0"
-                                   Grid.Column="2"
-                                   Text="{Binding Info_PEBakeryVersion}"
+                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                   Text="{Binding InfoPEBakeryVersion}"
                                    Margin="12, 0, 0, 10"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Bottom"
@@ -84,7 +89,7 @@
                     <TextBlock HorizontalAlignment="Center" 
                                Margin="0, 0, 0, 20"
                                FontSize="15"
-                               Text="{Binding Info_BuildDate}"/>
+                               Text="{Binding InfoBuildDate}"/>
                     <Grid Margin="0, 0, 0, 10"
                           HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -117,11 +122,11 @@
                     
                 </StackPanel>
             </TabItem>
-            <TabItem Header="License">
+            <TabItem Header="License" Width="100">
                 <Grid Margin="10, 10, 10, 10">
-                    <TextBox FontFamily="{Binding MonoFontFamily}"
-                             FontWeight="{Binding MonoFontWeight}"
-                             FontSize="{Binding MonoFontSize}"
+                    <TextBox FontFamily="{Binding MonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                             FontWeight="{Binding MonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                             FontSize="{Binding MonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
                              TextWrapping="Wrap"
                              AcceptsReturn="True"
                              VerticalContentAlignment="Stretch"
@@ -129,7 +134,7 @@
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.CanContentScroll="True"
                              IsReadOnly="True"
-                             Text="{Binding License_Text}"/>
+                             Text="{Binding LicenseText}"/>
                 </Grid>
             </TabItem>
         </TabControl>

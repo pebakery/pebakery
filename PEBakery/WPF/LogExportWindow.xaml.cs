@@ -25,8 +25,10 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core;
+using PEBakery.Core.ViewModels;
+using PEBakery.Helper;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -37,7 +39,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using PEBakery.Core;
 
 namespace PEBakery.WPF
 {
@@ -131,9 +132,14 @@ namespace PEBakery.WPF
             // Open log file
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (!(Application.Current.MainWindow is MainWindow w))
-                    return;
-                w.OpenTextFile(destFile);
+                if (_m.FileFormat == LogExportType.Html)
+                { // open .html files with the default browser
+                    FileHelper.OpenUri(destFile);
+                }
+                else
+                {
+                    MainViewModel.OpenTextFile(destFile);
+                }
             });
 
             // Close LogExportWindow

@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 -->
     
+<!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Class="PEBakery.WPF.LogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -39,9 +40,27 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
         Width="900" Height="640"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding x:Name="CloseCommand"
+                        Command="local:LogViewCommands.CloseCommand"
+                        CanExecute="CloseCommand_CanExecute"
+                        Executed="CloseCommand_Executed"/>
+        <CommandBinding x:Name="RefreshCommand"
+                        Command="local:LogViewCommands.RefreshCommand"
+                        CanExecute="RefreshCommand_CanExecute"
+                        Executed="RefreshCommand_Executed"/>
+        <CommandBinding x:Name="ClearCommand"
+                        Command="local:LogViewCommands.ClearCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearCommand_Executed"/>
+        <CommandBinding x:Name="ExportCommand"
+                        Command="local:LogViewCommands.ExportCommand"
+                        CanExecute="ExportCommand_CanExecute"
+                        Executed="ExportCommand_Executed"/>
+    </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -49,21 +68,26 @@
         <Style x:Key="AlternativeListViewColor" TargetType="{x:Type ListViewItem}">
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
-                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
-                    <Setter Property="Background" Value="White"></Setter>
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="White"/>
                 </Trigger>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
-                    <Setter Property="Background" Value="#f2f2f2"></Setter>
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="#f2f2f2"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="LightBlue"/>
                 </Trigger>
                 <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="Background" Value="LightBlue"></Setter>
+                    <Setter Property="Background" Value="LightBlue"/>
                 </Trigger>
-                
             </Style.Triggers>
+        </Style>
+        <Style x:Key="ListItemFocusColorOverride">
+            <Style.Resources>
+                <!-- For Windows 7 Classic Theme -->
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
+            </Style.Resources>
         </Style>
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
         <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
@@ -78,13 +102,14 @@
         <TabControl Grid.Row="0"
                     Name="MainTab"
                     SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="System Log">
+            <TabItem Header="System Log" Width="100">
                 <Grid>
                     <ListView Name="SystemLogListView"
                               HorizontalContentAlignment="Stretch"
                               SelectedIndex="{Binding SystemLogsSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
@@ -102,7 +127,7 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Build Log">
+            <TabItem Header="Build Log" Width="100">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -152,6 +177,7 @@
                                 Grid.Row="2">
                         <TabItem Header="Statistics">
                             <ListView HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding LogStats}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
@@ -171,6 +197,7 @@
                             <ListView Name="BuildLogSimpleListView"
                                       SelectedIndex="{Binding SimpleBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
@@ -194,6 +221,7 @@
                             <ListView Name="BuildLogDetailListView"
                                       SelectedIndex="{Binding FullBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2"
@@ -237,6 +265,7 @@
                         <TabItem Header="Variables">
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
+                                      Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding VariableLogs}"
                                       ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2">
@@ -274,25 +303,29 @@
                     Margin="10, 0, 0, 0"
                     IsDefault="True"
                     IsCancel="True"
-                    Click="CloseButton_Click"
+                    Command="local:LogViewCommands.CloseCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Close"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="RefreshButton_Click"
+                    Command="local:LogViewCommands.RefreshCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Refresh"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="ClearButton_Click"
+                    Command="local:LogViewCommands.ClearCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Clear"/>
             <Button DockPanel.Dock="Left"
                     HorizontalAlignment="Left"
                     Width="100"
                     Margin="0, 0, 10, 0"
-                    Click="ExportButton_Click"
+                    Command="local:LogViewCommands.ExportCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Export"/>
             <StackPanel Orientation="Horizontal" 
                         Visibility="{Binding BuildLogSelected}">

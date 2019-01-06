@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using System.Resources;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -55,5 +53,5 @@ using System.Windows.Media;
 // 모든 값을 지정하거나 아래와 같이 '*'를 사용하여 빌드 번호 및 수정 번호가 자동으로 
 // 지정되도록 할 수 있습니다.
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.9.5.1")]
-[assembly: AssemblyFileVersion("0.9.5.1")]
+[assembly: AssemblyVersion("0.9.6.0")]
+[assembly: AssemblyFileVersion("0.9.6.0")]

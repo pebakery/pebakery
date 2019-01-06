@@ -25,28 +25,17 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Core;
+using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
     // ReSharper disable once RedundantExtendsListEntry
     public partial class AboutWindow : Window
     {
-        public AboutWindow(FontHelper.WPFFont monoFont)
+        public AboutWindow(FontHelper.FontInfo monoFont)
         {
             InitializeComponent();
             DataContext = new AboutViewModel(monoFont);
@@ -59,67 +48,44 @@ namespace PEBakery.WPF
     }
 
     #region AboutViewModel
-    public class AboutViewModel : INotifyPropertyChanged
+    public class AboutViewModel : ViewModelBase
     {
         #region Field, Property, Constructor
-        public FontHelper.WPFFont MonoFont { get; }
-        public FontFamily MonoFontFamily => MonoFont.FontFamily;
-        public FontWeight MonoFontWeight => MonoFont.FontWeight;
-        public double MonoFontSize => MonoFont.FontSizeInDIP;
+        public FontHelper.FontInfo MonospacedFont { get; }
 
-        public AboutViewModel(FontHelper.WPFFont monoFont)
+        public AboutViewModel(FontHelper.FontInfo monospacedFont)
         {
-            MonoFont = monoFont;
+            MonospacedFont = monospacedFont;
 
-            Info_PEBakeryVersion = Properties.Resources.StringVersionFull;
-            Info_BuildDate = "Build " + Properties.Resources.BuildDate;
+            InfoPEBakeryVersion = Global.Const.StringVersionFull;
+            InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
 
-            License_Text = Properties.Resources.LicenseSimple;
+            LicenseText = Properties.Resources.LicenseSimple;
         }
         #endregion
 
         #region Information
-        private string info_PEBakeryVersion = string.Empty;
-        public string Info_PEBakeryVersion
+        private string _infoPEBakeryVersion = string.Empty;
+        public string InfoPEBakeryVersion
         {
-            get => info_PEBakeryVersion;
-            set
-            {
-                info_PEBakeryVersion = value;
-                OnPropertyUpdate("Info_PEBakeryBanner");
-            }
+            get => _infoPEBakeryVersion;
+            set => SetProperty(ref _infoPEBakeryVersion, value);
         }
 
-        private string info_BuildDate = string.Empty;
-        public string Info_BuildDate
+        private string _infoBuildDate = string.Empty;
+        public string InfoBuildDate
         {
-            get => info_BuildDate;
-            set
-            {
-                info_BuildDate = value;
-                OnPropertyUpdate("Info_BuildDate");
-            }
+            get => _infoBuildDate;
+            set => SetProperty(ref _infoBuildDate, value);
         }
         #endregion
 
         #region License
-        private string license_Text = string.Empty;
-        public string License_Text
+        private string _licenseText = string.Empty;
+        public string LicenseText
         {
-            get => license_Text;
-            set
-            {
-                license_Text = value;
-                OnPropertyUpdate("License_Text");
-            }
-        }
-        #endregion
-
-        #region Utility
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get => _licenseText;
+            set => SetProperty(ref _licenseText, value);
         }
         #endregion
     }

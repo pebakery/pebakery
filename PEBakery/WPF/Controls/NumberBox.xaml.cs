@@ -23,12 +23,9 @@
 */
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-
 
 namespace PEBakery.WPF.Controls
 {
@@ -49,17 +46,17 @@ namespace PEBakery.WPF.Controls
             set => SetValue(ValueProperty, value);
         }
 
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(NumberBox),
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(nameof(Value), typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultValue, OnValueChanged, CoerceValue));
 
         private const decimal DefaultMinimum = 0;
-        public decimal Minimum 
+        public decimal Minimum
         {
             get => (decimal)GetValue(MinimumProperty);
             set => SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(NumberBox),
+        public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register(nameof(Minimum), typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultMinimum));
 
         private const decimal DefaultMaximum = ushort.MaxValue;
@@ -69,7 +66,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(MaximumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(NumberBox),
+        public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(nameof(Maximum), typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultMaximum));
 
         private const decimal DefaultIncrementUnit = 1;
@@ -79,7 +76,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(IncrementUnitProperty, value);
         }
 
-        public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register("IncrementUnit", typeof(decimal), typeof(NumberBox),
+        public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register(nameof(IncrementUnit), typeof(decimal), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultIncrementUnit));
 
         private const int DefaultDecimalPlaces = 0;
@@ -89,7 +86,7 @@ namespace PEBakery.WPF.Controls
             set => SetValue(DecimalPlacesProperty, value);
         }
 
-        public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register("DecimalPlaces", typeof(int), typeof(NumberBox),
+        public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register(nameof(DecimalPlaces), typeof(int), typeof(NumberBox),
             new FrameworkPropertyMetadata(DefaultDecimalPlaces));
         #endregion
 

@@ -25,6 +25,11 @@
     not derived from or based on this program. 
 -->
 
+<!-- 
+    Enable "Running Project Code" to see run designer properly.
+    This is caused by cc:IconButton, which results in System.Runtime.Remoting.RemotingException.
+-->
+<!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
 <Window x:Name="Main"
         x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -34,380 +39,386 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
         mc:Ignorable="d"
-        FontSize="13"
+        Closing="Window_Closing"
+        Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
+        MinWidth="600" MinHeight="480"
+        FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
-        WindowStartupLocation="CenterScreen"
-        Title="PEBakery"
-        Width="900" Height="720"
-        MinWidth="800" MinHeight="600"
-        Closing="Window_Closing">
+        Title="{Binding TitleBar}"
+        WindowStartupLocation="CenterScreen">
     <Window.DataContext>
-        <local:MainViewModel/>
+        <vm:MainViewModel/>
     </Window.DataContext>
+    <Window.CommandBindings>
+        <!-- Main Buttons -->
+        <CommandBinding x:Name="ProjectBuildStartCommand"
+                        Command="local:MainViewCommands.ProjectBuildStartCommand"
+                        CanExecute="ProjectBuildStartCommand_CanExecute"
+                        Executed="ProjectBuildStartCommand_Executed"/>
+        <CommandBinding x:Name="ProjectBuildStopCommand"
+                        Command="local:MainViewCommands.ProjectBuildStopCommand"
+                        CanExecute="ProjectBuildStopCommand_CanExecute"
+                        Executed="ProjectBuildStopCommand_Executed"/>
+        <CommandBinding x:Name="ProjectRefreshCommand"
+                        Command="local:MainViewCommands.ProjectRefreshCommand"
+                        CanExecute="ProjectLoading_CanExecute"
+                        Executed="ProjectRefreshCommand_Executed"/>
+        <CommandBinding x:Name="SettingWindowCommand"
+                        Command="local:MainViewCommands.SettingWindowCommand"
+                        CanExecute="ProjectLoading_CanExecute"
+                        Executed="SettingWindowCommand_Executed"/>
+        <CommandBinding x:Name="UtilityWindowCommand"
+                        Command="local:MainViewCommands.UtilityWindowCommand"
+                        CanExecute="UtilityWindowCommand_CanExecute"
+                        Executed="UtilityWindowCommand_Executed"/>
+        <CommandBinding x:Name="LogWindowCommand"
+                        Command="local:MainViewCommands.LogWindowCommand"
+                        CanExecute="LogWindowCommand_CanExecute"
+                        Executed="LogWindowCommand_Executed"/>
+        <CommandBinding x:Name="ProjectUpdateCommand"
+                        Command="local:MainViewCommands.ProjectUpdateCommand"
+                        CanExecute="ProjectUpdateCommand_CanExecute"
+                        Executed="ProjectUpdateCommand_Executed"/>
+        <CommandBinding x:Name="AboutWindowCommand"
+                        Command="local:MainViewCommands.AboutWindowCommand"
+                        CanExecute="AboutWindowCommand_CanExecute"
+                        Executed="AboutWindowCommand_Executed"/>
+        <!-- Script Buttons and Context Menus -->
+        <CommandBinding x:Name="ScriptRunCommand"
+                        Command="local:MainViewCommands.ScriptRunCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptRunCommand_Executed"/>
+        <CommandBinding x:Name="ScriptRefreshCommand"
+                        Command="local:MainViewCommands.ScriptRefreshCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptRefreshCommand_Executed"/>
+        <CommandBinding x:Name="ScriptEditCommand"
+                        Command="local:MainViewCommands.ScriptEditCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptEditCommand_Executed"/>
+        <CommandBinding x:Name="ScriptInternalEditorCommand"
+                        Command="local:MainViewCommands.ScriptInternalEditorCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptInternalEditorCommand_Executed"/>
+        <CommandBinding x:Name="ScriptExternalEditorCommand"
+                        Command="local:MainViewCommands.ScriptExternalEditorCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptExternalEditorCommand_Executed"/>
+        <CommandBinding x:Name="ScriptUpdateCommand"
+                        Command="local:MainViewCommands.ScriptUpdateCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptUpdateCommand_Executed"/>
+        <CommandBinding x:Name="ScriptSyntaxCheckCommand"
+                        Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptSyntaxCheckCommand_Executed"/>
+        <CommandBinding x:Name="ScriptOpenFolderCommand"
+                        Command="local:MainViewCommands.ScriptOpenFolderCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="ScriptOpenFolderCommand_Executed"/>
+    </Window.CommandBindings>
     <Window.Resources>
-        <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
+        <local:TaskBarProgressConverter x:Key="TaskBarProgressConverter" />
         <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
-        <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
-        <Style x:Key="BitmapButton" TargetType="Button">
-            <Setter Property="OverridesDefaultStyle" Value="True" />
+        <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
+        <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
+        <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
+        <local:ScriptTitleConverter x:Key="ScriptTitleConverter" />
+        <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
+        <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Name="border" BorderThickness="0" BorderBrush="Black" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border BorderThickness="0" BorderBrush="Transparent" Focusable="True">
+                            <Border.Style>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                            </Border.Style>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>
-        <Style x:Key="BackgroundButton" TargetType="Button">
-            <Setter Property="OverridesDefaultStyle" Value="False" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Button
-                            BorderThickness="0"
-                            BorderBrush="Black">
-                            <Button.Background>
-                                <SolidColorBrush Opacity="1"></SolidColorBrush>
-                            </Button.Background>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Button>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ImageButton" TargetType="{x:Type Button}">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="1"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Grid x:Name="Chrome" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.75" />
-                                <Setter Property="Cursor" Value="Hand" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="FocusLightColor" TargetType="{x:Type TreeViewItem}">
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="LightBlue"/>
-                </Trigger>
-            </Style.Triggers>
         </Style>
     </Window.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top"
-              Height="80"
-              Background="LightBlue"
+              Background="{Binding TopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
               Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60" />
+                <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}" />
                 <RowDefinition Height="20" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
-                <Image Margin="15, 15, 5, 15"
-                       Source="{StaticResource DonutSvgImage}">
-                </Image>
+                <ContentControl Margin="15, 15, 5, 15"
+                                ContentTemplate="{StaticResource DonutLogo}"
+                                Content="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"/>
                 <TextBlock Text="PEBakery"
-                           Margin="0, 0, 15, 0"
+                           Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           FontSize="40" 
+                           FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
                            FontWeight="SemiBold"
                            FontStretch="Condensed"
-                           FontStyle="Italic">
-                </TextBlock>
+                           FontStyle="Italic"/>
             </StackPanel>
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
-                                 Grid.Column="1"
-                                 Margin="10"
-                                 HorizontalAlignment="Left"
-                                 IsActive="{Binding WorkInProgress}">
-            </cc:ProgressRing>
-            <Button Grid.Row="0" Grid.Column="2" 
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="BuildButton_Click"
-                    ToolTip="Build Project">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Play"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="3"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="RefreshButton_Click"
-                    ToolTip="Refresh Project">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Refresh"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="4"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="SettingButton_Click"
-                    ToolTip="Setting">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Settings"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="5"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="LogButton_Click"
-                    ToolTip="View Logs">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="CommentCheck"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="6"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="UtilityButton_Click"
-                    ToolTip="Utility">
-                <Button.Content>
-                    <iconPacks:PackIconModern Kind="BoxLayered"
-                                              Width="Auto" 
-                                              Height="Auto" 
-                                              Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="7"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="UpdateButton_Click"
-                    ToolTip="Update Project">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Download"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0" Grid.Column="8"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="AboutButton_Click"
-                    ToolTip="About PEBakery">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Help"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
+                             Grid.Column="1"
+                             Margin="10, 0, 0, 0"
+                             Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Center"
+                             IsActive="{Binding WorkInProgress}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="2" 
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                           x:Name="ProjectBuildStartButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectBuildStartCommand"
+                           IconMaterialKind="Play"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="3"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="ProjectRefreshButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectRefreshCommand"
+                           IconMaterialKind="Refresh"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="SettingWindowButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.SettingWindowCommand"
+                           IconMaterialKind="Settings"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="5"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="LogWindowButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.LogWindowCommand"
+                           IconMaterialKind="CommentCheck"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="6"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="UtilityWindowButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.UtilityWindowCommand"
+                           IconMaterialKind="Layers"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="7"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="ProjectUpdateButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.ProjectUpdateCommand"
+                           IconMaterialKind="Download"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="8"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="AboutWindowButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           Command="local:MainViewCommands.AboutWindowCommand"
+                           IconMaterialKind="Help"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
 
             <TextBlock Text="Build"
                        Grid.Row="1" Grid.Column="2"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="Refresh"
-                       Grid.Row="1"
-                       Grid.Column="3"
+                       Grid.Row="1" Grid.Column="3"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
-            <TextBlock Text="Setting"
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="Settings"
                        Grid.Row="1" Grid.Column="4"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
-            <TextBlock Text="Log"
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="Logs"
                        Grid.Row="1" Grid.Column="5"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
-            <TextBlock Text="Utility"
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="Utilities"
                        Grid.Row="1" Grid.Column="6"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center" />
             <TextBlock Text="Update"
                        Grid.Row="1" Grid.Column="7"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="8"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="5,0" />
+                       VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Top"
-              Height="80"
-              Background="LightBlue"
+              Background="{Binding TopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
               Visibility="{Binding BuildInterfaceVisibility}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60" />
+                <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
                 <RowDefinition Height="20" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
+                <ColumnDefinition Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Row="0" Grid.RowSpan="2"
                         Grid.Column="0"
                         Orientation="Horizontal">
-                <Image Margin="15, 15, 5, 15"
-                       Source="{StaticResource DonutSvgImage}">
-                </Image>
+                <ContentControl Margin="15, 15, 5, 15"
+                                ContentTemplate="{StaticResource DonutLogo}"
+                                Content="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"/>
                 <TextBlock Text="PEBakery"
-                           Margin="0, 0, 15, 0"
+                           Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
+                           Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           FontSize="40" 
+                           FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
                            FontWeight="SemiBold"
                            FontStretch="Condensed"
-                           FontStyle="Italic">
-                </TextBlock>
+                           FontStyle="Italic"/>
             </StackPanel>
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
-                                 Grid.Column="1"
-                                 Margin="10"
-                                 HorizontalAlignment="Left"
-                                 IsActive="{Binding WorkInProgress}">
-            </cc:ProgressRing>
-
-            <Button Grid.Row="0"
-                    Grid.Column="2"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="BuildButton_Click">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="StopCircle"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0"
-                    Grid.Column="3"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="LogButton_Click">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="CommentCheck"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
-            <Button Grid.Row="0"
-                    Grid.Column="4"
-                    Margin="4"
-                    Style="{StaticResource BackgroundButton}"
-                    Click="AboutButton_Click">
-                <Button.Content>
-                    <iconPacks:PackIconMaterial Kind="Help"
-                                                Width="Auto"
-                                                Height="Auto"
-                                                Margin="4" />
-                </Button.Content>
-            </Button>
+                             Grid.Column="1"
+                             Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                             Margin="10, 0, 0, 0"
+                             Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
+                             HorizontalAlignment="Left"
+                             IsActive="{Binding WorkInProgress}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="2"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           x:Name="ProjectBuildStopButton"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="StopCircle"
+                           Command="local:MainViewCommands.ProjectBuildStopCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="3"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="CommentCheck"
+                           Command="local:MainViewCommands.LogWindowCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+            <cc:IconButton Grid.Row="0" Grid.Column="4"
+                           Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                           Style="{StaticResource MainIconButtonStyle}"
+                           IconMaterialKind="Help"
+                           Command="local:MainViewCommands.AboutWindowCommand"
+                           AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
 
             <TextBlock Text="Stop"
-                       Grid.Row="1"
-                       Grid.Column="2"
+                       Grid.Row="1" Grid.Column="2"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Log"
-                       Grid.Row="1"
-                       Grid.Column="3"
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="Log" 
+                       Grid.Row="1" Grid.Column="3"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
+                       VerticalAlignment="Center"/>
             <TextBlock Text="About"
-                       Grid.Row="1"
-                       Grid.Column="4"
+                       Grid.Row="1" Grid.Column="4"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" Margin="5,0" />
+                       VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Bottom"
               Height="20"
-              x:Name="bottomDock"
+              x:Name="BottomDock"
               Panel.ZIndex="100">
             <ProgressBar IsIndeterminate="False"
                          Minimum="{Binding BottomProgressBarMinimum}"
                          Maximum="{Binding BottomProgressBarMaximum}"
                          Value="{Binding BottomProgressBarValue}"
-                         Visibility="{Binding BottomProgressBarVisibility}">
-            </ProgressBar>
-            <TextBlock Background="#dfdfdf" 
+                         Visibility="{Binding BottomProgressBarVisibility}"/>
+            <TextBlock FontSize="13"
                        Text="{Binding StatusBarText}"
-                       Visibility="{Binding BottomStatusBarVisibility}">
-            </TextBlock>
+                       Background="{Binding StatusBarBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
+                       Foreground="{Binding StatusBarForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                       Visibility="{Binding BottomStatusBarVisibility}"/>
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"
                                   MinWidth="100"
-                                  MaxWidth="400"/>
+                                  MaxWidth="300"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
                 <TreeView x:Name="MainTreeView"
-                          Background="PaleGreen"
+                          Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
+                          Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                           FontSize="12"
-                          DataContext="{Binding MainTree}"
-                          ItemsSource="{Binding Children}"
+                          ItemsSource="{Binding MainTreeItems}"
+                          IsEnabled="{Binding EnableTreeItems}"
                           BorderThickness="0"
                           Loaded="MainTreeView_Loaded"
+                          Unloaded="MainTreeView_Unloaded"
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
@@ -416,56 +427,56 @@
                     <TreeView.ContextMenu>
                         <ContextMenu>
                             <cc:CorrectMenuItem Header="Run Script" 
-                                      Click="ScriptRunButton_Click" 
-                                      Grid.IsSharedSizeScope="True"
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptRunCommand"
+                                                Grid.IsSharedSizeScope="True"
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Play"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Refresh Script" 
-                                      Click="ScriptRefreshButton_Click" 
-                                      Grid.IsSharedSizeScope="True" 
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptRefreshCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Refresh"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Edit Script Properties" 
-                                      Click="ScriptInternalEditor_Click"
-                                      Grid.IsSharedSizeScope="True"
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptInternalEditorCommand"
+                                                Grid.IsSharedSizeScope="True"
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Edit Script Source" 
-                                      Click="ScriptExternalEditor_Click" 
-                                      Grid.IsSharedSizeScope="True"
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptExternalEditorCommand"
+                                                Grid.IsSharedSizeScope="True"
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Update Script" 
-                                      Click="ScriptUpdateButton_Click"
-                                      Grid.IsSharedSizeScope="True" 
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptUpdateCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Download"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Syntax Check"
-                                      Click="ScriptCheckButton_Click" 
-                                      Grid.IsSharedSizeScope="True" 
-                                      Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}">
+                                                Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Magnify"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
-                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource booleanToVisibilityConverter}}"/>
+                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <cc:CorrectMenuItem Header="Open Script Folder"
-                                                Click="ScriptOpenFolderButton_Click" 
+                                                Command="local:MainViewCommands.ScriptOpenFolderCommand"
                                                 Grid.IsSharedSizeScope="True" >
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="FolderOpen"/>
@@ -474,7 +485,7 @@
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
+                        <HierarchicalDataTemplate DataType="vm:ProjectTreeItemModel"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -488,27 +499,28 @@
 
                                 <CheckBox Grid.Row="0" Grid.Column="0"
                                           VerticalAlignment="Center"
-                                          Visibility="{Binding CheckBoxVisible}"
+                                          Visibility="{Binding Script, Converter={StaticResource SelectedStateToVisibilityConverter}}"
                                           IsChecked="{Binding Checked, Mode=TwoWay}"
-                                          Focusable="False">
-                                </CheckBox>
-                                <ContentPresenter Content="{Binding Icon}"
-                                                  Grid.Row="0" Grid.Column="1"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Center"
-                                                  Margin="3,2,3,2">
-                                </ContentPresenter>
+                                          Focusable="False"/>
+                                <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="1"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"
+                                                            UseLayoutRounding="True"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="2"
+                                                            Kind="{Binding Icon}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="2"
                                            VerticalAlignment="Center"
-                                           Text="{Binding Text}">
-                                </TextBlock>
+                                           Margin="1, 0, 0, 0"
+                                           Text="{Binding Script, Converter={StaticResource ScriptTitleConverter}}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
-                            <Setter Property="IsExpanded"
-                                    Value="{Binding IsExpanded}" />
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                            <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
@@ -516,14 +528,15 @@
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding BuildInterfaceVisibility}">
-                <TreeView Background="PaleGreen"
-                          DataContext="{Binding BuildTree}"
-                          ItemsSource="{Binding Children}"
+                <TreeView Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
+                          Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                          ItemsSource="{Binding BuildTreeItems}"
+                          FontSize="12"
                           BorderThickness="0"
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ItemTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}"
+                        <HierarchicalDataTemplate DataType="{x:Type vm:ProjectTreeItemModel}"
                                                   ItemsSource="{Binding Children}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -534,17 +547,19 @@
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
 
-                                <ContentPresenter Content="{Binding Icon}"
-                                                  Grid.Row="0" Grid.Column="0"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Center"
-                                                  Margin="3,2,3,2">
-                                </ContentPresenter>
+                                <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"
+                                                            UseLayoutRounding="True"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="2"
+                                                            Kind="{Binding Icon}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1"
+                                           Margin="1, 0, 0, 0"
                                            VerticalAlignment="Center"
                                            FontWeight="{Binding BuildFontWeight}"
-                                           Text="{Binding Text}">
-                                </TextBlock>
+                                           Text="{Binding Script, Converter={StaticResource ScriptTitleConverter}}"/>
                             </Grid>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
@@ -554,9 +569,10 @@
                             <Setter Property="IsExpanded" Value="True" />
                             <Setter Property="cc:BringIntoViewBehavior.BringIntoView" Value="True"  />
                             <Setter Property="IsSelected" Value="{Binding BuildFocus, Mode=OneWay}" />
+                            <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Foreground" Value="Red"/>
+                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlight, Converter={StaticResource ColorToSolidColorBrushConverter}, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
                                 </Trigger>
                             </Style.Triggers>
                             <Style.Resources>
@@ -589,147 +605,160 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Background="LightYellow">
+                      Background="{Binding ScriptPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
+                    <!-- ScriptLogo -->
                     <Image x:Name="ScriptLogoImage"
                            Grid.Row="0" Grid.Column="0"
+                           Grid.RowSpan="4"
                            Width="90" Height="90"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            StretchDirection="DownOnly"
                            Stretch="Uniform"
                            UseLayoutRounding="True"
-                           Visibility="{Binding ScriptLogoImageVisible}"
+                           Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                            Source="{Binding ScriptLogoImage}"/>
                     <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
                                                 Grid.Row="0" Grid.Column="0"
+                                                Grid.RowSpan="4"
                                                 Width="60" Height="60"
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"
                                                 UseLayoutRounding="True"
-                                                Visibility="{Binding ScriptLogoIconVisible}"
+                                                Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                                                 Kind="{Binding ScriptLogoIcon}"/>
-                    <Grid Grid.Row="0" Grid.Column="1"
-                          Margin="0, 0, 6, 0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30" />
-                            <RowDefinition Height="70" />
-                        </Grid.RowDefinitions>
-
-                        <DockPanel Grid.Row="0"
-                                   VerticalAlignment="Center">
-                            <TextBlock DockPanel.Dock="Right"
-                                       Margin="0, 0, 0, 2"
-                                       Name="ScriptVersion"
-                                       Text="{Binding ScriptVersionText}"
-                                       FontWeight="Bold"
-                                       FontSize="14" 
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock DockPanel.Dock="Right"
-                                       Name="ScriptAuthor"
-                                       Text="{Binding ScriptAuthorText}" 
-                                       Margin="0, 0, 5, 2"
-                                       FontSize="12"
-                                       VerticalAlignment="Bottom"
-                                       HorizontalAlignment="Right"
-                                       FontStretch="Condensed"
-                                       TextWrapping="Wrap" />
-                            <TextBlock DockPanel.Dock="Left"
-                                       Name="ScriptTitle"
-                                       FontStretch="SemiCondensed"
-                                       Text="{Binding ScriptTitleText}" 
-                                       FontWeight="Bold" FontSize="16"
-                                       VerticalAlignment="Bottom"
-                                       TextWrapping="Wrap"/>
-                            <Button DockPanel.Dock="Left"
-                                    Margin="4, 0, 0, 2"
-                                    Width="16"
-                                    Height="16"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Bottom"
-                                    Click="ScriptCheckButton_Click"
-                                    IsEnabled="{Binding IsTreeEntryFile}"
-                                    Visibility="{Binding ScriptCheckVisiblility}"
-                                    BorderThickness="0"
-                                    Background="Transparent"
-                                    Foreground="{Binding ScriptCheckColor}"
-                                    ToolTip="Syntax Check">
-                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"
-                                                            Width="Auto"
-                                                            Height="Auto"/>
-                            </Button>
-                        </DockPanel>
-                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                   FontWeight="Medium"
-                                   Name="ScriptDescription"
-                                   Text="{Binding ScriptDescriptionText}"
+                    <Border x:Name="ScriptLogoSvg"
+                            Grid.Row="0" Grid.Column="0"
+                            Grid.RowSpan="4"
+                            Width="{Binding ScriptLogoSvgWidth}"
+                            Height="{Binding ScriptLogoSvgHeight}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            UseLayoutRounding="True"
+                            Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                            Background="{Binding ScriptLogoSvg}"/>
+                    <!-- Title & Description -->
+                    <DockPanel Grid.Row="0" Grid.Column="1"
+                               VerticalAlignment="Center">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Name="ScriptTitle"
                                    FontStretch="SemiCondensed"
-                                   VerticalAlignment="Center"
-                                   TextWrapping="Wrap">
-                        </TextBlock>
-                    </Grid>
-                    <Grid Grid.Row="0"
-                          Grid.Column="2"
-                          Width="25"
-                          Visibility="{Binding NormalInterfaceVisibility}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                        </Grid.RowDefinitions>
-
-                        <Button Grid.Row="0"
-                                Grid.Column="0"
-                                Click="ScriptRunButton_Click"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="Run Script">
-                            <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                        <Button Grid.Row="1"
-                                Grid.Column="0"
-                                Click="ScriptRefreshButton_Click"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="Refresh Script">
-                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                        <Button Grid.Row="2"
-                                Grid.Column="0"
-                                Click="ScriptEditButton_Click"
-                                ToolTip="{Binding OpenExternalButtonToolTip}">
-                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
-                            <Button.ContextMenu>
-                                <ContextMenu>
-                                    <cc:CorrectMenuItem Header="Edit Script Properties"
-                                                        ToolTip="Manage header, interface and attachments"
-                                                        Click="ScriptInternalEditor_Click">
-                                        <cc:CorrectMenuItem.Icon>
-                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                        </cc:CorrectMenuItem.Icon>
-                                    </cc:CorrectMenuItem>
-                                    <cc:CorrectMenuItem Header="Edit Script Source"
-                                                        ToolTip="Edit script code"
-                                                        Click="ScriptExternalEditor_Click">
-                                        <cc:CorrectMenuItem.Icon>
-                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                        </cc:CorrectMenuItem.Icon>
-                                    </cc:CorrectMenuItem>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
-                        <Button Grid.Row="3"
-                                Grid.Column="0"
-                                Click="ScriptUpdateButton_Click"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="{Binding ScriptUpdateButtonToolTip}">
-                            <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                    </Grid>
+                                   Text="{Binding ScriptTitleText}" 
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   FontWeight="Bold" 
+                                   FontSize="16"
+                                   VerticalAlignment="Bottom"
+                                   TextWrapping="Wrap"/>
+                        <cc:IconButton DockPanel.Dock="Left"
+                                       IconMargin="0"
+                                       Margin="4, 0, 0, 0"
+                                       Width="16"
+                                       Height="16"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Bottom"
+                                       Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                                       IsEnabled="{Binding IsTreeEntryFile}"
+                                       Visibility="{Binding ScriptCheckVisibility}"
+                                       BorderThickness="0"
+                                       Background="Transparent"
+                                       BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
+                                       IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}, FallbackValue=None}"
+                                       ToolTip="Syntax Check"/>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Margin="0, 0, 5, 0"
+                                   Name="ScriptVersion"
+                                   Text="{Binding ScriptVersionText}"
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   FontWeight="Bold"
+                                   FontSize="14" 
+                                   VerticalAlignment="Bottom"/>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Name="ScriptAuthor"
+                                   Text="{Binding ScriptAuthorText}" 
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   Margin="0, 0, 5, 0"
+                                   FontSize="12"
+                                   VerticalAlignment="Bottom"
+                                   HorizontalAlignment="Right"
+                                   FontStretch="Condensed"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
+                    <TextBlock Grid.Row="1" Grid.Column="1"
+                               Grid.RowSpan="3"
+                               Margin="0, 0, 5, 0"
+                               FontWeight="Medium"
+                               Name="ScriptDescription"
+                               Text="{Binding ScriptDescriptionText}"
+                               Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                               FontStretch="SemiCondensed"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
+                    <!-- Script Buttons -->
+                    <Button Grid.Row="0" Grid.Column="2"
+                            x:Name="ScriptRunButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptRunCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                        <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
+                    <Button Grid.Row="1" Grid.Column="2"
+                            x:Name="ScriptRefreshButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptRefreshCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                        <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
+                    <Button Grid.Row="2" Grid.Column="2"
+                            x:Name="ScriptEditButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptEditCommand"
+                            AutomationProperties.Name="{Binding OpenExternalButtonToolTip}"
+                            ToolTip="{Binding OpenExternalButtonToolTip}">
+                        <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <cc:CorrectMenuItem Header="Edit Script Properties"
+                                                    ToolTip="Manage header, interface and attachments"
+                                                    Command="local:MainViewCommands.ScriptInternalEditorCommand">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <cc:CorrectMenuItem Header="Edit Script Source"
+                                                    ToolTip="Edit script code"
+                                                    Command="local:MainViewCommands.ScriptExternalEditorCommand">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button Grid.Row="3" Grid.Column="2"
+                            x:Name="ScriptUpdateButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptUpdateCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding ScriptUpdateButtonToolTip}"
+                            ToolTip="{Binding ScriptUpdateButtonToolTip}">
+                        <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
                 </Grid>
 
                 <DockPanel Grid.Row="1"
@@ -797,8 +826,8 @@
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Stretch"
                                      FontSize="12"
-                                     FontFamily="{Binding MonospaceFontFamily}"
-                                     FontWeight="{Binding MonospaceFontWeight}"
+                                     FontFamily="{Binding MonospacedFontFamily}"
+                                     FontWeight="{Binding MonospacedFontWeight}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      ScrollViewer.CanContentScroll="True"
@@ -849,9 +878,9 @@
         </Grid>
     </DockPanel>
     <Window.TaskbarItemInfo>
-        <TaskbarItemInfo ProgressState="{Binding TaskbarProgressState}" >
+        <TaskbarItemInfo ProgressState="{Binding TaskBarProgressState}" >
             <TaskbarItemInfo.ProgressValue>
-                <MultiBinding Converter="{StaticResource TaskbarProgressConverter}" >
+                <MultiBinding Converter="{StaticResource TaskBarProgressConverter}" >
                     <Binding Path="BuildFullProgressBarMax" />
                     <Binding Path="BuildFullProgressBarValue" />
                 </MultiBinding>
@@ -859,4 +888,3 @@
         </TaskbarItemInfo>
     </Window.TaskbarItemInfo>
 </Window>
-

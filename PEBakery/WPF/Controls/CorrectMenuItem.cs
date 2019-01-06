@@ -22,15 +22,15 @@
 	SOFTWARE.
 */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace PEBakery.WPF.Controls
 {
+    /// <summary>
+    /// MenuItem rendered properly in both Win 10 Aero and Win 7 Classic.
+    /// </summary>
     public class CorrectMenuItem : MenuItem
     {
         public CorrectMenuItem()

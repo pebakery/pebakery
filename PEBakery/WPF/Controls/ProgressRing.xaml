@@ -23,11 +23,12 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 -->
+
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:custom="clr-namespace:PEBakery.WPF.Controls">
+                    xmlns:cc="clr-namespace:PEBakery.WPF.Controls">
 
-    <Style TargetType="custom:ProgressRing">
+    <Style TargetType="cc:ProgressRing">
         <Setter Property="Foreground" Value="{DynamicResource AccentColorBrush}" />
         <Setter Property="Height" Value="60" />
         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -39,7 +40,7 @@
         <Setter Property="Width" Value="60" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="custom:ProgressRing">
+                <ControlTemplate TargetType="cc:ProgressRing">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">

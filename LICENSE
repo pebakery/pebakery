@@ -34,37 +34,14 @@ not derived from or based on this program.
 -----------------------------------------------------------
 These parts of PEBakery is licensed under various license.
 
-PEBakery.CabLib
-PEBakery.CabLib.Tests
-    Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-
-PEBakery.IniLib
-PEBakery.IniLib.Tests
+PEBakery.Ini
+PEBakery.Ini.Tests
+PEBakery.Tree
     MIT License
     https://opensource.org/licenses/MIT
-
-PEBakery.TreeLib
-    MIT License
-    https://opensource.org/licenses/MIT
-	
-PEBakery.XZLib
-PEBakery.XZLib.Tests
-    MIT License
-    https://opensource.org/licenses/MIT
-	
-PEBakery.LZ4Lib
-PEBakery.LZ4Lib.Tests
-    The 2-Clause BSD License
-    https://opensource.org/licenses/BSD-2-Clause
-
-ManagedWimLib
-ManagedWimLib.Tests
-    LGPLv3 License
-    https://www.gnu.org/licenses/lgpl-3.0.en.html
 
 Ookii.Dialogs.Wpf
-    The 3-Clause BSD License
+    The BSD 3-Clause License
     https://opensource.org/licenses/BSD-3-Clause
 
     Copyright (c) Sven Groot (Ookii.org) 2009
@@ -77,26 +54,19 @@ LauncherSharp
     MIT License
     https://opensource.org/licenses/MIT
 
-XZNet20/XZ.Net.dll
+PEBakery.Helper
     MIT License
     https://opensource.org/licenses/MIT
 
-    https://github.com/RomanBelkov/XZ.NET
+PEBakery.Helper/ThirdParty/TextEncodingDetect.cs
+    Apache License, Version 2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-XZNet20/liblzma.dll
-XZNet20/liblzma64.dll
-    Public Domain
-    https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
-
-PEBakery/Helper
-    MIT License
-    https://opensource.org/licenses/MIT
+    Copyright (c) Jonathan Bennett
+    https://github.com/AutoItConsulting/text-encoding-detect
 
 PEBakery/WPF/Controls/NumberBox.xaml
 PEBakery/WPF/Controls/NumberBox.xaml.cs
-    MIT License
-    https://opensource.org/licenses/MIT
-
 PEBakery/WPF/Controls/DragCanvas.cs
 PEBakery/WPF/Controls/EditCanvas.cs
     MIT License
@@ -154,12 +124,20 @@ ControlzEx
     Copyright (c) 2015 Jan Karger, Bastian Schmidt
     https://github.com/ControlzEx/ControlzEx
 
-ZLibWrapper
+Joveler.Compression.XZ
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/Joveler.Compression
+
+Joveler.Compression.ZLib
     zlib license
     https://opensource.org/licenses/Zlib
 
+    Copyright (C) Jean-loup Gailly and Mark Adler
     Copyright (C) Hajin Jang
-    https://github.com/ied206/ZLibWrapper
+    https://github.com/ied206/Joveler.Compression
 
 MahApps.Metro.IconPacks
     MIT License
@@ -174,13 +152,29 @@ ManagedWimgApi
 
     Copyright (c) josemesona
     https://github.com/josemesona/ManagedWimgApi
-    
+
+ManagedWimLib
+ManagedWimLib.Tests
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
+
+    Copyright (C) Eric Biggers
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/ManagedWimLib
+
 Material Icons
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
 
     https://material.io/tools/icons/
     https://github.com/google/material-design-icons
+
+Microsoft.IO.RecyclableMemoryStream
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) 2015-2016 Microsoft
+    https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream
 
 NaturalSort.Extension
     MIT License
@@ -213,18 +207,18 @@ RazorEngine
     
     https://github.com/Antaris/RazorEngine
 
-SevenZipExtractor
-    MIT License
-    https://opensource.org/licenses/MIT
+SevenZipSharp
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
 
-    https://github.com/adoconnection/SevenZipExtractor
+    https://github.com/squid-box/SevenZipSharp
 
-SharpCompress
-    MIT License
-    https://opensource.org/licenses/MIT
+SharpVectors
+    The BSD 3-Clause License
+    https://opensource.org/licenses/BSD-3-Clause
 
-    Copyright (c) Adam Hathcock
-    https://github.com/adamhathcock/sharpcompress
+    Copyright (c) Elinam LLC
+    https://github.com/ElinamLLC/SharpVectors
 
 sqlite-net-pcl
     MIT License
@@ -233,11 +227,12 @@ sqlite-net-pcl
     Copyright (c) Krueger Systems, Inc.
     https://github.com/praeclarum/sqlite-net
 
-Svg.Net
-    Microsoft Public License (MS-PL)
-    https://opensource.org/licenses/MS-PL
+Timestamp
+    MIT License
+    https://opensource.org/licenses/MIT
 
-    https://github.com/vvvv/SVG
+    Copyright (c) 2013 NServiceBus Ltd
+    https://github.com/SimonCropp/Timestamp
 
 UACHelper
     MIT License

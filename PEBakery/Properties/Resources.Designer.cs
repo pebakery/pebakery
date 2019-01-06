@@ -61,46 +61,6 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20180908과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string BuildDate {
-            get {
-                return ResourceManager.GetString("BuildDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   @using System.Collections.Generic;
-        ///@using PEBakery.Core;
-        ///&lt;!DOCTYPE html&gt;
-        ///&lt;html&gt;
-        ///    &lt;head&gt;
-        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
-        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
-        ///
-        ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
-        ///
-        ///        &lt;!-- Bootstrap CSS --&gt;
-        ///        &lt;link rel=&quot;styles[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string BuildLogHtmlTemplate {
-            get {
-                return ResourceManager.GetString("BuildLogHtmlTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   095과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string EngineVersion {
-            get {
-                return ResourceManager.GetString("EngineVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Unless specified, PEBakery is licensed under GPLv3 or any
         ///later version with additional permission.
         ///
@@ -118,46 +78,6 @@ namespace PEBakery.Properties {
         internal static string LicenseSimple {
             get {
                 return ResourceManager.GetString("LicenseSimple", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   0.9.5.1과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string StringVersion {
-            get {
-                return ResourceManager.GetString("StringVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   0.9.5.1 beta5과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string StringVersionFull {
-            get {
-                return ResourceManager.GetString("StringVersionFull", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   @using System.Collections.Generic;
-        ///@using PEBakery.Core;
-        ///&lt;!DOCTYPE html&gt;
-        ///&lt;html&gt;
-        ///    &lt;head&gt;
-        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
-        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
-        ///
-        ///        &lt;title&gt;PEBakery System Log&lt;/title&gt;
-        ///
-        ///        &lt;!-- Bootstrap CSS --&gt;
-        ///        &lt;link rel=&quot;sty[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
-        /// </summary>
-        internal static string SystemLogHtmlTemplate {
-            get {
-                return ResourceManager.GetString("SystemLogHtmlTemplate", resourceCulture);
             }
         }
     }

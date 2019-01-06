@@ -40,7 +40,8 @@
         Title="Export Logs" 
         d:DataContext="{d:DesignInstance Type=local:LogExportModel}">
     <Window.CommandBindings>
-        <CommandBinding Command="local:LogExportCommands.Export"
+        <CommandBinding x:Name="ExportCommand"
+                        Command="local:LogExportCommands.Export"
                         CanExecute="ExportCommand_CanExecute"
                         Executed="ExportCommand_Executed"/>
     </Window.CommandBindings>

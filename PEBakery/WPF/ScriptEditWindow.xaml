@@ -32,7 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         Title="Edit Script"
         FontFamily="Segoe UI"
@@ -40,16 +40,22 @@
         Closing="Window_Closing"
         Closed="Window_Closed"
         Width="900" Height="720"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
-    <Window.Resources>
-        <local:IndexToBooleanConverter x:Key="IndexToBooleanConverter" />
-    </Window.Resources>
     <Window.CommandBindings>
-        <CommandBinding Command="ApplicationCommands.Save"
-                        Executed="ScriptMain_Executed"
-                        CanExecute="ScriptMain_CanExecute"/>
+        <CommandBinding Command="local:ScriptEditCommands.Save"
+                        CanExecute="SaveCommand_CanExecute"
+                        Executed="SaveCommand_Execute"/>
     </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Command="{Binding UICtrlReloadCommand}" Key="R" Modifiers="Ctrl"/>
+    </Window.InputBindings>
+    <Window.Resources>
+        <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
+        <local:AttachProgressValueToPercentConverter x:Key="AttachProgressValueToPercentConverter" />
+        <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -58,7 +64,9 @@
         <TabControl Grid.Row="0"
                     Background="White"
                     SelectedIndex="{Binding TabIndex}">
-            <TabItem Header="General">
+            <TabItem Header="General" 
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <StackPanel Margin="10, 0, 10, 10">
                     <GroupBox Header="Header"
                               BorderBrush="Gray">
@@ -151,7 +159,7 @@
                                            VerticalAlignment="Center"
                                            FontWeight="Bold"
                                            Text="Level"/>
-                                <custom:NumberBox Grid.Row="2" Grid.Column="3"
+                                <cc:NumberBox Grid.Row="2" Grid.Column="3"
                                                       x:Name="ScriptLevel"
                                                       VerticalAlignment="Center"
                                                       Minimum="-256"
@@ -185,20 +193,12 @@
                                     Width="100"
                                     Content="Save"
                                     x:Name="MainSaveButton"
-                                    Click="MainSaveButton_Click"
-                                    HorizontalAlignment="Right">
-                                <Button.InputBindings>
-                                    <KeyBinding Key="S"
-                                                Modifiers="Ctrl" 
-                                                Command="ApplicationCommands.Save" />
-                                </Button.InputBindings>
-                            </Button>
+                                    Command="local:ScriptEditCommands.Save"
+                                    HorizontalAlignment="Right"/>
                         </Grid>
                     </GroupBox>
                     <GroupBox Header="Logo"
                               BorderBrush="Gray">
-                    
-                        <!-- Script Logo -->
                         <Grid Height="100"
                               Margin="3, 0, 5, 0">
                             <Grid.ColumnDefinitions>
@@ -207,6 +207,7 @@
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
 
+                            <!-- Script Logo -->
                             <Image x:Name="ScriptLogoImage"
                                    Grid.Row="0" Grid.Column="0"
                                    Width="90" Height="90"
@@ -215,7 +216,7 @@
                                    StretchDirection="DownOnly"
                                    Stretch="Uniform"
                                    UseLayoutRounding="True"
-                                   Visibility="{Binding ScriptLogoImageVisible}"
+                                   Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                                    Source="{Binding ScriptLogoImage}"
                                    ToolTip="Recommended image size : 80x80"/>
                             <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
@@ -225,9 +226,18 @@
                                                         VerticalAlignment="Center"
                                                         HorizontalAlignment="Center"
                                                         UseLayoutRounding="True"
-                                                        Visibility="{Binding ScriptLogoNoneIconVisible}"
-                                                        Kind="BorderNone"
+                                                        Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                                                        Kind="{Binding ScriptLogoIcon}"
                                                         ToolTip="Recommended image size : 80x80"/>
+                            <Border x:Name="ScriptLogoSvg"
+                                    Grid.Row="0" Grid.Column="0"
+                                    Width="{Binding ScriptLogoSvgWidth}"
+                                    Height="{Binding ScriptLogoSvgHeight}"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    UseLayoutRounding="True"
+                                    Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                                    Background="{Binding ScriptLogoSvg}"/>
                             <Grid Grid.Row="0" Grid.Column="1"
                                   Height="80"
                                   Visibility="{Binding ScriptLogoInfoVisibility}">
@@ -292,7 +302,7 @@
                                 <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoAttachButton"
-                                        Click="ScriptLogoAttachButton_Click"
+                                        Command="{Binding ScriptLogoAttachCommand}"
                                         ToolTip="Import logo from image">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
@@ -306,8 +316,7 @@
                                 <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoExtractButton"
-                                        Click="ScriptLogoExtractButton_Click"
-                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        Command="{Binding ScriptLogoExtractCommand}"
                                         ToolTip="Export logo to image">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
@@ -320,8 +329,7 @@
                                 </Button>
                                 <Button Width="100" Height="25"
                                         x:Name="ScriptLogoDeleteButton"
-                                        Click="ScriptLogoDeleteButton_Click"
-                                        IsEnabled="{Binding ScriptLogoLoaded}"
+                                        Command="{Binding ScriptLogoDeleteCommand}"
                                         ToolTip="Delete logo">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Close"
@@ -337,7 +345,9 @@
                     </GroupBox>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Interface">
+            <TabItem Header="Interface" 
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
@@ -377,7 +387,7 @@
                                           SelectionChanged="UICtrlAddType_SelectionChanged"
                                           SelectedIndex="{Binding UICtrlAddTypeIndex}">
                                     <ComboBoxItem Content="TextBox"/>
-                                    <ComboBoxItem Content="TextBlock"/>
+                                    <ComboBoxItem Content="TextLabel"/>
                                     <ComboBoxItem Content="NumberBox"/>
                                     <ComboBoxItem Content="CheckBox"/>
                                     <ComboBoxItem Content="ComboBox"/>
@@ -401,8 +411,7 @@
                                 <Button Grid.Row="2" Grid.Column="1"
                                         Margin="0, 5, 0, 0"
                                         x:Name="UICtrlAddButton"
-                                        Click="UICtrlAddButton_Click"
-                                        IsEnabled="{Binding ElementName=UICtrlAddType, Path=SelectedIndex, Converter={StaticResource IndexToBooleanConverter}}">
+                                        Command="{Binding UICtrlAddCommand}">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus"
                                                                     Width="Auto"
@@ -419,10 +428,36 @@
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="5, 5, 5, 5" Orientation="Vertical">
+                                    <!-- UIControl Selection -->
                                     <ComboBox IsEnabled="{Binding InterfaceLoaded}"
                                               SelectedIndex="{Binding InterfaceUICtrlIndex}"
                                               ItemsSource="{Binding InterfaceUICtrls}"
                                               SelectionChanged="UIControlComboBox_SelectionChanged"/>
+
+                                    <!-- Move or Resize -->
+                                    <Grid Margin="0, 5, 0, 0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 5, 0"
+                                                   Text="Drag" />
+                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                  Padding="3, 0, 3, 0"
+                                                  FontSize="11"
+                                                  VerticalContentAlignment="Center"
+                                                  SelectedIndex="{Binding InterfaceCanvasDragModeIndex}"
+                                                  SelectionChanged="InterfaceCanvasDragMode_SelectionChanged">
+                                            <ComboBoxItem Content="Move"/>
+                                            <ComboBoxItem Content="Resize"/>
+                                        </ComboBox>
+                                    </Grid>
+
                                     <!-- Common -->
                                     <Grid Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>
@@ -430,8 +465,6 @@
                                             <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
-                                            <!-- <RowDefinition Height="20" /> -->
-                                            <RowDefinition Height="0" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
                                             <RowDefinition Height="20" />
@@ -440,62 +473,54 @@
                                             <RowDefinition Height="20" />
                                         </Grid.RowDefinitions>
 
-                                        <!--
+                                        <!-- General Properties -->
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
-                                                   FontWeight="Bold"
-                                                   Text="Key" />
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 IsEnabled="{Binding UICtrlEditEnabled}"
-                                                 Text="{Binding UICtrlKey}"/>
-                                        -->
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
                                                    Text="Visible" />
-                                        <CheckBox Grid.Row="1" Grid.Column="1"
+                                        <CheckBox Grid.Row="0" Grid.Column="1"
                                                   VerticalContentAlignment="Center"
                                                   IsEnabled="{Binding UICtrlEditEnabled}"
                                                   IsChecked="{Binding UICtrlVisible}"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="X" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Y"/>
-                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Width"/>
-                                        <custom:NumberBox Grid.Row="4" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Height" />
-                                        <custom:NumberBox Grid.Row="5" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="4" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
                                                           IsEnabled="{Binding UICtrlEditEnabled}"
                                                           Value="{Binding UICtrlHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                        <TextBlock Grid.Row="6" Grid.Column="0"
+                                        <TextBlock Grid.Row="5" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="ToolTip" />
-                                        <TextBox Grid.Row="6" Grid.Column="1"
+                                        <TextBox Grid.Row="5" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  FontSize="11"
                                                  IsEnabled="{Binding UICtrlEditEnabled}"
@@ -548,7 +573,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -594,7 +619,7 @@
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
-                                        <custom:NumberBox Grid.Row="0" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="0" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -602,7 +627,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Min" />
-                                        <custom:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -610,7 +635,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Max" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -618,7 +643,7 @@
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Tick" />
-                                        <custom:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           Minimum="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -665,8 +690,8 @@
                                         <Button Grid.Row="0" Grid.Column="1"
                                                 Visibility="{Binding UICtrlImageUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlImageAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="ImageAttach"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft" Width="Auto" Height="Auto" Margin="3"/>
@@ -679,8 +704,8 @@
                                                     Visibility="{Binding UICtrlImageLoaded}"
                                                     Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlImageExtractButton"
-                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="ImageExtract"
                                                     ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight" Width="Auto" Height="Auto" Margin="3"/>
@@ -690,8 +715,8 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlImageResetButton"
-                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="ImageReset"
                                                     ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone" Width="Auto" Height="Auto" Margin="3"/>
@@ -702,7 +727,7 @@
                                             </Button>
                                             <Button Width="Auto" Height="25"
                                                     x:Name="UICtrlImageAutoResizeButton"
-                                                    Click="UICtrlImageAutoResizeButton_Click"
+                                                    Command="{Binding UICtrlImageAutoResizeCommand}"
                                                     ToolTip="Auto Resize">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="MoveResizeVariant"
@@ -735,8 +760,8 @@
                                         <Button Grid.Column="1"
                                                 Visibility="{Binding UICtrlTextFileUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="TextFileAttach"
                                                 ToolTip="Import image">
                                             <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
@@ -752,9 +777,9 @@
                                                 Visibility="{Binding UICtrlTextFileLoaded}"
                                                 Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileExtractButton"
-                                                Click="UICtrlInterfaceExtractButton_Click"
-                                                ToolTip="Export image">
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="TextFileExtract"
+                                                    ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
                                                                             Width="Auto"
@@ -766,9 +791,9 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                x:Name="UICtrlTextFileResetButton"
-                                                Click="UICtrlInterfaceResetButton_Click"
-                                                ToolTip="Reset image">
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="TextFileReset"
+                                                    ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
                                                                             Width="Auto"
@@ -803,10 +828,10 @@
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 Visibility="{Binding UICtrlButtonPictureUnloaded}"
                                                 Width="Auto" Height="25"
-                                                x:Name="UICtrlButtonPictureAttachButton"
-                                                Click="UICtrlInterfaceAttachButton_Click"
+                                                Command="{Binding UICtrlInterfaceAttachCommand}"
+                                                CommandParameter="ButtonPictureAttach"
                                                 ToolTip="Import image">
-                                                <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal">
                                                 <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                             Width="Auto"
                                                                             Height="Auto"
@@ -820,8 +845,8 @@
                                                     Visibility="{Binding UICtrlButtonPictureLoaded}"
                                                     Orientation="Vertical">
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlButtonPictureExtractButton"
-                                                    Click="UICtrlInterfaceExtractButton_Click"
+                                                    Command="{Binding UICtrlInterfaceExtractCommand}"
+                                                    CommandParameter="ButtonPictureExtract"
                                                     ToolTip="Export image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
@@ -834,8 +859,8 @@
                                                 </StackPanel>
                                             </Button>
                                             <Button Width="Auto" Height="25"
-                                                    x:Name="UICtrlButtonPictureResetButton"
-                                                    Click="UICtrlInterfaceResetButton_Click"
+                                                    Command="{Binding UICtrlInterfaceResetCommand}"
+                                                    CommandParameter="ButtonPictureReset"
                                                     ToolTip="Reset image">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="BorderNone"
@@ -893,8 +918,7 @@
                                                    Text="Select" />
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlRadioButtonSelect"
-                                                Click="UICtrlRadioButtonSelect_Click"
-                                                IsEnabled="{Binding UICtrlRadioButtonSelectEnable}"
+                                                Command="{Binding UICtrlRadioButtonSelectCommand}"
                                                 Content="Select"/>
                                     </Grid>
                                     <!-- Bevel -->
@@ -926,7 +950,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <custom:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
                                                               Minimum="0"
                                                               IncrementUnit="1"
                                                               IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
@@ -1030,7 +1054,7 @@
                                                  Text="{Binding UICtrlListItemBoxNewItem}"/>
                                         <Button Grid.Row="1" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxUp"
-                                                Click="UICtrlListItemBoxUp_Click"
+                                                Command="{Binding UICtrlListItemBoxUpCommand}"
                                               ToolTip="Up">
                                             <iconPacks:PackIconMaterial Kind="ChevronUp"
                                                                         Width="Auto"
@@ -1039,7 +1063,7 @@
                                         </Button>
                                         <Button Grid.Row="2" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxDown"
-                                                Click="UICtrlListItemBoxDown_Click"
+                                                Command="{Binding UICtrlListItemBoxDownCommand}"
                                                 ToolTip="Down">
                                             <iconPacks:PackIconMaterial Kind="ChevronDown"
                                                                         Width="Auto"
@@ -1048,13 +1072,13 @@
                                         </Button>
                                         <Button Grid.Row="3" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxSelect"
-                                                Click="UICtrlListItemBoxSelect_Click"
+                                                Command="{Binding UICtrlListItemBoxSelectCommand}"
                                                 ToolTip="Select" >
                                             <TextBlock Text="S" FontWeight="Bold"/>
                                         </Button>
                                         <Button Grid.Row="4" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxDelete"
-                                                Click="UICtrlListItemBoxDelete_Click"
+                                                Command="{Binding UICtrlListItemBoxDeleteCommand}"
                                                 ToolTip="Delete">
                                             <iconPacks:PackIconMaterial Kind="Minus" 
                                                                         Width="Auto"
@@ -1063,7 +1087,7 @@
                                         </Button>
                                         <Button Grid.Row="5" Grid.Column="1"
                                                 x:Name="UICtrlListItemBoxAdd"
-                                                Click="UICtrlListItemBoxAdd_Click"
+                                                Command="{Binding UICtrlListItemBoxAddCommand}"
                                                 ToolTip="Add">
                                             <iconPacks:PackIconMaterial Kind="Plus" 
                                                                         Width="Auto"
@@ -1094,8 +1118,7 @@
                                             Margin="0, 10, 0, 0"
                                             HorizontalAlignment="Right"
                                             x:Name="UICtrlDeleteButton"
-                                            Click="UICtrlDeleteButton_Click"
-                                            IsEnabled="{Binding UICtrlEditEnabled}"
+                                            Command="{Binding UICtrlDeleteCommand}"
                                             ToolTip="Delete UIControl">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Close"
@@ -1134,14 +1157,14 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Slider Grid.Column="0"
-                                            Minimum="100"
+                                            Minimum="70"
                                             Maximum="200"
                                             TickPlacement="BottomRight"
                                             TickFrequency="10"
                                             IsSnapToTickEnabled="True"
                                             x:Name="ScaleFactorSlider"
                                             ValueChanged="ScaleFactorSlider_ValueChanged"
-                                            Value="{Binding InterfaceScaleFactor}" />
+                                            Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
                                     <TextBlock Grid.Column="1"
                                                Margin="0, 2, 0, 0"
                                                Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
@@ -1160,19 +1183,17 @@
                                     Width="100" Height="25"
                                     Content="Reload"
                                     x:Name="InterfaceReloadButton"
-                                    Click="InterfaceReloadButton_Click"
+                                    Command="{Binding UICtrlReloadCommand}"
                                     HorizontalAlignment="Right"
-                                    VerticalAlignment="Bottom">
-                            </Button>
+                                    VerticalAlignment="Bottom"/>
                             <Button Grid.Column="2"
                                     Margin="0, 0, 0, 3"
                                     Width="100"  Height="25"
                                     Content="Save"
                                     x:Name="InterfaceSaveButton"
-                                    Click="InterfaceSaveButton_Click"
+                                    Command="local:ScriptEditCommands.Save"
                                     HorizontalAlignment="Right"
-                                    VerticalAlignment="Bottom">
-                            </Button>
+                                    VerticalAlignment="Bottom"/>
                         </Grid>
 
                         <Border Grid.Row="1"
@@ -1189,7 +1210,9 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Attachment">
+            <TabItem Header="Attachments"
+                     IsEnabled="{Binding CanExecuteCommand}"
+                     Width="100">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"
@@ -1219,13 +1242,17 @@
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
 
-                                    <ContentPresenter Content="{Binding Icon}"
-                                                      Grid.Row="0" Grid.Column="0"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Center"
-                                                      Margin="3,2,3,2"/>
+                                    <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                                VerticalAlignment="Center"
+                                                                HorizontalAlignment="Center"
+                                                                UseLayoutRounding="True"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="2"
+                                                                Kind="{Binding Icon}"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1"
                                                VerticalAlignment="Center"
+                                               Margin="1, 0, 0, 0"
                                                Text="{Binding Name}"/>
                                 </Grid>
                             </HierarchicalDataTemplate>
@@ -1254,7 +1281,7 @@
                             <!-- Detail of Attached File -->
                             <StackPanel Margin="5, 5, 5, 0"
                                         Orientation="Vertical"
-                                        Visibility="{Binding AttachDetailFileVisiblity}">
+                                        Visibility="{Binding AttachDetailFileVisibility}">
                                 <GroupBox Header="Detail"
                                           BorderBrush="Gray">
                                     <Grid>
@@ -1317,13 +1344,13 @@
                                 </GroupBox>
 
                                 <DockPanel Margin="5, 5, 0, 0"
-                                            Visibility="{Binding AttachDetailFileVisiblity}">
+                                            Visibility="{Binding AttachDetailFileVisibility}">
                                     <Button x:Name="ExtractFileButton"
                                             DockPanel.Dock="Left"
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="ExtractFileButton_Click">
+                                            Command="{Binding ExtractFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Export"
                                                                         Width="Auto"
@@ -1338,7 +1365,7 @@
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="DeleteFileButton_Click">
+                                            Command="{Binding DeleteFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                                         Width="Auto"
@@ -1353,7 +1380,7 @@
                                             Margin="0, 0, 5, 0"
                                             HorizontalAlignment="Right"
                                             Width="160" Height="25"
-                                            Click="InspectFileButton_Click">
+                                            Command="{Binding InspectFileCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Magnify"
                                                                         Width="Auto"
@@ -1369,7 +1396,7 @@
                             <GroupBox Header="Add Folder"
                                       Margin="5, 5, 0, 0"
                                       BorderBrush="Gray"
-                                      Visibility="{Binding AttachAddFolderVisiblity}">
+                                      Visibility="{Binding AttachAddFolderVisibility}">
                                 <Grid Margin="3, 0, 3, 2" Height="25">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="120"/>
@@ -1392,8 +1419,8 @@
                                             VerticalAlignment="Top"
                                             HorizontalAlignment="Left"
                                             Width="120" Height="25"
-                                            Click="AddFolderButton_Click"
-                                            Visibility="{Binding AttachAddFolderVisiblity}">
+                                            Command="{Binding AddFolderCommand}"
+                                            Visibility="{Binding AttachAddFolderVisibility}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderPlus"
                                                                         Width="Auto"
@@ -1408,7 +1435,7 @@
                             <!-- Detail of Attached Folder -->
                             <StackPanel Margin="5, 0, 0, 0"
                                         Orientation="Vertical"
-                                        Visibility="{Binding AttachDetailFolderVisiblity}">
+                                        Visibility="{Binding AttachDetailFolderVisibility}">
                                 <GroupBox Header="Attach File"
                                           Margin="0, 0, 0, 5"
                                           BorderBrush="Gray">
@@ -1439,7 +1466,7 @@
                                             <Button Grid.Row="0" Grid.Column="2"
                                                     Margin="0, 0, 0, 5"
                                                     x:Name="AttachNewFileChooseButton"
-                                                    Click="AttachNewFileChooseButto_Click"
+                                                    Command="{Binding AttachNewFileChooseCommand}"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Width="120" >
@@ -1471,6 +1498,7 @@
                                             <ComboBox Grid.Row="2" Grid.Column="1"
                                                       Margin="0, 0, 5, 0"
                                                       VerticalContentAlignment="Center"
+                                                      IsEnabled="{Binding CanExecuteCommand}"
                                                       SelectedIndex="{Binding AttachNewCompressionIndex}">
                                                 <ComboBoxItem Content="None"/>
                                                 <ComboBoxItem Content="Deflate"/>
@@ -1481,7 +1509,7 @@
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Width="120" Height="25"
-                                                    Click="AttachFileButton_Click">
+                                                    Command="{Binding AttachFileCommand}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <iconPacks:PackIconMaterial Kind="FilePlus"
                                                                                 Width="Auto"
@@ -1500,7 +1528,7 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                         Width="120" Height="25"
-                                        Click="ExtractFolderButton_Click">
+                                        Command="{Binding ExtractFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="Export"
                                                                     Width="Auto"
@@ -1511,22 +1539,32 @@
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="RemoveFolderButton"
-                                        Margin="0, 0, 5, 0"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Top"
-                                        Width="120" Height="25"
-                                        Click="DeleteFolderButton_Click">
+                                            Margin="0, 0, 5, 0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Width="120" Height="25"
+                                            Command="{Binding DeleteFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
                                             <iconPacks:PackIconMaterial Kind="FolderRemove"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="0, 5, 5, 5"/>
                                             <TextBlock Text="Delete Folder"
-                                           VerticalAlignment="Center"/>
+                                                       VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
+                            <Grid Margin="8, 5, 8, 0"
+                                  Height="20">
+                                <ProgressBar Maximum="1"
+                                             Value="{Binding AttachProgressValue}"
+                                             IsIndeterminate="{Binding AttachProgressIndeterminate}"
+                                             IsEnabled="{Binding AttachProgressValue, Converter={StaticResource AttachProgressValueToEnabledConverter}}"/>
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding AttachProgressValue, Converter={StaticResource AttachProgressValueToPercentConverter}}"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -1541,6 +1579,7 @@
             <Button Grid.Row="0" Grid.Column="1"
                     Margin="10, 0, 0, 0"
                     IsCancel="True"
+                    IsEnabled="{Binding CanExecuteCommand}"
                     Content="Close"/>
         </Grid>
     </Grid>
