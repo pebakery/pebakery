@@ -6,18 +6,18 @@
              xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
              mc:Ignorable="d" 
              x:Name="ColorEditorControl"
-             d:DesignWidth="200" d:DesignHeight="20">
+             d:DesignWidth="300" d:DesignHeight="20">
     <Grid x:Name="LayoutGrid" 
           SnapsToDevicePixels="True"
           Width="{Binding Width, ElementName=ColorEditorControl}"
           Height="{Binding Height, ElementName=ColorEditorControl}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{Binding ActualHeight, ElementName=ColorEditorControl}"/>
-            <ColumnDefinition Width="15"/>
+            <ColumnDefinition Width="25"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="15"/>
+            <ColumnDefinition Width="25"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="15"/>
+            <ColumnDefinition Width="25"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Border Grid.Column="0" 
@@ -25,31 +25,34 @@
                 BorderThickness="1"
                 BorderBrush="Black"/>
         <TextBlock Grid.Column="1"
-                   HorizontalAlignment="Center"
+                   Margin="0, 0, 5, 0"
+                   HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="R"/>
         <cc:NumberBox Grid.Column="2"
                       x:Name="RedNumberBox"
                       Minimum="0"
                       Maximum="255"
-                      Value="{Binding Path=Red, ElementName=ColorEditorControl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                      ValueChanged="RedNumberBox_ValueChanged"/>
         <TextBlock Grid.Column="3"
-                   HorizontalAlignment="Center"
+                   Margin="0, 0, 5, 0"
+                   HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="G"/>
         <cc:NumberBox Grid.Column="4"
                       x:Name="GreenNumberBox"
                       Minimum="0"
                       Maximum="255"
-                      Value="{Binding Path=Green, ElementName=ColorEditorControl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                      ValueChanged="GreenNumberBox_ValueChanged"/>
         <TextBlock Grid.Column="5"
-                   HorizontalAlignment="Center"
+                   Margin="0, 0, 5, 0"
+                   HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="B"/>
         <cc:NumberBox Grid.Column="6"
                       x:Name="BlueNumberBox"
                       Minimum="0"
                       Maximum="255"
-                      Value="{Binding Path=Blue, ElementName=ColorEditorControl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                      ValueChanged="BlueNumberBox_ValueChanged"/>
     </Grid>
 </UserControl>

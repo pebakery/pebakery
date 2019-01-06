@@ -24,6 +24,8 @@ namespace PEBakery.WPF.Controls
         {
             InitializeComponent();
 
+            Color = Colors.Black;
+            SampleColor.Background = new SolidColorBrush(Color);
         }
 
         #region Property
@@ -44,25 +46,29 @@ namespace PEBakery.WPF.Controls
                 return;
 
             control.SampleColor.Background = new SolidColorBrush(c);
-            control.Red = c.R;
-            control.Green = c.G;
-            control.Blue = c.B;
+            control.RedNumberBox.Value = c.R;
+            control.GreenNumberBox.Value = c.G;
+            control.BlueNumberBox.Value = c.B;
+        }
+        #endregion
+
+        #region Internal Event Handler
+        private void RedNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        {
+            Color = Color.FromRgb((byte)e.NewValue, Color.G, Color.B);
+            SampleColor.Background = new SolidColorBrush(Color);
         }
 
-        public byte Red
+        private void GreenNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            get => Color.R;
-            set => Color = Color.FromRgb(value, Color.G, Color.B);
+            Color = Color.FromRgb(Color.R, (byte)e.NewValue, Color.B);
+            SampleColor.Background = new SolidColorBrush(Color);
         }
-        public byte Green
+
+        private void BlueNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            get => Color.G;
-            set => Color = Color.FromRgb(Color.R, value, Color.B);
-        }
-        public byte Blue
-        {
-            get => Color.B;
-            set => Color = Color.FromRgb(Color.R, Color.G, value);
+            Color = Color.FromRgb(Color.R, Color.G, (byte)e.NewValue);
+            SampleColor.Background = new SolidColorBrush(Color);
         }
         #endregion
     }

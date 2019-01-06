@@ -671,39 +671,39 @@ namespace PEBakery.WPF
             set => SetProperty(ref _themeCustomTopPanelForeground, value);
         }
 
-        private Color _themeCustomTreeViewBackground;
-        public Color ThemeCustomTreeViewBackground
+        private Color _themeCustomTreePanelBackground;
+        public Color ThemeCustomTreePanelBackground
         {
-            get => _themeCustomTreeViewBackground;
-            set => SetProperty(ref _themeCustomTreeViewBackground, value);
+            get => _themeCustomTreePanelBackground;
+            set => SetProperty(ref _themeCustomTreePanelBackground, value);
         }
 
-        private Color _themeCustomTreeViewForeground;
-        public Color ThemeCustomTreeViewForeground
+        private Color _themeCustomTreePanelForeground;
+        public Color ThemeCustomTreePanelForeground
         {
-            get => _themeCustomTreeViewForeground;
-            set => SetProperty(ref _themeCustomTreeViewForeground, value);
+            get => _themeCustomTreePanelForeground;
+            set => SetProperty(ref _themeCustomTreePanelForeground, value);
         }
 
-        private Color _themeCustomTreeViewHighlightForeground;
-        public Color ThemeCustomTreeViewHighlightForeground
+        private Color _themeCustomTreePanelHighlight;
+        public Color ThemeCustomTreePanelHighlight
         {
-            get => _themeCustomTreeViewHighlightForeground;
-            set => SetProperty(ref _themeCustomTreeViewHighlightForeground, value);
+            get => _themeCustomTreePanelHighlight;
+            set => SetProperty(ref _themeCustomTreePanelHighlight, value);
         }
 
-        private Color _themeCustomScriptDescBackground;
-        public Color ThemeCustomScriptDescBackground
+        private Color _themeCustomScriptPanelBackground;
+        public Color ThemeCustomScriptPanelBackground
         {
-            get => _themeCustomScriptDescBackground;
-            set => SetProperty(ref _themeCustomScriptDescBackground, value);
+            get => _themeCustomScriptPanelBackground;
+            set => SetProperty(ref _themeCustomScriptPanelBackground, value);
         }
 
-        private Color _themeCustomScriptDescForeground;
-        public Color ThemeCustomScriptDescForeground
+        private Color _themeCustomScriptPanelForeground;
+        public Color ThemeCustomScriptPanelForeground
         {
-            get => _themeCustomScriptDescForeground;
-            set => SetProperty(ref _themeCustomScriptDescForeground, value);
+            get => _themeCustomScriptPanelForeground;
+            set => SetProperty(ref _themeCustomScriptPanelForeground, value);
         }
 
         private Color _themeCustomStatusBarBackground;
@@ -1199,11 +1199,11 @@ namespace PEBakery.WPF
             ThemeUseCustomTheme = newTheme.UseCustomTheme;
             ThemeCustomTopPanelBackground = newTheme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = newTheme.CustomTopPanelForeground;
-            ThemeCustomTreeViewBackground = newTheme.CustomTreeViewBackground;
-            ThemeCustomTreeViewForeground = newTheme.CustomTreeViewForeground;
-            ThemeCustomTreeViewHighlightForeground = newTheme.CustomTreeViewHighlightForeground;
-            ThemeCustomScriptDescBackground = newTheme.CustomScriptDescBackground;
-            ThemeCustomScriptDescForeground = newTheme.CustomScriptDescForeground;
+            ThemeCustomTreePanelBackground = newTheme.CustomTreePanelBackground;
+            ThemeCustomTreePanelForeground = newTheme.CustomTreePanelForeground;
+            ThemeCustomTreePanelHighlight = newTheme.CustomTreePanelHighlight;
+            ThemeCustomScriptPanelBackground = newTheme.CustomScriptPanelBackground;
+            ThemeCustomScriptPanelForeground = newTheme.CustomScriptPanelForeground;
             ThemeCustomStatusBarBackground = newTheme.CustomStatusBarBackground;
             ThemeCustomStatusBarForeground = newTheme.CustomStatusBarForeground;
 
@@ -1268,11 +1268,11 @@ namespace PEBakery.WPF
             ThemeUseCustomTheme = Setting.Theme.UseCustomTheme;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
-            ThemeCustomTreeViewBackground = Setting.Theme.CustomTreeViewBackground;
-            ThemeCustomTreeViewForeground = Setting.Theme.CustomTreeViewForeground;
-            ThemeCustomTreeViewHighlightForeground = Setting.Theme.CustomTreeViewHighlightForeground;
-            ThemeCustomScriptDescBackground = Setting.Theme.CustomScriptDescBackground;
-            ThemeCustomScriptDescForeground = Setting.Theme.CustomScriptDescForeground;
+            ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
+            ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
+            ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
+            ThemeCustomScriptPanelBackground = Setting.Theme.CustomScriptPanelBackground;
+            ThemeCustomScriptPanelForeground = Setting.Theme.CustomScriptPanelForeground;
             ThemeCustomStatusBarBackground = Setting.Theme.CustomStatusBarBackground;
             ThemeCustomStatusBarForeground = Setting.Theme.CustomStatusBarForeground;
 
@@ -1326,11 +1326,11 @@ namespace PEBakery.WPF
             Setting.Theme.UseCustomTheme = ThemeUseCustomTheme;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
-            Setting.Theme.CustomTreeViewBackground = ThemeCustomTreeViewBackground;
-            Setting.Theme.CustomTreeViewForeground = ThemeCustomTreeViewForeground;
-            Setting.Theme.CustomTreeViewHighlightForeground = ThemeCustomTreeViewHighlightForeground;
-            Setting.Theme.CustomScriptDescBackground = ThemeCustomScriptDescBackground;
-            Setting.Theme.CustomScriptDescForeground = ThemeCustomScriptDescForeground;
+            Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
+            Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
+            Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;
+            Setting.Theme.CustomScriptPanelBackground = ThemeCustomScriptPanelBackground;
+            Setting.Theme.CustomScriptPanelForeground = ThemeCustomScriptPanelForeground;
             Setting.Theme.CustomStatusBarBackground = ThemeCustomStatusBarBackground;
             Setting.Theme.CustomStatusBarForeground = ThemeCustomStatusBarForeground;
 

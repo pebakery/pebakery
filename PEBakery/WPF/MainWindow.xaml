@@ -411,8 +411,8 @@
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
                 <TreeView x:Name="MainTreeView"
-                          Background="{Binding TreeViewBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
-                          Foreground="{Binding TreeViewForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                          Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
+                          Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                           FontSize="12"
                           ItemsSource="{Binding MainTreeItems}"
                           IsEnabled="{Binding EnableTreeItems}"
@@ -528,8 +528,8 @@
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding BuildInterfaceVisibility}">
-                <TreeView Background="{Binding TreeViewBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
-                          Foreground="{Binding TreeViewForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                <TreeView Background="{Binding TreePanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
+                          Foreground="{Binding TreePanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                           ItemsSource="{Binding BuildTreeItems}"
                           FontSize="12"
                           BorderThickness="0"
@@ -572,7 +572,7 @@
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Converter={StaticResource ColorToSolidColorBrushConverter}, Mode=OneWay, FallbackValue=Black}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlightForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
+                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlight, Converter={StaticResource ColorToSolidColorBrushConverter}, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
                                 </Trigger>
                             </Style.Triggers>
                             <Style.Resources>
@@ -605,7 +605,7 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Background="{Binding ScriptDescBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}">
+                      Background="{Binding ScriptPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
@@ -653,14 +653,14 @@
                                        Margin="0, 0, 0, 1"
                                        Name="ScriptVersion"
                                        Text="{Binding ScriptVersionText}"
-                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        FontWeight="Bold"
                                        FontSize="14" 
                                        VerticalAlignment="Bottom"/>
                             <TextBlock DockPanel.Dock="Right"
                                        Name="ScriptAuthor"
                                        Text="{Binding ScriptAuthorText}" 
-                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        Margin="0, 0, 5, 2"
                                        FontSize="12"
                                        VerticalAlignment="Bottom"
@@ -671,7 +671,7 @@
                                        Name="ScriptTitle"
                                        FontStretch="SemiCondensed"
                                        Text="{Binding ScriptTitleText}" 
-                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        FontWeight="Bold" FontSize="16"
                                        VerticalAlignment="Bottom"
                                        TextWrapping="Wrap"/>
@@ -693,9 +693,9 @@
                         </DockPanel>
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    FontWeight="Medium"
-                                   Name="ScriptDescription"
+                                   Name="ScriptPanelription"
                                    Text="{Binding ScriptDescriptionText}"
-                                   Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                    FontStretch="SemiCondensed"
                                    VerticalAlignment="Center"
                                    TextWrapping="Wrap"/>

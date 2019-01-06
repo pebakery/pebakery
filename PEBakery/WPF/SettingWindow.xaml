@@ -454,8 +454,9 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Theme" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <Grid Margin="5, 5, 5, 0">
+                <StackPanel Margin="5, 5, 5, 0"
+                            IsEnabled="{Binding CanExecuteCommand}">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
@@ -477,34 +478,126 @@
                                           Foreground="Blue"/>
                         </ComboBox>
                     </Grid>
-                    <GroupBox Header="Custom Theme"
+                    <TextBlock FontWeight="Bold"
+                               Margin="0, 10, 0, 0"
+                               Text="Custom Theme"/>
+                    <Separator/>
+                    <CheckBox Content="Use custom theme"
+                              Height="20"
                               Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Content="Use custom theme"
-                                      Height="20"
-                                      IsChecked="{Binding ThemeUseCustomTheme}"/>
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="200"/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Text="Top Panel (Background)"/>
-                                <cc:ColorEditor Grid.Row="0" Grid.Column="1"
-                                                Color="{Binding ThemeCustomTopPanelBackground}"/>
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
+                              IsChecked="{Binding ThemeUseCustomTheme}"/>
+                    <Grid Margin="5, 0, 5, 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <!-- Background -->
+                        <Border Grid.Row="0" Grid.Column="0"
+                                Grid.RowSpan="2" Grid.ColumnSpan="3"
+                                Background="#FFE0E0E0"/>
+                        <Border Grid.Row="2" Grid.Column="0"
+                                Grid.RowSpan="3" Grid.ColumnSpan="3"
+                                Background="#FFF0F0F0"/>
+                        <Border Grid.Row="5" Grid.Column="0"
+                                Grid.RowSpan="2" Grid.ColumnSpan="3"
+                                Background="#FFE0E0E0"/>
+                        <Border Grid.Row="7" Grid.Column="0"
+                                Grid.RowSpan="2" Grid.ColumnSpan="3"
+                                Background="#FFF0F0F0"/>
+                        <!-- Element -->
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Grid.RowSpan="2"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Text="Top Panel"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Text="Background"/>
+                        <cc:ColorEditor Grid.Row="0" Grid.Column="2"
+                                        Color="{Binding ThemeCustomTopPanelBackground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Text="Foreground"/>
+                        <cc:ColorEditor Grid.Row="1" Grid.Column="2"
+                                        Color="{Binding ThemeCustomTopPanelForeground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                   Grid.RowSpan="3"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Text="Tree Panel"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Background"/>
+                        <cc:ColorEditor Grid.Row="2" Grid.Column="2"
+                                        Color="{Binding ThemeCustomTreePanelBackground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Foreground"/>
+                        <cc:ColorEditor Grid.Row="3" Grid.Column="2"
+                                        Color="{Binding ThemeCustomTreePanelForeground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Highlight"/>
+                        <cc:ColorEditor Grid.Row="4" Grid.Column="2"
+                                        Color="{Binding ThemeCustomTreePanelHighlight, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                   Grid.RowSpan="2"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Text="Script Panel"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Background"/>
+                        <cc:ColorEditor Grid.Row="5" Grid.Column="2"
+                                        Color="{Binding ThemeCustomScriptPanelBackground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Foreground"/>
+                        <cc:ColorEditor Grid.Row="6" Grid.Column="2"
+                                        Color="{Binding ThemeCustomScriptPanelForeground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="7" Grid.Column="0"
+                                   Grid.RowSpan="2"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Text="Status Bar"/>
+                        <TextBlock Grid.Row="7" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Background"/>
+                        <cc:ColorEditor Grid.Row="7" Grid.Column="2"
+                                        Color="{Binding ThemeCustomStatusBarBackground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                        <TextBlock Grid.Row="8" Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   Text="Foreground"/>
+                        <cc:ColorEditor Grid.Row="8" Grid.Column="2"
+                                        Color="{Binding ThemeCustomStatusBarForeground, Mode=TwoWay}"
+                                        IsEnabled="{Binding ThemeUseCustomTheme}"/>
+                    </Grid>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Script" Width="70">

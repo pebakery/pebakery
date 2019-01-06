@@ -152,11 +152,11 @@ namespace PEBakery.Core
             public bool UseCustomTheme;
             public Color CustomTopPanelBackground;
             public Color CustomTopPanelForeground;
-            public Color CustomTreeViewBackground;
-            public Color CustomTreeViewForeground;
-            public Color CustomTreeViewHighlightForeground;
-            public Color CustomScriptDescBackground;
-            public Color CustomScriptDescForeground;
+            public Color CustomTreePanelBackground;
+            public Color CustomTreePanelForeground;
+            public Color CustomTreePanelHighlight;
+            public Color CustomScriptPanelBackground;
+            public Color CustomScriptPanelForeground;
             public Color CustomStatusBarBackground;
             public Color CustomStatusBarForeground;
 
@@ -171,11 +171,11 @@ namespace PEBakery.Core
                 UseCustomTheme = false;
                 CustomTopPanelBackground = Colors.Black;
                 CustomTopPanelForeground = Color.FromRgb(238, 238, 238);
-                CustomTreeViewBackground = Color.FromRgb(204, 204, 204);
-                CustomTreeViewForeground = Colors.Black;
-                CustomTreeViewHighlightForeground = Colors.Red;
-                CustomScriptDescBackground = Color.FromRgb(238, 238, 238);
-                CustomScriptDescForeground = Colors.Black;
+                CustomTreePanelBackground = Color.FromRgb(204, 204, 204);
+                CustomTreePanelForeground = Colors.Black;
+                CustomTreePanelHighlight = Colors.Red;
+                CustomScriptPanelBackground = Color.FromRgb(238, 238, 238);
+                CustomScriptPanelForeground = Colors.Black;
                 CustomStatusBarBackground = Color.FromRgb(238, 238, 238);
                 CustomStatusBarForeground = Colors.Black;
             }
@@ -223,12 +223,12 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color TreeViewBackground
+            public Color TreePanelBackground
             {
                 get
                 {
                     if (UseCustomTheme)
-                        return CustomTreeViewBackground;
+                        return CustomTreePanelBackground;
                     switch (Preset)
                     {
                         case ThemePreset.Black:
@@ -244,12 +244,12 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color TreeViewForeground
+            public Color TreePanelForeground
             {
                 get
                 {
                     if (UseCustomTheme)
-                        return CustomTreeViewForeground;
+                        return CustomTreePanelForeground;
                     switch (Preset)
                     {
                         case ThemePreset.Black:
@@ -262,12 +262,12 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color TreeViewHighlightForeground
+            public Color TreePanelHighlight
             {
                 get
                 {
                     if (UseCustomTheme)
-                        return CustomTreeViewHighlightForeground;
+                        return CustomTreePanelHighlight;
                     switch (Preset)
                     {
                         case ThemePreset.Black:
@@ -283,12 +283,12 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color ScriptDescBackground
+            public Color ScriptPanelBackground
             {
                 get
                 {
                     if (UseCustomTheme)
-                        return CustomScriptDescBackground;
+                        return CustomScriptPanelBackground;
                     switch (Preset)
                     {
                         case ThemePreset.Black:
@@ -304,12 +304,12 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color ScriptDescForeground
+            public Color ScriptPanelForeground
             {
                 get
                 {
                     if (UseCustomTheme)
-                        return CustomScriptDescForeground;
+                        return CustomScriptPanelForeground;
                     switch (Preset)
                     {
                         case ThemePreset.Black:
@@ -459,11 +459,11 @@ namespace PEBakery.Core
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
             Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
-            Global.MainViewModel.TreeViewBackground = Theme.TreeViewBackground;
-            Global.MainViewModel.TreeViewForeground = Theme.TreeViewForeground;
-            Global.MainViewModel.TreeViewHighlightForeground = Theme.TreeViewHighlightForeground;
-            Global.MainViewModel.ScriptDescBackground = Theme.ScriptDescBackground;
-            Global.MainViewModel.ScriptDescForeground = Theme.ScriptDescForeground;
+            Global.MainViewModel.TreePanelBackground = Theme.TreePanelBackground;
+            Global.MainViewModel.TreePanelForeground = Theme.TreePanelForeground;
+            Global.MainViewModel.TreePanelHighlight = Theme.TreePanelHighlight;
+            Global.MainViewModel.ScriptPanelBackground = Theme.ScriptPanelBackground;
+            Global.MainViewModel.ScriptPanelForeground = Theme.ScriptPanelForeground;
             Global.MainViewModel.StatusBarBackground = Theme.StatusBarBackground;
             Global.MainViewModel.StatusBarForeground = Theme.StatusBarForeground;
         }
@@ -516,11 +516,11 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme)), // Boolean
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground)), // Color
                 // Script
@@ -593,11 +593,11 @@ namespace PEBakery.Core
                 Theme.UseCustomTheme = DictParser.ParseBoolean(scDict, ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme);
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTreeViewBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground), Theme.CustomTreeViewBackground);
-                Theme.CustomTreeViewForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground), Theme.CustomTreeViewForeground);
-                Theme.CustomTreeViewHighlightForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground), Theme.CustomTreeViewHighlightForeground);
-                Theme.CustomScriptDescBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground), Theme.CustomScriptDescBackground);
-                Theme.CustomScriptDescForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground), Theme.CustomScriptDescForeground);
+                Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
+                Theme.CustomTreePanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
+                Theme.CustomTreePanelHighlight = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
+                Theme.CustomScriptPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
+                Theme.CustomScriptPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
                 Theme.CustomStatusBarBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
                 Theme.CustomStatusBarForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
             }
@@ -653,11 +653,11 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme.ToString()), // Boolean
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground), WriteColor(Theme.CustomTreeViewBackground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground), WriteColor(Theme.CustomTreeViewForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground), WriteColor(Theme.CustomTreeViewHighlightForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground), WriteColor(Theme.CustomScriptDescBackground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground), WriteColor(Theme.CustomScriptDescForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), WriteColor(Theme.CustomTreePanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), WriteColor(Theme.CustomTreePanelHighlight)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), WriteColor(Theme.CustomScriptPanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), WriteColor(Theme.CustomScriptPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), WriteColor(Theme.CustomStatusBarBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), WriteColor(Theme.CustomStatusBarForeground)), // Color
                 // Script

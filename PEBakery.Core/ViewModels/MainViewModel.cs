@@ -162,7 +162,6 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Color Theme
-
         private Color _topPanelBackground = Colors.Black;
         public Color TopPanelBackground
         {
@@ -177,39 +176,39 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private Color _treeViewBackground = Color.FromRgb(204, 204, 204);
-        public Color TreeViewBackground
+        private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
+        public Color TreePanelBackground
         {
-            get => _treeViewBackground;
-            set => SetProperty(ref _treeViewBackground, value);
+            get => _treePanelBackground;
+            set => SetProperty(ref _treePanelBackground, value);
         }
 
-        private Color _treeViewForeground = Colors.Black;
-        public Color TreeViewForeground
+        private Color _treePanelForeground = Colors.Black;
+        public Color TreePanelForeground
         {
-            get => _treeViewForeground;
-            set => SetProperty(ref _treeViewForeground, value);
+            get => _treePanelForeground;
+            set => SetProperty(ref _treePanelForeground, value);
         }
 
-        private Color _treeViewHighlightForeground = Colors.Red;
-        public Color TreeViewHighlightForeground
+        private Color _treePanelHighlight = Colors.Red;
+        public Color TreePanelHighlight
         {
-            get => _treeViewHighlightForeground;
-            set => SetProperty(ref _treeViewHighlightForeground, value);
+            get => _treePanelHighlight;
+            set => SetProperty(ref _treePanelHighlight, value);
         }
 
-        private Color _scriptDescBackground = Color.FromRgb(238, 238, 238);
-        public Color ScriptDescBackground
+        private Color _scriptPanelBackground = Color.FromRgb(238, 238, 238);
+        public Color ScriptPanelBackground
         {
-            get => _scriptDescBackground;
-            set => SetProperty(ref _scriptDescBackground, value);
+            get => _scriptPanelBackground;
+            set => SetProperty(ref _scriptPanelBackground, value);
         }
 
-        private Color _scriptDescForeground = Colors.Black;
-        public Color ScriptDescForeground
+        private Color _scriptPanelForeground = Colors.Black;
+        public Color ScriptPanelForeground
         {
-            get => _scriptDescForeground;
-            set => SetProperty(ref _scriptDescForeground, value);
+            get => _scriptPanelForeground;
+            set => SetProperty(ref _scriptPanelForeground, value);
         }
 
         private Color _statusBarBackground = Color.FromRgb(238, 238, 238);
