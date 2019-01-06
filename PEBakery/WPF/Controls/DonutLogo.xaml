@@ -1,5 +1,7 @@
 <!--
     Created by Numero Uno, from the Noun Project
+    https://thenounproject.com/term/donut/1042976
+    
     Converted to XAML by Hajin Jang
     
     Attribution 3.0 United States
@@ -7,8 +9,7 @@
 -->
 
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:cc="clr-namespace:PEBakery.WPF.Controls">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <DataTemplate x:Key="DonutLogo" DataType="{x:Type SolidColorBrush}">
         <Image>
             <Image.Source>

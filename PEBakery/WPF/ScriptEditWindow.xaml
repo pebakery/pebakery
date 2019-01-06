@@ -40,7 +40,7 @@
         Closing="Window_Closing"
         Closed="Window_Closed"
         Width="900" Height="720"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
     <Window.CommandBindings>

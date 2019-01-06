@@ -40,7 +40,7 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
         Width="900" Height="640"
-        MinWidth="640" MinHeight="480"
+        MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
     <Window.CommandBindings>
