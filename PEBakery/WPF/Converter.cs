@@ -181,29 +181,6 @@ namespace PEBakery.WPF
             throw new NotImplementedException();
         }
     }
-
-    public class ColorToSolidColorBrushConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-            if (!(value is Color c))
-                return null;
-
-            return new SolidColorBrush(c);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-            if (!(value is SolidColorBrush b))
-                return null;
-
-            return b.Color;
-        }
-    }
     #endregion
 
     #region SettingWindow
@@ -471,6 +448,31 @@ namespace PEBakery.WPF
             if (value == null)
                 return false;
             return !(bool)value;
+        }
+    }
+    #endregion
+
+    #region SolidColorBrush
+    public class ColorToSolidColorBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is Color c))
+                return null;
+
+            return new SolidColorBrush(c);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is SolidColorBrush b))
+                return null;
+
+            return b.Color;
         }
     }
     #endregion

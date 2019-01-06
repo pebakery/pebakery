@@ -654,11 +654,12 @@
                                VerticalAlignment="Center">
                         <TextBlock DockPanel.Dock="Left"
                                    Name="ScriptTitle"
+                                   Margin="0, 0, 0, -2"
+                                   FontSize="16"
                                    FontStretch="SemiCondensed"
                                    Text="{Binding ScriptTitleText}" 
                                    Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                    FontWeight="Bold" 
-                                   FontSize="16"
                                    VerticalAlignment="Bottom"
                                    TextWrapping="Wrap"/>
                         <cc:IconButton DockPanel.Dock="Left"

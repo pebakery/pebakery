@@ -379,7 +379,7 @@ namespace PEBakery.WPF
             Script sc = Model.CurMainTree.Script;
             if (ScriptEditWindow.Count == 0)
             {
-                ScriptEditDialog = new ScriptEditWindow(sc) { Owner = this };
+                ScriptEditDialog = new ScriptEditWindow(sc, Model) { Owner = this };
 
                 // Open as Modal
                 // If ScriptEditWindow returns true in DialogResult, refresh script

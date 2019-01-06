@@ -36,13 +36,13 @@ namespace PEBakery.WPF
         #endregion
 
         #region Constructor
-        public ScriptEditWindow(Script sc)
+        public ScriptEditWindow(Script sc, MainViewModel mainViewModel)
         {
             Interlocked.Increment(ref Count);
 
             try
             {
-                DataContext = m = new ScriptEditViewModel(sc, this);
+                DataContext = m = new ScriptEditViewModel(sc, this, mainViewModel);
 
                 InitializeComponent();
 
@@ -289,8 +289,9 @@ namespace PEBakery.WPF
     public class ScriptEditViewModel : ViewModelBase
     {
         #region Constructor
-        public ScriptEditViewModel(Script sc, Window window)
+        public ScriptEditViewModel(Script sc, Window window, MainViewModel mainViewModel)
         {
+            MainViewModel = mainViewModel;
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
             _window = window;
 
@@ -327,6 +328,7 @@ namespace PEBakery.WPF
         #region Property - Basic
         public Script Script;
         private readonly Window _window;
+        public MainViewModel MainViewModel { get; private set; }
         public UIRenderer Renderer { get; private set; }
         public string InterfaceSectionName { get; private set; }
 
@@ -504,6 +506,8 @@ namespace PEBakery.WPF
 
         #region Property - General - Script Logo
         public bool ScriptLogoUpdated { get; set; } = false;
+
+        public Color ScriptPanelBackground => MainViewModel.ScriptPanelBackground;
 
         #region ScriptLogo
         private PackIconMaterialKind? _scriptLogoIcon;
@@ -3380,7 +3384,7 @@ namespace PEBakery.WPF
 
         public void RefreshMainWindow()
         {
-            Global.MainViewModel.DisplayScript(Script);
+            MainViewModel.DisplayScript(Script);
         }
 
         public void WriteUIControlInfo(UIControl uiCtrl)

@@ -873,9 +873,10 @@
 
                     <TextBlock Margin="0, 3, 0, 3"
                                VerticalAlignment="Center"
-                               Foreground="Red"
+                               Foreground="#FFE00000"
+                               FontWeight="SemiBold"
                                Text="Delete project temp files after changing compatibility options!"/>
-
+                    
                     <TextBlock Margin="0, 0, 0, 3"
                                FontWeight="Bold"
                                Text="Asterisk Bug"/>

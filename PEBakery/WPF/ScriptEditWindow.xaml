@@ -55,6 +55,7 @@
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
         <local:AttachProgressValueToPercentConverter x:Key="AttachProgressValueToPercentConverter" />
         <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
+        <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -68,281 +69,294 @@
                      IsEnabled="{Binding CanExecuteCommand}"
                      Width="100">
                 <StackPanel Margin="10, 0, 10, 10">
-                    <GroupBox Header="Header"
-                              BorderBrush="Gray">
-                        <Grid Margin="5, 5, 5, 5">
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Header"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               SnapsToDevicePixels="True"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Margin="5, 0, 5, 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="130"/>
+                            <RowDefinition Height="25"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Main Description -->
+                        <Grid Grid.Row="0"
+                              Margin="5, 0, 5, 5">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="130"/>
                                 <RowDefinition Height="25"/>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition />
                             </Grid.RowDefinitions>
-
-                            <!-- Main Description -->
-                            <Grid Grid.Row="0"
-                                  Margin="5, 0, 5, 5">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="25"/>
-                                    <RowDefinition Height="25"/>
-                                    <RowDefinition Height="25"/>
-                                    <RowDefinition Height="25"/>
-                                    <RowDefinition />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="90"/>
-                                    <ColumnDefinition Width="2*"/>
-                                    <ColumnDefinition Width="90"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Title -->
-                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Title"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBox Grid.Row="0" Grid.Column="1"
-                                         VerticalAlignment="Center"
-                                         Text="{Binding ScriptTitle}"/>
-
-                                <!-- Author -->
-                                <TextBlock Grid.Row="1" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Author"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBox Grid.Row="1" Grid.Column="1"
-                                         VerticalAlignment="Center"
-                                         Text="{Binding ScriptAuthor}"/>
-
-                                <!-- Description -->
-                                <TextBlock Grid.Row="2" Grid.Column="0"
-                                           Margin="0, 0, 5, 0"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"
-                                           Text="Description"/>
-                                <TextBox Grid.Row="2" Grid.Column="1"
-                                         Grid.RowSpan="3"
-                                         Height="70"
-                                         Text="{Binding ScriptDescription, Mode=TwoWay}"
-                                         TextWrapping="Wrap"
-                                         AcceptsReturn="True"
-                                         VerticalAlignment="Center"/>
-
-                                <!-- Version -->
-                                <TextBlock Grid.Row="0" Grid.Column="2"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Version"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBox Grid.Row="0" Grid.Column="3"
-                                         VerticalAlignment="Center"
-                                         Text="{Binding ScriptVersion}"/>
-
-                                <!-- Date -->
-                                <TextBlock Grid.Row="1" Grid.Column="2"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Date"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBox Grid.Row="1" Grid.Column="3"
-                                         VerticalAlignment="Center"
-                                         Text="{Binding ScriptDate}"/>
-
-                                <!-- Level -->
-                                <TextBlock Grid.Row="2" Grid.Column="2"
-                                           Margin="0, 0, 5, 0"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"
-                                           Text="Level"/>
-                                <cc:NumberBox Grid.Row="2" Grid.Column="3"
-                                                      x:Name="ScriptLevel"
-                                                      VerticalAlignment="Center"
-                                                      Minimum="-256"
-                                                      Maximum="255"
-                                                      IncrementUnit="1"
-                                                      Value="{Binding ScriptLevel, Mode=TwoWay}"/>
-
-                                <!-- Selected -->
-                                <TextBlock Grid.Row="3" Grid.Column="2"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Selected"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <CheckBox Grid.Row="3" Grid.Column="3"
-                                          IsThreeState="True"
-                                          IsChecked="{Binding ScriptSelected}"
-                                          VerticalAlignment="Center"/>
-                                <!-- Mandatory -->
-                                <TextBlock Grid.Row="4" Grid.Column="2"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Mandatory"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <CheckBox Grid.Row="4" Grid.Column="3" 
-                                          IsChecked="{Binding ScriptMandatory}"
-                                          VerticalAlignment="Center"/>
-                            </Grid>
-                            <Button Grid.Row="1"
-                                    Width="100"
-                                    Content="Save"
-                                    x:Name="MainSaveButton"
-                                    Command="local:ScriptEditCommands.Save"
-                                    HorizontalAlignment="Right"/>
-                        </Grid>
-                    </GroupBox>
-                    <GroupBox Header="Logo"
-                              BorderBrush="Gray">
-                        <Grid Height="100"
-                              Margin="3, 0, 5, 0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!-- Script Logo -->
-                            <Image x:Name="ScriptLogoImage"
-                                   Grid.Row="0" Grid.Column="0"
-                                   Width="90" Height="90"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"
-                                   StretchDirection="DownOnly"
-                                   Stretch="Uniform"
-                                   UseLayoutRounding="True"
-                                   Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
-                                   Source="{Binding ScriptLogoImage}"
-                                   ToolTip="Recommended image size : 80x80"/>
-                            <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
-                                                        Grid.Row="0" Grid.Column="0"
-                                                        Width="60" Height="60"
-                                                        Foreground="#60000000"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalAlignment="Center"
-                                                        UseLayoutRounding="True"
-                                                        Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
-                                                        Kind="{Binding ScriptLogoIcon}"
-                                                        ToolTip="Recommended image size : 80x80"/>
-                            <Border x:Name="ScriptLogoSvg"
-                                    Grid.Row="0" Grid.Column="0"
-                                    Width="{Binding ScriptLogoSvgWidth}"
-                                    Height="{Binding ScriptLogoSvgHeight}"
-                                    VerticalAlignment="Center"
-                                    HorizontalAlignment="Center"
-                                    UseLayoutRounding="True"
-                                    Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
-                                    Background="{Binding ScriptLogoSvg}"/>
-                            <Grid Grid.Row="0" Grid.Column="1"
-                                  Height="80"
-                                  Visibility="{Binding ScriptLogoInfoVisibility}">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="20"/>
-                                    <RowDefinition Height="20"/>
-                                    <RowDefinition Height="20"/>
-                                    <RowDefinition Height="20"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <!-- Title -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Title"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBox Grid.Row="0" Grid.Column="1"
+                                     VerticalAlignment="Center"
+                                     Text="{Binding ScriptTitle}"/>
 
-                                <!-- Name -->
-                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                           Margin="0, 0, 10, 0"
-                                           Text="Name"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding ScriptLogoName}"/>
+                            <!-- Author -->
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Author"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBox Grid.Row="1" Grid.Column="1"
+                                     VerticalAlignment="Center"
+                                     Text="{Binding ScriptAuthor}"/>
 
-                                <!-- Raw Size -->
-                                <TextBlock Grid.Row="1" Grid.Column="0"
-                                           Margin="0, 0, 10, 0"
-                                           Text="Raw Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding ScriptLogoRawSize}"/>
+                            <!-- Description -->
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Margin="0, 0, 5, 0"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"
+                                       Text="Description"/>
+                            <TextBox Grid.Row="2" Grid.Column="1"
+                                     Grid.RowSpan="3"
+                                     Height="70"
+                                     Text="{Binding ScriptDescription, Mode=TwoWay}"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalAlignment="Center"/>
 
-                                <!-- Encoded Size -->
-                                <TextBlock Grid.Row="2" Grid.Column="0"
-                                           Margin="0, 0, 10, 0"
-                                           Text="Encoded Size"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBlock Grid.Row="2" Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding ScriptLogoEncodedSize}"/>
+                            <!-- Version -->
+                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Version"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBox Grid.Row="0" Grid.Column="3"
+                                     VerticalAlignment="Center"
+                                     Text="{Binding ScriptVersion}"/>
 
-                                <!-- Compression -->
-                                <TextBlock Grid.Row="3" Grid.Column="0"
-                                           Margin="0, 0, 10, 0"
-                                           Text="Compression"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           FontWeight="Bold"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding ScriptLogoCompression}"/>
-                            </Grid>
-                            <StackPanel Grid.Row="0" Grid.Column="2"
-                                        Orientation="Vertical"
-                                        VerticalAlignment="Center">
-                                <Button Width="100" Height="25"
-                                        Margin="0, 0, 0, 5"
-                                        x:Name="ScriptLogoAttachButton"
-                                        Command="{Binding ScriptLogoAttachCommand}"
-                                        ToolTip="Import logo from image">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Import"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Width="100" Height="25"
-                                        Margin="0, 0, 0, 5"
-                                        x:Name="ScriptLogoExtractButton"
-                                        Command="{Binding ScriptLogoExtractCommand}"
-                                        ToolTip="Export logo to image">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Extract"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Width="100" Height="25"
-                                        x:Name="ScriptLogoDeleteButton"
-                                        Command="{Binding ScriptLogoDeleteCommand}"
-                                        ToolTip="Delete logo">
-                                    <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Close"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Delete"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <!-- Date -->
+                            <TextBlock Grid.Row="1" Grid.Column="2"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Date"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBox Grid.Row="1" Grid.Column="3"
+                                     VerticalAlignment="Center"
+                                     Text="{Binding ScriptDate}"/>
+
+                            <!-- Level -->
+                            <TextBlock Grid.Row="2" Grid.Column="2"
+                                       Margin="0, 0, 5, 0"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"
+                                       Text="Level"/>
+                            <cc:NumberBox Grid.Row="2" Grid.Column="3"
+                                          x:Name="ScriptLevel"
+                                          VerticalAlignment="Center"
+                                          Minimum="-256"
+                                          Maximum="255"
+                                          IncrementUnit="1"
+                                          Value="{Binding ScriptLevel, Mode=TwoWay}"/>
+
+                            <!-- Selected -->
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Selected"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <CheckBox Grid.Row="3" Grid.Column="3"
+                                      IsThreeState="True"
+                                      IsChecked="{Binding ScriptSelected}"
+                                      VerticalAlignment="Center"/>
+                            <!-- Mandatory -->
+                            <TextBlock Grid.Row="4" Grid.Column="2"
+                                       Margin="0, 0, 5, 0"
+                                       Text="Mandatory"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <CheckBox Grid.Row="4" Grid.Column="3" 
+                                      IsChecked="{Binding ScriptMandatory}"
+                                      VerticalAlignment="Center"/>
                         </Grid>
-                    </GroupBox>
+                        <Button Grid.Row="1"
+                                Width="100"
+                                Content="Save"
+                                x:Name="MainSaveButton"
+                                Command="local:ScriptEditCommands.Save"
+                                HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Logo"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               SnapsToDevicePixels="True"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Height="100"
+                          Margin="5, 0, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Script Logo -->
+                        <Border Grid.Row="0" Grid.Column="0"
+                                Background="{Binding ScriptPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=#FFE0E0E0}"/>
+                        <Image x:Name="ScriptLogoImage"
+                               Grid.Row="0" Grid.Column="0"
+                               Width="90" Height="90"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               StretchDirection="DownOnly"
+                               Stretch="Uniform"
+                               UseLayoutRounding="True"
+                               Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                               Source="{Binding ScriptLogoImage}"
+                               ToolTip="Recommended image size : 80x80"/>
+                        <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
+                                                    Grid.Row="0" Grid.Column="0"
+                                                    Width="60" Height="60"
+                                                    Foreground="#60000000"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"
+                                                    UseLayoutRounding="True"
+                                                    Visibility="{Binding ScriptLogoIcon, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                                                    Kind="{Binding ScriptLogoIcon}"
+                                                    ToolTip="Recommended image size : 80x80"/>
+                        <Border x:Name="ScriptLogoSvg"
+                                Grid.Row="0" Grid.Column="0"
+                                Width="{Binding ScriptLogoSvgWidth}"
+                                Height="{Binding ScriptLogoSvgHeight}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                UseLayoutRounding="True"
+                                Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
+                                Background="{Binding ScriptLogoSvg}"/>
+                        <Grid Grid.Row="0" Grid.Column="1"
+                              Height="80"
+                              Visibility="{Binding ScriptLogoInfoVisibility}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20"/>
+                                <RowDefinition Height="20"/>
+                                <RowDefinition Height="20"/>
+                                <RowDefinition Height="20"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Name -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Margin="0, 0, 10, 0"
+                                       Text="Name"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ScriptLogoName}"/>
+
+                            <!-- Raw Size -->
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Margin="0, 0, 10, 0"
+                                       Text="Raw Size"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ScriptLogoRawSize}"/>
+
+                            <!-- Encoded Size -->
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Margin="0, 0, 10, 0"
+                                       Text="Encoded Size"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ScriptLogoEncodedSize}"/>
+
+                            <!-- Compression -->
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       Margin="0, 0, 10, 0"
+                                       Text="Compression"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ScriptLogoCompression}"/>
+                        </Grid>
+                        <StackPanel Grid.Row="0" Grid.Column="2"
+                                    Orientation="Vertical"
+                                    VerticalAlignment="Center">
+                            <Button Width="100" Height="25"
+                                    Margin="0, 0, 0, 5"
+                                    x:Name="ScriptLogoAttachButton"
+                                    Command="{Binding ScriptLogoAttachCommand}"
+                                    ToolTip="Import logo from image">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="0, 5, 5, 5"/>
+                                    <TextBlock Text="Import"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Width="100" Height="25"
+                                    Margin="0, 0, 0, 5"
+                                    x:Name="ScriptLogoExtractButton"
+                                    Command="{Binding ScriptLogoExtractCommand}"
+                                    ToolTip="Export logo to image">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="0, 5, 5, 5"/>
+                                    <TextBlock Text="Extract"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Width="100" Height="25"
+                                    x:Name="ScriptLogoDeleteButton"
+                                    Command="{Binding ScriptLogoDeleteCommand}"
+                                    ToolTip="Delete logo">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="Close"
+                                                                Width="Auto"
+                                                                Height="Auto"
+                                                                Margin="0, 5, 5, 5"/>
+                                    <TextBlock Text="Delete"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Interface" 
@@ -361,9 +375,15 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <GroupBox Grid.Row="0"
-                                  Header="Add"
-                                  BorderBrush="Gray">
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Margin="0, 0, 0, 5"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Text="Add"/>
+                            <Separator Margin="0, 0, 0, 5"
+                                       SnapsToDevicePixels="True"
+                                       BorderBrush="Black"
+                                       BorderThickness="2"/>
                             <Grid Margin="3, 0, 3, 0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="20"/>
@@ -421,13 +441,19 @@
                                     </StackPanel>
                                 </Button>
                             </Grid>
-                        </GroupBox>
-                        <GroupBox Grid.Row="1"
-                                  Header="Edit"
-                                  BorderBrush="Gray">
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Margin="0, 5, 0, 0">
+                            <TextBlock Margin="0, 0, 0, 5"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Text="Edit"/>
+                            <Separator Margin="0, 0, 0, 5"
+                                       SnapsToDevicePixels="True"
+                                       BorderBrush="Black"
+                                       BorderThickness="2"/>
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto">
-                                <StackPanel Margin="5, 5, 5, 5" Orientation="Vertical">
+                                <StackPanel Margin="3, 0, 3, 0" Orientation="Vertical">
                                     <!-- UIControl Selection -->
                                     <ComboBox IsEnabled="{Binding InterfaceLoaded}"
                                               SelectedIndex="{Binding InterfaceUICtrlIndex}"
@@ -1131,64 +1157,43 @@
                                     </Button>
                                 </StackPanel>
                             </ScrollViewer>
-                        </GroupBox>
+                        </StackPanel>
                     </Grid>
-                    <Grid Grid.Column="1">
+                    <Grid Grid.Column="1" Margin="0, 0, 0, 3">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="55"/>
+                            <RowDefinition Height="25"/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0" Margin="0, 0, 5, 0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="60"/>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="110"/>
                             </Grid.ColumnDefinitions>
 
-                            <GroupBox Grid.Column="0"
-                                      Header="Scale Factor"
-                                      BorderBrush="Gray">
-                                <Grid Margin="3, 3, 3, 3">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition/>
-                                        <ColumnDefinition Width="25"/>
-                                        <ColumnDefinition Width="15"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Slider Grid.Column="0"
-                                            Minimum="70"
-                                            Maximum="200"
-                                            TickPlacement="BottomRight"
-                                            TickFrequency="10"
-                                            IsSnapToTickEnabled="True"
-                                            x:Name="ScaleFactorSlider"
-                                            ValueChanged="ScaleFactorSlider_ValueChanged"
-                                            Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
-                                    <TextBlock Grid.Column="1"
-                                               Margin="0, 2, 0, 0"
-                                               Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
-                                               TextAlignment="Right"
-                                               VerticalAlignment="Top"/>
-                                    <TextBlock Grid.Column="2"
-                                               Margin="0, 2, 0, 0"
-                                               TextAlignment="Left"
-                                               VerticalAlignment="Top"
-                                               Text="%" />
-                                </Grid>
-                            </GroupBox>
-
-                            <Button Grid.Column="1"
-                                    Margin="0, 0, 0, 3"
+                            <TextBlock Grid.Column="0" 
+                                       Margin="0, 0, 10, 0"
+                                       VerticalAlignment="Center"
+                                       Text="Script Scale Factor (%)"/>
+                            <cc:NumberBox Grid.Column="1"
+                                          Height="25"
+                                          VerticalContentAlignment="Center"
+                                          Minimum="50"
+                                          Maximum="200"
+                                          IncrementUnit="5"
+                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"/>
+                            <Button Grid.Column="3"
                                     Width="100" Height="25"
                                     Content="Reload"
                                     x:Name="InterfaceReloadButton"
                                     Command="{Binding UICtrlReloadCommand}"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"/>
-                            <Button Grid.Column="2"
-                                    Margin="0, 0, 0, 3"
-                                    Width="100"  Height="25"
+                            <Button Grid.Column="4"
+                                    Width="100" Height="25"
                                     Content="Save"
                                     x:Name="InterfaceSaveButton"
                                     Command="local:ScriptEditCommands.Save"
@@ -1279,71 +1284,75 @@
                             BorderThickness="0, 0.7, 0.7, 0.7">
                         <StackPanel Orientation="Vertical">
                             <!-- Detail of Attached File -->
-                            <StackPanel Margin="5, 5, 5, 0"
+                            <StackPanel Margin="5, 0, 5, 0"
                                         Orientation="Vertical"
                                         Visibility="{Binding AttachDetailFileVisibility}">
-                                <GroupBox Header="Detail"
-                                          BorderBrush="Gray">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="20"/>
-                                            <RowDefinition Height="20"/>
-                                            <RowDefinition Height="20"/>
-                                            <RowDefinition Height="20"/>
-                                            <RowDefinition />
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="120"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
+                                <TextBlock Margin="0, 10, 0, 5"
+                                           FontWeight="Bold"
+                                           FontSize="13"
+                                           Text="Detail"/>
+                                <Separator Margin="0, 0, 0, 5"
+                                           SnapsToDevicePixels="True"
+                                           BorderBrush="Black"
+                                           BorderThickness="2"/>
+                                <Grid Margin="5, 0, 0, 5">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                        <!-- Name -->
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                    <!-- Name -->
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Name"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
                                                    Margin="5, 0, 0, 0"
                                                    VerticalAlignment="Center"
                                                    Text="{Binding AttachFileName}"/>
 
-                                        <!-- Raw Size -->
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                    <!-- Raw Size -->
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Raw Size"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
                                                    Margin="5, 0, 0, 0"
                                                    VerticalAlignment="Center"
                                                    Text="{Binding AttachFileRawSize}"/>
 
-                                        <!-- Encoded Size -->
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                    <!-- Encoded Size -->
+                                    <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Encoded Size"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                    <TextBlock Grid.Row="2" Grid.Column="1"
                                                    Margin="5, 0, 0, 0"
                                                    VerticalAlignment="Center"
                                                    Text="{Binding AttachFileEncodedSize}"/>
 
-                                        <!-- Compression -->
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                    <!-- Compression -->
+                                    <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Compression"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="1"
+                                    <TextBlock Grid.Row="3" Grid.Column="1"
                                                    Margin="5, 0, 0, 0"
                                                    VerticalAlignment="Center"
                                                    Text="{Binding AttachFileCompression}"/>
-                                    </Grid>
-                                </GroupBox>
-
-                                <DockPanel Margin="5, 5, 0, 0"
+                                </Grid>
+                                <DockPanel Margin="5, 0, 0, 0"
                                             Visibility="{Binding AttachDetailFileVisibility}">
                                     <Button x:Name="ExtractFileButton"
                                             DockPanel.Dock="Left"
@@ -1393,11 +1402,17 @@
                                 </DockPanel>
                             </StackPanel>
                             <!-- AddFolderButton -->
-                            <GroupBox Header="Add Folder"
-                                      Margin="5, 5, 0, 0"
-                                      BorderBrush="Gray"
-                                      Visibility="{Binding AttachAddFolderVisibility}">
-                                <Grid Margin="3, 0, 3, 2" Height="25">
+                            <StackPanel Margin="5, 10, 0, 0"
+                                        Visibility="{Binding AttachAddFolderVisibility}">
+                                <TextBlock Margin="0, 0, 0, 5"
+                                           FontWeight="Bold"
+                                           FontSize="13"
+                                           Text="Add Folder"/>
+                                <Separator Margin="0, 0, 0, 5"
+                                           SnapsToDevicePixels="True"
+                                           BorderBrush="Black"
+                                           BorderThickness="2"/>
+                                <Grid Margin="5, 0, 5, 0" Height="25">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="120"/>
                                         <ColumnDefinition/>
@@ -1431,97 +1446,101 @@
                                         </StackPanel>
                                     </Button>
                                 </Grid>
-                            </GroupBox>
+                            </StackPanel>
                             <!-- Detail of Attached Folder -->
-                            <StackPanel Margin="5, 0, 0, 0"
+                            <StackPanel Margin="5, 10, 0, 0"
                                         Orientation="Vertical"
                                         Visibility="{Binding AttachDetailFolderVisibility}">
-                                <GroupBox Header="Attach File"
-                                          Margin="0, 0, 0, 5"
-                                          BorderBrush="Gray">
-                                    <StackPanel Margin="3, 0, 3, 2"
-                                                Orientation="Vertical">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition/>
-                                                <ColumnDefinition Width="120"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="30"/>
-                                                <RowDefinition Height="30"/>
-                                                <RowDefinition Height="25"/>
-                                            </Grid.RowDefinitions>
+                                <TextBlock Margin="0, 0, 0, 5"
+                                           FontWeight="Bold"
+                                           FontSize="13"
+                                           Text="Attach File"/>
+                                <Separator Margin="0, 0, 0, 5"
+                                           SnapsToDevicePixels="True"
+                                           BorderBrush="Black"
+                                           BorderThickness="2"/>
+                                <StackPanel Margin="5, 0, 5, 5"
+                                            Orientation="Vertical">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="30"/>
+                                            <RowDefinition Height="30"/>
+                                            <RowDefinition Height="25"/>
+                                        </Grid.RowDefinitions>
 
-                                            <TextBlock Grid.Row="0" Grid.Column="0"
-                                                       Margin="0, 0, 10, 5"
-                                                       HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Margin="0, 0, 10, 5"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
 
-                                                       Text="Path"/>
-                                            <TextBox Grid.Row="0" Grid.Column="1"
-                                                     VerticalContentAlignment="Center"
-                                                     Margin="0, 0, 5, 5"
-                                                     Text="{Binding AttachNewFilePath}"/>
-                                            <Button Grid.Row="0" Grid.Column="2"
-                                                    Margin="0, 0, 0, 5"
-                                                    x:Name="AttachNewFileChooseButton"
-                                                    Command="{Binding AttachNewFileChooseCommand}"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Top"
-                                                    Width="120" >
-                                                <StackPanel Orientation="Horizontal">
-                                                    <iconPacks:PackIconMaterial Kind="FolderOpen"
-                                                                                Width="Auto"
-                                                                                Height="Auto"
-                                                                                Margin="0, 5, 5, 5"/>
-                                                    <TextBlock Text="Choose"
-                                                               VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
+                                                   Text="Path"/>
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Margin="0, 0, 5, 5"
+                                                 Text="{Binding AttachNewFilePath}"/>
+                                        <Button Grid.Row="0" Grid.Column="2"
+                                                Margin="0, 0, 0, 5"
+                                                x:Name="AttachNewFileChooseButton"
+                                                Command="{Binding AttachNewFileChooseCommand}"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Width="120" >
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="FolderOpen"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="0, 5, 5, 5"/>
+                                                <TextBlock Text="Choose"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
 
-                                            <TextBlock Grid.Row="1" Grid.Column="0"
-                                                       Margin="0, 0, 10, 5"
-                                                       HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
-                                                       Text="File Name"/>
-                                            <TextBox Grid.Row="1" Grid.Column="1"
-                                                     VerticalContentAlignment="Center"
-                                                     Margin="0, 0, 5, 5"
-                                                     Text="{Binding AttachNewFileName}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Margin="0, 0, 10, 5"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   Text="File Name"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1"
+                                                 VerticalContentAlignment="Center"
+                                                 Margin="0, 0, 5, 5"
+                                                 Text="{Binding AttachNewFileName}"/>
 
-                                            <TextBlock Grid.Row="2" Grid.Column="0"
-                                                       Margin="0, 0, 10, 0"
-                                                       HorizontalAlignment="Right"
-                                                       VerticalAlignment="Center"
-                                                       Text="Compression"/>
-                                            <ComboBox Grid.Row="2" Grid.Column="1"
-                                                      Margin="0, 0, 5, 0"
-                                                      VerticalContentAlignment="Center"
-                                                      IsEnabled="{Binding CanExecuteCommand}"
-                                                      SelectedIndex="{Binding AttachNewCompressionIndex}">
-                                                <ComboBoxItem Content="None"/>
-                                                <ComboBoxItem Content="Deflate"/>
-                                                <ComboBoxItem Content="LZMA2"/>
-                                            </ComboBox>
-                                            <Button Grid.Row="2" Grid.Column="2"
-                                                    x:Name="AttachFileButton"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Top"
-                                                    Width="120" Height="25"
-                                                    Command="{Binding AttachFileCommand}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <iconPacks:PackIconMaterial Kind="FilePlus"
-                                                                                Width="Auto"
-                                                                                Height="Auto"
-                                                                                Margin="0, 5, 5, 5"/>
-                                                    <TextBlock Text="Attach File"
-                                                               VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </Grid>
-                                    </StackPanel>
-                                </GroupBox>
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Margin="0, 0, 10, 0"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   Text="Compression"/>
+                                        <ComboBox Grid.Row="2" Grid.Column="1"
+                                                  Margin="0, 0, 5, 0"
+                                                  VerticalContentAlignment="Center"
+                                                  IsEnabled="{Binding CanExecuteCommand}"
+                                                  SelectedIndex="{Binding AttachNewCompressionIndex}">
+                                            <ComboBoxItem Content="None"/>
+                                            <ComboBoxItem Content="Deflate"/>
+                                            <ComboBoxItem Content="LZMA2"/>
+                                        </ComboBox>
+                                        <Button Grid.Row="2" Grid.Column="2"
+                                                x:Name="AttachFileButton"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Width="120" Height="25"
+                                                Command="{Binding AttachFileCommand}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="FilePlus"
+                                                                            Width="Auto"
+                                                                            Height="Auto"
+                                                                            Margin="0, 5, 5, 5"/>
+                                                <TextBlock Text="Attach File"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Margin="5, 0, 5, 0"
                                         x:Name="ExtractFolderButton"
