@@ -83,20 +83,20 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || value.GetType() != typeof(CodeValidator.Result))
+            if (value == null || value.GetType() != typeof(SyntaxChecker.Result))
                 return null;
 
             PackIconMaterialKind icon;
-            CodeValidator.Result result = (CodeValidator.Result)value;
+            SyntaxChecker.Result result = (SyntaxChecker.Result)value;
             switch (result)
             {
-                case CodeValidator.Result.Clean:
+                case SyntaxChecker.Result.Clean:
                     icon = PackIconMaterialKind.Check;
                     break;
-                case CodeValidator.Result.Warning:
+                case SyntaxChecker.Result.Warning:
                     icon = PackIconMaterialKind.Alert;
                     break;
-                case CodeValidator.Result.Error:
+                case SyntaxChecker.Result.Error:
                     icon = PackIconMaterialKind.Close;
                     break;
                 default:
@@ -116,20 +116,20 @@ namespace PEBakery.WPF
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || value.GetType() != typeof(CodeValidator.Result))
+            if (value == null || value.GetType() != typeof(SyntaxChecker.Result))
                 return null;
 
             Brush brush;
-            CodeValidator.Result result = (CodeValidator.Result)value;
+            SyntaxChecker.Result result = (SyntaxChecker.Result)value;
             switch (result)
             {
-                case CodeValidator.Result.Clean:
+                case SyntaxChecker.Result.Clean:
                     brush = new SolidColorBrush(Colors.Green);
                     break;
-                case CodeValidator.Result.Warning:
+                case SyntaxChecker.Result.Warning:
                     brush = new SolidColorBrush(Colors.OrangeRed);
                     break;
-                case CodeValidator.Result.Error:
+                case SyntaxChecker.Result.Error:
                     brush = new SolidColorBrush(Colors.Red);
                     break;
                 default:
@@ -180,6 +180,29 @@ namespace PEBakery.WPF
             throw new NotImplementedException();
         }
     }
+
+    public class ColorToSolidColorBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is Color c))
+                return null;
+
+            return new SolidColorBrush(c);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return null;
+            if (!(value is SolidColorBrush b))
+                return null;
+
+            return b.Color;
+        }
+    }
     #endregion
 
     #region SettingWindow
@@ -214,6 +237,23 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
+        }
+    }
+
+    public class InverseBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            return !(bool)value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+            return !(bool)value;
         }
     }
     #endregion

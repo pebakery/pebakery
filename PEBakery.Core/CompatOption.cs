@@ -111,7 +111,6 @@ namespace PEBakery.Core
 
         #region ReadFromFile, WriteToFile
         public void ReadFromFile()
-
         {
             // Use default value if key/value does not exist or malformed.
             SetToDefault();

@@ -44,7 +44,7 @@ namespace PEBakery.WPF.Controls
             {
                 Width = double.NaN,
                 Height = double.NaN,
-                Margin = new Thickness(4),
+                Margin = IconMargin,
                 Kind = IconMaterialKind,
                 Foreground = BaseForeground,
             };
@@ -116,6 +116,14 @@ namespace PEBakery.WPF.Controls
             get => (SolidColorBrush)GetValue(BaseForegroundProperty);
             set => SetValue(BaseForegroundProperty, value);
         }
+
+        public static readonly DependencyProperty IconMarginProperty = DependencyProperty.Register(nameof(IconMargin),
+            typeof(Thickness), typeof(IconButton), new FrameworkPropertyMetadata(new Thickness(0), OnIconMarginPropertyChanged));
+        public Thickness IconMargin
+        {
+            get => (Thickness)GetValue(IconMarginProperty);
+            set => SetValue(IconMarginProperty, value);
+        }
         #endregion
 
         #region Callbacks
@@ -137,6 +145,17 @@ namespace PEBakery.WPF.Controls
 
             if (button.Content is PackIconMaterial control)
                 control.Foreground = newBrush;
+        }
+
+        private static void OnIconMarginPropertyChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+        {
+            if (!(obj is IconButton button))
+                return;
+            if (!(args.NewValue is Thickness newMargin))
+                return;
+
+            if (button.Content is PackIconMaterial control)
+                control.Margin = newMargin;
         }
         #endregion
     }

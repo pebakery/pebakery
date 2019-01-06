@@ -24,7 +24,7 @@
     SOFTWARE.
 -->
 
-<Window x:Class="PEBakery.Core.UIControls.CustomMessageBoxWindow"
+<Window x:Class="PEBakery.Core.WpfControls.CustomMessageBoxWindow"
         x:ClassModifier="internal"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

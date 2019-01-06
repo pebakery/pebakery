@@ -27,7 +27,7 @@
 
 using ManagedWimLib;
 using Microsoft.Win32;
-using PEBakery.Core.UIControls;
+using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;

@@ -40,6 +40,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace PEBakery.WPF
 {
@@ -626,6 +627,100 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Property - Theme
+        private Setting.ThemePreset _themePreset;
+        public Setting.ThemePreset ThemePreset
+        {
+            get => _themePreset;
+            set
+            {
+                _themePreset = value;
+                OnPropertyUpdate(nameof(ThemePreset));
+                OnPropertyUpdate(nameof(ThemePresetIndex));
+            }
+        }
+        public int ThemePresetIndex
+        {
+            get => (int)_themePreset;
+            set
+            {
+                _themePreset = (Setting.ThemePreset)value;
+                OnPropertyUpdate(nameof(ThemePreset));
+                OnPropertyUpdate(nameof(ThemePresetIndex));
+            }
+        }
+
+        private bool _themeUseCustomTheme;
+        public bool ThemeUseCustomTheme
+        {
+            get => _themeUseCustomTheme;
+            set => SetProperty(ref _themeUseCustomTheme, value);
+        }
+
+        private Color _themeCustomTopPanelBackground;
+        public Color ThemeCustomTopPanelBackground
+        {
+            get => _themeCustomTopPanelBackground;
+            set => SetProperty(ref _themeCustomTopPanelBackground, value);
+        }
+
+        private Color _themeCustomTopPanelForeground;
+        public Color ThemeCustomTopPanelForeground
+        {
+            get => _themeCustomTopPanelForeground;
+            set => SetProperty(ref _themeCustomTopPanelForeground, value);
+        }
+
+        private Color _themeCustomTreeViewBackground;
+        public Color ThemeCustomTreeViewBackground
+        {
+            get => _themeCustomTreeViewBackground;
+            set => SetProperty(ref _themeCustomTreeViewBackground, value);
+        }
+
+        private Color _themeCustomTreeViewForeground;
+        public Color ThemeCustomTreeViewForeground
+        {
+            get => _themeCustomTreeViewForeground;
+            set => SetProperty(ref _themeCustomTreeViewForeground, value);
+        }
+
+        private Color _themeCustomTreeViewHighlightForeground;
+        public Color ThemeCustomTreeViewHighlightForeground
+        {
+            get => _themeCustomTreeViewHighlightForeground;
+            set => SetProperty(ref _themeCustomTreeViewHighlightForeground, value);
+        }
+
+        private Color _themeCustomScriptDescBackground;
+        public Color ThemeCustomScriptDescBackground
+        {
+            get => _themeCustomScriptDescBackground;
+            set => SetProperty(ref _themeCustomScriptDescBackground, value);
+        }
+
+        private Color _themeCustomScriptDescForeground;
+        public Color ThemeCustomScriptDescForeground
+        {
+            get => _themeCustomScriptDescForeground;
+            set => SetProperty(ref _themeCustomScriptDescForeground, value);
+        }
+
+        private Color _themeCustomStatusBarBackground;
+        public Color ThemeCustomStatusBarBackground
+        {
+            get => _themeCustomStatusBarBackground;
+            set => SetProperty(ref _themeCustomStatusBarBackground, value);
+        }
+
+        private Color _themeCustomStatusBarForeground;
+        public Color ThemeCustomStatusBarForeground
+        {
+            get => _themeCustomStatusBarForeground;
+            set => SetProperty(ref _themeCustomStatusBarForeground, value);
+        }
+        #endregion
+
         #region Property - Script
         private string _scriptCacheState;
         public string ScriptCacheState
@@ -1098,6 +1193,20 @@ namespace PEBakery.WPF
             InterfaceUseCustomTitle = newInterface.UseCustomTitle;
             InterfaceCustomTitle = newInterface.CustomTitle;
 
+            // [Theme]
+            Setting.ThemeSetting newTheme = new Setting.ThemeSetting();
+            ThemePreset = newTheme.Preset;
+            ThemeUseCustomTheme = newTheme.UseCustomTheme;
+            ThemeCustomTopPanelBackground = newTheme.CustomTopPanelBackground;
+            ThemeCustomTopPanelForeground = newTheme.CustomTopPanelForeground;
+            ThemeCustomTreeViewBackground = newTheme.CustomTreeViewBackground;
+            ThemeCustomTreeViewForeground = newTheme.CustomTreeViewForeground;
+            ThemeCustomTreeViewHighlightForeground = newTheme.CustomTreeViewHighlightForeground;
+            ThemeCustomScriptDescBackground = newTheme.CustomScriptDescBackground;
+            ThemeCustomScriptDescForeground = newTheme.CustomScriptDescForeground;
+            ThemeCustomStatusBarBackground = newTheme.CustomStatusBarBackground;
+            ThemeCustomStatusBarForeground = newTheme.CustomStatusBarForeground;
+
             // [Script]
             Setting.ScriptSetting newScript = new Setting.ScriptSetting();
             ScriptEnableCache = newScript.EnableCache;
@@ -1154,6 +1263,19 @@ namespace PEBakery.WPF
             InterfaceDisplayShellExecuteConOut = Setting.Interface.DisplayShellExecuteConOut;
             InterfaceSize = Setting.Interface.InterfaceSize;
 
+            // [Theme]
+            ThemePreset = Setting.Theme.Preset;
+            ThemeUseCustomTheme = Setting.Theme.UseCustomTheme;
+            ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
+            ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
+            ThemeCustomTreeViewBackground = Setting.Theme.CustomTreeViewBackground;
+            ThemeCustomTreeViewForeground = Setting.Theme.CustomTreeViewForeground;
+            ThemeCustomTreeViewHighlightForeground = Setting.Theme.CustomTreeViewHighlightForeground;
+            ThemeCustomScriptDescBackground = Setting.Theme.CustomScriptDescBackground;
+            ThemeCustomScriptDescForeground = Setting.Theme.CustomScriptDescForeground;
+            ThemeCustomStatusBarBackground = Setting.Theme.CustomStatusBarBackground;
+            ThemeCustomStatusBarForeground = Setting.Theme.CustomStatusBarForeground;
+
             // [Script]
             ScriptEnableCache = Setting.Script.EnableCache;
             ScriptAutoSyntaxCheck = Setting.Script.AutoSyntaxCheck;
@@ -1198,6 +1320,19 @@ namespace PEBakery.WPF
             Setting.Interface.ScaleFactor = _interfaceScaleFactor;
             Setting.Interface.DisplayShellExecuteConOut = InterfaceDisplayShellExecuteConOut;
             Setting.Interface.InterfaceSize = InterfaceSize;
+
+            // [Theme]
+            Setting.Theme.Preset = ThemePreset;
+            Setting.Theme.UseCustomTheme = ThemeUseCustomTheme;
+            Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
+            Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
+            Setting.Theme.CustomTreeViewBackground = ThemeCustomTreeViewBackground;
+            Setting.Theme.CustomTreeViewForeground = ThemeCustomTreeViewForeground;
+            Setting.Theme.CustomTreeViewHighlightForeground = ThemeCustomTreeViewHighlightForeground;
+            Setting.Theme.CustomScriptDescBackground = ThemeCustomScriptDescBackground;
+            Setting.Theme.CustomScriptDescForeground = ThemeCustomScriptDescForeground;
+            Setting.Theme.CustomStatusBarBackground = ThemeCustomStatusBarBackground;
+            Setting.Theme.CustomStatusBarForeground = ThemeCustomStatusBarForeground;
 
             // [Script]
             Setting.Script.EnableCache = ScriptEnableCache;

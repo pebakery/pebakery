@@ -128,6 +128,7 @@
         <local:ScriptTitleConverter x:Key="ScriptTitleConverter" />
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -148,7 +149,7 @@
     </Window.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top"
-              Background="{Binding TopPanelBackground, FallbackValue=LightBlue}"
+              Background="{Binding TopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
               Visibility="{Binding NormalInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}" />
@@ -171,9 +172,9 @@
                         Orientation="Horizontal">
                 <ContentControl Margin="15, 15, 5, 15"
                                 ContentTemplate="{StaticResource DonutLogo}"
-                                Content="{Binding TopPanelForeground, FallbackValue=Black}"/>
+                                Content="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"/>
                 <TextBlock Text="PEBakery"
-                           Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
@@ -188,13 +189,14 @@
                              Margin="10, 0, 0, 0"
                              Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
-                             Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                             Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Center"
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2" 
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                            x:Name="ProjectBuildStartButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectBuildStartCommand"
@@ -203,7 +205,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="ProjectRefreshButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectRefreshCommand"
@@ -212,7 +215,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="SettingWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.SettingWindowCommand"
@@ -221,7 +225,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="5"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="LogWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.LogWindowCommand"
@@ -230,7 +235,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="6"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="UtilityWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.UtilityWindowCommand"
@@ -239,7 +245,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="7"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="ProjectUpdateButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.ProjectUpdateCommand"
@@ -248,7 +255,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="8"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="AboutWindowButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            Command="local:MainViewCommands.AboutWindowCommand"
@@ -258,42 +266,42 @@
 
             <TextBlock Text="Build"
                        Grid.Row="1" Grid.Column="2"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Refresh"
                        Grid.Row="1" Grid.Column="3"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Settings"
                        Grid.Row="1" Grid.Column="4"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Logs"
                        Grid.Row="1" Grid.Column="5"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Utilities"
                        Grid.Row="1" Grid.Column="6"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
             <TextBlock Text="Update"
                        Grid.Row="1" Grid.Column="7"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="8"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
         </Grid>
         <Grid DockPanel.Dock="Top"
-              Background="{Binding TopPanelBackground, FallbackValue=LightBlue}"
+              Background="{Binding TopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
               Visibility="{Binding BuildInterfaceVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"/>
@@ -312,10 +320,10 @@
                         Orientation="Horizontal">
                 <ContentControl Margin="15, 15, 5, 15"
                                 ContentTemplate="{StaticResource DonutLogo}"
-                                Content="{Binding TopPanelForeground, FallbackValue=White}"/>
+                                Content="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"/>
                 <TextBlock Text="PEBakery"
                            Margin="{Binding BannerMargin, Mode=OneWay, FallbackValue=0}"
-                           Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            FontSize="{Binding BannerFontSize, Mode=OneWay, FallbackValue=40}" 
@@ -326,7 +334,7 @@
 
             <cc:ProgressRing Grid.Row="0" Grid.RowSpan="2"
                              Grid.Column="1"
-                             Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                             Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                              Margin="10, 0, 0, 0"
                              Width="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
                              Height="{Binding MainIconButtonSize, Mode=OneWay, FallbackValue=60}"
@@ -334,7 +342,8 @@
                              IsActive="{Binding WorkInProgress}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="2"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            x:Name="ProjectBuildStopButton"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="StopCircle"
@@ -343,7 +352,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="3"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="CommentCheck"
                            Command="local:MainViewCommands.LogWindowCommand"
@@ -351,7 +361,8 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
             <cc:IconButton Grid.Row="0" Grid.Column="4"
                            Margin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                           BaseForeground="{Binding TopPanelForeground, FallbackValue=Black}"
+                           IconMargin="4"
+                           BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            Style="{StaticResource MainIconButtonStyle}"
                            IconMaterialKind="Help"
                            Command="local:MainViewCommands.AboutWindowCommand"
@@ -360,17 +371,17 @@
 
             <TextBlock Text="Stop"
                        Grid.Row="1" Grid.Column="2"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="Log" 
                        Grid.Row="1" Grid.Column="3"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
             <TextBlock Text="About"
                        Grid.Row="1" Grid.Column="4"
-                       Foreground="{Binding TopPanelForeground, FallbackValue=Black}"
+                       Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
         </Grid>
@@ -385,8 +396,8 @@
                          Visibility="{Binding BottomProgressBarVisibility}"/>
             <TextBlock FontSize="13"
                        Text="{Binding StatusBarText}"
-                       Background="{Binding StatusBarBackground, FallbackValue=LightGray}"
-                       Foreground="{Binding StatusBarForeground, FallbackValue=Black}"
+                       Background="{Binding StatusBarBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
+                       Foreground="{Binding StatusBarForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                        Visibility="{Binding BottomStatusBarVisibility}"/>
         </Grid>
         <Grid>
@@ -400,8 +411,8 @@
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding NormalInterfaceVisibility}">
                 <TreeView x:Name="MainTreeView"
-                          Background="{Binding TreeViewBackground, FallbackValue=LimeGreen}"
-                          Foreground="{Binding TreeViewForeground, FallbackValue=Black}"
+                          Background="{Binding TreeViewBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Gray}"
+                          Foreground="{Binding TreeViewForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                           FontSize="12"
                           ItemsSource="{Binding MainTreeItems}"
                           IsEnabled="{Binding EnableTreeItems}"
@@ -512,14 +523,13 @@
                             <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Black}"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
-
                 </TreeView>
             </Grid>
             <Grid Grid.Column="0"
                   Margin="0, 0, 8, 0"
                   Visibility="{Binding BuildInterfaceVisibility}">
-                <TreeView Background="{Binding TreeViewBackground, FallbackValue=LimeGreen}"
-                          Foreground="{Binding TreeViewForeground, FallbackValue=Black}"
+                <TreeView Background="{Binding TreeViewBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
+                          Foreground="{Binding TreeViewForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                           ItemsSource="{Binding BuildTreeItems}"
                           FontSize="12"
                           BorderThickness="0"
@@ -561,7 +571,7 @@
                             <Setter Property="IsSelected" Value="{Binding BuildFocus, Mode=OneWay}" />
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlightForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
+                                    <Setter Property="Foreground" Value="{Binding Path=DataContext.TreeViewHighlightForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}, Mode=OneWay, FallbackValue=Red}"/>
                                 </Trigger>
                             </Style.Triggers>
                             <Style.Resources>
@@ -594,7 +604,7 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0"
-                      Background="{Binding ScriptDescBackground, FallbackValue=LightYellow}">
+                      Background="{Binding ScriptDescBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
@@ -642,14 +652,14 @@
                                        Margin="0, 0, 0, 1"
                                        Name="ScriptVersion"
                                        Text="{Binding ScriptVersionText}"
-                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        FontWeight="Bold"
                                        FontSize="14" 
                                        VerticalAlignment="Bottom"/>
                             <TextBlock DockPanel.Dock="Right"
                                        Name="ScriptAuthor"
                                        Text="{Binding ScriptAuthorText}" 
-                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        Margin="0, 0, 5, 2"
                                        FontSize="12"
                                        VerticalAlignment="Bottom"
@@ -660,33 +670,31 @@
                                        Name="ScriptTitle"
                                        FontStretch="SemiCondensed"
                                        Text="{Binding ScriptTitleText}" 
-                                       Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
+                                       Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                        FontWeight="Bold" FontSize="16"
                                        VerticalAlignment="Bottom"
                                        TextWrapping="Wrap"/>
-                            <Button DockPanel.Dock="Left"
-                                    Margin="4, 0, 0, 2"
-                                    Width="16"
-                                    Height="16"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Bottom"
-                                    Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
-                                    IsEnabled="{Binding IsTreeEntryFile}"
-                                    Visibility="{Binding ScriptCheckVisibility}"
-                                    BorderThickness="0"
-                                    Background="Transparent"
-                                    Foreground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
-                                    ToolTip="Syntax Check">
-                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}}"
-                                                            Width="Auto"
-                                                            Height="Auto"/>
-                            </Button>
+                            <cc:IconButton DockPanel.Dock="Left"
+                                           IconMargin="0"
+                                           Margin="4, 0, 0, 2"
+                                           Width="16"
+                                           Height="16"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Bottom"
+                                           Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                                           IsEnabled="{Binding IsTreeEntryFile}"
+                                           Visibility="{Binding ScriptCheckVisibility}"
+                                           BorderThickness="0"
+                                           Background="Transparent"
+                                           BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
+                                           IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}, FallbackValue=None}"
+                                           ToolTip="Syntax Check"/>
                         </DockPanel>
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    FontWeight="Medium"
                                    Name="ScriptDescription"
                                    Text="{Binding ScriptDescriptionText}"
-                                   Foreground="{Binding ScriptDescForeground, FallbackValue=Black}"
+                                   Foreground="{Binding ScriptDescForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                    FontStretch="SemiCondensed"
                                    VerticalAlignment="Center"
                                    TextWrapping="Wrap"/>

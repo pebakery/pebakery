@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -133,6 +134,236 @@ namespace PEBakery.Core
             }
         }
 
+        public enum ThemePreset
+        {
+            Black = 0,
+            Red = 1,
+            Green = 2,
+            Blue = 3,
+        }
+
+        public class ThemeSetting
+        {
+            public const string SectionName = "Theme";
+
+            // Preset
+            public ThemePreset Preset;
+            // Custom
+            public bool UseCustomTheme;
+            public Color CustomTopPanelBackground;
+            public Color CustomTopPanelForeground;
+            public Color CustomTreeViewBackground;
+            public Color CustomTreeViewForeground;
+            public Color CustomTreeViewHighlightForeground;
+            public Color CustomScriptDescBackground;
+            public Color CustomScriptDescForeground;
+            public Color CustomStatusBarBackground;
+            public Color CustomStatusBarForeground;
+
+            public ThemeSetting()
+            {
+                Default();
+            }
+
+            public void Default()
+            {
+                Preset = ThemePreset.Black;
+                UseCustomTheme = false;
+                CustomTopPanelBackground = Colors.Black;
+                CustomTopPanelForeground = Color.FromRgb(238, 238, 238);
+                CustomTreeViewBackground = Color.FromRgb(204, 204, 204);
+                CustomTreeViewForeground = Colors.Black;
+                CustomTreeViewHighlightForeground = Colors.Red;
+                CustomScriptDescBackground = Color.FromRgb(238, 238, 238);
+                CustomScriptDescForeground = Colors.Black;
+                CustomStatusBarBackground = Color.FromRgb(238, 238, 238);
+                CustomStatusBarForeground = Colors.Black;
+            }
+
+            #region Properties
+            public Color TopPanelBackground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomTopPanelBackground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Colors.Black;
+                        case ThemePreset.Red:
+                            return Colors.DarkRed;
+                        case ThemePreset.Green:
+                            return Colors.DarkGreen;
+                        case ThemePreset.Blue:
+                            return Colors.DarkBlue;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color TopPanelForeground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomTopPanelForeground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Color.FromRgb(238, 238, 238);
+                        case ThemePreset.Red:
+                            return Colors.White;
+                        case ThemePreset.Green:
+                            return Colors.White;
+                        case ThemePreset.Blue:
+                            return Colors.White;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color TreeViewBackground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomTreeViewBackground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Color.FromRgb(204, 204, 204);
+                        case ThemePreset.Red:
+                            return Color.FromRgb(255, 211, 94);
+                        case ThemePreset.Green:
+                            return Colors.LimeGreen;
+                        case ThemePreset.Blue:
+                            return Colors.SkyBlue;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color TreeViewForeground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomTreeViewForeground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                        case ThemePreset.Red:
+                        case ThemePreset.Green:
+                        case ThemePreset.Blue:
+                            return Colors.Black;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color TreeViewHighlightForeground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomTreeViewHighlightForeground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Colors.Red;
+                        case ThemePreset.Red:
+                            return Colors.DarkRed;
+                        case ThemePreset.Green:
+                            return Colors.DarkGreen;
+                        case ThemePreset.Blue:
+                            return Colors.DarkBlue;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color ScriptDescBackground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomScriptDescBackground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Color.FromRgb(238, 238, 238);
+                        case ThemePreset.Red:
+                            return Color.FromRgb(255, 255, 192);
+                        case ThemePreset.Green:
+                            return Colors.LightGreen;
+                        case ThemePreset.Blue:
+                            return Colors.LightBlue;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color ScriptDescForeground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomScriptDescForeground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                        case ThemePreset.Red:
+                        case ThemePreset.Green:
+                        case ThemePreset.Blue:
+                            return Colors.Black;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color StatusBarBackground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomStatusBarBackground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                            return Color.FromRgb(238, 238, 238);
+                        case ThemePreset.Red:
+                            return Color.FromRgb(255, 232, 208);
+                        case ThemePreset.Green:
+                            return Colors.LightGreen;
+                        case ThemePreset.Blue:
+                            return Colors.LightBlue;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            public Color StatusBarForeground
+            {
+                get
+                {
+                    if (UseCustomTheme)
+                        return CustomStatusBarForeground;
+                    switch (Preset)
+                    {
+                        case ThemePreset.Black:
+                        case ThemePreset.Red:
+                        case ThemePreset.Green:
+                        case ThemePreset.Blue:
+                            return Colors.Black;
+                        default:
+                            throw new InvalidOperationException("Undefined theme preset");
+                    }
+                }
+            }
+            #endregion
+        }
+
         public class ScriptSetting
         {
             public const string SectionName = "Script";
@@ -185,6 +416,7 @@ namespace PEBakery.Core
         public ProjectSetting Project { get; }
         public GeneralSetting General { get; }
         public InterfaceSetting Interface { get; }
+        public ThemeSetting Theme { get; }
         public ScriptSetting Script { get; }
         public LogSetting Log { get; }
         #endregion
@@ -197,6 +429,7 @@ namespace PEBakery.Core
             Project = new ProjectSetting();
             General = new GeneralSetting();
             Interface = new InterfaceSetting();
+            Theme = new ThemeSetting();
             Script = new ScriptSetting();
             Log = new LogSetting();
 
@@ -217,11 +450,22 @@ namespace PEBakery.Core
             Logger.DebugLevel = Log.DebugLevel;
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
 
-            // Instance
+            // MainViewModel (Without Theme)
             Global.MainViewModel.TitleBar = Interface.UseCustomTitle ? Interface.CustomTitle : MainViewModel.DefaultTitleBar;
             Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
+
+            // MainViewModel (Theme)
+            Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
+            Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
+            Global.MainViewModel.TreeViewBackground = Theme.TreeViewBackground;
+            Global.MainViewModel.TreeViewForeground = Theme.TreeViewForeground;
+            Global.MainViewModel.TreeViewHighlightForeground = Theme.TreeViewHighlightForeground;
+            Global.MainViewModel.ScriptDescBackground = Theme.ScriptDescBackground;
+            Global.MainViewModel.ScriptDescForeground = Theme.ScriptDescForeground;
+            Global.MainViewModel.StatusBarBackground = Theme.StatusBarBackground;
+            Global.MainViewModel.StatusBarForeground = Theme.StatusBarForeground;
         }
         #endregion
 
@@ -247,13 +491,16 @@ namespace PEBakery.Core
 
             IniKey[] keys =
             {
+                // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject)), // String
+                // General
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent)), // String
+                // Interface
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle)), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle)), // String
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor)), // Boolean
@@ -264,8 +511,22 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (70 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Integer (0 - 2)
+                // Theme
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.Preset)), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme)), // Boolean
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground)), // Color
+                // Script
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache)), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck)), // Boolean
+                // Log
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Integer (0 - 2)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
@@ -323,6 +584,24 @@ namespace PEBakery.Core
                 Interface.InterfaceSize = (InterfaceSize)DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), (int)Interface.InterfaceSize, 0, Enum.GetValues(typeof(InterfaceSize)).Length - 1);
             }
 
+            // Theme
+            if (keyDict.ContainsKey(ThemeSetting.SectionName))
+            {
+                Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
+
+                Theme.Preset = (ThemePreset)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.Preset), (int)Theme.Preset, 0, Enum.GetValues(typeof(ThemePreset)).Length - 1);
+                Theme.UseCustomTheme = DictParser.ParseBoolean(scDict, ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme);
+                Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
+                Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
+                Theme.CustomTreeViewBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground), Theme.CustomTreeViewBackground);
+                Theme.CustomTreeViewForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground), Theme.CustomTreeViewForeground);
+                Theme.CustomTreeViewHighlightForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground), Theme.CustomTreeViewHighlightForeground);
+                Theme.CustomScriptDescBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground), Theme.CustomScriptDescBackground);
+                Theme.CustomScriptDescForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground), Theme.CustomScriptDescForeground);
+                Theme.CustomStatusBarBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
+                Theme.CustomStatusBarForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
+            }
+
             // Script
             if (keyDict.ContainsKey(ScriptSetting.SectionName))
             {
@@ -345,15 +624,20 @@ namespace PEBakery.Core
 
         public void WriteToFile()
         {
+            string WriteColor(Color c) => $"{c.R}, {c.G}, {c.B}";
+
             IniKey[] keys =
             {
+                // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject), Project.DefaultProject), // String
+                // General
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent), General.CustomUserAgent), // String
+                // Interface
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.CustomTitle), Interface.CustomTitle), // String
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor.ToString()), // Boolean
@@ -364,8 +648,22 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
+                // Theme
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.Preset), ((int)Theme.Preset).ToString()), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.UseCustomTheme), Theme.UseCustomTheme.ToString()), // Boolean
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewBackground), WriteColor(Theme.CustomTreeViewBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewForeground), WriteColor(Theme.CustomTreeViewForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreeViewHighlightForeground), WriteColor(Theme.CustomTreeViewHighlightForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescBackground), WriteColor(Theme.CustomScriptDescBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomScriptDescForeground), WriteColor(Theme.CustomScriptDescForeground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), WriteColor(Theme.CustomStatusBarBackground)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), WriteColor(Theme.CustomStatusBarForeground)), // Color
+                // Script
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache.ToString()), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck.ToString()), // Boolean
+                // Log
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel), ((int)Log.DebugLevel).ToString()), // Integer
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging.ToString()), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport.ToString()), // Boolean
@@ -466,6 +764,52 @@ namespace PEBakery.Core
 
             Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
             return defaultValue;
+        }
+
+        public static Color ParseColor(Dictionary<string, string> dict, string section, string key, Color defaultValue)
+        {
+            string valStr = dict[key];
+            if (valStr == null) // No warning, just use default value
+                return defaultValue;
+
+            // Format = R, G, B (in base 10)
+            string[] colorStrs = valStr.Split(',').Select(x => x.Trim()).ToArray();
+            if (colorStrs.Length != 3)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+                return defaultValue;
+            }
+
+            byte[] c = new byte[3]; // R, G, B
+            for (int i = 0; i < 3; i++)
+            {
+                string colorStr = colorStrs[i];
+                if (!byte.TryParse(colorStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte valByte))
+                {
+                    char ch;
+                    switch (i)
+                    {
+                        case 0: // Red
+                            ch = 'R';
+                            break;
+                        case 1: // Green
+                            ch = 'G';
+                            break;
+                        case 2: // Blue
+                            ch = 'B';
+                            break;
+                        default: // Unknown
+                            ch = 'U';
+                            break;
+                    }
+                    Debug.Assert(ch != 'U', "Unknown color parsing index");
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong [{ch}] value: {colorStr}"));
+                    return defaultValue;
+                }
+                c[i] = valByte;
+            }
+
+            return Color.FromRgb(c[0], c[1], c[2]);
         }
     }
     #endregion

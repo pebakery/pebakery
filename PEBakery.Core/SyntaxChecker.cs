@@ -31,7 +31,7 @@ using System.Linq;
 
 namespace PEBakery.Core
 {
-    public class CodeValidator
+    public class SyntaxChecker
     {
         #region Field and Property
         private readonly Script _sc;
@@ -51,7 +51,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public CodeValidator(Script sc)
+        public SyntaxChecker(Script sc)
         {
             _sc = sc ?? throw new ArgumentNullException(nameof(sc));
         }
@@ -63,15 +63,15 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             // Codes
-            if (_sc.Sections.ContainsKey("Process"))
-                logs.AddRange(ValidateCodeSection(_sc.Sections["Process"]));
+            if (_sc.Sections.ContainsKey(ScriptSection.Names.Process))
+                logs.AddRange(ValidateCodeSection(_sc.Sections[ScriptSection.Names.Process]));
 
             // UICtrls
-            if (_sc.Sections.ContainsKey("Interface"))
-                logs.AddRange(ValidateInterfaceSection(_sc.Sections["Interface"]));
-            if (_sc.MainInfo.ContainsKey("Interface"))
+            if (_sc.Sections.ContainsKey(ScriptSection.Names.Interface))
+                logs.AddRange(ValidateInterfaceSection(_sc.Sections[ScriptSection.Names.Interface]));
+            if (_sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
             {
-                string ifaceSection = _sc.MainInfo["Interface"];
+                string ifaceSection = _sc.MainInfo[ScriptSection.Names.Interface];
                 if (_sc.Sections.ContainsKey(ifaceSection))
                     logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
             }

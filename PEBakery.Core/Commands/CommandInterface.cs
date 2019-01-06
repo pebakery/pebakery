@@ -29,7 +29,7 @@
 
 using Ookii.Dialogs.Wpf;
 using PEBakery.Helper;
-using PEBakery.Core.UIControls;
+using PEBakery.Core.WpfControls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

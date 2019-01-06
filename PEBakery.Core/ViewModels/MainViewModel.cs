@@ -162,64 +162,65 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Color Theme
-        private SolidColorBrush _topPanelBackground = new SolidColorBrush(Colors.Black);
-        public SolidColorBrush TopPanelBackground
+
+        private Color _topPanelBackground = Colors.Black;
+        public Color TopPanelBackground
         {
             get => _topPanelBackground;
             set => SetProperty(ref _topPanelBackground, value);
         }
 
-        private SolidColorBrush _topPanelForeground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
-        public SolidColorBrush TopPanelForeground
+        private Color _topPanelForeground = Color.FromRgb(238, 238, 238);
+        public Color TopPanelForeground
         {
             get => _topPanelForeground;
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private SolidColorBrush _treeViewBackground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
-        public SolidColorBrush TreeViewBackground
+        private Color _treeViewBackground = Color.FromRgb(204, 204, 204);
+        public Color TreeViewBackground
         {
             get => _treeViewBackground;
             set => SetProperty(ref _treeViewBackground, value);
         }
 
-        private SolidColorBrush _treeViewForeground = new SolidColorBrush(Colors.Black);
-        public SolidColorBrush TreeViewForeground
+        private Color _treeViewForeground = Colors.Black;
+        public Color TreeViewForeground
         {
             get => _treeViewForeground;
             set => SetProperty(ref _treeViewForeground, value);
         }
 
-        private SolidColorBrush _treeViewHighlightForeground = new SolidColorBrush(Colors.Red);
-        public SolidColorBrush TreeViewHighlightForeground
+        private Color _treeViewHighlightForeground = Colors.Red;
+        public Color TreeViewHighlightForeground
         {
             get => _treeViewHighlightForeground;
             set => SetProperty(ref _treeViewHighlightForeground, value);
         }
 
-        private SolidColorBrush _scriptDescBackground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
-        public SolidColorBrush ScriptDescBackground
+        private Color _scriptDescBackground = Color.FromRgb(238, 238, 238);
+        public Color ScriptDescBackground
         {
             get => _scriptDescBackground;
             set => SetProperty(ref _scriptDescBackground, value);
         }
 
-        private SolidColorBrush _scriptDescForeground = new SolidColorBrush(Colors.Black);
-        public SolidColorBrush ScriptDescForeground
+        private Color _scriptDescForeground = Colors.Black;
+        public Color ScriptDescForeground
         {
             get => _scriptDescForeground;
             set => SetProperty(ref _scriptDescForeground, value);
         }
 
-        private SolidColorBrush _statusBarBackground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
-        public SolidColorBrush StatusBarBackground
+        private Color _statusBarBackground = Color.FromRgb(238, 238, 238);
+        public Color StatusBarBackground
         {
             get => _statusBarBackground;
             set => SetProperty(ref _statusBarBackground, value);
         }
 
-        private SolidColorBrush _statusBarForeground = new SolidColorBrush(Colors.Black);
-        public SolidColorBrush StatusBarForeground
+        private Color _statusBarForeground = Colors.Black;
+        public Color StatusBarForeground
         {
             get => _statusBarForeground;
             set => SetProperty(ref _statusBarForeground, value);
@@ -343,8 +344,8 @@ namespace PEBakery.Core.ViewModels
 
         public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
 
-        private CodeValidator.Result _scriptCheckResult = CodeValidator.Result.Unknown;
-        public CodeValidator.Result ScriptCheckResult
+        private SyntaxChecker.Result _scriptCheckResult = SyntaxChecker.Result.Unknown;
+        public SyntaxChecker.Result ScriptCheckResult
         {
             get => _scriptCheckResult;
             set
@@ -756,7 +757,7 @@ namespace PEBakery.Core.ViewModels
                     Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Loading from [{Global.BaseDir}]"));
 
                     // Load CommentProcessing Icon, Clear interfaces
-                    ScriptCheckResult = CodeValidator.Result.Unknown;
+                    ScriptCheckResult = SyntaxChecker.Result.Unknown;
                     ScriptLogoIcon = PackIconMaterialKind.CommentProcessing;
                     MainTreeItems.Clear();
                     BuildTreeItems.Clear();
@@ -925,8 +926,8 @@ namespace PEBakery.Core.ViewModels
                 Interlocked.Increment(ref SyntaxChecking);
                 try
                 {
-                    CodeValidator v = new CodeValidator(sc);
-                    (List<LogInfo> logs, CodeValidator.Result result) = v.Validate();
+                    SyntaxChecker v = new SyntaxChecker(sc);
+                    (List<LogInfo> logs, SyntaxChecker.Result result) = v.Validate();
                     LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
                     LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
 
@@ -993,16 +994,16 @@ namespace PEBakery.Core.ViewModels
                     {
                         switch (result)
                         {
-                            case CodeValidator.Result.Clean:
+                            case SyntaxChecker.Result.Clean:
                                 b.AppendLine("No syntax issue detected");
                                 b.AppendLine();
                                 b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
                                 MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
                                 break;
-                            case CodeValidator.Result.Warning:
-                            case CodeValidator.Result.Error:
+                            case SyntaxChecker.Result.Warning:
+                            case SyntaxChecker.Result.Error:
                                 string dialogMsg = $"{errorWarns} syntax {(errorWarns == 1 ? "issue" : "issues")} detected!\r\n\r\nOpen logs?";
-                                MessageBoxImage dialogIcon = result == CodeValidator.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
+                                MessageBoxImage dialogIcon = result == SyntaxChecker.Result.Error ? MessageBoxImage.Error : MessageBoxImage.Exclamation;
                                 MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
                                 if (dialogResult == MessageBoxResult.OK)
                                 {
@@ -1093,7 +1094,7 @@ namespace PEBakery.Core.ViewModels
             DisplayScriptLogo(sc);
             DisplayScriptTexts(sc, null);
 
-            ScriptCheckResult = CodeValidator.Result.Unknown;
+            ScriptCheckResult = SyntaxChecker.Result.Unknown;
             if (sc.Type == ScriptType.Directory)
             {
                 ClearScriptInterface();

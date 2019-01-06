@@ -33,6 +33,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         FontSize="13"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
@@ -106,6 +107,7 @@
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
+        <local:InverseBoolConverter x:Key="InverseBoolConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -321,13 +323,15 @@
                                       VerticalContentAlignment="Center"
                                       Content="Use custom title"
                                       IsChecked="{Binding InterfaceUseCustomTitle}" />
-                            <Grid Margin="0, 0, 0, 3">
+                            <Grid Margin="0, 0, 0, 3"
+                                  Height="25">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
                                            FontSize="12"
+                                           VerticalAlignment="Center"
                                            Text="Custom Title" />
                                 <TextBox Grid.Column="1"
                                          FontSize="12"
@@ -444,6 +448,60 @@
                                           ItemsSource="{Binding InterfaceSizes}"
                                           SelectedItem="{Binding InterfaceSize}">
                                 </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Theme" Width="70">
+                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
+                    <Grid Margin="5, 5, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   Text="Preset"/>
+                        <ComboBox Grid.Column="1"
+                                  VerticalContentAlignment="Center"
+                                  SelectedIndex="{Binding ThemePresetIndex}"
+                                  IsEnabled="{Binding ThemeUseCustomTheme, Converter={StaticResource InverseBoolConverter}}">
+                            <ComboBoxItem Content="Black"
+                                          Foreground="Black"/>
+                            <ComboBoxItem Content="Red"
+                                          Foreground="Red"/>
+                            <ComboBoxItem Content="Green"
+                                          Foreground="Green"/>
+                            <ComboBoxItem Content="Blue"
+                                          Foreground="Blue"/>
+                        </ComboBox>
+                    </Grid>
+                    <GroupBox Header="Custom Theme"
+                              Margin="5, 5, 5, 0"
+                              BorderBrush="Gray">
+                        <StackPanel Margin="3, 3, 3, 0">
+                            <CheckBox Content="Use custom theme"
+                                      Height="20"
+                                      IsChecked="{Binding ThemeUseCustomTheme}"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Text="Top Panel (Background)"/>
+                                <cc:ColorEditor Grid.Row="0" Grid.Column="1"
+                                                Color="{Binding ThemeCustomTopPanelBackground}"/>
                             </Grid>
                         </StackPanel>
                     </GroupBox>

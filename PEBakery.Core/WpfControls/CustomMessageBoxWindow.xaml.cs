@@ -34,7 +34,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
-namespace PEBakery.Core.UIControls
+namespace PEBakery.Core.WpfControls
 {
     /// <summary>
     /// Interaction logic for ModalDialog.xaml
