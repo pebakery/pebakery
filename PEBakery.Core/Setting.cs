@@ -236,9 +236,9 @@ namespace PEBakery.Core
                         case ThemePreset.Red:
                             return Color.FromRgb(255, 211, 94);
                         case ThemePreset.Green:
-                            return Colors.LimeGreen;
+                            return Color.FromRgb(180, 255, 180);
                         case ThemePreset.Blue:
-                            return Colors.SkyBlue;
+                            return Color.FromRgb(180, 180, 255);
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -296,9 +296,9 @@ namespace PEBakery.Core
                         case ThemePreset.Red:
                             return Color.FromRgb(255, 255, 192);
                         case ThemePreset.Green:
-                            return Colors.LightGreen;
+                            return Color.FromRgb(230, 255, 230);
                         case ThemePreset.Blue:
-                            return Colors.LightBlue;
+                            return Color.FromRgb(230, 230, 255);
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -335,9 +335,9 @@ namespace PEBakery.Core
                         case ThemePreset.Red:
                             return Color.FromRgb(255, 232, 208);
                         case ThemePreset.Green:
-                            return Colors.LightGreen;
+                            return Color.FromRgb(210, 255, 210);
                         case ThemePreset.Blue:
-                            return Colors.LightBlue;
+                            return Color.FromRgb(210, 210, 255);
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
