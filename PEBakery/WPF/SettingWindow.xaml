@@ -34,13 +34,13 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
-        FontSize="13"
+        FontSize="12"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Settings"
-        Width="600" Height="530"
+        Width="600" Height="540"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
@@ -107,7 +107,8 @@
         <local:FontInfoWeightConverter x:Key="FontInfoWeightConverter" />
         <local:FontInfoSizeConverter x:Key="FontInfoSizeConverter" />
         <local:CompatOptionToggleButtonContentConverter x:Key="CompatOptionToggleButtonContentConverter" />
-        <local:InverseBoolConverter x:Key="InverseBoolConverter" />
+        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <local:AddPercentConverter x:Key="AddPercentConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -115,348 +116,402 @@
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Header="Projects" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <Grid Margin="5, 5, 5, 0"
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Projects"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
+                    <TextBlock Margin="0, 0, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Default Project"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               SnapsToDevicePixels="True"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Margin="5, 0, 5, 5"
+                          Height="25"
                           VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="30"/>
-                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Margin="0, 0, 0, 5" 
                                    FontSize="12"
                                    VerticalAlignment="Center"
                                    Text="Default Project"/>
                         <ComboBox Grid.Row="0" Grid.Column="1"
-                                  Margin="0, 0, 0, 5"
+                                  Height="25"
                                   VerticalAlignment="Center"
+                                  VerticalContentAlignment="Center"
                                   ItemsSource="{Binding ProjectNames}"
                                   SelectedIndex="{Binding DefaultProjectIndex}"/>
-                        <TextBlock Grid.Row="1" Grid.Column="0"
+                    </Grid>
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontSize="13"
+                               FontWeight="Bold"
+                               Text="Source Setup (Legacy)"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Margin="5, 0, 5, 0"
+                          VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="25"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="25"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- Project to Configure -->
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Height="25"
                                    Margin="0, 0, 0, 5"
-                                   FontSize="12"
                                    VerticalAlignment="Center"
                                    Text="Project to Configure"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1"
+                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                  Grid.ColumnSpan="3"
+                                  Height="25"
                                   Margin="0, 0, 0, 5"
                                   VerticalAlignment="Center"
+                                  VerticalContentAlignment="Center"
                                   ItemsSource="{Binding ProjectNames}"
                                   SelectedIndex="{Binding SelectedProjectIndex}"/>
-                    </Grid>
-                    <GroupBox Margin="5, 5, 5, 0"
-                              Header="Source Setup (Legacy)"
-                              BorderBrush="Gray">
-                        <StackPanel IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}">
-                            <Grid Height="25"
-                                  Margin="5, 5, 5, 0"
-                                  VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="30"/>
-                                    <ColumnDefinition Width="25"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           FontSize="12"
-                                           VerticalAlignment="Center"
-                                           Text="Source Directory"/>
-                                <ComboBox Grid.Column="1"
-                                          Margin="0, 0, 5, 0"
-                                          ItemsSource="{Binding ProjectSourceDirs}"
-                                          SelectedIndex="{Binding ProjectSourceDirIndex}"/>
-                                <Button Grid.Column="2"
-                                        Margin="0, 0, 5, 0"
-                                        x:Name="SelectSourceDirButton"
-                                        Command="local:SettingViewCommands.SelectSourceDirCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="FolderOpen"
+                        <!-- Source Directory -->
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   Height="25"
+                                   Margin="0, 0, 0, 5"
+                                   VerticalAlignment="Center"
+                                   Text="Source Directory"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1"
+                                  Height="25"
+                                  Margin="0, 0, 5, 5"
+                                  VerticalAlignment="Center"
+                                  VerticalContentAlignment="Center"
+                                  IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                  ItemsSource="{Binding ProjectSourceDirs}"
+                                  SelectedIndex="{Binding ProjectSourceDirIndex}"/>
+                        <Button Grid.Row="1" Grid.Column="2"
+                                Height="25"
+                                Margin="0, 0, 5, 5"
+                                x:Name="SelectSourceDirButton"
+                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                Command="local:SettingViewCommands.SelectSourceDirCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="FolderOpen"
                                                                     Width="Auto"
                                                                     Height="Auto"
                                                                     Margin="2"/>
-                                    </Button.Content>
-                                </Button>
-                                <Button Grid.Column="3"
-                                        x:Name="ResetSourceDirButton"
-                                        Command="local:SettingViewCommands.ResetSourceDirCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="Close"
+                            </Button.Content>
+                        </Button>
+                        <Button Grid.Row="1" Grid.Column="3"
+                                Height="25"
+                                Margin="0, 0, 0, 5"
+                                x:Name="ResetSourceDirButton"
+                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                Command="local:SettingViewCommands.ResetSourceDirCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="Close"
                                                                     Width="Auto"
                                                                     Height="Auto"
                                                                     Margin="4"/>
-                                    </Button.Content>
-                                </Button>
-                            </Grid>
-                            <Grid Height="25"
-                                  Margin="5, 5, 5, 0"
-                                  VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="25"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           VerticalAlignment="Center"
-                                           Text="Target Directory"/>
-                                <TextBox Grid.Column="1"
-                                         Margin="0, 0, 5, 0"
-                                         FontSize="12"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding ProjectTargetDir}"/>
-                                <Button Grid.Column="2"
-                                        x:Name="SelectTargetDirButton"
-                                        Command="local:SettingViewCommands.SelectTargetDirCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="FolderOpen"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="2"/>
-                                    </Button.Content>
-                                </Button>
-                            </Grid>
-                            <Grid Height="25"
-                                  Margin="5, 5, 5, 5"
-                                  VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="25"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           FontSize="12"
-                                           VerticalAlignment="Center"
-                                           Text="ISO File"/>
-                                <TextBox Grid.Column="1"
-                                         Margin="0, 0, 5, 0"
-                                         VerticalContentAlignment="Center"
-                                         Text="{Binding ProjectIsoFile}"/>
-                                <Button Grid.Column="2"
-                                        x:Name="SelectIsoFileButton"
-                                        Command="local:SettingViewCommands.SelectIsoFileCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="FolderOpen"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="2"/>
-                                    </Button.Content>
-                                </Button>
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
+                            </Button.Content>
+                        </Button>
+                        <!-- Target Directory -->
+                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                   Height="25"
+                                   Margin="0, 0, 0, 5"
+                                   VerticalAlignment="Center"
+                                   Text="Target Directory"/>
+                        <TextBox Grid.Row="2" Grid.Column="1"
+                                 Grid.ColumnSpan="2"
+                                 Height="25"
+                                 Margin="0, 0, 5, 5"
+                                 VerticalContentAlignment="Center"
+                                 IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                 Text="{Binding ProjectTargetDir}"/>
+                        <Button Grid.Row="2" Grid.Column="3"
+                                Height="25"
+                                Margin="0, 0, 0, 5"
+                                x:Name="SelectTargetDirButton"
+                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                Command="local:SettingViewCommands.SelectTargetDirCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="FolderOpen"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="2"/>
+                            </Button.Content>
+                        </Button>
+                        <!-- ISO File -->
+                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                   Height="25"
+                                   VerticalAlignment="Center"
+                                   Text="ISO File"/>
+                        <TextBox Grid.Row="3" Grid.Column="1"
+                                 Grid.ColumnSpan="2"
+                                 Height="25"
+                                 Margin="0, 0, 5, 0"
+                                 IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                 VerticalContentAlignment="Center"
+                                 Text="{Binding ProjectIsoFile}"/>
+                        <Button Grid.Row="3" Grid.Column="3"
+                                Height="25"
+                                x:Name="SelectIsoFileButton"
+                                IsEnabled="{Binding DefaultProject, Converter={StaticResource ProjectPathEnabledConverter}}"
+                                Command="local:SettingViewCommands.SelectIsoFileCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="FolderOpen"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="2"/>
+                            </Button.Content>
+                        </Button>
+                    </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="General" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <GroupBox Header="Build"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Optimize code"
-                                      IsChecked="{Binding GeneralOptimizeCode}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Show LogWindow after build"
-                                      IsChecked="{Binding GeneralShowLogAfterBuild}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Stop build on error"
-                                      IsChecked="{Binding GeneralStopBuildOnError}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Path Length Limit"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable long file path support"
-                                      ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
-                                      Command="local:SettingViewCommands.EnableLongFilePathCommand"
-                                      AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                      IsChecked="{Binding GeneralEnableLongFilePath}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="User-Agent"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Use custom User-Agent in WebGet"
-                                      IsChecked="{Binding GeneralUseCustomUserAgent}" />
-                            <Grid Margin="0, 0, 0, 3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           FontSize="12"
-                                           Text="Custom User-Agent" />
-                                <TextBox Grid.Column="1"
-                                         FontSize="12"
-                                         VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding GeneralUseCustomUserAgent}"
-                                         Text="{Binding GeneralCustomUserAgent}" />
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </TabItem>
-            <TabItem Header="Interface" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <GroupBox Header="PEBakery Title"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Use custom title"
-                                      IsChecked="{Binding InterfaceUseCustomTitle}" />
-                            <Grid Margin="0, 0, 0, 3"
-                                  Height="25">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           FontSize="12"
-                                           VerticalAlignment="Center"
-                                           Text="Custom Title" />
-                                <TextBox Grid.Column="1"
-                                         FontSize="12"
-                                         VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding InterfaceUseCustomTitle}"
-                                         Text="{Binding InterfaceCustomTitle}" />
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Default Code Editor"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox DockPanel.Dock="Left" 
-                                      Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      IsChecked="{Binding InterfaceUseCustomEditor}"
-                                      Content="Use custom editor" />
-                            <DockPanel Height="25">
-                                <Button DockPanel.Dock="Right"
-                                        Width="25"
-                                        VerticalContentAlignment="Center"
-                                        HorizontalContentAlignment="Center"
-                                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                    <Button.Content>
-                                        <iconPacks:PackIconMaterial Kind="FolderOpen"/>
-                                    </Button.Content>
-                                </Button>
-                                <TextBox DockPanel.Dock="Left"
-                                         Margin="0, 0, 5, 0"
-                                         VerticalContentAlignment="Center"
-                                         IsEnabled="{Binding InterfaceUseCustomEditor}"
-                                         Text="{Binding InterfaceCustomEditorPath}" />
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Default Monospaced Font"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <Grid Margin="3, 3, 3, 3">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="25"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="0" Grid.Column="0"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
-                                       FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
-                                       FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
-                                       Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
-                            <Button Grid.Row="0"
-                                    Grid.Column="1"
-                                    Height="25"
-                                    Command="local:SettingViewCommands.SelectMonospacedFontCommand"
-                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                                <Button.Content>
-                                    <iconPacks:PackIconMaterial Kind="FormatFont"
-                                                                Width="Auto"
-                                                                Height="Auto"
-                                                                Margin="2"/>
-                                </Button.Content>
-                            </Button>
-                        </Grid>
-                    </GroupBox>
-                    <GroupBox Header="Scale Factor for Script Interface"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <DockPanel Margin="3, 3, 3, 0">
-                            <TextBlock DockPanel.Dock="Right"
-                                       TextAlignment="Right"
-                                       Text="%" />
-                            <TextBlock DockPanel.Dock="Right"
-                                       Width="25" 
-                                       Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
-                                       TextAlignment="Right" />
-                            <Slider Minimum="70"
-                                    Maximum="200"
-                                    TickPlacement="BottomRight"
-                                    TickFrequency="10"
-                                    IsSnapToTickEnabled="True"
-                                    Foreground="Black"
-                                    x:Name="ScaleFactorSlider"
-                                    Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
-                        </DockPanel>
-                    </GroupBox>
-                    <GroupBox Header="Build Mode Interface"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Display console output in ShellExecute"
-                                      IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Program Interface"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <Grid Margin="0, 0, 0, 3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           FontSize="12"
-                                           Text="Interface Size"
-                                           VerticalAlignment="Center"/>
-                                <ComboBox Grid.Column="1"
-                                          FontSize="12"
-                                          VerticalContentAlignment="Center"
-                                          ItemsSource="{Binding InterfaceSizes}"
-                                          SelectedItem="{Binding InterfaceSize}">
-                                </ComboBox>
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </TabItem>
-            <TabItem Header="Theme" Width="70">
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="General"/>
+                </TabItem.Header>
                 <StackPanel Margin="5, 5, 5, 0"
                             IsEnabled="{Binding CanExecuteCommand}">
-                    <Grid>
+                    <TextBlock Margin="0, 0, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Build"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 5">
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Optimize code"
+                                  IsChecked="{Binding GeneralOptimizeCode}" />
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Show LogWindow after build"
+                                  IsChecked="{Binding GeneralShowLogAfterBuild}" />
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Stop build on error"
+                                  IsChecked="{Binding GeneralStopBuildOnError}" />
+                    </StackPanel>
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Path Length Limit"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 5">
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable long file path support"
+                                  ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
+                                  Command="local:SettingViewCommands.EnableLongFilePathCommand"
+                                  AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                  IsChecked="{Binding GeneralEnableLongFilePath}" />
+                    </StackPanel>
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="User-Agent"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 0">
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Use custom User-Agent in WebGet"
+                                  IsChecked="{Binding GeneralUseCustomUserAgent}" />
+                        <Grid Height="25" Margin="0, 0, 0, 3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Text="Custom User-Agent" />
+                            <TextBox Grid.Column="1"
+                                     VerticalContentAlignment="Center"
+                                     IsEnabled="{Binding GeneralUseCustomUserAgent}"
+                                     Text="{Binding GeneralCustomUserAgent}" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Interface"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0" 
+                            IsEnabled="{Binding CanExecuteCommand}">
+                    <TextBlock Margin="0, 0, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="PEBakery Interface"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 0">
+                        <CheckBox VerticalContentAlignment="Center"
+                                  Height="20"
+                                  Content="Display console output in ShellExecute"
+                                  IsChecked="{Binding InterfaceDisplayShellExecuteConOut}" />
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="25"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Custom Title -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Text="Custom Title" />
+                            <CheckBox Grid.Row="0" Grid.Column="1"
+                                      VerticalContentAlignment="Center"
+                                      IsChecked="{Binding InterfaceUseCustomTitle}" />
+                            <TextBox Grid.Row="0" Grid.Column="2"
+                                     FontSize="12"
+                                     VerticalContentAlignment="Center"
+                                     IsEnabled="{Binding InterfaceUseCustomTitle}"
+                                     Text="{Binding InterfaceCustomTitle}" />
+                            <!-- Interface Size -->
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Grid.ColumnSpan="2"
+                                       Text="Interface Size"
+                                       VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="1" Grid.Column="2"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding InterfaceSizes}"
+                                      SelectedItem="{Binding InterfaceSize}"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Default Code Editor"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Height="25" Margin="5, 0, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="25"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   Text="Custom Editor"/>
+                        <CheckBox Grid.Row="0" Grid.Column="1" 
+                                  VerticalAlignment="Center"
+                                  IsChecked="{Binding InterfaceUseCustomEditor}"
+                                  Content="Use custom editor" />
+                        <TextBox Grid.Row="0" Grid.Column="2" 
+                                 Margin="0, 0, 5, 0"
+                                 VerticalContentAlignment="Center"
+                                 IsEnabled="{Binding InterfaceUseCustomEditor}"
+                                 Text="{Binding InterfaceCustomEditorPath}" />
+                        <Button Grid.Row="0" Grid.Column="3" 
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
+                                Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="FolderOpen"/>
+                            </Button.Content>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Default Monospaced Font"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Height="25" Margin="5, 0, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="25"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontFamily="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoFamilyConverter}}"
+                                   FontWeight="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoWeightConverter}}"
+                                   FontSize="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoSizeConverter}}"
+                                   Text="{Binding InterfaceMonospacedFont, Converter={StaticResource FontInfoDescriptionConverter}}"/>
+                        <Button Grid.Row="0" Grid.Column="1"
+                                Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="FormatFont"
+                                                            Width="Auto"
+                                                            Height="Auto"
+                                                            Margin="2"/>
+                            </Button.Content>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Scale Factor for Script Interface"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Margin="5, 0, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="32"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider Grid.Column="0"
+                                Minimum="70"
+                                Maximum="200"
+                                TickPlacement="BottomRight"
+                                TickFrequency="10"
+                                IsSnapToTickEnabled="True"
+                                Foreground="Black"
+                                x:Name="ScaleFactorSlider"
+                                Value="{Binding InterfaceScaleFactor, FallbackValue=100}" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding InterfaceScaleFactor, Mode=OneWay, Converter={StaticResource AddPercentConverter}}"
+                                   TextAlignment="Right" />
+                    </Grid>
+                </StackPanel>
+            </TabItem>
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Theme"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0"
+                            IsEnabled="{Binding CanExecuteCommand}">
+                    <TextBlock FontWeight="Bold"
+                               FontSize="13"
+                               Text="Theme Preset"/>
+                    <Separator Margin="0, 5, 0, 5"
+                               SnapsToDevicePixels="True"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Height="25">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
@@ -478,13 +533,18 @@
                                           Foreground="Blue"/>
                         </ComboBox>
                     </Grid>
+
                     <TextBlock FontWeight="Bold"
                                Margin="0, 10, 0, 0"
+                               FontSize="13"
                                Text="Custom Theme"/>
-                    <Separator/>
+                    <Separator Margin="0, 5, 0, 5"
+                               SnapsToDevicePixels="True"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
                     <CheckBox Content="Use custom theme"
                               Height="20"
-                              Margin="5, 5, 5, 0"
+                              Margin="5, 0, 5, 0"
                               IsChecked="{Binding ThemeUseCustomTheme}"/>
                     <Grid Margin="5, 0, 5, 0">
                         <Grid.RowDefinitions>
@@ -528,6 +588,7 @@
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
                         <cc:ColorEditor Grid.Row="0" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTopPanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="1" Grid.Column="1"
@@ -535,6 +596,7 @@
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="1" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTopPanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="2" Grid.Column="0"
@@ -547,18 +609,21 @@
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
                         <cc:ColorEditor Grid.Row="2" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="3" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="3" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="4" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Highlight"/>
                         <cc:ColorEditor Grid.Row="4" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomTreePanelHighlight, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="5" Grid.Column="0"
@@ -571,12 +636,14 @@
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
                         <cc:ColorEditor Grid.Row="5" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="6" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="6" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomScriptPanelForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="7" Grid.Column="0"
@@ -589,117 +656,143 @@
                                    HorizontalAlignment="Center"
                                    Text="Background"/>
                         <cc:ColorEditor Grid.Row="7" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarBackground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                         <TextBlock Grid.Row="8" Grid.Column="1"
                                    HorizontalAlignment="Center"
                                    Text="Foreground"/>
                         <cc:ColorEditor Grid.Row="8" Grid.Column="2"
+                                        Margin="10, 0, 0, 0"
                                         Color="{Binding ThemeCustomStatusBarForeground, Mode=TwoWay}"
                                         IsEnabled="{Binding ThemeUseCustomTheme}"/>
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Script" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <GroupBox Header="Script Cache"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Content="Enable Script Cache"
-                                      IsChecked="{Binding ScriptEnableCache}" />
-                            <Grid Height="25"
-                                  Margin="0, 0, 0, 3"
-                                  VerticalAlignment="Center">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="150"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           Margin="0, 0, 10, 0"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding ScriptCacheState}"/>
-                                <Button Grid.Column="1"
-                                        Content="Clear Cache Database"
-                                        Command="local:SettingViewCommands.ClearCacheDatabaseCommand" 
-                                        AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
-                            </Grid>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Syntax Checker"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Auto Check Syntax Error"
-                                      IsChecked="{Binding ScriptAutoSyntaxCheck}" />
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </TabItem>
-            <TabItem Header="Log" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <GroupBox Header="Log Database"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <DockPanel Height="25"
-                                   Margin="5, 5, 5, 5"
-                                   VerticalAlignment="Center">
-                            <Button DockPanel.Dock="Right"
-                                    Content="Clear Log Database"
-                                    Width="150"
-                                    Command="local:SettingViewCommands.ClearLogDatabaseCommand" 
-                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}" />
-                            <TextBlock x:Name="TextBlock_LogDBState"
-                                       VerticalAlignment="Center"
-                                       Text="{Binding LogDatabaseState}" />
-                        </DockPanel>
-                    </GroupBox>
-                    <GroupBox Header="Debug Level"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <Grid Margin="5, 5, 5, 5"
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Script"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
+                    <TextBlock Margin="0, 0, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Script Cache"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 0">
+                        <CheckBox Height="20" 
+                                  VerticalContentAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Content="Enable script cache"
+                                  IsChecked="{Binding ScriptEnableCache}" />
+                        <Grid Height="25"
+                              Margin="0, 0, 0, 3"
                               VerticalAlignment="Center">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
                                 <ColumnDefinition/>
+                                <ColumnDefinition Width="120"/>
                             </Grid.ColumnDefinitions>
+
                             <TextBlock Grid.Column="0"
+                                       Margin="0, 0, 10, 0"
                                        VerticalAlignment="Center"
-                                       Text="Log Debug Level" />
-                            <ComboBox Grid.Column="1"
-                                      x:Name="LogDebugLevelComboBox"
-                                      ItemsSource="{Binding LogDebugLevels}"
-                                      SelectedItem="{Binding LogSelectedDebugLevel}"/>
+                                       Text="{Binding ScriptCacheState}"/>
+                            <Button Grid.Column="1"
+                                    Height="25"
+                                    Content="Clear Cache"
+                                    Command="local:SettingViewCommands.ClearCacheDatabaseCommand" 
+                                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                         </Grid>
-                    </GroupBox>
-                    <GroupBox Header="Optimization"
-                              Margin="5, 5, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="0, 0, 0, 5">
-                            <CheckBox Margin="5, 5, 5, 0"
-                                      VerticalContentAlignment="Center"
-                                      Content="Deferred Logging"
-                                      ToolTip="Deferred logging vastly improves performance."
-                                      IsChecked="{Binding LogDeferredLogging}" />
-                            <CheckBox Margin="5, 5, 5, 0"
-                                      VerticalContentAlignment="Center"
-                                      Content="Compact Exported HTML Log"
-                                      ToolTip="Compact the size of HTML at the expense of memory."
-                                      IsChecked="{Binding LogMinifyHtmlExport}" />
-                        </StackPanel>
-                    </GroupBox>
+                    </StackPanel>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Syntax Check"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 0">
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Auto check syntax error"
+                                  IsChecked="{Binding ScriptAutoSyntaxCheck}" />
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Compat" Width="70">
-                <StackPanel IsEnabled="{Binding CanExecuteCommand}">
-                    <Grid Margin="5, 5, 5, 0"
-                          Height="25"
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Log"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
+                    <TextBlock Margin="0, 0, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Logging"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <Grid Height="25" Margin="5, 0, 5, 5"
+                          VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding LogDatabaseState}" />
+                        <Button Grid.Column="1"
+                                Height="25"
+                                Content="Clear Logs"
+                                Command="local:SettingViewCommands.ClearLogDatabaseCommand" 
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}" />
+                    </Grid>
+                    <Grid Margin="5, 0, 5, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   Text="Debug Level" />
+                        <ComboBox Grid.Column="1"
+                                  Height="25"
+                                  x:Name="LogDebugLevelComboBox"
+                                  VerticalAlignment="Center"
+                                  VerticalContentAlignment="Center"
+                                  ItemsSource="{Binding LogDebugLevels}"
+                                  SelectedItem="{Binding LogSelectedDebugLevel}"/>
+                    </Grid>
+
+                    <TextBlock Margin="0, 10, 0, 5"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               Text="Optimization"/>
+                    <Separator Margin="0, 0, 0, 5"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="5, 0, 5, 0">
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Deferred logging"
+                                  ToolTip="Deferred logging vastly improves performance."
+                                  IsChecked="{Binding LogDeferredLogging}" />
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Compact exported HTML log"
+                                  ToolTip="Compact the size of HTML at the expense of memory."
+                                  IsChecked="{Binding LogMinifyHtmlExport}" />
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Width="70">
+                <TabItem.Header>
+                    <TextBlock FontSize="13" Text="Compat"/>
+                </TabItem.Header>
+                <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
+                    <Grid Height="25"
                           VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="125"/>
@@ -708,7 +801,6 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                                   FontSize="12"
                                    VerticalAlignment="Center"
                                    Text="Project to Configure"/>
                         <ComboBox Grid.Column="1"
@@ -722,91 +814,104 @@
                                 Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
                     </Grid>
-                    <GroupBox Header="Asterisk Bug"
-                              Margin="5, 0, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Simulate WinBuilder's *.* bug in DirCopy"
-                                      IsChecked="{Binding CompatAsteriskBugDirCopy}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Simulate WinBuilder's *.* bug in folder.project"
-                                      IsChecked="{Binding CompatAsteriskBugDirLink}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Command"
-                              Margin="5, 0, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0" >
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="FileRename and DirMove work like PathMove"
-                                      IsChecked="{Binding CompatFileRenameCanMoveDir}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow letter in Loop"
-                                      IsChecked="{Binding CompatAllowLetterInLoop}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable deprecated legacy branch conditions"
-                                      IsChecked="{Binding CompatLegacyBranchCondition}" />
-                            <!-- ReSharper disable once MarkupAttributeTypo -->
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
-                                      IsChecked="{Binding CompatLegacyRegWrite}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow Set to modify interface controls"
-                                      IsChecked="{Binding CompatAllowSetModifyInterface}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy interface commands (e.g. Visible)"
-                                      IsChecked="{Binding CompatLegacyInterfaceCommand}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
-                                      IsChecked="{Binding CompatLegacySectionParamCommand}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Script Interface"
-                              Margin="5, 0, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Ignore width of WebLabel"
-                                      IsChecked="{Binding CompatIgnoreWidthOfWebLabel}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Variable"
-                              Margin="5, 0, 5, 0"
-                              BorderBrush="Gray">
-                        <StackPanel Margin="3, 3, 3, 0">
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Overridable fixed variables"
-                                      IsChecked="{Binding CompatOverridableFixedVariables}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Overridable loop counter (#c)"
-                                      IsChecked="{Binding CompatOverridableLoopCounter}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable environment variables"
-                                      IsChecked="{Binding CompatEnableEnvironmentVariables}" />
-                            <CheckBox Margin="0, 0, 0, 3" FontSize="12"
-                                      VerticalContentAlignment="Center"
-                                      Content="Disable extended section parameters (e.g. #a, #r)"
-                                      IsChecked="{Binding CompatDisableExtendedSectionParams}" />
-                        </StackPanel>
-                    </GroupBox>
-                    <TextBlock Margin="10, 0, 10, 0"
+
+                    <TextBlock Margin="0, 3, 0, 3"
                                VerticalAlignment="Center"
                                Foreground="Red"
                                Text="Delete project temp files after changing compatibility options!"/>
+
+                    <TextBlock Margin="0, 0, 0, 3"
+                               FontWeight="Bold"
+                               Text="Asterisk Bug"/>
+                    <Separator Margin="0, 0, 0, 3"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="3, 3, 3, 0">
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Simulate WinBuilder's *.* bug in DirCopy"
+                                  IsChecked="{Binding CompatAsteriskBugDirCopy}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Simulate WinBuilder's *.* bug in folder.project"
+                                  IsChecked="{Binding CompatAsteriskBugDirLink}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0, 3, 0, 3"
+                               FontWeight="Bold"
+                               Text="Command"/>
+                    <Separator Margin="0, 0, 0, 3"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="3, 3, 3, 0" >
+                        <CheckBox Margin="0, 0, 0, 3"
+                                      VerticalContentAlignment="Center"
+                                      Content="FileRename and DirMove work like PathMove"
+                                      IsChecked="{Binding CompatFileRenameCanMoveDir}" />
+                        <CheckBox Margin="0, 0, 0, 3" 
+                                      VerticalContentAlignment="Center"
+                                      Content="Allow letter in Loop"
+                                      IsChecked="{Binding CompatAllowLetterInLoop}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                      VerticalContentAlignment="Center"
+                                      Content="Enable deprecated legacy branch conditions"
+                                      IsChecked="{Binding CompatLegacyBranchCondition}" />
+                        <!-- ReSharper disable once MarkupAttributeTypo -->
+                        <CheckBox Margin="0, 0, 0, 3"
+                                      VerticalContentAlignment="Center"
+                                      Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
+                                      IsChecked="{Binding CompatLegacyRegWrite}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                      VerticalContentAlignment="Center"
+                                      Content="Allow Set to modify interface controls"
+                                      IsChecked="{Binding CompatAllowSetModifyInterface}" />
+                        <CheckBox Margin="0, 0, 0, 3" 
+                                      VerticalContentAlignment="Center"
+                                      Content="Enable legacy interface commands (e.g. Visible)"
+                                      IsChecked="{Binding CompatLegacyInterfaceCommand}" />
+                        <CheckBox Margin="0, 0, 0, 3" 
+                                      VerticalContentAlignment="Center"
+                                      Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
+                                      IsChecked="{Binding CompatLegacySectionParamCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0, 3, 0, 3"
+                               FontWeight="Bold"
+                               Text="Script Interface"/>
+                    <Separator Margin="0, 0, 0, 3"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="3, 3, 3, 0">
+                        <CheckBox Margin="0, 0, 0, 3" 
+                                  VerticalContentAlignment="Center"
+                                  Content="Ignore width of WebLabel"
+                                  IsChecked="{Binding CompatIgnoreWidthOfWebLabel}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0, 3, 0, 3"
+                               FontWeight="Bold"
+                               Text="Variable"/>
+                    <Separator Margin="0, 0, 0, 3"
+                               BorderBrush="Black"
+                               BorderThickness="2"/>
+                    <StackPanel Margin="3, 3, 3, 0">
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Overridable fixed variables"
+                                  IsChecked="{Binding CompatOverridableFixedVariables}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Overridable loop counter (#c)"
+                                  IsChecked="{Binding CompatOverridableLoopCounter}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable environment variables"
+                                  IsChecked="{Binding CompatEnableEnvironmentVariables}" />
+                        <CheckBox Margin="0, 0, 0, 3"
+                                  VerticalContentAlignment="Center"
+                                  Content="Disable extended section parameters (e.g. #a, #r)"
+                                  IsChecked="{Binding CompatDisableExtendedSectionParams}" />
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
         </TabControl>

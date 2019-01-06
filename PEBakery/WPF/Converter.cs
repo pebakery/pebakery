@@ -256,6 +256,22 @@ namespace PEBakery.WPF
             return !(bool)value;
         }
     }
+
+    public class AddPercentConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return false;
+
+            return $"{(double)value}%";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     #endregion
 
     #region ScriptEditWindow
