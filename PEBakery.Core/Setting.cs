@@ -588,7 +588,11 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                Theme.ThemeType = (ThemeType)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), (int)Theme.ThemeType, 0, Enum.GetValues(typeof(ThemeType)).Length - 1);
+                ThemeType themeTypeVal = (ThemeType)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), (int)Theme.ThemeType, 0, 255);
+                if (Enum.IsDefined(typeof(ThemeType), themeTypeVal))
+                    Theme.ThemeType = themeTypeVal;
+                else
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{nameof(Theme)}.{nameof(ThemeType)}] has wrong value: {(int)themeTypeVal}"));
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
                 Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
