@@ -606,6 +606,12 @@
 
                 <Grid Grid.Row="0"
                       Background="{Binding ScriptPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition/>
@@ -615,6 +621,7 @@
                     <!-- ScriptLogo -->
                     <Image x:Name="ScriptLogoImage"
                            Grid.Row="0" Grid.Column="0"
+                           Grid.RowSpan="4"
                            Width="90" Height="90"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
@@ -625,6 +632,7 @@
                            Source="{Binding ScriptLogoImage}"/>
                     <iconPacks:PackIconMaterial x:Name="ScriptLogoIcon"
                                                 Grid.Row="0" Grid.Column="0"
+                                                Grid.RowSpan="4"
                                                 Width="60" Height="60"
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"
@@ -633,6 +641,7 @@
                                                 Kind="{Binding ScriptLogoIcon}"/>
                     <Border x:Name="ScriptLogoSvg"
                             Grid.Row="0" Grid.Column="0"
+                            Grid.RowSpan="4"
                             Width="{Binding ScriptLogoSvgWidth}"
                             Height="{Binding ScriptLogoSvgHeight}"
                             VerticalAlignment="Center"
@@ -640,127 +649,116 @@
                             UseLayoutRounding="True"
                             Visibility="{Binding ScriptLogoSvg, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                             Background="{Binding ScriptLogoSvg}"/>
-                    <Grid Grid.Row="0" Grid.Column="1"
-                          Margin="0, 0, 6, 0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30" />
-                            <RowDefinition Height="70" />
-                        </Grid.RowDefinitions>
-
-                        <DockPanel Grid.Row="0"
-                                   VerticalAlignment="Center">
-                            <TextBlock DockPanel.Dock="Right"
-                                       Margin="0, 0, 0, 1"
-                                       Name="ScriptVersion"
-                                       Text="{Binding ScriptVersionText}"
-                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
-                                       FontWeight="Bold"
-                                       FontSize="14" 
-                                       VerticalAlignment="Bottom"/>
-                            <TextBlock DockPanel.Dock="Right"
-                                       Name="ScriptAuthor"
-                                       Text="{Binding ScriptAuthorText}" 
-                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
-                                       Margin="0, 0, 5, 2"
-                                       FontSize="12"
-                                       VerticalAlignment="Bottom"
-                                       HorizontalAlignment="Right"
-                                       FontStretch="Condensed"
-                                       TextWrapping="Wrap" />
-                            <TextBlock DockPanel.Dock="Left"
-                                       Name="ScriptTitle"
-                                       FontStretch="SemiCondensed"
-                                       Text="{Binding ScriptTitleText}" 
-                                       Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
-                                       FontWeight="Bold" FontSize="16"
-                                       VerticalAlignment="Bottom"
-                                       TextWrapping="Wrap"/>
-                            <cc:IconButton DockPanel.Dock="Left"
-                                           IconMargin="0"
-                                           Margin="4, 0, 0, 2"
-                                           Width="16"
-                                           Height="16"
-                                           HorizontalAlignment="Left"
-                                           VerticalAlignment="Bottom"
-                                           Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
-                                           IsEnabled="{Binding IsTreeEntryFile}"
-                                           Visibility="{Binding ScriptCheckVisibility}"
-                                           BorderThickness="0"
-                                           Background="Transparent"
-                                           BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
-                                           IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}, FallbackValue=None}"
-                                           ToolTip="Syntax Check"/>
-                        </DockPanel>
-                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                   FontWeight="Medium"
-                                   Name="ScriptPanelription"
-                                   Text="{Binding ScriptDescriptionText}"
-                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                    <!-- Title & Description -->
+                    <DockPanel Grid.Row="0" Grid.Column="1"
+                               VerticalAlignment="Center">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Name="ScriptTitle"
                                    FontStretch="SemiCondensed"
-                                   VerticalAlignment="Center"
+                                   Text="{Binding ScriptTitleText}" 
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   FontWeight="Bold" 
+                                   FontSize="16"
+                                   VerticalAlignment="Bottom"
                                    TextWrapping="Wrap"/>
-                    </Grid>
-                    <Grid Grid.Row="0"
-                          Grid.Column="2"
-                          Width="25"
-                          Visibility="{Binding NormalInterfaceVisibility}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                            <RowDefinition Height="25" />
-                        </Grid.RowDefinitions>
-
-                        <Button Grid.Row="0" Grid.Column="0"
-                                x:Name="ScriptRunButton"
-                                Command="local:MainViewCommands.ScriptRunCommand"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                            <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                        <Button Grid.Row="1" Grid.Column="0"
-                                x:Name="ScriptRefreshButton"
-                                Command="local:MainViewCommands.ScriptRefreshCommand"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                        <Button Grid.Row="2" Grid.Column="0"
-                                x:Name="ScriptEditButton"
-                                Command="local:MainViewCommands.ScriptEditCommand"
-                                AutomationProperties.Name="{Binding OpenExternalButtonToolTip}"
-                                ToolTip="{Binding OpenExternalButtonToolTip}">
-                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
-                            <Button.ContextMenu>
-                                <ContextMenu>
-                                    <cc:CorrectMenuItem Header="Edit Script Properties"
-                                                        ToolTip="Manage header, interface and attachments"
-                                                        Command="local:MainViewCommands.ScriptInternalEditorCommand">
-                                        <cc:CorrectMenuItem.Icon>
-                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                        </cc:CorrectMenuItem.Icon>
-                                    </cc:CorrectMenuItem>
-                                    <cc:CorrectMenuItem Header="Edit Script Source"
-                                                        ToolTip="Edit script code"
-                                                        Command="local:MainViewCommands.ScriptExternalEditorCommand">
-                                        <cc:CorrectMenuItem.Icon>
-                                            <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                        </cc:CorrectMenuItem.Icon>
-                                    </cc:CorrectMenuItem>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
-                        <Button Grid.Row="3" Grid.Column="0"
-                                x:Name="ScriptUpdateButton"
-                                Command="local:MainViewCommands.ScriptUpdateCommand"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                AutomationProperties.Name="{Binding ScriptUpdateButtonToolTip}"
-                                ToolTip="{Binding ScriptUpdateButtonToolTip}">
-                            <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
-                        </Button>
-                    </Grid>
+                        <cc:IconButton DockPanel.Dock="Left"
+                                       IconMargin="0"
+                                       Margin="4, 0, 0, 0"
+                                       Width="16"
+                                       Height="16"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Bottom"
+                                       Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                                       IsEnabled="{Binding IsTreeEntryFile}"
+                                       Visibility="{Binding ScriptCheckVisibility}"
+                                       BorderThickness="0"
+                                       Background="Transparent"
+                                       BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
+                                       IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}, FallbackValue=None}"
+                                       ToolTip="Syntax Check"/>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Margin="0, 0, 5, 0"
+                                   Name="ScriptVersion"
+                                   Text="{Binding ScriptVersionText}"
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   FontWeight="Bold"
+                                   FontSize="14" 
+                                   VerticalAlignment="Bottom"/>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Name="ScriptAuthor"
+                                   Text="{Binding ScriptAuthorText}" 
+                                   Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                                   Margin="0, 0, 5, 0"
+                                   FontSize="12"
+                                   VerticalAlignment="Bottom"
+                                   HorizontalAlignment="Right"
+                                   FontStretch="Condensed"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
+                    <TextBlock Grid.Row="1" Grid.Column="1"
+                               Grid.RowSpan="3"
+                               Margin="0, 0, 5, 0"
+                               FontWeight="Medium"
+                               Name="ScriptDescription"
+                               Text="{Binding ScriptDescriptionText}"
+                               Foreground="{Binding ScriptPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                               FontStretch="SemiCondensed"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
+                    <!-- Script Buttons -->
+                    <Button Grid.Row="0" Grid.Column="2"
+                            x:Name="ScriptRunButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptRunCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                        <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
+                    <Button Grid.Row="1" Grid.Column="2"
+                            x:Name="ScriptRefreshButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptRefreshCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                        <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
+                    <Button Grid.Row="2" Grid.Column="2"
+                            x:Name="ScriptEditButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptEditCommand"
+                            AutomationProperties.Name="{Binding OpenExternalButtonToolTip}"
+                            ToolTip="{Binding OpenExternalButtonToolTip}">
+                        <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}" Width="Auto" Height="Auto" Margin="4"/>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <cc:CorrectMenuItem Header="Edit Script Properties"
+                                                    ToolTip="Manage header, interface and attachments"
+                                                    Command="local:MainViewCommands.ScriptInternalEditorCommand">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                                <cc:CorrectMenuItem Header="Edit Script Source"
+                                                    ToolTip="Edit script code"
+                                                    Command="local:MainViewCommands.ScriptExternalEditorCommand">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button Grid.Row="3" Grid.Column="2"
+                            x:Name="ScriptUpdateButton"
+                            Visibility="{Binding NormalInterfaceVisibility}"
+                            Command="local:MainViewCommands.ScriptUpdateCommand"
+                            IsEnabled="{Binding IsTreeEntryFile}"
+                            AutomationProperties.Name="{Binding ScriptUpdateButtonToolTip}"
+                            ToolTip="{Binding ScriptUpdateButtonToolTip}">
+                        <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>
+                    </Button>
                 </Grid>
 
                 <DockPanel Grid.Row="1"

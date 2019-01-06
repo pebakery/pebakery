@@ -556,25 +556,26 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="4" 
-                                Background="DarkBlue"
-                                Foreground="White"
-                                Command="local:SettingViewCommands.SelectThemeCommand"
-                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Content="Blue">
-                            <Button.CommandParameter>
-                                <s:Int32>2</s:Int32>
-                            </Button.CommandParameter>
-                        </Button>
-                        <Button Grid.Column="5" 
                                 Background="DarkGreen"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Green">
                             <Button.CommandParameter>
+                                <s:Int32>2</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="5" 
+                                Background="DarkBlue"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Blue">
+                            <Button.CommandParameter>
                                 <s:Int32>3</s:Int32>
                             </Button.CommandParameter>
                         </Button>
+                        
                         <Button Grid.Column="6" 
                                 Background="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
