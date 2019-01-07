@@ -133,6 +133,12 @@
     <Compile Include="WPF\Controls\ColorEditor.xaml.cs">
       <DependentUpon>ColorEditor.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WPF\Controls\ColorPicker.xaml.cs">
+      <DependentUpon>ColorPicker.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="WPF\Controls\ColorPickerWindow.xaml.cs">
+      <DependentUpon>ColorPickerWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\Controls\IconButton.cs" />
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
@@ -162,6 +168,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WPF\Controls\ColorEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WPF\Controls\ColorPicker.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WPF\Controls\ColorPickerWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
