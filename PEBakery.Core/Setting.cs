@@ -510,9 +510,9 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize)), // FontSize
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.ScaleFactor)), // Integer (70 - 200)
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut)), // Boolean
-                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Integer (0 - 2)
+                new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize)), // Enum (InterfaceSize)
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
@@ -526,7 +526,7 @@ namespace PEBakery.Core
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache)), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck)), // Boolean
                 // Log
-                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Integer (0 - 2)
+                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Enum (LogDebugLevel)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
             };
@@ -580,7 +580,8 @@ namespace PEBakery.Core
                 Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
                 Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
                 Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
-                Interface.InterfaceSize = (InterfaceSize)DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), (int)Interface.InterfaceSize, 0, Enum.GetValues(typeof(InterfaceSize)).Length - 1);
+                Interface.InterfaceSize = DictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
+
             }
 
             // Theme
@@ -588,11 +589,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                ThemeType themeTypeVal = (ThemeType)DictParser.ParseInteger(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), (int)Theme.ThemeType, 0, 255);
-                if (Enum.IsDefined(typeof(ThemeType), themeTypeVal))
-                    Theme.ThemeType = themeTypeVal;
-                else
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{nameof(Theme)}.{nameof(ThemeType)}] has wrong value: {(int)themeTypeVal}"));
+                Theme.ThemeType = DictParser.ParseIntEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
                 Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
@@ -618,7 +615,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> logDict = keyDict[LogSetting.SectionName];
 
-                Log.DebugLevel = (LogDebugLevel)DictParser.ParseInteger(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), (int)Log.DebugLevel, 0, Enum.GetValues(typeof(LogDebugLevel)).Length - 1);
+                Log.DebugLevel = DictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
                 Log.DeferredLogging = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
                 Log.MinifyHtmlExport = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
             }
@@ -761,6 +758,23 @@ namespace PEBakery.Core
                     if (min <= valInt && valInt <= max) // Have Min
                         return valInt;
                 }
+            }
+
+            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+            return defaultValue;
+        }
+
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue) 
+            where TEnum : Enum
+        {
+            string valStr = dict[key];
+            if (valStr == null) // No warning, just use default value
+                return defaultValue;
+
+            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
+            {
+                if (Enum.IsDefined(typeof(TEnum), valInt))
+                    return (TEnum)Enum.ToObject(typeof(TEnum), valInt);
             }
 
             Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
