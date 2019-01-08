@@ -39,6 +39,14 @@ namespace PEBakery.WPF.Controls
         private double _saturation = 1;
         private double _value = 1;
 
+        private enum FocusedElement
+        {
+            None = 0,
+            SaturationValueCanvas = 1,
+            HueCanvas = 2,
+        }
+        private FocusedElement _focusedElement = FocusedElement.None;
+
         public ColorPicker()
         {
             InitializeComponent();
@@ -48,7 +56,7 @@ namespace PEBakery.WPF.Controls
 
         private void ColorPickerControl_Loaded(object sender, RoutedEventArgs e)
         {
-            UpdateTracks();
+            UpdateAllTracks();
         }
         #endregion
 
@@ -77,25 +85,34 @@ namespace PEBakery.WPF.Controls
             if (control.BlueNumberBox != null)
                 control.BlueNumberBox.Value = c.B;
 
-            (control._hue, control._saturation, control._value) = FromRgbToHsv(c);
-            control.UpdateTracks();
+            if (control._focusedElement == FocusedElement.None)
+            {
+                (control._hue, control._saturation, control._value) = FromRgbToHsv(c);
+                control.UpdateAllTracks();
+            }
         }
         #endregion
 
         #region Internal Event Handler
         private void RedNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            Color = Color.FromRgb((byte)e.NewValue, Color.G, Color.B);
+            // Only if NumberBox was touched by the user, not canvases
+            if (_focusedElement == FocusedElement.None)
+                Color = Color.FromRgb((byte) e.NewValue, Color.G, Color.B);
         }
 
         private void GreenNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            Color = Color.FromRgb(Color.R, (byte)e.NewValue, Color.B);
+            // Only if NumberBox was touched by the user, not canvases
+            if (_focusedElement == FocusedElement.None)
+                Color = Color.FromRgb(Color.R, (byte)e.NewValue, Color.B);
         }
 
         private void BlueNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
-            Color = Color.FromRgb(Color.R, Color.G, (byte)e.NewValue);
+            // Only if NumberBox was touched by the user, not canvases
+            if (_focusedElement == FocusedElement.None)
+                Color = Color.FromRgb(Color.R, Color.G, (byte)e.NewValue);
         }
         #endregion
 
@@ -106,6 +123,7 @@ namespace PEBakery.WPF.Controls
                 return;
 
             SaturationValueCanvas.CaptureMouse();
+            _focusedElement = FocusedElement.SaturationValueCanvas;
             _dragSaturationValueCanvas = true;
         }
 
@@ -133,35 +151,25 @@ namespace PEBakery.WPF.Controls
 
             // Convert HSV to RGB
             Color = FromHsvToRgb(_hue, _saturation, _value);
+            SaturationValueTrack.Background = new SolidColorBrush(Color);
         }
 
         private void SaturationValueCanvas_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             SaturationValueCanvas.ReleaseMouseCapture();
+            _focusedElement = FocusedElement.None;
             _dragSaturationValueCanvas = false;
-        }
-
-        private void UpdateTracks()
-        {
-            // Set SaturationValueCanvas' Hue
-            SaturationValueCanvasHue.Color = FromHsvToRgb(_hue, 1, 1);
-
-            // Set SaturationValueTrack's position
-            Canvas.SetLeft(SaturationValueTrack, _saturation * SaturationValueCanvas.ActualWidth - SaturationValueTrack.ActualWidth / 2);
-            Canvas.SetTop(SaturationValueTrack, (1 - _value) * SaturationValueCanvas.ActualHeight - SaturationValueTrack.ActualHeight / 2);
-
-            // Set HueTrack's position
-            Canvas.SetLeft(HueTrack, _hue * HueCanvas.ActualWidth - HueTrack.ActualWidth / 2);
         }
         #endregion
 
-        #region HueCanvasMouse Event Handlers
+        #region HueCanvas Mouse Event Handlers
         private void HueCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (_dragHueCanvas)
                 return;
 
             HueCanvas.CaptureMouse();
+            _focusedElement = FocusedElement.HueCanvas;
             _dragHueCanvas = true;
         }
 
@@ -185,16 +193,38 @@ namespace PEBakery.WPF.Controls
             Canvas.SetLeft(HueTrack, x - HueTrack.ActualWidth / 2);
 
             // Set SaturationValueCanvas' Hue
-            SaturationValueCanvasHue.Color = FromHsvToRgb(_hue, 1, 1);
+            Color hueColor = FromHsvToRgb(_hue, 1, 1);
+            SaturationValueCanvasHue.Color = hueColor;
+            HueTrack.Background = new SolidColorBrush(hueColor);
 
             // Convert HSV to RGB
             Color = FromHsvToRgb(_hue, _saturation, _value);
+            SaturationValueTrack.Background = new SolidColorBrush(Color);
         }
 
         private void HueCanvas_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             HueCanvas.ReleaseMouseCapture();
+            _focusedElement = FocusedElement.None;
             _dragHueCanvas = false;
+        }
+        #endregion
+
+        #region UpdateAllTrakcs
+        private void UpdateAllTracks()
+        {
+            // Set SaturationValueCanvas/HueTrack's Hue
+            Color hueColor = FromHsvToRgb(_hue, 1, 1);
+            SaturationValueCanvasHue.Color = hueColor;
+            HueTrack.Background = new SolidColorBrush(hueColor);
+
+            // Set SaturationValueTrack's position
+            Canvas.SetLeft(SaturationValueTrack, _saturation * SaturationValueCanvas.ActualWidth - SaturationValueTrack.ActualWidth / 2);
+            Canvas.SetTop(SaturationValueTrack, (1 - _value) * SaturationValueCanvas.ActualHeight - SaturationValueTrack.ActualHeight / 2);
+            SaturationValueTrack.Background = new SolidColorBrush(Color);
+
+            // Set HueTrack's position
+            Canvas.SetLeft(HueTrack, _hue * HueCanvas.ActualWidth - HueTrack.ActualWidth / 2);
         }
         #endregion
 

@@ -29,7 +29,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
-        Title="ColorPickerWindow" 
+        Title="Color Picker" 
         Width="480" Height="500" >
     <Window.CommandBindings>
         <CommandBinding x:Name="ApplyCommand"

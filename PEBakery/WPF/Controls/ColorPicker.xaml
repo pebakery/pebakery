@@ -50,7 +50,6 @@
             <!-- SaturationValueCanvas -->
             <Canvas x:Name="SaturationValueCanvas" 
                     Grid.Row="0"
-                    ClipToBounds="True"
                     Focusable="False"
                     PreviewMouseLeftButtonDown="SaturationValueCanvas_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="SaturationValueCanvas_PreviewMouseMove"
