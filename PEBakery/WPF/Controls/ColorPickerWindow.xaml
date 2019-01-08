@@ -30,7 +30,8 @@
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         Title="Color Picker" 
-        Width="480" Height="500" >
+        Width="480" Height="520" 
+        d:DataContext="{d:DesignInstance cc:ColorPickerViewModel}">
     <Window.CommandBindings>
         <CommandBinding x:Name="ApplyCommand"
                         Command="cc:ColorPickerViewCommands.ApplyCommand"
@@ -39,17 +40,17 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
         <cc:ColorPicker Grid.Row="0" 
                         Margin="30, 30, 0, 0"
                         Color="{Binding Color, Mode=TwoWay, FallbackValue=Red}"/>
         <Grid Grid.Row="1"
-              Margin="20, 0, 20, 20">
+              Margin="30, 0, 30, 30">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
-                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="30"/>
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" 
