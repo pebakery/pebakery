@@ -310,43 +310,41 @@ namespace PEBakery.WPF.Controls
             double r = 0;
             double g = 0;
             double b = 0;
-            if (0 <= h2 && h2 <= 1)
+            switch ((int) h2)
             {
-                r = c;
-                g = x;
-                b = 0;
+                case 0:
+                    r = c;
+                    g = x;
+                    b = 0;
+                    break;
+                case 1:
+                    r = x;
+                    g = c;
+                    b = 0;
+                    break;
+                case 2:
+                    r = 0;
+                    g = c;
+                    b = x;
+                    break;
+                case 3:
+                    r = 0;
+                    g = x;
+                    b = c;
+                    break;
+                case 4:
+                    r = x;
+                    g = 0;
+                    b = c;
+                    break;
+                case 5:
+                case 6:
+                    r = c;
+                    g = 0;
+                    b = x;
+                    break;
             }
-            else if (1 < h2 && h2 <= 2)
-            {
-                r = x;
-                g = c;
-                b = 0;
-            }
-            else if (2 < h2 && h2 <= 3)
-            {
-                r = 0;
-                g = c;
-                b = x;
-            }
-            else if (3 < h2 && h2 <= 4)
-            {
-                r = 0;
-                g = x;
-                b = c;
-            }
-            else if (4 < h2 && h2 <= 5)
-            {
-                r = x;
-                g = 0;
-                b = c;
-            }
-            else if (5 < h2 && h2 <= 6)
-            {
-                r = c;
-                g = 0;
-                b = x;
-            }
-
+            
             // Convert R, G, B to [0, 255] range
             double m = v - c;
             r = r + m;

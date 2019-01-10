@@ -6,4 +6,4 @@ The placeholder project to manage custom native libraries.
 
 | Name | File   | Version | License  |
 |------|--------|---------|----------|
-| [7zip](https://www.7-zip.org/) | 7z.dll | 18.05   | [LGPLv2.1](https://www.7-zip.org/license.txt) |
+| [7zip](https://www.7-zip.org/) | 7z.dll | 18.06   | [LGPLv2.1](https://www.7-zip.org/license.txt) |
