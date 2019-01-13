@@ -61,6 +61,10 @@
                         Command="local:LogViewCommands.ExportCommand"
                         CanExecute="ExportCommand_CanExecute"
                         Executed="ExportCommand_Executed"/>
+        <CommandBinding x:Name="LogOptionsCommand"
+                        Command="local:LogViewCommands.LogOptionsCommand"
+                        CanExecute="LogOptionsCommand_CanExecute"
+                        Executed="LogOptionsCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="ListViewItem">
@@ -234,10 +238,10 @@
                                         <GridViewColumn Header="Time"
                                                         DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowScriptOrigin"
+                                                <Binding Path="BuildLogShowTime"
                                                          Converter="{StaticResource ScriptSourceColumnWidthConverter}">
                                                     <Binding.ConverterParameter>
-                                                        <s:Int32>0</s:Int32>
+                                                        <s:Int32>1</s:Int32>
                                                     </Binding.ConverterParameter>
                                                     <Binding.FallbackValue>
                                                         <s:Boolean>false</s:Boolean>
@@ -266,23 +270,95 @@
                                             </GridViewColumn.DisplayMemberBinding>
                                         </GridViewColumn>
                                         <GridViewColumn Header="Depth"
-                                                        Width="35"
-                                                        DisplayMemberBinding="{Binding Depth, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding Depth, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowDepth"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>35</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="State"
-                                                        Width="55"
-                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowState"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>55</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="Line#"
-                                                        Width="40"
-                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowLineNumber"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>40</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="Message"
-                                                        Width="340" 
-                                                        DisplayMemberBinding="{Binding Message, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding Message, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowMessage"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>340</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="RawCode"
-                                                        Width="175"
-                                                        DisplayMemberBinding="{Binding RawCode, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding RawCode, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowRawCode"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>175</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                         <GridViewColumn Header="Flags"
-                                                        Width="35"
-                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}, Mode=OneWay}" />
+                                                        DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}, Mode=OneWay}">
+                                            <GridViewColumn.Width>
+                                                <Binding Path="BuildLogShowFlags"
+                                                         Mode="OneWay"
+                                                         Converter="{StaticResource ScriptSourceColumnWidthConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <s:Int32>35</s:Int32>
+                                                    </Binding.ConverterParameter>
+                                                    <Binding.FallbackValue>
+                                                        <s:Boolean>false</s:Boolean>
+                                                    </Binding.FallbackValue>
+                                                </Binding>                             
+                                            </GridViewColumn.Width>
+                                        </GridViewColumn>
                                     </GridView>
                                 </ListView.View>
                                 <ListView.ContextMenu>
@@ -361,30 +437,32 @@
                     Command="local:LogViewCommands.ExportCommand"
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Content="Export"/>
-            <StackPanel Orientation="Horizontal" 
-                        Visibility="{Binding BuildLogSelected}">
-                <CheckBox DockPanel.Dock="Left"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowComments}"
-                          Content="Show Comments"/>
-                <CheckBox DockPanel.Dock="Left"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowMacros}"
-                          Content="Show Macros"/>
-                <CheckBox DockPanel.Dock="Left"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Margin="0, 0, 5, 0"
-                          IsChecked="{Binding BuildLogShowScriptOrigin}"
-                          Content="Show Script Origin "/>
-            </StackPanel>
+            <Button DockPanel.Dock="Left"
+                    HorizontalAlignment="Left"
+                    Width="100"
+                    Margin="0, 0, 10, 0"
+                    Command="local:LogViewCommands.LogOptionsCommand"
+                    AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                    Visibility="{Binding BuildLogSelected}"
+                    Content="Options">
+                <Button.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Log Options" IsEnabled="False" />
+                        <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
+                        <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
+                        <Separator Visibility="{Binding BuildLogFullLogSelected}" />
+                        <MenuItem Header="Show Columns" IsEnabled="False" />
+                        <CheckBox IsChecked="{Binding BuildLogShowDepth}" Content="Depth" />
+                        <CheckBox IsChecked="{Binding BuildLogShowFlags}" Content="Flags" />
+                        <CheckBox IsChecked="{Binding BuildLogShowLineNumber}" Content="Line #" />
+                        <CheckBox IsChecked="{Binding BuildLogShowMessage}" Content="Message" />
+                        <CheckBox IsChecked="{Binding BuildLogShowScriptOrigin}" Content="Script Orgin" />
+                        <CheckBox IsChecked="{Binding BuildLogShowState}" Content="State" />
+                        <CheckBox IsChecked="{Binding BuildLogShowTime}" Content="Time" />
+                        <CheckBox IsChecked="{Binding BuildLogShowRawCode}" Content="Raw Code" />
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
         </DockPanel>
     </Grid>
 </Window>
