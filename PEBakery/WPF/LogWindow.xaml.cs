@@ -314,6 +314,21 @@ namespace PEBakery.WPF
         {
             Close();
         }
+
+        private void LogOptionsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _m != null && _m.CanExecuteCommand;
+        }
+
+        private void LogOptionsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Open Context Menu
+            if (e.Source is Button button && button.ContextMenu is ContextMenu menu)
+            {
+                menu.PlacementTarget = button;
+                menu.IsOpen = true;
+            }
+        }
         #endregion
     }
 
@@ -672,6 +687,42 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool _buildLogShowDepth = true;
+        public bool BuildLogShowDepth
+        {
+            get => _buildLogShowDepth;
+            set
+            {
+                _buildLogShowDepth = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowFlags = true;
+        public bool BuildLogShowFlags
+        {
+            get => _buildLogShowFlags;
+            set
+            {
+                _buildLogShowFlags = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowLineNumber = true;
+        public bool BuildLogShowLineNumber
+        {
+            get => _buildLogShowLineNumber;
+            set
+            {
+                _buildLogShowLineNumber = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+               
         private bool _buildLogShowMacros = true;
         public bool BuildLogShowMacros
         {
@@ -684,6 +735,18 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool _buildLogShowMessage = true;
+        public bool BuildLogShowMessage
+        {
+            get => _buildLogShowMessage;
+            set
+            {
+                _buildLogShowMessage = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
         private bool _buildLogShowScriptOrigin = false;
         public bool BuildLogShowScriptOrigin
         {
@@ -691,6 +754,42 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowScriptOrigin = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowState = true;
+        public bool BuildLogShowState
+        {
+            get => _buildLogShowState;
+            set
+            {
+                _buildLogShowState = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowTime = true;
+        public bool BuildLogShowTime
+        {
+            get => _buildLogShowTime;
+            set
+            {
+                _buildLogShowTime = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowRawCode = true;
+        public bool BuildLogShowRawCode
+        {
+            get => _buildLogShowRawCode;
+            set
+            {
+                _buildLogShowRawCode = value;
                 OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
@@ -719,6 +818,7 @@ namespace PEBakery.WPF
             });
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
+        public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
         public static readonly RoutedCommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(LogViewCommands));
         #endregion
     }
