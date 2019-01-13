@@ -553,7 +553,10 @@ namespace PEBakery.Core
         {
             public LogState State { get; set; }
             public string Message { get; set; }
-            public int Href { get; set; } // Optional
+            /// <summary>
+            /// Optional, for error/warning logs
+            /// </summary>
+            public int Href { get; set; } 
         }
         #endregion
     }

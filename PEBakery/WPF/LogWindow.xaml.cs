@@ -473,7 +473,9 @@ namespace PEBakery.WPF
                 else
                 { // Per Script
                     // Script Title Dict for script origin
-                    ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>().ToDictionary(x => x.Id, x => x.Name);
+                    ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>()
+                        .Where(x => x.BuildId == buildId)
+                        .ToDictionary(x => x.Id, x => x.Name);
 
                     // BuildLog
                     var builds = LogDb.Table<LogModel.BuildLog>()
