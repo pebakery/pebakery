@@ -115,7 +115,7 @@ namespace PEBakery.Core.ViewModels
             {
                 _interfaceSize = value;
                 OnPropertyUpdate();
-                UpdateTopInterfaceSize();
+                UpdateTopPanelSize();
             }
         }
 
@@ -126,7 +126,7 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _windowWidth = value;
-                UpdateTopInterfaceSize();
+                UpdateTopPanelSize();
             }
         }
         private const int WindowWidthThreshold = 700;
@@ -143,22 +143,28 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
-        public void UpdateTopInterfaceSize()
+        public void UpdateTopPanelSize()
         {
             // Do not call WindowWidth, it is bidden as OneWayToSource (set only)
             // Tried Converters, but declaring too many converters made code too complicated.
             OnPropertyUpdate(nameof(GlobalFontSize));
+            OnPropertyUpdate(nameof(TopPanelHeight));
+            OnPropertyUpdate(nameof(BannerIconSize));
             OnPropertyUpdate(nameof(BannerFontSize));
             OnPropertyUpdate(nameof(BannerMargin));
+            OnPropertyUpdate(nameof(MainIconGridWidth));
             OnPropertyUpdate(nameof(MainIconButtonSize));
             OnPropertyUpdate(nameof(MainIconButtonMargin));
         }
 
         public int GlobalFontSize => GetAdaptiveSize(13, 12);
+        public int TopPanelHeight => GetAdaptiveSize(80, 60);
+        public int BannerIconSize => GetAdaptiveSize(56, 36);
         public int BannerFontSize => GetAdaptiveSize(40, 32);
         public Thickness BannerMargin => GetAdaptiveSize(new Thickness(0, 0, 15, 0), new Thickness(0, 0, 0, 0));
-        public int MainIconButtonSize => GetAdaptiveSize(60, 48);
-        public int MainIconButtonMargin => GetAdaptiveSize(4, 2);
+        public int MainIconGridWidth => GetAdaptiveSize(54, 44);
+        public int MainIconButtonSize => GetAdaptiveSize(48, 36);
+        public int MainIconButtonMargin => GetAdaptiveSize(6, 4);
         #endregion
 
         #region Color Theme
