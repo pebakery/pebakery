@@ -120,6 +120,7 @@ namespace PEBakery.WPF
                         {
                             IncludeComments = _m.BuildLogIncludeComments,
                             IncludeMacros = _m.BuildLogIncludeMacros,
+                            ShowLogFlags = _m.BuildLogShowLogFlags,
                         });
                     }
                 });
@@ -149,7 +150,7 @@ namespace PEBakery.WPF
     }
 
     #region LogExportModel
-    public class LogExportModel : INotifyPropertyChanged
+    public class LogExportModel : ViewModelBase
     {
         #region Constructor, SetSystemLog, SetBuildLog
         public LogExportModel(Logger logger, IEnumerable<Tuple<string, int>> buildEntries)
@@ -271,45 +272,36 @@ namespace PEBakery.WPF
         public bool BuildLogIncludeComments
         {
             get => _buildLogIncludeComments;
-            set
-            {
-                _buildLogIncludeComments = value;
-                OnPropertyUpdate(nameof(BuildLogIncludeComments));
-            }
+            set => SetProperty(ref _buildLogIncludeComments, value);
         }
 
         private bool _buildLogIncludeMacros = true;
         public bool BuildLogIncludeMacros
         {
             get => _buildLogIncludeMacros;
-            set
-            {
-                _buildLogIncludeMacros = value;
-                OnPropertyUpdate(nameof(BuildLogIncludeMacros));
-            }
+            set => SetProperty(ref _buildLogIncludeMacros, value);
+        }
+
+        private bool _buildLogShowLogFlags = true;
+        public bool BuildLogShowLogFlags
+        {
+            get => _buildLogShowLogFlags;
+            set => SetProperty(ref _buildLogShowLogFlags, value);
         }
         #endregion
 
         #region Progress
-        private bool _inProgress = false;
-        public bool InProgress
+    private bool _inProgress = false;
+    public bool InProgress
+    {
+        get => _inProgress;
+        set
         {
-            get => _inProgress;
-            set
-            {
-                _inProgress = value;
-                OnPropertyUpdate(nameof(InProgress));
-            }
+            _inProgress = value;
+            OnPropertyUpdate(nameof(InProgress));
         }
-        #endregion
-
-        #region Utility
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
+    }
+    #endregion
     }
     #endregion
 

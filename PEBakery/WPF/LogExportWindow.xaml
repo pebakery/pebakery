@@ -33,7 +33,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
         FontSize="13"
-        Width="500" Height="300"
+        Width="500" Height="320"
         FontFamily="Segoe UI"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
@@ -112,7 +112,7 @@
                     </StackPanel>
                 </GroupBox>
             </Grid>
-            <GroupBox Height="120"
+            <GroupBox Height="140"
                       Margin="0, 0, 0, 5"
                       BorderBrush="Gray" >
                 <GroupBox.Header>
@@ -150,6 +150,12 @@
                               IsEnabled="{Binding BuildLogOptionEnabled}"
                               IsChecked="{Binding BuildLogIncludeMacros}"
                               Content="Include Macro Commands"/>
+                    <CheckBox Height="20"
+                              VerticalAlignment="Top"
+                              VerticalContentAlignment="Center"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
+                              IsChecked="{Binding BuildLogShowLogFlags}"
+                              Content="Show Log Flags"/>
                 </StackPanel>
             </GroupBox>
             <ProgressBar Height="20"

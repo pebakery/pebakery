@@ -101,6 +101,7 @@ namespace PEBakery.Core
         {
             public bool IncludeComments;
             public bool IncludeMacros;
+            public bool ShowLogFlags;
         }
 
         public void ExportBuildLog(int buildId, BuildLogOptions opts)
@@ -290,6 +291,7 @@ namespace PEBakery.Core
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildTookTimeStr = $"{dbBuild.EndTime - dbBuild.StartTime:h\\:mm\\:ss}",
+                            ShowLogFlags = opts.ShowLogFlags,
                             LogStats = new List<LogStatHtmlModel>(),
                         };
 
@@ -307,7 +309,7 @@ namespace PEBakery.Core
                         }
 
                         // Show ErrorLogs
-                        m.ErrorCodeDicts = new Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]>();
+                        m.ErrorCodeDict = new Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]>();
                         {
                             int errIdx = 0;
                             LogModel.BuildLog[] errors = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
@@ -327,7 +329,7 @@ namespace PEBakery.Core
                                         Path = scLog.TreePath,
                                     };
 
-                                    m.ErrorCodeDicts[scModel] = errors
+                                    m.ErrorCodeDict[scModel] = errors
                                         .Where(x => x.ScriptId == scLog.Id)
                                         .Select(x => new Tuple<CodeLogHtmlModel, string>(
                                             new CodeLogHtmlModel
@@ -341,7 +343,7 @@ namespace PEBakery.Core
                         }
 
                         // Show WarnLogs
-                        m.WarnCodeDicts = new Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]>();
+                        m.WarnCodeDict = new Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]>();
                         {
                             int warnIdx = 0;
                             LogModel.BuildLog[] warns = _db.Table<LogModel.BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
@@ -360,7 +362,7 @@ namespace PEBakery.Core
                                         Name = scLog.Name,
                                         Path = scLog.TreePath,
                                     };
-                                    m.WarnCodeDicts[pModel] = warns
+                                    m.WarnCodeDict[pModel] = warns
                                         .Where(x => x.ScriptId == scLog.Id)
                                         .Select(x => new Tuple<CodeLogHtmlModel, string>(
                                             new CodeLogHtmlModel
@@ -454,7 +456,8 @@ namespace PEBakery.Core
                                     };
 
                                     // Referenced script
-                                    if ((log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
+                                    if (opts.ShowLogFlags &&
+                                        (log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
                                     {
                                         if (scTitleDict.ContainsKey(log.ScriptId))
                                             item.RefScriptTitle = scTitleDict[log.ScriptId];
@@ -532,11 +535,12 @@ namespace PEBakery.Core
             public string BuildStartTimeStr { get; set; }
             public string BuildEndTimeStr { get; set; }
             public string BuildTookTimeStr { get; set; }
+            public bool ShowLogFlags { get; set; }
             public List<LogStatHtmlModel> LogStats { get; set; }
             public List<ScriptHtmlModel> Scripts { get; set; }
             public List<VarHtmlModel> Vars { get; set; }
-            public Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]> ErrorCodeDicts { get; set; }
-            public Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]> WarnCodeDicts { get; set; }
+            public Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]> ErrorCodeDict { get; set; }
+            public Dictionary<ScriptHtmlModel, Tuple<CodeLogHtmlModel, string>[]> WarnCodeDict { get; set; }
             public List<Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>> CodeLogs { get; set; }
         }
 
@@ -580,7 +584,18 @@ namespace PEBakery.Core
             public int Href { get; set; }
 
             // Used in BuildLogHtmlTemplate.cshtml
-            public string FlagsStr => LogModel.BuildLogFlagToString(Flags);
+            public string FlagsStr
+            {
+                get
+                {
+                    if ((Flags & LogModel.BuildLogFlag.Macro) == LogModel.BuildLogFlag.Macro)
+                        return "Macro";
+                    else if ((Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
+                        return "Ref";
+                    else
+                        return string.Empty;
+                }
+            }
         }
         #endregion
     }

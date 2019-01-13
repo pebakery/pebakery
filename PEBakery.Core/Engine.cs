@@ -719,7 +719,7 @@ namespace PEBakery.Core
                     case CodeType.Run:
                     case CodeType.Exec:
                     case CodeType.RunEx:
-                        CommandBranch.RunExec(s, cmd);
+                        CommandBranch.RunExec(s, cmd, new CommandBranch.RunExecOptions());
                         break;
                     case CodeType.Loop:
                     case CodeType.LoopLetter:
@@ -849,7 +849,7 @@ namespace PEBakery.Core
                 else
                     info.InParams.Add(eventParam);
 
-                CommandBranch.RunExec(s, cbCmd);
+                CommandBranch.RunExec(s, cbCmd, new CommandBranch.RunExecOptions());
             }
             else
             {
@@ -1089,7 +1089,7 @@ namespace PEBakery.Core
         public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
         public char LoopLetter = ' '; // Use capital alphabet
-        public bool InMacro = false;
+        public Stack<bool> InMacroStack = new Stack<bool>();
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false; // Halt Command
@@ -1233,7 +1233,7 @@ namespace PEBakery.Core
             LoopState = LoopState.Off;
             LoopCounter = 0;
             LoopLetter = ' ';
-            InMacro = false;
+            InMacroStack.Clear();
 
             // Command State
             OnBuildExit = null;

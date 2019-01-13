@@ -802,7 +802,7 @@ namespace PEBakery.Core
                 return;
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
-            if (s.InMacro)
+            if (0 < s.InMacroStack.Count && s.InMacroStack.Peek())
             {
                 flags |= LogModel.BuildLogFlag.Macro;
             }
@@ -852,7 +852,7 @@ namespace PEBakery.Core
             };
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
-            if (s.InMacro)
+            if (0 < s.InMacroStack.Count && s.InMacroStack.Peek())
             {
                 flags |= LogModel.BuildLogFlag.Macro;
             }

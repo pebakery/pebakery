@@ -137,11 +137,11 @@
         </section>
 
         <!-- ErrorSummary -->
-        @if (0 < @Model.ErrorCodeDicts.Count)
+        @if (0 < @Model.ErrorCodeDict.Count)
         {
             <section id="error_summary" class="container-fluid mt-2">
                 <h2 class="mt-2">Errors</h2>
-                @foreach (var kv in @Model.ErrorCodeDicts)
+                @foreach (var kv in @Model.ErrorCodeDict)
                 {
                     <span class="pb-monospace">@kv.Value.Length Error in script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
                     <div class="table-responsive">
@@ -179,11 +179,11 @@
         }
 
         <!-- WarnSummary -->
-        @if (0 < @Model.WarnCodeDicts.Count)
+        @if (0 < @Model.WarnCodeDict.Count)
         {
             <section id="warn_summary" class="container-fluid mt-2">
                 <h2 class="mt-2">Warnings</h2>
-                @foreach (var kv in @Model.WarnCodeDicts)
+                @foreach (var kv in @Model.WarnCodeDict)
                 {
                     <span class="pb-monospace">@kv.Value.Length Warning in Script &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
                     <div class="table-responsive">
@@ -297,7 +297,10 @@
                         <thead class="thead-dark text-center">
                             <tr>
                                 <th class="text-nowrap">State</th>
-                                <th class="text-nowrap">Flags</th>
+                                @if (@Model.ShowLogFlags)
+                                {
+                                    <th class="text-nowrap">Flags</th>
+                                }
                                 <th>Message</th>
                             </tr>
                         </thead>
@@ -308,13 +311,16 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -323,13 +329,16 @@
                                 {
                                     <tr class="table-warning" id='@string.Format("warn_{0}", @item.Href)'>
                                         <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -338,13 +347,16 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;@item.State&#93;</td>
-                                       @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -353,13 +365,16 @@
                                 {
                                     <tr class="table-danger" id='@string.Format("error_{0}", @item.Href)'>
                                         <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -368,13 +383,16 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-info"><i class="fas fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -383,13 +401,16 @@
                                 {
                                     <tr class="text-muted">
                                         <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -398,13 +419,16 @@
                                 {
                                     <tr class="text-muted">
                                         <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -413,13 +437,16 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap"></td>
-                                        @if (@item.RefScriptTitle != null)
+                                        @if (@Model.ShowLogFlags)
                                         {
-                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
-                                        }
-                                        else
-                                        {
-                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                            if (@item.RefScriptTitle != null)
+                                            {
+                                                <td class="text-nowrap text-primary" data-toggle="tooltip" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-nowrap">@item.FlagsStr</td>
+                                            }
                                         }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
@@ -471,5 +498,10 @@
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js" integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em" crossorigin="anonymous"></script>
+        <script>
+            $(function () {
+                $('[data-toggle="tooltip"]').tooltip()
+            })
+        </script>
     </body>
 </html>

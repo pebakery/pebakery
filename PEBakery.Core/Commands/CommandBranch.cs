@@ -43,7 +43,14 @@ namespace PEBakery.Core.Commands
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurrentParams = false, bool forceLog = false)
+        public struct RunExecOptions
+        {
+            public bool PreserveCurrentParams { get; set; }
+            public bool ForceLog { get; set; }
+            public bool IsMacro { get; set; }
+        }
+
+        public static void RunExec(EngineState s, CodeCommand cmd, RunExecOptions opts)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
@@ -62,7 +69,7 @@ namespace PEBakery.Core.Commands
 
             // Section Parameter
             Dictionary<int, string> newInParams = new Dictionary<int, string>();
-            if (preserveCurrentParams)
+            if (opts.PreserveCurrentParams)
             {
                 newInParams = s.CurSectionInParams;
             }
@@ -74,7 +81,7 @@ namespace PEBakery.Core.Commands
 
             // Prepare to branch to a new section
             ScriptSection targetSection = sc.Sections[sectionName];
-            s.Logger.LogStartOfSection(s, targetSection, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, targetSection, s.CurDepth, inCurrentScript, newInParams, info.OutParams, cmd, opts.ForceLog);
 
             // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
@@ -105,7 +112,9 @@ namespace PEBakery.Core.Commands
                 s.RefScriptId = s.Logger.BuildRefScriptWrite(s, sc);
 
             // Run Section
+            s.InMacroStack.Push(opts.IsMacro);
             Engine.RunSection(s, targetSection, newInParams, info.OutParams, s.CurDepth + 1);
+            s.InMacroStack.Pop();
 
             // Restore EngineState values
             s.CurDepth = depthBackup;
@@ -122,7 +131,7 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.Logger.LogEndOfSection(s, targetSection, s.CurDepth, inCurrentScript, cmd, forceLog);
+            s.Logger.LogEndOfSection(s, targetSection, s.CurDepth, inCurrentScript, cmd, opts.ForceLog);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
