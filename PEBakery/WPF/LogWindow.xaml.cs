@@ -472,6 +472,9 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Per Script
+                    // Script Title Dict for script origin
+                    ScriptTitleDict = Global.Logger.Db.Table<LogModel.Script>().ToDictionary(x => x.Id, x => x.Name);
+
                     // BuildLog
                     var builds = LogDb.Table<LogModel.BuildLog>()
                         .Where(x => x.BuildId == buildId && x.ScriptId == scriptId);
@@ -579,7 +582,7 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _buildEntries, _buildEntriesLock, value);
         }
 
-        public bool CheckSelectBulidIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
+        public bool CheckSelectBuildIndex() => 0 <= SelectedBuildIndex && SelectedBuildIndex < BuildEntries.Count;
 
         private int _selectedScriptIndex;
         public int SelectedScriptIndex
@@ -619,6 +622,13 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _buildLogs, _buildLogsLock, value);
         }
 
+        private Dictionary<int, string> _scriptTitleDict;
+        public Dictionary<int, string> ScriptTitleDict
+        {
+            get => _scriptTitleDict;
+            set => SetProperty(ref _scriptTitleDict, value);
+        }
+
         private int _simpleBuildLogSelectedIndex;
         public int SimpleBuildLogSelectedIndex
         {
@@ -655,7 +665,7 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowComments = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
         }
@@ -667,7 +677,19 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowMacros = value;
-                OnPropertyUpdate(nameof(BuildLogShowMacros));
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowScriptOrigin = false;
+        public bool BuildLogShowScriptOrigin
+        {
+            get => _buildLogShowScriptOrigin;
+            set
+            {
+                _buildLogShowScriptOrigin = value;
+                OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
         }

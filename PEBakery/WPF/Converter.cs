@@ -29,6 +29,7 @@ using MahApps.Metro.IconPacks;
 using PEBakery.Core;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -323,6 +324,59 @@ namespace PEBakery.WPF
         {
             // Not Implemented
             return LogState.None;
+        }
+    }
+
+    public class ScriptSourceColumnWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || parameter == null)
+                return string.Empty;
+
+            bool showScriptOrigin = (bool)value;
+            int columnType = (int)parameter;
+            if (showScriptOrigin)
+            {
+                if (columnType == 0) // Time
+                    return 0;
+                else // ScriptOrigin
+                    return 135; 
+            }
+            else
+            {
+                if (columnType == 0) // Time
+                    return 135;
+                else // ScriptOrigin
+                    return 0;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Not Implemented
+            return 0;
+        }
+    }
+
+    public class RefScriptIdToTitleConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values == null || values.Length != 2)
+                return string.Empty;
+
+            if (!(values[0] is int logScriptId))
+                return string.Empty;
+            if (!(values[1] is Dictionary<int, string> scTitleDict))
+                return string.Empty;
+
+            return scTitleDict.ContainsKey(logScriptId) ? scTitleDict[logScriptId] : string.Empty;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
 
