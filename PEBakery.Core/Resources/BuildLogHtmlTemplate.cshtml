@@ -297,6 +297,7 @@
                         <thead class="thead-dark text-center">
                             <tr>
                                 <th class="text-nowrap">State</th>
+                                <th class="text-nowrap">Flags</th>
                                 <th>Message</th>
                             </tr>
                         </thead>
@@ -307,6 +308,14 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-success"><i class="fas fa-fw fa-check"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -314,6 +323,14 @@
                                 {
                                     <tr class="table-warning" id='@string.Format("warn_{0}", @item.Href)'>
                                         <td class="text-nowrap"><i class="fas fa-fw fa-exclamation-triangle"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -321,6 +338,14 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-overwrite"><i class="fas fa-fw fa-copy"></i>&#91;@item.State&#93;</td>
+                                       @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -328,6 +353,14 @@
                                 {
                                     <tr class="table-danger" id='@string.Format("error_{0}", @item.Href)'>
                                         <td class="text-nowrap"><i class="fas fa-fw fa-times"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -335,6 +368,14 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap text-info"><i class="fas fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -342,6 +383,14 @@
                                 {
                                     <tr class="text-muted">
                                         <td class="text-nowrap"><i class="fas fa-fw fa-file"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -349,6 +398,14 @@
                                 {
                                     <tr class="text-muted">
                                         <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }
@@ -356,6 +413,14 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap"></td>
+                                        @if (@item.RefScriptTitle != null)
+                                        {
+                                            <td class="text-nowrap" title='@item.RefScriptTitle'>@item.FlagsStr</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap">@item.FlagsStr</td>
+                                        }
                                         <td class="pb-whitespace">@item.Message</td>
                                     </tr>
                                 }

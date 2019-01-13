@@ -419,6 +419,11 @@ namespace PEBakery.Core
                             int errIdx = 0;
                             int warnIdx = 0;
 
+                            // Script Title Dict for script origin
+                            Dictionary<int, string> scTitleDict = Global.Logger.Db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId)
+                                .ToDictionary(x => x.Id, x => x.Name);
+
                             foreach (LogModel.Script scLog in scripts)
                             {
                                 pIdx += 1;
@@ -445,7 +450,15 @@ namespace PEBakery.Core
                                     {
                                         State = log.State,
                                         Message = log.Export(LogExportType.Html, true),
+                                        Flags = log.Flags,
                                     };
+
+                                    // Referenced script
+                                    if ((log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
+                                    {
+                                        if (scTitleDict.ContainsKey(log.ScriptId))
+                                            item.RefScriptTitle = scTitleDict[log.ScriptId];
+                                    }
 
                                     if (log.State == LogState.Error)
                                         item.Href = errIdx++;
@@ -554,9 +567,20 @@ namespace PEBakery.Core
             public LogState State { get; set; }
             public string Message { get; set; }
             /// <summary>
+            /// From LogModel.BuildLogFlag
+            /// </summary>
+            public LogModel.BuildLogFlag Flags { get; set; }
+            /// <summary>
+            /// Set to null if a log was not generated from a referenced script
+            /// </summary>
+            public string RefScriptTitle { get; set; }
+            /// <summary>
             /// Optional, for error/warning logs
             /// </summary>
-            public int Href { get; set; } 
+            public int Href { get; set; }
+
+            // Used in BuildLogHtmlTemplate.cshtml
+            public string FlagsStr => LogModel.BuildLogFlagToString(Flags);
         }
         #endregion
     }
