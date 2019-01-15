@@ -327,29 +327,15 @@ namespace PEBakery.WPF
         }
     }
 
-    public class ScriptSourceColumnWidthConverter : IValueConverter
+    public class GridViewColumnWidthConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || parameter == null)
                 return string.Empty;
-
-            bool showScriptOrigin = (bool)value;
-            int columnType = (int)parameter;
-            if (showScriptOrigin)
-            {
-                if (columnType == 0) // Time
-                    return 0;
-                else // ScriptOrigin
-                    return 135; 
-            }
-            else
-            {
-                if (columnType == 0) // Time
-                    return 135;
-                else // ScriptOrigin
-                    return 0;
-            }
+            if (value is bool visible && parameter is int width)
+                return visible ? width : 0;
+            return 0;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
