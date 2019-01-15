@@ -94,6 +94,22 @@
                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
             </Style.Resources>
         </Style>
+        <ContextMenu x:Key="FullBuildLogColumnContextMenu" x:Shared="true">
+            <MenuItem Header="Log Options" IsEnabled="False" />
+            <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
+            <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
+            <Separator Visibility="{Binding BuildLogFullLogSelected}" />
+            <MenuItem Header="Show Columns" IsEnabled="False" />
+            <CheckBox IsChecked="{Binding BuildLogShowTime}" Content="Time" />
+            <CheckBox IsChecked="{Binding BuildLogShowScriptOrigin}" Content="Script Origin" />
+            <CheckBox IsChecked="{Binding BuildLogShowDepth}" Content="Depth" />
+            <CheckBox IsChecked="{Binding BuildLogShowState}" Content="State" />
+            <CheckBox IsChecked="{Binding BuildLogShowFlags}" Content="Flags" />
+            <CheckBox IsChecked="{Binding BuildLogShowMessage}" Content="Message" />
+            <CheckBox IsChecked="{Binding BuildLogShowRawCode}" Content="Raw Code" />
+            <CheckBox IsChecked="{Binding BuildLogShowLineNumber}" Content="Line #" />
+        </ContextMenu>
+        <!-- Converters -->
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
         <local:LogStateToStrConverter x:Key="LogStateToStrConverter"/>
         <local:LineIdxToStrConverter x:Key="LineIdxToStrConverter"/>
@@ -230,13 +246,16 @@
                                       HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding BuildLogs}"
-                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                                       AlternationCount="2"
+                                      ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"
                                       FontSize="11">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Time"
-                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
+                                        <GridViewColumn DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
+                                            <GridViewColumn.Header>
+                                                <TextBlock Text="Time"
+                                                           ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"/>
+                                            </GridViewColumn.Header>
                                             <GridViewColumn.Width>
                                                 <Binding Path="BuildLogShowTime"
                                                          Converter="{StaticResource GridViewColumnWidthConverter}">
@@ -361,15 +380,21 @@
                                         </GridViewColumn>
                                     </GridView>
                                 </ListView.View>
-                                <ListView.ContextMenu>
-                                    <ContextMenu>
-                                        <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
-                                            <cc:CorrectMenuItem.Icon>
-                                                <iconPacks:PackIconMaterial Kind="ContentCopy"/>
-                                            </cc:CorrectMenuItem.Icon>
-                                        </cc:CorrectMenuItem>
-                                    </ContextMenu>
-                                </ListView.ContextMenu>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource AlternativeListViewColor}">
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu>
+                                                    <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="FullLogViewCopy_Click">
+                                                        <cc:CorrectMenuItem.Icon>
+                                                            <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                                        </cc:CorrectMenuItem.Icon>
+                                                    </cc:CorrectMenuItem>
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Variables">
@@ -444,24 +469,8 @@
                     Command="local:LogViewCommands.LogOptionsCommand"
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Visibility="{Binding BuildLogSelected}"
+                    ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"
                     Content="Options">
-                <Button.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Log Options" IsEnabled="False" />
-                        <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
-                        <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
-                        <Separator Visibility="{Binding BuildLogFullLogSelected}" />
-                        <MenuItem Header="Show Columns" IsEnabled="False" />
-                        <CheckBox IsChecked="{Binding BuildLogShowTime}" Content="Time" />
-                        <CheckBox IsChecked="{Binding BuildLogShowScriptOrigin}" Content="Script Origin" />
-                        <CheckBox IsChecked="{Binding BuildLogShowDepth}" Content="Depth" />
-                        <CheckBox IsChecked="{Binding BuildLogShowState}" Content="State" />
-                        <CheckBox IsChecked="{Binding BuildLogShowFlags}" Content="Flags" />
-                        <CheckBox IsChecked="{Binding BuildLogShowMessage}" Content="Message" />
-                        <CheckBox IsChecked="{Binding BuildLogShowRawCode}" Content="Raw Code" />
-                        <CheckBox IsChecked="{Binding BuildLogShowLineNumber}" Content="Line #" />
-                    </ContextMenu>
-                </Button.ContextMenu>
             </Button>
         </DockPanel>
     </Grid>
