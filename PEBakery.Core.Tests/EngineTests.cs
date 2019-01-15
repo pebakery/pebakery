@@ -55,7 +55,7 @@ namespace PEBakery.Core.Tests
         public static string BaseDir;
         #endregion
 
-        #region CreateEngineState, DummySectionAddress
+        #region CreateEngineState, DummySection
         public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = "Process")
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
@@ -83,6 +83,14 @@ namespace PEBakery.Core.Tests
             s.TestMode = true;
 
             return s;
+        }
+
+        public static void PushDepthInfo(EngineState s, int targetDepth)
+        {
+            while (s.PeekDepth < targetDepth)
+            {
+                s.PushDepth(s, s.DepthInfoStack.Peek().ToOptions());
+            }
         }
 
         public static ScriptSection DummySection() => Project.MainScript.Sections["Process"];
@@ -166,7 +174,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, dummySection, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
         }
         #endregion
 
@@ -282,7 +290,7 @@ namespace PEBakery.Core.Tests
             s.ResetFull();
 
             // Run CodeCommands
-            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, s.CurDepth);
+            return Engine.RunCommands(s, section, cmds, s.CurSectionInParams, s.CurSectionOutParams, false);
         }
         #endregion
 

@@ -257,6 +257,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_1()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
@@ -269,6 +271,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_2()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
             Variables.SetVariable(s, "#1", "World");
 
             const string src = "%A% ##2 #1";
@@ -280,6 +284,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_3()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -291,7 +297,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_4()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -303,7 +310,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_5()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
@@ -330,7 +338,8 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_6()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "#2");
             Variables.SetVariable(s, "#2", "#3");
@@ -346,6 +355,7 @@ namespace PEBakery.Core.Tests
         public void ExpandSectionParams_7()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
             s.SectionReturnValue = "TEST";
 
             const string src = "##1 ##a ##r #r";
@@ -371,6 +381,7 @@ namespace PEBakery.Core.Tests
         public void ExpandVariables_1()
         {
             EngineState s = EngineTests.CreateEngineState();
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             s.CurSectionInParams[1] = "World";
 
@@ -394,6 +405,8 @@ namespace PEBakery.Core.Tests
         public void ExpandVariables_3()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -405,7 +418,8 @@ namespace PEBakery.Core.Tests
         public void ExpandVariables_4()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -417,7 +431,8 @@ namespace PEBakery.Core.Tests
         public void ExpandVariables_5()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             s.CurSectionInParams[2] = "WPF";
 
@@ -444,7 +459,7 @@ namespace PEBakery.Core.Tests
         public void ExpandVariables_6()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
 
             // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
@@ -499,6 +514,8 @@ namespace PEBakery.Core.Tests
         public void Preprocess_3()
         {
             EngineState s = EngineTests.CreateEngineState();
+            EngineTests.PushDepthInfo(s, 1);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -510,7 +527,8 @@ namespace PEBakery.Core.Tests
         public void Preprocess_4()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             const string src = "%A% #1";
@@ -522,7 +540,8 @@ namespace PEBakery.Core.Tests
         public void Preprocess_5()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
+
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             Variables.SetVariable(s, "#2", "WPF");
 
@@ -549,7 +568,7 @@ namespace PEBakery.Core.Tests
         public void Preprocess_6()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
+            EngineTests.PushDepthInfo(s, 2);
 
             // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
