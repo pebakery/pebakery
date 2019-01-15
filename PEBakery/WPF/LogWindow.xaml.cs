@@ -91,9 +91,9 @@ namespace PEBakery.WPF
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                _m.SystemLogsSelectedIndex = SystemLogListView.Items.Count - 1;
+                _m.SystemLogSelectedIndex = SystemLogListView.Items.Count - 1;
                 SystemLogListView.UpdateLayout();
-                SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogsSelectedIndex]);
+                SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogSelectedIndex]);
             });
         }
 
@@ -180,7 +180,16 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region BuildLog Event
+        #region Context Menus
+        private void SystemLogViewCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (_m.SystemLogSelectedIndex < 0 || _m.SystemLogs.Count <= _m.SystemLogSelectedIndex)
+                return;
+
+            LogModel.SystemLog log = _m.SystemLogs[_m.SystemLogSelectedIndex];
+            Clipboard.SetText(log.State == LogState.None ? log.Message : $"[{log.State}] {log.Message}");
+        }
+
         private void FullLogViewCopy_Click(object sender, RoutedEventArgs e)
         {
             if (_m.FullBuildLogSelectedIndex < 0 || _m.BuildLogs.Count <= _m.FullBuildLogSelectedIndex)
@@ -330,6 +339,8 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
+        
     }
 
     #region LogViewModel
@@ -373,7 +384,7 @@ namespace PEBakery.WPF
                 log.Time = log.Time.ToLocalTime();
                 SystemLogs.Add(log);
             }
-            SystemLogsSelectedIndex = SystemLogs.Count - 1;
+            SystemLogSelectedIndex = SystemLogs.Count - 1;
         }
 
         public void RefreshBuildLog()
@@ -552,7 +563,7 @@ namespace PEBakery.WPF
 
         #region SystemLog
         private int _systemLogsSelectedIndex;
-        public int SystemLogsSelectedIndex
+        public int SystemLogSelectedIndex
         {
             get => _systemLogsSelectedIndex;
             set => SetProperty(ref _systemLogsSelectedIndex, value);

@@ -75,7 +75,8 @@ namespace PEBakery.WPF
         #region Main Buttons
         private void ProjectBuildStartCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress && Engine.WorkingLock == 0;
+            e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress && Engine.WorkingLock == 0 &&
+                           Global.Projects != null && Global.Projects.FullyLoaded;
         }
 
         private async void ProjectBuildStartCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -236,7 +237,7 @@ namespace PEBakery.WPF
 
         private void ProjectUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && !Model.WorkInProgress;
+            e.CanExecute = Model != null && !Model.WorkInProgress && Global.Projects != null && Global.Projects.FullyLoaded;
         }
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)

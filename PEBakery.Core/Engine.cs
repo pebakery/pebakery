@@ -314,7 +314,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, DepthOptions opts)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushDepth(s, opts);
+            int newDepth = s.PushLocalState(s, opts);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -340,13 +340,13 @@ namespace PEBakery.Core
                 s.ProcessedSectionHashes.Add(section.GetHashCode());
 
             // Pop ExecutionDepth
-            s.PopDepth();
+            s.PopLocalState();
         }
 
         public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, DepthOptions opts)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushDepth(s, opts);
+            int newDepth = s.PushLocalState(s, opts);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -369,7 +369,7 @@ namespace PEBakery.Core
                 s.ProcessedSectionHashes.Add(section.GetHashCode());
 
             // Pop ExecutionDepth
-            s.PopDepth();
+            s.PopLocalState();
         }
         #endregion
 
@@ -383,7 +383,7 @@ namespace PEBakery.Core
             }
 
             if (pushDepth)
-                s.PushDepth(s, s.DepthInfoStack.Peek().ToOptions());
+                s.PushLocalState(s, s.LocalStateStack.Peek().ToOptions());
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
@@ -412,7 +412,7 @@ namespace PEBakery.Core
             DisableErrorOff(s, section, s.PeekDepth, ErrorOffState.ForceDisable);
 
             if (pushDepth)
-                s.PopDepth();
+                s.PopLocalState();
 
             return s.TestMode ? allLogs : null;
         }
@@ -422,7 +422,7 @@ namespace PEBakery.Core
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            DepthInfo di = s.DepthInfoStack.Peek();
+            EngineLocalState di = s.LocalStateStack.Peek();
 
             if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
@@ -857,7 +857,7 @@ namespace PEBakery.Core
             if (changeCurrentScript)
                 s.CurrentScript = cbCmd.Section.Script;
 
-            s.InitDepthInfoStack();
+            s.InitLocalStateStack();
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
                 CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
@@ -1118,8 +1118,8 @@ namespace PEBakery.Core
         /// <summary>
         /// Should be managed in Engine.RunSection()
         /// </summary>
-        public Stack<DepthInfo> DepthInfoStack = new Stack<DepthInfo>(16);
-        public int PeekDepth => DepthInfoStack.Count == 0 ? 0 : DepthInfoStack.Peek().Depth;
+        public Stack<EngineLocalState> LocalStateStack = new Stack<EngineLocalState>(16);
+        public int PeekDepth => LocalStateStack.Count == 0 ? 0 : LocalStateStack.Peek().Depth;
 
         // Elapsed Time
         public DateTime StartTime = DateTime.MinValue;
@@ -1216,7 +1216,7 @@ namespace PEBakery.Core
             }
 
             // Init DepthInfoStack
-            InitDepthInfoStack();
+            InitLocalStateStack();
 
             // Current Section
             CurrentSection = null;
@@ -1258,7 +1258,7 @@ namespace PEBakery.Core
 
             // Engine State
             SectionReturnValue = string.Empty;
-            InitDepthInfoStack();
+            InitLocalStateStack();
             ElseFlag = false;
             LoopState = LoopState.Off;
             LoopCounter = 0;
@@ -1285,11 +1285,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Execution Depths
-        public void InitDepthInfoStack()
+        #region Local State
+        public void InitLocalStateStack()
         {
-            DepthInfoStack.Clear();
-            DepthInfoStack.Push(new DepthInfo
+            LocalStateStack.Clear();
+            LocalStateStack.Push(new EngineLocalState
             {
                 Depth = 0,
                 IsMacro = false,
@@ -1299,18 +1299,18 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Push new execution depth information.
+        /// Push new local state.
         /// </summary>
         /// <returns>New execution depth.</returns>
-        public int PushDepth(EngineState s, DepthOptions opts)
+        public int PushLocalState(EngineState s, DepthOptions opts)
         {
-            Debug.Assert(0 < DepthInfoStack.Count, "InitDepth() was not called properly");
-            int newDepth = DepthInfoStack.Peek().Depth + 1;
+            Debug.Assert(0 < LocalStateStack.Count, "InitDepth() was not called properly");
+            int newDepth = LocalStateStack.Peek().Depth + 1;
 
-            DepthInfo di;
+            EngineLocalState di;
             if (opts.RefScriptId != 0)
             {
-                di = new DepthInfo
+                di = new EngineLocalState
                 {
                     Depth = newDepth,
                     IsMacro = opts.IsMacro,
@@ -1320,7 +1320,7 @@ namespace PEBakery.Core
             }
             else
             {
-                di = new DepthInfo
+                di = new EngineLocalState
                 {
                     Depth = newDepth,
                     IsMacro = opts.IsMacro,
@@ -1329,18 +1329,18 @@ namespace PEBakery.Core
                 };
             }
 
-            DepthInfoStack.Push(di);
+            LocalStateStack.Push(di);
             return newDepth;
         }
 
         /// <summary>
-        /// Remove latest execution depth information.
+        /// Remove latest local state
         /// </summary>
         /// <returns></returns>
-        public void PopDepth()
+        public void PopLocalState()
         {
-            if (0 < DepthInfoStack.Count)
-                DepthInfoStack.Pop();
+            if (0 < LocalStateStack.Count)
+                LocalStateStack.Pop();
         }
         #endregion
     }
@@ -1374,7 +1374,7 @@ namespace PEBakery.Core
         public int RefScriptId;
     }
 
-    public class DepthInfo
+    public class EngineLocalState
     {
         /// <summary>
         /// Current Depth.

@@ -129,7 +129,7 @@
                 <Grid>
                     <ListView Name="SystemLogListView"
                               HorizontalContentAlignment="Stretch"
-                              SelectedIndex="{Binding SystemLogsSelectedIndex}"
+                              SelectedIndex="{Binding SystemLogSelectedIndex}"
                               ItemsSource="{Binding SystemLogs}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
@@ -147,6 +147,15 @@
                                                 DisplayMemberBinding="{Binding Message}" />
                             </cc:AutoSizedGridView>
                         </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <cc:CorrectMenuItem Header="Copy" Grid.IsSharedSizeScope="True" Click="SystemLogViewCopy_Click">
+                                    <cc:CorrectMenuItem.Icon>
+                                        <iconPacks:PackIconMaterial Kind="ContentCopy"/>
+                                    </cc:CorrectMenuItem.Icon>
+                                </cc:CorrectMenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                     </ListView>
                 </Grid>
             </TabItem>

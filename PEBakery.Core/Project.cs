@@ -378,6 +378,14 @@ namespace PEBakery.Core
         #region Load, LoadLinks
         public List<LogInfo> Load(ScriptCache scriptCache, IProgress<(Project.LoadReport Type, string Path)> progress)
         {
+            if (_projectNames.Count == 0)
+            {
+                return new List<LogInfo>
+                {
+                    new LogInfo(LogState.Error, "No project found"),
+                };
+            }
+
             List<LogInfo> logs = new List<LogInfo>(32);
             try
             {

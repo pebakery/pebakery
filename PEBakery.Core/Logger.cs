@@ -801,7 +801,7 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            DepthInfo di = s.DepthInfoStack.Peek();
+            EngineLocalState di = s.LocalStateStack.Peek();
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
             if (di.IsMacro)
@@ -833,7 +833,7 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            DepthInfo di = s.DepthInfoStack.Peek();
+            EngineLocalState di = s.LocalStateStack.Peek();
 
             // Normally this should be already done in Engine.ExecuteCommand.
             // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
@@ -1311,7 +1311,6 @@ namespace PEBakery.Core
             // Used in LogWindow
             [Ignore]
             public string StateStr => State == LogState.None ? string.Empty : State.ToString();
-
             [Ignore]
             public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
 

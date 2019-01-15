@@ -89,7 +89,7 @@ namespace PEBakery.Core.Tests
         {
             while (s.PeekDepth < targetDepth)
             {
-                s.PushDepth(s, s.DepthInfoStack.Peek().ToOptions());
+                s.PushLocalState(s, s.LocalStateStack.Peek().ToOptions());
             }
         }
 
