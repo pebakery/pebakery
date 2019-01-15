@@ -71,8 +71,7 @@ namespace PEBakery.Core
             // Turn off temporary log suspend
             s.Logger.SuspendBuildLog = false;
 
-            // Assert s.CurDepth == 1
-            Debug.Assert(s.CurDepth == 1);
+            Debug.Assert(s.PeekDepth == 0, "Incorrect DepthInfoStack handling");
 
             // Set CurrentScript
             // Note: s.CurrentScriptIdx is not touched here
@@ -84,7 +83,6 @@ namespace PEBakery.Core
             // Init Per-Script Log
             bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
             s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
-            s.RefScriptId = s.ScriptId;
 
             // Determine EntrySection
             string entrySection = Engine.GetEntrySection(s);
@@ -179,7 +177,7 @@ namespace PEBakery.Core
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), 1);
+                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new DepthOptions());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -313,10 +311,13 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, int depth)
+        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, DepthOptions opts)
         {
+            // Push ExecutionDepth
+            int newDepth = s.PushDepth(s, opts);
+
             if (section.Lines == null)
-                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
 
             CodeParser parser = new CodeParser(section, new CodeParser.Options());
             (CodeCommand[] cmds, _) = parser.ParseStatements();
@@ -332,17 +333,23 @@ namespace PEBakery.Core
                 inParamDict[i + 1] = StringEscaper.ExpandSectionParams(s, inParams[i]);
 
             // Must copy ParamDict by value, not reference
-            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), depth);
+            RunCommands(s, section, cmds, inParamDict, new List<string>(outParams), false);
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(section.Script))
                 s.ProcessedSectionHashes.Add(section.GetHashCode());
+
+            // Pop ExecutionDepth
+            s.PopDepth();
         }
 
-        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, DepthOptions opts)
         {
+            // Push ExecutionDepth
+            int newDepth = s.PushDepth(s, opts);
+
             if (section.Lines == null)
-                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
 
             CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
             (CodeCommand[] cmds, _) = parser.ParseStatements();
@@ -355,34 +362,41 @@ namespace PEBakery.Core
 
             // Must copy ParamDict by value, not reference
             outParams = outParams == null ? new List<string>() : new List<string>(outParams);
-            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, depth);
+            RunCommands(s, section, cmds, new Dictionary<int, string>(inParams), outParams, false);
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(section.Script))
                 s.ProcessedSectionHashes.Add(section.GetHashCode());
+
+            // Pop ExecutionDepth
+            s.PopDepth();
         }
         #endregion
 
         #region RunCommands
-        // ReSharper disable once PossibleNullReferenceException
-        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, int depth)
+        public static List<LogInfo> RunCommands(EngineState s, ScriptSection section, IList<CodeCommand> cmds, Dictionary<int, string> inParams, List<string> outParams, bool pushDepth)
         {
             if (cmds.Count == 0)
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.CurDepth + 1));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"No code in script [{section.Script.TreePath}]'s section [{section.Name}]", s.PeekDepth + 1));
                 return null;
             }
+
+            if (pushDepth)
+                s.PushDepth(s, s.DepthInfoStack.Peek().ToOptions());
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
             {
-                s.CurDepth = depth;
                 s.CurSectionInParams = inParams;
                 s.CurSectionOutParams = outParams;
 
                 List<LogInfo> logs = ExecuteCommand(s, cmd);
                 if (s.TestMode)
+                {
+                    // ReSharper disable once PossibleNullReferenceException
                     allLogs.AddRange(logs);
+                }
 
                 if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     break;
@@ -391,11 +405,15 @@ namespace PEBakery.Core
             if (Engine.DisableSetLocal(s, section))
             {
                 int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
             }
 
-            DisableErrorOff(s, section, depth, ErrorOffState.ForceDisable);
+            DisableErrorOff(s, section, s.PeekDepth, ErrorOffState.ForceDisable);
+
+            if (pushDepth)
+                s.PopDepth();
+
             return s.TestMode ? allLogs : null;
         }
         #endregion
@@ -404,7 +422,7 @@ namespace PEBakery.Core
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            int curDepth = s.CurDepth;
+            DepthInfo di = s.DepthInfoStack.Peek();
 
             if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
@@ -794,20 +812,20 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Critical Error, stop build
-                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, curDepth));
+                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, di.Depth));
                 s.ErrorHaltFlag = true;
             }
             catch (InvalidCodeCommandException e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, curDepth));
+                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, di.Depth));
             }
             catch (Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
+                logs.Add(new LogInfo(LogState.Error, e, cmd, di.Depth));
             }
 
             // Mute LogState.{Error|Warning} if ErrorOff is enabled, and disable ErrorOff when necessary
-            ProcessErrorOff(s, cmd.Section, curDepth, cmd.LineIdx, logs);
+            ProcessErrorOff(s, cmd.Section, di.Depth, cmd.LineIdx, logs);
 
             // Stop build on error
             if (StopBuildOnError)
@@ -816,7 +834,7 @@ namespace PEBakery.Core
                     s.ErrorHaltFlag = true;
             }
 
-            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
+            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, di.Depth));
 
             // Increase only if cmd resides in CurrentScript.
             // So if a section is from Macro, it will not be count.
@@ -839,7 +857,7 @@ namespace PEBakery.Core
             if (changeCurrentScript)
                 s.CurrentScript = cbCmd.Section.Script;
 
-            s.CurDepth = 0;
+            s.InitDepthInfoStack();
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
                 CodeInfo_RunExec info = cbCmd.Info.Cast<CodeInfo_RunExec>();
@@ -856,7 +874,7 @@ namespace PEBakery.Core
                 ExecuteCommand(s, cbCmd);
             }
 
-            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.PeekDepth));
             s.Logger.BuildWrite(s, Logger.LogSeparator);
             cbCmd = null;
         }
@@ -879,7 +897,7 @@ namespace PEBakery.Core
             s.SetLocalStack.Push(new SetLocalState
             {
                 Section = section,
-                SectionDepth = s.CurDepth,
+                SectionDepth = s.PeekDepth,
                 LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local),
             });
         }
@@ -889,7 +907,7 @@ namespace PEBakery.Core
             if (0 < s.SetLocalStack.Count)
             {
                 SetLocalState last = s.SetLocalStack.Peek();
-                if (last.Section.Equals(section) && last.SectionDepth == s.CurDepth)
+                if (last.Section.Equals(section) && last.SectionDepth == s.PeekDepth)
                 {
                     s.SetLocalStack.Pop();
                     s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
@@ -1084,12 +1102,10 @@ namespace PEBakery.Core
         public List<string> CurSectionOutParams = null;
         public string SectionReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>();
-        public int CurDepth = 1;
         public bool ElseFlag = false;
         public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
         public char LoopLetter = ' '; // Use capital alphabet
-        public Stack<bool> InMacroStack = new Stack<bool>();
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false; // Halt Command
@@ -1097,7 +1113,13 @@ namespace PEBakery.Core
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
-        public int RefScriptId = 0; // Used in logging
+
+        // Depth Management
+        /// <summary>
+        /// Should be managed in Engine.RunSection()
+        /// </summary>
+        public Stack<DepthInfo> DepthInfoStack = new Stack<DepthInfo>(16);
+        public int PeekDepth => DepthInfoStack.Count == 0 ? 0 : DepthInfoStack.Peek().Depth;
 
         // Elapsed Time
         public DateTime StartTime = DateTime.MinValue;
@@ -1112,16 +1134,18 @@ namespace PEBakery.Core
             }
         }
 
-        // Options
-        public bool CompatDirCopyBug = false; // Compatibility
-        public bool CompatFileRenameCanMoveDir = false; // Compatibility
-        public bool CompatAllowLetterInLoop = false; // Compatibility
-        public bool CompatAllowSetModifyInterface = false; // Compatibility
-        public bool CompatDisableExtendedSectionParams = false; // Compatibility
-        public bool CompatOverridableLoopCounter; // Compatibility
+        // Normal Options
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
+
+        // Compat Options
+        public bool CompatDirCopyBug = false;
+        public bool CompatFileRenameCanMoveDir = false;
+        public bool CompatAllowLetterInLoop = false;
+        public bool CompatAllowSetModifyInterface = false;
+        public bool CompatDisableExtendedSectionParams = false;
+        public bool CompatOverridableLoopCounter;
 
         // Command State
         // |- Callback
@@ -1191,8 +1215,14 @@ namespace PEBakery.Core
                     break;
             }
 
+            // Init DepthInfoStack
+            InitDepthInfoStack();
+
+            // Current Section
             CurrentSection = null;
             CurSectionInParams = new Dictionary<int, string>();
+
+            // MainViewModel
             MainViewModel = mainModel;
 
             // Use secure random number generator to feed seed to pseudo random number generator.
@@ -1228,12 +1258,11 @@ namespace PEBakery.Core
 
             // Engine State
             SectionReturnValue = string.Empty;
-            CurDepth = 1;
+            InitDepthInfoStack();
             ElseFlag = false;
             LoopState = LoopState.Off;
             LoopCounter = 0;
             LoopLetter = ' ';
-            InMacroStack.Clear();
 
             // Command State
             OnBuildExit = null;
@@ -1241,7 +1270,7 @@ namespace PEBakery.Core
             ErrorOff = null;
             ErrorOffDepthMinusOne = false;
             ErrorOffWaitingRegister = null;
-            SetLocalStack = new Stack<SetLocalState>(16);
+            SetLocalStack.Clear();
             RunningSubProcess = null;
             RunningWebClient = null;
         }
@@ -1253,6 +1282,65 @@ namespace PEBakery.Core
             ErrorHaltFlag = false;
             UserHaltFlag = false;
             CmdHaltFlag = false;
+        }
+        #endregion
+
+        #region Execution Depths
+        public void InitDepthInfoStack()
+        {
+            DepthInfoStack.Clear();
+            DepthInfoStack.Push(new DepthInfo
+            {
+                Depth = 0,
+                IsMacro = false,
+                IsRefScript = false,
+                RefScriptId = 0,
+            });
+        }
+
+        /// <summary>
+        /// Push new execution depth information.
+        /// </summary>
+        /// <returns>New execution depth.</returns>
+        public int PushDepth(EngineState s, DepthOptions opts)
+        {
+            Debug.Assert(0 < DepthInfoStack.Count, "InitDepth() was not called properly");
+            int newDepth = DepthInfoStack.Peek().Depth + 1;
+
+            DepthInfo di;
+            if (opts.RefScriptId != 0)
+            {
+                di = new DepthInfo
+                {
+                    Depth = newDepth,
+                    IsMacro = opts.IsMacro,
+                    IsRefScript = true,
+                    RefScriptId = opts.RefScriptId,
+                };
+            }
+            else
+            {
+                di = new DepthInfo
+                {
+                    Depth = newDepth,
+                    IsMacro = opts.IsMacro,
+                    IsRefScript = false,
+                    RefScriptId = s.ScriptId,
+                };
+            }
+
+            DepthInfoStack.Push(di);
+            return newDepth;
+        }
+
+        /// <summary>
+        /// Remove latest execution depth information.
+        /// </summary>
+        /// <returns></returns>
+        public void PopDepth()
+        {
+            if (0 < DepthInfoStack.Count)
+                DepthInfoStack.Pop();
         }
         #endregion
     }
@@ -1276,6 +1364,44 @@ namespace PEBakery.Core
         public int LineCount;
 
         public const int ForceDisable = -1;
+    }
+    #endregion
+
+    #region struct DepthOptions / class DepthInfo
+    public struct DepthOptions
+    {
+        public bool IsMacro;
+        public int RefScriptId;
+    }
+
+    public class DepthInfo
+    {
+        /// <summary>
+        /// Current Depth.
+        /// [Process] starts from 1.
+        /// If no section is running, it must be 0.
+        /// </summary>
+        public int Depth;
+
+        /// <summary>
+        /// Is running from Macro command?
+        /// </summary>
+        public bool IsMacro;
+
+        /// <summary>
+        /// Is running from Referenced Script?
+        /// </summary>
+        public bool IsRefScript;
+        public int RefScriptId;
+
+        public DepthOptions ToOptions()
+        {
+            return new DepthOptions
+            {
+                IsMacro = IsMacro,
+                RefScriptId = IsRefScript ? RefScriptId : 0,
+            };
+        }
     }
     #endregion
 }

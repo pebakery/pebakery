@@ -445,7 +445,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        if (s.CurDepth == 1) // Dirty Hack for WB082 compatibility
+                        if (s.PeekDepth == 1) // Dirty Hack for WB082 compatibility
                             param = $"##{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
                         else
                             param = string.Empty; // Not in entry section -> return string.Empty;

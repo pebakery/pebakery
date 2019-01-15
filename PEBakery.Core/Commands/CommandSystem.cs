@@ -95,7 +95,7 @@ namespace PEBakery.Core.Commands
                             ErrorOffState newState = new ErrorOffState
                             {
                                 Section = cmd.Section,
-                                SectionDepth = s.CurDepth,
+                                SectionDepth = s.PeekDepth,
                                 StartLineIdx = cmd.LineIdx,
                                 LineCount = lines,
                             };
@@ -427,13 +427,14 @@ namespace PEBakery.Core.Commands
                             int realBuildId = s.Logger.Flush(s);
 
                             // This message should make it on exported log
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported build logs to [{destPath}]", cmd, s.PeekDepth));
 
                             // Do not use s.BuildId, for case of FullDeferredLogging
                             s.Logger.ExportBuildLog(logFormat, destPath, realBuildId, new LogExporter.BuildLogOptions
                             {
                                 IncludeComments = true,
                                 IncludeMacros = true,
+                                ShowLogFlags = true,
                             });
                         }
                     }
@@ -484,16 +485,16 @@ namespace PEBakery.Core.Commands
 
                         // Load Global Variables
                         List<LogInfo> varLogs = s.Variables.LoadDefaultGlobalVariables();
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         // Load Per-Script Variables
                         varLogs = s.Variables.LoadDefaultScriptVariables(cmd.Section.Script);
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         // Load Per-Script Macro
                         s.Macro.ResetLocalMacros();
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Section.Script, false);
-                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.PeekDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, "Variables are reset to their default state"));
                     }

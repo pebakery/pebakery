@@ -119,6 +119,7 @@ namespace PEBakery.WPF
                 {
                     IncludeComments = true, 
                     IncludeMacros = true,
+                    ShowLogFlags = true,
                 });
 #endif
 
@@ -313,6 +314,7 @@ namespace PEBakery.WPF
                 {
                     IncludeComments = true,
                     IncludeMacros = true,
+                    ShowLogFlags = true,
                 });
 #endif
 

@@ -1315,6 +1315,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> AddInterface(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
+            DepthInfo di = s.DepthInfoStack.Peek();
 
             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 
@@ -1337,10 +1338,10 @@ namespace PEBakery.Core.Commands
                 List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
                 if (0 < subLogs.Count)
                 {
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
-                    logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, di.Depth));
+                    logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, di.Depth + 1));
                     s.Logger.BuildWrite(s, subLogs);
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, di.Depth));
                 }
             }
 
