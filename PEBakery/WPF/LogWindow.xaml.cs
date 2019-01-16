@@ -74,23 +74,24 @@ namespace PEBakery.WPF
         #region Logger EventHandler
         public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
         {
-            if (e.Log != null)
-            {
-                _m.SystemLogs.Add(e.Log);
-            }
-            else if (e.Logs != null)
-            {
-                // e.Logs
-                foreach (LogModel.SystemLog dbLog in e.Logs)
-                    _m.SystemLogs.Add(dbLog);
-            }
-            else
-            {
-                Debug.Assert(false, $"Invalid {nameof(SystemLogUpdateEventArgs)}");
-            }
-
+            // Another dirty hack (Dispatcher) to avoid crash from threading issue
             Application.Current.Dispatcher.Invoke(() =>
             {
+                if (e.Log != null)
+                {
+                    _m.SystemLogs.Add(e.Log);
+                }
+                else if (e.Logs != null)
+                {
+                    // e.Logs
+                    foreach (LogModel.SystemLog dbLog in e.Logs)
+                        _m.SystemLogs.Add(dbLog);
+                }
+                else
+                {
+                    Debug.Assert(false, $"Invalid {nameof(SystemLogUpdateEventArgs)}");
+                }
+
                 _m.SystemLogSelectedIndex = SystemLogListView.Items.Count - 1;
                 SystemLogListView.UpdateLayout();
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[_m.SystemLogSelectedIndex]);

@@ -470,8 +470,8 @@ namespace PEBakery.Core
                                     if (opts.ShowLogFlags &&
                                         (log.Flags & LogModel.BuildLogFlag.RefScript) == LogModel.BuildLogFlag.RefScript)
                                     {
-                                        if (scTitleDict.ContainsKey(log.ScriptId))
-                                            item.RefScriptTitle = scTitleDict[log.ScriptId];
+                                        if (scTitleDict.ContainsKey(log.RefScriptId))
+                                            item.RefScriptTitle = scTitleDict[log.RefScriptId];
                                     }
 
                                     if (log.State == LogState.Error)
