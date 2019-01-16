@@ -53,6 +53,7 @@
     <Compile Include="EncodingHelperTests.cs" />
     <Compile Include="HashHelperTests.cs" />
     <Compile Include="FileHelperTests.cs" />
+    <Compile Include="HtmlHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringHelperTests.cs" />
     <Compile Include="TestSetup.cs" />

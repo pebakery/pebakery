@@ -1132,7 +1132,7 @@ namespace PEBakery.Core
             return logFormat;
         }
 
-        public void ExportSystemLog(LogExportType type, string exportFile)
+        public void ExportSystemLog(LogExportType type, string exportFile, bool embedResource)
         {
             if (type == LogExportType.Html && MinifyHtmlExport)
             {
@@ -1455,13 +1455,13 @@ namespace PEBakery.Core
             /// Where the command was called
             /// </summary>
             [Indexed]
-            public int ScriptId { get; set; } 
+            public int ScriptId { get; set; }
             /// <summary>
             /// Where the command resides in (Run/Exec).
             /// Put same value with ScriptId if a command did not reference script.
             /// 0 is also treated as 'not referenced script'.
             /// </summary>
-            public int RefScriptId { get; set; } 
+            public int RefScriptId { get; set; }
             public int Depth { get; set; }
             public LogState State { get; set; }
             [MaxLength(65535)]

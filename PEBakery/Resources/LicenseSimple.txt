@@ -78,10 +78,9 @@ PEBakery/WPF/Controls/AutoSizedGridView.cs
 
     Derived from http://stackoverflow.com/a/15745082
 
-PEBakery/WPF/Controls/CustomMessageBox.cs
-PEBakery/WPF/Controls/CustomMessageBoxUtil.cs
-PEBakery/WPF/Controls/CustomMessageBoxWindow.xaml
-PEBakery/WPF/Controls/CustomMessageBoxWindow.xaml.cs
+PEBakery.Core/WpfControls/CustomMessageBox.cs
+PEBakery.Core/WpfControls/CustomMessageBoxWindow.xaml
+PEBakery.Core/WpfControls/CustomMessageBoxWindow.xaml.cs
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -242,3 +241,33 @@ UACHelper
     https://github.com/falahati/UACHelper
 
 -----------------------------------------------------------
+PEBakery's log html template uses Open Source Software (OSS).
+This is the list of open source projects and licenses.
+
+Bootstrap
+    MIT License
+    https://opensource.org/licenses/MIT
+    
+    Copyright (c) 2011-2019 Twitter, Inc.
+    Copyright (c) 2011-2019 The Bootstrap Authors
+    https://getbootstrap.com/
+    
+Font Awesome
+    Icons - CC BY 4.0 License
+    Fonts - SIL OFL 1.1 License
+    Code - MIT License
+    https://fontawesome.com/license/free
+    
+jQuery
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (C) JS Foundation and other contributors
+    https://jquery.org/
+
+Popper.js
+    MIT License
+    https://opensource.org/licenses/MIT
+    
+    Copyright © 2016 Federico Zivolo and contributors
+    https://popper.js.org/

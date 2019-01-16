@@ -177,7 +177,7 @@ namespace PEBakery.Core
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new DepthOptions());
+                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalStateOptions());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -311,7 +311,7 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, DepthOptions opts)
+        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalStateOptions opts)
         {
             // Push ExecutionDepth
             int newDepth = s.PushLocalState(s, opts);
@@ -343,7 +343,7 @@ namespace PEBakery.Core
             s.PopLocalState();
         }
 
-        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, DepthOptions opts)
+        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalStateOptions opts)
         {
             // Push ExecutionDepth
             int newDepth = s.PushLocalState(s, opts);
@@ -1101,7 +1101,7 @@ namespace PEBakery.Core
         public Dictionary<int, string> CurSectionInParams;
         public List<string> CurSectionOutParams = null;
         public string SectionReturnValue = string.Empty;
-        public List<int> ProcessedSectionHashes = new List<int>();
+        public List<int> ProcessedSectionHashes = new List<int>(16);
         public bool ElseFlag = false;
         public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
@@ -1114,9 +1114,9 @@ namespace PEBakery.Core
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
 
-        // Depth Management
+        // Local State Stack
         /// <summary>
-        /// Should be managed in Engine.RunSection()
+        /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
         /// </summary>
         public Stack<EngineLocalState> LocalStateStack = new Stack<EngineLocalState>(16);
         public int PeekDepth => LocalStateStack.Count == 0 ? 0 : LocalStateStack.Peek().Depth;
@@ -1302,7 +1302,7 @@ namespace PEBakery.Core
         /// Push new local state.
         /// </summary>
         /// <returns>New execution depth.</returns>
-        public int PushLocalState(EngineState s, DepthOptions opts)
+        public int PushLocalState(EngineState s, EngineLocalStateOptions opts)
         {
             Debug.Assert(0 < LocalStateStack.Count, "InitDepth() was not called properly");
             int newDepth = LocalStateStack.Peek().Depth + 1;
@@ -1346,29 +1346,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct SetLocalState
-    public struct SetLocalState
-    {
-        public ScriptSection Section;
-        public int SectionDepth;
-        public Dictionary<string, string> LocalVarsBackup;
-    }
-    #endregion
-
-    #region struct ErrorOffState
-    public struct ErrorOffState
-    {
-        public ScriptSection Section;
-        public int SectionDepth;
-        public int StartLineIdx;
-        public int LineCount;
-
-        public const int ForceDisable = -1;
-    }
-    #endregion
-
-    #region struct DepthOptions / class DepthInfo
-    public struct DepthOptions
+    #region EngineLocalState
+    public struct EngineLocalStateOptions
     {
         public bool IsMacro;
         public int RefScriptId;
@@ -1394,14 +1373,35 @@ namespace PEBakery.Core
         public bool IsRefScript;
         public int RefScriptId;
 
-        public DepthOptions ToOptions()
+        public EngineLocalStateOptions ToOptions()
         {
-            return new DepthOptions
+            return new EngineLocalStateOptions
             {
                 IsMacro = IsMacro,
                 RefScriptId = IsRefScript ? RefScriptId : 0,
             };
         }
+    }
+    #endregion
+
+    #region struct SetLocalState
+    public struct SetLocalState
+    {
+        public ScriptSection Section;
+        public int SectionDepth;
+        public Dictionary<string, string> LocalVarsBackup;
+    }
+    #endregion
+
+    #region struct ErrorOffState
+    public struct ErrorOffState
+    {
+        public ScriptSection Section;
+        public int SectionDepth;
+        public int StartLineIdx;
+        public int LineCount;
+
+        public const int ForceDisable = -1;
     }
     #endregion
 }

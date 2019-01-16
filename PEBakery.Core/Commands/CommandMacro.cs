@@ -25,8 +25,6 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace PEBakery.Core.Commands
@@ -37,23 +35,20 @@ namespace PEBakery.Core.Commands
         {
             CodeInfo_Macro info = cmd.Info.Cast<CodeInfo_Macro>();
 
-            // bool isGlobal;
             CodeCommand macroCmd;
             if (s.Macro.GlobalDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.GlobalDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
-                // isGlobal = true;
             }
             else if (s.Macro.LocalDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.LocalDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
-                // isGlobal = false;
             }
             else
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Invalid Command [{info.MacroType}]", cmd, s.PeekDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Invalid command [{info.MacroType}]", cmd, s.PeekDepth));
                 return;
             }
 
@@ -62,23 +57,26 @@ namespace PEBakery.Core.Commands
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
             s.CurSectionInParams = paramDict;
-            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing Command [{info.MacroType}]", cmd, s.PeekDepth));
+            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Executing command [{info.MacroType}]", cmd, s.PeekDepth));
 
-            /*
-            // Backup and set EngineState values
-            int realScriptIdBackup = s.RefScriptId;
-            if (isGlobal)
-                s.RefScriptId = s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script);
-                */
-            CommandBranch.RunExec(s, macroCmd, new CommandBranch.RunExecOptions
+            if (macroCmd.Type == CodeType.Run || macroCmd.Type == CodeType.RunEx || macroCmd.Type == CodeType.Exec)
             {
-                PreserveCurrentParams = true,
-                IsMacro = true,
-            });
-            /*
-            // Restore and reset EngineState values
-            s.RefScriptId = realScriptIdBackup;
-            */
+                CommandBranch.RunExec(s, macroCmd, new CommandBranch.RunExecOptions
+                {
+                    PreserveCurrentParams = true,
+                    IsMacro = true,
+                });
+            }
+            else
+            {
+                s.PushLocalState(s, new EngineLocalStateOptions
+                {
+                    IsMacro = true,
+                    RefScriptId = s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script),
+                });
+                Engine.ExecuteCommand(s, cmd);
+                s.PopLocalState();
+            }
         }
     }
 }

@@ -32,7 +32,7 @@ namespace PEBakery.Helper.Tests
     [TestClass]
     public class EncodingHelperTests
     {
-        #region DetectTextEncoding
+        #region DetectBom
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("EncodingHelper")]

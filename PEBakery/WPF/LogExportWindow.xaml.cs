@@ -110,7 +110,7 @@ namespace PEBakery.WPF
                 {
                     if (_m.ExportSystemLog)
                     {
-                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
+                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile, true);
                     }
                     else if (_m.ExportBuildLog)
                     {
@@ -198,6 +198,7 @@ namespace PEBakery.WPF
                 _exportSystemLog = value;
                 OnPropertyUpdate(nameof(ExportSystemLog));
                 OnPropertyUpdate(nameof(BuildLogOptionEnabled));
+                OnPropertyUpdate(nameof(BuildLogShowLogFlagsEnabled));
             }
         }
 
@@ -210,6 +211,7 @@ namespace PEBakery.WPF
                 _exportBuildLog = value;
                 OnPropertyUpdate(nameof(ExportBuildLog));
                 OnPropertyUpdate(nameof(BuildLogOptionEnabled));
+                OnPropertyUpdate(nameof(BuildLogShowLogFlagsEnabled));
             }
         }
         #endregion
@@ -234,6 +236,7 @@ namespace PEBakery.WPF
             {
                 FileFormat = value ? LogExportType.Html : LogExportType.Text;
                 OnPropertyUpdate(nameof(FileFormatHtml));
+                OnPropertyUpdate(nameof(BuildLogShowLogFlagsEnabled));
             }
         }
         #endregion
@@ -241,6 +244,7 @@ namespace PEBakery.WPF
         #region IsEnabled
         public bool BuildLogRadioEnabled => 0 < BuildEntries.Count;
         public bool BuildLogOptionEnabled => ExportBuildLog && !ExportSystemLog && 0 < BuildEntries.Count;
+        public bool BuildLogShowLogFlagsEnabled => ExportBuildLog && !ExportSystemLog && 0 < BuildEntries.Count && FileFormatHtml;
         #endregion
 
         #region Build Log Export
