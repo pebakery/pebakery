@@ -1131,8 +1131,9 @@ namespace PEBakery.Core
                     encodeStream.Flush();
                     encodeStream.Position = 0;
 
-                    using (StreamReader tr = new StreamReader(backupFile, Encoding.UTF8, false))
-                    using (StreamWriter tw = new StreamWriter(sc.RealPath, false, Encoding.UTF8))
+                    Encoding encoding = EncodingHelper.DetectBom(backupFile);
+                    using (StreamReader tr = new StreamReader(backupFile, encoding, false))
+                    using (StreamWriter tw = new StreamWriter(sc.RealPath, false, encoding))
                     {
                         // No need to check existing encoded file section
                         // Fresh write : Fast forward tr, tw to EOF
