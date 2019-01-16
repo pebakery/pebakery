@@ -301,7 +301,7 @@ namespace PEBakery.Ini
                 // Append IniKey into existing file
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     bool inTargetSection = false;
@@ -782,7 +782,7 @@ namespace PEBakery.Ini
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
@@ -1049,7 +1049,7 @@ namespace PEBakery.Ini
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     // Is Original File Empty?
@@ -1219,7 +1219,7 @@ namespace PEBakery.Ini
                 bool finished = false;
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
@@ -1313,7 +1313,7 @@ namespace PEBakery.Ini
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     if (r.Peek() == -1)
@@ -1411,7 +1411,7 @@ namespace PEBakery.Ini
             try
             {
                 Encoding encoding = Helper.DetectTextEncoding(file);
-                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamReader r = new StreamReader(file, encoding, false))
                 {
                     string line;
                     bool inTargetSection = false;
@@ -1689,7 +1689,7 @@ namespace PEBakery.Ini
             List<string> lines = new List<string>();
 
             Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
                 bool appendState = false;
@@ -1736,7 +1736,7 @@ namespace PEBakery.Ini
             List<string> lines = new List<string>();
 
             Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
                 bool appendState = false;
@@ -1965,7 +1965,7 @@ namespace PEBakery.Ini
             bool result = false;
 
             Encoding encoding = Helper.DetectTextEncoding(file);
-            using (StreamReader r = new StreamReader(file, encoding, true))
+            using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
                 while ((line = r.ReadLine()) != null)
