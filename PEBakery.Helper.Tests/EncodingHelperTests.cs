@@ -45,13 +45,20 @@ namespace PEBakery.Helper.Tests
             try
             {
                 // Empty -> ANSI
+                // No BOM -> Treat them as ANSI
                 File.Create(tempFile).Close();
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), EncodingHelper.DefaultAnsi);
+                string srcFile = Path.Combine(srcDir, "UTF8woBOM.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
+                srcFile = Path.Combine(srcDir, "CP949.txt");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
+                srcFile = Path.Combine(srcDir, "ShiftJIS.html");
+                Assert.AreEqual(EncodingHelper.DetectBom(srcFile), EncodingHelper.DefaultAnsi);
 
                 // UTF-16 LE
                 EncodingHelper.WriteTextBom(tempFile, Encoding.Unicode);
                 Assert.AreEqual(EncodingHelper.DetectBom(tempFile), Encoding.Unicode);
-                string srcFile = Path.Combine(srcDir, "UTF16LE.txt");
+                srcFile = Path.Combine(srcDir, "UTF16LE.txt");
                 Assert.AreEqual(EncodingHelper.DetectBom(srcFile), Encoding.Unicode);
 
                 // UTF-16 BE

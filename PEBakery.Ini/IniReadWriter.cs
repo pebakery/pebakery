@@ -121,7 +121,7 @@ namespace PEBakery.Ini
             {
                 List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
@@ -300,7 +300,7 @@ namespace PEBakery.Ini
 
                 // Append IniKey into existing file
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -453,7 +453,7 @@ namespace PEBakery.Ini
 
                 if (inputKeys.Count == 0)
                 { // Success
-                    Helper.FileReplaceEx(tempPath, file);
+                    MiniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -529,7 +529,7 @@ namespace PEBakery.Ini
 
                 List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -560,7 +560,7 @@ namespace PEBakery.Ini
                             beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
-                        Helper.FileReplaceEx(tempPath, file);
+                        MiniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -728,7 +728,7 @@ namespace PEBakery.Ini
 
                 if (processedKeys.Count == iniKeys.Count)
                 {
-                    Helper.FileReplaceEx(tempPath, file);
+                    MiniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -781,7 +781,7 @@ namespace PEBakery.Ini
                     return processed; // All False
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -862,7 +862,7 @@ namespace PEBakery.Ini
                 }
 
                 if (0 < processed.Count(x => x))
-                    Helper.FileReplaceEx(tempPath, file);
+                    MiniHelper.FileReplaceEx(tempPath, file);
 
                 return processed;
             }
@@ -911,7 +911,7 @@ namespace PEBakery.Ini
             rwLock.EnterReadLock();
             try
             {
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
@@ -1048,7 +1048,7 @@ namespace PEBakery.Ini
                 }
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1067,7 +1067,7 @@ namespace PEBakery.Ini
 
                         w.Close();
 
-                        Helper.FileReplaceEx(tempPath, file);
+                        MiniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -1124,7 +1124,7 @@ namespace PEBakery.Ini
 
                 if (sectionList.Count == 0)
                 {
-                    Helper.FileReplaceEx(tempPath, file);
+                    MiniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1218,7 +1218,7 @@ namespace PEBakery.Ini
 
                 bool finished = false;
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1257,7 +1257,7 @@ namespace PEBakery.Ini
                     }
                 }
 
-                Helper.FileReplaceEx(tempPath, file);
+                MiniHelper.FileReplaceEx(tempPath, file);
                 return true;
             }
             finally
@@ -1312,7 +1312,7 @@ namespace PEBakery.Ini
                     return false;
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1357,7 +1357,7 @@ namespace PEBakery.Ini
 
                 if (sectionList.Count == 0)
                 {
-                    Helper.FileReplaceEx(tempPath, file);
+                    MiniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1410,7 +1410,7 @@ namespace PEBakery.Ini
             rwLock.EnterReadLock();
             try
             {
-                Encoding encoding = Helper.DetectTextEncoding(file);
+                Encoding encoding = MiniHelper.DetectBom(file);
                 using (StreamReader r = new StreamReader(file, encoding, false))
                 {
                     string line;
@@ -1688,7 +1688,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
+            Encoding encoding = MiniHelper.DetectBom(file);
             using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
@@ -1735,7 +1735,7 @@ namespace PEBakery.Ini
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
+            Encoding encoding = MiniHelper.DetectBom(file);
             using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
@@ -1796,7 +1796,7 @@ namespace PEBakery.Ini
             for (int i = 0; i < sections.Length; i++)
                 lines[i] = new List<string>();
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
+            Encoding encoding = MiniHelper.DetectBom(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line;
@@ -1872,7 +1872,7 @@ namespace PEBakery.Ini
                 if (!File.Exists(srcFile))
                     return dict; // Return Empty dict if srcFile does not exist
 
-                Encoding encoding = Helper.DetectTextEncoding(srcFile);
+                Encoding encoding = MiniHelper.DetectBom(srcFile);
                 using (StreamReader reader = new StreamReader(srcFile, encoding))
                 {
                     // Is Original File Empty?
@@ -1936,7 +1936,7 @@ namespace PEBakery.Ini
         {
             List<string> sections = new List<string>();
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
+            Encoding encoding = MiniHelper.DetectBom(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line;
@@ -1964,7 +1964,7 @@ namespace PEBakery.Ini
         {
             bool result = false;
 
-            Encoding encoding = Helper.DetectTextEncoding(file);
+            Encoding encoding = MiniHelper.DetectBom(file);
             using (StreamReader r = new StreamReader(file, encoding, false))
             {
                 string line;
