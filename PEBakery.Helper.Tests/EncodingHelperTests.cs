@@ -23,6 +23,7 @@
 */
 
 using System;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Text;
@@ -32,6 +33,24 @@ namespace PEBakery.Helper.Tests
     [TestClass]
     public class EncodingHelperTests
     {
+        #region LogCodePage
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("EncodingHelper")]
+        public void LogCodePage()
+        {
+            // Determined by current system default locale
+            Console.WriteLine($"System.Text.Encoding.Default.CodePage = {Encoding.Default.CodePage}");
+            Console.WriteLine($"EncodingHelper.DefaultAnsi.CodePage   = {EncodingHelper.DefaultAnsi.CodePage}");
+            Console.WriteLine($"Console.OutputEncoding.CodePage       = {Console.OutputEncoding.CodePage}");
+            // Determined by display language?
+            Console.WriteLine($"CultureInfo.CurrentCulture.TextInfo.ANSICodePage   = {CultureInfo.CurrentCulture.TextInfo.ANSICodePage}");
+            Console.WriteLine($"CultureInfo.CurrentCulture.TextInfo.OEMCodePage    = {CultureInfo.CurrentCulture.TextInfo.OEMCodePage}");
+            Console.WriteLine($"CultureInfo.CurrentUICulture.TextInfo.ANSICodePage = {CultureInfo.CurrentUICulture.TextInfo.ANSICodePage}");
+            Console.WriteLine($"CultureInfo.CurrentUICulture.TextInfo.OEMCodePage  = {CultureInfo.CurrentUICulture.TextInfo.OEMCodePage}");
+        }
+        #endregion
+
         #region DetectBom
         [TestMethod]
         [TestCategory("Helper")]
