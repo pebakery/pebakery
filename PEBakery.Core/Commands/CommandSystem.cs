@@ -593,8 +593,10 @@ namespace PEBakery.Core.Commands
                             redirectStandardStream = true;
 
                             // Windows console uses OEM code pages
-                            // Console.OutputEncoding returns ANSI encoding, do not use it
-                            Encoding oemEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+                            // Console.OutputEncoding -> System default locale for non-Unicode apps
+                            // CultureInfo.CurrentCulture.TextInfo.OEMCodePage -> System's text encoding?
+                            Encoding oemEncoding = Console.OutputEncoding;
+                            // Encoding oemEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
 
                             proc.StartInfo.RedirectStandardOutput = true;
                             proc.StartInfo.StandardOutputEncoding = oemEncoding;

@@ -177,7 +177,7 @@ namespace PEBakery.Core
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalStateOptions());
+                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalState());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -311,10 +311,10 @@ namespace PEBakery.Core
         #endregion
 
         #region RunSection
-        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalStateOptions opts)
+        public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, opts);
+            int newDepth = s.PushLocalState(s, ls);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -343,10 +343,10 @@ namespace PEBakery.Core
             s.PopLocalState();
         }
 
-        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalStateOptions opts)
+        public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, opts);
+            int newDepth = s.PushLocalState(s, ls);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -383,7 +383,7 @@ namespace PEBakery.Core
             }
 
             if (pushDepth)
-                s.PushLocalState(s, s.LocalStateStack.Peek().ToOptions());
+                s.PushLocalState(s, s.PeekLocalState());
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
@@ -422,7 +422,7 @@ namespace PEBakery.Core
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            EngineLocalState di = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
@@ -812,20 +812,20 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Critical Error, stop build
-                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, di.Depth));
+                logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, ls.Depth));
                 s.ErrorHaltFlag = true;
             }
             catch (InvalidCodeCommandException e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, di.Depth));
+                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, ls.Depth));
             }
             catch (Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, e, cmd, di.Depth));
+                logs.Add(new LogInfo(LogState.Error, e, cmd, ls.Depth));
             }
 
             // Mute LogState.{Error|Warning} if ErrorOff is enabled, and disable ErrorOff when necessary
-            ProcessErrorOff(s, cmd.Section, di.Depth, cmd.LineIdx, logs);
+            ProcessErrorOff(s, cmd.Section, ls.Depth, cmd.LineIdx, logs);
 
             // Stop build on error
             if (StopBuildOnError)
@@ -834,7 +834,7 @@ namespace PEBakery.Core
                     s.ErrorHaltFlag = true;
             }
 
-            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, di.Depth));
+            s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, ls.Depth));
 
             // Increase only if cmd resides in CurrentScript.
             // So if a section is from Macro, it will not be count.
@@ -1118,8 +1118,11 @@ namespace PEBakery.Core
         /// <summary>
         /// Should be managed only in Engine.RunSection() and CommandMacro.Macro()
         /// </summary>
-        public Stack<EngineLocalState> LocalStateStack = new Stack<EngineLocalState>(16);
-        public int PeekDepth => LocalStateStack.Count == 0 ? 0 : LocalStateStack.Peek().Depth;
+        /// <remarks>
+        /// At least one EngineLocalState (depth of 0) is guaranteed in the stack.
+        /// </remarks>
+        private readonly Stack<EngineLocalState> _localStateStack = new Stack<EngineLocalState>(16);
+        public int PeekDepth => _localStateStack.Count == 0 ? 0 : _localStateStack.Peek().Depth;
 
         // Elapsed Time
         public DateTime StartTime = DateTime.MinValue;
@@ -1288,13 +1291,10 @@ namespace PEBakery.Core
         #region Local State
         public void InitLocalStateStack()
         {
-            LocalStateStack.Clear();
-            LocalStateStack.Push(new EngineLocalState
+            _localStateStack.Clear();
+            _localStateStack.Push(new EngineLocalState
             {
                 Depth = 0,
-                IsMacro = false,
-                IsRefScript = false,
-                RefScriptId = 0,
             });
         }
 
@@ -1302,58 +1302,50 @@ namespace PEBakery.Core
         /// Push new local state.
         /// </summary>
         /// <returns>New execution depth.</returns>
-        public int PushLocalState(EngineState s, EngineLocalStateOptions opts)
+        public int PushLocalState(EngineState s, EngineLocalState ls)
         {
-            Debug.Assert(0 < LocalStateStack.Count, "InitDepth() was not called properly");
-            int newDepth = LocalStateStack.Peek().Depth + 1;
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
 
-            EngineLocalState di;
-            if (opts.RefScriptId != 0)
-            {
-                di = new EngineLocalState
-                {
-                    Depth = newDepth,
-                    IsMacro = opts.IsMacro,
-                    IsRefScript = true,
-                    RefScriptId = opts.RefScriptId,
-                };
-            }
-            else
-            {
-                di = new EngineLocalState
-                {
-                    Depth = newDepth,
-                    IsMacro = opts.IsMacro,
-                    IsRefScript = false,
-                    RefScriptId = s.ScriptId,
-                };
-            }
+            // ls.Depth will always be overwritten by this method
+            ls.Depth = _localStateStack.Peek().Depth + 1;
 
-            LocalStateStack.Push(di);
-            return newDepth;
+            _localStateStack.Push(ls);
+            return ls.Depth;
         }
 
         /// <summary>
-        /// Remove latest local state
+        /// Remove current local state
         /// </summary>
         /// <returns></returns>
         public void PopLocalState()
         {
-            if (0 < LocalStateStack.Count)
-                LocalStateStack.Pop();
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");           
+            _localStateStack.Pop();
+        }
+
+        /// <summary>
+        /// Peek current local state
+        /// </summary>
+        /// <returns></returns>
+        public EngineLocalState PeekLocalState()
+        {
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
+
+            // Prevent stack corruption by cloning EngineLocalState
+            return _localStateStack.Peek();
         }
         #endregion
     }
     #endregion
 
     #region EngineLocalState
-    public struct EngineLocalStateOptions
-    {
-        public bool IsMacro;
-        public int RefScriptId;
-    }
-
-    public class EngineLocalState
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>
+    /// Used struct to prevent unwanted corruption of _localStateStack
+    /// </remarks>
+    public struct EngineLocalState
     {
         /// <summary>
         /// Current Depth.
@@ -1370,16 +1362,18 @@ namespace PEBakery.Core
         /// <summary>
         /// Is running from Referenced Script?
         /// </summary>
-        public bool IsRefScript;
+        public bool IsRefScript => RefScriptId != 0;
         public int RefScriptId;
 
-        public EngineLocalStateOptions ToOptions()
+        public bool IsSetLocalEnabled => LocalVarsBackup != null;
+        public Dictionary<string, string> LocalVarsBackup;
+
+        public void Default()
         {
-            return new EngineLocalStateOptions
-            {
-                IsMacro = IsMacro,
-                RefScriptId = IsRefScript ? RefScriptId : 0,
-            };
+            Depth = -1;
+            IsMacro = false;
+            RefScriptId = 0;
+            LocalVarsBackup = null;
         }
     }
     #endregion

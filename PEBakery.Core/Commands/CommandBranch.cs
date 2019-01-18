@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
         public static void RunExec(EngineState s, CodeCommand cmd, RunExecOptions opts)
         {
             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
-            EngineLocalState ls = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             Debug.Assert((cmd.Type == CodeType.Run || cmd.Type == CodeType.Exec) && info.OutParams == null ||
                          cmd.Type == CodeType.RunEx && info.OutParams != null);
@@ -107,7 +107,7 @@ namespace PEBakery.Core.Commands
             }
 
             // Run Section
-            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalStateOptions
+            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
             {
                 IsMacro = opts.IsMacro | ls.IsMacro,
                 RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
@@ -130,7 +130,7 @@ namespace PEBakery.Core.Commands
         public static void Loop(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
-            EngineLocalState ls = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             if (info.Break)
             {
@@ -254,7 +254,7 @@ namespace PEBakery.Core.Commands
                             s.LoopState = LoopState.OnIndex;
 
                             // Run Loop Section
-                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalStateOptions
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
                                 RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
@@ -288,7 +288,7 @@ namespace PEBakery.Core.Commands
                             // Set s.LoopState
                             s.LoopState = LoopState.OnDriveLetter;
 
-                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalStateOptions
+                            Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
                                 RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
@@ -322,7 +322,7 @@ namespace PEBakery.Core.Commands
         public static void If(EngineState s, CodeCommand cmd)
         {
             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
-            EngineLocalState ls = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
@@ -345,7 +345,7 @@ namespace PEBakery.Core.Commands
         public static void Else(EngineState s, CodeCommand cmd)
         {
             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
-            EngineLocalState ls = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             if (s.ElseFlag)
             {

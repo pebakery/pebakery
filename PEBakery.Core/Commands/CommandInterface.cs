@@ -1315,7 +1315,7 @@ namespace PEBakery.Core.Commands
         public static List<LogInfo> AddInterface(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            EngineLocalState ls = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 

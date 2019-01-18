@@ -801,16 +801,16 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            EngineLocalState di = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
-            if (di.IsMacro)
+            if (ls.IsMacro)
             {
                 flags |= LogModel.BuildLogFlag.Macro;
             }
             else
             {
-                if (s.ScriptId != di.RefScriptId && di.RefScriptId != 0)
+                if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
                     flags |= LogModel.BuildLogFlag.RefScript;
             }
 
@@ -819,7 +819,7 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = di.RefScriptId,
+                RefScriptId = ls.IsRefScript ? s.ScriptId : ls.RefScriptId,
                 Message = message,
                 Flags = flags,
             };
@@ -833,7 +833,7 @@ namespace PEBakery.Core
             if (SuspendBuildLog || s.DisableLogger)
                 return;
 
-            EngineLocalState di = s.LocalStateStack.Peek();
+            EngineLocalState ls = s.PeekLocalState();
 
             // Normally this should be already done in Engine.ExecuteCommand.
             // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
@@ -850,19 +850,19 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = di.RefScriptId,
+                RefScriptId = ls.IsRefScript ? s.ScriptId : ls.RefScriptId,
                 Depth = log.Depth,
                 State = state,
             };
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
-            if (di.IsMacro)
+            if (ls.IsMacro)
             {
                 flags |= LogModel.BuildLogFlag.Macro;
             }
             else
             {
-                if (s.ScriptId != di.RefScriptId && di.RefScriptId != 0)
+                if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
                     flags |= LogModel.BuildLogFlag.RefScript;
             }
 
