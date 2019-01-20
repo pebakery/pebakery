@@ -89,7 +89,8 @@ namespace PEBakery.Core.Tests
         {
             while (s.PeekDepth < targetDepth)
             {
-                s.PushLocalState(s, s.PeekLocalState());
+                EngineLocalState ls = s.PeekLocalState();
+                s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
             }
         }
 

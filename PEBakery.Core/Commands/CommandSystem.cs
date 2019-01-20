@@ -92,16 +92,16 @@ namespace PEBakery.Core.Commands
                         {
                             // Enable s.ErrorOff
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
+                            EngineLocalState ls = s.PeekLocalState();
+                            if (s.ErrorOffDepthMinusOne)
+                                ls = ls.UpdateDepth(ls.Depth - 1);
+
                             ErrorOffState newState = new ErrorOffState
                             {
-                                Section = cmd.Section,
-                                SectionDepth = s.PeekDepth,
+                                LocalState = ls,
                                 StartLineIdx = cmd.LineIdx,
                                 LineCount = lines,
                             };
-
-                            if (s.ErrorOffDepthMinusOne)
-                                newState.SectionDepth -= 1;
 
                             s.ErrorOffWaitingRegister = newState;
                             s.ErrorOffDepthMinusOne = false;
@@ -443,9 +443,9 @@ namespace PEBakery.Core.Commands
                     { // SetLocal
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        Engine.EnableSetLocal(s, cmd.Section);
+                        Engine.EnableSetLocal(s);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count}) enabled"));
+                        logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count}) enabled"));
                     }
                     break;
                 case SystemType.EndLocal:
@@ -454,7 +454,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         if (Engine.DisableSetLocal(s, cmd.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
-                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count + 1}) disabled"));
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count + 1}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
                     }

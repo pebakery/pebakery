@@ -314,7 +314,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, ls);
+            int newDepth = s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -346,7 +346,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, ls);
+            int newDepth = s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -383,7 +383,11 @@ namespace PEBakery.Core
             }
 
             if (pushDepth)
-                s.PushLocalState(s, s.PeekLocalState());
+            {
+                EngineLocalState ls = s.PeekLocalState();
+                s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
+            }
+                
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
@@ -402,9 +406,9 @@ namespace PEBakery.Core
                     break;
             }
 
-            if (Engine.DisableSetLocal(s, section))
+            if (DisableSetLocal(s, section))
             {
-                int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
+                int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
             }
@@ -892,24 +896,24 @@ namespace PEBakery.Core
         #endregion
 
         #region SetLocal
-        public static void EnableSetLocal(EngineState s, ScriptSection section)
+        public static void EnableSetLocal(EngineState s)
         {
-            s.SetLocalStack.Push(new SetLocalState
+            s.LocalVarsStateStack.Push(new LocalVarsState
             {
-                Section = section,
-                SectionDepth = s.PeekDepth,
+                LocalState = s.PeekLocalState(),
                 LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local),
             });
         }
 
         public static bool DisableSetLocal(EngineState s, ScriptSection section)
         {
-            if (0 < s.SetLocalStack.Count)
+            if (0 < s.LocalVarsStateStack.Count)
             {
-                SetLocalState last = s.SetLocalStack.Peek();
-                if (last.Section.Equals(section) && last.SectionDepth == s.PeekDepth)
+                LocalVarsState last = s.LocalVarsStateStack.Peek();
+                EngineLocalState ls = s.PeekLocalState();
+                if (ls.Equals(last.LocalState))
                 {
-                    s.SetLocalStack.Pop();
+                    s.LocalVarsStateStack.Pop();
                     s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
                     return true;
                 }
@@ -920,32 +924,32 @@ namespace PEBakery.Core
         #endregion
 
         #region ErrorOff
-        public static bool ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
+        public static void ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
         {
             if (s.ErrorOff == null)
-                return false;
+                return;
 
             // When muting error, never check lineIdx.
             // If lineIdx is involved, ErrorOff will not work properly in RunExec.
             MuteLogError(logs);
 
-            return DisableErrorOff(s, section, depth, lineIdx);
+            // 
+            DisableErrorOff(s, section, depth, lineIdx);
         }
 
-        public static bool DisableErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx)
+        public static void DisableErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx)
         {
             if (s.ErrorOff is ErrorOffState es)
             {
-                if (es.Section.Equals(section) && es.SectionDepth == depth &&
+                EngineLocalState ls = s.PeekLocalState();
+                if (ls.Equals(es.LocalState) &&
                     (lineIdx == ErrorOffState.ForceDisable || es.StartLineIdx + es.LineCount <= lineIdx))
                 {
                     s.ErrorOff = null;
                     s.ErrorOffWaitingRegister = null;
                     s.ErrorOffDepthMinusOne = false;
-                    return true;
                 }
             }
-            return false;
         }
 
         private static void MuteLogError(List<LogInfo> logs)
@@ -1159,7 +1163,7 @@ namespace PEBakery.Core
         public bool ErrorOffDepthMinusOne = false;
         public ErrorOffState? ErrorOff = null;
         // |- System,SetLocal
-        public Stack<SetLocalState> SetLocalStack = new Stack<SetLocalState>(16);
+        public Stack<LocalVarsState> LocalVarsStateStack = new Stack<LocalVarsState>(16);
         // |- ShellExecute
         public Process RunningSubProcess = null;
         // |- WebGet
@@ -1273,7 +1277,7 @@ namespace PEBakery.Core
             ErrorOff = null;
             ErrorOffDepthMinusOne = false;
             ErrorOffWaitingRegister = null;
-            SetLocalStack.Clear();
+            LocalVarsStateStack.Clear();
             RunningSubProcess = null;
             RunningWebClient = null;
         }
@@ -1302,12 +1306,18 @@ namespace PEBakery.Core
         /// Push new local state.
         /// </summary>
         /// <returns>New execution depth.</returns>
-        public int PushLocalState(EngineState s, EngineLocalState ls)
+        public int PushLocalState(EngineState s, bool isMacro, int refScriptId)
         {
             Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
 
-            // ls.Depth will always be overwritten by this method
-            ls.Depth = _localStateStack.Peek().Depth + 1;
+            EngineLocalState ls = new EngineLocalState
+            {
+                Depth = _localStateStack.Peek().Depth + 1,
+                IsMacro = isMacro,
+                RefScriptId = refScriptId,
+            };
+
+            Debug.Assert(ls.Depth != -1, "Incorrect EngineLocalState.Depth handling");
 
             _localStateStack.Push(ls);
             return ls.Depth;
@@ -1330,23 +1340,16 @@ namespace PEBakery.Core
         public EngineLocalState PeekLocalState()
         {
             Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
-
-            // Prevent stack corruption by cloning EngineLocalState
             return _localStateStack.Peek();
         }
         #endregion
     }
     #endregion
 
-    #region EngineLocalState
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <remarks>
-    /// Used struct to prevent unwanted corruption of _localStateStack
-    /// </remarks>
-    public struct EngineLocalState
+    #region struct EngineLocalState
+    public struct EngineLocalState : IEquatable<EngineLocalState>
     {
+        #region Fields and Properties
         /// <summary>
         /// Current Depth.
         /// [Process] starts from 1.
@@ -1362,27 +1365,45 @@ namespace PEBakery.Core
         /// <summary>
         /// Is running from Referenced Script?
         /// </summary>
-        public bool IsRefScript => RefScriptId != 0;
         public int RefScriptId;
+        public bool IsRefScript => RefScriptId != 0;
+        #endregion
 
-        public bool IsSetLocalEnabled => LocalVarsBackup != null;
-        public Dictionary<string, string> LocalVarsBackup;
-
+        #region Default, UpdateDepth
         public void Default()
         {
             Depth = -1;
             IsMacro = false;
             RefScriptId = 0;
-            LocalVarsBackup = null;
         }
+
+        [SuppressMessage("ReSharper", "ArrangeThisQualifier")]
+        public EngineLocalState UpdateDepth(int newDepth)
+        {
+            return new EngineLocalState
+            {
+                Depth = newDepth,
+                IsMacro = this.IsMacro,
+                RefScriptId = this.RefScriptId,
+            };
+        }
+        #endregion
+
+        #region Interface Methods
+        public bool Equals(EngineLocalState ls)
+        {
+            return Depth == ls.Depth &&
+                   IsMacro == ls.IsMacro &&
+                   RefScriptId == ls.RefScriptId;
+        }
+        #endregion
     }
     #endregion
 
-    #region struct SetLocalState
-    public struct SetLocalState
+    #region struct LocalVarsState
+    public struct LocalVarsState
     {
-        public ScriptSection Section;
-        public int SectionDepth;
+        public EngineLocalState LocalState;
         public Dictionary<string, string> LocalVarsBackup;
     }
     #endregion
@@ -1390,8 +1411,7 @@ namespace PEBakery.Core
     #region struct ErrorOffState
     public struct ErrorOffState
     {
-        public ScriptSection Section;
-        public int SectionDepth;
+        public EngineLocalState LocalState;
         public int StartLineIdx;
         public int LineCount;
 
