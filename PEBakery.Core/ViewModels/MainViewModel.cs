@@ -88,6 +88,10 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _workInProgress = value;
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() => 
+                {
+                    MainCanvas.IsEnabled = !_workInProgress;
+                }));  
                 OnPropertyUpdate();
                 CommandManager.InvalidateRequerySuggested();
             }
