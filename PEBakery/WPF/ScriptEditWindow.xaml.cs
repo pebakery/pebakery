@@ -178,25 +178,6 @@ namespace PEBakery.WPF
                 m.InvokeUIControlEvent(true);
         }
 
-        private void InterfaceCanvasDragMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            /*
-            switch (m.InterfaceCanvasDragModeIndex)
-            {
-                default:
-                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Move;
-                    m.InterfaceCanvas.BorderBrush = Brushes.Red;
-                    break;
-                case 1:
-                    m.InterfaceCanvas.Mode = DragCanvas.DragMode.Resize;
-                    m.InterfaceCanvas.BorderBrush = Brushes.Blue;
-                    break;
-            }
-            */
-            m.InterfaceCanvas.ClearSelectedBorderHandles();
-            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
-        }
-
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
         {
             UIControl uiCtrl = e.UIControl;
@@ -1296,7 +1277,7 @@ namespace PEBakery.WPF
                     return;
 
                 _selectedUICtrl.Text = value;
-                OnPropertyUpdate(nameof(UICtrlBevelFontSize));
+                OnPropertyUpdate(nameof(UICtrlBevelCaption));
                 InvokeUIControlEvent(true);
             }
         }
@@ -1869,6 +1850,9 @@ namespace PEBakery.WPF
                 UIControl uiCtrl = SelectedUICtrl;
                 UICtrlToBeDeleted.Add(uiCtrl);
 
+                // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
+                DeleteInterfaceEncodedFile(uiCtrl);
+
                 Renderer.UICtrls.Remove(uiCtrl);
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
@@ -1876,6 +1860,7 @@ namespace PEBakery.WPF
                 Renderer.Render();
                 SelectedUICtrl = null;
 
+                WriteScriptInterface(true);
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
             }
@@ -2492,7 +2477,10 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-        private async void UICtrlInterfaceResetCommand_Execute(object parameter)
+        /// <summary>
+        /// Only for Image, TextFile, Button
+        /// </summary>
+        private void UICtrlInterfaceResetCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -2527,15 +2515,7 @@ namespace PEBakery.WPF
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 Debug.Assert(SelectedUICtrl.Type == selectedType, internalErrorMsg);
 
-                UIControl uiCtrl = SelectedUICtrl;
-                string fileName = uiCtrl.Text;
-                if (selectedType == UIControlType.Button)
-                {
-                    Debug.Assert(UICtrlButtonInfo != null, internalErrorMsg);
-                    fileName = UICtrlButtonInfo.Picture;
-                }
-                Debug.Assert(fileName != null, internalErrorMsg);
-
+                // If interface was not saved, save it with confirmation
                 if (InterfaceNotSaved)
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
@@ -2545,65 +2525,77 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                if (!EncodedFile.ContainsInterface(Script, fileName))
-                { // Unable to find encoded image, so just remove image entry from uiCtrl
-                    switch (selectedType)
-                    {
-                        case UIControlType.Image:
-                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                            UICtrlImageSet = false;
-                            break;
-                        case UIControlType.TextFile:
-                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                            UICtrlTextFileSet = false;
-                            break;
-                        case UIControlType.Button:
-                            UICtrlButtonInfo.Picture = null;
-                            UICtrlButtonPictureSet = false;
-                            break;
-                    }
-                    InvokeUIControlEvent(false);
+                // Delete interface encoded file to prevent orphaned Interface-Encoded attachments
+                string fileName = DeleteInterfaceEncodedFile(SelectedUICtrl);
+                Debug.Assert(fileName != null, internalErrorMsg);
 
-                    MessageBox.Show("An incorrect file entry was deleted.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                string errMsg;
-                (Script, errMsg) = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName);
-                if (errMsg == null)
+                // Clear encoded file information from uiCtrl
+                switch (selectedType)
                 {
-                    UIControl.ReplaceAddress(Renderer.UICtrls, Script);
-
-                    switch (selectedType)
-                    {
-                        case UIControlType.Image:
-                            SelectedUICtrl.Text = UIInfo_Image.NoResource;
-                            UICtrlImageSet = false;
-                            break;
-                        case UIControlType.TextFile:
-                            SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
-                            UICtrlTextFileSet = false;
-                            break;
-                        case UIControlType.Button:
-                            UICtrlButtonInfo.Picture = null;
-                            UICtrlButtonPictureSet = false;
-                            break;
-                    }
-
-                    InvokeUIControlEvent(false);
-                    WriteScriptInterface(true);
+                    case UIControlType.Image:
+                        SelectedUICtrl.Text = UIInfo_Image.NoResource;
+                        UICtrlImageSet = false;
+                        break;
+                    case UIControlType.TextFile:
+                        SelectedUICtrl.Text = UIInfo_TextFile.NoResource;
+                        UICtrlTextFileSet = false;
+                        break;
+                    case UIControlType.Button:
+                        UICtrlButtonInfo.Picture = null;
+                        UICtrlButtonPictureSet = false;
+                        break;
                 }
-                else
-                {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show($"There was an issue while deleting [{fileName}].\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                InvokeUIControlEvent(false);
+                WriteScriptInterface(true);
             }
             finally
             {
                 CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
+        }
+        private string DeleteInterfaceEncodedFile(UIControl uiCtrl)
+        {
+            async void InternalDeleteInterfaceEncodedFile(string delFileName)
+            {
+                (Script sc, _) = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                if (sc != null)
+                    Script = sc;
+                else
+                    MessageBox.Show($"Unable to delete encoded file [{delFileName}].", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            // If two or more controls are referencing encoded file, do not delete it.
+            Dictionary<string, int> fileRefCountDict = EncodedFile.GetInterfaceFileRefCount(Script);
+
+            string fileName = null;
+            switch (uiCtrl.Type)
+            {
+                case UIControlType.Image:
+                case UIControlType.TextFile:
+                    {
+                        fileName = uiCtrl.Text;
+                        Debug.Assert(fileRefCountDict.ContainsKey(fileName));
+
+                        if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                            InternalDeleteInterfaceEncodedFile(fileName);
+                    }
+                    break;
+                case UIControlType.Button:
+                    {
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();                      
+                        if (info.Picture != null)
+                        {
+                            fileName = info.Picture;
+                            Debug.Assert(fileRefCountDict.ContainsKey(fileName));
+
+                            if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                                InternalDeleteInterfaceEncodedFile(fileName);
+                        }
+                    }
+                    break;
+            }
+            return fileName;
         }
         #endregion 
         #endregion

@@ -242,7 +242,7 @@ namespace PEBakery.Core
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
-             Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
+            Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
         }
 
         public static bool ContainsFile(Script sc, string folderName, string fileName)
@@ -270,7 +270,11 @@ namespace PEBakery.Core
         public static void AttachInterface(Script sc, string fileName, string srcFilePath, IProgress<double> progress)
         {
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
-                throw new ArgumentException($"[{fileName}] contains invalid character");
+                throw new ArgumentException($"Filename [{fileName}] contains invalid character");
+
+            if (fileName.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) ||
+                fileName.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"Filename [{fileName}] is reserved");
 
             EncodeMode type = EncodeMode.ZLib;
             if (ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
@@ -284,7 +288,50 @@ namespace PEBakery.Core
 
         public static bool ContainsInterface(Script sc, string fileName)
         {
+            if (fileName.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) ||
+                fileName.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
+                return false;
+
             return ContainsFile(sc, ScriptSection.Names.InterfaceEncoded, fileName);
+        }
+
+        public static Dictionary<string, int> GetInterfaceFileRefCount(Script sc)
+        {
+            (_, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            Dictionary<string, int> fileRefCountDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (UIControl thisCtrl in uiCtrls)
+            {
+                switch (thisCtrl.Type)
+                {
+                    case UIControlType.Image:
+                    case UIControlType.TextFile:
+                        {
+                            if (EncodedFile.ContainsInterface(sc, thisCtrl.Text))
+                            {
+                                if (fileRefCountDict.ContainsKey(thisCtrl.Text))
+                                    fileRefCountDict[thisCtrl.Text] += 1;
+                                else
+                                    fileRefCountDict[thisCtrl.Text] = 1;
+                            }
+                        }
+                        break;
+                    case UIControlType.Button:
+                        {
+                            UIInfo_Button info = thisCtrl.Info.Cast<UIInfo_Button>();
+
+                            if (info.Picture != null && EncodedFile.ContainsInterface(sc, info.Picture))
+                            {
+                                if (fileRefCountDict.ContainsKey(info.Picture))
+                                    fileRefCountDict[info.Picture] += 1;
+                                else
+                                    fileRefCountDict[info.Picture] = 1;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return fileRefCountDict;
         }
         #endregion
 
@@ -1171,12 +1218,12 @@ namespace PEBakery.Core
                         // Update file
                         IniReadWriter.WriteRawLine(sc.RealPath, ScriptSection.Names.EncodedFolders, folderName, false);
                     }
-                        
+
                 }
 
                 // Write file info into [{folderName}]
                 IniReadWriter.WriteKey(sc.RealPath, folderName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
-               
+
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {

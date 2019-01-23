@@ -948,7 +948,7 @@
                                         <TextBox Grid.Row="1" Grid.Column="1"
                                                  VerticalContentAlignment="Center"
                                                  IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
-                                                 Text="{Binding UICtrlText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                 Text="{Binding UICtrlBevelCaption, UpdateSourceTrigger=PropertyChanged}"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
