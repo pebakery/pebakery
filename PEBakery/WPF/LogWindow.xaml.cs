@@ -62,6 +62,17 @@ namespace PEBakery.WPF
             _m.Logger.VariableUpdated += VariableUpdateEventHandler;
             _m.Logger.FullRefresh += FullRefreshEventHandler;
 
+            _m.WindowWidth = Global.Setting.LogViewer.LogWindowWidth;
+            _m.WindowHeight = Global.Setting.LogViewer.LogWindowHeight;
+            _m.BuildLogShowTime = Global.Setting.LogViewer.BuildFullLogShowTime;
+            _m.BuildLogShowScriptOrigin = Global.Setting.LogViewer.BuildFullLogShowScriptOrigin;
+            _m.BuildLogShowDepth = Global.Setting.LogViewer.BuildFullLogShowDepth;
+            _m.BuildLogShowState = Global.Setting.LogViewer.BuildFullLogShowState;
+            _m.BuildLogShowFlags = Global.Setting.LogViewer.BuildFullLogShowFlags;
+            _m.BuildLogShowMessage = Global.Setting.LogViewer.BuildFullLogShowMessage;
+            _m.BuildLogShowRawCode = Global.Setting.LogViewer.BuildFullLogShowRawCode;
+            _m.BuildLogShowLineNumber = Global.Setting.LogViewer.BuildFullLogShowLineNumber;
+
             SystemLogListView.UpdateLayout();
             if (1 < SystemLogListView.Items.Count)
             {
@@ -175,6 +186,18 @@ namespace PEBakery.WPF
             _m.Logger.ScriptUpdated -= ScriptUpdateEventHandler;
             _m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
             _m.Logger.VariableUpdated -= VariableUpdateEventHandler;
+
+            Global.Setting.LogViewer.LogWindowWidth = _m.WindowWidth;
+            Global.Setting.LogViewer.LogWindowHeight = _m.WindowHeight;
+            Global.Setting.LogViewer.BuildFullLogShowTime = _m.BuildLogShowTime;
+            Global.Setting.LogViewer.BuildFullLogShowScriptOrigin = _m.BuildLogShowScriptOrigin;
+            Global.Setting.LogViewer.BuildFullLogShowDepth = _m.BuildLogShowDepth;
+            Global.Setting.LogViewer.BuildFullLogShowState = _m.BuildLogShowState;
+            Global.Setting.LogViewer.BuildFullLogShowFlags = _m.BuildLogShowFlags;
+            Global.Setting.LogViewer.BuildFullLogShowMessage = _m.BuildLogShowMessage;
+            Global.Setting.LogViewer.BuildFullLogShowRawCode = _m.BuildLogShowRawCode;
+            Global.Setting.LogViewer.BuildFullLogShowLineNumber = _m.BuildLogShowLineNumber;
+            Global.Setting.WriteToFile();
 
             Interlocked.Decrement(ref LogWindow.Count);
             CommandManager.InvalidateRequerySuggested();
@@ -340,8 +363,6 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-
-        
     }
 
     #region LogViewModel
@@ -390,11 +411,11 @@ namespace PEBakery.WPF
 
         public void RefreshBuildLog()
         {
+            // I don't know why, but LogStats.Clear throws thread exception even though EnableCollectionSynchronization is used.
+            // Reproduce: Remove Dispatcher.Invoke, and run CodeBox three times in a row (without closing LogWindow).
+            // TODO: This is a quick dirty fix. Apply better patch later.
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                // I don't know why, but LogStats.Clear throws thread exception even though EnableCollectionSynchronization is used.
-                // Reproduce: Remove Dispatcher.Invoke, and run CodeBox three times in a row (without closing LogWindow).
-                // TODO: This is a quick dirty fix. Apply better patch later.
                 LogStats.Clear();
                 VariableLogs.Clear();
 
@@ -418,7 +439,7 @@ namespace PEBakery.WPF
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 ScriptEntries.Clear();
-                    
+
                 if (buildId == null)
                 {
                     // Clear
@@ -443,7 +464,7 @@ namespace PEBakery.WPF
                         SelectedScriptIndex = 0; // Summary is always index 0
                 }
             });
-            
+
         }
 
         /// <summary>
@@ -543,6 +564,22 @@ namespace PEBakery.WPF
             {
                 BuildLogs = new ObservableCollection<LogModel.BuildLog>();
             }
+        }
+        #endregion
+
+        #region Window Resolution
+        private int _windowWidth = 900;
+        public int WindowWidth
+        {
+            get => _windowWidth;
+            set => SetProperty(ref _windowWidth, value);
+        }
+
+        private int _windowHeight = 640;
+        public int WindowHeight
+        {
+            get => _windowHeight;
+            set => SetProperty(ref _windowHeight, value);
         }
         #endregion
 
@@ -687,6 +724,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _variableLogSelectedIndex, value);
         }
 
+        // Log Filters
         private bool _buildLogShowComments = true;
         public bool BuildLogShowComments
         {
@@ -699,42 +737,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool _buildLogShowDepth = true;
-        public bool BuildLogShowDepth
-        {
-            get => _buildLogShowDepth;
-            set
-            {
-                _buildLogShowDepth = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
-        }
-
-        private bool _buildLogShowFlags = true;
-        public bool BuildLogShowFlags
-        {
-            get => _buildLogShowFlags;
-            set
-            {
-                _buildLogShowFlags = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
-        }
-
-        private bool _buildLogShowLineNumber = true;
-        public bool BuildLogShowLineNumber
-        {
-            get => _buildLogShowLineNumber;
-            set
-            {
-                _buildLogShowLineNumber = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
-        }
-               
         private bool _buildLogShowMacros = true;
         public bool BuildLogShowMacros
         {
@@ -747,13 +749,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool _buildLogShowMessage = true;
-        public bool BuildLogShowMessage
+        // Show Columns
+        private bool _buildLogShowTime = true;
+        public bool BuildLogShowTime
         {
-            get => _buildLogShowMessage;
+            get => _buildLogShowTime;
             set
             {
-                _buildLogShowMessage = value;
+                _buildLogShowTime = value;
                 OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
@@ -771,6 +774,18 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool _buildLogShowDepth = true;
+        public bool BuildLogShowDepth
+        {
+            get => _buildLogShowDepth;
+            set
+            {
+                _buildLogShowDepth = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
         private bool _buildLogShowState = true;
         public bool BuildLogShowState
         {
@@ -783,13 +798,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool _buildLogShowTime = true;
-        public bool BuildLogShowTime
+        private bool _buildLogShowFlags = true;
+        public bool BuildLogShowFlags
         {
-            get => _buildLogShowTime;
+            get => _buildLogShowFlags;
             set
             {
-                _buildLogShowTime = value;
+                _buildLogShowFlags = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowMessage = true;
+        public bool BuildLogShowMessage
+        {
+            get => _buildLogShowMessage;
+            set
+            {
+                _buildLogShowMessage = value;
                 OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }
@@ -802,6 +829,18 @@ namespace PEBakery.WPF
             set
             {
                 _buildLogShowRawCode = value;
+                OnPropertyUpdate();
+                RefreshBuildLog(SelectedScriptIndex);
+            }
+        }
+
+        private bool _buildLogShowLineNumber = true;
+        public bool BuildLogShowLineNumber
+        {
+            get => _buildLogShowLineNumber;
+            set
+            {
+                _buildLogShowLineNumber = value;
                 OnPropertyUpdate();
                 RefreshBuildLog(SelectedScriptIndex);
             }

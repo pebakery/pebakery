@@ -408,6 +408,42 @@ namespace PEBakery.Core
                 MinifyHtmlExport = true;
             }
         }
+
+        // For LogWindow, this is not shown to SettingWindow. 
+        public class LogViewerSetting
+        {
+            public const string SectionName = "LogViewer";
+
+            public int LogWindowWidth;
+            public int LogWindowHeight;
+            public bool BuildFullLogShowTime;
+            public bool BuildFullLogShowScriptOrigin;
+            public bool BuildFullLogShowDepth;
+            public bool BuildFullLogShowState;
+            public bool BuildFullLogShowFlags;
+            public bool BuildFullLogShowMessage;
+            public bool BuildFullLogShowRawCode;
+            public bool BuildFullLogShowLineNumber;
+
+            public LogViewerSetting()
+            {
+                Default();
+            }
+
+            public void Default()
+            {
+                LogWindowWidth = 900;
+                LogWindowHeight = 640;
+                BuildFullLogShowTime = true;
+                BuildFullLogShowScriptOrigin = false;
+                BuildFullLogShowDepth = true;
+                BuildFullLogShowState = true;
+                BuildFullLogShowFlags = true;
+                BuildFullLogShowMessage = true;
+                BuildFullLogShowRawCode = true;
+                BuildFullLogShowLineNumber = true;
+            }
+        }
         #endregion
 
         #region Fields and Properties
@@ -419,6 +455,7 @@ namespace PEBakery.Core
         public ThemeSetting Theme { get; }
         public ScriptSetting Script { get; }
         public LogSetting Log { get; }
+        public LogViewerSetting LogViewer { get; }
         #endregion
 
         #region Constructor
@@ -432,6 +469,7 @@ namespace PEBakery.Core
             Theme = new ThemeSetting();
             Script = new ScriptSetting();
             Log = new LogSetting();
+            LogViewer = new LogViewerSetting();
 
             ReadFromFile();
         }
@@ -477,6 +515,7 @@ namespace PEBakery.Core
             Interface.Default();
             Script.Default();
             Log.Default();
+            LogViewer.Default();
         }
         #endregion
 
@@ -529,6 +568,17 @@ namespace PEBakery.Core
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Enum (LogDebugLevel)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
+                // LogViewer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth)), // Integer (600 -)
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight)), // Integer (480 -)
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber)), // Boolean
             };
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, Dictionary<string, string>> keyDict = keys
@@ -581,7 +631,6 @@ namespace PEBakery.Core
                 Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
                 Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
                 Interface.InterfaceSize = DictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
-
             }
 
             // Theme
@@ -618,6 +667,23 @@ namespace PEBakery.Core
                 Log.DebugLevel = DictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
                 Log.DeferredLogging = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
                 Log.MinifyHtmlExport = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
+            }
+
+            // LogViewer
+            if (keyDict.ContainsKey(LogViewerSetting.SectionName))
+            {
+                Dictionary<string, string> logViewDict = keyDict[LogViewerSetting.SectionName];
+
+                LogViewer.LogWindowWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, -1);
+                LogViewer.LogWindowHeight = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, -1);
+                LogViewer.BuildFullLogShowTime = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime), LogViewer.BuildFullLogShowTime);
+                LogViewer.BuildFullLogShowScriptOrigin = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin), LogViewer.BuildFullLogShowScriptOrigin);
+                LogViewer.BuildFullLogShowDepth = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth), LogViewer.BuildFullLogShowDepth);
+                LogViewer.BuildFullLogShowState = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState), LogViewer.BuildFullLogShowState);
+                LogViewer.BuildFullLogShowFlags = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags), LogViewer.BuildFullLogShowFlags);
+                LogViewer.BuildFullLogShowMessage = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage), LogViewer.BuildFullLogShowMessage);
+                LogViewer.BuildFullLogShowRawCode = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode), LogViewer.BuildFullLogShowRawCode);
+                LogViewer.BuildFullLogShowLineNumber = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber), LogViewer.BuildFullLogShowLineNumber);
             }
         }
 
@@ -665,6 +731,17 @@ namespace PEBakery.Core
                 new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel), ((int)Log.DebugLevel).ToString()), // Integer
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging.ToString()), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport.ToString()), // Boolean
+                // LogViewer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime), LogViewer.BuildFullLogShowTime.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin), LogViewer.BuildFullLogShowScriptOrigin.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth), LogViewer.BuildFullLogShowDepth.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState), LogViewer.BuildFullLogShowState.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags), LogViewer.BuildFullLogShowFlags.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage), LogViewer.BuildFullLogShowMessage.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode), LogViewer.BuildFullLogShowRawCode.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber), LogViewer.BuildFullLogShowLineNumber.ToString()), // Boolean
             };
             IniReadWriter.WriteKeys(_settingFile, keys);
         }
@@ -764,7 +841,7 @@ namespace PEBakery.Core
             return defaultValue;
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue) 
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
             where TEnum : Enum
         {
             string valStr = dict[key];

@@ -40,7 +40,8 @@
         Closed="Window_Closed"
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
-        Width="900" Height="640"
+        Width="{Binding WindowWidth, Mode=TwoWay, FallbackValue=900}" 
+        Height="{Binding WindowHeight, Mode=TwoWay, FallbackValue=640}"
         MinWidth="600" MinHeight="480"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
@@ -95,7 +96,7 @@
             </Style.Resources>
         </Style>
         <ContextMenu x:Key="FullBuildLogColumnContextMenu" x:Shared="true">
-            <MenuItem Header="Log Options" IsEnabled="False" />
+            <MenuItem Header="Log Filters" IsEnabled="False" />
             <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
             <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
             <Separator Visibility="{Binding BuildLogFullLogSelected}" />
