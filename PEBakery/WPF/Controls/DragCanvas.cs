@@ -24,13 +24,18 @@
 
 using PEBakery.Core;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 // ReSharper disable InconsistentNaming
 namespace PEBakery.WPF.Controls
 {
-    public class DragCanvas : EditCanvas
+    public class DragCanvas : Canvas
     {
         #region Enums and Const
         public enum DragMode
@@ -53,26 +58,72 @@ namespace PEBakery.WPF.Controls
             Outside,
         }
 
+        // HeightLimit
         private const int CanvasWidthHeightLimit = 600;
         private const int ElementWidthHeightLimit = 100;
+
+        // DragHandle
+        private const int DragHandleLength = 10;
+        private const int DragHandleShowThreshold = 20;
         #endregion
 
         #region Fields, Properties
-        public DragMode Mode { get; set; }
+        // SelectedElement
+        private FrameworkElement _selectedElement;
+        private DragMode _dragMode;
+
+        // Border
+        private Border _selectedBorder;
 
         // Shared
-        protected bool _isBeingDragged;
-        protected Point _dragStartCursorPos;
+        private bool _isBeingDragged;
+        private Point _dragStartCursorPos;
+        private ResizeClickPosition _selectedClickPos;
+        private Rect _dragStartElementRect;
 
-        // Move
-        protected Point _dragStartElementPos;
+        // DragHandle
+        private readonly List<Border> _dragHandles = new List<Border>(8);
+        private Border _selectedDragHandle;
 
-        // Resize
-        protected ResizeClickPosition _resizeClickPos;
-        protected Rect _dragStartElementRect;
+        // Max Z Index
+        private int MaxZIndex
+        {
+            get
+            {
+                int max = GetZIndex(this);
+                foreach (UIElement element in Children)
+                {
+                    int z = GetZIndex(element);
+                    if (max < z)
+                        max = z;
+                }
+                return max;
+            }
+        }
+        #endregion
+
+        #region Constructor
+        public DragCanvas()
+        {
+            // Set Background to always fire OnPreviewMouseMove on DragCanvas
+            Background = Brushes.Transparent;
+        }
         #endregion
 
         #region Events
+        public class UIControlSelectedEventArgs : EventArgs
+        {
+            public FrameworkElement Element { get; set; }
+            public UIControl UIControl { get; set; }
+            public UIControlSelectedEventArgs(FrameworkElement element, UIControl uiCtrl)
+            {
+                Element = element;
+                UIControl = uiCtrl;
+            }
+        }
+        public delegate void UIControlSelectedEventHandler(object sender, UIControlSelectedEventArgs e);
+        public event UIControlSelectedEventHandler UIControlSelected;
+
         public class UIControlDraggedEventArgs : EventArgs
         {
             public FrameworkElement Element { get; set; }
@@ -96,38 +147,83 @@ namespace PEBakery.WPF.Controls
 
         #region Event Handler
         /// <summary>
+        /// Clear mouse cursor when mouse is not hovering DragCanvas, such as close of the window.
+        /// </summary>
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            // Sometime this is called outside of STA thread
+            Dispatcher.Invoke(ResetMouseCursor);
+        }
+
+        /// <summary>
         /// Start dragging
         /// </summary>
-        /// <param name="e"></param>
         protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             if (_isBeingDragged)
                 return;
 
-            base.OnPreviewMouseLeftButtonDown(e);
-            if (_selectedElement == null)
+            FrameworkElement element = FindRootFrameworkElement(e.Source);
+
+            // No UIControl was selected
+            if (element == null)
                 return;
 
-            _dragStartCursorPos = e.GetPosition(this);
-            double x = GetLeft(_selectedElement);
-            double y = GetTop(_selectedElement);
+            if (element is Border border && border.Tag is DragHandleInfo info)
+            { // Clicked drag handle
+                // Resize mode
+                _dragMode = DragMode.Resize;
 
-            switch (Mode)
-            {
-                case DragMode.Move:
-                    _dragStartElementPos = new Point(x, y);
-                    SetMovingMouseCursor();
-                    break;
-                case DragMode.Resize:
-                    _dragStartElementRect = new Rect(x, y, _selectedElement.Width, _selectedElement.Height);
-                    _resizeClickPos = DetectResizeClickPosition(_dragStartCursorPos, _dragStartElementRect);
-                    SetResizingMouseCursor(_resizeClickPos);
-                    break;
+                // Record select information
+                _selectedDragHandle = border;
+                _selectedClickPos = info.ClickPos;
+                _selectedElement = info.Parent;
+                _isBeingDragged = true;
+
+                // Record position and size
+                _dragStartCursorPos = e.GetPosition(this);
+                _dragStartElementRect = GetElementSize(_selectedElement);
+
+                // Set Cursor
+                SetMouseCursor(_selectedClickPos);
+
+                // Capture mouse
+                _selectedDragHandle.CaptureMouse();
+            }
+            else if (element.Tag is UIControl)
+            { // Clicked UIControl
+                ClearSelectedBorderHandles();
+
+                // Move mode
+                _dragMode = DragMode.Move;
+
+                // Record select information
+                _selectedDragHandle = null;
+                _selectedClickPos = ResizeClickPosition.Inside;
+                _selectedElement = element;
+                _isBeingDragged = true;
+
+                // Record position and size
+                _dragStartCursorPos = e.GetPosition(this);
+                _dragStartElementRect = GetElementSize(_selectedElement);
+
+                DrawSelectedBorderHandles();
+
+                // Set Cursor
+                SetMouseCursor();
+
+                // Capture mouse
+                _selectedElement.CaptureMouse();
+            }
+            else
+            { // Clicked background
+                _selectedDragHandle = null;
+                _selectedElement = null;
+                _isBeingDragged = false;
+
+                ClearSelectedBorderHandles();
             }
 
-            _selectedElement.CaptureMouse();
-
-            _isBeingDragged = true;
             e.Handled = true;
         }
 
@@ -137,36 +233,44 @@ namespace PEBakery.WPF.Controls
         /// <param name="e"></param>
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
-            if (!_isBeingDragged || _selectedElement == null)
+            // Change cursor following underlying element
+            if (!_isBeingDragged)
+            {
+                FrameworkElement hoverElement = FindRootFrameworkElement(e.Source);
+                if (hoverElement == null) // Outside
+                    ResetMouseCursor();
+                else if (hoverElement is Border border && border.Tag is DragHandleInfo info)
+                    SetMouseCursor(info.ClickPos);
+                else if (hoverElement.Tag is UIControl) // Inside
+                    SetMouseCursor();
+                else 
+                    ResetMouseCursor();
                 return;
+            }
+
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
 
             // Moving/Resizing a UIControl
-            Point nowCursorPoint = e.GetPosition(this);
-            switch (Mode)
+            Point nowCursorPos = e.GetPosition(this);
+
+            switch (_dragMode)
             {
                 case DragMode.Move:
-                    Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, _dragStartElementPos);
-                    SetLeft(_selectedElement, newElementPos.X);
-                    SetTop(_selectedElement, newElementPos.Y);
-                    if (_selectedBorder != null)
+                    Point dragStartElementPos = new Point(_dragStartElementRect.X, _dragStartElementRect.Y);
+                    Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, dragStartElementPos);
+
+                    MoveSelectedBorderHandles(new Rect
                     {
-                        SetLeft(_selectedBorder, newElementPos.X);
-                        SetTop(_selectedBorder, newElementPos.Y);
-                    }
+                        X = newElementPos.X,
+                        Y = newElementPos.Y,
+                        Width = _dragStartElementRect.Width,
+                        Height = _dragStartElementRect.Height,
+                    });
                     break;
                 case DragMode.Resize:
-                    Rect newElementRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, _dragStartElementRect, _resizeClickPos);
-                    SetLeft(_selectedElement, newElementRect.X);
-                    SetTop(_selectedElement, newElementRect.Y);
-                    _selectedElement.Width = newElementRect.Width;
-                    _selectedElement.Height = newElementRect.Height;
-                    if (_selectedBorder != null)
-                    {
-                        SetLeft(_selectedBorder, newElementRect.X);
-                        SetTop(_selectedBorder, newElementRect.Y);
-                        _selectedBorder.Width = newElementRect.Width;
-                        _selectedBorder.Height = newElementRect.Height;
-                    }
+                    Rect newElementRect = CalcNewSize(_dragStartCursorPos, nowCursorPos, _dragStartElementRect, _selectedClickPos);
+
+                    ResizeSelectedBorderHandles(newElementRect);
                     break;
             }
         }
@@ -177,10 +281,13 @@ namespace PEBakery.WPF.Controls
         /// <param name="e"></param>
         protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
         {
-            if (!_isBeingDragged || _selectedElement == null)
+            if (!_isBeingDragged)
                 return;
 
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
+
             _selectedElement.ReleaseMouseCapture();
+            _selectedDragHandle?.ReleaseMouseCapture();
 
             if (!(_selectedElement.Tag is UIControl uiCtrl))
                 return;
@@ -188,7 +295,7 @@ namespace PEBakery.WPF.Controls
             double deltaX;
             double deltaY;
             Point nowCursorPoint = e.GetPosition(this);
-            switch (Mode)
+            switch (_dragMode)
             {
                 case DragMode.Move:
                     Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.X, uiCtrl.Y));
@@ -202,7 +309,7 @@ namespace PEBakery.WPF.Controls
                     UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
                 case DragMode.Resize:
-                    Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, uiCtrl.Rect, _resizeClickPos);
+                    Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, uiCtrl.Rect, _selectedClickPos);
                     deltaX = newCtrlRect.X - uiCtrl.X;
                     deltaY = newCtrlRect.Y - uiCtrl.Y;
 
@@ -215,15 +322,274 @@ namespace PEBakery.WPF.Controls
                     UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
             }
-
             ResetMouseCursor();
 
             _isBeingDragged = false;
             _selectedElement = null;
+            _selectedDragHandle = null;
         }
         #endregion
 
-        #region Move Utility
+        #region SelectedBorderHandles
+        /// <summary>
+        /// Clear border and drag handles around selected element
+        /// </summary>
+        public void ClearSelectedBorderHandles()
+        {
+            if (_selectedBorder != null)
+            {
+                UIRenderer.RemoveFromCanvas(this, _selectedBorder);
+                _selectedBorder = null;
+            }
+
+            foreach (Border dragHandle in _dragHandles)
+            {
+                UIRenderer.RemoveFromCanvas(this, dragHandle);
+            }
+            _dragHandles.Clear();
+        }
+
+        /// <summary>
+        /// Draw border and drag handles around selected element
+        /// </summary>
+        public void DrawSelectedBorderHandles(UIControl uiCtrl)
+        {
+            if (uiCtrl == null)
+                return;
+
+            foreach (FrameworkElement child in Children)
+            {
+                if (!(child.Tag is UIControl ctrl))
+                    continue;
+                if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    continue;
+
+                _selectedElement = child;
+                break;
+            }
+
+            DrawSelectedBorderHandles();
+        }
+
+        /// <summary>
+        /// Draw border and drag handles around selected element
+        /// </summary>
+        public void DrawSelectedBorderHandles()
+        {
+            if (_selectedElement == null)
+                return;
+            if (!(_selectedElement.Tag is UIControl uiCtrl))
+                return;
+
+            int z = MaxZIndex;
+
+            // Draw selected border
+            _selectedBorder = new Border
+            {
+                Opacity = 0.75,
+                BorderBrush = Brushes.Red,
+                BorderThickness = new Thickness(2),
+                SnapsToDevicePixels = true,
+                Focusable = false,
+            };
+
+            if (uiCtrl.Type != UIControlType.Bevel)
+            {
+                SetZIndex(_selectedElement, z + 1);
+                SetZIndex(_selectedBorder, z + 2);
+            }
+
+            Rect rect = new Rect
+            {
+                X = GetLeft(_selectedElement),
+                Y = GetTop(_selectedElement),
+                Width = _selectedElement.Width,
+                Height = _selectedElement.Height,
+            };
+            UIRenderer.DrawToCanvas(this, _selectedBorder, rect);
+
+            // Draw drag handle
+            Rect elementRect = new Rect
+            {
+                X = GetLeft(_selectedElement),
+                Y = GetTop(_selectedElement),
+                Width = _selectedElement.Width,
+                Height = _selectedElement.Height,
+            };
+
+            Thickness handleBorderThickness = new Thickness(1);
+            SolidColorBrush handleBorderBrush = Brushes.Black;
+            SolidColorBrush handleBackground = Brushes.White;
+
+            List<ResizeClickPosition> clickPosList = new List<ResizeClickPosition>(9)
+            {
+                ResizeClickPosition.LeftTop,
+                ResizeClickPosition.RightTop,
+                ResizeClickPosition.LeftBottom,
+                ResizeClickPosition.RightBottom,
+            };
+
+            if (DragHandleShowThreshold < elementRect.Width)
+            {
+                clickPosList.Add(ResizeClickPosition.Top);
+                clickPosList.Add(ResizeClickPosition.Bottom);
+            }
+
+            if (DragHandleShowThreshold < elementRect.Height)
+            {
+                clickPosList.Add(ResizeClickPosition.Left);
+                clickPosList.Add(ResizeClickPosition.Right);
+            }
+
+            foreach (ResizeClickPosition clickPos in clickPosList)
+            {
+                Border dragHandle = new Border
+                {
+                    Background = handleBackground,
+                    BorderBrush = handleBorderBrush,
+                    BorderThickness = handleBorderThickness,
+                    SnapsToDevicePixels = true,
+                    Tag = new DragHandleInfo(clickPos, _selectedElement, rect),
+                };
+
+                SetZIndex(dragHandle, z + 3);
+                _dragHandles.Add(dragHandle);
+
+                UIRenderer.DrawToCanvas(this, dragHandle, CalcDragHandlePosition(clickPos, elementRect));
+            }
+
+            // Invoke event handlers
+            UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
+        }
+
+        public static Rect CalcDragHandlePosition(ResizeClickPosition clickPos, Rect elementRect)
+        {
+            double x = elementRect.X;
+            double y = elementRect.Y;
+            switch (clickPos)
+            {
+                case ResizeClickPosition.Left:
+                    y += elementRect.Height / 2;
+                    break;
+                case ResizeClickPosition.Right:
+                    x += elementRect.Width;
+                    y += elementRect.Height / 2;
+                    break;
+                case ResizeClickPosition.Top:
+                    x += elementRect.Width / 2;
+                    break;
+                case ResizeClickPosition.Bottom:
+                    x += elementRect.Width / 2;
+                    y += elementRect.Height;
+                    break;
+                case ResizeClickPosition.LeftTop:
+                    break;
+                case ResizeClickPosition.LeftBottom:
+                    y += elementRect.Height;
+                    break;
+                case ResizeClickPosition.RightTop:
+                    x += elementRect.Width;
+                    break;
+                case ResizeClickPosition.RightBottom:
+                    x += elementRect.Width;
+                    y += elementRect.Height;
+                    break;
+                default:
+                    throw new ArgumentException(nameof(clickPos));
+            }
+
+            return ConvertPosToDragHandleRect(new Point(x, y));
+        }
+
+        public void MoveSelectedBorderHandles(Rect newRect)
+        {
+            Point newPos = new Point(newRect.X, newRect.Y);
+
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
+            SetElementPosition(_selectedElement, newPos);
+
+            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
+            SetElementPosition(_selectedBorder, newPos);
+
+            foreach (Border dragHandle in _dragHandles)
+            {
+                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
+                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
+
+                Rect r = CalcDragHandlePosition(info.ClickPos, newRect);
+                SetElementPosition(dragHandle, new Point(r.X, r.Y));
+            }
+        }
+
+        public void ResizeSelectedBorderHandles(Rect newRect)
+        {
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
+            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
+
+            SetElementSize(_selectedElement, newRect);
+            SetElementSize(_selectedBorder, newRect);
+
+            foreach (Border dragHandle in _dragHandles)
+            {
+                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
+                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
+
+                Rect r = CalcDragHandlePosition(info.ClickPos, newRect);
+                SetElementPosition(dragHandle, new Point(r.X, r.Y));
+            }
+        }
+
+        public static Rect ConvertPosToDragHandleRect(Point p)
+        {
+            return new Rect
+            {
+                X = p.X - DragHandleLength / 2.0,
+                Y = p.Y - DragHandleLength / 2.0,
+                Width = DragHandleLength,
+                Height = DragHandleLength,
+            };
+        }
+        #endregion
+
+        #region Mouse Cursor
+        private static void SetMouseCursor(ResizeClickPosition clickPos = ResizeClickPosition.Inside)
+        {
+            Cursor newCursor = null;
+            switch (clickPos)
+            {
+                case ResizeClickPosition.Left:
+                case ResizeClickPosition.Right:
+                    newCursor = Cursors.SizeWE;
+                    break;
+                case ResizeClickPosition.Top:
+                case ResizeClickPosition.Bottom:
+                    newCursor = Cursors.SizeNS;
+                    break;
+                case ResizeClickPosition.LeftTop:
+                case ResizeClickPosition.RightBottom:
+                    newCursor = Cursors.SizeNWSE;
+                    break;
+                case ResizeClickPosition.RightTop:
+                case ResizeClickPosition.LeftBottom:
+                    newCursor = Cursors.SizeNESW;
+                    break;
+                case ResizeClickPosition.Inside:
+                    newCursor = Cursors.SizeAll;
+                    break;
+            }
+
+            if (Mouse.OverrideCursor != newCursor)
+                Mouse.OverrideCursor = newCursor;
+        }
+
+        public static void ResetMouseCursor()
+        {
+            if (Mouse.OverrideCursor != null)
+                Mouse.OverrideCursor = null;
+        }
+        #endregion
+
+        #region Move/Resize Utility
         private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
         {
             double x = elementStart.X + cursorNow.X - cursorStart.X;
@@ -240,66 +606,6 @@ namespace PEBakery.WPF.Controls
                 y = CanvasWidthHeightLimit;
 
             return new Point(x, y);
-        }
-        #endregion
-
-        #region Resize Utility
-        private ResizeClickPosition DetectResizeClickPosition(Point cursor, Rect elementRect)
-        {
-            ResizeClickPosition clickPos;
-
-            // Get Border Margin
-            double xBorderMargin = elementRect.Width / 4;
-            double yBorderMargin = elementRect.Height / 4;
-
-            // Decide direction of X
-            double leftRelPos = cursor.X - elementRect.Left;
-            double rightRelPos = elementRect.Right - cursor.X;
-
-            // Decide direction of Y
-            double topRelPos = cursor.Y - elementRect.Top;
-            double bottomRelPos = elementRect.Bottom - cursor.Y;
-
-            // Get ResizeDirection
-            if (Math.Abs(leftRelPos) <= xBorderMargin)
-            { // Left
-                if (Math.Abs(topRelPos) <= yBorderMargin) // Top
-                    clickPos = ResizeClickPosition.LeftTop;
-                else if (Math.Abs(bottomRelPos) <= yBorderMargin) // Bottom
-                    clickPos = ResizeClickPosition.LeftBottom;
-                else if (0 <= topRelPos && 0 <= bottomRelPos) // Y-Inside
-                    clickPos = ResizeClickPosition.Left;
-                else // Y-Outside
-                    clickPos = ResizeClickPosition.Outside;
-            }
-            else if (Math.Abs(rightRelPos) <= xBorderMargin)
-            { // Right
-                if (Math.Abs(topRelPos) <= yBorderMargin) // Top
-                    clickPos = ResizeClickPosition.RightTop;
-                else if (Math.Abs(bottomRelPos) <= yBorderMargin) // Bottom
-                    clickPos = ResizeClickPosition.RightBottom;
-                else if (0 <= topRelPos && 0 <= bottomRelPos) // Y-Inside
-                    clickPos = ResizeClickPosition.Right;
-                else // Y-Outside
-                    clickPos = ResizeClickPosition.Outside;
-            }
-            else if (0 <= leftRelPos && 0 <= rightRelPos)
-            { // X-Inside
-                if (Math.Abs(topRelPos) <= yBorderMargin) // Top
-                    clickPos = ResizeClickPosition.Top;
-                else if (Math.Abs(bottomRelPos) <= yBorderMargin) // Bottom
-                    clickPos = ResizeClickPosition.Bottom;
-                else if (0 <= topRelPos && 0 <= bottomRelPos) // Y-Inside
-                    clickPos = ResizeClickPosition.Inside;
-                else // Y-Outside
-                    clickPos = ResizeClickPosition.Outside;
-            }
-            else
-            { // X-Outside
-                clickPos = ResizeClickPosition.Outside;
-            }
-
-            return clickPos;
         }
 
         private static Rect CalcNewSize(Point cursorStart, Point cursorNow, Rect elementRect, ResizeClickPosition clickPos)
@@ -458,46 +764,71 @@ namespace PEBakery.WPF.Controls
 
             return new Rect(x, y, width, height);
         }
+
+        private static void SetElementPosition(FrameworkElement element, Point p)
+        {
+            SetLeft(element, p.X);
+            SetTop(element, p.Y);
+        }
+
+        private static void SetElementSize(FrameworkElement element, Rect rect)
+        {
+            SetLeft(element, rect.X);
+            SetTop(element, rect.Y);
+            element.Width = rect.Width;
+            element.Height = rect.Height;
+        }
+
+        private static Rect GetElementSize(FrameworkElement element)
+        {
+            return new Rect
+            {
+                X = GetLeft(element),
+                Y = GetTop(element),
+                Width = element.Width,
+                Height = element.Height,
+            };
+        }
         #endregion
 
-        #region Mouse Cursor
-        private static void SetMovingMouseCursor()
+        #region FrameworkElement Utility
+        public FrameworkElement FindRootFrameworkElement(object obj)
         {
-            if (Mouse.OverrideCursor != Cursors.Hand)
-                Mouse.OverrideCursor = Cursors.Hand;
+            if (obj is DependencyObject dObj)
+                return FindRootFrameworkElement(dObj);
+            else
+                return null;
         }
 
-        private static void SetResizingMouseCursor(ResizeClickPosition clickPos)
+        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
         {
-            Cursor newCursor = null;
-            switch (clickPos)
+            while (dObj != null)
             {
-                case ResizeClickPosition.Left:
-                case ResizeClickPosition.Right:
-                    newCursor = Cursors.SizeWE;
-                    break;
-                case ResizeClickPosition.Top:
-                case ResizeClickPosition.Bottom:
-                    newCursor = Cursors.SizeNS;
-                    break;
-                case ResizeClickPosition.LeftTop:
-                case ResizeClickPosition.RightBottom:
-                    newCursor = Cursors.SizeNWSE;
-                    break;
-                case ResizeClickPosition.RightTop:
-                case ResizeClickPosition.LeftBottom:
-                    newCursor = Cursors.SizeNESW;
-                    break;
+                if (dObj is FrameworkElement element && Children.Contains(element))
+                    return element;
+
+                if (dObj is Visual || dObj is Visual3D)
+                    dObj = VisualTreeHelper.GetParent(dObj);
+                else
+                    dObj = LogicalTreeHelper.GetParent(dObj);
             }
-
-            if (Mouse.OverrideCursor != newCursor)
-                Mouse.OverrideCursor = newCursor;
+            return null;
         }
+        #endregion
 
-        private static void ResetMouseCursor()
+        #region class DragHandleInfo
+        protected class DragHandleInfo
         {
-            if (Mouse.OverrideCursor != null)
-                Mouse.OverrideCursor = null;
+            public ResizeClickPosition ClickPos;
+            public FrameworkElement Parent;
+            public Rect ParentRect;
+
+            public DragHandleInfo(ResizeClickPosition clickPos, FrameworkElement parent, Rect parentRect)
+            {
+                ClickPos = clickPos;
+                Parent = parent;
+                ParentRect = parentRect;
+            }
         }
         #endregion
     }

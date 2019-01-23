@@ -135,7 +135,7 @@ namespace PEBakery.WPF
 
         #region Event Handler - Interface
         #region For Editor
-        private void ScaleFactorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void ScaleFactor_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
             m.DrawScript();
         }
@@ -146,11 +146,11 @@ namespace PEBakery.WPF
                 return;
 
             m.SelectedUICtrl = m.Renderer.UICtrls[m.InterfaceUICtrlIndex];
-            m.InterfaceCanvas.ResetSelectedBorder();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+            m.InterfaceCanvas.ClearSelectedBorderHandles();
+            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
         }
 
-        private void InterfaceCanvas_UIControlSelected(object sender, EditCanvas.UIControlSelectedEventArgs e)
+        private void InterfaceCanvas_UIControlSelected(object sender, DragCanvas.UIControlSelectedEventArgs e)
         {
             if (e.UIControl == null)
                 return;
@@ -180,6 +180,7 @@ namespace PEBakery.WPF
 
         private void InterfaceCanvasDragMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            /*
             switch (m.InterfaceCanvasDragModeIndex)
             {
                 default:
@@ -191,9 +192,9 @@ namespace PEBakery.WPF
                     m.InterfaceCanvas.BorderBrush = Brushes.Blue;
                     break;
             }
-
-            m.InterfaceCanvas.ResetSelectedBorder();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+            */
+            m.InterfaceCanvas.ClearSelectedBorderHandles();
+            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
         }
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
@@ -207,9 +208,9 @@ namespace PEBakery.WPF
             Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
             m.Renderer.UICtrls[idx] = uiCtrl;
 
-            m.InterfaceCanvas.ResetSelectedBorder();
+            m.InterfaceCanvas.ClearSelectedBorderHandles();
             m.Renderer.Render();
-            m.InterfaceCanvas.DrawSelectedBorder(m.SelectedUICtrl);
+            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
         }
 
         private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -700,16 +701,6 @@ namespace PEBakery.WPF
             {
                 _interfaceLoaded = value;
                 OnPropertyUpdate(nameof(InterfaceLoaded));
-            }
-        }
-        private int _interfaceCanvasDragModeIndex;
-        public int InterfaceCanvasDragModeIndex
-        {
-            get => _interfaceCanvasDragModeIndex;
-            set
-            {
-                _interfaceCanvasDragModeIndex = value;
-                OnPropertyUpdate(nameof(InterfaceCanvasDragModeIndex));
             }
         }
         private ObservableCollection<string> _interfaceUICtrls = new ObservableCollection<string>();
@@ -1847,10 +1838,10 @@ namespace PEBakery.WPF
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
-                InterfaceCanvas.ResetSelectedBorder();
+                InterfaceCanvas.ClearSelectedBorderHandles();
                 Renderer.Render();
                 SelectedUICtrl = uiCtrl;
-                InterfaceCanvas.DrawSelectedBorder(uiCtrl);
+                InterfaceCanvas.DrawSelectedBorderHandles(uiCtrl);
 
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
@@ -3476,7 +3467,7 @@ namespace PEBakery.WPF
         public void ResetSelectedUICtrl()
         {
             SelectedUICtrl = null;
-            InterfaceCanvas.ResetSelectedBorder();
+            InterfaceCanvas.ClearSelectedBorderHandles();
         }
         #endregion
     }

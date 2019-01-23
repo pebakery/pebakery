@@ -460,30 +460,6 @@
                                               ItemsSource="{Binding InterfaceUICtrls}"
                                               SelectionChanged="UIControlComboBox_SelectionChanged"/>
 
-                                    <!-- Move or Resize -->
-                                    <Grid Margin="0, 5, 0, 0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="60" />
-                                            <ColumnDefinition />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="20" />
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Margin="0, 0, 5, 0"
-                                                   Text="Drag" />
-                                        <ComboBox Grid.Row="0" Grid.Column="1"
-                                                  Padding="3, 0, 3, 0"
-                                                  FontSize="11"
-                                                  VerticalContentAlignment="Center"
-                                                  SelectedIndex="{Binding InterfaceCanvasDragModeIndex}"
-                                                  SelectionChanged="InterfaceCanvasDragMode_SelectionChanged">
-                                            <ComboBoxItem Content="Move"/>
-                                            <ComboBoxItem Content="Resize"/>
-                                        </ComboBox>
-                                    </Grid>
-
                                     <!-- Common -->
                                     <Grid Margin="0, 10, 0, 0">
                                         <Grid.ColumnDefinitions>
@@ -1184,7 +1160,8 @@
                                           Minimum="50"
                                           Maximum="200"
                                           IncrementUnit="5"
-                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"/>
+                                          Value="{Binding InterfaceScaleFactor, Mode=TwoWay, FallbackValue=100}"
+                                          ValueChanged="ScaleFactor_ValueChanged"/>
                             <Button Grid.Column="3"
                                     Width="100" Height="25"
                                     Content="Reload"

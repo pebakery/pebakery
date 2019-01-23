@@ -93,12 +93,11 @@ namespace PEBakery.WPF.Controls
             {
                 if (!(child.Tag is UIControl ctrl))
                     continue;
+                if (!ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
+                    continue;
 
-                if (ctrl.Key.Equals(uiCtrl.Key, StringComparison.Ordinal))
-                {
-                    element = child;
-                    break;
-                }
+                element = child;
+                break;
             }
 
             DrawSelectedBorder(element);
@@ -167,7 +166,7 @@ namespace PEBakery.WPF.Controls
             if (e.Source is DependencyObject dObj)
                 element = FindRootFrameworkElement(dObj);
 
-            if (element == null)
+            if (!(element?.Tag is UIControl))
                 return;
 
             DrawSelectedBorder(element);
