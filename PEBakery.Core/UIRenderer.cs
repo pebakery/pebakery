@@ -835,7 +835,6 @@ namespace PEBakery.Core
                     // Even if a file extension is not a ".txt", just display.
                     TextBox textBox = new TextBox
                     {
-                        TextWrapping = TextWrapping.Wrap,
                         AcceptsReturn = true,
                         IsReadOnly = true,
                         FontSize = CalcFontPointScale(),
