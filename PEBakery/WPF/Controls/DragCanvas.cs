@@ -63,7 +63,7 @@ namespace PEBakery.WPF.Controls
         private const int ElementWidthHeightLimit = 100;
 
         // DragHandle
-        private const int DragHandleLength = 10;
+        private const int DragHandleLength = 8;
         private const int DragHandleShowThreshold = 20;
         #endregion
 
@@ -389,7 +389,6 @@ namespace PEBakery.WPF.Controls
                 Opacity = 0.75,
                 BorderBrush = Brushes.Red,
                 BorderThickness = new Thickness(2),
-                SnapsToDevicePixels = true,
                 Focusable = false,
             };
 
@@ -448,7 +447,6 @@ namespace PEBakery.WPF.Controls
                     Background = handleBackground,
                     BorderBrush = handleBorderBrush,
                     BorderThickness = handleBorderThickness,
-                    SnapsToDevicePixels = true,
                     Tag = new DragHandleInfo(clickPos, _selectedElement, rect),
                 };
 
