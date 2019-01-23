@@ -1121,7 +1121,7 @@ namespace PEBakery.Core.ViewModels
         public void DisplayScriptInterface(Script sc)
         {
             // Current UIRenderer can only run in interface thread.
-            // Guard instance owner exception using Application.Current.Dispatcher.Invoke()
+            // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 // Set scale factor
@@ -1171,27 +1171,28 @@ namespace PEBakery.Core.ViewModels
             {
                 try
                 {
-                    using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                    // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
+                    Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        switch (type)
+                        using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
                         {
-                            case ImageHelper.ImageType.Svg:
-                                DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                                Rect svgSize = svgDrawing.Bounds;
-                                (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
-                                ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                                ScriptLogoSvgWidth = width;
-                                ScriptLogoSvgHeight = height;
-                                break;
-                            default:
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    // ReSharper disable once AccessToDisposedClosure
+                            switch (type)
+                            {
+                                case ImageHelper.ImageType.Svg:
+                                    DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                    Rect svgSize = svgDrawing.Bounds;
+                                    (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
+                                    ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                    ScriptLogoSvgWidth = width;
+                                    ScriptLogoSvgHeight = height;
+                                    break;
+                                default:
                                     ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
-                                });
-                                break;
+                                    break;
+                            }
                         }
-                    }
+                    });
+                    
                 }
                 catch
                 { // No logo file - use default
