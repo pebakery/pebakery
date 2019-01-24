@@ -330,7 +330,7 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region SelectedBorderHandles
+        #region (public) SelectedBorderHandles
         /// <summary>
         /// Clear border and drag handles around selected element
         /// </summary>
@@ -416,141 +416,45 @@ namespace PEBakery.WPF.Controls
                 Height = _selectedElement.Height,
             };
 
-            Thickness handleBorderThickness = new Thickness(1);
-            SolidColorBrush handleBorderBrush = Brushes.Black;
-            SolidColorBrush handleBackground = Brushes.White;
-
             List<ResizeClickPosition> clickPosList = new List<ResizeClickPosition>(9)
             {
+                // Only visible if ElementRect.Height is longer than 20px
+                ResizeClickPosition.Left,
+                ResizeClickPosition.Right,
+                // Only visible if ElementRect.Width is longer than 20px
+                ResizeClickPosition.Top,
+                ResizeClickPosition.Bottom,
+                // Always visible
                 ResizeClickPosition.LeftTop,
                 ResizeClickPosition.RightTop,
                 ResizeClickPosition.LeftBottom,
                 ResizeClickPosition.RightBottom,
             };
 
-            if (DragHandleShowThreshold < elementRect.Width)
-            {
-                clickPosList.Add(ResizeClickPosition.Top);
-                clickPosList.Add(ResizeClickPosition.Bottom);
-            }
-
-            if (DragHandleShowThreshold < elementRect.Height)
-            {
-                clickPosList.Add(ResizeClickPosition.Left);
-                clickPosList.Add(ResizeClickPosition.Right);
-            }
-
             foreach (ResizeClickPosition clickPos in clickPosList)
             {
                 Border dragHandle = new Border
                 {
-                    Background = handleBackground,
-                    BorderBrush = handleBorderBrush,
-                    BorderThickness = handleBorderThickness,
+                    BorderThickness = new Thickness(1),
                     Tag = new DragHandleInfo(clickPos, _selectedElement, rect),
                 };
-
+                SetDragHandleVisibility(dragHandle, clickPos, elementRect);
                 SetZIndex(dragHandle, z + 3);
+
                 _dragHandles.Add(dragHandle);
 
-                UIRenderer.DrawToCanvas(this, dragHandle, CalcDragHandlePosition(clickPos, elementRect));
+                Point p = CalcDragHandlePosition(clickPos, elementRect);
+                Rect r = new Rect(p.X, p.Y, DragHandleLength, DragHandleLength);
+                UIRenderer.DrawToCanvas(this, dragHandle, r);
             }
 
             // Invoke event handlers
             UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs(_selectedElement, uiCtrl));
         }
-
-        public static Rect CalcDragHandlePosition(ResizeClickPosition clickPos, Rect elementRect)
-        {
-            double x = elementRect.X;
-            double y = elementRect.Y;
-            switch (clickPos)
-            {
-                case ResizeClickPosition.Left:
-                    y += elementRect.Height / 2;
-                    break;
-                case ResizeClickPosition.Right:
-                    x += elementRect.Width;
-                    y += elementRect.Height / 2;
-                    break;
-                case ResizeClickPosition.Top:
-                    x += elementRect.Width / 2;
-                    break;
-                case ResizeClickPosition.Bottom:
-                    x += elementRect.Width / 2;
-                    y += elementRect.Height;
-                    break;
-                case ResizeClickPosition.LeftTop:
-                    break;
-                case ResizeClickPosition.LeftBottom:
-                    y += elementRect.Height;
-                    break;
-                case ResizeClickPosition.RightTop:
-                    x += elementRect.Width;
-                    break;
-                case ResizeClickPosition.RightBottom:
-                    x += elementRect.Width;
-                    y += elementRect.Height;
-                    break;
-                default:
-                    throw new ArgumentException(nameof(clickPos));
-            }
-
-            return ConvertPosToDragHandleRect(new Point(x, y));
-        }
-
-        public void MoveSelectedBorderHandles(Rect newRect)
-        {
-            Point newPos = new Point(newRect.X, newRect.Y);
-
-            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
-            SetElementPosition(_selectedElement, newPos);
-
-            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
-            SetElementPosition(_selectedBorder, newPos);
-
-            foreach (Border dragHandle in _dragHandles)
-            {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
-                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
-
-                Rect r = CalcDragHandlePosition(info.ClickPos, newRect);
-                SetElementPosition(dragHandle, new Point(r.X, r.Y));
-            }
-        }
-
-        public void ResizeSelectedBorderHandles(Rect newRect)
-        {
-            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
-            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
-
-            SetElementSize(_selectedElement, newRect);
-            SetElementSize(_selectedBorder, newRect);
-
-            foreach (Border dragHandle in _dragHandles)
-            {
-                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
-                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
-
-                Rect r = CalcDragHandlePosition(info.ClickPos, newRect);
-                SetElementPosition(dragHandle, new Point(r.X, r.Y));
-            }
-        }
-
-        public static Rect ConvertPosToDragHandleRect(Point p)
-        {
-            return new Rect
-            {
-                X = p.X - DragHandleLength / 2.0,
-                Y = p.Y - DragHandleLength / 2.0,
-                Width = DragHandleLength,
-                Height = DragHandleLength,
-            };
-        }
         #endregion
 
-        #region Mouse Cursor
-        private static void SetMouseCursor(ResizeClickPosition clickPos = ResizeClickPosition.Inside)
+        #region (public) Mouse Cursor
+        public static void SetMouseCursor(ResizeClickPosition clickPos = ResizeClickPosition.Inside)
         {
             Cursor newCursor = null;
             switch (clickPos)
@@ -587,7 +491,138 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region Move/Resize Utility
+        #region (private) DragHandle Utility
+        private void MoveSelectedBorderHandles(Rect newRect)
+        {
+            Point newPos = new Point(newRect.X, newRect.Y);
+
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
+            SetElementPosition(_selectedElement, newPos);
+
+            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
+            SetElementPosition(_selectedBorder, newPos);
+
+            foreach (Border dragHandle in _dragHandles)
+            {
+                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
+                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
+
+                SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
+                Point p = CalcDragHandlePosition(info.ClickPos, newRect);
+                SetElementPosition(dragHandle, p);
+            }
+        }
+
+        private void ResizeSelectedBorderHandles(Rect newRect)
+        {
+            Debug.Assert(_selectedElement != null, "SelectedElement was not set");
+            Debug.Assert(_selectedBorder != null, "SelectedBorder was not set");
+
+            SetElementSize(_selectedElement, newRect);
+            SetElementSize(_selectedBorder, newRect);
+
+            foreach (Border dragHandle in _dragHandles)
+            {
+                Debug.Assert(dragHandle.Tag.GetType() == typeof(DragHandleInfo));
+                DragHandleInfo info = (DragHandleInfo)dragHandle.Tag;
+
+                SetDragHandleVisibility(dragHandle, info.ClickPos, newRect);
+                Point p = CalcDragHandlePosition(info.ClickPos, newRect);
+                SetElementPosition(dragHandle, p);
+            }
+        }
+        
+        private static Point CalcDragHandlePosition(ResizeClickPosition clickPos, Rect elementRect)
+        {
+            double x = elementRect.X;
+            double y = elementRect.Y;
+            switch (clickPos)
+            {
+                case ResizeClickPosition.Left:
+                    x -= DragHandleLength;
+                    y -= DragHandleLength / 2.0;
+                    y += elementRect.Height / 2;
+                    break;
+                case ResizeClickPosition.Right:
+                    x += elementRect.Width;
+                    y -= DragHandleLength / 2.0;
+                    y += elementRect.Height / 2;
+                    break;
+                case ResizeClickPosition.Top:
+                    x -= DragHandleLength / 2.0;
+                    x += elementRect.Width / 2;
+                    y -= DragHandleLength;
+                    break;
+                case ResizeClickPosition.Bottom:
+                    x -= DragHandleLength / 2.0;
+                    x += elementRect.Width / 2;
+                    y += elementRect.Height;
+                    break;
+                case ResizeClickPosition.LeftTop:
+                    x -= DragHandleLength;
+                    y -= DragHandleLength;
+                    break;
+                case ResizeClickPosition.LeftBottom:
+                    x -= DragHandleLength;
+                    y += elementRect.Height;
+                    break;
+                case ResizeClickPosition.RightTop:
+                    x += elementRect.Width;
+                    y -= DragHandleLength;
+                    break;
+                case ResizeClickPosition.RightBottom:
+                    x += elementRect.Width;
+                    y += elementRect.Height;
+                    break;
+                default:
+                    throw new ArgumentException(nameof(clickPos));
+            }
+
+            return new Point(x, y);
+        }
+
+        private static void SetDragHandleVisibility(Border dragHandle, ResizeClickPosition clickPos, Rect elementRect)
+        {
+            bool visible;
+            switch (clickPos)
+            {
+                // Only visible if ElementRect.Height is longer than 20px
+                case ResizeClickPosition.Left:
+                case ResizeClickPosition.Right:
+                    visible = DragHandleShowThreshold < elementRect.Height;
+                    break;
+                // Only visible if ElementRect.Width is longer than 20px
+                case ResizeClickPosition.Top:
+                case ResizeClickPosition.Bottom:
+                    visible = DragHandleShowThreshold < elementRect.Width;
+                    break;
+                // Always visible
+                case ResizeClickPosition.LeftTop:
+                case ResizeClickPosition.LeftBottom:
+                case ResizeClickPosition.RightTop:
+                case ResizeClickPosition.RightBottom:
+                    visible = true;
+                    break;
+                default:
+                    throw new ArgumentException(nameof(clickPos));
+            }
+
+            if (visible)
+            {
+                dragHandle.Background = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+                dragHandle.BorderBrush = Brushes.Black;
+                dragHandle.Focusable = true;
+            }
+            else
+            {
+                dragHandle.Background = Brushes.Transparent;
+                dragHandle.BorderBrush = Brushes.Transparent;
+                dragHandle.Focusable = false;
+            }
+        }
+        #endregion
+
+        #region (private) Move/Resize Utility
         private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
         {
             double x = elementStart.X + cursorNow.X - cursorStart.X;
@@ -789,8 +824,8 @@ namespace PEBakery.WPF.Controls
         }
         #endregion
 
-        #region FrameworkElement Utility
-        public FrameworkElement FindRootFrameworkElement(object obj)
+        #region (private) FrameworkElement Utility
+        private FrameworkElement FindRootFrameworkElement(object obj)
         {
             if (obj is DependencyObject dObj)
                 return FindRootFrameworkElement(dObj);
@@ -798,7 +833,7 @@ namespace PEBakery.WPF.Controls
                 return null;
         }
 
-        public FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
+        private FrameworkElement FindRootFrameworkElement(DependencyObject dObj)
         {
             while (dObj != null)
             {
