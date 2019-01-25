@@ -416,14 +416,24 @@ namespace PEBakery.Core
 
             public int LogWindowWidth;
             public int LogWindowHeight;
-            public bool BuildFullLogShowTime;
-            public bool BuildFullLogShowScriptOrigin;
-            public bool BuildFullLogShowDepth;
-            public bool BuildFullLogShowState;
-            public bool BuildFullLogShowFlags;
-            public bool BuildFullLogShowMessage;
-            public bool BuildFullLogShowRawCode;
-            public bool BuildFullLogShowLineNumber;
+            public bool BuildFullLogTimeVisible;
+            public int BuildFullLogTimeWidth;
+            public bool BuildFullLogScriptOriginVisible;
+            public int BuildFullLogScriptOriginWidth;
+            public bool BuildFullLogDepthVisible;
+            public int BuildFullLogDepthWidth;
+            public bool BuildFullLogStateVisible;
+            public int BuildFullLogStateWidth;
+            public bool BuildFullLogFlagsVisible;
+            public int BuildFullLogFlagsWidth;
+            public bool BuildFullLogMessageVisible;
+            public int BuildFullLogMessageWidth;
+            public bool BuildFullLogRawCodeVisible;
+            public int BuildFullLogRawCodeWidth;
+            public bool BuildFullLogLineNumberVisible;
+            public int BuildFullLogLineNumberWidth;
+
+            public const int MinColumnWidth = 35;
 
             public LogViewerSetting()
             {
@@ -434,14 +444,22 @@ namespace PEBakery.Core
             {
                 LogWindowWidth = 900;
                 LogWindowHeight = 640;
-                BuildFullLogShowTime = true;
-                BuildFullLogShowScriptOrigin = false;
-                BuildFullLogShowDepth = true;
-                BuildFullLogShowState = true;
-                BuildFullLogShowFlags = true;
-                BuildFullLogShowMessage = true;
-                BuildFullLogShowRawCode = true;
-                BuildFullLogShowLineNumber = true;
+                BuildFullLogTimeVisible = true;
+                BuildFullLogTimeWidth = 135;
+                BuildFullLogScriptOriginVisible = false;
+                BuildFullLogScriptOriginWidth = 135;
+                BuildFullLogDepthVisible = true;
+                BuildFullLogDepthWidth = 35;
+                BuildFullLogStateVisible = true;
+                BuildFullLogStateWidth = 55;
+                BuildFullLogFlagsVisible = true;
+                BuildFullLogFlagsWidth = 35;
+                BuildFullLogMessageVisible = true;
+                BuildFullLogMessageWidth = 340;
+                BuildFullLogRawCodeVisible = true;
+                BuildFullLogRawCodeWidth = 175;
+                BuildFullLogLineNumberVisible = true;
+                BuildFullLogLineNumberWidth = 40;
             }
         }
         #endregion
@@ -571,14 +589,22 @@ namespace PEBakery.Core
                 // LogViewer
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth)), // Integer (600 -)
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight)), // Integer (480 -)
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode)), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth)), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible)), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth)), // Integer
             };
             keys = IniReadWriter.ReadKeys(_settingFile, keys);
             Dictionary<string, Dictionary<string, string>> keyDict = keys
@@ -676,14 +702,22 @@ namespace PEBakery.Core
 
                 LogViewer.LogWindowWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, -1);
                 LogViewer.LogWindowHeight = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, -1);
-                LogViewer.BuildFullLogShowTime = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime), LogViewer.BuildFullLogShowTime);
-                LogViewer.BuildFullLogShowScriptOrigin = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin), LogViewer.BuildFullLogShowScriptOrigin);
-                LogViewer.BuildFullLogShowDepth = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth), LogViewer.BuildFullLogShowDepth);
-                LogViewer.BuildFullLogShowState = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState), LogViewer.BuildFullLogShowState);
-                LogViewer.BuildFullLogShowFlags = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags), LogViewer.BuildFullLogShowFlags);
-                LogViewer.BuildFullLogShowMessage = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage), LogViewer.BuildFullLogShowMessage);
-                LogViewer.BuildFullLogShowRawCode = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode), LogViewer.BuildFullLogShowRawCode);
-                LogViewer.BuildFullLogShowLineNumber = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber), LogViewer.BuildFullLogShowLineNumber);
+                LogViewer.BuildFullLogTimeVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible);
+                LogViewer.BuildFullLogTimeWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogScriptOriginVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible);
+                LogViewer.BuildFullLogScriptOriginWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogDepthVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible);
+                LogViewer.BuildFullLogDepthWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogStateVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible);
+                LogViewer.BuildFullLogStateWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogFlagsVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible);
+                LogViewer.BuildFullLogFlagsWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogMessageVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible);
+                LogViewer.BuildFullLogMessageWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogRawCodeVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible);
+                LogViewer.BuildFullLogRawCodeWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.BuildFullLogLineNumberVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible);
+                LogViewer.BuildFullLogLineNumberWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth, LogViewerSetting.MinColumnWidth, -1);
             }
         }
 
@@ -734,14 +768,22 @@ namespace PEBakery.Core
                 // LogViewer
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth.ToString()), // Integer
                 new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight.ToString()), // Integer
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowTime), LogViewer.BuildFullLogShowTime.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowScriptOrigin), LogViewer.BuildFullLogShowScriptOrigin.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowDepth), LogViewer.BuildFullLogShowDepth.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowState), LogViewer.BuildFullLogShowState.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowFlags), LogViewer.BuildFullLogShowFlags.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowMessage), LogViewer.BuildFullLogShowMessage.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowRawCode), LogViewer.BuildFullLogShowRawCode.ToString()), // Boolean
-                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogShowLineNumber), LogViewer.BuildFullLogShowLineNumber.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth.ToString()), // Integer
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible.ToString()), // Boolean
+                new IniKey(LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth.ToString()), // Integer
             };
             IniReadWriter.WriteKeys(_settingFile, keys);
         }

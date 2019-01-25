@@ -62,16 +62,8 @@ namespace PEBakery.WPF
             _m.Logger.VariableUpdated += VariableUpdateEventHandler;
             _m.Logger.FullRefresh += FullRefreshEventHandler;
 
-            _m.WindowWidth = Global.Setting.LogViewer.LogWindowWidth;
-            _m.WindowHeight = Global.Setting.LogViewer.LogWindowHeight;
-            _m.BuildLogShowTime = Global.Setting.LogViewer.BuildFullLogShowTime;
-            _m.BuildLogShowScriptOrigin = Global.Setting.LogViewer.BuildFullLogShowScriptOrigin;
-            _m.BuildLogShowDepth = Global.Setting.LogViewer.BuildFullLogShowDepth;
-            _m.BuildLogShowState = Global.Setting.LogViewer.BuildFullLogShowState;
-            _m.BuildLogShowFlags = Global.Setting.LogViewer.BuildFullLogShowFlags;
-            _m.BuildLogShowMessage = Global.Setting.LogViewer.BuildFullLogShowMessage;
-            _m.BuildLogShowRawCode = Global.Setting.LogViewer.BuildFullLogShowRawCode;
-            _m.BuildLogShowLineNumber = Global.Setting.LogViewer.BuildFullLogShowLineNumber;
+            // Read Build-Full log column layout
+            ReadLayoutFromSetting();
 
             SystemLogListView.UpdateLayout();
             if (1 < SystemLogListView.Items.Count)
@@ -187,17 +179,8 @@ namespace PEBakery.WPF
             _m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
             _m.Logger.VariableUpdated -= VariableUpdateEventHandler;
 
-            Global.Setting.LogViewer.LogWindowWidth = _m.WindowWidth;
-            Global.Setting.LogViewer.LogWindowHeight = _m.WindowHeight;
-            Global.Setting.LogViewer.BuildFullLogShowTime = _m.BuildLogShowTime;
-            Global.Setting.LogViewer.BuildFullLogShowScriptOrigin = _m.BuildLogShowScriptOrigin;
-            Global.Setting.LogViewer.BuildFullLogShowDepth = _m.BuildLogShowDepth;
-            Global.Setting.LogViewer.BuildFullLogShowState = _m.BuildLogShowState;
-            Global.Setting.LogViewer.BuildFullLogShowFlags = _m.BuildLogShowFlags;
-            Global.Setting.LogViewer.BuildFullLogShowMessage = _m.BuildLogShowMessage;
-            Global.Setting.LogViewer.BuildFullLogShowRawCode = _m.BuildLogShowRawCode;
-            Global.Setting.LogViewer.BuildFullLogShowLineNumber = _m.BuildLogShowLineNumber;
-            Global.Setting.WriteToFile();
+            // Save Build-Full log column layout
+            WriteLayoutToSetting();
 
             Interlocked.Decrement(ref LogWindow.Count);
             CommandManager.InvalidateRequerySuggested();
@@ -242,10 +225,82 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region ReadLayoutFromSetting, WriteLayoutToSetting
+        public void ReadLayoutFromSetting()
+        {
+            _m.WindowWidth = Global.Setting.LogViewer.LogWindowWidth;
+            _m.WindowHeight = Global.Setting.LogViewer.LogWindowHeight;
+            _m.BuildFullLogTimeVisible = Global.Setting.LogViewer.BuildFullLogTimeVisible;
+            _m.BuildFullLogTimeWidth = Global.Setting.LogViewer.BuildFullLogTimeWidth;
+            _m.BuildFullLogScriptOriginVisible = Global.Setting.LogViewer.BuildFullLogScriptOriginVisible;
+            _m.BuildFullLogScriptOriginWidth = Global.Setting.LogViewer.BuildFullLogScriptOriginWidth;
+            _m.BuildFullLogDepthVisible = Global.Setting.LogViewer.BuildFullLogDepthVisible;
+            _m.BuildFullLogDepthWidth = Global.Setting.LogViewer.BuildFullLogDepthWidth;
+            _m.BuildFullLogStateVisible = Global.Setting.LogViewer.BuildFullLogStateVisible;
+            _m.BuildFullLogStateWidth = Global.Setting.LogViewer.BuildFullLogStateWidth;
+            _m.BuildFullLogFlagsVisible = Global.Setting.LogViewer.BuildFullLogFlagsVisible;
+            _m.BuildFullLogFlagsWidth = Global.Setting.LogViewer.BuildFullLogFlagsWidth;
+            _m.BuildFullLogMessageVisible = Global.Setting.LogViewer.BuildFullLogMessageVisible;
+            _m.BuildFullLogMessageWidth = Global.Setting.LogViewer.BuildFullLogMessageWidth;
+            _m.BuildFullLogRawCodeVisible = Global.Setting.LogViewer.BuildFullLogRawCodeVisible;
+            _m.BuildFullLogRawCodeWidth = Global.Setting.LogViewer.BuildFullLogRawCodeWidth;
+            _m.BuildFullLogLineNumberVisible = Global.Setting.LogViewer.BuildFullLogLineNumberVisible;
+            _m.BuildFullLogLineNumberWidth = Global.Setting.LogViewer.BuildFullLogLineNumberWidth;
+        }
+
+        public void WriteLayoutToSetting()
+        {
+            // Strange enough, using standard binding with converter just locks column width.
+            // Instead, retrieve column width directly from column using old-school method.
+            // Be noted that this will leave some quirk.
+            // Ex) If you adjusted column width and hide it, the modified width will not be saved.
+            Global.Setting.LogViewer.LogWindowWidth = _m.WindowWidth;
+            Global.Setting.LogViewer.LogWindowHeight = _m.WindowHeight;
+            Global.Setting.LogViewer.BuildFullLogTimeVisible = _m.BuildFullLogTimeVisible;
+            Global.Setting.LogViewer.BuildFullLogTimeWidth = (int)(_m.BuildFullLogTimeVisible
+                ? BuildFullLogTimeColumn.Width
+                : _m.BuildFullLogTimeWidth);
+            Global.Setting.LogViewer.BuildFullLogScriptOriginVisible = _m.BuildFullLogScriptOriginVisible;
+            Global.Setting.LogViewer.BuildFullLogScriptOriginWidth = (int)(_m.BuildFullLogScriptOriginVisible
+                ? BuildFullLogScriptOriginColumn.Width
+                : _m.BuildFullLogScriptOriginWidth);
+            Global.Setting.LogViewer.BuildFullLogDepthVisible = _m.BuildFullLogDepthVisible;
+            Global.Setting.LogViewer.BuildFullLogDepthWidth = (int)(_m.BuildFullLogDepthVisible
+                ? BuildFullLogDepthColumn.Width
+                : _m.BuildFullLogDepthWidth);
+            Global.Setting.LogViewer.BuildFullLogStateVisible = _m.BuildFullLogStateVisible;
+            Global.Setting.LogViewer.BuildFullLogStateWidth = (int)(_m.BuildFullLogStateVisible
+                ? BuildFullLogStateColumn.Width
+                : _m.BuildFullLogStateWidth);
+            Global.Setting.LogViewer.BuildFullLogFlagsVisible = _m.BuildFullLogFlagsVisible;
+            Global.Setting.LogViewer.BuildFullLogFlagsWidth = (int)(_m.BuildFullLogFlagsVisible
+                ? BuildFullLogFlagsColumn.Width
+                : _m.BuildFullLogFlagsWidth);
+            Global.Setting.LogViewer.BuildFullLogMessageVisible = _m.BuildFullLogMessageVisible;
+            Global.Setting.LogViewer.BuildFullLogMessageWidth = (int)(_m.BuildFullLogMessageVisible
+                ? BuildFullLogMessageColumn.Width
+                : _m.BuildFullLogMessageWidth);
+            Global.Setting.LogViewer.BuildFullLogRawCodeVisible = _m.BuildFullLogRawCodeVisible;
+            Global.Setting.LogViewer.BuildFullLogRawCodeWidth = (int)(_m.BuildFullLogRawCodeVisible
+                ? BuildFullLogRawCodeColumn.Width
+                : _m.BuildFullLogRawCodeWidth);
+            Global.Setting.LogViewer.BuildFullLogLineNumberVisible = _m.BuildFullLogLineNumberVisible;
+            Global.Setting.LogViewer.BuildFullLogLineNumberWidth = (int)(_m.BuildFullLogLineNumberVisible
+                ? BuildFullLogLineNumberColumn.Width
+                : _m.BuildFullLogLineNumberWidth);
+            Global.Setting.WriteToFile();
+        }
+        #endregion
+
         #region Commands
-        private void RefreshCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void Command_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = _m != null && _m.CanExecuteCommand;
+        }
+
+        private void CloseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Close();
         }
 
         private void RefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -311,11 +366,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExportCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = _m != null && _m.CanExecuteCommand;
-        }
-
         private void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             _m.CanExecuteCommand = false;
@@ -338,21 +388,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private void CloseCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = _m != null && _m.CanExecuteCommand;
-        }
-
-        private void CloseCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            Close();
-        }
-
-        private void LogOptionsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = _m != null && _m.CanExecuteCommand;
-        }
-
         private void LogOptionsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Open Context Menu
@@ -361,6 +396,12 @@ namespace PEBakery.WPF
                 menu.PlacementTarget = button;
                 menu.IsOpen = true;
             }
+        }
+
+        private void ResetLayoutCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Global.Setting.LogViewer.Default();
+            ReadLayoutFromSetting();
         }
         #endregion
     }
@@ -749,101 +790,117 @@ namespace PEBakery.WPF
             }
         }
 
-        // Show Columns
-        private bool _buildLogShowTime = true;
-        public bool BuildLogShowTime
+        // Visibility and Width of Columns
+        private bool _buildFullLogTimeVisible = true;
+        public bool BuildFullLogTimeVisible
         {
-            get => _buildLogShowTime;
-            set
-            {
-                _buildLogShowTime = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogTimeVisible;
+            set => SetProperty(ref _buildFullLogTimeVisible, value);
         }
 
-        private bool _buildLogShowScriptOrigin = false;
-        public bool BuildLogShowScriptOrigin
+        private double _buildFullLogTimeWidth = 135;
+        public double BuildFullLogTimeWidth
         {
-            get => _buildLogShowScriptOrigin;
-            set
-            {
-                _buildLogShowScriptOrigin = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogTimeWidth;
+            set => SetProperty(ref _buildFullLogTimeWidth, value);
         }
 
-        private bool _buildLogShowDepth = true;
-        public bool BuildLogShowDepth
+        private bool _buildFullLogScriptOriginVisible = false;
+        public bool BuildFullLogScriptOriginVisible
         {
-            get => _buildLogShowDepth;
-            set
-            {
-                _buildLogShowDepth = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogScriptOriginVisible;
+            set => SetProperty(ref _buildFullLogScriptOriginVisible, value);
         }
 
-        private bool _buildLogShowState = true;
-        public bool BuildLogShowState
+        private double _buildFullLogScriptOriginWidth = 135;
+        public double BuildFullLogScriptOriginWidth
         {
-            get => _buildLogShowState;
-            set
-            {
-                _buildLogShowState = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogScriptOriginWidth;
+            set => SetProperty(ref _buildFullLogScriptOriginWidth, value);
         }
 
-        private bool _buildLogShowFlags = true;
-        public bool BuildLogShowFlags
+        private bool _buildFullLogDepthVisible = true;
+        public bool BuildFullLogDepthVisible
         {
-            get => _buildLogShowFlags;
-            set
-            {
-                _buildLogShowFlags = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogDepthVisible;
+            set => SetProperty(ref _buildFullLogDepthVisible, value);
         }
 
-        private bool _buildLogShowMessage = true;
-        public bool BuildLogShowMessage
+        private double _buildFullLogDepthWidth = 35;
+        public double BuildFullLogDepthWidth
         {
-            get => _buildLogShowMessage;
-            set
-            {
-                _buildLogShowMessage = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogDepthWidth;
+            set => SetProperty(ref _buildFullLogDepthWidth, value);
         }
 
-        private bool _buildLogShowRawCode = true;
-        public bool BuildLogShowRawCode
+        private bool _buildFullLogStateVisible = true;
+        public bool BuildFullLogStateVisible
         {
-            get => _buildLogShowRawCode;
-            set
-            {
-                _buildLogShowRawCode = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogStateVisible;
+            set => SetProperty(ref _buildFullLogStateVisible, value);
         }
 
-        private bool _buildLogShowLineNumber = true;
-        public bool BuildLogShowLineNumber
+        private double _buildFullLogStateWidth = 55;
+        public double BuildFullLogStateWidth
         {
-            get => _buildLogShowLineNumber;
-            set
-            {
-                _buildLogShowLineNumber = value;
-                OnPropertyUpdate();
-                RefreshBuildLog(SelectedScriptIndex);
-            }
+            get => _buildFullLogStateWidth;
+            set => SetProperty(ref _buildFullLogStateWidth, value);
+        }
+
+        private bool _buildFullLogFlagsVisible = true;
+        public bool BuildFullLogFlagsVisible
+        {
+            get => _buildFullLogFlagsVisible;
+            set => SetProperty(ref _buildFullLogFlagsVisible, value);
+        }
+
+        private double _buildFullLogFlagsWidth = 35;
+        public double BuildFullLogFlagsWidth
+        {
+            get => _buildFullLogFlagsWidth;
+            set => SetProperty(ref _buildFullLogFlagsWidth, value);
+        }
+
+        private bool _buildFullLogMessageVisible = true;
+        public bool BuildFullLogMessageVisible
+        {
+            get => _buildFullLogMessageVisible;
+            set => SetProperty(ref _buildFullLogMessageVisible, value);
+        }
+
+        private double _buildFullLogMessageWidth = 340;
+        public double BuildFullLogMessageWidth
+        {
+            get => _buildFullLogMessageWidth;
+            set => SetProperty(ref _buildFullLogMessageWidth, value);
+        }
+
+        private bool _buildFullLogRawCodeVisible = true;
+        public bool BuildFullLogRawCodeVisible
+        {
+            get => _buildFullLogRawCodeVisible;
+            set => SetProperty(ref _buildFullLogRawCodeVisible, value);
+        }
+
+        private double _buildFullLogRawCodeWidth = 175;
+        public double BuildFullLogRawCodeWidth
+        {
+            get => _buildFullLogRawCodeWidth;
+            set => SetProperty(ref _buildFullLogRawCodeWidth, value);
+        }
+
+        private bool _buildFullLogLineNumberVisible = true;
+        public bool BuildFullLogLineNumberVisible
+        {
+            get => _buildFullLogLineNumberVisible;
+            set => SetProperty(ref _buildFullLogLineNumberVisible, value);
+        }
+
+        private double _buildFullLogLineNumberWidth = 40;
+        public double BuildFullLogLineNumberWidth
+        {
+            get => _buildFullLogLineNumberWidth;
+            set => SetProperty(ref _buildFullLogLineNumberWidth, value);
         }
         #endregion
 
@@ -870,6 +927,7 @@ namespace PEBakery.WPF
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
         public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
+        public static readonly RoutedCommand ResetLayoutCommand = new RoutedUICommand("Reset Layout", "Reset Layout", typeof(LogViewCommands));
         public static readonly RoutedCommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(LogViewCommands));
         #endregion
     }

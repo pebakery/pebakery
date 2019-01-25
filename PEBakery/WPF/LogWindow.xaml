@@ -48,11 +48,11 @@
     <Window.CommandBindings>
         <CommandBinding x:Name="CloseCommand"
                         Command="local:LogViewCommands.CloseCommand"
-                        CanExecute="CloseCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="CloseCommand_Executed"/>
         <CommandBinding x:Name="RefreshCommand"
                         Command="local:LogViewCommands.RefreshCommand"
-                        CanExecute="RefreshCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="RefreshCommand_Executed"/>
         <CommandBinding x:Name="ClearCommand"
                         Command="local:LogViewCommands.ClearCommand"
@@ -60,12 +60,16 @@
                         Executed="ClearCommand_Executed"/>
         <CommandBinding x:Name="ExportCommand"
                         Command="local:LogViewCommands.ExportCommand"
-                        CanExecute="ExportCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="ExportCommand_Executed"/>
         <CommandBinding x:Name="LogOptionsCommand"
                         Command="local:LogViewCommands.LogOptionsCommand"
-                        CanExecute="LogOptionsCommand_CanExecute"
+                        CanExecute="Command_CanExecute"
                         Executed="LogOptionsCommand_Executed"/>
+        <CommandBinding x:Name="ResetLayoutCommand"
+                        Command="local:LogViewCommands.ResetLayoutCommand"
+                        CanExecute="Command_CanExecute"
+                        Executed="ResetLayoutCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="ListViewItem">
@@ -99,16 +103,18 @@
             <MenuItem Header="Log Filters" IsEnabled="False" />
             <CheckBox IsChecked="{Binding BuildLogShowComments}" Content="Show Comments" />
             <CheckBox IsChecked="{Binding BuildLogShowMacros}" Content="Show Macros" />
-            <Separator Visibility="{Binding BuildLogFullLogSelected}" />
+            <Separator />
             <MenuItem Header="Show Columns" IsEnabled="False" />
-            <CheckBox IsChecked="{Binding BuildLogShowTime}" Content="Time" />
-            <CheckBox IsChecked="{Binding BuildLogShowScriptOrigin}" Content="Script Origin" />
-            <CheckBox IsChecked="{Binding BuildLogShowDepth}" Content="Depth" />
-            <CheckBox IsChecked="{Binding BuildLogShowState}" Content="State" />
-            <CheckBox IsChecked="{Binding BuildLogShowFlags}" Content="Flags" />
-            <CheckBox IsChecked="{Binding BuildLogShowMessage}" Content="Message" />
-            <CheckBox IsChecked="{Binding BuildLogShowRawCode}" Content="Raw Code" />
-            <CheckBox IsChecked="{Binding BuildLogShowLineNumber}" Content="Line #" />
+            <CheckBox IsChecked="{Binding BuildFullLogTimeVisible}" Content="Time" />
+            <CheckBox IsChecked="{Binding BuildFullLogScriptOriginVisible}" Content="Script Origin" />
+            <CheckBox IsChecked="{Binding BuildFullLogDepthVisible}" Content="Depth" />
+            <CheckBox IsChecked="{Binding BuildFullLogStateVisible}" Content="State" />
+            <CheckBox IsChecked="{Binding BuildFullLogFlagsVisible}" Content="Flags" />
+            <CheckBox IsChecked="{Binding BuildFullLogMessageVisible}" Content="Message" />
+            <CheckBox IsChecked="{Binding BuildFullLogRawCodeVisible}" Content="Raw Code" />
+            <CheckBox IsChecked="{Binding BuildFullLogLineNumberVisible}" Content="Line #" />
+            <Separator />
+            <MenuItem Header="Reset Layout" Command="local:LogViewCommands.ResetLayoutCommand"/>
         </ContextMenu>
         <!-- Converters -->
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
@@ -261,35 +267,41 @@
                                       FontSize="11">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
-                                            <GridViewColumn.Header>
-                                                <TextBlock Text="Time"
-                                                           ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"/>
-                                            </GridViewColumn.Header>
+                                        <GridViewColumn x:Name="BuildFullLogTimeColumn"
+                                                        Header="Time" 
+                                                        DisplayMemberBinding="{Binding Time, Converter={StaticResource LocalTimeToStrConverter}}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowTime"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" 
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogTimeVisible"/>
+                                                        <Binding Path="BuildFullLogTimeWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>135</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>135</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>135</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Script Origin">
+                                        <GridViewColumn x:Name="BuildFullLogScriptOriginColumn" 
+                                                        Header="Script Origin">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowScriptOrigin"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" 
+                                                              Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogScriptOriginVisible"/>
+                                                        <Binding Path="BuildFullLogScriptOriginWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>135</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>135</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>135</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                             <GridViewColumn.DisplayMemberBinding>
                                                 <MultiBinding Converter="{StaticResource RefScriptIdToTitleConverter}">
@@ -298,94 +310,112 @@
                                                 </MultiBinding>
                                             </GridViewColumn.DisplayMemberBinding>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Depth"
+                                        <GridViewColumn x:Name="BuildFullLogDepthColumn"
+                                                        Header="Depth"
                                                         DisplayMemberBinding="{Binding Depth, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowDepth"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogDepthVisible"/>
+                                                        <Binding Path="BuildFullLogDepthWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>35</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>35</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>35</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="State"
+                                        <GridViewColumn x:Name="BuildFullLogStateColumn"
+                                                        Header="State"
                                                         DisplayMemberBinding="{Binding State, Converter={StaticResource LogStateToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowState"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogStateVisible"/>
+                                                        <Binding Path="BuildFullLogStateWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>55</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>55</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>55</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Flags"
+                                        <GridViewColumn x:Name="BuildFullLogFlagsColumn"
+                                                        Header="Flags"
                                                         DisplayMemberBinding="{Binding Flags, Converter={StaticResource BuildLogFlagToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowFlags"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogFlagsVisible"/>
+                                                        <Binding Path="BuildFullLogFlagsWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>35</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>35</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>35</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Message"
+                                        <GridViewColumn x:Name="BuildFullLogMessageColumn"
+                                                        Header="Message"
                                                         DisplayMemberBinding="{Binding Message, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowMessage"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogMessageVisible"/>
+                                                        <Binding Path="BuildFullLogMessageWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>340</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>340</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>340</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="RawCode"
+                                        <GridViewColumn x:Name="BuildFullLogRawCodeColumn"
+                                                        Header="RawCode"
                                                         DisplayMemberBinding="{Binding RawCode, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowRawCode"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogRawCodeVisible"/>
+                                                        <Binding Path="BuildFullLogRawCodeWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>175</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>175</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>175</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="Line#"
+                                        <GridViewColumn x:Name="BuildFullLogLineNumberColumn"
+                                                        Header="Line#"
                                                         DisplayMemberBinding="{Binding LineIdx, Converter={StaticResource LineIdxToStrConverter}, Mode=OneWay}">
                                             <GridViewColumn.Width>
-                                                <Binding Path="BuildLogShowLineNumber"
-                                                         Mode="OneWay"
-                                                         Converter="{StaticResource GridViewColumnWidthConverter}">
-                                                    <Binding.ConverterParameter>
+                                                <MultiBinding Mode="TwoWay" Converter="{StaticResource GridViewColumnWidthConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding Path="BuildFullLogLineNumberVisible"/>
+                                                        <Binding Path="BuildFullLogLineNumberWidth"/>
+                                                    </MultiBinding.Bindings>
+                                                    <MultiBinding.ConverterParameter>
                                                         <s:Int32>40</s:Int32>
-                                                    </Binding.ConverterParameter>
-                                                    <Binding.FallbackValue>
-                                                        <s:Int32>40</s:Int32>
-                                                    </Binding.FallbackValue>
-                                                </Binding>
+                                                    </MultiBinding.ConverterParameter>
+                                                    <MultiBinding.FallbackValue>
+                                                        <s:Double>40</s:Double>
+                                                    </MultiBinding.FallbackValue>
+                                                </MultiBinding>
                                             </GridViewColumn.Width>
                                         </GridViewColumn>
                                     </GridView>

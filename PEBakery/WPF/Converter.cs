@@ -327,21 +327,24 @@ namespace PEBakery.WPF
         }
     }
 
-    public class GridViewColumnWidthConverter : IValueConverter
+    public class GridViewColumnWidthConverter : IMultiValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || parameter == null)
-                return string.Empty;
-            if (value is bool visible && parameter is int width)
-                return visible ? width : 0;
-            return 0;
+            if (values == null || values.Length != 2)
+                return Setting.LogViewerSetting.MinColumnWidth;
+            if (!(values[0] is bool visible && values[1] is double width))
+                return Setting.LogViewerSetting.MinColumnWidth;
+
+            // Binding won't work if returned value is not double (for column width)
+            return visible ? width : 0.0;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
-            // Not Implemented
-            return 0;
+            // Strange enough, using ConvertBack just locks column width.
+            // So just return Binding.DoNothing...
+            return new object[2] { Binding.DoNothing, Binding.DoNothing };
         }
     }
 
