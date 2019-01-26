@@ -41,7 +41,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Settings"
-        Width="600" Height="540"
+        Width="600" Height="550"
         WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
@@ -126,7 +126,7 @@
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Projects"/>
                 </TabItem.Header>
@@ -290,7 +290,7 @@
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="General"/>
                 </TabItem.Header>
@@ -362,7 +362,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Interface"/>
                 </TabItem.Header>
@@ -511,7 +511,7 @@
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Theme"/>
                 </TabItem.Header>
@@ -725,7 +725,7 @@
                     </Grid>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Script"/>
                 </TabItem.Header>
@@ -778,7 +778,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Log"/>
                 </TabItem.Header>
@@ -843,7 +843,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Width="70">
+            <TabItem Width="80">
                 <TabItem.Header>
                     <TextBlock FontSize="13" Text="Compat"/>
                 </TabItem.Header>
@@ -876,7 +876,7 @@
                                Foreground="#FFE00000"
                                FontWeight="SemiBold"
                                Text="Delete project temp files after changing compatibility options!"/>
-                    
+
                     <TextBlock Margin="0, 0, 0, 3"
                                FontWeight="Bold"
                                Text="Asterisk Bug"/>
