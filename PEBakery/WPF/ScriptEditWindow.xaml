@@ -1143,7 +1143,7 @@
                             <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="0, 0, 5, 0">
+                        <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="60"/>

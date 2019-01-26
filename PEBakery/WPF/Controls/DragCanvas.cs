@@ -63,7 +63,7 @@ namespace PEBakery.WPF.Controls
         private const int ElementWidthHeightLimit = 100;
 
         // DragHandle
-        private const int DragHandleLength = 8;
+        private const int DragHandleLength = 6;
         private const int DragHandleShowThreshold = 20;
         #endregion
 
