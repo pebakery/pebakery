@@ -130,12 +130,14 @@ namespace PEBakery.WPF.Controls
             public UIControl UIControl { get; set; }
             public double DeltaX { get; set; }
             public double DeltaY { get; set; }
-            public UIControlDraggedEventArgs(FrameworkElement element, UIControl uiCtrl, double deltaX, double deltaY)
+            public bool ForceUpdate { get; set; }
+            public UIControlDraggedEventArgs(FrameworkElement element, UIControl uiCtrl, double deltaX, double deltaY, bool forceUpdate = false)
             {
                 Element = element;
                 UIControl = uiCtrl;
                 DeltaX = deltaX;
                 DeltaY = deltaY;
+                ForceUpdate = forceUpdate;
             }
         }
         public delegate void UIControlMovedEventHandler(object sender, UIControlDraggedEventArgs e);
@@ -145,7 +147,7 @@ namespace PEBakery.WPF.Controls
         public event UIControlResizedEventHandler UIControlResized;
         #endregion
 
-        #region Event Handler
+        #region Mouse Event Handler
         /// <summary>
         /// Clear mouse cursor when mouse is not hovering DragCanvas, such as close of the window.
         /// </summary>
@@ -303,8 +305,8 @@ namespace PEBakery.WPF.Controls
                     deltaY = newCtrlPos.Y - uiCtrl.Y;
 
                     // UIControl should have position/size of int
-                    uiCtrl.X = (int)newCtrlPos.X;
-                    uiCtrl.Y = (int)newCtrlPos.Y;
+                    uiCtrl.X = (int) newCtrlPos.X;
+                    uiCtrl.Y = (int) newCtrlPos.Y;
 
                     UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
@@ -314,19 +316,45 @@ namespace PEBakery.WPF.Controls
                     deltaY = newCtrlRect.Y - uiCtrl.Y;
 
                     // UIControl should have position/size of int
-                    uiCtrl.X = (int)newCtrlRect.X;
-                    uiCtrl.Y = (int)newCtrlRect.Y;
-                    uiCtrl.Width = (int)newCtrlRect.Width;
-                    uiCtrl.Height = (int)newCtrlRect.Height;
+                    uiCtrl.X = (int) newCtrlRect.X;
+                    uiCtrl.Y = (int) newCtrlRect.Y;
+                    uiCtrl.Width = (int) newCtrlRect.Width;
+                    uiCtrl.Height = (int) newCtrlRect.Height;
 
                     UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY));
                     break;
             }
+
             ResetMouseCursor();
 
             _isBeingDragged = false;
-            _selectedElement = null;
             _selectedDragHandle = null;
+        }
+
+        public void MoveSelectedUIControl(int deltaX, int deltaY)
+        {
+            if (!(_selectedElement?.Tag is UIControl uiCtrl))
+                return;
+
+            // Update UIControl
+            uiCtrl.X += deltaX;
+            uiCtrl.Y += deltaY;
+
+            // Updating SelectedElement is should be done by UIRenderer
+            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY, true));
+        }
+
+        public void ResizeSelectedUIControl(int deltaX, int deltaY)
+        {
+            if (!(_selectedElement?.Tag is UIControl uiCtrl))
+                return;
+
+            // Update UIControl
+            uiCtrl.Width += deltaX;
+            uiCtrl.Height += deltaY;
+
+            // Updating SelectedElement is should be done by UIRenderer
+            UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY, true));
         }
         #endregion
 

@@ -22,7 +22,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 // ReSharper disable InconsistentNaming
-
 namespace PEBakery.WPF
 {
     #region ScriptEditWindow
@@ -174,7 +173,7 @@ namespace PEBakery.WPF
             if (m.SelectedUICtrl != e.UIControl)
                 return;
 
-            if (5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
+            if (e.ForceUpdate || 5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
                 m.InvokeUIControlEvent(true);
         }
 
@@ -202,6 +201,69 @@ namespace PEBakery.WPF
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), m.Renderer.UICtrls.Select(x => x.Key));
         }
         #endregion  
+        #region For Interface Move/Resize via Keyboard
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (m.TabIndex == 1)
+                InterfaceScrollViewer.Focus();
+        }
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            IInputElement focusedControl = Keyboard.FocusedElement;
+            if (Equals(focusedControl, InterfaceScrollViewer))
+            {
+                int delta;
+                bool move;
+                switch (e.KeyboardDevice.Modifiers)
+                {
+                    case ModifierKeys.None:
+                        move = true;
+                        delta = 5;
+                        break;
+                    case ModifierKeys.Control:
+                        move = true;
+                        delta = 1;
+                        break;
+                    case ModifierKeys.Shift:
+                        move = false;
+                        delta = 5;
+                        break;
+                    case ModifierKeys.Shift | ModifierKeys.Control:
+                        move = false;
+                        delta = 1;
+                        break;
+                    default:
+                        return;
+                }
+
+                // UIControl should have position/size of int
+                int deltaX = 0;
+                int deltaY = 0;
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        deltaX = -1 * delta;
+                        break;
+                    case Key.Right:
+                        deltaX = delta;
+                        break;
+                    case Key.Up:
+                        deltaY = -1 * delta;
+                        break;
+                    case Key.Down:
+                        deltaY = delta;
+                        break;
+                    default:
+                        return;
+                }
+
+                if (move)
+                    m.InterfaceCanvas.MoveSelectedUIControl(deltaX, deltaY);
+                else // Resize
+                    m.InterfaceCanvas.ResizeSelectedUIControl(deltaX, deltaY);
+            }
+        }
+        #endregion
         #region For (Common) ListItemBox
         private void ListNewItem_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
