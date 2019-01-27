@@ -171,6 +171,11 @@ namespace PEBakery.WPF.Controls
             if (element == null)
                 return;
 
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            { // Multi-select
+
+            }
+
             if (element is Border border && border.Tag is DragHandleInfo info)
             { // Clicked drag handle
                 // Resize mode
@@ -329,32 +334,6 @@ namespace PEBakery.WPF.Controls
 
             _isBeingDragged = false;
             _selectedDragHandle = null;
-        }
-
-        public void MoveSelectedUIControl(int deltaX, int deltaY)
-        {
-            if (!(_selectedElement?.Tag is UIControl uiCtrl))
-                return;
-
-            // Update UIControl
-            uiCtrl.X += deltaX;
-            uiCtrl.Y += deltaY;
-
-            // Updating SelectedElement is should be done by UIRenderer
-            UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY, true));
-        }
-
-        public void ResizeSelectedUIControl(int deltaX, int deltaY)
-        {
-            if (!(_selectedElement?.Tag is UIControl uiCtrl))
-                return;
-
-            // Update UIControl
-            uiCtrl.Width += deltaX;
-            uiCtrl.Height += deltaY;
-
-            // Updating SelectedElement is should be done by UIRenderer
-            UIControlResized?.Invoke(this, new UIControlDraggedEventArgs(_selectedElement, uiCtrl, deltaX, deltaY, true));
         }
         #endregion
 

@@ -181,7 +181,7 @@ namespace PEBakery.WPF
         {
             UIControl uiCtrl = e.UIControl;
 
-            if (!e.Direct)
+            if (!e.InfoNotUpdated)
                 m.WriteUIControlInfo(uiCtrl);
 
             int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
@@ -258,9 +258,17 @@ namespace PEBakery.WPF
                 }
 
                 if (move)
-                    m.InterfaceCanvas.MoveSelectedUIControl(deltaX, deltaY);
+                {
+                    m.SelectedUICtrl.X += deltaX;
+                    m.SelectedUICtrl.Y += deltaY;
+                    m.InvokeUIControlEvent(true);
+                }
                 else // Resize
-                    m.InterfaceCanvas.ResizeSelectedUIControl(deltaX, deltaY);
+                {
+                    m.SelectedUICtrl.Width += deltaX;
+                    m.SelectedUICtrl.Height += deltaY;
+                    m.InvokeUIControlEvent(true);
+                }
             }
         }
         #endregion
@@ -357,12 +365,12 @@ namespace PEBakery.WPF
         public class UIControlModifiedEventArgs : EventArgs
         {
             public UIControl UIControl { get; set; }
-            public bool Direct { get; set; }
+            public bool InfoNotUpdated { get; set; }
 
-            public UIControlModifiedEventArgs(UIControl uiCtrl, bool direct)
+            public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
             {
                 UIControl = uiCtrl;
-                Direct = direct;
+                InfoNotUpdated = infoNotUpdated;
             }
         }
         public delegate void UIControlModifiedHandler(object sender, UIControlModifiedEventArgs e);
@@ -1690,14 +1698,14 @@ namespace PEBakery.WPF
 
         #region InvokeUIControlEvent
         public bool UIControlModifiedEventToggle = false;
-        public void InvokeUIControlEvent(bool direct)
+        public void InvokeUIControlEvent(bool infoNotUpdated)
         {
             if (UIControlModifiedEventToggle)
                 return;
 
             InterfaceNotSaved = true;
             InterfaceUpdated = true;
-            UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, direct));
+            UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
         }
         #endregion
 
