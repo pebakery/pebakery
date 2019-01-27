@@ -145,33 +145,41 @@ namespace PEBakery.WPF
                 return;
 
             m.SelectedUICtrl = m.Renderer.UICtrls[m.InterfaceUICtrlIndex];
-            m.InterfaceCanvas.ClearSelectedBorderHandles();
-            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
+            m.InterfaceCanvas.ClearSelectedElements(true);
+            m.InterfaceCanvas.DrawSelectedElement(m.SelectedUICtrl);
         }
 
         private void InterfaceCanvas_UIControlSelected(object sender, DragCanvas.UIControlSelectedEventArgs e)
         {
-            if (e.UIControl == null)
-                return;
-
-            m.SelectedUICtrl = e.UIControl;
-
-            if (m.SelectedUICtrl != null)
+            if (e.UIControl == null && e.UIControls == null)
+            { // Reset
+                m.SelectedUICtrl = null;
+                m.SelectedUICtrls = null;
+                m.InterfaceUICtrlIndex = -1;
+            }
+            else if (e.MultiSelect)
+            {
+                m.SelectedUICtrls = e.UIControls;
+                m.InterfaceUICtrlIndex = -1;
+            }
+            else
+            {
+                m.SelectedUICtrl = e.UIControl;
                 m.ReadUIControlInfo(m.SelectedUICtrl);
 
-            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
-            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
-            m.InterfaceUICtrlIndex = idx;
+                int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(e.UIControl.Key));
+                Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlSelected");
+                m.InterfaceUICtrlIndex = idx;
+            }
         }
 
         private void InterfaceCanvas_UIControlMoved(object sender, DragCanvas.UIControlDraggedEventArgs e)
         {
-            if (e.UIControl == null)
-                return;
-
-            // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
-            if (m.SelectedUICtrl != e.UIControl)
-                return;
+            if (!e.MultiSelect)
+            {
+                // m.SelectedUICtrl should have been set to e.UIControl by InterfaceCanvas_UIControlSelected
+                Debug.Assert(m.SelectedUICtrl == e.UIControl, "Incorrect m.SelectedUICtrl");
+            }
 
             if (e.ForceUpdate || 5 <= Math.Abs(e.DeltaX) || 5 <= Math.Abs(e.DeltaY))
                 m.InvokeUIControlEvent(true);
@@ -179,18 +187,35 @@ namespace PEBakery.WPF
 
         private void ViewModel_UIControlModified(object sender, ScriptEditViewModel.UIControlModifiedEventArgs e)
         {
-            UIControl uiCtrl = e.UIControl;
+            if (e.MultiSelect)
+            {
+                foreach (UIControl uiCtrl in e.UIControls)
+                {
+                    // m.WriteUIControlInfo(uiCtrl) is ignored here
+                    int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
+                    Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
+                    m.Renderer.UICtrls[idx] = uiCtrl;
+                }
 
-            if (!e.InfoNotUpdated)
-                m.WriteUIControlInfo(uiCtrl);
+                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.Renderer.Render();
+                m.InterfaceCanvas.DrawSelectedElements(e.UIControls);
+            }
+            else
+            {
+                UIControl uiCtrl = e.UIControl;
 
-            int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
-            Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
-            m.Renderer.UICtrls[idx] = uiCtrl;
+                if (!e.InfoNotUpdated)
+                    m.WriteUIControlInfo(uiCtrl);
 
-            m.InterfaceCanvas.ClearSelectedBorderHandles();
-            m.Renderer.Render();
-            m.InterfaceCanvas.DrawSelectedBorderHandles(m.SelectedUICtrl);
+                int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
+                Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
+                m.Renderer.UICtrls[idx] = uiCtrl;
+
+                m.InterfaceCanvas.ClearSelectedElements(true);
+                m.Renderer.Render();
+                m.InterfaceCanvas.DrawSelectedElement(uiCtrl);
+            }
         }
 
         private void UICtrlAddType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -199,6 +224,17 @@ namespace PEBakery.WPF
             if (type == UIControlType.None)
                 return;
             m.UICtrlAddName = StringEscaper.GetUniqueKey(type.ToString(), m.Renderer.UICtrls.Select(x => x.Key));
+        }
+
+        private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Point cursorPos = e.GetPosition(sender as ScrollViewer);
+            if (m.InterfaceCanvas.Width < cursorPos.X || m.InterfaceCanvas.Height < cursorPos.Y)
+            { // Clicked outside of DragCanvas -> Reset selected UIControls
+                m.SelectedUICtrl = null;
+                m.SelectedUICtrls = null;
+                m.InterfaceCanvas.ClearSelectedElements(true);
+            }
         }
         #endregion  
         #region For Interface Move/Resize via Keyboard
@@ -257,17 +293,88 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                if (move)
+                switch (m.SelectMode)
                 {
-                    m.SelectedUICtrl.X += deltaX;
-                    m.SelectedUICtrl.Y += deltaY;
-                    m.InvokeUIControlEvent(true);
-                }
-                else // Resize
-                {
-                    m.SelectedUICtrl.Width += deltaX;
-                    m.SelectedUICtrl.Height += deltaY;
-                    m.InvokeUIControlEvent(true);
+                    case ScriptEditViewModel.ControlSelectMode.SingleSelect:
+                        if (move)
+                        {
+                            UIControl uiCtrl = m.SelectedUICtrl;
+
+                            int x = uiCtrl.X + deltaX;
+                            int y = uiCtrl.Y + deltaY;
+
+                            if (x < 0)
+                                x = 0;
+                            else if (DragCanvas.CanvasWidthHeightLimit < x)
+                                x = DragCanvas.CanvasWidthHeightLimit;
+                            if (y < 0)
+                                y = 0;
+                            else if (DragCanvas.CanvasWidthHeightLimit < y)
+                                y = DragCanvas.CanvasWidthHeightLimit;
+
+                            uiCtrl.X = x;
+                            uiCtrl.Y = y;
+
+                            m.InvokeUIControlEvent(true);
+                        }
+                        else // Resize
+                        {
+                            UIControl uiCtrl = m.SelectedUICtrl;
+
+                            int width = uiCtrl.Width + deltaX;
+                            int height = uiCtrl.Height + deltaY;
+
+                            if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.X + width)
+                                width = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.X;
+                            if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.Y + height)
+                                height = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.Y;
+
+                            uiCtrl.Width = width;
+                            uiCtrl.Height = height;
+
+                            m.InvokeUIControlEvent(true);
+                        }
+                        break;
+                    case ScriptEditViewModel.ControlSelectMode.MultiSelect:
+                        if (move)
+                        {
+                            foreach (UIControl uiCtrl in m.SelectedUICtrls)
+                            {
+                                int x = uiCtrl.X + deltaX;
+                                int y = uiCtrl.Y + deltaY;
+
+                                if (x < 0)
+                                    x = 0;
+                                else if (DragCanvas.CanvasWidthHeightLimit < x)
+                                    x = DragCanvas.CanvasWidthHeightLimit;
+                                if (y < 0)
+                                    y = 0;
+                                else if (DragCanvas.CanvasWidthHeightLimit < y)
+                                    y = DragCanvas.CanvasWidthHeightLimit;
+
+                                uiCtrl.X = x;
+                                uiCtrl.Y = y;
+                            }
+                            m.InvokeUIControlEvent(true);
+                        }
+                        else // Resize
+                        {
+                            foreach (UIControl uiCtrl in m.SelectedUICtrls)
+                            {
+                                int width = uiCtrl.Width + deltaX;
+                                int height = uiCtrl.Height + deltaY;
+
+                                if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.X + width)
+                                    width = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.X;
+                                if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.Y + height)
+                                    height = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.Y;
+
+                                uiCtrl.Width = width;
+                                uiCtrl.Height = height;
+                            }
+                            m.InvokeUIControlEvent(true);
+                        }
+                        break;
                 }
             }
         }
@@ -365,11 +472,18 @@ namespace PEBakery.WPF
         public class UIControlModifiedEventArgs : EventArgs
         {
             public UIControl UIControl { get; set; }
+            public List<UIControl> UIControls { get; set; }
+            public bool MultiSelect => UIControls != null;
             public bool InfoNotUpdated { get; set; }
 
             public UIControlModifiedEventArgs(UIControl uiCtrl, bool infoNotUpdated)
             {
                 UIControl = uiCtrl;
+                InfoNotUpdated = infoNotUpdated;
+            }
+            public UIControlModifiedEventArgs(List<UIControl> uiCtrls, bool infoNotUpdated)
+            {
+                UIControls = uiCtrls;
                 InfoNotUpdated = infoNotUpdated;
             }
         }
@@ -774,6 +888,30 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(InterfaceUICtrlIndex));
             }
         }
+        // Select mode
+        public enum ControlSelectMode
+        {
+            None = 0,
+            SingleSelect = 1,
+            MultiSelect = 2,
+        }
+        public ControlSelectMode SelectMode
+        {
+            get
+            {
+                bool singleSelect = _selectedUICtrl != null;
+                bool multiSelect = _selectedUICtrls != null;
+                Debug.Assert(!(singleSelect && multiSelect), "SelectedUICtrl and SelectedUICtrls cannot be activated at the same time");
+
+                if (singleSelect)
+                    return ControlSelectMode.SingleSelect;
+                else if (multiSelect)
+                    return ControlSelectMode.MultiSelect;
+                else
+                    return ControlSelectMode.None;
+            }
+        }
+        // Single-select
         private UIControl _selectedUICtrl = null;
         public UIControl SelectedUICtrl
         {
@@ -781,6 +919,48 @@ namespace PEBakery.WPF
             set
             {
                 _selectedUICtrl = value;
+                _selectedUICtrls = null;
+
+                // UIControl Shared Argument
+                OnPropertyUpdate(nameof(UICtrlEditEnabled));
+                OnPropertyUpdate(nameof(UICtrlKey));
+                OnPropertyUpdate(nameof(UICtrlText));
+                OnPropertyUpdate(nameof(UICtrlVisible));
+                OnPropertyUpdate(nameof(UICtrlX));
+                OnPropertyUpdate(nameof(UICtrlY));
+                OnPropertyUpdate(nameof(UICtrlWidth));
+                OnPropertyUpdate(nameof(UICtrlHeight));
+                OnPropertyUpdate(nameof(UICtrlToolTip));
+
+                // UIControl Visibility
+                OnPropertyUpdate(nameof(IsUICtrlTextBox));
+                OnPropertyUpdate(nameof(IsUICtrlTextLabel));
+                OnPropertyUpdate(nameof(IsUICtrlNumberBox));
+                OnPropertyUpdate(nameof(IsUICtrlCheckBox));
+                OnPropertyUpdate(nameof(IsUICtrlComboBox));
+                OnPropertyUpdate(nameof(IsUICtrlImage));
+                OnPropertyUpdate(nameof(IsUICtrlTextFile));
+                OnPropertyUpdate(nameof(IsUICtrlButton));
+                OnPropertyUpdate(nameof(IsUICtrlWebLabel));
+                OnPropertyUpdate(nameof(IsUICtrlRadioButton));
+                OnPropertyUpdate(nameof(IsUICtrlBevel));
+                OnPropertyUpdate(nameof(IsUICtrlFileBox));
+                OnPropertyUpdate(nameof(IsUICtrlRadioGroup));
+                OnPropertyUpdate(nameof(ShowUICtrlListItemBox));
+                OnPropertyUpdate(nameof(ShowUICtrlRunOptional));
+
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        // Multi-select
+        private List<UIControl> _selectedUICtrls = null;
+        public List<UIControl> SelectedUICtrls
+        {
+            get => _selectedUICtrls;
+            set
+            {
+                _selectedUICtrl = null;
+                _selectedUICtrls = value;
 
                 // UIControl Shared Argument
                 OnPropertyUpdate(nameof(UICtrlEditEnabled));
@@ -1705,7 +1885,15 @@ namespace PEBakery.WPF
 
             InterfaceNotSaved = true;
             InterfaceUpdated = true;
-            UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
+            switch (SelectMode)
+            {
+                case ControlSelectMode.SingleSelect:
+                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrl, infoNotUpdated));
+                    break;
+                case ControlSelectMode.MultiSelect:
+                    UIControlModified?.Invoke(this, new UIControlModifiedEventArgs(_selectedUICtrls, true));
+                    break;
+            }
         }
         #endregion
 
@@ -1889,10 +2077,10 @@ namespace PEBakery.WPF
                 InterfaceUICtrls = new ObservableCollection<string>(Renderer.UICtrls.Select(x => x.Key));
                 InterfaceUICtrlIndex = 0;
 
-                InterfaceCanvas.ClearSelectedBorderHandles();
+                InterfaceCanvas.ClearSelectedElements(true);
                 Renderer.Render();
                 SelectedUICtrl = uiCtrl;
-                InterfaceCanvas.DrawSelectedBorderHandles(uiCtrl);
+                InterfaceCanvas.DrawSelectedElement(uiCtrl);
 
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
@@ -3529,7 +3717,8 @@ namespace PEBakery.WPF
         public void ResetSelectedUICtrl()
         {
             SelectedUICtrl = null;
-            InterfaceCanvas.ClearSelectedBorderHandles();
+            SelectedUICtrls = null;
+            InterfaceCanvas.ClearSelectedElements(true);
         }
         #endregion
     }

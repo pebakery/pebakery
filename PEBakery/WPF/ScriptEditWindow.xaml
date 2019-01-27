@@ -1189,6 +1189,7 @@
                                           VerticalAlignment="Stretch"
                                           HorizontalScrollBarVisibility="Auto"
                                           VerticalScrollBarVisibility="Auto"
+                                          PreviewMouseLeftButtonDown="InterfaceScrollViewer_PreviewMouseLeftButtonDown"
                                           Content="{Binding InterfaceCanvas}"/>
                         </Border>
                     </Grid>
