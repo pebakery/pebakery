@@ -298,29 +298,12 @@ namespace PEBakery.WPF
                     case ScriptEditViewModel.ControlSelectMode.SingleSelect:
                         if (move)
                         {
-                            UIControl uiCtrl = m.SelectedUICtrl;
-
-                            int x = uiCtrl.X + deltaX;
-                            int y = uiCtrl.Y + deltaY;
-
-                            if (x < 0)
-                                x = 0;
-                            else if (DragCanvas.CanvasWidthHeightLimit < x)
-                                x = DragCanvas.CanvasWidthHeightLimit;
-                            if (y < 0)
-                                y = 0;
-                            else if (DragCanvas.CanvasWidthHeightLimit < y)
-                                y = DragCanvas.CanvasWidthHeightLimit;
-
-                            uiCtrl.X = x;
-                            uiCtrl.Y = y;
-
+                            DragCanvas.ApplyNewPosition(m.SelectedUICtrl, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         else // Resize
                         {
                             UIControl uiCtrl = m.SelectedUICtrl;
-
                             int width = uiCtrl.Width + deltaX;
                             int height = uiCtrl.Height + deltaY;
 
@@ -338,23 +321,7 @@ namespace PEBakery.WPF
                     case ScriptEditViewModel.ControlSelectMode.MultiSelect:
                         if (move)
                         {
-                            foreach (UIControl uiCtrl in m.SelectedUICtrls)
-                            {
-                                int x = uiCtrl.X + deltaX;
-                                int y = uiCtrl.Y + deltaY;
-
-                                if (x < 0)
-                                    x = 0;
-                                else if (DragCanvas.CanvasWidthHeightLimit < x)
-                                    x = DragCanvas.CanvasWidthHeightLimit;
-                                if (y < 0)
-                                    y = 0;
-                                else if (DragCanvas.CanvasWidthHeightLimit < y)
-                                    y = DragCanvas.CanvasWidthHeightLimit;
-
-                                uiCtrl.X = x;
-                                uiCtrl.Y = y;
-                            }
+                            DragCanvas.ApplyNewPositions(m.SelectedUICtrls, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         else // Resize

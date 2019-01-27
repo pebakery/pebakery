@@ -23,6 +23,7 @@
 */
 
 using PEBakery.Core;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -199,8 +200,7 @@ namespace PEBakery.WPF.Controls
             }
 
             // Multi-select mode handling
-            bool addMultiSelect = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-            bool isMultiSelect = addMultiSelect || 2 <= _selectedElements.Count;
+            bool multiClick = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
             if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
             { // Clicked drag handle
@@ -227,10 +227,8 @@ namespace PEBakery.WPF.Controls
             else if (focusedElement.Tag is UIControl)
             { // Clicked UIControl
                 // Move mode
-                // if (addMultiSelect)
-                //    ClearSelectedElements(false);
-                
-                if (isMultiSelect)
+                int idx = _selectedElements.FindIndex(x => x.Element.Equals(focusedElement));
+                if (multiClick || idx != -1)
                 {
                     _dragMode = DragMode.MultiMove;
                 }
@@ -242,7 +240,6 @@ namespace PEBakery.WPF.Controls
 
                 // Record select information
                 SelectedElement selected = new SelectedElement(focusedElement);
-                int idx = _selectedElements.FindIndex(x => x.Element.Equals(focusedElement));
                 if (_dragMode == DragMode.SingleMove || _dragMode == DragMode.MultiMove && idx == -1)
                     _selectedElements.Add(selected); // Add to list only if (1) single-select mode or (2) multi-select and the element is not added yet
                 _selectedElementIndex = idx == -1 ? _selectedElements.Count - 1 : idx;
@@ -254,7 +251,7 @@ namespace PEBakery.WPF.Controls
 
                 // Draw border and drag handles
                 DrawSelectedElements();
-                
+
                 // Set Cursor
                 SetMouseCursor();
 
@@ -316,10 +313,14 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiMove:
                     {
-                        foreach (SelectedElement selected in _selectedElements)
+                        List<Point> elementPosList = _selectedElements.Select(se => new Point(se.ElementInitialRect.X, se.ElementInitialRect.Y)).ToList();
+                        (List<Point> newPosList, _, _) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementPosList);
+
+                        for (int i = 0; i < _selectedElements.Count; i++)
                         {
-                            Point dragStartElementPos = new Point(selected.ElementInitialRect.X, selected.ElementInitialRect.Y);
-                            Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, dragStartElementPos);
+                            SelectedElement selected = _selectedElements[i];
+                            Point newElementPos = newPosList[i];
+
                             Rect r = new Rect
                             {
                                 X = newElementPos.X,
@@ -354,18 +355,16 @@ namespace PEBakery.WPF.Controls
             Debug.Assert(_selected != null, "SelectedElement was not set");
             ReleaseMouseCapture();
 
-            double deltaX;
-            double deltaY;
-            Point nowCursorPoint = e.GetPosition(this);
+            Point nowCursorPos = e.GetPosition(this);
             switch (_dragMode)
             {
                 case DragMode.SingleMove:
                     {
                         UIControl uiCtrl = _selected.UIControl;
 
-                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.X, uiCtrl.Y));
-                        deltaX = newCtrlPos.X - uiCtrl.X;
-                        deltaY = newCtrlPos.Y - uiCtrl.Y;
+                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, new Point(uiCtrl.X, uiCtrl.Y));
+                        double deltaX = newCtrlPos.X - uiCtrl.X;
+                        double deltaY = newCtrlPos.Y - uiCtrl.Y;
 
                         // UIControl should have position/size of int
                         uiCtrl.X = (int)newCtrlPos.X;
@@ -376,35 +375,31 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiMove:
                     {
-                        double maxDeltaX = 0;
-                        double maxDeltaY = 0;
                         List<UIControl> uiCtrls = new List<UIControl>(_selectedElements.Count);
-                        foreach (SelectedElement selected in _selectedElements)
-                        {
-                            UIControl uiCtrl = selected.UIControl;
-                            uiCtrls.Add(uiCtrl);
+                        List<Point> elementPosList = _selectedElements.Select(se => new Point(se.UIControl.X, se.UIControl.Y)).ToList();
+                        (List<Point> newPosList, double deltaX, double deltaY) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementPosList);
 
-                            Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPoint, new Point(uiCtrl.X, uiCtrl.Y));
-                            deltaX = newCtrlPos.X - uiCtrl.X;
-                            deltaY = newCtrlPos.Y - uiCtrl.Y;
-                            maxDeltaX = Math.Max(deltaX, maxDeltaX);
-                            maxDeltaY = Math.Max(deltaY, maxDeltaY);
+                        for (int i = 0; i < _selectedElements.Count; i++)
+                        {
+                            SelectedElement selected = _selectedElements[i];
+                            UIControl uiCtrl = selected.UIControl;
+                            Point newCtrlPos = newPosList[i];
 
                             // UIControl should have position/size of int
                             uiCtrl.X = (int)newCtrlPos.X;
                             uiCtrl.Y = (int)newCtrlPos.Y;
                         }
 
-                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, maxDeltaX, maxDeltaY));
+                        UIControlMoved?.Invoke(this, new UIControlDraggedEventArgs(uiCtrls, deltaX, deltaY));                        
                     }
                     break;
                 case DragMode.SingleResize:
                     {
                         UIControl uiCtrl = _selected.UIControl;
 
-                        Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPoint, uiCtrl.Rect, _selectedClickPos);
-                        deltaX = newCtrlRect.X - uiCtrl.X;
-                        deltaY = newCtrlRect.Y - uiCtrl.Y;
+                        Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect, _selectedClickPos);
+                        double deltaX = newCtrlRect.X - uiCtrl.X;
+                        double deltaY = newCtrlRect.Y - uiCtrl.Y;
 
                         // UIControl should have position/size of int
                         uiCtrl.X = (int)newCtrlRect.X;
@@ -761,6 +756,7 @@ namespace PEBakery.WPF.Controls
             double y = elementStart.Y + cursorNow.Y - cursorStart.Y;
 
             // Do not use Width and Height here, or canvas cannot be expanded
+            // Guard new X and Y in 0 ~ 600
             if (x < 0)
                 x = 0;
             else if (CanvasWidthHeightLimit < x)
@@ -771,6 +767,137 @@ namespace PEBakery.WPF.Controls
                 y = CanvasWidthHeightLimit;
 
             return new Point(x, y);
+        }
+
+        public static void ApplyNewPosition(UIControl uiCtrl, int deltaX, int deltaY)
+        {
+            int x = uiCtrl.X + deltaX;
+            int y = uiCtrl.Y + deltaY;
+
+            // Do not use Width and Height here, or canvas cannot be expanded
+            // Guard new X and Y in 0 ~ 600
+            if (x < 0)
+                x = 0;
+            else if (CanvasWidthHeightLimit < x)
+                x = CanvasWidthHeightLimit;
+            if (y < 0)
+                y = 0;
+            else if (CanvasWidthHeightLimit < y)
+                y = CanvasWidthHeightLimit;
+
+            uiCtrl.X = x;
+            uiCtrl.Y = y;
+        }
+
+        private static (List<Point> NewPosList, double DeltaX, double DeltaY) CalcNewPositions(Point cursorStart, Point cursorNow, List<Point> elementStartList)
+        {
+            double deltaX = cursorNow.X - cursorStart.X;
+            double deltaY = cursorNow.Y - cursorStart.Y;
+
+            bool guarded = false;
+            List<Point> newPosList = new List<Point>(elementStartList.Count);
+            foreach (Point elementStart in elementStartList)
+            {
+                double x = elementStart.X + deltaX;
+                double y = elementStart.Y + deltaY;
+
+                // Do not use Width and Height here, or canvas cannot be expanded
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                {
+                    deltaX -= x;
+                    x = 0;
+                    guarded = true;
+                }
+                else if (CanvasWidthHeightLimit < x)
+                {
+                    deltaX += CanvasWidthHeightLimit - x;
+                    x = CanvasWidthHeightLimit;
+                    guarded = true;
+                }
+
+                if (y < 0)
+                {
+                    deltaY -= y;
+                    y = 0;
+                    guarded = true;
+                }
+                else if (CanvasWidthHeightLimit < y)
+                {
+                    deltaY += CanvasWidthHeightLimit - y;
+                    y = CanvasWidthHeightLimit;
+                    guarded = true;
+                }
+
+                if (guarded)
+                    break;
+
+                newPosList.Add(new Point(x, y));
+            }
+
+            // If any point was guarded, recalculate new position with new deltas.
+            if (guarded)
+            {
+                newPosList.Clear();
+
+                foreach (Point elementStart in elementStartList)
+                {
+                    double x = elementStart.X + deltaX;
+                    double y = elementStart.Y + deltaY;
+
+                    newPosList.Add(new Point(x, y));
+                }
+            }
+
+            return (newPosList, deltaX, deltaY);
+        }
+
+        public static void ApplyNewPositions(List<UIControl> uiCtrls, int deltaX, int deltaY)
+        {
+            bool guarded = false;
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                int x = uiCtrl.X + deltaX;
+                int y = uiCtrl.Y + deltaY;
+
+                // Do not use Width and Height here, or canvas cannot be expanded
+                // Guard new X and Y in 0 ~ 600
+                if (x < 0)
+                {
+                    deltaX -= x;
+                    // x = 0;
+                    guarded = true;
+                }
+                else if (CanvasWidthHeightLimit < x)
+                {
+                    deltaX += CanvasWidthHeightLimit - x;
+                    // x = CanvasWidthHeightLimit;
+                    guarded = true;
+                }
+
+                if (y < 0)
+                {
+                    deltaY -= y;
+                    // y = 0;
+                    guarded = true;
+                }
+                else if (CanvasWidthHeightLimit < y)
+                {
+                    deltaY += CanvasWidthHeightLimit - y;
+                    // y = CanvasWidthHeightLimit;
+                    guarded = true;
+                }
+
+                if (guarded)
+                    break;
+            }
+
+            // If any point was guarded, recalculate new position with new deltas.
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                uiCtrl.X += deltaX;
+                uiCtrl.Y += deltaY;
+            }
         }
 
         private static Rect CalcNewSize(Point cursorStart, Point cursorNow, Rect elementRect, ResizeClickPosition clickPos)
@@ -801,7 +928,7 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Left:
                 case ResizeClickPosition.LeftTop:
                 case ResizeClickPosition.LeftBottom:
-                    if (Math.Abs(xDelta) < double.Epsilon)
+                    if (NumberHelper.CompareDouble(xDelta, 0))
                         break;
                     if (0 < xDelta)
                     { // L [->    ] R, delta is positive
@@ -825,7 +952,7 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Right:
                 case ResizeClickPosition.RightTop:
                 case ResizeClickPosition.RightBottom:
-                    if (Math.Abs(xDelta) < double.Epsilon)
+                    if (NumberHelper.CompareDouble(xDelta, 0))
                         break;
                     if (0 < xDelta)
                     { // L [    ]-> R, delta is positive
@@ -847,7 +974,7 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Top:
                 case ResizeClickPosition.LeftTop:
                 case ResizeClickPosition.RightTop:
-                    if (Math.Abs(yDelta) < double.Epsilon)
+                    if (NumberHelper.CompareDouble(yDelta, 0))
                         break;
                     if (0 < yDelta)
                     { // T [->    ] B, delta is positive
@@ -871,7 +998,7 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Bottom:
                 case ResizeClickPosition.LeftBottom:
                 case ResizeClickPosition.RightBottom:
-                    if (Math.Abs(yDelta) < double.Epsilon)
+                    if (NumberHelper.CompareDouble(yDelta, 0))
                         break;
                     if (0 < yDelta)
                     { // T [    ]-> B, delta is positive

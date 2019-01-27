@@ -715,6 +715,20 @@ namespace PEBakery.Helper
                 return src - remainder;
         }
         #endregion
+
+        #region Compare of floating points
+        public const float FloatCompareEpsilon = 1E-7F;
+        public const double DoubleCompareEpsilon = 1E-14;
+
+        public static bool CompareDouble(double x, double y)
+        {
+            return Math.Abs(x - y) < DoubleCompareEpsilon;
+        }
+        public static bool CompareFloat(float x, float y)
+        {
+            return Math.Abs(x - y) < FloatCompareEpsilon;
+        }
+        #endregion
     }
     #endregion
 }
