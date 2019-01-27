@@ -378,11 +378,19 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))  // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
+                        int cnt = args.Count;
+                        string tooltip = null;
+                        if (0 < args.Count && args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
+
                         string url = null;
-                        if (1 <= args.Count)
+                        if (1 <= cnt)
                             url = args[0];
 
-                        return new UIInfo_Image(GetInfoTooltip(args, maxOpCount), url);
+                        return new UIInfo_Image(tooltip, url);
                     }
                 #endregion
                 #region TextFile
