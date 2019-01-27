@@ -1505,7 +1505,7 @@ namespace PEBakery.Core
         private static void SetToolTip(FrameworkElement element, string toolTip)
         {
             if (toolTip != null)
-                element.ToolTip = toolTip;
+                element.ToolTip = StringEscaper.Unescape(toolTip);
         }
 
         private void SetEditModeProperties(FrameworkElement element, UIControl uiCtrl)
