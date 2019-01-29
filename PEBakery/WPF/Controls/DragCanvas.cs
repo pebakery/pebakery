@@ -63,8 +63,7 @@ namespace PEBakery.WPF.Controls
         }
 
         // Length
-        public const int CanvasLengthLimit = 600;
-        public const int ElementLengthLimit = 100;
+        public const int CanvasLengthLimit = 700;
         public const int ElementLengthMin = 16;
 
         // DragHandle
@@ -298,8 +297,7 @@ namespace PEBakery.WPF.Controls
                 case DragMode.SingleMove:
                     {
                         Debug.Assert(_selected != null, "SelectedElement is null");
-                        Point dragStartElementPos = new Point(_selected.ElementInitialRect.X, _selected.ElementInitialRect.Y);
-                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, dragStartElementPos);
+                        Point newElementPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, _selected.ElementInitialRect);
                         Rect r = new Rect
                         {
                             X = newElementPos.X,
@@ -312,8 +310,8 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiMove:
                     {
-                        Point[] elementPosList = _selectedElements.Select(se => new Point(se.ElementInitialRect.X, se.ElementInitialRect.Y)).ToArray();
-                        (List<Point> newPosList, _, _) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementPosList);
+                        Rect[] elementRectList = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
+                        (List<Point> newPosList, _, _) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRectList);
 
                         for (int i = 0; i < _selectedElements.Count; i++)
                         {
@@ -373,7 +371,7 @@ namespace PEBakery.WPF.Controls
                     {
                         UIControl uiCtrl = _selected.UIControl;
 
-                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, new Point(uiCtrl.X, uiCtrl.Y));
+                        Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
                         double deltaX = newCtrlPos.X - uiCtrl.X;
                         double deltaY = newCtrlPos.Y - uiCtrl.Y;
 
@@ -387,8 +385,8 @@ namespace PEBakery.WPF.Controls
                 case DragMode.MultiMove:
                     {
                         List<UIControl> uiCtrls = new List<UIControl>(_selectedElements.Count);
-                        Point[] uiCtrlPosList = _selectedElements.Select(se => new Point(se.UIControl.X, se.UIControl.Y)).ToArray();
-                        (List<Point> newPosList, double deltaX, double deltaY) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, uiCtrlPosList);
+                        Rect[] uiCtrlRectList = _selectedElements.Select(se => se.UIControl.Rect).ToArray();
+                        (List<Point> newPosList, double deltaX, double deltaY) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, uiCtrlRectList);
 
                         for (int i = 0; i < _selectedElements.Count; i++)
                         {
@@ -783,7 +781,7 @@ namespace PEBakery.WPF.Controls
         #endregion
 
         #region (private) Move Utility
-        private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Point elementStart)
+        private static Point CalcNewPosition(Point cursorStart, Point cursorNow, Rect elementStart)
         {
             double x = elementStart.X + cursorNow.X - cursorStart.X;
             double y = elementStart.Y + cursorNow.Y - cursorStart.Y;
@@ -792,17 +790,17 @@ namespace PEBakery.WPF.Controls
             // Guard new X and Y in 0 ~ 600
             if (x < 0)
                 x = 0;
-            else if (CanvasLengthLimit < x)
-                x = CanvasLengthLimit;
+            else if (CanvasLengthLimit < x + elementStart.Width)
+                x = CanvasLengthLimit - elementStart.Width;
             if (y < 0)
                 y = 0;
-            else if (CanvasLengthLimit < y)
-                y = CanvasLengthLimit;
+            else if (CanvasLengthLimit < y + elementStart.Height)
+                y = CanvasLengthLimit - elementStart.Height;
 
             return new Point(x, y);
         }
 
-        private static (List<Point> NewPosList, double CaliDeltaX, double CaliDeltaY) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Point> elementStartList)
+        private static (List<Point> NewPosList, double CaliDeltaX, double CaliDeltaY) CalcNewPositions(Point cursorStart, Point cursorNow, IReadOnlyList<Rect> elementStartList)
         {
             double deltaX = cursorNow.X - cursorStart.X;
             double deltaY = cursorNow.Y - cursorStart.Y;
@@ -810,7 +808,7 @@ namespace PEBakery.WPF.Controls
             double caliDeltaY = deltaY;
 
             // Calibrate deltaX, deltaY
-            foreach (Point elementStart in elementStartList)
+            foreach (Rect elementStart in elementStartList)
             {
                 double x = elementStart.X + deltaX;
                 double y = elementStart.Y + deltaY;
@@ -819,18 +817,18 @@ namespace PEBakery.WPF.Controls
                 // Guard new X and Y in 0 ~ 600
                 if (x < 0)
                     caliDeltaX = Math.Max(caliDeltaX, deltaX - x);
-                else if (CanvasLengthLimit < x)
-                    caliDeltaX = Math.Min(caliDeltaX, deltaX + CanvasLengthLimit - x);
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    caliDeltaX = Math.Min(caliDeltaX, deltaX + CanvasLengthLimit - (x + elementStart.Width));
 
                 if (y < 0)
                     caliDeltaY = Math.Max(caliDeltaY, deltaY - y);
-                else if (CanvasLengthLimit < y)
-                    caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - y);
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    caliDeltaY = Math.Min(caliDeltaY, deltaY + CanvasLengthLimit - (y + elementStart.Height));
             }
 
             // Apply calibrated deltaX, deltaY
             List<Point> newPosList = new List<Point>(elementStartList.Count);
-            foreach (Point elementStart in elementStartList)
+            foreach (Rect elementStart in elementStartList)
             {
                 double x = elementStart.X + caliDeltaX;
                 double y = elementStart.Y + caliDeltaY;
@@ -838,13 +836,13 @@ namespace PEBakery.WPF.Controls
                 // double always have subtle rounding error, so guard again
                 if (x < 0)
                     x = 0;
-                else if (CanvasLengthLimit < x)
-                    x = CanvasLengthLimit;
+                else if (CanvasLengthLimit < x + elementStart.Width)
+                    x = CanvasLengthLimit - elementStart.Width;
 
                 if (y < 0)
                     y = 0;
-                else if (CanvasLengthLimit < y)
-                    y = CanvasLengthLimit;
+                else if (CanvasLengthLimit < y + elementStart.Height)
+                    y = CanvasLengthLimit - elementStart.Height;
 
                 newPosList.Add(new Point(x, y));
             }
@@ -985,11 +983,11 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Right:
                 case ResizeClickPosition.RightTop:
                 case ResizeClickPosition.RightBottom:
-                    if (CanvasLengthLimit + ElementLengthLimit < x + width)
+                    if (CanvasLengthLimit < x + width)
                     {
-                        deltaX += CanvasLengthLimit + ElementLengthLimit - (x + width);
+                        deltaX += CanvasLengthLimit - (x + width);
 
-                        width = CanvasLengthLimit + ElementLengthLimit - x;
+                        width = CanvasLengthLimit - x;
                     }
                     break;
             }
@@ -1011,11 +1009,11 @@ namespace PEBakery.WPF.Controls
                 case ResizeClickPosition.Bottom:
                 case ResizeClickPosition.LeftBottom:
                 case ResizeClickPosition.RightBottom:
-                    if (CanvasLengthLimit + ElementLengthLimit < y + height)
+                    if (CanvasLengthLimit < y + height)
                     {
-                        deltaY += CanvasLengthLimit + ElementLengthLimit - (y + height);
+                        deltaY += CanvasLengthLimit - (y + height);
 
-                        height = CanvasLengthLimit + ElementLengthLimit - y;
+                        height = CanvasLengthLimit - y;
                     }
                     break;
             }
@@ -1171,12 +1169,12 @@ namespace PEBakery.WPF.Controls
 
             if (width < ElementLengthMin)
                 width = ElementLengthMin;
-            else if (CanvasLengthLimit + ElementLengthLimit < uiCtrl.X + width)
-                width = CanvasLengthLimit + ElementLengthLimit - uiCtrl.X;
+            else if (CanvasLengthLimit < uiCtrl.X + width)
+                width = CanvasLengthLimit - uiCtrl.X;
             if (height < ElementLengthMin)
                 height = ElementLengthMin;
-            else if (CanvasLengthLimit + ElementLengthLimit < uiCtrl.Y + height)
-                height = CanvasLengthLimit + ElementLengthLimit - uiCtrl.Y;
+            else if (CanvasLengthLimit < uiCtrl.Y + height)
+                height = CanvasLengthLimit - uiCtrl.Y;
 
             uiCtrl.Width = width;
             uiCtrl.Height = height;
@@ -1192,12 +1190,12 @@ namespace PEBakery.WPF.Controls
             {
                 if (uiCtrl.Width + deltaX < ElementLengthMin)
                     caliDeltaX = Math.Max(caliDeltaX, ElementLengthMin - uiCtrl.Width);
-                else if (CanvasLengthLimit + ElementLengthLimit < uiCtrl.X + uiCtrl.Width + deltaX)
-                    caliDeltaX = Math.Min(caliDeltaX, CanvasLengthLimit + ElementLengthLimit - (uiCtrl.X + uiCtrl.Width));
+                else if (CanvasLengthLimit < uiCtrl.X + uiCtrl.Width + deltaX)
+                    caliDeltaX = Math.Min(caliDeltaX, CanvasLengthLimit - (uiCtrl.X + uiCtrl.Width));
                 if (uiCtrl.Height + deltaY < ElementLengthMin)
                     caliDeltaY = Math.Max(caliDeltaY, ElementLengthMin - uiCtrl.Height);
-                else if (CanvasLengthLimit + ElementLengthLimit < uiCtrl.Y + uiCtrl.Height + deltaY)
-                    caliDeltaY = Math.Min(caliDeltaY, CanvasLengthLimit + ElementLengthLimit - (uiCtrl.Y + uiCtrl.Height));
+                else if (CanvasLengthLimit < uiCtrl.Y + uiCtrl.Height + deltaY)
+                    caliDeltaY = Math.Min(caliDeltaY, CanvasLengthLimit - (uiCtrl.Y + uiCtrl.Height));
             }
 
             // Apply calibrated deltaX, deltaY
