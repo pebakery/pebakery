@@ -27,8 +27,8 @@
 
 using MahApps.Metro.IconPacks;
 using Ookii.Dialogs.Wpf;
-using PEBakery.Core.WpfControls;
 using PEBakery.Core.ViewModels;
+using PEBakery.Core.WpfControls;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -1156,11 +1156,7 @@ namespace PEBakery.Core
                 BorderBrush = Brushes.Gray,
             };
 
-            if (!_viewMode)
-            {
-                bevel.IsHitTestVisible = true; // Focus is given when clicked
-                Panel.SetZIndex(bevel, -1); // Should have lowest z-index
-            }
+            
 
             SetToolTip(bevel, info.ToolTip);
             if (info.FontSize == null)
@@ -1220,6 +1216,14 @@ namespace PEBakery.Core
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
                 subCanvas.Children.Add(textBorder);
                 SetEditModeProperties(subCanvas, uiCtrl);
+
+                if (!_viewMode)
+                {
+                    bevel.IsHitTestVisible = true; // Focus is given when clicked
+                    Panel.SetZIndex(bevel, -1); // Should have lowest z-index
+                    Panel.SetZIndex(subCanvas, -1); // Should have lowest z-index
+                }
+
                 DrawToCanvas(subCanvas, uiCtrl);
             }
         }

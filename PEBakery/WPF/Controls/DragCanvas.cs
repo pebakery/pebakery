@@ -849,7 +849,7 @@ namespace PEBakery.WPF.Controls
 
             return (newPosList, caliDeltaX, caliDeltaY);
         }
-        
+
         private static void SetElementPosition(FrameworkElement element, Point p)
         {
             SetLeft(element, p.X);
