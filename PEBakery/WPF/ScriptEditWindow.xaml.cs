@@ -228,7 +228,7 @@ namespace PEBakery.WPF
 
         private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Point cursorPos = e.GetPosition(sender as ScrollViewer);
+            Point cursorPos = e.GetPosition(m.InterfaceCanvas);
             if (m.InterfaceCanvas.Width < cursorPos.X || m.InterfaceCanvas.Height < cursorPos.Y)
             { // Clicked outside of DragCanvas -> Reset selected UIControls
                 m.SelectedUICtrl = null;
@@ -298,47 +298,24 @@ namespace PEBakery.WPF
                     case ScriptEditViewModel.ControlSelectMode.SingleSelect:
                         if (move)
                         {
-                            DragCanvas.ApplyNewPosition(m.SelectedUICtrl, deltaX, deltaY);
+                            DragCanvas.ApplyUIControlPosition(m.SelectedUICtrl, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         else // Resize
                         {
-                            UIControl uiCtrl = m.SelectedUICtrl;
-                            int width = uiCtrl.Width + deltaX;
-                            int height = uiCtrl.Height + deltaY;
-
-                            if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.X + width)
-                                width = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.X;
-                            if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.Y + height)
-                                height = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.Y;
-
-                            uiCtrl.Width = width;
-                            uiCtrl.Height = height;
-
+                            DragCanvas.ApplyUIControlSize(m.SelectedUICtrl, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         break;
                     case ScriptEditViewModel.ControlSelectMode.MultiSelect:
                         if (move)
                         {
-                            DragCanvas.ApplyNewPositions(m.SelectedUICtrls, deltaX, deltaY);
+                            DragCanvas.ApplyUIControlPositions(m.SelectedUICtrls, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         else // Resize
                         {
-                            foreach (UIControl uiCtrl in m.SelectedUICtrls)
-                            {
-                                int width = uiCtrl.Width + deltaX;
-                                int height = uiCtrl.Height + deltaY;
-
-                                if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.X + width)
-                                    width = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.X;
-                                if (DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit < uiCtrl.Y + height)
-                                    height = DragCanvas.CanvasWidthHeightLimit + DragCanvas.ElementWidthHeightLimit - uiCtrl.Y;
-
-                                uiCtrl.Width = width;
-                                uiCtrl.Height = height;
-                            }
+                            DragCanvas.ApplyUIControlSizes(m.SelectedUICtrls, deltaX, deltaY);
                             m.InvokeUIControlEvent(true);
                         }
                         break;
@@ -2808,7 +2785,7 @@ namespace PEBakery.WPF
                     break;
                 case UIControlType.Button:
                     {
-                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();                      
+                        UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
                         if (info.Picture != null)
                         {
                             fileName = info.Picture;
