@@ -51,7 +51,7 @@ namespace PEBakery.WPF
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 m.ReadScriptGeneral();
-                m.ReadScriptInterface();
+                m.ReadScriptInterface(true);
                 m.ReadScriptAttachment();
             }
             catch (Exception e)
@@ -65,12 +65,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Window Event
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            // m.InterfaceCanvas.Width = InterfaceBorder.ActualWidth;
-            // m.InterfaceCanvas.Height = InterfaceBorder.ActualHeight;
-        }
-
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             bool scriptSaved = false;
@@ -104,7 +98,7 @@ namespace PEBakery.WPF
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
-                        if (m.WriteScriptInterface(false))
+                        if (m.WriteScriptInterface(m.SelectedInterfaceSectionName, false))
                             scriptSaved = true;
                         break;
                     case MessageBoxResult.No:
@@ -143,6 +137,28 @@ namespace PEBakery.WPF
         private void ScaleFactor_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
         {
             m.DrawScript();
+        }
+
+        private void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Run only if selected interface section is different from active interface section
+            if (m.SelectedInterfaceSectionName.Equals(m.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            // Must save current edits to switch active interface section
+            MessageBoxResult result = MessageBox.Show("The script must be saved before switching interface.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+            if (result == MessageBoxResult.Yes)
+            {
+                m.WriteScriptInterface(m.SelectedInterfaceSectionName, false);
+            }
+            else
+            {
+                // Keep current active interface section in ComboBox
+                m.SelectedInterfaceSectionName = m.InterfaceSectionName;
+                return;
+            }
+
+            m.ReadScriptInterface(false);
         }
 
         private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -234,10 +250,12 @@ namespace PEBakery.WPF
 
         private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            InterfaceScrollViewer.Focus();
+
             Point cursorPos = e.GetPosition(m.InterfaceCanvas);
             if (cursorPos.X < 0 || m.InterfaceCanvas.Width < cursorPos.X ||
                 cursorPos.Y < 0 || m.InterfaceCanvas.Height < cursorPos.Y)
-            { // Clicked outside of DragCanvas -> Force trigger of OnPreviewMouseLeftButtonDown of DragCanvas
+            { // Clicked outside of DragCanvas -> Route OnPreviewMouseLeftButtonDown event to DragCanvas
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
                 e.Handled = true;
             }
@@ -444,7 +462,7 @@ namespace PEBakery.WPF
         #region Property - Basic
         public Script Script;
         private readonly Window _window;
-        public MainViewModel MainViewModel { get; private set; }
+        public MainViewModel MainViewModel { get; }
         public UIRenderer Renderer { get; private set; }
         public string InterfaceSectionName { get; private set; }
 
@@ -760,24 +778,33 @@ namespace PEBakery.WPF
         public DragCanvas InterfaceCanvas
         {
             get => _interfaceCanvas;
-            set
-            {
-                _interfaceCanvas = value;
-                OnPropertyUpdate(nameof(InterfaceCanvas));
-            }
+            set => SetProperty(ref _interfaceCanvas, value);
         }
+
         private int _interfaceScaleFactor = 100;
         public int InterfaceScaleFactor
         {
             get => _interfaceScaleFactor;
-            set
-            {
-                _interfaceScaleFactor = value;
-                OnPropertyUpdate(nameof(InterfaceScaleFactor));
-            }
+            set => SetProperty(ref _interfaceScaleFactor, value);
         }
 
-        // Add
+        // InterfaceSection
+        private ObservableCollection<string> _interfaceSectionNames;
+        private readonly object _interfaceSectionNamesLock = new object();
+        public ObservableCollection<string> InterfaceSectionNames
+        {
+            get => _interfaceSectionNames;
+            set => SetCollectionProperty(ref _interfaceSectionNames, _interfaceSectionNamesLock, value);
+        }
+
+        private string _selectedInterfaceSectionName;
+        public string SelectedInterfaceSectionName
+        {
+            get => _selectedInterfaceSectionName;
+            set => SetProperty(ref _selectedInterfaceSectionName, value);
+        }
+
+        // Add Control
         private int _uiCtrlAddTypeIndex = -1;
         public int UICtrlAddTypeIndex
         {
@@ -801,7 +828,7 @@ namespace PEBakery.WPF
             }
         }
 
-        // Delete
+        // Delete Control (not for UI, for code-behind use)
         public List<UIControl> UICtrlToBeDeleted = new List<UIControl>();
         public List<string> UICtrlKeyChanged = new List<string>();
         #endregion
@@ -2068,7 +2095,7 @@ namespace PEBakery.WPF
                 Renderer.Render();
                 SelectedUICtrl = null;
 
-                WriteScriptInterface(true);
+                WriteScriptInterface(null, true);
                 InterfaceNotSaved = true;
                 InterfaceUpdated = true;
             }
@@ -2090,7 +2117,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                ReadScriptInterface();
+                ReadScriptInterface(true);
             }
             finally
             {
@@ -2121,9 +2148,9 @@ namespace PEBakery.WPF
 
                 if (InterfaceNotSaved)
                 {
-                    MessageBoxResult result = MessageBox.Show("The interface should be saved before editing an image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show("The interface must be saved before editing an image.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
@@ -2145,7 +2172,7 @@ namespace PEBakery.WPF
                     uiCtrl.Width = width;
                     uiCtrl.Height = height;
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(false);
+                    WriteScriptInterface(null, false);
                 }
             }
             finally
@@ -2462,19 +2489,19 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface should be saved before editing a text file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing a text file.\r\nSave changes?";
                     extFilter = "Text Files|*.txt;*.rtf|All Files|*.*";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else
@@ -2489,7 +2516,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
@@ -2582,7 +2609,7 @@ namespace PEBakery.WPF
                     }
 
                     InvokeUIControlEvent(false);
-                    WriteScriptInterface(true);
+                    WriteScriptInterface(null, true);
                 }
                 catch (Exception ex)
                 {
@@ -2703,17 +2730,17 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
                 }
                 else if (sender.Equals("TextFileReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface should be saved before editing text a file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing text a file.\r\nSave changes?";
                 }
                 else if (sender.Equals("ButtonPictureReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface should be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
                 }
                 else
                 {
@@ -2728,7 +2755,7 @@ namespace PEBakery.WPF
                 {
                     MessageBoxResult result = MessageBox.Show(saveConfirmMsg, "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
-                        WriteScriptInterface(false);
+                        WriteScriptInterface(null, false);
                     else
                         return;
                 }
@@ -2754,7 +2781,7 @@ namespace PEBakery.WPF
                         break;
                 }
                 InvokeUIControlEvent(false);
-                WriteScriptInterface(true);
+                WriteScriptInterface(null, true);
             }
             finally
             {
@@ -3327,12 +3354,27 @@ namespace PEBakery.WPF
             ScriptHeaderUpdated = false;
         }
 
-        public void ReadScriptInterface()
+        /// <summary>
+        /// Read script interface from a script instance.
+        /// </summary>
+        /// <param name="refreshSectionNames">
+        /// Refresh section list and auto detect active section if true. Do not update section list and keep current active section if false.
+        /// </param>
+        public void ReadScriptInterface(bool refreshSectionNames)
         {
-            InterfaceSectionName = UIRenderer.GetInterfaceSectionName(Script);
+            // Refresh interface section names
+            if (refreshSectionNames)
+            {
+                InterfaceSectionNames = new ObservableCollection<string>(Script.InterfaceSectionNames);
+                SelectedInterfaceSectionName = InterfaceSectionName = Script.InterfaceSectionName;
+            }
+            else
+            {
+                InterfaceSectionName = SelectedInterfaceSectionName;
+            }
 
             // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
-            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script);
+            (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script, InterfaceSectionName);
             if (uiCtrls == null) // No Interface -> empty list
             {
                 if (0 < errLogs.Count)
@@ -3542,7 +3584,7 @@ namespace PEBakery.WPF
             return true;
         }
 
-        public bool WriteScriptInterface(bool refresh = true)
+        public bool WriteScriptInterface(string activeInterfaceSection = null, bool refreshMainWindow = true)
         {
             if (Renderer == null)
                 return false;
@@ -3558,9 +3600,14 @@ namespace PEBakery.WPF
                 IniReadWriter.DeleteKeys(Script.RealPath, UICtrlKeyChanged.Select(x => new IniKey(InterfaceSectionName, x)));
                 UICtrlKeyChanged.Clear();
 
+                if (activeInterfaceSection != null)
+                {
+                    IniReadWriter.WriteKey(Script.RealPath, ScriptSection.Names.Main, "Interface", activeInterfaceSection);
+                }
+
                 Script = Script.Project.RefreshScript(Script);
 
-                if (refresh)
+                if (refreshMainWindow)
                     RefreshMainWindow();
             }
             catch (Exception e)

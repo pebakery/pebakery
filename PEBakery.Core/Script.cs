@@ -212,6 +212,18 @@ namespace PEBakery.Core
         }
 
         public ScriptSection this[string key] => Sections[key];
+
+        public string InterfaceSectionName
+        {
+            get
+            {
+                // Check if script has custom interface section
+                if (MainInfo.ContainsKey(ScriptSection.Names.Interface))
+                    return MainInfo[ScriptSection.Names.Interface];
+                return ScriptSection.Names.Interface;
+            }
+        }
+        public List<string> InterfaceSectionNames => _interfaceList.ToList();
         #endregion
 
         #region Constructor
@@ -221,7 +233,6 @@ namespace PEBakery.Core
             Debug.Assert(realPath != null, $"{nameof(realPath)} is null");
             Debug.Assert(treePath != null, $"{nameof(treePath)} is null");
             Debug.Assert(project != null, $"{nameof(project)} is null");
-
             Debug.Assert(!isDirLink || type != ScriptType.Link, "Script cannot be both Link and DirLink at the same time");
             Debug.Assert(treePath.Length == 0 || !Path.IsPathRooted(treePath), $"{nameof(treePath)} must be empty or rooted path");
 
@@ -238,6 +249,15 @@ namespace PEBakery.Core
                 _level = lv;
             else
                 _level = 0;
+
+            // Read from file
+            switch (Type)
+            {
+                case ScriptType.Link:
+                case ScriptType.Script:
+                    _sections = ParseSections();
+                    break;
+            }
 
             ReadMainSection(true);
         }
@@ -366,21 +386,21 @@ namespace PEBakery.Core
             else if (sectionName.StartsWith(ScriptSection.Names.EncodedFilePrefix, StringComparison.OrdinalIgnoreCase)) // lazy loading
                 type = SectionType.AttachEncodeLazy;
             else // Can be SectionType.Code or SectionType.AttachFileList
-                type = inspectCode ? DetectTypeOfUninspectedSection(sectionName) : SectionType.Uninspected;
+                type = inspectCode ? DetectTypeOfNotInspectedSection(sectionName) : SectionType.NotInspected;
             return type;
         }
 
-        private void InspectTypeOfUninspectedCodeSection()
+        private void DetectTypeOfNotInspectedCodeSection()
         {
-            // Dictionary<string, ScriptSection>
-            foreach (var key in _sections.Keys)
+            foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NotInspected))
             {
-                if (_sections[key].Type == SectionType.Uninspected)
-                    _sections[key].Type = DetectTypeOfUninspectedSection(_sections[key].Name);
+                ScriptSection section = kv.Value;
+                section.Type = DetectTypeOfNotInspectedSection(section.Name);
             }
+                
         }
 
-        private SectionType DetectTypeOfUninspectedSection(string sectionName)
+        private SectionType DetectTypeOfNotInspectedSection(string sectionName)
         {
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
@@ -400,7 +420,7 @@ namespace PEBakery.Core
                 case SectionType.Variables:
                 case SectionType.Interface:
                 case SectionType.Code:
-                case SectionType.Uninspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
@@ -420,7 +440,7 @@ namespace PEBakery.Core
                 case SectionType.Variables:
                 case SectionType.Interface:
                 case SectionType.Code:
-                case SectionType.Uninspected:
+                case SectionType.NotInspected:
                 case SectionType.AttachFolderList:
                 case SectionType.AttachFileList:
                 case SectionType.AttachEncodeNow:
@@ -490,7 +510,6 @@ namespace PEBakery.Core
                     break;
                 case ScriptType.Link:
                     { // Parse only [Main] Section
-                        _sections = ParseSections();
                         CheckMainSection(ScriptType.Link);
                         ScriptSection mainSection = _sections[ScriptSection.Names.Main];
 
@@ -511,8 +530,7 @@ namespace PEBakery.Core
                     break;
                 case ScriptType.Script:
                     {
-                        _sections = ParseSections();
-                        InspectTypeOfUninspectedCodeSection();
+                        _interfaceList.Clear();
                         if (!_ignoreMain)
                         {
                             CheckMainSection(ScriptType.Script);
@@ -559,22 +577,22 @@ namespace PEBakery.Core
                                     _mandatory = false;
                             }
                             if (mainSection.IniDict.ContainsKey("InterfaceList"))
-                            {
+                            { // Hint for multiple Interface. Useful when supporting multi-interface editing.
                                 string rawList = mainSection.IniDict["InterfaceList"];
-                                if (rawList.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                try
                                 {
-                                    try
+                                    string remainder = rawList;
+                                    while (remainder != null)
                                     {
-                                        string remainder = rawList;
-                                        while (remainder != null)
-                                        {
-                                            string next;
-                                            (next, remainder) = CodeParser.GetNextArgument(remainder);
+                                        string next;
+                                        (next, remainder) = CodeParser.GetNextArgument(remainder);
+                                        
+                                        // Avoid duplicate, only add if section exists
+                                        if (_sections.ContainsKey(next) && !_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
                                             _interfaceList.Add(next);
-                                        }
                                     }
-                                    catch (InvalidCommandException) { } // Just Ignore
                                 }
+                                catch (InvalidCommandException) { } // Just Ignore
                             } // InterfaceList
                             _link = null;
                         }
@@ -584,6 +602,13 @@ namespace PEBakery.Core
                             _description = string.Empty;
                             _level = 0;
                         }
+
+                        // Add default interface section if not added
+                        if (!_interfaceList.Contains(InterfaceSectionName, StringComparer.OrdinalIgnoreCase))
+                            _interfaceList.Add(InterfaceSectionName);
+
+                        // Inspect previously not inspectd sections
+                        DetectTypeOfNotInspectedCodeSection();
                     }
                     break;
                 default:
@@ -822,7 +847,7 @@ namespace PEBakery.Core
         // [Process], ...
         Code = 40,
         // Code or AttachFileList
-        Uninspected = 90,
+        NotInspected = 90,
         // [EncodedFolders]
         AttachFolderList = 100,
         // [AuthorEncoded], [InterfaceEncoded], and other folders

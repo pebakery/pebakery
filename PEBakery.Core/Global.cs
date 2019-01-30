@@ -41,11 +41,11 @@ namespace PEBakery.Core
     #region Global
     public static class Global
     {
-        #region Const
+        #region Constants
         public static class Const
         {
             public const int EngineVersion = 96;
-            public const string ScriptCacheRevision = "r12";
+            public const string ScriptCacheRevision = "r13";
             public const string StringVersion = "0.9.6";
             public const string StringVersionFull = "0.9.6 beta6";
         }

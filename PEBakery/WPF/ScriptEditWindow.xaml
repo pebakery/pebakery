@@ -37,7 +37,6 @@
         Title="Edit Script"
         FontFamily="Segoe UI"
         FontSize="13"
-        Loaded="Window_Loaded"
         Closing="Window_Closing"
         Closed="Window_Closed"
         Width="900" Height="720"
@@ -58,6 +57,7 @@
         <local:AttachProgressValueToPercentConverter x:Key="AttachProgressValueToPercentConverter" />
         <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
+        <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -371,18 +371,30 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
-                    <Grid Grid.Column="0"
-                          Margin="0, 0, 10, 0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="100"/>
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0">
+                    <StackPanel Grid.Column="0"
+                                Margin="0, 0, 10, 0">
+                        <StackPanel Margin="0, 0, 0, 10"
+                                    Visibility="{Binding InterfaceSectionNames, Mode=OneWay, Converter={StaticResource ActiveInterfaceSectionVisibilityConverter}, FallbackValue=Visible}">
                             <TextBlock Margin="0, 0, 0, 5"
                                        FontWeight="Bold"
                                        FontSize="13"
-                                       Text="Add"/>
+                                       Text="Active Interface Section"/>
+                            <Separator Margin="0, 0, 0, 5"
+                                       SnapsToDevicePixels="True"
+                                       BorderBrush="Black"
+                                       BorderThickness="2"/>
+                            <ComboBox x:Name="ActiveSectionComboBox" 
+                                      Margin="3, 0, 3, 0"
+                                      VerticalContentAlignment="Center"
+                                      ItemsSource="{Binding InterfaceSectionNames}"
+                                      SelectedItem="{Binding SelectedInterfaceSectionName}"
+                                      SelectionChanged="ActiveSectionComboBox_SelectionChanged"/>
+                        </StackPanel>
+                        <StackPanel Margin="0, 0, 0, 10">
+                            <TextBlock Margin="0, 0, 0, 5"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Text="Add Control"/>
                             <Separator Margin="0, 0, 0, 5"
                                        SnapsToDevicePixels="True"
                                        BorderBrush="Black"
@@ -445,11 +457,11 @@
                                 </Button>
                             </Grid>
                         </StackPanel>
-                        <StackPanel Grid.Row="1" Margin="0, 5, 0, 0">
+                        <StackPanel>
                             <TextBlock Margin="0, 0, 0, 5"
                                        FontWeight="Bold"
                                        FontSize="13"
-                                       Text="Edit"/>
+                                       Text="Edit Control"/>
                             <Separator Margin="0, 0, 0, 5"
                                        SnapsToDevicePixels="True"
                                        BorderBrush="Black"
@@ -1137,7 +1149,7 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </StackPanel>
-                    </Grid>
+                    </StackPanel>
                     <Grid Grid.Column="1" Margin="0, 0, 0, 3">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="25"/>
@@ -1154,7 +1166,6 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" 
-                                       Margin="0, 0, 10, 0"
                                        VerticalAlignment="Center"
                                        Text="Script Scale Factor (%)"/>
                             <cc:NumberBox Grid.Column="1"

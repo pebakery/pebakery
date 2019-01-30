@@ -111,10 +111,16 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Utility
-        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc)
+        /// <summary>
+        /// Load script interface's UIControl list.
+        /// </summary>
+        /// <param name="sc">Script to get interface.</param>
+        /// <param name="sectionName">Set to null for auto detection.</param>
+        /// <returns></returns>
+        public static (List<UIControl>, List<LogInfo>) LoadInterfaces(Script sc, string sectionName = null)
         {
             // Check if script has custom interface section
-            string ifaceSectionName = GetInterfaceSectionName(sc);
+            string ifaceSectionName = sectionName ?? sc.InterfaceSectionName;
 
             if (sc.Sections.ContainsKey(ifaceSectionName))
             {
@@ -133,14 +139,6 @@ namespace PEBakery.Core
                 }
             }
             return (new List<UIControl>(), new List<LogInfo>());
-        }
-
-        public static string GetInterfaceSectionName(Script sc)
-        {
-            // Check if script has custom interface section
-            if (sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
-                return sc.MainInfo[ScriptSection.Names.Interface];
-            return ScriptSection.Names.Interface;
         }
         #endregion
 
