@@ -33,6 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Shapes;
 
 // ReSharper disable InconsistentNaming
 namespace PEBakery.WPF.Controls
@@ -42,6 +43,7 @@ namespace PEBakery.WPF.Controls
         #region Enums and Const
         public enum DragMode
         {
+            DragToSelect,
             SingleMove,
             MultiMove,
             SingleResize,
@@ -93,6 +95,7 @@ namespace PEBakery.WPF.Controls
         private DragMode _dragMode;
         private bool _isBeingDragged;
         private Point _dragStartCursorPos;
+        private Rectangle _dragAreaRectangle;
 
         // Max Z Index
         private int MaxZIndex
@@ -179,6 +182,15 @@ namespace PEBakery.WPF.Controls
             Dispatcher.Invoke(ResetMouseCursor);
         }
 
+        /// <summary>
+        /// Invoke OnPreviewMouseLeftButonDown from outside (e.g. ScriptEditWindow)
+        /// </summary>
+        /// <param name="e"></param>
+        public void TriggerPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            OnPreviewMouseLeftButtonDown(e);
+        }
+
         /// <inheritdoc />
         /// <summary>
         /// Start dragging
@@ -188,18 +200,33 @@ namespace PEBakery.WPF.Controls
             if (_isBeingDragged)
                 return;
 
+            // Capture mouse
+            CaptureMouse();
+
+            // Record position and size
+            // Always run this code, one for move/resize and one for drag-to-select.
+            _dragStartCursorPos = e.GetPosition(this);
+
+            // Which element was selected?
             FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
 
             // No UIControl was selected
             if (focusedElement == null)
             { // Clicked background -> Reset selected elements
-                _isBeingDragged = false;
-                ClearSelectedElements(true);
-                UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs());
-                return;
-            }
+                _dragMode = DragMode.DragToSelect;
 
-            if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
+                _isBeingDragged = true;
+
+                // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
+                _dragAreaRectangle = new Rectangle
+                {
+                    Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
+                };
+                Children.Add(_dragAreaRectangle);
+
+                ClearSelectedElements(true);
+            }
+            else if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
             { // Clicked drag handle
                 // Resize mode
                 _dragMode = 2 <= _selectedElements.Count ? DragMode.MultiResize : DragMode.SingleResize;
@@ -210,14 +237,8 @@ namespace PEBakery.WPF.Controls
                 _selectedElementIndex = _selectedElements.FindIndex(x => x.Element.Equals(info.Parent));
                 Debug.Assert(_selectedElementIndex != -1, "Incorrect SelectedElement handling");
 
-                // Record position and size
-                _dragStartCursorPos = e.GetPosition(this);
-
                 // Set Cursor
                 SetMouseCursor(_selectedClickPos);
-
-                // Capture mouse
-                CaptureMouse();
             }
             else if (focusedElement.Tag is UIControl)
             { // Clicked UIControl
@@ -243,23 +264,15 @@ namespace PEBakery.WPF.Controls
                 _selectedClickPos = ResizeClickPosition.Inside;
                 _isBeingDragged = true;
 
-                // Record position and size
-                _dragStartCursorPos = e.GetPosition(this);
-
                 // Draw border and drag handles
                 DrawSelectedElements();
 
                 // Set Cursor
                 SetMouseCursor();
-
-                // Capture mouse
-                CaptureMouse();
             }
             else
-            { // Clicked background -> Reset selected elements
-                _isBeingDragged = false;
-                ClearSelectedElements(true);
-                UIControlSelected?.Invoke(this, new UIControlSelectedEventArgs());
+            {
+                Debug.Assert(false, "Internal Error at DragCanvas mouse event handler");
             }
 
             e.Handled = true;
@@ -282,18 +295,23 @@ namespace PEBakery.WPF.Controls
                     SetMouseCursor(info.ClickPos);
                 else if (hoverElement.Tag is UIControl) // Inside
                     SetMouseCursor();
-                else
+                else // Since the mouse is captured by DragCanvas, the element outside of the canvas can be captured
                     ResetMouseCursor();
                 return;
             }
-
-            Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
 
             // Moving/Resizing a UIControl
             Point nowCursorPos = e.GetPosition(this);
 
             switch (_dragMode)
             {
+                case DragMode.DragToSelect:
+                    {
+                        Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
+                        Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
+                        SetElementRect(_dragAreaRectangle, dragRect);
+                    }
+                    break;
                 case DragMode.SingleMove:
                     {
                         Debug.Assert(_selected != null, "SelectedElement is null");
@@ -310,6 +328,7 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiMove:
                     {
+                        Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
                         Rect[] elementRectList = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
                         (List<Point> newPosList, _, _) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, elementRectList);
 
@@ -338,6 +357,7 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiResize:
                     {
+                        Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
                         Rect[] elementRectList = _selectedElements.Select(se => se.ElementInitialRect).ToArray();
                         (List<Rect> newRectList, _, _) = CalcNewSizes(_dragStartCursorPos, nowCursorPos, elementRectList, _selectedClickPos);
                         for (int i = 0; i < _selectedElements.Count; i++)
@@ -358,17 +378,46 @@ namespace PEBakery.WPF.Controls
         /// <param name="e"></param>
         protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
         {
-            if (!_isBeingDragged)
-                return;
-
-            Debug.Assert(_selected != null, "SelectedElement was not set");
+            Point nowCursorPos = e.GetPosition(this);
             ReleaseMouseCapture();
 
-            Point nowCursorPos = e.GetPosition(this);
+            // Check drag-to-select
+            if (!_isBeingDragged)
+            {
+                // OnPreviewMouseLeftButtonDown event must have been fired prior.
+                // If selected correctly, _selectedElements should have been cleaned.
+                if (_selectedElements.Count == 0)
+                {
+                    
+                }
+                return;
+            }
+
             switch (_dragMode)
             {
+                case DragMode.DragToSelect:
+                    {
+                        Debug.Assert(_selectedElements.Count == 0, "Incorrect SelectedElement handling");
+                        Children.Remove(_dragAreaRectangle);
+                        _dragAreaRectangle = null;
+
+                        // Check if any element was caught by drag-to-select
+                        Rect dragRect = new Rect(_dragStartCursorPos, nowCursorPos);
+                        foreach (FrameworkElement element in Children)
+                        {
+                            Rect elementRect = GetElementRect(element);
+                            if (dragRect.Contains(elementRect) && element.Tag is UIControl)
+                            {
+                                _selectedElements.Add(new SelectedElement(element));
+                            }
+                        }
+
+                        DrawSelectedElements();
+                    }
+                    break;
                 case DragMode.SingleMove:
                     {
+                        Debug.Assert(_selected != null, "SelectedElement was not set");
                         UIControl uiCtrl = _selected.UIControl;
 
                         Point newCtrlPos = CalcNewPosition(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect);
@@ -384,6 +433,7 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiMove:
                     {
+                        Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
                         List<UIControl> uiCtrls = new List<UIControl>(_selectedElements.Count);
                         Rect[] uiCtrlRectList = _selectedElements.Select(se => se.UIControl.Rect).ToArray();
                         (List<Point> newPosList, double deltaX, double deltaY) = CalcNewPositions(_dragStartCursorPos, nowCursorPos, uiCtrlRectList);
@@ -404,6 +454,7 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.SingleResize:
                     {
+                        Debug.Assert(_selected != null, "SelectedElement was not set");
                         UIControl uiCtrl = _selected.UIControl;
 
                         Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect, _selectedClickPos);
@@ -421,6 +472,7 @@ namespace PEBakery.WPF.Controls
                     break;
                 case DragMode.MultiResize:
                     {
+                        Debug.Assert(0 < _selectedElements.Count, "Incorrect SelectedElement handling");
                         List<UIControl> uiCtrls = new List<UIControl>(_selectedElements.Count);
                         Rect[] uiCtrlRectList = _selectedElements.Select(se => se.UIControl.Rect).ToArray();
                         (List<Rect> newRectList, double deltaX, double deltaY) = CalcNewSizes(_dragStartCursorPos, nowCursorPos, uiCtrlRectList, _selectedClickPos);
@@ -503,7 +555,7 @@ namespace PEBakery.WPF.Controls
             Debug.Assert(uiCtrl != null, "Incorrect SelectedElement handling");
 
             int z = MaxZIndex;
-            Rect elementRect = GetElementSize(selected.Element);
+            Rect elementRect = GetElementRect(selected.Element);
 
             // Draw selected border
             selected.Border = new Border
@@ -635,8 +687,8 @@ namespace PEBakery.WPF.Controls
             Debug.Assert(selected.Border != null, "Incorrect SelectedElement handling");
 
             // Resize element and border
-            SetElementSize(selected.Element, newRect);
-            SetElementSize(selected.Border, newRect);
+            SetElementRect(selected.Element, newRect);
+            SetElementRect(selected.Border, newRect);
 
             // Resize drag handles
             foreach (Border dragHandle in selected.DragHandles)
@@ -1089,7 +1141,7 @@ namespace PEBakery.WPF.Controls
             return (newRects, caliDeltaX, caliDeltaY);
         }
 
-        private static void SetElementSize(FrameworkElement element, Rect rect)
+        private static void SetElementRect(FrameworkElement element, Rect rect)
         {
             SetLeft(element, rect.X);
             SetTop(element, rect.Y);
@@ -1097,7 +1149,7 @@ namespace PEBakery.WPF.Controls
             element.Height = rect.Height;
         }
 
-        private static Rect GetElementSize(FrameworkElement element)
+        private static Rect GetElementRect(FrameworkElement element)
         {
             return new Rect
             {
@@ -1261,7 +1313,7 @@ namespace PEBakery.WPF.Controls
             {
                 Debug.Assert(element.Tag.GetType() == typeof(UIControl), "Incorrect Element.Tag");
                 Element = element;
-                ElementInitialRect = DragCanvas.GetElementSize(element);
+                ElementInitialRect = DragCanvas.GetElementRect(element);
             }
         }
         #endregion

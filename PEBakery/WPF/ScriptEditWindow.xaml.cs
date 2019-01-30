@@ -65,6 +65,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region Window Event
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // m.InterfaceCanvas.Width = InterfaceBorder.ActualWidth;
+            // m.InterfaceCanvas.Height = InterfaceBorder.ActualHeight;
+        }
+
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             bool scriptSaved = false;
@@ -229,11 +235,11 @@ namespace PEBakery.WPF
         private void InterfaceScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Point cursorPos = e.GetPosition(m.InterfaceCanvas);
-            if (m.InterfaceCanvas.Width < cursorPos.X || m.InterfaceCanvas.Height < cursorPos.Y)
-            { // Clicked outside of DragCanvas -> Reset selected UIControls
-                m.SelectedUICtrl = null;
-                m.SelectedUICtrls = null;
-                m.InterfaceCanvas.ClearSelectedElements(true);
+            if (cursorPos.X < 0 || m.InterfaceCanvas.Width < cursorPos.X ||
+                cursorPos.Y < 0 || m.InterfaceCanvas.Height < cursorPos.Y)
+            { // Clicked outside of DragCanvas -> Force trigger of OnPreviewMouseLeftButtonDown of DragCanvas
+                m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
+                e.Handled = true;
             }
         }
         #endregion  

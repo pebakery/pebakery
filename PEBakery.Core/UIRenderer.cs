@@ -1156,8 +1156,6 @@ namespace PEBakery.Core
                 BorderBrush = Brushes.Gray,
             };
 
-            
-
             SetToolTip(bevel, info.ToolTip);
             if (info.FontSize == null)
             { // No caption (WinBuilder compatible)
