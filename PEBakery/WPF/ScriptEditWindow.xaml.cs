@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -139,26 +140,35 @@ namespace PEBakery.WPF
             m.DrawScript();
         }
 
-        private void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void ActiveSectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Run only if selected interface section is different from active interface section
             if (m.SelectedInterfaceSectionName.Equals(m.InterfaceSectionName, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            // Must save current edits to switch active interface section
-            MessageBoxResult result = MessageBox.Show("The script must be saved before switching interface.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-            if (result == MessageBoxResult.Yes)
+            m.CanExecuteCommand = false;
+            try
             {
-                m.WriteScriptInterface(m.SelectedInterfaceSectionName, false);
-            }
-            else
-            {
-                // Keep current active interface section in ComboBox
-                m.SelectedInterfaceSectionName = m.InterfaceSectionName;
-                return;
-            }
+                // Must save current edits to switch active interface section
+                MessageBoxResult result = MessageBox.Show("The script must be saved before switching interface.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                {
+                    await m.WriteScriptInterfaceAsync(m.SelectedInterfaceSectionName, false);
+                }
+                else
+                {
+                    // Keep current active interface section in ComboBox
+                    m.SelectedInterfaceSectionName = m.InterfaceSectionName;
+                    return;
+                }
 
-            m.ReadScriptInterface(false);
+                m.ReadScriptInterface(false);
+            }
+            finally
+            {
+                m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void UIControlComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2232,7 +2242,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUp_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxUpCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 List<string> items;
@@ -2353,7 +2363,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelect_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxSelectCommand_Execute";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
                 switch (SelectedUICtrl.Type)
@@ -2807,10 +2817,20 @@ namespace PEBakery.WPF
             switch (uiCtrl.Type)
             {
                 case UIControlType.Image:
+                    {
+                        fileName = uiCtrl.Text;
+                        Debug.Assert(fileName.Equals(UIInfo_Image.NoResource) ||
+                                     fileRefCountDict.ContainsKey(fileName));
+
+                        if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
+                            InternalDeleteInterfaceEncodedFile(fileName);
+                    }
+                    break;
                 case UIControlType.TextFile:
                     {
                         fileName = uiCtrl.Text;
-                        Debug.Assert(fileRefCountDict.ContainsKey(fileName));
+                        Debug.Assert(fileName.Equals(UIInfo_TextFile.NoResource) ||
+                                     fileRefCountDict.ContainsKey(fileName));
 
                         if (EncodedFile.ContainsInterface(Script, fileName) && fileRefCountDict[fileName] == 1)
                             InternalDeleteInterfaceEncodedFile(fileName);
@@ -3582,6 +3602,11 @@ namespace PEBakery.WPF
 
             ScriptHeaderNotSaved = false;
             return true;
+        }
+
+        public Task<bool> WriteScriptInterfaceAsync(string activeInterfaceSection = null, bool refreshMainWindow = true)
+        {
+            return Task.Run(() => WriteScriptInterface(activeInterfaceSection, refreshMainWindow));
         }
 
         public bool WriteScriptInterface(string activeInterfaceSection = null, bool refreshMainWindow = true)

@@ -70,7 +70,7 @@
                     SelectionChanged="TabControl_SelectionChanged">
             <TabItem Header="General" 
                      IsEnabled="{Binding CanExecuteCommand}"
-                     Width="100">
+                     Width="120">
                 <StackPanel Margin="10, 0, 10, 10">
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
@@ -364,7 +364,7 @@
             </TabItem>
             <TabItem Header="Interface" 
                      IsEnabled="{Binding CanExecuteCommand}"
-                     Width="100">
+                     Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"/>
@@ -1210,7 +1210,7 @@
             </TabItem>
             <TabItem Header="Attachments"
                      IsEnabled="{Binding CanExecuteCommand}"
-                     Width="100">
+                     Width="120">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200"
