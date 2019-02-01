@@ -81,7 +81,7 @@ namespace PEBakery.Core
     0x200 - 0x207 : 8B  -> Length of Raw File
     0x208 - 0x20F : 8B  -> (Type 1) Length of zlib-compressed File
                            (Type 2) Null-padded
-                           (Type 3) Length of LZMA-compressed File
+                           (Type 3) Length of XZ-compressed File
     0x210 - 0x21F : 16B -> Null-padded
     0x220 - 0x223 : 4B  -> CRC32 of Raw File
     0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01, Type 3 : 02)

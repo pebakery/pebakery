@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Core
@@ -39,15 +40,7 @@ namespace PEBakery.Core
 
         public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code);
         public int VisitedSectionCount => _visitedSections.Count;
-        public double Coverage
-        {
-            get
-            {
-                if (CodeSectionCount == 0)
-                    return 0;
-                return (double)VisitedSectionCount / CodeSectionCount;
-            }
-        }
+        public double Coverage => CodeSectionCount == 0 ? 0 : (double)VisitedSectionCount / CodeSectionCount;
         #endregion
 
         #region Constructor
@@ -66,16 +59,33 @@ namespace PEBakery.Core
             if (_sc.Sections.ContainsKey(ScriptSection.Names.Process))
                 logs.AddRange(ValidateCodeSection(_sc.Sections[ScriptSection.Names.Process]));
 
-            // UICtrls
+            // UICtrls - [Interface]
+            List<string> processedInterfaces = new List<string>();
             if (_sc.Sections.ContainsKey(ScriptSection.Names.Interface))
+            {
+                processedInterfaces.Add(ScriptSection.Names.Interface);
                 logs.AddRange(ValidateInterfaceSection(_sc.Sections[ScriptSection.Names.Interface]));
+            }
+            // UICtrls - Interface=
             if (_sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
             {
                 string ifaceSection = _sc.MainInfo[ScriptSection.Names.Interface];
                 if (_sc.Sections.ContainsKey(ifaceSection))
+                {
+                    processedInterfaces.Add(ifaceSection);
                     logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
+                }
+                    
+            }
+            // UICtrls - InterfaceList=
+            foreach (string ifaceSection in _sc.InterfaceSectionNames
+                .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase) &&
+                            _sc.Sections.ContainsKey(x)))
+            {
+                logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
             }
 
+            // Result
             Result result = Result.Clean;
             if (logs.Any(x => x.State == LogState.Error || x.State == LogState.CriticalError))
                 result = Result.Error;
@@ -89,6 +99,11 @@ namespace PEBakery.Core
         #region ValidateCodeSection
         private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
+            // If this section was already visited, return.
+            if (_visitedSections.Contains(section.Name))
+                return new List<LogInfo>();
+            _visitedSections.Add(section.Name);
+
             if (section.Lines == null)
             {
                 string msg = $"Unable to load section [{section.Name}]";
@@ -102,12 +117,12 @@ namespace PEBakery.Core
 
             CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
             (CodeCommand[] cmds, List<LogInfo> logs) = parser.ParseStatements();
-            InternalValidateCodes(cmds, logs);
+            ValidateCodeCommands(cmds, logs);
 
             return logs;
         }
 
-        private void InternalValidateCodes(CodeCommand[] codes, List<LogInfo> logs)
+        private void ValidateCodeCommands(CodeCommand[] codes, List<LogInfo> logs)
         {
             string targetCodeSection = null;
             string targetInterfaceSection = null;
@@ -136,14 +151,14 @@ namespace PEBakery.Core
                                 }
                             }
 
-                            InternalValidateCodes(info.Link.ToArray(), logs);
+                            ValidateCodeCommands(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Else:
                         {
                             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
-                            InternalValidateCodes(info.Link.ToArray(), logs);
+                            ValidateCodeCommands(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Run:
@@ -209,20 +224,16 @@ namespace PEBakery.Core
                         #endregion
                 }
 
-                if (targetCodeSection != null && !_visitedSections.Contains(targetCodeSection))
+                if (targetCodeSection != null)
                 {
-                    _visitedSections.Add(targetCodeSection);
-
                     if (_sc.Sections.ContainsKey(targetCodeSection))
                         logs.AddRange(ValidateCodeSection(_sc.Sections[targetCodeSection], cmd.RawCode, cmd.LineIdx));
                     else
                         logs.Add(new LogInfo(LogState.Error, $"Section [{targetCodeSection}] does not exist", cmd));
                 }
 
-                if (targetInterfaceSection != null && !_visitedSections.Contains(targetInterfaceSection))
+                if (targetInterfaceSection != null)
                 {
-                    _visitedSections.Add(targetInterfaceSection);
-
                     if (_sc.Sections.ContainsKey(targetInterfaceSection))
                         logs.AddRange(ValidateInterfaceSection(_sc.Sections[targetInterfaceSection], cmd.RawCode, cmd.LineIdx));
                     else
@@ -235,6 +246,11 @@ namespace PEBakery.Core
         #region ValidateInterfaceSection
         private List<LogInfo> ValidateInterfaceSection(ScriptSection section, string rawLine = null, int lineIdx = 0)
         {
+            // If this section was already visited, return.
+            if (_visitedSections.Contains(section.Name))
+                return new List<LogInfo>();
+            _visitedSections.Add(section.Name);
+
             // Force parsing of code, bypassing caching by section.GetUICtrls()
             string[] lines = section.Lines;
             if (lines == null)
@@ -283,7 +299,12 @@ namespace PEBakery.Core
                             if (info.Picture != null &&
                                 !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                                 !EncodedFile.ContainsInterface(_sc, info.Picture))
-                                logs.Add(new LogInfo(LogState.Warning, $"Image resource [{info.Picture}] does not exist", uiCtrl));
+                            {
+                                if (info.Picture.Length == 0) // Due to WinBuilder's editor quirks, many buttons have '' instead of '0' in the place of <Picture>.
+                                    logs.Add(new LogInfo(LogState.Warning, "Image resource entry is empty. Use [0] to represent not having an image resource.", uiCtrl)); 
+                                else
+                                    logs.Add(new LogInfo(LogState.Warning, $"Image resource [{info.Picture}] does not exist", uiCtrl));
+                            }
 
                             if (info.SectionName != null)
                             {

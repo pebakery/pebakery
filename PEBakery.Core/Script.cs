@@ -396,8 +396,7 @@ namespace PEBakery.Core
             {
                 ScriptSection section = kv.Value;
                 section.Type = DetectTypeOfNotInspectedSection(section.Name);
-            }
-                
+            } 
         }
 
         private SectionType DetectTypeOfNotInspectedSection(string sectionName)
@@ -405,7 +404,7 @@ namespace PEBakery.Core
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
                 type = SectionType.AttachFileList;
-            else if (_interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
+            else if (_interfaceList.Any(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)))
                 type = SectionType.Interface;
             else // Load it!
                 type = SectionType.Code;
@@ -705,9 +704,9 @@ namespace PEBakery.Core
         #region Interface Methods - Get, Apply
         public ScriptSection GetInterfaceSection(out string sectionName)
         {
-            sectionName = "Interface";
-            if (MainInfo.ContainsKey("Interface"))
-                sectionName = MainInfo["Interface"];
+            sectionName = ScriptSection.Names.Interface;
+            if (MainInfo.ContainsKey(ScriptSection.Names.Interface))
+                sectionName = MainInfo[ScriptSection.Names.Interface];
 
             return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
         }
