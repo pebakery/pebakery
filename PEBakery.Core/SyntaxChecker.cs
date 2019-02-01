@@ -27,7 +27,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Core
@@ -75,7 +74,7 @@ namespace PEBakery.Core
                     processedInterfaces.Add(ifaceSection);
                     logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
                 }
-                    
+
             }
             // UICtrls - InterfaceList=
             foreach (string ifaceSection in _sc.InterfaceSectionNames
@@ -117,12 +116,12 @@ namespace PEBakery.Core
 
             CodeParser parser = new CodeParser(section, Global.Setting, section.Project.Compat);
             (CodeCommand[] cmds, List<LogInfo> logs) = parser.ParseStatements();
-            ValidateCodeCommands(cmds, logs);
+            RecursiveFindCodeSection(cmds, logs);
 
             return logs;
         }
 
-        private void ValidateCodeCommands(CodeCommand[] codes, List<LogInfo> logs)
+        private void RecursiveFindCodeSection(CodeCommand[] codes, List<LogInfo> logs)
         {
             string targetCodeSection = null;
             string targetInterfaceSection = null;
@@ -139,11 +138,11 @@ namespace PEBakery.Core
                             {
                                 // For recursive section call
                                 // Ex) If,ExistSection,%ScriptFile%,DoWork,Run,%ScriptFile%,DoWork
-                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                    info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
+                                if (info.Condition.Arg1.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.RunEx || info.Embed.Type == CodeType.Exec)
                                 {
                                     CodeInfo_RunExec subInfo = info.Embed.Info.Cast<CodeInfo_RunExec>();
-                                    if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                                    if (subInfo.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase))
                                     {
                                         if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
                                             continue;
@@ -151,14 +150,14 @@ namespace PEBakery.Core
                                 }
                             }
 
-                            ValidateCodeCommands(info.Link.ToArray(), logs);
+                            RecursiveFindCodeSection(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Else:
                         {
                             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
-                            ValidateCodeCommands(info.Link.ToArray(), logs);
+                            RecursiveFindCodeSection(info.Link.ToArray(), logs);
                         }
                         break;
                     case CodeType.Run:
@@ -168,7 +167,7 @@ namespace PEBakery.Core
                             CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
+                            if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
                         }
@@ -184,7 +183,7 @@ namespace PEBakery.Core
                                 continue;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
+                            if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                 !CodeParser.StringContainsVariable(info.SectionName))
                                 targetCodeSection = info.SectionName;
                         }
@@ -196,8 +195,8 @@ namespace PEBakery.Core
                             CodeInfo_AddInterface info = cmd.Info.Cast<CodeInfo_AddInterface>();
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                CodeParser.StringContainsVariable(info.Section))
+                            if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                !CodeParser.StringContainsVariable(info.Section))
                                 targetInterfaceSection = info.Section;
                         }
                         break;
@@ -206,8 +205,8 @@ namespace PEBakery.Core
                             CodeInfo_ReadInterface info = cmd.Info.Cast<CodeInfo_ReadInterface>();
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                CodeParser.StringContainsVariable(info.Section))
+                            if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                !CodeParser.StringContainsVariable(info.Section))
                                 targetInterfaceSection = info.Section;
                         }
                         break;
@@ -216,9 +215,23 @@ namespace PEBakery.Core
                             CodeInfo_WriteInterface info = cmd.Info.Cast<CodeInfo_WriteInterface>();
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) &&
-                                CodeParser.StringContainsVariable(info.Section))
+                            if (info.ScriptFile.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                !CodeParser.StringContainsVariable(info.Section))
                                 targetInterfaceSection = info.Section;
+                        }
+                        break;
+                    case CodeType.IniWrite:
+                        {
+                            // To detect multi-interface without `InterfaceList=`,
+                            // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
+                            CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+
+                            // CodeValidator does not have Variable information, so just check with predefined literal
+                            if (info.FileName.Equals(Script.Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                info.Section.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase) &&
+                                info.Key.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase) &&
+                                !CodeParser.StringContainsVariable(info.Value))
+                                targetInterfaceSection = info.Value;
                         }
                         break;
                         #endregion
@@ -301,7 +314,7 @@ namespace PEBakery.Core
                                 !EncodedFile.ContainsInterface(_sc, info.Picture))
                             {
                                 if (info.Picture.Length == 0) // Due to WinBuilder's editor quirks, many buttons have '' instead of '0' in the place of <Picture>.
-                                    logs.Add(new LogInfo(LogState.Warning, "Image resource entry is empty. Use [0] to represent not having an image resource.", uiCtrl)); 
+                                    logs.Add(new LogInfo(LogState.Warning, "Image resource entry is empty. Use [0] to represent not having an image resource.", uiCtrl));
                                 else
                                     logs.Add(new LogInfo(LogState.Warning, $"Image resource [{info.Picture}] does not exist", uiCtrl));
                             }

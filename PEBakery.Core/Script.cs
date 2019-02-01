@@ -50,6 +50,13 @@ namespace PEBakery.Core
     [Serializable]
     public class Script : IEquatable<Script>
     {
+        #region Const
+        public static class Const
+        {
+            public const string ScriptFile = "%ScriptFile%";
+        }
+        #endregion
+
         #region Fields
         private readonly string _realPath;
         [NonSerialized]
@@ -895,7 +902,6 @@ namespace PEBakery.Core
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static string GetEncodedSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
         }
-
         #endregion
 
         #region Fields and Properties
