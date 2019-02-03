@@ -704,14 +704,17 @@ namespace PEBakery.Core
         #endregion
 
         #region Static Methods - Utility
-        public static string TrimPercentMark(string varName)
+        public static string TrimPercentMark(string varKey)
         {
-            if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
+            if (varKey == null)
+                throw new ArgumentNullException(nameof(varKey));
+
+            if (!(varKey.StartsWith("%", StringComparison.Ordinal) && varKey.EndsWith("%", StringComparison.Ordinal)))
                 return null;
-            varName = varName.Substring(1, varName.Length - 2);
-            if (varName.Contains('%'))
+            varKey = varKey.Substring(1, varKey.Length - 2);
+            if (varKey.Contains('%'))
                 return null;
-            return varName;
+            return varKey;
         }
         #endregion
 
@@ -1082,6 +1085,9 @@ namespace PEBakery.Core
         /// <returns>Return null at error</returns>
         public static bool? ContainsKey(EngineState s, string varKey)
         {
+            if (varKey == null)
+                throw new ArgumentNullException(nameof(varKey));
+
             VarKeyType type = DetectType(varKey);
             switch (type)
             {

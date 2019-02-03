@@ -161,7 +161,7 @@ namespace PEBakery.Core.Commands
             }
 
             // Render script
-            if (s.MainViewModel.CurMainTree.Script.Equals(sc))
+            if (s.MainViewModel.CurMainTree != null && s.MainViewModel.CurMainTree.Script.Equals(sc))
             {
                 s.MainViewModel.CurMainTree.Script = sc;
                 s.MainViewModel.DisplayScript(s.MainViewModel.CurMainTree.Script);

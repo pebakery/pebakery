@@ -48,9 +48,8 @@ namespace PEBakery.Core.Tests
         [AssemblyCleanup]
         public static void AssemblyCleanup()
         {
-            EngineTests.Logger?.Dispose();
-
-            Global.NativeGlobalCleanup();
+            Global.Cleanup();
+            EngineTests.Logger = null;
         }
         #endregion
     }

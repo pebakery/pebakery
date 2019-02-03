@@ -189,6 +189,17 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Cleanup
+        public static void Cleanup()
+        {
+            ScriptCache?.WaitClose();
+            Logger?.Dispose();
+            NativeGlobalCleanup();
+
+            FileHelper.CleanBaseTempDir();
+        }
+        #endregion
+
         #region Load Native Libraries
         public static void NativeGlobalInit(string baseDir)
         {
@@ -221,16 +232,6 @@ namespace PEBakery.Core
             Joveler.Compression.ZLib.ZLibInit.GlobalCleanup();
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
-        }
-        #endregion
-
-        #region Cleanup
-        public static void Cleanup()
-        {
-            ScriptCache?.WaitClose();
-            Logger.Db.Close();
-
-            FileHelper.CleanBaseTempDir();
         }
         #endregion
     }

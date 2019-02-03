@@ -114,7 +114,8 @@ namespace PEBakery.Helper
                 if (_baseTempDir == null)
                     return;
 
-                Directory.Delete(_baseTempDir, true);
+                if (Directory.Exists(_baseTempDir))
+                    Directory.Delete(_baseTempDir, true);
                 _baseTempDir = null;
             }
         }
