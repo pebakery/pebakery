@@ -432,10 +432,12 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel(Script sc, Window window, MainViewModel mainViewModel)
         {
-            MainViewModel = mainViewModel;
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
             _window = window;
+            MainViewModel = mainViewModel;
+            InterfaceScaleFactor = Global.Setting.Interface.ScaleFactor;
 
+            // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
             {
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -445,7 +447,6 @@ namespace PEBakery.WPF
             Grid.SetRow(canvas, 0);
             Grid.SetColumn(canvas, 0);
             Panel.SetZIndex(canvas, -1);
-
             InterfaceCanvas = canvas;
         }
         #endregion
