@@ -1155,6 +1155,9 @@ namespace PEBakery.Core
                 BorderBrush = Brushes.Gray,
             };
 
+            if (!_viewMode)
+                Panel.SetZIndex(bevel, -1); // Should have lowest z-index
+
             SetToolTip(bevel, info.ToolTip);
             if (info.FontSize == null)
             { // No caption (WinBuilder compatible)
@@ -1214,11 +1217,7 @@ namespace PEBakery.Core
                 SetEditModeProperties(subCanvas, uiCtrl);
 
                 if (!_viewMode)
-                {
-                    bevel.IsHitTestVisible = true; // Focus is given when clicked
-                    Panel.SetZIndex(bevel, -1); // Should have lowest z-index
                     Panel.SetZIndex(subCanvas, -1); // Should have lowest z-index
-                }
 
                 DrawToCanvas(subCanvas, uiCtrl);
             }
