@@ -3384,7 +3384,7 @@ namespace PEBakery.WPF
             // Refresh interface section names
             if (refreshSectionNames)
             {
-                InterfaceSectionNames = new ObservableCollection<string>(Script.InterfaceSectionNames);
+                InterfaceSectionNames = new ObservableCollection<string>(Script.GetInterfaceSectionNames(true));
                 SelectedInterfaceSectionName = InterfaceSectionName = Script.InterfaceSectionName;
             }
             else

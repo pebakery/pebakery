@@ -53,7 +53,12 @@ namespace PEBakery.Core
         #region Const
         public static class Const
         {
+            // %ScriptFile%
             public const string ScriptFile = "%ScriptFile%";
+            // MainInfo
+            public const string Selected = "Selected";
+            public const string Interface = "Interface";
+            public const string InterfaceList = "InterfaceList";
         }
         #endregion
 
@@ -120,8 +125,8 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.MainInfo;
-                if (_sections.ContainsKey("Main"))
-                    return _sections["Main"].IniDict;
+                if (_sections.ContainsKey(ScriptSection.Names.Main))
+                    return _sections[ScriptSection.Names.Main].IniDict;
 
                 // Section not found, Just return empty dictionary
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -210,10 +215,10 @@ namespace PEBakery.Core
 
                 _selected = value;
                 string valStr = value.ToString();
-                if (_type != ScriptType.Directory && _sections.ContainsKey("Main"))
+                if (_type != ScriptType.Directory && _sections.ContainsKey(ScriptSection.Names.Main))
                 {
-                    _sections["Main"].IniDict["Selected"] = valStr;
-                    IniReadWriter.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
+                    _sections[ScriptSection.Names.Main].IniDict[Const.Selected] = valStr;
+                    IniReadWriter.WriteKey(_realPath, new IniKey(ScriptSection.Names.Main, Const.Selected, valStr));
                 }
             }
         }
@@ -230,7 +235,6 @@ namespace PEBakery.Core
                 return ScriptSection.Names.Interface;
             }
         }
-        public List<string> InterfaceSectionNames => _interfaceList.ToList();
         #endregion
 
         #region Constructor
@@ -403,7 +407,7 @@ namespace PEBakery.Core
             {
                 ScriptSection section = kv.Value;
                 section.Type = DetectTypeOfNotInspectedSection(section.Name);
-            } 
+            }
         }
 
         private SectionType DetectTypeOfNotInspectedSection(string sectionName)
@@ -522,9 +526,9 @@ namespace PEBakery.Core
                         if (!mainSection.IniDict.ContainsKey("Link"))
                             throw new ScriptParseException($"Invalid link path in script {RealPath}");
 
-                        if (mainSection.IniDict.ContainsKey("Selected"))
+                        if (mainSection.IniDict.ContainsKey(Const.Selected))
                         {
-                            string value = mainSection.IniDict["Selected"];
+                            string value = mainSection.IniDict[Const.Selected];
                             if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 _selected = SelectedState.True;
                             else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -565,9 +569,9 @@ namespace PEBakery.Core
                                 _author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
                                 _version = mainSection.IniDict["Version"];
-                            if (mainSection.IniDict.ContainsKey("Selected"))
+                            if (mainSection.IniDict.ContainsKey(Const.Selected))
                             {
-                                string src = mainSection.IniDict["Selected"];
+                                string src = mainSection.IniDict[Const.Selected];
                                 if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
                                     _selected = SelectedState.True;
                                 else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -582,9 +586,9 @@ namespace PEBakery.Core
                                 else
                                     _mandatory = false;
                             }
-                            if (mainSection.IniDict.ContainsKey("InterfaceList"))
+                            if (mainSection.IniDict.ContainsKey(Const.InterfaceList))
                             { // Hint for multiple Interface. Useful when supporting multi-interface editing.
-                                string rawList = mainSection.IniDict["InterfaceList"];
+                                string rawList = mainSection.IniDict[Const.InterfaceList];
                                 try
                                 {
                                     string remainder = rawList;
@@ -592,7 +596,7 @@ namespace PEBakery.Core
                                     {
                                         string next;
                                         (next, remainder) = CodeParser.GetNextArgument(remainder);
-                                        
+
                                         // Avoid duplicate, only add if section exists
                                         if (_sections.ContainsKey(next) && !_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
                                             _interfaceList.Add(next);
@@ -718,6 +722,153 @@ namespace PEBakery.Core
             return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
         }
 
+        public List<string> GetInterfaceSectionNames(bool deepScan)
+        {
+            // Basic scan : Refer only _interfaceList
+            List<string> interfaceSections = _interfaceList.ToList();
+            if (!deepScan)
+                return interfaceSections;
+
+            // Deep scan : Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
+            List<string> visitedSections = new List<string>();
+
+            // Parse interface controls.
+            ScriptSection section = GetInterfaceSection(out string defaultInterfaceSection);
+            if (section == null) // No interface section -> return empty list
+                return interfaceSections;
+
+            // Add defaultInterfaceSection to visited sections.
+            Debug.Assert(!visitedSections.Contains(defaultInterfaceSection, StringComparer.OrdinalIgnoreCase));
+            visitedSections.Add(defaultInterfaceSection);
+
+            // Queue for checking sections.
+            Queue<ScriptSection> sectionQueue = new Queue<ScriptSection>();
+
+            // Parse interface controls, and get a queue of code sections to inspect.
+            // Inspect only default interface section for performance
+            // 전제) The multi-interface script should have buttons for switching to another interface, in current interface.
+            (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(section.Lines, section);
+            foreach (UIControl uiCtrl in uiCtrls)
+            {
+                string sectionToRun = null;
+                switch (uiCtrl.Type)
+                {
+                    case UIControlType.CheckBox:
+                        {
+                            UIInfo_CheckBox info = uiCtrl.Info.Cast<UIInfo_CheckBox>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.Button:
+                        {
+                            UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.RadioButton:
+                        {
+                            UIInfo_RadioButton info = uiCtrl.Info.Cast<UIInfo_RadioButton>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                    case UIControlType.RadioGroup:
+                        {
+                            UIInfo_RadioGroup info = uiCtrl.Info.Cast<UIInfo_RadioGroup>();
+                            sectionToRun = info.SectionName;
+                        }
+                        break;
+                }
+
+                if (sectionToRun != null && Sections.ContainsKey(sectionToRun))
+                    sectionQueue.Enqueue(Sections[sectionToRun]);
+            }
+
+            // Run section queue
+            while (0 < sectionQueue.Count)
+            {
+                // Dequeue targetSection
+                ScriptSection targetSection = sectionQueue.Dequeue();
+
+                // Check if targetSection was already visited
+                if (visitedSections.Contains(targetSection.Name, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                visitedSections.Add(targetSection.Name);
+
+                // Parse commands (depth 0)
+                CodeParser parser = new CodeParser(targetSection, Global.Setting, targetSection.Project.Compat);
+                (CodeCommand[] cmds, _) = parser.ParseStatements();
+
+                // Queue for checking commands
+                Queue<CodeCommand> commandQueue = new Queue<CodeCommand>(cmds);
+
+                // Run command queue
+                while (0 < commandQueue.Count)
+                {
+                    CodeCommand cmd = commandQueue.Dequeue();
+                    switch (cmd.Type)
+                    {
+                        case CodeType.If:
+                            {
+                                CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
+                                foreach (CodeCommand nextCmd in info.Link)
+                                    commandQueue.Enqueue(nextCmd);
+                            }
+                            break;
+                        case CodeType.Else:
+                            {
+                                CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
+                                foreach (CodeCommand nextCmd in info.Link)
+                                    commandQueue.Enqueue(nextCmd);
+                            }
+                            break;
+                        case CodeType.Run:
+                        case CodeType.Exec:
+                        case CodeType.RunEx:
+                            {
+                                CodeInfo_RunExec info = cmd.Info.Cast<CodeInfo_RunExec>();
+
+                                if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.SectionName) &&
+                                    Sections.ContainsKey(info.SectionName))
+                                    sectionQueue.Enqueue(Sections[info.SectionName]);
+                            }
+                            break;
+                        case CodeType.Loop:
+                        case CodeType.LoopLetter:
+                        case CodeType.LoopEx:
+                        case CodeType.LoopLetterEx:
+                            {
+                                CodeInfo_Loop info = cmd.Info.Cast<CodeInfo_Loop>();
+
+                                if (info.Break)
+                                    continue;
+
+                                if (info.ScriptFile.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.SectionName) &&
+                                    Sections.ContainsKey(info.SectionName))
+                                    sectionQueue.Enqueue(Sections[info.SectionName]);
+                            }
+                            break;
+                        case CodeType.IniWrite:
+                            {
+                                CodeInfo_IniWrite info = cmd.Info.Cast<CodeInfo_IniWrite>();
+
+                                // To detect multi-interface without `InterfaceList=`,
+                                // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
+                                if (info.FileName.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Section.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Key.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase) &&
+                                    !CodeParser.StringContainsVariable(info.Value))
+                                    interfaceSections.Add(info.Value);
+                            }
+                            break;
+                    }
+                }
+            }
+
+            return interfaceSections;
+        }
+
         public (string sectionName, List<UIControl> uiCtrls, List<LogInfo> errLogs) GetInterfaceControls()
         {
             ScriptSection ifaceSection = GetInterfaceSection(out string sectionName);
@@ -740,7 +891,7 @@ namespace PEBakery.Core
             return (uiCtrls, errLogs);
         }
 
-        public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = "Interface")
+        public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = Const.Interface)
         {
             if (!Sections.ContainsKey(destSection))
                 return false; // Section [destSection] not found
@@ -789,7 +940,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Virtual, Interface Methods
+        #region Virtual, Overriden Methods
         public override string ToString()
         {
             switch (_type)
@@ -1063,7 +1214,7 @@ namespace PEBakery.Core
             {
                 // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
                 string line = _lines[i];
-                
+
                 int eIdx = line.IndexOf('=');
                 if (eIdx != -1 && eIdx != 0)
                 { // Key Found
@@ -1165,7 +1316,7 @@ namespace PEBakery.Core
         public override string ToString() => IsDir ? $"[D] {TreePath}" : $"[S] {TreePath}";
 
         public bool Equals(ScriptParseInfo y)
-        { 
+        {
             // IsDir, IsDirLink
             if (IsDir != y.IsDir || IsDirLink != y.IsDirLink)
                 return false;

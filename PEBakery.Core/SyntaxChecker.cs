@@ -77,7 +77,7 @@ namespace PEBakery.Core
 
             }
             // UICtrls - InterfaceList=
-            foreach (string ifaceSection in _sc.InterfaceSectionNames
+            foreach (string ifaceSection in _sc.GetInterfaceSectionNames(false)
                 .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase) &&
                             _sc.Sections.ContainsKey(x)))
             {
@@ -121,7 +121,7 @@ namespace PEBakery.Core
             return logs;
         }
 
-        private void RecursiveFindCodeSection(CodeCommand[] codes, List<LogInfo> logs)
+        private void RecursiveFindCodeSection(IReadOnlyList<CodeCommand> codes, List<LogInfo> logs)
         {
             string targetCodeSection = null;
             string targetInterfaceSection = null;
@@ -150,14 +150,14 @@ namespace PEBakery.Core
                                 }
                             }
 
-                            RecursiveFindCodeSection(info.Link.ToArray(), logs);
+                            RecursiveFindCodeSection(info.Link, logs);
                         }
                         break;
                     case CodeType.Else:
                         {
                             CodeInfo_Else info = cmd.Info.Cast<CodeInfo_Else>();
 
-                            RecursiveFindCodeSection(info.Link.ToArray(), logs);
+                            RecursiveFindCodeSection(info.Link, logs);
                         }
                         break;
                     case CodeType.Run:
