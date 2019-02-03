@@ -1148,7 +1148,8 @@ namespace PEBakery.Core
 
             Border bevel = new Border
             {
-                IsHitTestVisible = false, // Focus is not given when clicked
+                // Focusable only in edit mode
+                IsHitTestVisible = !_viewMode,
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0.7),
                 BorderBrush = Brushes.Gray,
@@ -1166,13 +1167,12 @@ namespace PEBakery.Core
 
                 Border textBorder = new Border
                 {
+                    // Focusable only in edit mode
+                    IsHitTestVisible = !_viewMode,
                     // Don't use info.FontSize for border thickness. It throws off X Pos.
                     BorderThickness = new Thickness(CalcFontPointScale() / 3),
                     BorderBrush = Brushes.Transparent,
                 };
-
-                if (!_viewMode) // Focus is given when clicked
-                    textBorder.IsHitTestVisible = true;
 
                 TextBlock textBlock = new TextBlock
                 {
@@ -1514,7 +1514,7 @@ namespace PEBakery.Core
             if (_viewMode)
                 return;
 
-            // Only for EditMode (ScriptEditWindow)
+            // Only for edit mode (ScriptEditWindow)
             if (!uiCtrl.Visibility)
                 element.Opacity = 0.5;
         }
