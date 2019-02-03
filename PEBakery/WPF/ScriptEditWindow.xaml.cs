@@ -267,7 +267,6 @@ namespace PEBakery.WPF
                 cursorPos.Y < 0 || m.InterfaceCanvas.Height < cursorPos.Y)
             { // Clicked outside of DragCanvas -> Route OnPreviewMouseLeftButtonDown event to DragCanvas
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
-                e.Handled = true;
             }
         }
         #endregion  

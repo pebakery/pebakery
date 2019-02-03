@@ -272,7 +272,19 @@ namespace PEBakery.WPF.Controls
             }
             else
             {
-                Debug.Assert(false, "Internal Error at DragCanvas mouse event handler");
+                // Clicked background -> Reset selected elements
+                _dragMode = DragMode.DragToSelect;
+
+                _isBeingDragged = true;
+
+                // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
+                _dragAreaRectangle = new Rectangle
+                {
+                    Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
+                };
+                Children.Add(_dragAreaRectangle);
+
+                ClearSelectedElements(true);
             }
 
             e.Handled = true;
