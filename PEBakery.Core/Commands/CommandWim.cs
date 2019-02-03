@@ -741,7 +741,7 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(listFilePath))
                 return LogInfo.LogErrorMessage(logs, $"ListFile [{listFilePath}] does not exist");
 
-            string unicodeListFile = Path.GetTempFileName();
+            string unicodeListFile = FileHelper.GetTempFile("txt");
             try
             {
                 List<string> extractNormalPaths = new List<string>();

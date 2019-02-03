@@ -35,6 +35,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
@@ -220,6 +221,16 @@ namespace PEBakery.Core
             Joveler.Compression.ZLib.ZLibInit.GlobalCleanup();
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
+        }
+        #endregion
+
+        #region Cleanup
+        public static void Cleanup()
+        {
+            ScriptCache?.WaitClose();
+            Logger.Db.Close();
+
+            FileHelper.CleanBaseTempDir();
         }
         #endregion
     }

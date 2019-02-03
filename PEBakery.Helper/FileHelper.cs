@@ -30,7 +30,9 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace PEBakery.Helper
 {
@@ -70,19 +72,101 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region Path Operations
-        private static readonly object TempDirLock = new object();
-        public static string GetTempDir()
+        #region Temp Path
+        private static readonly object _tempPathLock = new object();
+        private static readonly RNGCryptoServiceProvider _secureRandom = new RNGCryptoServiceProvider();
+        private static int _tempCounter = 0;
+
+        private static string _baseTempDir = null;
+        public static string BaseTempDir()
         {
-            lock (TempDirLock)
+            lock (_tempPathLock)
             {
-                string path = Path.GetTempFileName();
-                File.Delete(path);
-                Directory.CreateDirectory(path);
-                return path;
+                if (_baseTempDir == null)
+                {
+                    byte[] randBytes = new byte[4];
+                    string systemTempDir = Path.GetTempPath();
+
+                    do
+                    {
+                        // Get 4B of random 
+                        _secureRandom.GetBytes(randBytes);
+                        uint randInt = BitConverter.ToUInt32(randBytes, 0);
+
+                        _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
+                    }
+                    while (Directory.Exists(_baseTempDir) || File.Exists(_baseTempDir));
+
+                    Directory.CreateDirectory(_baseTempDir);
+                }
+
+                return _baseTempDir;
             }
         }
 
+        /// <summary>
+        /// Delete BaseTempDir from disk. Call this method before termination of an application.
+        /// </summary>
+        public static void CleanBaseTempDir()
+        {
+            lock (_tempPathLock)
+            {
+                if (_baseTempDir == null)
+                    return;
+
+                Directory.Delete(_baseTempDir, true);
+                _baseTempDir = null;
+            }
+        }
+
+        public static string GetTempDir()
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            lock (_tempPathLock)
+            {
+                string tempDir;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempCounter);
+                    tempDir = Path.Combine(baseTempDir, $"d{counter:X8}");
+                }
+                while (Directory.Exists(tempDir) || File.Exists(tempDir));
+
+                Directory.CreateDirectory(tempDir);
+                return tempDir;
+            }
+        }
+
+        /// <summary>
+        /// Create temp file with synchronization
+        /// </summary>
+        public static string GetTempFile(string ext = null)
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            // Use tmp by default / Remove '.' from ext
+            ext = ext == null ? "tmp" : ext.Trim('.');
+
+            lock (_tempPathLock)
+            {
+                string tempFile;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempCounter);
+                    tempFile = Path.Combine(baseTempDir, ext.Length == 0 ? $"f{counter:X8}" : $"f{counter:X8}.{ext}");
+                }
+                while (Directory.Exists(tempFile) || File.Exists(tempFile));
+
+                File.Create(tempFile).Dispose();
+                return tempFile;
+            }
+        }
+        #endregion
+
+        #region Path Operations
         /// <summary>
         /// Extends Path.GetDirectoryName().
         /// If returned dir path is empty, change it to "."
@@ -141,13 +225,6 @@ namespace PEBakery.Helper
                 File.Copy(src, dest, true);
                 File.Delete(src);
             }
-        }
-
-        public static string GetTempFileNameEx()
-        {
-            string path = Path.GetTempFileName();
-            File.Delete(path);
-            return path;
         }
 
         public static string RemoveFirstDir(string src, int removeNumber)

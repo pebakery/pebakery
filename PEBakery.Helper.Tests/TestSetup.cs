@@ -20,6 +20,7 @@ namespace PEBakery.Helper.Tests
         [AssemblyCleanup]
         public static void Cleanup()
         {
+            FileHelper.CleanBaseTempDir();
         }
     }
 

@@ -34,6 +34,71 @@ namespace PEBakery.Helper.Tests
     [TestClass]
     public class FileHelperTests
     {
+        #region Temp Path
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("FileHelper")]
+        public void BaseTempDir()
+        {
+            string baseTempDir = FileHelper.BaseTempDir();
+            Console.WriteLine($"BaseTempDir = {baseTempDir}");
+
+            string startsWith = Path.Combine(Path.GetTempPath(), "PEBakery_");
+            Assert.IsTrue(baseTempDir.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase));
+
+            int length = startsWith.Length + 8; // %TempDir%\PEBakery_<8 HEX NUM>
+            Assert.AreEqual(length, baseTempDir.Length);
+        }
+
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("FileHelper")]
+        public void GetTempDir()
+        {
+            string baseTempDir = FileHelper.BaseTempDir();
+            Console.WriteLine($"BaseTempDir = {baseTempDir}");
+
+            string tempDir = FileHelper.GetTempDir();
+            Console.WriteLine($"TempDir     = {tempDir}");
+
+            string startsWith = Path.Combine(baseTempDir, "d");
+            Assert.IsTrue(tempDir.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase));
+
+            int length = startsWith.Length + 8;
+            Assert.AreEqual(length, tempDir.Length);
+        }
+
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("FileHelper")]
+        public void GetTempFile()
+        {
+            string baseTempDir = FileHelper.BaseTempDir();
+            Console.WriteLine($"BaseTempDir = {baseTempDir}");
+
+            void Template(string ext)
+            {
+                string tempFile = FileHelper.GetTempFile(ext);
+                Console.WriteLine($"TempFile    = {tempFile}");
+
+                string startsWith = Path.Combine(baseTempDir, "f");
+                Assert.IsTrue(tempFile.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase));
+
+                int length = startsWith.Length + 8;
+                if (ext == null)
+                    length += ".tmp".Length;
+                else
+                    length += 1 + ext.Length;
+                Assert.AreEqual(length, tempFile.Length);
+            }
+
+            Template(null);
+            Template("txt");
+            Template("ini");
+            Template("script");
+        }
+        #endregion
+
         #region GetFilesEx
         [TestMethod]
         [TestCategory("Helper")]

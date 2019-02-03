@@ -583,8 +583,7 @@ namespace PEBakery.WPF
             if (Model.ProjectsLoading != 0)
                 await Task.Delay(500);
 
-            Global.ScriptCache?.WaitClose();
-            Logger.Db.Close();
+            Global.Cleanup();
         }
 
         private void BuildConOutRedirectListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)

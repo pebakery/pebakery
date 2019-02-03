@@ -77,6 +77,7 @@ namespace PEBakery.Core
 
             }
             // UICtrls - InterfaceList=
+            // Do not enable deepScan, SyntaxChecker have its own implementation of `IniWrite` pattern scanning
             foreach (string ifaceSection in _sc.GetInterfaceSectionNames(false)
                 .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase) &&
                             _sc.Sections.ContainsKey(x)))

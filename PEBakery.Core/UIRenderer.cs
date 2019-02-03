@@ -784,7 +784,7 @@ namespace PEBakery.Core
                 return;
             }
 
-            string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
+            string path = Path.ChangeExtension(FileHelper.GetTempFile(), "." + t.ToString().ToLower());
             using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
             {

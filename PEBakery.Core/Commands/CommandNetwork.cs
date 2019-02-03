@@ -107,7 +107,7 @@ namespace PEBakery.Core.Commands
                 { // Validate downloaded file with hash
                     Debug.Assert(info.HashDigest != null);
 
-                    string tempPath = Path.GetTempFileName();
+                    string tempPath = FileHelper.GetTempFile();
                     (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, tempPath);
                     if (result)
                     { // Success -> Check hash

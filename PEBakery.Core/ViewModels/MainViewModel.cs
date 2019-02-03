@@ -633,7 +633,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildCommandProgressValue, value);
         }
 
-        private Visibility _buildCommandProgressVisibility;
+        private Visibility _buildCommandProgressVisibility = Visibility.Collapsed;
         public Visibility BuildCommandProgressVisibility
         {
             get => _buildCommandProgressVisibility;
@@ -1004,9 +1004,9 @@ namespace PEBakery.Core.ViewModels
                         switch (result)
                         {
                             case SyntaxChecker.Result.Clean:
-                                b.AppendLine("No syntax issue detected");
+                                b.AppendLine("No syntax issue detected.");
                                 b.AppendLine();
-                                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
                                 MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
                                 break;
                             case SyntaxChecker.Result.Warning:
@@ -1016,11 +1016,9 @@ namespace PEBakery.Core.ViewModels
                                 MessageBoxResult dialogResult = MessageBox.Show(dialogMsg, "Syntax Check", MessageBoxButton.OKCancel, dialogIcon);
                                 if (dialogResult == MessageBoxResult.OK)
                                 {
-                                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+                                    b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
 
-                                    string tempFile = Path.GetTempFileName();
-                                    File.Delete(tempFile);
-                                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                                    string tempFile = FileHelper.GetTempFile("txt");
                                     using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                                         w.Write(b.ToString());
 

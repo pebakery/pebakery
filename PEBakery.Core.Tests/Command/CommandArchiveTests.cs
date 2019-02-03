@@ -289,7 +289,7 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcFullPath = Path.Combine(dirPath, archiveName);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
 
                 try
                 {
@@ -327,13 +327,11 @@ namespace PEBakery.Core.Tests.Command
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
                 string srcPath = Path.Combine(dirPath, archiveName, compFile);
-                string destDir = FileHelper.GetTempFileNameEx();
+                string destDir = FileHelper.GetTempDir();
                 string destPath = Path.Combine(destDir, compFile);
 
                 try
                 {
-                    Directory.CreateDirectory(destDir);
-
                     string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
                     EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
 
@@ -370,7 +368,7 @@ namespace PEBakery.Core.Tests.Command
         public void Expand()
         {
             EngineState s = EngineTests.CreateEngineState();
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
 
             void FileTemplate(string compFile, string rawCode, ErrorCheck check, bool testPreserve = false, bool checkIfPreserve = true)
             {
@@ -497,15 +495,11 @@ namespace PEBakery.Core.Tests.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
             string destFile = Path.Combine(destDir, "ex3.jpg");
 
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
             try
             {
-                Directory.CreateDirectory(destDir);
-
                 string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 
@@ -531,16 +525,11 @@ namespace PEBakery.Core.Tests.Command
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
             string srcPath = Path.Combine(dirPath, "Cab", "ex3.jpg");
-            string destDir = FileHelper.GetTempFileNameEx();
+            string destDir = FileHelper.GetTempDir();
             string destFile = Path.Combine(destDir, "change.jpg");
-
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
 
             try
             {
-                Directory.CreateDirectory(destDir);
-
                 string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"{destDir}\\change.jpg\"";
                 EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
 

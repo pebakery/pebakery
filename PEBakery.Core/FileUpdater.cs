@@ -98,7 +98,7 @@ namespace PEBakery.Core
                 url = $"{url}\\{pBaseUrl}";
             }
 
-            string tempFile = FileHelper.GetTempFileNameEx();
+            string tempFile = FileHelper.GetTempFile();
             opts.Model?.SetBuildCommandProgress("Download Progress");
             try
             {

@@ -823,7 +823,7 @@ namespace PEBakery.Core
             string errorMsg = null;
 
             // Backup
-            string backupFile = Path.GetTempFileName();
+            string backupFile = FileHelper.GetTempFile("script");
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
@@ -874,7 +874,7 @@ namespace PEBakery.Core
             string errorMsg = null;
 
             // Backup
-            string backupFile = Path.GetTempFileName();
+            string backupFile = FileHelper.GetTempFile("script");
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
@@ -959,7 +959,7 @@ namespace PEBakery.Core
             string errorMsg = null;
 
             // Backup
-            string backupFile = Path.GetTempFileName();
+            string backupFile = FileHelper.GetTempFile("script");
             File.Copy(sc.RealPath, backupFile, true);
             try
             {
@@ -1031,9 +1031,9 @@ namespace PEBakery.Core
             string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
 
             // [Stage 1] Backup original script and prepare temp files
-            string backupFile = Path.GetTempFileName();
+            string backupFile = FileHelper.GetTempFile("");
             File.Copy(sc.RealPath, backupFile, true);
-            string tempCompressed = Path.GetTempFileName();
+            string tempCompressed = FileHelper.GetTempFile();
             try
             {
                 int encodedLen;
@@ -1258,8 +1258,8 @@ namespace PEBakery.Core
         #region Decode
         private static long Decode(string scPath, string section, Stream outStream, IProgress<double> progress)
         {
-            string tempDecode = Path.GetTempFileName();
-            string tempComp = Path.GetTempFileName();
+            string tempDecode = FileHelper.GetTempFile();
+            string tempComp = FileHelper.GetTempFile();
             try
             {
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
@@ -1647,7 +1647,7 @@ namespace PEBakery.Core
         #region GetEncodeMode
         private static EncodeMode GetEncodeMode(string scPath, string section)
         {
-            string tempDecode = Path.GetTempFileName();
+            string tempDecode = FileHelper.GetTempFile();
             try
             {
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
