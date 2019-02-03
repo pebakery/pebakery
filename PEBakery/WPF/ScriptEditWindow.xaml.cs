@@ -262,12 +262,17 @@ namespace PEBakery.WPF
         {
             InterfaceScrollViewer.Focus();
 
-            Point cursorPos = e.GetPosition(m.InterfaceCanvas);
-            if (cursorPos.X < 0 || m.InterfaceCanvas.Width < cursorPos.X ||
-                cursorPos.Y < 0 || m.InterfaceCanvas.Height < cursorPos.Y)
-            { // Clicked outside of DragCanvas -> Route OnPreviewMouseLeftButtonDown event to DragCanvas
+            // Clicked outside of the viewport (== clicked scrollbar) -> Do nothing to let event propagate to scrollbar
+            Point svCursor = e.GetPosition(InterfaceScrollViewer);
+            if (InterfaceScrollViewer.ViewportWidth < svCursor.X ||
+                InterfaceScrollViewer.ViewportHeight < svCursor.Y)
+                return;
+
+            // Clicked outside of DragCanvas -> Route OnPreviewMouseLeftButtonDown event to DragCanvas
+            Point cvCursor = e.GetPosition(m.InterfaceCanvas);
+            if (cvCursor.X < 0 || m.InterfaceCanvas.Width < cvCursor.X ||
+                cvCursor.Y < 0 || m.InterfaceCanvas.Height < cvCursor.Y)
                 m.InterfaceCanvas.TriggerPreviewMouseLeftButtonDown(e);
-            }
         }
         #endregion  
         #region For Interface Move/Resize via Keyboard
@@ -3583,14 +3588,14 @@ namespace PEBakery.WPF
 
             IniKey[] keys =
             {
-                new IniKey("Main", "Title", ScriptTitle),
-                new IniKey("Main", "Author", ScriptAuthor),
-                new IniKey("Main", "Version", ScriptVersion),
-                new IniKey("Main", "Date", ScriptDate),
-                new IniKey("Main", "Level", ((int)ScriptLevel).ToString()),
-                new IniKey("Main", "Description", StringEscaper.Escape(ScriptDescription)),
-                new IniKey("Main", "Selected", ScriptSelectedState.ToString()),
-                new IniKey("Main", "Mandatory", ScriptMandatory.ToString()),
+                new IniKey(ScriptSection.Names.Main, "Title", ScriptTitle),
+                new IniKey(ScriptSection.Names.Main, "Author", ScriptAuthor),
+                new IniKey(ScriptSection.Names.Main, "Version", ScriptVersion),
+                new IniKey(ScriptSection.Names.Main, "Date", ScriptDate),
+                new IniKey(ScriptSection.Names.Main, "Level", ((int)ScriptLevel).ToString()),
+                new IniKey(ScriptSection.Names.Main, "Description", StringEscaper.Escape(ScriptDescription)),
+                new IniKey(ScriptSection.Names.Main, "Selected", ScriptSelectedState.ToString()),
+                new IniKey(ScriptSection.Names.Main, "Mandatory", ScriptMandatory.ToString()),
             };
 
             IniReadWriter.WriteKeys(Script.RealPath, keys);
