@@ -1099,7 +1099,7 @@ namespace PEBakery.Core.Commands
             UIControl.Update(updatedUICtrls);
 
             // Render Script again
-            if (s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
+            if (s.MainViewModel.CurMainTree != null && s.MainViewModel.CurMainTree.Script.Equals(cmd.Section.Script))
                 s.MainViewModel.DisplayScript(cmd.Section.Script);
 
             if (1 < updatedUICtrls.Count)
