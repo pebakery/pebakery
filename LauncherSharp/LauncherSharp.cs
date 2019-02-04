@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2019 Hajin Jang
     Licensed under MIT License.
 
     MIT License
@@ -54,9 +54,9 @@ namespace PEBakeryLauncher
             if (!File.Exists(pebakeryPath))
             {
                 MessageBox.Show("Unable to find PEBakery.",
-                    "Unable to find PEBakery",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                                "Unable to find PEBakery",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
                 Environment.Exit(1);
             }
 
@@ -64,9 +64,9 @@ namespace PEBakeryLauncher
             // The launcher itself runs in .Net Framework 4 Client Profile.
             if (!CheckNetFrameworkVersion())
             {
-                MessageBox.Show($"PEBakery requires .Net Framework {DotNetFxVerStr} or newer.", 
-                                $"Install .Net Framework {DotNetFxVerStr}", 
-                                MessageBoxButton.OK, 
+                MessageBox.Show($"PEBakery requires .Net Framework {DotNetFxVerStr} or newer.",
+                                $"Install .Net Framework {DotNetFxVerStr}",
+                                MessageBoxButton.OK,
                                 MessageBoxImage.Error);
                 Process.Start(DotNetFxInstallerUrl);
                 Environment.Exit(1);
