@@ -683,10 +683,8 @@ namespace PEBakery.Core
                 if (!string.IsNullOrEmpty(info.Url))
                 {
                     url = StringEscaper.Unescape(info.Url);
-                    if (Uri.TryCreate(url, UriKind.Absolute, out Uri _)) // Success
-                        hasUrl = true;
-                    else // Failure
-                        throw new InvalidCommandException($"Invalid URL [{url}]");
+                    Uri uri = ParseUri(url);
+                    hasUrl = uri != null;
                 }
 
                 string toolTip = info.ToolTip;
@@ -770,7 +768,10 @@ namespace PEBakery.Core
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
             string url = StringEscaper.Unescape(info.Url);
-            FileHelper.OpenUri(url);
+            if (url.IndexOf("://", StringComparison.Ordinal) != -1)
+                FileHelper.OpenUri(url); 
+            else
+                throw new InvalidCommandException($"Invalid URL [{url}]");
         }
 
         /// <summary>
@@ -1039,7 +1040,10 @@ namespace PEBakery.Core
             };
 
             string url = StringEscaper.Unescape(info.Url);
-            Hyperlink link = new Hyperlink { NavigateUri = new Uri(url) };
+            Uri uri = ParseUri(url);
+            if (uri == null)
+                throw new InvalidCommandException($"Invalid URL [{url}]");
+            Hyperlink link = new Hyperlink { NavigateUri = uri };
             link.Inlines.Add(StringEscaper.Unescape(uiCtrl.Text));
             if (_viewMode)
                 ManageWebLabelEvent(link, true);
@@ -1551,6 +1555,26 @@ namespace PEBakery.Core
             return StringEscaper.Unescape(toolTip) + Environment.NewLine + Environment.NewLine + url;
         }
 
+        private static Uri ParseUri(string url)
+        {
+            if (!string.IsNullOrEmpty(url))
+            {
+                url = StringEscaper.Unescape(url);
+                if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+                    return uri;
+
+                // Retry again with appending `http://` 
+                // Ex) PStart_WebLabel="PStart Homepage",1,10,668,122,98,18,www.pegtop.de/start/
+                if (url.IndexOf("://", StringComparison.Ordinal) == -1)
+                {
+                    if (Uri.TryCreate("http://" + url, UriKind.Absolute, out uri)) // Success
+                        return uri;
+                }
+            }
+
+            return null;
+        }
+
         public static int GetMaxZIndex(Canvas canvas)
         {
             int max = Panel.GetZIndex(canvas);
@@ -1595,15 +1619,7 @@ namespace PEBakery.Core
                     mainModel.BuildTreeItems.Add(itemRoot);
                     mainModel.CurBuildTree = null;
                 }
-                /*
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!(Application.Current.MainWindow is MainWindow w))
-                        return;
 
-                    
-                });
-                */
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);

@@ -40,6 +40,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 
 namespace PEBakery.Core.ViewModels
@@ -88,10 +89,10 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _workInProgress = value;
-                Application.Current?.Dispatcher.BeginInvoke(new Action(() => 
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     MainCanvas.IsEnabled = !_workInProgress;
-                }));  
+                }));
                 OnPropertyUpdate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -302,6 +303,20 @@ namespace PEBakery.Core.ViewModels
                 OnPropertyUpdate(nameof(ScriptLogoImage));
                 OnPropertyUpdate(nameof(ScriptLogoSvg));
             }
+        }
+
+        private double _scriptLogoImageWidth;
+        public double ScriptLogoImageWidth
+        {
+            get => _scriptLogoImageWidth;
+            set => SetProperty(ref _scriptLogoImageWidth, value);
+        }
+
+        private double _scriptLogoImageHeight;
+        public double ScriptLogoImageHeight
+        {
+            get => _scriptLogoImageHeight;
+            set => SetProperty(ref _scriptLogoImageHeight, value);
         }
 
         private DrawingBrush _scriptLogoSvg;
@@ -1171,33 +1186,44 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-                try
+                bool processed = false;
+                if (EncodedFile.ContainsLogo(sc))
                 {
-                    // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
-                    Application.Current?.Dispatcher.Invoke(() =>
+                    try
                     {
-                        using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                        // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            switch (type)
+                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
                             {
-                                case ImageHelper.ImageType.Svg:
-                                    DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                                    Rect svgSize = svgDrawing.Bounds;
-                                    (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);
-                                    ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
-                                    ScriptLogoSvgWidth = width;
-                                    ScriptLogoSvgHeight = height;
-                                    break;
-                                default:
-                                    ScriptLogoImage = ImageHelper.ImageToBitmapImage(ms);
-                                    break;
+                                switch (type)
+                                {
+                                    case ImageHelper.ImageType.Svg:
+                                        DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+                                        Rect svgSize = svgDrawing.Bounds;
+                                        ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };
+                                        (ScriptLogoSvgWidth, ScriptLogoSvgHeight) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 80, 80);
+                                        break;
+                                    default:
+                                        BitmapImage bitmap;
+                                        ScriptLogoImage = bitmap = ImageHelper.ImageToBitmapImage(ms);
+                                        (ScriptLogoImageWidth, ScriptLogoImageHeight) = ImageHelper.DownSizeAspectRatio(bitmap.PixelWidth, bitmap.PixelHeight, 80, 80);
+                                        break;
+                                }
                             }
-                        }
-                    });
-                    
+                        });
+
+                        processed = true;
+                    }
+                    catch
+                    { // Problem with displaying logo file - use default icon
+                        processed = false;
+                    }
                 }
-                catch
-                { // No logo file - use default
+
+                if (!processed)
+                {
+                    // Default Icon
                     PackIconMaterialKind iconKind = PackIconMaterialKind.None;
                     if (sc.Type == ScriptType.Script)
                         iconKind = sc.IsDirLink ? PackIconMaterialKind.FileSend : PackIconMaterialKind.FileDocument;

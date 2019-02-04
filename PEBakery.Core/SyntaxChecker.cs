@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Core
@@ -334,6 +335,20 @@ namespace PEBakery.Core
                                 else
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", uiCtrl));
                             }
+                        }
+                        break;
+                    case UIControlType.WebLabel:
+                        {
+                            UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
+
+                            string url = StringEscaper.Unescape(info.Url);
+                            if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+                            {
+                                if (url.IndexOf("://", StringComparison.Ordinal) != -1)
+                                    logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{info.Url}]", uiCtrl));
+                                else
+                                    logs.Add(new LogInfo(LogState.Warning, $"URL does not have scheme. Did you omit \"http://\"?", uiCtrl));
+                            }   
                         }
                         break;
                     case UIControlType.RadioButton:

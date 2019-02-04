@@ -216,6 +216,22 @@ namespace PEBakery.Helper
 
             return (newWidth, newHeight);
         }
+
+        public static (int Width, int Height) DownSizeAspectRatio(int currentWidth, int currentHeight, int targetWidth, int targetHeight)
+        {
+            if (currentWidth <= targetWidth && currentHeight <= targetHeight)
+                return (currentWidth, currentHeight);
+            else
+                return StretchSizeAspectRatio(currentWidth, currentHeight, targetWidth, targetHeight);
+        }
+
+        public static (double Width, double Height) DownSizeAspectRatio(double currentWidth, double currentHeight, double targetWidth, double targetHeight)
+        {
+            if (currentWidth <= targetWidth && currentHeight <= targetHeight)
+                return (currentWidth, currentHeight);
+            else
+                return StretchSizeAspectRatio(currentWidth, currentHeight, targetWidth, targetHeight);
+        }
         #endregion
 
         #region MaskWhiteAsTrapsarent

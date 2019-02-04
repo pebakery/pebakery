@@ -81,7 +81,7 @@ namespace PEBakery.WPF
         }
     }
 
-    public class CodeValidatorResultIconConverter : IValueConverter
+    public class SyntaxCheckerResultIconConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
@@ -114,7 +114,7 @@ namespace PEBakery.WPF
         }
     }
 
-    public class CodeValidatorResultColorConverter : IValueConverter
+    public class SyntaxCheckerResultColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

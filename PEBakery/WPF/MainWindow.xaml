@@ -122,8 +122,8 @@
     <Window.Resources>
         <local:TaskBarProgressConverter x:Key="TaskBarProgressConverter" />
         <local:BuildConOutForegroundConverter x:Key="BuildConOutForegroundConverter"/>
-        <local:CodeValidatorResultIconConverter x:Key="CodeValidatorResultIconConverter"/>
-        <local:CodeValidatorResultColorConverter x:Key="CodeValidatorResultColorConverter"/>
+        <local:SyntaxCheckerResultIconConverter x:Key="SyntaxCheckerResultIconConverter"/>
+        <local:SyntaxCheckerResultColorConverter x:Key="SyntaxCheckerResultColorConverter"/>
         <local:ScriptLogoVisibilityConverter x:Key="ScriptLogoVisibilityConverter"/>
         <local:ScriptTitleConverter x:Key="ScriptTitleConverter" />
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
@@ -633,11 +633,11 @@
                     <Image x:Name="ScriptLogoImage"
                            Grid.Row="0" Grid.Column="0"
                            Grid.RowSpan="4"
-                           Width="90" Height="90"
+                           Margin="10"
+                           Width="{Binding ScriptLogoImageWidth}"
+                           Height="{Binding ScriptLogoImageHeight}"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
-                           StretchDirection="DownOnly"
-                           Stretch="Uniform"
                            UseLayoutRounding="True"
                            Visibility="{Binding ScriptLogoImage, Converter={StaticResource ScriptLogoVisibilityConverter}}"
                            Source="{Binding ScriptLogoImage}"/>
@@ -685,8 +685,8 @@
                                        Visibility="{Binding ScriptCheckVisibility}"
                                        BorderThickness="0"
                                        Background="Transparent"
-                                       BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultColorConverter}}"
-                                       IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource CodeValidatorResultIconConverter}, FallbackValue=None}"
+                                       BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource SyntaxCheckerResultColorConverter}}"
+                                       IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource SyntaxCheckerResultIconConverter}, FallbackValue=None}"
                                        ToolTip="Syntax Check"/>
                         <TextBlock DockPanel.Dock="Right"
                                    Margin="0, 0, 5, 0"
