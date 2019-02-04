@@ -39,12 +39,10 @@ namespace PEBakery.Core.Commands
             if (s.Macro.GlobalDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.GlobalDict[info.MacroType];
-                macroCmd.RawCode = cmd.RawCode;
             }
             else if (s.Macro.LocalDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.LocalDict[info.MacroType];
-                macroCmd.RawCode = cmd.RawCode;
             }
             else
             {

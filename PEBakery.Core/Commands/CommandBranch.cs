@@ -110,7 +110,7 @@ namespace PEBakery.Core.Commands
             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
             {
                 IsMacro = opts.IsMacro | ls.IsMacro,
-                RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
+                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
             });
 
             // Restore Variables and Macros for Exec
@@ -242,7 +242,6 @@ namespace PEBakery.Core.Commands
                 {
                     case CodeType.Loop:
                     case CodeType.LoopEx:
-                        // for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                         for (long i = startIdx; i <= endIdx; i++)
                         { // Counter Variable is [#c]
                             s.LoopCounter = i;
@@ -257,7 +256,7 @@ namespace PEBakery.Core.Commands
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
-                                RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
                             });
 
                             // Reset s.LoopState
@@ -277,7 +276,6 @@ namespace PEBakery.Core.Commands
                         break;
                     case CodeType.LoopLetter:
                     case CodeType.LoopLetterEx:
-                        // for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
                         for (char ch = startLetter; ch <= endLetter; ch++)
                         { // Counter Variable is [#c]
                             s.LoopLetter = ch;
@@ -291,7 +289,7 @@ namespace PEBakery.Core.Commands
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
-                                RefScriptId = inCurrentScript ? s.ScriptId : s.Logger.BuildRefScriptWrite(s, sc),
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
                             });
 
                             // Reset s.LoopState

@@ -819,7 +819,7 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = ls.IsRefScript ? s.ScriptId : ls.RefScriptId,
+                RefScriptId = ls.RefScriptId,
                 Message = message,
                 Flags = flags,
             };
@@ -850,7 +850,7 @@ namespace PEBakery.Core
                 Time = DateTime.UtcNow,
                 BuildId = s.BuildId,
                 ScriptId = s.ScriptId,
-                RefScriptId = ls.IsRefScript ? s.ScriptId : ls.RefScriptId,
+                RefScriptId = ls.RefScriptId,
                 Depth = log.Depth,
                 State = state,
             };

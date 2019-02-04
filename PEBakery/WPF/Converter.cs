@@ -33,7 +33,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -52,7 +51,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -65,7 +64,7 @@ namespace PEBakery.WPF
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return new object[] { Binding.DoNothing, Binding.DoNothing };
         }
     }
 
@@ -78,7 +77,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -111,7 +110,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -144,7 +143,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -162,7 +161,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -180,7 +179,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
     #endregion
@@ -200,7 +199,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -216,7 +215,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -320,8 +319,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Not Implemented
-            return LogState.None;
+            return Binding.DoNothing;
         }
     }
 
@@ -338,8 +336,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Not Implemented
-            return LogState.None;
+            return Binding.DoNothing;
         }
     }
 
@@ -371,17 +368,17 @@ namespace PEBakery.WPF
             if (values == null || values.Length != 2)
                 return string.Empty;
 
-            if (!(values[0] is int logScriptId))
+            if (!(values[0] is int refScriptId))
                 return string.Empty;
             if (!(values[1] is Dictionary<int, string> scTitleDict))
                 return string.Empty;
 
-            return scTitleDict.ContainsKey(logScriptId) ? scTitleDict[logScriptId] : string.Empty;
+            return scTitleDict.ContainsKey(refScriptId) ? scTitleDict[refScriptId] : string.Empty;
         }
 
         public object[] ConvertBack(object value, Type[] targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return new object[] { Binding.DoNothing, Binding.DoNothing };
         }
     }
 
@@ -423,7 +420,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -441,7 +438,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -459,7 +456,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
 
@@ -477,7 +474,7 @@ namespace PEBakery.WPF
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return Binding.DoNothing;
         }
     }
     #endregion

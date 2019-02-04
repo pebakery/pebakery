@@ -1363,7 +1363,7 @@ namespace PEBakery.Core
         public bool IsMacro;
 
         /// <summary>
-        /// Is running from Referenced Script?
+        /// Is running from Referenced Script? Set to 0 if not referenced
         /// </summary>
         public int RefScriptId;
         public bool IsRefScript => RefScriptId != 0;
