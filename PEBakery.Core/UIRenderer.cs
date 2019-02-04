@@ -525,6 +525,7 @@ namespace PEBakery.Core
             ComboBox box = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
+                FontFamily = Global.Setting.Interface.MonospacedFontFamily,
                 ItemsSource = new ObservableCollection<string>(info.Items.Select(x => StringEscaper.Unescape(x))),
                 SelectedIndex = info.Index,
                 VerticalContentAlignment = VerticalAlignment.Center,

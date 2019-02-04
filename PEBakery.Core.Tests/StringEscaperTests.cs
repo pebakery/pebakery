@@ -104,7 +104,7 @@ namespace PEBakery.Core.Tests
         {
             string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.QuoteEscape(src, false, false);
-            string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
+            const string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
