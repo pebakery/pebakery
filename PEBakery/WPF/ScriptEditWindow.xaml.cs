@@ -3632,7 +3632,7 @@ namespace PEBakery.WPF
 
                 if (activeInterfaceSection != null)
                 {
-                    IniReadWriter.WriteKey(Script.RealPath, ScriptSection.Names.Main, "Interface", activeInterfaceSection);
+                    IniReadWriter.WriteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.Interface, activeInterfaceSection);
                 }
 
                 Script = Script.Project.RefreshScript(Script);

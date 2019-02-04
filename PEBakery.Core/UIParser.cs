@@ -158,7 +158,7 @@ namespace PEBakery.Core
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawValue, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be even", rawLine);
+                throw new InvalidCommandException("Double-quote's number should be even", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
@@ -577,7 +577,7 @@ namespace PEBakery.Core
                         if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[cnt - 1].StartsWith("_", StringComparison.Ordinal) &&
                             args[cnt - 1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 showProgress = true;
                             else if (!args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase))

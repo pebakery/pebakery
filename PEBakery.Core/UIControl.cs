@@ -596,7 +596,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
+                return "," + StringEscaper.Doublequote($"__{ToolTip}");
             return string.Empty;
         }
 
