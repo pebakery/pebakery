@@ -38,6 +38,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -847,9 +848,13 @@ namespace PEBakery.Core
                     else
                     {
                         using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
-                        using (StreamReader sr = new StreamReader(ms, EncodingHelper.DetectBom(ms)))
                         {
-                            textBox.Text = sr.ReadToEnd();
+                            Encoding encoding = EncodingHelper.DetectBom(ms);
+                            ms.Position = 0;
+                            using (StreamReader sr = new StreamReader(ms, encoding, false))
+                            {
+                                textBox.Text = sr.ReadToEnd();
+                            }
                         }
                     }
 
