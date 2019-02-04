@@ -48,6 +48,18 @@ namespace PEBakeryLauncher
 
         public static void Main(string[] args)
         {
+            // Check if PEBakery.exe exists
+            string absPath = GetProgramAbsolutePath();
+            string pebakeryPath = Path.Combine(absPath, "Binary", "PEBakery.exe");
+            if (!File.Exists(pebakeryPath))
+            {
+                MessageBox.Show("Unable to find PEBakery.",
+                    "Unable to find PEBakery",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Environment.Exit(1);
+            }
+
             // Alert user to install .Net Framework to 4.7.x if not installed.
             // The launcher itself runs in .Net Framework 4 Client Profile.
             if (!CheckNetFrameworkVersion())
@@ -61,18 +73,6 @@ namespace PEBakeryLauncher
             }
 
             // Launch PEBakery.exe using ShellExecute
-            string absPath = GetProgramAbsolutePath();
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    UseShellExecute = true,
-                    Verb = "Open",
-                    FileName = Path.Combine(absPath, "Binary", "PEBakery.exe"),
-                    WorkingDirectory = absPath
-                }
-            };
-
             StringBuilder b = new StringBuilder();
             foreach (string arg in args)
             {
@@ -80,7 +80,20 @@ namespace PEBakeryLauncher
                 b.Append(arg);
                 b.Append("\" ");
             }
-            proc.StartInfo.Arguments = b.ToString();
+            string argStr = b.ToString();
+            Console.WriteLine(argStr);
+
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    Verb = "Open",
+                    FileName = pebakeryPath,
+                    WorkingDirectory = absPath,
+                    Arguments = argStr,
+                }
+            };
             proc.Start();
         }
 
@@ -100,7 +113,7 @@ namespace PEBakeryLauncher
                 if (ndpKey == null)
                     return false;
 
-                uint revision = (uint)ndpKey.GetValue("Release", 0);
+                uint revision = (uint)(int)ndpKey.GetValue("Release", 0);
 
                 // PEBakery requires .Net Framework 4.7.x or later
                 return DotNetFxReleaseValue <= revision;
