@@ -238,16 +238,16 @@ namespace PEBakery.Helper
                 switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
                 {
                     // Binary
-                    case TextEncodingDetect.Encoding.None:
+                    case TextEncodingDetect.DetectedEncoding.None:
                     // PEBakery mandates unicode text to have BOM.
                     // They must have been filtered out in stage 1.
-                    case TextEncodingDetect.Encoding.Utf16LeBom:
-                    case TextEncodingDetect.Encoding.Utf16BeBom:
-                    case TextEncodingDetect.Encoding.Utf8Bom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16LeBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16BeBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf8Bom:
                     // Treat unicode text file without a BOM as a binary.
-                    case TextEncodingDetect.Encoding.Utf16LeNoBom:
-                    case TextEncodingDetect.Encoding.Utf16BeNoBom:
-                    case TextEncodingDetect.Encoding.Utf8NoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16LeNoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf16BeNoBom:
+                    case TextEncodingDetect.DetectedEncoding.Utf8NoBom:
                         isText = false;
                         break;
                 }

@@ -1,16 +1,18 @@
 ﻿// Copyright (c) Sven Groot (Ookii.org) 2006
 // See license.txt for details
 
+using Microsoft.Win32;
+using Ookii.Dialogs.Wpf.Interop;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Interop;
-using Microsoft.Win32;
-using Ookii.Dialogs.Wpf.Interop;
 
 namespace Ookii.Dialogs.Wpf
 {
+    /// <inheritdoc />
     /// <summary>
     /// Displays a dialog box from which the user can select a file.
     /// </summary>
@@ -26,14 +28,14 @@ namespace Ookii.Dialogs.Wpf
     ///   of the new APIs provided by Vista's file dialogs.
     /// </para>
     /// <para>
-    ///   This class precisely duplicates the public interface of <see cref="FileDialog"/> so you can just replace
-    ///   any instances of <see cref="FileDialog"/> with the <see cref="VistaFileDialog"/> without any further changes
+    ///   This class precisely duplicates the public interface of <see cref="T:Microsoft.Win32.FileDialog" /> so you can just replace
+    ///   any instances of <see cref="T:Microsoft.Win32.FileDialog" /> with the <see cref="T:Ookii.Dialogs.Wpf.VistaFileDialog" /> without any further changes
     ///   to your code.
     /// </para>
     /// </remarks>
     /// <threadsafety instance="false" static="true" />
     [DefaultEvent("FileOk"), DefaultProperty("FileName")]
-    public abstract class VistaFileDialog : Microsoft.Win32.CommonDialog
+    public abstract class VistaFileDialog : CommonDialog
     {
         internal const int HelpButtonId = 0x4001;
 
@@ -52,10 +54,11 @@ namespace Ookii.Dialogs.Wpf
         /// Event raised when the user clicks on the Open or Save button on a file dialog box.
         /// </summary>
         [Description("Event raised when the user clicks on the Open or Save button on a file dialog box."), Category("Action")]
-        public event System.ComponentModel.CancelEventHandler FileOk;
+        public event CancelEventHandler FileOk;
 
+        /// <inheritdoc />
         /// <summary>
-        /// Creates a new instance of <see cref="VistaFileDialog" /> class.
+        /// Creates a new instance of <see cref="T:Ookii.Dialogs.Wpf.VistaFileDialog" /> class.
         /// </summary>
         protected VistaFileDialog()
         {
@@ -298,10 +301,9 @@ namespace Ookii.Dialogs.Wpf
                     {
                         if (!string.IsNullOrEmpty(value))
                         {
-                            string[] filterElements = value.Split(new char[] { '|' });
-                            if (filterElements == null || filterElements.Length % 2 != 0)
+                            string[] filterElements = value.Split('|');
+                            if (filterElements.Length % 2 != 0)
                                 throw new ArgumentException(Properties.Resources.InvalidFilterString);
-
                         }
                         else
                             value = null;
@@ -457,17 +459,14 @@ namespace Ookii.Dialogs.Wpf
         [Browsable(false)]
         protected FileDialog DownlevelDialog
         {
-            get
-            {
-                return _downlevelDialog;
-            }
+            get => _downlevelDialog;
             set
             {
                 _downlevelDialog = value;
                 if (value != null)
                 {
                     //value.HelpRequest += new EventHandler(DownlevelDialog_HelpRequest);
-                    value.FileOk += new System.ComponentModel.CancelEventHandler(DownlevelDialog_FileOk);
+                    value.FileOk += DownlevelDialog_FileOk;
                 }
             }
         }
@@ -549,8 +548,7 @@ namespace Ookii.Dialogs.Wpf
             if (!GetOption(NativeMethods.FOS.FOS_ALLOWMULTISELECT))
             {
                 _fileNames = new string[1];
-                Ookii.Dialogs.Wpf.Interop.IShellItem result;
-                dialog.GetResult(out result);
+                dialog.GetResult(out IShellItem result);
                 result.GetDisplayName(NativeMethods.SIGDN.SIGDN_FILESYSPATH, out _fileNames[0]);
             }
         }
@@ -561,7 +559,7 @@ namespace Ookii.Dialogs.Wpf
         /// <param name="e">A <see cref="System.ComponentModel.CancelEventArgs" /> that contains the event data.</param>
         protected virtual void OnFileOk(System.ComponentModel.CancelEventArgs e)
         {
-            if (this.FileOk != null) this.FileOk(this, e);
+            FileOk?.Invoke(this, e);
         }
 
         /// <summary>
@@ -569,12 +567,15 @@ namespace Ookii.Dialogs.Wpf
         /// </summary>
         protected override bool RunDialog(IntPtr hwndOwner)
         {
-            Window owner = (Window)HwndSource.FromHwnd(hwndOwner).RootVisual;
+            HwndSource hWnd = HwndSource.FromHwnd(hwndOwner);
+            Debug.Assert(hWnd != null);
+
+            Window owner = (Window)hWnd.RootVisual;
             _owner = owner;
             if (DownlevelDialog != null)
-                return DownlevelDialog.ShowDialog(owner) ?? false;
+                return (bool)DownlevelDialog.ShowDialog(owner);
 
-            Ookii.Dialogs.Wpf.Interop.IFileDialog dialog = null;
+            IFileDialog dialog = null;
             try
             {
                 dialog = CreateFileDialog();
@@ -613,8 +614,7 @@ namespace Ookii.Dialogs.Wpf
 
         internal virtual void SetDialogProperties(Ookii.Dialogs.Wpf.Interop.IFileDialog dialog)
         {
-            uint cookie;
-            dialog.Advise(new VistaFileDialogEvents(this), out cookie);
+            dialog.Advise(new VistaFileDialogEvents(this), out _);
 
             // Set the default file name
             if (!(_fileNames == null || _fileNames.Length == 0 || string.IsNullOrEmpty(_fileNames[0])))
@@ -635,7 +635,7 @@ namespace Ookii.Dialogs.Wpf
             // Set the filter
             if (!string.IsNullOrEmpty(_filter))
             {
-                string[] filterElements = _filter.Split(new char[] { '|' });
+                string[] filterElements = _filter.Split('|');
                 NativeMethods.COMDLG_FILTERSPEC[] filter = new NativeMethods.COMDLG_FILTERSPEC[filterElements.Length / 2];
                 for (int x = 0; x < filterElements.Length; x += 2)
                 {
