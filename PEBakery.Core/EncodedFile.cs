@@ -45,7 +45,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
-    #region Attachment Format
+    #region (Docs) Attachment Format
     /*
     [Attachment Format]
     Streams are encoded in base64 format.
@@ -119,7 +119,7 @@ namespace PEBakery.Core
         {
             ZLib = 0x00, // Type 1
             Raw = 0x01, // Type 2
-            XZ = 0x02, // Type 3 (PEBakery Only)
+            XZ = 0x02 // Type 3 (PEBakery Only)
         }
 
         public static EncodeMode ParseEncodeMode(string str)
@@ -183,7 +183,7 @@ namespace PEBakery.Core
                 { ImageHelper.ImageType.Png, EncodeMode.Raw },
                 { ImageHelper.ImageType.Gif, EncodeMode.Raw },
                 { ImageHelper.ImageType.Ico, EncodeMode.ZLib },
-                { ImageHelper.ImageType.Svg, EncodeMode.ZLib },
+                { ImageHelper.ImageType.Svg, EncodeMode.ZLib }
             });
         #endregion
 
@@ -306,12 +306,13 @@ namespace PEBakery.Core
                     case UIControlType.Image:
                     case UIControlType.TextFile:
                         {
-                            if (EncodedFile.ContainsInterface(sc, thisCtrl.Text))
+                            string resourceSection = StringEscaper.Unescape(thisCtrl.Text);
+                            if (ContainsInterface(sc, resourceSection))
                             {
-                                if (fileRefCountDict.ContainsKey(thisCtrl.Text))
-                                    fileRefCountDict[thisCtrl.Text] += 1;
+                                if (fileRefCountDict.ContainsKey(resourceSection))
+                                    fileRefCountDict[resourceSection] += 1;
                                 else
-                                    fileRefCountDict[thisCtrl.Text] = 1;
+                                    fileRefCountDict[resourceSection] = 1;
                             }
                         }
                         break;
@@ -319,7 +320,7 @@ namespace PEBakery.Core
                         {
                             UIInfo_Button info = thisCtrl.Info.Cast<UIInfo_Button>();
 
-                            if (info.Picture != null && EncodedFile.ContainsInterface(sc, info.Picture))
+                            if (info.Picture != null && ContainsInterface(sc, info.Picture))
                             {
                                 if (fileRefCountDict.ContainsKey(info.Picture))
                                     fileRefCountDict[info.Picture] += 1;
@@ -589,7 +590,7 @@ namespace PEBakery.Core
             EncodedFileInfo info = new EncodedFileInfo
             {
                 FolderName = folderName,
-                FileName = fileName,
+                FileName = fileName
             };
 
             if (!sc.Sections.ContainsKey(folderName))
@@ -678,7 +679,7 @@ namespace PEBakery.Core
                 EncodedFileInfo info = new EncodedFileInfo
                 {
                     FolderName = folderName,
-                    FileName = fileName,
+                    FileName = fileName
                 };
 
                 if (!fileDict.ContainsKey(fileName))
@@ -758,7 +759,7 @@ namespace PEBakery.Core
                     EncodedFileInfo info = new EncodedFileInfo
                     {
                         FolderName = folderName,
-                        FileName = fileName,
+                        FileName = fileName
                     };
 
                     if (!fileDict.ContainsKey(fileName))
@@ -2102,7 +2103,7 @@ namespace PEBakery.Core
                 FileName = FileName,
                 RawSize = RawSize,
                 EncodedSize = EncodedSize,
-                EncodeMode = EncodeMode,
+                EncodeMode = EncodeMode
             };
         }
 

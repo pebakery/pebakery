@@ -2859,7 +2859,7 @@ namespace PEBakery.Core
             b.Append(DestVar);
             b.Append(",");
             // This does not show original format string, but in .Net format string!
-            b.Append(StringEscaper.Doublequote(FormatString));
+            b.Append(StringEscaper.DoubleQuote(FormatString));
             return b.ToString();
         }
     }
@@ -2882,7 +2882,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(FilePath));
+            b.Append(StringEscaper.DoubleQuote(FilePath));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2906,9 +2906,9 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.Doublequote(DirPath));
+            b.Append(StringEscaper.DoubleQuote(DirPath));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(FileName));
+            b.Append(StringEscaper.DoubleQuote(FileName));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2937,7 +2937,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Integer));
+            b.Append(StringEscaper.DoubleQuote(Integer));
             return b.ToString();
         }
     }
@@ -2963,7 +2963,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Count));
+            b.Append(StringEscaper.DoubleQuote(Count));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2991,9 +2991,9 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(StartPos));
+            b.Append(StringEscaper.DoubleQuote(StartPos));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Length));
+            b.Append(StringEscaper.DoubleQuote(Length));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -3045,7 +3045,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(ToTrim));
+            b.Append(StringEscaper.DoubleQuote(ToTrim));
             b.Append(",");
             b.Append(DestVarName);
             return b.ToString();
@@ -3239,9 +3239,9 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(TotalWidth));
+            b.Append(StringEscaper.DoubleQuote(TotalWidth));
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(PadChar));
+            b.Append(StringEscaper.DoubleQuote(PadChar));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();

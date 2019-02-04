@@ -168,7 +168,7 @@ namespace PEBakery.Core
 
             int dqIdx = str.IndexOf("\"", StringComparison.Ordinal);
 
-            if (dqIdx == 0) // With Doublequote, dqIdx should be 0
+            if (dqIdx == 0) // With DoubleQuote, dqIdx should be 0
             { // Ex) "   Return SetError(@error,0,0)",Append
                 // [   Return SetError(@error,0,0)], [Append]
                 int nextIdx = str.IndexOf('\"', 1);
@@ -259,7 +259,7 @@ namespace PEBakery.Core
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("Doublequote's number should be even", rawCode);
+                throw new InvalidCommandException("DoubleQuote's number should be even", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();

@@ -187,7 +187,7 @@ namespace PEBakery.Core
             args.RemoveAt(2);
 
             // Forge UIControl
-            string text = StringEscaper.Unescape(args[0]);
+            string text = args[0];
             string visibilityStr = args[1];
             bool visibility;
             if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
@@ -242,7 +242,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount), args[0]);
                     }
                 #endregion
                 #region TextLabel
@@ -319,13 +319,15 @@ namespace PEBakery.Core
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[1].StartsWith("_", StringComparison.Ordinal) &&
                             args[1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
 
-                            sectionName = args[1].Substring(1, args[1].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[1];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                         }
 
                         return new UIInfo_CheckBox(tooltip, _checked, sectionName, hideProgress);
@@ -350,13 +352,15 @@ namespace PEBakery.Core
                             (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[cnt - 2].StartsWith("_", StringComparison.Ordinal) &&
                             args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
 
-                            sectionName = args[cnt - 2].Substring(1, args[cnt - 2].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[cnt - 2];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2); 
                             cnt -= 2;
                         }
 
@@ -459,7 +463,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount), args[0]);
                     }
                 #endregion
                 #region RadioButton
@@ -473,7 +477,7 @@ namespace PEBakery.Core
                         bool selected = false;
                         if (args[0].Equals("True", StringComparison.OrdinalIgnoreCase))
                             selected = true;
-                        else if (args[0].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                        else if (!args[0].Equals("False", StringComparison.OrdinalIgnoreCase))
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
                         string tooltip = null;
@@ -486,13 +490,15 @@ namespace PEBakery.Core
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
                             args[1].StartsWith("_", StringComparison.Ordinal) &&
                             args[1].EndsWith("_", StringComparison.Ordinal))
-                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                        { // Has [RunOptional] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
 
-                            sectionName = args[1].Substring(1, args[1].Length - 2);
+                            // Trim one '_' from start and end
+                            string rawSectionName = args[1];
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                         }
 
                         return new UIInfo_RadioButton(tooltip, selected, sectionName, hideProgress);

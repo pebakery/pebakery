@@ -277,7 +277,7 @@ namespace PEBakery.Core
 
             TextBox box = new TextBox
             {
-                Text = info.Value,
+                Text = StringEscaper.Unescape(info.Value),
                 Height = uiCtrl.Height,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -297,7 +297,7 @@ namespace PEBakery.Core
             { // Print caption
                 TextBlock block = new TextBlock
                 {
-                    Text = uiCtrl.Text,
+                    Text = StringEscaper.Unescape(uiCtrl.Text),
                     VerticalAlignment = VerticalAlignment.Top,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                     LineHeight = CalcFontPointScale(),
@@ -342,7 +342,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.TextBox, $"Wrong UIControlType in [{nameof(TextBox_LostFocus)}]");
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
-            info.Value = box.Text;
+            info.Value = StringEscaper.Escape(box.Text);
             uiCtrl.Update();
         }
         #endregion
@@ -354,7 +354,7 @@ namespace PEBakery.Core
 
             TextBlock block = new TextBlock
             {
-                Text = uiCtrl.Text,
+                Text = StringEscaper.Unescape(uiCtrl.Text),
                 TextWrapping = TextWrapping.Wrap,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 LineHeight = CalcFontPointScale(info.FontSize),
@@ -443,7 +443,7 @@ namespace PEBakery.Core
 
             CheckBox box = new CheckBox
             {
-                Content = uiCtrl.Text,
+                Content = StringEscaper.Unescape(uiCtrl.Text),
                 IsChecked = info.Value,
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -525,7 +525,7 @@ namespace PEBakery.Core
             ComboBox box = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
-                ItemsSource = new ObservableCollection<string>(info.Items),
+                ItemsSource = new ObservableCollection<string>(info.Items.Select(x => StringEscaper.Unescape(x))),
                 SelectedIndex = info.Index,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
@@ -592,7 +592,8 @@ namespace PEBakery.Core
         {
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-            if (uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
+            string imageSection = uiCtrl.Text;
+            if (imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase))
             { // Empty image
                 PackIconMaterial noImage = new PackIconMaterial
                 {
@@ -617,7 +618,7 @@ namespace PEBakery.Core
                 return null;
             }
 
-            if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, uiCtrl.Text))
+            if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, imageSection))
             { // Encoded image does not exist
                 PackIconMaterial alertImage = new PackIconMaterial
                 {
@@ -640,13 +641,13 @@ namespace PEBakery.Core
                 SetEditModeProperties(border, uiCtrl);
                 DrawToCanvas(border, uiCtrl);
 
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{uiCtrl.Text}] ({uiCtrl.RawLine})"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to find encoded image [{imageSection}] ({uiCtrl.RawLine})"));
                 return null;
             }
 
-            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType imgType))
+            if (!ImageHelper.GetImageType(imageSection, out ImageHelper.ImageType imgType))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(imageSection)}] is not supported"));
                 return null;
             }
 
@@ -655,7 +656,7 @@ namespace PEBakery.Core
                 Brush brush;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                 {
                     switch (imgType)
                     {
@@ -668,25 +669,29 @@ namespace PEBakery.Core
                     }
                 }
 
+                Style imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
+                Debug.Assert(imageButtonStyle != null);
                 Button button = new Button
                 {
-                    Style = Application.Current.FindResource("ImageButtonStyle") as Style,
+                    Style = imageButtonStyle,
                     Background = brush,
                 };
 
                 bool hasUrl = false;
+                string url = null;
                 if (!string.IsNullOrEmpty(info.Url))
                 {
-                    if (Uri.TryCreate(info.Url, UriKind.Absolute, out Uri _)) // Success
+                    url = StringEscaper.Unescape(info.Url);
+                    if (Uri.TryCreate(url, UriKind.Absolute, out Uri _)) // Success
                         hasUrl = true;
                     else // Failure
-                        throw new InvalidCommandException($"Invalid URL [{info.Url}]");
+                        throw new InvalidCommandException($"Invalid URL [{url}]");
                 }
 
                 string toolTip = info.ToolTip;
                 ManageImageEvent(button, true, hasUrl);
                 if (hasUrl) // Open URL
-                    toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
+                    toolTip = AppendUrlToToolTip(info.ToolTip, url);
 
                 SetToolTip(button, toolTip);
                 DrawToCanvas(button, uiCtrl);
@@ -697,7 +702,7 @@ namespace PEBakery.Core
                 FrameworkElement element;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                 {
                     switch (imgType)
                     {
@@ -763,7 +768,8 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenUrl)}]");
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
-            FileHelper.OpenUri(info.Url);
+            string url = StringEscaper.Unescape(info.Url);
+            FileHelper.OpenUri(url);
         }
 
         /// <summary>
@@ -779,14 +785,15 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(Image_Click_OpenImage)}]");
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenImage)}]");
 
-            if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+            string imageSection = StringEscaper.Unescape(uiCtrl.Text);
+            if (!ImageHelper.GetImageType(imageSection, out ImageHelper.ImageType t))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(imageSection)}] is not supported"));
                 return;
             }
 
             string path = Path.ChangeExtension(FileHelper.GetTempFile(), "." + t.ToString().ToLower());
-            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, uiCtrl.Text))
+            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
@@ -802,16 +809,16 @@ namespace PEBakery.Core
         {
             UIInfo_TextFile info = uiCtrl.Info.Cast<UIInfo_TextFile>();
 
-            string encodedText = uiCtrl.Text;
+            string textSection = uiCtrl.Text;
             TextBoxBase box;
 
-            if (encodedText.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
+            if (textSection.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase))
             {
                 box = new TextBox { IsReadOnly = true };
             }
             else
             {
-                string ext = Path.GetExtension(encodedText);
+                string ext = Path.GetExtension(textSection);
                 if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 { // RichTextBox
                     RichTextBox rtfBox = new RichTextBox
@@ -822,7 +829,7 @@ namespace PEBakery.Core
                     };
 
                     TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                     {
                         textRange.Load(ms, DataFormats.Rtf);
                     }
@@ -839,15 +846,15 @@ namespace PEBakery.Core
                         FontSize = CalcFontPointScale(),
                     };
 
-                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, encodedText))
+                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, textSection))
                     { // Wrong encoded text
-                        string errMsg = $"Unable to find encoded text [{encodedText}]";
+                        string errMsg = $"Unable to find encoded text [{textSection}]";
                         textBox.Text = errMsg;
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
                     }
                     else
                     {
-                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, encodedText))
+                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                         {
                             Encoding encoding = EncodingHelper.DetectBom(ms);
                             ms.Position = 0;
@@ -886,17 +893,18 @@ namespace PEBakery.Core
             if (_viewMode)
                 ManageButtonEvent(button, true, info.SectionName);
 
-            if (info.Picture != null &&
-                !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
-                EncodedFile.ContainsInterface(uiCtrl.Section.Script, info.Picture))
+            string pictureSection = info.Picture;
+            if (pictureSection != null &&
+                !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
+                EncodedFile.ContainsInterface(uiCtrl.Section.Script, pictureSection))
             { // Has Picture
-                if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType imgType))
+                if (!ImageHelper.GetImageType(pictureSection, out ImageHelper.ImageType imgType))
                     return null;
 
                 FrameworkElement imageContent;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, info.Picture))
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
                 {
                     switch (imgType)
                     {
@@ -958,7 +966,7 @@ namespace PEBakery.Core
                 { // Button has text
                     TextBlock text = new TextBlock
                     {
-                        Text = uiCtrl.Text,
+                        Text = StringEscaper.Unescape(uiCtrl.Text),
                         FontSize = CalcFontPointScale(),
                         Height = double.NaN,
                         VerticalAlignment = VerticalAlignment.Center,
@@ -979,7 +987,7 @@ namespace PEBakery.Core
             }
             else
             { // No picture
-                button.Content = uiCtrl.Text;
+                button.Content = StringEscaper.Unescape(uiCtrl.Text);
                 button.FontSize = CalcFontPointScale();
             }
 
@@ -1029,13 +1037,14 @@ namespace PEBakery.Core
                 FontSize = CalcFontPointScale(),
             };
 
-            Hyperlink link = new Hyperlink { NavigateUri = new Uri(info.Url) };
-            link.Inlines.Add(uiCtrl.Text);
+            string url = StringEscaper.Unescape(info.Url);
+            Hyperlink link = new Hyperlink { NavigateUri = new Uri(url) };
+            link.Inlines.Add(StringEscaper.Unescape(uiCtrl.Text));
             if (_viewMode)
                 ManageWebLabelEvent(link, true);
             block.Inlines.Add(link);
 
-            string toolTip = AppendUrlToToolTip(info.ToolTip, info.Url);
+            string toolTip = AppendUrlToToolTip(info.ToolTip, url);
             SetToolTip(block, toolTip);
             SetEditModeProperties(block, uiCtrl);
 
@@ -1077,7 +1086,7 @@ namespace PEBakery.Core
             RadioButton radio = new RadioButton
             {
                 GroupName = _sc.RealPath,
-                Content = uiCtrl.Text,
+                Content = StringEscaper.Unescape(uiCtrl.Text),
                 FontSize = fontSize,
                 IsChecked = info.Selected,
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -1184,7 +1193,7 @@ namespace PEBakery.Core
 
                 TextBlock textBlock = new TextBlock
                 {
-                    Text = uiCtrl.Text,
+                    Text = StringEscaper.Unescape(uiCtrl.Text),
                     FontSize = CalcFontPointScale(fontSize),
                     Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
                     Background = Brushes.White,
@@ -1213,8 +1222,8 @@ namespace PEBakery.Core
                 Canvas subCanvas = new Canvas();
                 Canvas.SetLeft(bevel, 0);
                 Canvas.SetTop(bevel, 0);
-                bevel.Width = uiCtrl.Rect.Width;
-                bevel.Height = uiCtrl.Rect.Height;
+                bevel.Width = uiCtrl.Width;
+                bevel.Height = uiCtrl.Height;
                 subCanvas.Children.Add(bevel);
                 Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
@@ -1236,7 +1245,7 @@ namespace PEBakery.Core
 
             TextBox box = new TextBox
             {
-                Text = uiCtrl.Text,
+                Text = StringEscaper.Unescape(uiCtrl.Text),
                 FontSize = CalcFontPointScale(),
                 Margin = new Thickness(0, 0, 5, 0),
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -1297,7 +1306,7 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl != null, $"Wrong tag in [{nameof(FileBox_TextChanged)}]");
             Debug.Assert(uiCtrl.Type == UIControlType.FileBox, $"Wrong UIControlType in [{nameof(FileBox_TextChanged)}]");
 
-            uiCtrl.Text = box.Text;
+            uiCtrl.Text = StringEscaper.Escape(box.Text);
             uiCtrl.Update();
         }
 
@@ -1381,7 +1390,7 @@ namespace PEBakery.Core
                 RadioButton radio = new RadioButton
                 {
                     GroupName = $"{_sc.RealPath}_{uiCtrl.Key}",
-                    Content = info.Items[i],
+                    Content = StringEscaper.Unescape(info.Items[i]),
                     Tag = new Tuple<UIControl, int>(uiCtrl, i),
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
@@ -1531,14 +1540,14 @@ namespace PEBakery.Core
         private static string AppendUrlToToolTip(string toolTip, string url)
         {
             if (url == null)
-                return toolTip;
+                return StringEscaper.Unescape(toolTip);
 
             if (MaxUrlDisplayLen < url.Length)
                 url = url.Substring(0, MaxUrlDisplayLen) + "...";
 
             if (toolTip == null)
                 return url;
-            return toolTip + Environment.NewLine + Environment.NewLine + url;
+            return StringEscaper.Unescape(toolTip) + Environment.NewLine + Environment.NewLine + url;
         }
 
         public static int GetMaxZIndex(Canvas canvas)

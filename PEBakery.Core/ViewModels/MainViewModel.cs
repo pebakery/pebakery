@@ -1493,7 +1493,7 @@ namespace PEBakery.Core.ViewModels
                 {
                     UseShellExecute = false,
                     FileName = Global.Setting.Interface.CustomEditorPath,
-                    Arguments = StringEscaper.Doublequote(filePath),
+                    Arguments = StringEscaper.DoubleQuote(filePath),
                 };
 
                 try { UACHelper.UACHelper.StartWithShell(info); }

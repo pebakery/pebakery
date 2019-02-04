@@ -297,27 +297,34 @@ namespace PEBakery.Core
                         }
                         break;
                     case UIControlType.Image:
-                        if (!uiCtrl.Text.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
-                            !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Warning, $"Image resource [{uiCtrl.Text}] does not exist", uiCtrl));
+                        {
+                            string imageSection = StringEscaper.Unescape(uiCtrl.Text);
+                            if (!imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
+                                !EncodedFile.ContainsInterface(_sc, imageSection))
+                                logs.Add(new LogInfo(LogState.Warning, $"Image resource [{imageSection}] does not exist", uiCtrl));
+                        }
                         break;
                     case UIControlType.TextFile:
-                        if (!uiCtrl.Text.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase) &&
-                            !EncodedFile.ContainsInterface(_sc, uiCtrl.Text))
-                            logs.Add(new LogInfo(LogState.Warning, $"Text resource [{uiCtrl.Text}] does not exist", uiCtrl));
+                        {
+                            string textSection = StringEscaper.Unescape(uiCtrl.Text);
+                            if (!textSection.Equals(UIInfo_TextFile.NoResource, StringComparison.OrdinalIgnoreCase) &&
+                                !EncodedFile.ContainsInterface(_sc, textSection))
+                                logs.Add(new LogInfo(LogState.Warning, $"Text resource [{textSection}] does not exist", uiCtrl));
+                        }
                         break;
                     case UIControlType.Button:
                         {
                             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
 
-                            if (info.Picture != null &&
-                                !info.Picture.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
-                                !EncodedFile.ContainsInterface(_sc, info.Picture))
+                            string pictureSection = info.Picture;
+                            if (pictureSection != null &&
+                                !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
+                                !EncodedFile.ContainsInterface(_sc, pictureSection))
                             {
-                                if (info.Picture.Length == 0) // Due to WinBuilder's editor quirks, many buttons have '' instead of '0' in the place of <Picture>.
+                                if (pictureSection.Length == 0) // Due to quirks of WinBuilder's editor, many buttons have '' instead of '0' in the place of <Picture>.
                                     logs.Add(new LogInfo(LogState.Warning, "Image resource entry is empty. Use [0] to represent not having an image resource.", uiCtrl));
                                 else
-                                    logs.Add(new LogInfo(LogState.Warning, $"Image resource [{info.Picture}] does not exist", uiCtrl));
+                                    logs.Add(new LogInfo(LogState.Warning, $"Image resource [{pictureSection}] does not exist", uiCtrl));
                             }
 
                             if (info.SectionName != null)

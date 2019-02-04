@@ -177,7 +177,7 @@ namespace PEBakery.Core.Commands
             {
                 #region General
                 case InterfaceElement.Text:
-                    destStr = uiCtrl.Text;
+                    destStr = StringEscaper.Unescape(uiCtrl.Text);
                     break;
                 case InterfaceElement.Visible:
                     destStr = uiCtrl.Visibility.ToString();
@@ -200,7 +200,7 @@ namespace PEBakery.Core.Commands
                         return (false, $"Reading [{element}] from [{uiCtrl.Type}] is not supported");
                     break;
                 case InterfaceElement.ToolTip:
-                    destStr = uiCtrl.Info.ToolTip ?? string.Empty;
+                    destStr = uiCtrl.Info.ToolTip == null ? string.Empty : StringEscaper.Unescape(uiCtrl.Info.ToolTip);
                     break;
                 #endregion
                 #region TextLabel, Bevel
@@ -587,7 +587,7 @@ namespace PEBakery.Core.Commands
             {
                 #region General
                 case InterfaceElement.Text:
-                    uiCtrl.Text = finalValue;
+                    uiCtrl.Text = StringEscaper.DoubleQuote(finalValue);
                     break;
                 case InterfaceElement.Visible:
                     {
@@ -641,7 +641,7 @@ namespace PEBakery.Core.Commands
                         bool success = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
                         logs.AddRange(varLogs);
 
-                        if (success == false && varLogs.Count == 0)
+                        if (!success && varLogs.Count == 0)
                             return ReturnErrorLog($"Writing [{element}] to [{uiCtrl.Type}] is not supported");
                     }
                     break;
@@ -815,8 +815,8 @@ namespace PEBakery.Core.Commands
                                     subInfo.Items = newItems.ToList();
                                     if (newItems.Length == 0)
                                         uiCtrl.Text = string.Empty;
-                                    else if (!newItems.Contains(uiCtrl.Text, StringComparer.OrdinalIgnoreCase))
-                                        uiCtrl.Text = subInfo.Items[0];
+                                    else if (!newItems.Contains(StringEscaper.Unescape(uiCtrl.Text), StringComparer.OrdinalIgnoreCase))
+                                        uiCtrl.Text = newItems[0];
                                 }
                                 break;
                             case UIControlType.RadioGroup:

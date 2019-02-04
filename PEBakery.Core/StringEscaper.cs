@@ -28,6 +28,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -195,7 +196,7 @@ namespace PEBakery.Core
                         }
                         else if (ch1 == '$')
                         {
-                            if (idx + 2 < str.Length)
+                            if (hIdx + 2 < str.Length)
                             {
                                 char ch2 = str[hIdx + 2];
                                 switch (ch2)
@@ -354,24 +355,22 @@ namespace PEBakery.Core
             return strs.Select(EscapePercent).ToList();
         }
 
-        public static string Doublequote(string str)
+        public static string DoubleQuote(string str)
         {
             if (str.StartsWith("\"") && str.EndsWith("\""))
                 return str;
-            if (str.Contains(' '))
-                return "\"" + str + "\"";
+            if (str.Contains(' ') || str.Contains(','))
+                return $"\"{str.Trim('\"')}\"";
             return str;
         }
 
         public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
         {
-            // Check if str need double-quote escaping
-            bool needQuote = str.Contains(' ') || str.Contains(',');
-
             // Escape characters
             str = Escape(str, fullEscape, escapePercent); // WB082 escape sequence
-            if (needQuote)
-                str = Doublequote(str); // Doublequote escape
+            // DoubleQuote escape
+            str = DoubleQuote(str); 
+                
             return str;
         }
 

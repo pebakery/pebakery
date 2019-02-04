@@ -149,11 +149,12 @@ namespace PEBakery.Core.Tests
             Unescape_3();
             Unescape_4();
             Unescape_5();
+            Unescape_6();
         }
 
         public void Unescape_1()
         {
-            string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
+            const string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, false);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -161,7 +162,7 @@ namespace PEBakery.Core.Tests
 
         public void Unescape_2()
         {
-            string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
+            const string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, true);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -169,7 +170,7 @@ namespace PEBakery.Core.Tests
 
         public void Unescape_3()
         {
-            string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
+            const string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, false);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -177,7 +178,7 @@ namespace PEBakery.Core.Tests
 
         public void Unescape_4()
         {
-            string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
+            const string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, true);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -201,6 +202,13 @@ namespace PEBakery.Core.Tests
 
             for (int i = 0; i < dests.Count; i++)
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+        }
+
+        public void Unescape_6()
+        {
+            const string src = "Incomplete#$";
+            string dest = StringEscaper.Unescape(src);
+            Assert.IsTrue(dest.Equals(src, StringComparison.Ordinal));
         }
         #endregion
 
