@@ -23,12 +23,12 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using PEBakery.Helper;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Ini.Tests
@@ -339,7 +339,7 @@ namespace PEBakery.Ini.Tests
 
         public void WriteKey_5()
         {
-            string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key", "Value"));
@@ -365,7 +365,7 @@ namespace PEBakery.Ini.Tests
 
         public void WriteKey_6()
         { // https://github.com/pebakery/pebakery/issues/57
-            string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempFile = FileHelper.GetTempFile();
             try
             {
                 EncodingHelper.WriteTextBom(tempFile, Encoding.UTF8);

@@ -67,9 +67,7 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                s.PushLocalState(s, 
-                    isMacro: true, 
-                    refScriptId: s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script));
+                s.PushLocalState(s, true, s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script));
 
                 Engine.ExecuteCommand(s, cmd);
                 s.PopLocalState();

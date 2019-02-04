@@ -78,10 +78,9 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string sampleStr = SampleStr();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -123,10 +122,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -247,10 +245,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -345,10 +342,9 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string sampleStr = SampleStr();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -388,10 +384,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -467,10 +462,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -560,10 +554,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempFile2 = Path.Combine(tempDir, Path.GetRandomFileName());
 
@@ -686,10 +679,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempSrcFile = Path.Combine(tempDir, Path.GetRandomFileName());
                 string tempDestFile = Path.Combine(tempDir, Path.GetRandomFileName());
 

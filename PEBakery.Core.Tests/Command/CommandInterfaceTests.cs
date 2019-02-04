@@ -650,7 +650,8 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string srcFile = Path.GetTempFileName();
-            string noFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string noFile = FileHelper.GetTempFile();
+            File.Delete(noFile);
             try
             {
                 StringBuilder b = new StringBuilder();

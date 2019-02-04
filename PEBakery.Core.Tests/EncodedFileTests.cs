@@ -177,10 +177,9 @@ namespace PEBakery.Core.Tests
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destDir = FileHelper.GetTempDir();
                 string destScript = Path.Combine(destDir, "AddFolderTest.script");
 
-                Directory.CreateDirectory(destDir);
                 try
                 {
                     File.Copy(originScript, destScript, true);
@@ -363,9 +362,7 @@ namespace PEBakery.Core.Tests
                 string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
                 string originScript = StringEscaper.Preprocess(s, pbOriginScript);
 
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-                if (!Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
+                string destDir = FileHelper.GetTempDir();
                 try
                 {
                     Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
@@ -765,10 +762,9 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string folderName, string fileName, bool result)
             {
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destDir = FileHelper.GetTempDir();
                 string destScript = Path.Combine(destDir, "DeleteFileTest.script");
 
-                Directory.CreateDirectory(destDir);
                 try
                 {
                     File.Copy(originScriptPath, destScript, true);
@@ -817,10 +813,9 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string folderName, bool result)
             {
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destDir = FileHelper.GetTempDir();
                 string destScript = Path.Combine(destDir, "DeleteFolderTest.script");
 
-                Directory.CreateDirectory(destDir);
                 try
                 {
                     File.Copy(originScriptPath, destScript, true);
@@ -878,10 +873,9 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string testScriptPath, bool result)
             {
-                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string destDir = FileHelper.GetTempDir();
                 string destScript = Path.Combine(destDir, "DeleteLogoTest.script");
 
-                Directory.CreateDirectory(destDir);
                 try
                 {
                     File.Copy(testScriptPath, destScript, true);

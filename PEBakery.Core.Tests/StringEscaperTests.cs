@@ -30,6 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using PEBakery.Helper;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests
@@ -599,7 +601,7 @@ namespace PEBakery.Core.Tests
 
         public void PathSecurityCheck_1()
         {
-            string path = Path.Combine(Path.GetTempPath(), "notepad.exe");
+            string path = Path.Combine(FileHelper.BaseTempDir(), "notepad.exe");
             Assert.IsTrue(StringEscaper.PathSecurityCheck(path, out _));
         }
 

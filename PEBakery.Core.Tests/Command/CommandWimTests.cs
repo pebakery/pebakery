@@ -34,6 +34,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -90,7 +91,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, ErrorCheck check = ErrorCheck.Success)
@@ -135,7 +136,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void SingleTemplate(string rawCode, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -284,7 +285,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -404,7 +405,7 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, ErrorCheck check = ErrorCheck.Success)
@@ -473,7 +474,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string srcDir, string wimFileName, SampleSet set, ErrorCheck check = ErrorCheck.Success)
@@ -551,7 +552,7 @@ namespace PEBakery.Core.Tests.Command
 
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, ErrorCheck check = ErrorCheck.Success)
@@ -605,7 +606,7 @@ namespace PEBakery.Core.Tests.Command
 
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, string comp, ErrorCheck check = ErrorCheck.Success)
@@ -660,7 +661,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, string comp, ErrorCheck check = ErrorCheck.Success)
@@ -713,7 +714,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, string originalName, string newName, ErrorCheck check = ErrorCheck.Success)
@@ -774,7 +775,7 @@ namespace PEBakery.Core.Tests.Command
 
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void OptTemplate(CodeType? opType, List<string> rawCodes, string wimFileName, (string, bool)[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -858,7 +859,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void Template(string rawCode, string wimFileName, ErrorCheck check = ErrorCheck.Success)
@@ -910,7 +911,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
             string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string destDir = FileHelper.GetTempDir();
             string pbDestDir = StringEscaper.Escape(destDir);
 
             void ExportNewTemplate(string rawCode, string srcWimFileName, string destWimFileName, ErrorCheck check = ErrorCheck.Success)

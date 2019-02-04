@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using WimInfo = ManagedWimLib.WimInfo;
 
 namespace PEBakery.Core.Commands
 {
@@ -74,6 +75,7 @@ namespace PEBakery.Core.Commands
 
             // Check imageIndex
             int imageCount;
+            string tempDir = FileHelper.GetTempDir();
             try
             {
                 using (WimHandle hWim = WimgApi.CreateFile(srcWim,
@@ -82,14 +84,19 @@ namespace PEBakery.Core.Commands
                     WimCreateFileOptions.None,
                     WimCompressionType.None))
                 {
-                    WimgApi.SetTemporaryPath(hWim, Path.GetTempPath());
+                    WimgApi.SetTemporaryPath(hWim, tempDir);
                     imageCount = WimgApi.GetImageCount(hWim);
                 }
             }
             catch (Win32Exception e)
             {
-                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get information from [{srcWim}]"));
+                logs.Add(LogWimgApiException(e, $"Unable to get information from [{srcWim}]"));
                 return logs;
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
             }
 
             if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -113,6 +120,7 @@ namespace PEBakery.Core.Commands
                 mountFlag = WimMountImageOptions.None;
             }
 
+            tempDir = FileHelper.GetTempDir();
             try
             {
                 using (WimHandle hWim = WimgApi.CreateFile(srcWim,
@@ -122,7 +130,7 @@ namespace PEBakery.Core.Commands
                     WimCompressionType.None))
                 {
 
-                    WimgApi.SetTemporaryPath(hWim, Path.GetTempPath());
+                    WimgApi.SetTemporaryPath(hWim, tempDir);
 
                     try
                     {
@@ -138,7 +146,7 @@ namespace PEBakery.Core.Commands
                     }
                     catch (Win32Exception e)
                     {
-                        logs.Add(CommandWim.LogWimgApiException(e, $"Unable to mount [{srcWim}]"));
+                        logs.Add(LogWimgApiException(e, $"Unable to mount [{srcWim}]"));
                         return logs;
                     }
                     finally
@@ -150,8 +158,13 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to open [{srcWim}]"));
+                logs.Add(LogWimgApiException(e, $"Unable to open [{srcWim}]"));
                 return logs;
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcWim}]'s image [{imageIndex}] mounted to [{mountDir}]"));
@@ -205,7 +218,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (Win32Exception e)
                         {
-                            logs.Add(CommandWim.LogWimgApiException(e, $"Unable to commit [{mountDir}] into [{wimInfo.Path}]"));
+                            logs.Add(LogWimgApiException(e, $"Unable to commit [{mountDir}] into [{wimInfo.Path}]"));
                             return logs;
                         }
 
@@ -220,7 +233,7 @@ namespace PEBakery.Core.Commands
                     }
                     catch (Win32Exception e)
                     {
-                        logs.Add(CommandWim.LogWimgApiException(e, $"Unable to unmount [{mountDir}]"));
+                        logs.Add(LogWimgApiException(e, $"Unable to unmount [{mountDir}]"));
                         return logs;
                     }
                 }
@@ -232,7 +245,7 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get mounted wim information from [{mountDir}]"));
+                logs.Add(LogWimgApiException(e, $"Unable to get mounted wim information from [{mountDir}]"));
                 return logs;
             }
             finally
@@ -317,7 +330,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(srcWim, OpenFlags.DEFAULT))
                 {
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -362,7 +375,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -406,7 +419,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
-                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+                    WimInfo wimInfo = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -446,7 +459,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -558,7 +571,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
-                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+                    WimInfo wimInfo = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -599,7 +612,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -653,7 +666,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
-                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+                    WimInfo wimInfo = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -697,7 +710,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -767,7 +780,7 @@ namespace PEBakery.Core.Commands
 
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
-                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+                    WimInfo wimInfo = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -854,7 +867,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
             finally
@@ -957,7 +970,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1030,7 +1043,7 @@ namespace PEBakery.Core.Commands
                     if (info.DeltaIndex != null)
                     {
                         // Get ImageCount
-                        ManagedWimLib.WimInfo wInfo = wim.GetWimInfo();
+                        WimInfo wInfo = wim.GetWimInfo();
                         uint imageCount = wInfo.ImageCount;
 
                         string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaIndex);
@@ -1058,7 +1071,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1143,7 +1156,7 @@ namespace PEBakery.Core.Commands
                 {
                     wim.RegisterCallback(WimDeleteProgress, s);
 
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -1168,7 +1181,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1249,7 +1262,7 @@ namespace PEBakery.Core.Commands
                 {
                     wim.RegisterCallback(WimPathProgress, s);
 
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
@@ -1273,7 +1286,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1310,7 +1323,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
@@ -1334,7 +1347,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1371,7 +1384,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
@@ -1395,7 +1408,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1524,7 +1537,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
@@ -1548,7 +1561,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1699,7 +1712,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 
@@ -1747,7 +1760,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim srcWim = Wim.OpenWim(srcWimPath, OpenFlags.DEFAULT))
                 {
-                    ManagedWimLib.WimInfo wi = srcWim.GetWimInfo();
+                    WimInfo wi = srcWim.GetWimInfo();
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
@@ -1793,7 +1806,7 @@ namespace PEBakery.Core.Commands
                                 destWim.RegisterCallback(WimSimpleWriteProgress, s);
 
                                 // Get destWim's imageCount
-                                ManagedWimLib.WimInfo dwi = destWim.GetWimInfo();
+                                WimInfo dwi = destWim.GetWimInfo();
                                 destWimCount = dwi.ImageCount;
 
                                 srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
@@ -1851,7 +1864,7 @@ namespace PEBakery.Core.Commands
             }
             catch (WimLibException e)
             {
-                logs.Add(CommandWim.LogWimLibException(e));
+                logs.Add(LogWimLibException(e));
                 return logs;
             }
 

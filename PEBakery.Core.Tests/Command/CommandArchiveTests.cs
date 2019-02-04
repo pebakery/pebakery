@@ -553,9 +553,17 @@ namespace PEBakery.Core.Tests.Command
 
         public void CopyOrExpand_3(EngineState s)
         {
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
-            EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
+            string destDir = FileHelper.GetTempDir();
+            try
+            {
+                string rawCode = $"CopyOrExpand,\"%TestBench%\\CommandArchive\\ex5.jpg\",\"{destDir}\"";
+                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Error);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
         }
         #endregion
     }

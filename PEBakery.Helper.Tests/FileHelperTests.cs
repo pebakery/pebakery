@@ -26,7 +26,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Helper.Tests

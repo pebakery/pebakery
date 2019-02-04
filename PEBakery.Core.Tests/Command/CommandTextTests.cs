@@ -46,10 +46,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
                 string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
 
@@ -115,10 +114,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
                 string tempFile2 = Path.Combine(tempDir, "Sample2.txt");
 
@@ -158,11 +156,10 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             string sampleStr = GenerateSampleText(true, true, true, true);
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "TXTReplace.txt");
                 string tempFile2 = Path.Combine(tempDir, "TXTReplace2.txt");
 
@@ -218,10 +215,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
 
                 StringBuilder b = new StringBuilder();
@@ -257,10 +253,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string tempDir = FileHelper.GetTempDir();
             try
             {
-                Directory.CreateDirectory(tempDir);
                 string tempFile = Path.Combine(tempDir, "Sample.txt");
 
                 StringBuilder b = new StringBuilder();
