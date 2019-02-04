@@ -170,7 +170,7 @@ namespace PEBakery.Helper
             int newWidth;
             int newHeight;
             // Aspect ratio is equal, return original target width and height
-            if (currentAspectRatio - targetAspectRatio < double.Epsilon)
+            if (NumberHelper.DoubleEquals(currentAspectRatio, targetAspectRatio))
             {
                 newWidth = targetWidth;
                 newHeight = targetHeight;
@@ -198,7 +198,7 @@ namespace PEBakery.Helper
             double newHeight;
 
             // Aspect ratio is equal, return original target width and height
-            if (Math.Abs(currentAspectRatio - targetAspectRatio) < double.Epsilon)
+            if (NumberHelper.DoubleEquals(currentAspectRatio, targetAspectRatio))
             {
                 newWidth = targetWidth;
                 newHeight = targetHeight;

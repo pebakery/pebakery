@@ -390,7 +390,7 @@ namespace PEBakery.Core.Commands
                 {
                     progressCount += 1;
                     double percent;
-                    if (Math.Abs(s.MainViewModel.BuildCommandProgressMax) < double.Epsilon)
+                    if (NumberHelper.DoubleEquals(s.MainViewModel.BuildCommandProgressMax, 0))
                         percent = 0;
                     else
                         percent = progressCount / s.MainViewModel.BuildCommandProgressMax * 100;

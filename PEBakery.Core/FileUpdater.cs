@@ -294,7 +294,7 @@ namespace PEBakery.Core
                         double totalSec = t.TotalSeconds;
                         string downloaded = NumberHelper.ByteSizeToSIUnit(e.BytesReceived, 1);
                         string total = NumberHelper.ByteSizeToSIUnit(e.TotalBytesToReceive, 1);
-                        if (Math.Abs(totalSec) < double.Epsilon)
+                        if (NumberHelper.DoubleEquals(totalSec, 0))
                         {
                             opts.Model.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
                         }

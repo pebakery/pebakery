@@ -27,6 +27,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using PEBakery.Helper;
 
 namespace PEBakery.WPF.Controls
 {
@@ -264,20 +265,20 @@ namespace PEBakery.WPF.Controls
 
             // Hue
             double h;
-            if (Math.Abs(max - min) < double.Epsilon)
+            if (NumberHelper.DoubleEquals(max, min))
                 h = 0;
-            else if (Math.Abs(max - r) < double.Epsilon)
+            else if (NumberHelper.DoubleEquals(max, r))
                 h = (g - b) / (max - min) / 6;
-            else if (Math.Abs(max - g) < double.Epsilon)
+            else if (NumberHelper.DoubleEquals(max, g))
                 h = (2 + (b - r) / (max - min)) / 6;
-            else // if (Math.Abs(max - b) < double.Epsilon)
+            else // if (NumberHelper.DoubleEquals(max, b))
                 h = (4 + (r - g) / (max - min)) / 6;
             while (h < 0)
                 h += 1;
 
             // Saturation
             double s;
-            if (Math.Abs(max) < double.Epsilon)
+            if (NumberHelper.DoubleEquals(max, 0))
                 s = 0;
             else
                 s = (max - min) / max;
@@ -297,7 +298,7 @@ namespace PEBakery.WPF.Controls
         {
             // https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
 
-            if (Math.Abs(h - 1) < double.Epsilon)
+            if (NumberHelper.DoubleEquals(h, 1))
                 h = 0;
 
             // Chroma
