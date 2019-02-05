@@ -53,6 +53,7 @@ namespace PEBakery.Core.Tests
         public static Project Project;
         public static Logger Logger;
         public static string BaseDir;
+        public static bool IsOnline;
         #endregion
 
         #region CreateEngineState, DummySection

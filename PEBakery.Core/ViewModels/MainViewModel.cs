@@ -648,6 +648,13 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildCommandProgressValue, value);
         }
 
+        private bool _buildCommandProgressIndeterminate = false;
+        public bool BuildCommandProgressIndeterminate
+        {
+            get => _buildCommandProgressIndeterminate;
+            set => SetProperty(ref _buildCommandProgressIndeterminate, value);
+        }
+
         private Visibility _buildCommandProgressVisibility = Visibility.Collapsed;
         public Visibility BuildCommandProgressVisibility
         {
@@ -677,18 +684,28 @@ namespace PEBakery.Core.ViewModels
         #region Build Interface Methods
         public void SetBuildCommandProgress(string title, double max = 100)
         {
+            // String Value
             BuildCommandProgressTitle = title;
             BuildCommandProgressText = string.Empty;
             BuildCommandProgressMax = max;
+            BuildCommandProgressValue = 0;
+            BuildCommandProgressIndeterminate = false;
+
+            // Visibility last
             BuildCommandProgressVisibility = Visibility.Visible;
         }
 
         public void ResetBuildCommandProgress()
         {
+            // Visibility first 
             BuildCommandProgressVisibility = Visibility.Collapsed;
+
+            // String Value
             BuildCommandProgressTitle = "Progress";
             BuildCommandProgressText = string.Empty;
+            BuildCommandProgressMax = 100;
             BuildCommandProgressValue = 0;
+            BuildCommandProgressIndeterminate = false;
         }
         #endregion
 

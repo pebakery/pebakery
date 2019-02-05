@@ -34,7 +34,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -298,7 +300,8 @@ namespace PEBakery.Core
                 catch { /* Ignore error */ }
                 s.RunningSubProcess = null;
             }
-            s.RunningWebClient?.CancelAsync();
+
+            s.CancelWebGet?.Cancel();
             s.UserHaltFlag = true;
             s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
         }
@@ -1167,7 +1170,7 @@ namespace PEBakery.Core
         // |- ShellExecute
         public Process RunningSubProcess = null;
         // |- WebGet
-        public WebClient RunningWebClient = null;
+        public CancellationTokenSource CancelWebGet = null;
 
         // Readonly Fields
         public readonly string RunOneEntrySection;
@@ -1279,7 +1282,6 @@ namespace PEBakery.Core
             ErrorOffWaitingRegister = null;
             LocalVarsStateStack.Clear();
             RunningSubProcess = null;
-            RunningWebClient = null;
         }
 
         public void ResetHaltFlags()

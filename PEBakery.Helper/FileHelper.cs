@@ -74,8 +74,8 @@ namespace PEBakery.Helper
 
         #region Temp Path
         private static readonly object _tempPathLock = new object();
+        private static int _tempPathCounter = 0;
         private static readonly RNGCryptoServiceProvider _secureRandom = new RNGCryptoServiceProvider();
-        private static int _tempCounter = 0;
 
         private static string _baseTempDir = null;
         public static string BaseTempDir()
@@ -96,9 +96,11 @@ namespace PEBakery.Helper
                         _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
                     }
                     while (Directory.Exists(_baseTempDir) || File.Exists(_baseTempDir));
-
-                    Directory.CreateDirectory(_baseTempDir);
                 }
+           
+                // Always call CreateDirectory().
+                // Cleanmgr can delete temp directories while PEBakery is running.
+                Directory.CreateDirectory(_baseTempDir);
 
                 return _baseTempDir;
             }
@@ -120,6 +122,13 @@ namespace PEBakery.Helper
             }
         }
 
+        /// <summary>
+        /// Create temp directory with synchronization.
+        /// Returned temp directory path is virtually unique per call.
+        /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
         public static string GetTempDir()
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
@@ -130,7 +139,7 @@ namespace PEBakery.Helper
                 string tempDir;
                 do
                 {
-                    int counter = Interlocked.Increment(ref _tempCounter);
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
                     tempDir = Path.Combine(baseTempDir, $"d{counter:X8}");
                 }
                 while (Directory.Exists(tempDir) || File.Exists(tempDir));
@@ -141,8 +150,12 @@ namespace PEBakery.Helper
         }
 
         /// <summary>
-        /// Create temp file with synchronization
+        /// Create temp file with synchronization.
+        /// Returned temp file path is virtually unique per call.
         /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
         public static string GetTempFile(string ext = null)
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
@@ -156,7 +169,7 @@ namespace PEBakery.Helper
                 string tempFile;
                 do
                 {
-                    int counter = Interlocked.Increment(ref _tempCounter);
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
                     tempFile = Path.Combine(baseTempDir, ext.Length == 0 ? $"f{counter:X8}" : $"f{counter:X8}.{ext}");
                 }
                 while (Directory.Exists(tempFile) || File.Exists(tempFile));

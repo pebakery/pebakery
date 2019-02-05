@@ -784,17 +784,10 @@ namespace PEBakery.Core
                         // Find ts, skeleton script instance of the directory
                         string treePath = Path.Combine(ProjectName, pathKey);
 
-                        /*
-                        Script ts = scripts.FirstOrDefault(x => 
-                            x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase) &&
-                            x.IsDirLink == sc.IsDirLink);
-                        Debug.Assert(ts != null, $"Unable to find proper directory ({sc.TreePath})");
-                        */
-
                         ScriptParseInfo dpi = dpis.FirstOrDefault(x =>
                             x.IsDirLink == sc.IsDirLink &&
                             x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                        Debug.Assert(!dpi.Equals(default(ScriptParseInfo)), $"Unable to find proper directory ({sc.TreePath})");
+                        Debug.Assert(!dpi.Equals(default), $"Unable to find proper directory ({sc.TreePath})");
 
                         // Create new directory script instance from a directory parse info.
                         // Do not have to cache these scripts, these directory script instance is only used once.
@@ -1029,7 +1022,7 @@ namespace PEBakery.Core
                             ScriptParseInfo dpi = DirEntries.FirstOrDefault(x =>
                                 x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
-                            if (dpi.Equals(default(ScriptParseInfo)))
+                            if (dpi.Equals(default))
                             {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);

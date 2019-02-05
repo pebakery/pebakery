@@ -746,6 +746,7 @@
                                TextWrapping="Wrap"/>
                     <!-- Script Buttons -->
                     <Button Grid.Row="0" Grid.Column="2"
+                            Width="25"
                             x:Name="ScriptRunButton"
                             Visibility="{Binding NormalInterfaceVisibility}"
                             Command="local:MainViewCommands.ScriptRunCommand"
@@ -755,6 +756,7 @@
                         <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4"/>
                     </Button>
                     <Button Grid.Row="1" Grid.Column="2"
+                            Width="25"
                             x:Name="ScriptRefreshButton"
                             Visibility="{Binding NormalInterfaceVisibility}"
                             Command="local:MainViewCommands.ScriptRefreshCommand"
@@ -764,6 +766,7 @@
                         <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4"/>
                     </Button>
                     <Button Grid.Row="2" Grid.Column="2"
+                            Width="25"
                             x:Name="ScriptEditButton"
                             Visibility="{Binding NormalInterfaceVisibility}"
                             Command="local:MainViewCommands.ScriptEditCommand"
@@ -790,6 +793,7 @@
                         </Button.ContextMenu>
                     </Button>
                     <Button Grid.Row="3" Grid.Column="2"
+                            Width="25"
                             x:Name="ScriptUpdateButton"
                             Visibility="{Binding NormalInterfaceVisibility}"
                             Command="local:MainViewCommands.ScriptUpdateCommand"
@@ -880,7 +884,7 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <!-- ProgressBar -->
+                            <!-- Command ProgressBar -->
                             <TextBlock DockPanel.Dock="Top"
                                        TextAlignment="Left"
                                        Margin="10, 20, 10, 0"
@@ -892,6 +896,7 @@
                                          Margin="10, 7, 10, 0"
                                          Height="20"
                                          Visibility="{Binding BuildCommandProgressVisibility}"
+                                         IsIndeterminate="{Binding BuildCommandProgressIndeterminate}"
                                          Minimum="0"
                                          Maximum="{Binding BuildCommandProgressMax}"
                                          Value="{Binding BuildCommandProgressValue}" />

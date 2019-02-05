@@ -2,6 +2,7 @@
 using PEBakery.Core.ViewModels;
 using System;
 using System.IO;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Tests
 {
@@ -43,6 +44,9 @@ namespace PEBakery.Core.Tests
             Global.Logger = EngineTests.Logger;
             Global.BaseDir = EngineTests.BaseDir;
             Global.BuildDate = BuildTimestamp.ReadDateTime();
+
+            // IsOnline?
+            EngineTests.IsOnline = NetworkHelper.IsOnline();
         }
 
         [AssemblyCleanup]
