@@ -416,14 +416,12 @@ Description=Test Commands
             set => SetProperty(ref _codeBoxInput, value);
         }
 
-        public async void SaveCodeBox()
+        public void SaveCodeBox()
         {
-            Encoding encoding = Encoding.UTF8;
-            if (File.Exists(CodeFile))
-                encoding = EncodingHelper.DetectBom(CodeFile);
+            Encoding encoding = File.Exists(CodeFile) ? EncodingHelper.DetectBom(CodeFile) : Encoding.UTF8;
             using (StreamWriter w = new StreamWriter(CodeFile, false, encoding))
             {
-                await w.WriteAsync(CodeBoxInput);
+                w.Write(CodeBoxInput);
             }
         }
         #endregion
