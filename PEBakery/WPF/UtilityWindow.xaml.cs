@@ -135,7 +135,7 @@ namespace PEBakery.WPF
                 try
                 {
                     Project project = _m.CurrentProject;
-                    Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions());
+                    Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
 
                     Global.MainViewModel.BuildTreeItems.Clear();
                     Global.MainViewModel.SwitchNormalBuildInterface = false;
