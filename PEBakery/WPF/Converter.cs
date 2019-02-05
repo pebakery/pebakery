@@ -496,6 +496,24 @@ namespace PEBakery.WPF
             return !(bool)value;
         }
     }
+
+    public class InverseBoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return Visibility.Collapsed;
+            if (!(value is bool valBool))
+                return Visibility.Collapsed;
+
+            return valBool ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
     #endregion
 
     #region SolidColorBrush

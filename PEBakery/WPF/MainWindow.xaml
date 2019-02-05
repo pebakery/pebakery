@@ -114,6 +114,14 @@
                         Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptSyntaxCheckCommand_Executed"/>
+        <CommandBinding x:Name="DirectoryExpandTreeCommand"
+                        Command="local:MainViewCommands.DirectoryExpandTreeCommand"
+                        CanExecute="ScriptDirectoryCommand_CanExecute"
+                        Executed="DirectoryExpandTreeCommand_Executed"/>
+        <CommandBinding x:Name="DirectoryCollapseTreeCommand"
+                        Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
+                        CanExecute="ScriptDirectoryCommand_CanExecute"
+                        Executed="DirectoryCollapseTreeCommand_Executed"/>
         <CommandBinding x:Name="ScriptOpenFolderCommand"
                         Command="local:MainViewCommands.ScriptOpenFolderCommand"
                         CanExecute="ScriptCommand_CanExecute"
@@ -129,6 +137,7 @@
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
+        <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -433,14 +442,14 @@
                           SelectedItemChanged="MainTreeView_SelectedItemChanged"
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling"
-                          Tag="{Binding DataContext, ElementName=Main}">
+                          VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.ContextMenu>
                         <ContextMenu>
+                            <!-- For File -->
                             <cc:CorrectMenuItem Header="Run Script" 
                                                 Command="local:MainViewCommands.ScriptRunCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Play"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -448,7 +457,7 @@
                             <cc:CorrectMenuItem Header="Refresh Script" 
                                                 Command="local:MainViewCommands.ScriptRefreshCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Refresh"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -456,7 +465,7 @@
                             <cc:CorrectMenuItem Header="Edit Script Properties" 
                                                 Command="local:MainViewCommands.ScriptInternalEditorCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -464,7 +473,7 @@
                             <cc:CorrectMenuItem Header="Edit Script Source" 
                                                 Command="local:MainViewCommands.ScriptExternalEditorCommand"
                                                 Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -472,7 +481,7 @@
                             <cc:CorrectMenuItem Header="Update Script" 
                                                 Command="local:MainViewCommands.ScriptUpdateCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Download"/>
                                 </cc:CorrectMenuItem.Icon>
@@ -480,12 +489,30 @@
                             <cc:CorrectMenuItem Header="Syntax Check"
                                                 Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
                                                 Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Magnify"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
-                            <Separator Visibility="{Binding PlacementTarget.Tag.IsTreeEntryFile, RelativeSource={RelativeSource AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <!-- For Directory -->
+                            <cc:CorrectMenuItem Header="Expand Items"
+                                                Command="local:MainViewCommands.DirectoryExpandTreeCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="ChevronDown"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Collapse Items"
+                                                Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="ChevronRight"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <!-- For File and Directory Both -->
+                            <Separator />
                             <cc:CorrectMenuItem Header="Open Script Folder"
                                                 Command="local:MainViewCommands.ScriptOpenFolderCommand"
                                                 Grid.IsSharedSizeScope="True" >

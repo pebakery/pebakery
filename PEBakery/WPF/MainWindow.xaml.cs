@@ -29,10 +29,12 @@ using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -118,7 +120,7 @@ namespace PEBakery.WPF
 #if DEBUG
                 Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
                 {
-                    IncludeComments = true, 
+                    IncludeComments = true,
                     IncludeMacros = true,
                     ShowLogFlags = true,
                 });
@@ -492,6 +494,44 @@ namespace PEBakery.WPF
                 MainViewModel.OpenFolder(Path.GetDirectoryName(sc.RealPath));
         }
 
+        private void ScriptDirectoryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = Model?.CurMainTree?.Script != null &&
+                           Model.CurMainTree.Script.Type == ScriptType.Directory &&
+                           !Model.WorkInProgress;
+        }
+
+        private void DirectoryExpandTreeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ProjectTreeItemModel selectedItem = Model.CurMainTree;
+            selectedItem.IsExpanded = true;
+
+            Queue<ProjectTreeItemModel> q = new Queue<ProjectTreeItemModel>(selectedItem.Children.Where(x => x.Script.Type == ScriptType.Directory));
+            while (0 < q.Count)
+            {
+                ProjectTreeItemModel dirItem = q.Dequeue();
+                dirItem.IsExpanded = true;
+
+                foreach (ProjectTreeItemModel subItem in dirItem.Children.Where(x => x.Script.Type == ScriptType.Directory))
+                    q.Enqueue(subItem);
+            }
+        }
+
+        private void DirectoryCollapseTreeCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ProjectTreeItemModel selectedItem = Model.CurMainTree;
+            selectedItem.IsExpanded = false;
+
+            Queue<ProjectTreeItemModel> q = new Queue<ProjectTreeItemModel>(selectedItem.Children.Where(x => x.Script.Type == ScriptType.Directory));
+            while (0 < q.Count)
+            {
+                ProjectTreeItemModel dirItem = q.Dequeue();
+                dirItem.IsExpanded = true;
+
+                foreach (ProjectTreeItemModel subItem in dirItem.Children.Where(x => x.Script.Type == ScriptType.Directory))
+                    q.Enqueue(subItem);
+            }
+        }
         #endregion
 
         #region TreeView Event Handler
@@ -639,6 +679,8 @@ namespace PEBakery.WPF
         public static readonly RoutedCommand ScriptExternalEditorCommand = new RoutedUICommand("Edit Script Source", "ScriptExternalEditor", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptUpdateCommand = new RoutedUICommand("Update Script", "ScriptUpdate", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptSyntaxCheckCommand = new RoutedUICommand("Syntax Check", "ScriptSyntaxCheck", typeof(MainViewCommands));
+        public static readonly RoutedCommand DirectoryExpandTreeCommand = new RoutedUICommand("Collapse items", "DirectoryExpandTree", typeof(MainViewCommands));
+        public static readonly RoutedCommand DirectoryCollapseTreeCommand = new RoutedUICommand("Collapse items", "DirectoryCollapseTree", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptOpenFolderCommand = new RoutedUICommand("Open Script Folder", "ScriptOpenFolder", typeof(MainViewCommands));
         #endregion
     }
