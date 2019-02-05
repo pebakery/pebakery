@@ -274,8 +274,8 @@ namespace PEBakery.Core.Tests.Command
         private static string GenerateNeverExistUrl()
         {
             // Let's try a domain which never exists.
-            // No one wants to create a domain named 'Never-exist-site + rand hex' in Korean, right?
-            const string baseUrl = "https://절대로존재하지않는사이트";
+            // No one wants to create a domain named 'Never-exist-domain + rand hex' in Korean, right?
+            const string baseUrl = "절대로존재하지않는도메인";
             Random rand = new Random();
             string testUrl = null;
             int counter = 0;
@@ -283,7 +283,7 @@ namespace PEBakery.Core.Tests.Command
             // Very unlikely, but if a villain already created 16 randomized domains, then give up. Test will fail.
             while (testUrl == null && counter < 16)
             {
-                int repeat = rand.Next(4);
+                int repeat = rand.Next(1, 4);
                 StringBuilder b = new StringBuilder(8);
                 b.Append(baseUrl);
                 b.Append('_');
@@ -306,7 +306,11 @@ namespace PEBakery.Core.Tests.Command
                     testUrl = url; 
                 }
             }
-            return testUrl;
+
+            if (testUrl == null)
+                return null;
+            else
+                return "https://" + testUrl;
         }
         #endregion
     }
