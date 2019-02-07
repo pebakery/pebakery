@@ -182,6 +182,24 @@ namespace PEBakery.WPF
             return Binding.DoNothing;
         }
     }
+
+    public class IsTreeEntryDirMainToVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values == null || values.Length != 2)
+                return Visibility.Collapsed;
+            if (!(values[0] is bool isTreeEntryFile && values[1] is bool isTreeEntryMain))
+                return Visibility.Collapsed;
+
+            return !isTreeEntryFile || isTreeEntryMain ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[2] { Binding.DoNothing, Binding.DoNothing };
+        }
+    }
     #endregion
 
     #region SettingWindow

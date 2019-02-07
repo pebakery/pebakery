@@ -494,11 +494,16 @@ namespace PEBakery.WPF
                 MainViewModel.OpenFolder(Path.GetDirectoryName(sc.RealPath));
         }
 
-        private void ScriptDirectoryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void ScriptDirMainCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model?.CurMainTree?.Script != null &&
-                           Model.CurMainTree.Script.Type == ScriptType.Directory &&
-                           !Model.WorkInProgress;
+            e.CanExecute = false;
+
+            if (Model?.CurMainTree?.Script != null && !Model.WorkInProgress)
+            {
+                Script sc = Model.CurMainTree.Script;
+                if (sc.Type == ScriptType.Directory || sc.Equals(sc.Project.MainScript))
+                    e.CanExecute = true;
+            }
         }
 
         private void DirectoryExpandTreeCommand_Executed(object sender, ExecutedRoutedEventArgs e)

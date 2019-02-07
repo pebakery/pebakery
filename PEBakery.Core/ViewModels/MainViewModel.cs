@@ -350,6 +350,9 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         private bool _isTreeEntryFile = true;
+        /// <summary>
+        /// Selected script is a script (.Script or .Link)
+        /// </summary>
         public bool IsTreeEntryFile
         {
             get => _isTreeEntryFile;
@@ -361,6 +364,16 @@ namespace PEBakery.Core.ViewModels
                 OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
+        }
+
+        private bool _isTreeEntryMain = true;
+        /// <summary>
+        /// Selected script is a MainScript
+        /// </summary>
+        public bool IsTreeEntryMain
+        {
+            get => _isTreeEntryMain;
+            set => SetProperty(ref _isTreeEntryMain, value);
         }
 
         public string OpenExternalButtonToolTip => IsTreeEntryFile ? "Edit Script" : "Open Folder";
@@ -1145,6 +1158,7 @@ namespace PEBakery.Core.ViewModels
             }
 
             IsTreeEntryFile = sc.Type != ScriptType.Directory;
+            IsTreeEntryMain = sc.Equals(sc.Project.MainScript);
             OnPropertyUpdate(nameof(MainCanvas));
         }
 

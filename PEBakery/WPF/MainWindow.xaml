@@ -116,11 +116,11 @@
                         Executed="ScriptSyntaxCheckCommand_Executed"/>
         <CommandBinding x:Name="DirectoryExpandTreeCommand"
                         Command="local:MainViewCommands.DirectoryExpandTreeCommand"
-                        CanExecute="ScriptDirectoryCommand_CanExecute"
+                        CanExecute="ScriptDirMainCommand_CanExecute"
                         Executed="DirectoryExpandTreeCommand_Executed"/>
         <CommandBinding x:Name="DirectoryCollapseTreeCommand"
                         Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
-                        CanExecute="ScriptDirectoryCommand_CanExecute"
+                        CanExecute="ScriptDirMainCommand_CanExecute"
                         Executed="DirectoryCollapseTreeCommand_Executed"/>
         <CommandBinding x:Name="ScriptOpenFolderCommand"
                         Command="local:MainViewCommands.ScriptOpenFolderCommand"
@@ -137,7 +137,7 @@
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
-        <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -494,19 +494,31 @@
                                     <iconPacks:PackIconMaterial Kind="Magnify"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
-                            <!-- For Directory -->
+                            <!-- For MainScript -->
+                            <Separator Visibility="{Binding Path=DataContext.IsTreeEntryMain, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <!-- For Directory and MainScript -->
                             <cc:CorrectMenuItem Header="Expand Items"
                                                 Command="local:MainViewCommands.DirectoryExpandTreeCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                Grid.IsSharedSizeScope="True" >
+                                <cc:CorrectMenuItem.Visibility>
+                                    <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
+                                        <Binding Path="DataContext.IsTreeEntryFile" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
+                                        <Binding Path="DataContext.IsTreeEntryMain" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
+                                    </MultiBinding>
+                                </cc:CorrectMenuItem.Visibility>
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="ChevronDown"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Collapse Items"
                                                 Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                Grid.IsSharedSizeScope="True" >
+                                <cc:CorrectMenuItem.Visibility>
+                                    <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
+                                        <Binding Path="DataContext.IsTreeEntryFile" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
+                                        <Binding Path="DataContext.IsTreeEntryMain" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
+                                    </MultiBinding>
+                                </cc:CorrectMenuItem.Visibility>
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="ChevronRight"/>
                                 </cc:CorrectMenuItem.Icon>
