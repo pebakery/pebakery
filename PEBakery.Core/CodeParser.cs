@@ -64,7 +64,7 @@ namespace PEBakery.Core
                     AllowLegacyRegWrite = compat.LegacyRegWrite,
                     AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
                     AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
-                    AllowExtendedSectionParams = !compat.DisableExtendedSectionParams,
+                    AllowExtendedSectionParams = !compat.DisableExtendedSectionParams
                 };
             }
         }
@@ -85,7 +85,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ExportCodeParserOptions
-        
+
         #endregion
 
         #region ParseStatement, ParseStatements
@@ -198,7 +198,7 @@ namespace PEBakery.Core
                 if (pIdx == -1) // Last one
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
-                    if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
@@ -208,7 +208,7 @@ namespace PEBakery.Core
                 else // [   Return SetError(@error,0,0)], [Append]
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
-                    if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    if (0 < whitespace.Length)
                         throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
@@ -224,12 +224,10 @@ namespace PEBakery.Core
                 {
                     return (str, null);
                 }
-                else // [FileCreateBlank], [#3.au3]
-                {
-                    string next = str.Substring(0, pIdx).Trim();
-                    string remainder = str.Substring(pIdx + 1).Trim();
-                    return (next, remainder);
-                }
+
+                string next = str.Substring(0, pIdx).Trim();
+                string remainder = str.Substring(pIdx + 1).Trim();
+                return (next, remainder);
             }
         }
         #endregion
@@ -259,7 +257,7 @@ namespace PEBakery.Core
 
             // Check double-quote's occurence - must be 2n
             if (StringHelper.CountSubStr(rawCode, "\"") % 2 == 1)
-                throw new InvalidCommandException("DoubleQuote's number should be even", rawCode);
+                throw new InvalidCommandException("Double-quote's number should be even", rawCode);
 
             // Parse Arguments
             List<string> args = new List<string>();
@@ -296,7 +294,7 @@ namespace PEBakery.Core
                     do
                     {
                         string nextArg;
-                        (nextArg, remainder) = CodeParser.GetNextArgument(remainder);
+                        (nextArg, remainder) = GetNextArgument(remainder);
                         args.Add(nextArg);
                     }
                     while (remainder != null);
@@ -323,7 +321,7 @@ namespace PEBakery.Core
         {
             CodeType type;
 
-            // Parse opcode
+            // Parse type
             string macroType;
             try
             {
@@ -663,7 +661,7 @@ namespace PEBakery.Core
 
                         string valTypeStr = args[1];
                         RegistryValueKind valType;
-                        try { valType = CodeParser.ParseRegistryValueKind(valTypeStr); }
+                        try { valType = ParseRegistryValueKind(valTypeStr); }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         switch (valType)
@@ -701,8 +699,7 @@ namespace PEBakery.Core
                                     string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
                                     if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
-                                    else
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
@@ -782,7 +779,7 @@ namespace PEBakery.Core
 
                         string valTypeStr = args[3];
                         RegMultiType valType;
-                        try { valType = CodeParser.ParseRegMultiType(valTypeStr); }
+                        try { valType = ParseRegMultiType(valTypeStr); }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         string arg1 = args[4];
@@ -1646,7 +1643,7 @@ namespace PEBakery.Core
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-                        
+
                         return new CodeInfo_Decompress(args[0], args[1]);
                     }
                 case CodeType.Expand:
@@ -2040,31 +2037,36 @@ namespace PEBakery.Core
                             args[0] = "DirPath";
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-                        else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
+
+                        if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.File -> UserInput.FilePath
                             type = CodeType.UserInput;
                             args[0] = "FilePath";
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-                        else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
+
+                        if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileSize -> FileSize
                             type = CodeType.FileSize;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-                        else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
+
+                        if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileVersion -> FileVersion
                             type = CodeType.FileVersion;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-                        else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
+
+                        if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FolderSize -> DirSize
                             type = CodeType.DirSize;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-                        else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
+
+                        if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.MD5 -> Hash.MD5
                             type = CodeType.Hash;
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
@@ -2147,19 +2149,18 @@ namespace PEBakery.Core
 
                             throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
                         }
-                        else
-                        { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
-                            const int minArgCount = 4;
-                            if (CheckInfoArgumentCount(args, minArgCount, -1))
-                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            // Get parameters 
-                            List<string> inParams = new List<string>();
-                            if (minArgCount < args.Count)
-                                inParams.AddRange(args.Skip(minArgCount));
+                        // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                        const int minArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, null);
-                        }
+                        // Get parameters 
+                        List<string> inParams = new List<string>();
+                        if (minArgCount < args.Count)
+                            inParams.AddRange(args.Skip(minArgCount));
+
+                        return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, null);
                     }
                 case CodeType.LoopEx:
                 case CodeType.LoopLetterEx:
@@ -2176,35 +2177,34 @@ namespace PEBakery.Core
 
                             throw new InvalidCommandException($"Invalid form of Command [{type}]", rawCode);
                         }
-                        else
-                        { // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
-                            const int minArgCount = 4;
-                            if (CheckInfoArgumentCount(args, minArgCount, -1))
-                                throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                            // Get parameters
-                            const string inKey = "In=";
-                            const string outKey = "Out=";
-                            List<string> inParams = new List<string>();
-                            List<string> outParams = new List<string>();
-                            for (int i = minArgCount; i < args.Count; i++)
+                        // LoopEx,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                        const int minArgCount = 4;
+                        if (CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        // Get parameters
+                        const string inKey = "In=";
+                        const string outKey = "Out=";
+                        List<string> inParams = new List<string>();
+                        List<string> outParams = new List<string>();
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
+                                inParams.Add(arg.Substring(inKey.Length));
+                            else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
                             {
-                                string arg = args[i];
-                                if (arg.StartsWith(inKey, StringComparison.OrdinalIgnoreCase))
-                                    inParams.Add(arg.Substring(inKey.Length));
-                                else if (arg.StartsWith(outKey, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string varKey = arg.Substring(outKey.Length);
-                                    if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
-                                        throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
-                                    outParams.Add(varKey);
-                                }
-                                else
-                                    throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                                string varKey = arg.Substring(outKey.Length);
+                                if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                outParams.Add(varKey);
                             }
-
-                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
+                            else
+                                throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
                         }
+
+                        return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);
                     }
                 case CodeType.If:
                     return ParseCodeInfoIf(rawCode, args, lineIdx);
@@ -2481,8 +2481,7 @@ namespace PEBakery.Core
         {
             if (max == -1) // Unlimited argument count
                 return op.Count < min;
-            else
-                return op.Count < min || max < op.Count;
+            return op.Count < min || max < op.Count;
         }
         #endregion
 
@@ -2572,8 +2571,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
-                        else
-                            info = new UserInputInfo_DirFile(args[0], args[1]);
+                        info = new UserInputInfo_DirFile(args[0], args[1]);
                     }
                     break;
                 default: // Error
@@ -2641,8 +2639,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_BytesToInt(args[0], args[1]);
+                        info = new StrFormatInfo_BytesToInt(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Hex:
@@ -2671,8 +2668,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_CeilFloorRound(args[0], args[1]);
+                        info = new StrFormatInfo_CeilFloorRound(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Date:
@@ -2964,11 +2960,11 @@ namespace PEBakery.Core
             [@"t"] = @"h:mm tt",
             // Gregorian Era (B.C./A.D.)
             [@"gg"] = @"gg",
-            [@"g"] = @"gg",
+            [@"g"] = @"gg"
         };
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
-        private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
+        private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g' };
 
         private static string StrFormat_Date_FormatString(string str)
         {
@@ -3274,8 +3270,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
+                        info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.Abs:
@@ -3286,8 +3281,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_Abs(args[0], args[1]);
+                        info = new MathInfo_Abs(args[0], args[1]);
                     }
                     break;
                 case MathType.Pow:
@@ -3298,13 +3292,12 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
-                        else
-                            info = new MathInfo_Pow(args[0], args[1], args[2]);
+                        info = new MathInfo_Pow(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.Hex:
                 case MathType.Dec:
-                    { 
+                    {
                         // Math,Hex,<DestVar>,<Integer>,[BitSize]
                         // Math,Dec,<DestVar>,<Integer>,[BitSize]
                         const int minArgCount = 2;
@@ -4412,7 +4405,8 @@ namespace PEBakery.Core
                     }
                 }
             }
-            else if (elseEmbCmd.Type == CodeType.Begin)
+
+            if (elseEmbCmd.Type == CodeType.Begin)
             {
                 // Find proper End
                 int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
@@ -4425,19 +4419,18 @@ namespace PEBakery.Core
                 elseFlag = true;
                 return endIdx;
             }
-            else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
+
+            if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
             {
                 info.Link.Add(info.Embed);
                 throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with [Else]", cmd);
             }
-            else // Normal codes
-            {
-                info.Link.Add(info.Embed);
-                info.LinkParsed = true;
 
-                elseFlag = false;
-                return codeListIdx;
-            }
+            info.Link.Add(info.Embed);
+            info.LinkParsed = true;
+
+            elseFlag = false;
+            return codeListIdx;
         }
 
         // Process nested Begin ~ End block

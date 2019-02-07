@@ -214,7 +214,7 @@ namespace PEBakery.Core
                                     case 'S':
                                         b.Append(' ');
                                         break;
-                                    case 't': // #$t -> [   ]
+                                    case 't': // #$t -> [\t]
                                     case 'T':
                                         b.Append('\t');
                                         break;

@@ -232,7 +232,8 @@ namespace PEBakery.Core
                         case ThemeType.Black:
                             return Color.FromRgb(204, 204, 204);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 211, 94);
+                            // return Color.FromRgb(255, 211, 94);
+                            return Color.FromRgb(255, 180, 180);
                         case ThemeType.Green:
                             return Color.FromRgb(180, 255, 180);
                         case ThemeType.Blue:
@@ -292,7 +293,7 @@ namespace PEBakery.Core
                         case ThemeType.Black:
                             return Color.FromRgb(238, 238, 238);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 255, 192);
+                            return Color.FromRgb(255, 230, 230);
                         case ThemeType.Green:
                             return Color.FromRgb(230, 255, 230);
                         case ThemeType.Blue:
@@ -331,7 +332,7 @@ namespace PEBakery.Core
                         case ThemeType.Black:
                             return Color.FromRgb(238, 238, 238);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 232, 208);
+                            return Color.FromRgb(255, 210, 210);
                         case ThemeType.Green:
                             return Color.FromRgb(210, 255, 210);
                         case ThemeType.Blue:

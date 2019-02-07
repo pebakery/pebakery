@@ -673,11 +673,7 @@ namespace PEBakery.Core.ViewModels
         public TaskbarItemProgressState TaskBarProgressState
         {
             get => _taskBarProgressState;
-            set
-            {
-                _taskBarProgressState = value;
-                OnPropertyUpdate(nameof(TaskBarProgressState));
-            }
+            set => SetProperty(ref _taskBarProgressState, value);
         }
         #endregion
 
