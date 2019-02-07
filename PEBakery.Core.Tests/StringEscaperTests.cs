@@ -29,6 +29,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using PEBakery.Helper;
 
@@ -601,42 +602,49 @@ namespace PEBakery.Core.Tests
         [TestCategory("StringEscaper")]
         public void PathSecurityCheck()
         {
-            PathSecurityCheck_1();
-            PathSecurityCheck_2();
-            PathSecurityCheck_3();
-            PathSecurityCheck_4();
-        }
+            void Template(string path, bool expected)
+            {
+                bool result = StringEscaper.PathSecurityCheck(path, out _);
+                Assert.AreEqual(expected, result);
+            }
 
-        public void PathSecurityCheck_1()
-        {
-            string path = Path.Combine(FileHelper.BaseTempDir(), "notepad.exe");
-            Assert.IsTrue(StringEscaper.PathSecurityCheck(path, out _));
-        }
+            string normalDir = FileHelper.GetTempDir();
+            try
+            {
+                // Valid paths
+                Template(Path.Combine(normalDir, "PEBakery.exe"), true);
+                Template(Path.Combine(normalDir, "Wildcard.*"), true);
+                Template(Path.Combine(normalDir, "Wild*.???"), true);
+                Template("C:\\", true);
+                Template(string.Empty, true);
+            }
+            finally
+            {
+                if (Directory.Exists(normalDir))
+                    Directory.Delete(normalDir, true);
+            }
 
-        public void PathSecurityCheck_2()
-        {
-            string windir = Environment.GetEnvironmentVariable("windir");
-            Assert.IsNotNull(windir);
-            string path = Path.Combine(windir, "System32", "notepad.exe");
-            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
-        }
+            // %WinDir%
+            string winDir = Environment.GetEnvironmentVariable("WinDir");
+            Assert.IsNotNull(winDir);
+            Template(Path.Combine(winDir, "System32", "notepad.exe"), false);
 
-        public void PathSecurityCheck_3()
-        {
-            string windir = Environment.GetEnvironmentVariable("ProgramFiles");
-            Assert.IsNotNull(windir);
-            string path = Path.Combine(windir, "System32", "notepad.exe");
-            Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
-        }
+            // %ProgramFiles%
+            string programFiles = Environment.GetEnvironmentVariable("ProgramFiles");
+            Assert.IsNotNull(programFiles);
+            Template(Path.Combine(programFiles, "PEBakery", "PEBakery.ini"), false);
 
-        public void PathSecurityCheck_4()
-        {
-            if (Environment.Is64BitProcess)
-            { // Only in 64bit process
-                string windir = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
-                Assert.IsNotNull(windir);
-                string path = Path.Combine(windir, "System32", "notepad.exe");
-                Assert.IsFalse(StringEscaper.PathSecurityCheck(path, out _));
+            // %ProgramFiles(x86)%
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                // Not sure about ARM64, please submit an issue/PR if anyone have ARM64 Windows device!
+                case Architecture.Arm64:
+                case Architecture.X64:
+                    // Only in 64bit process
+                    string programFiles86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                    Assert.IsNotNull(programFiles86);
+                    Template(Path.Combine(programFiles86, "PEBakery", "PEBakery.ini"), false);
+                    break;
             }
         }
         #endregion

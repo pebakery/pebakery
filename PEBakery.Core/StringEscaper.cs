@@ -41,10 +41,11 @@ namespace PEBakery.Core
     public static class StringEscaper
     {
         #region Static Variables and Constructor
-        private static readonly List<string> ForbiddenPaths = new List<string>
+        private static readonly string[] ForbiddenPaths = 
         {
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            // Equal to Environment.SpecialFolder.ProgramFiles in x86 Windows (32bit)
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
         };
         #endregion
@@ -56,22 +57,19 @@ namespace PEBakery.Core
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
-            bool containsInvalidChars = false;
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (char ch in invalidChars)
-            {
-                if (path.IndexOf(ch) != -1)
-                    containsInvalidChars = true;
-            }
+            errorMsg = string.Empty;
+            if (path.Length == 0) // Path.GetFullPath(string.Empty) throws ArgumentException
+                return true;
 
             // PathSecurityCheck should be able to process paths like [*.exe]
             // So remove filename if necessary.
             string fullPath;
-            if (containsInvalidChars)
+            int lastWildcardIdx = path.IndexOfAny(new char[] {'*', '?'});
+            if (lastWildcardIdx != -1 && path.LastIndexOf('\\') < lastWildcardIdx)
                 fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
             else
                 fullPath = Path.GetFullPath(path);
-
+            
             foreach (string f in ForbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
@@ -80,7 +78,6 @@ namespace PEBakery.Core
                     return false;
                 }
             }
-            errorMsg = string.Empty;
             return true;
         }
         #endregion
