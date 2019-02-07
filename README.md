@@ -28,7 +28,7 @@ A nightly build is provided for the testing purpose.
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
 
-**CAUTON**: Do not forget to set [proper compatibility options](./COMPAT.md) per projects.
+**CAUTION**: Do not forget to set [proper compatibility options](./COMPAT.md) per projects.
 
 ## Prerequisite
 

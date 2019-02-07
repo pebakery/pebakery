@@ -224,10 +224,12 @@ namespace PEBakery.Core
                 {
                     return (str, null);
                 }
-
-                string next = str.Substring(0, pIdx).Trim();
-                string remainder = str.Substring(pIdx + 1).Trim();
-                return (next, remainder);
+                else // [FileCreateBlank], [#3.au3]
+                {
+                    string next = str.Substring(0, pIdx).Trim();
+                    string remainder = str.Substring(pIdx + 1).Trim();
+                    return (next, remainder);
+                }
             }
         }
         #endregion
@@ -699,7 +701,8 @@ namespace PEBakery.Core
                                     string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
                                     if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                    else
+                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
@@ -2030,43 +2033,37 @@ namespace PEBakery.Core
 
                         if (Variables.DetectType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
-
-                        if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.Dir -> UserInput.DirPath
                             type = CodeType.UserInput;
                             args[0] = "DirPath";
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-
-                        if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.File -> UserInput.FilePath
                             type = CodeType.UserInput;
                             args[0] = "FilePath";
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-
-                        if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileSize -> FileSize
                             type = CodeType.FileSize;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-
-                        if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileVersion -> FileVersion
                             type = CodeType.FileVersion;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-
-                        if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FolderSize -> DirSize
                             type = CodeType.DirSize;
                             args.RemoveAt(0);
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
                         }
-
-                        if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
+                        else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.MD5 -> Hash.MD5
                             type = CodeType.Hash;
                             return ParseCodeInfo(rawCode, ref type, macroType, args, lineIdx);
@@ -4405,8 +4402,7 @@ namespace PEBakery.Core
                     }
                 }
             }
-
-            if (elseEmbCmd.Type == CodeType.Begin)
+            else if (elseEmbCmd.Type == CodeType.Begin)
             {
                 // Find proper End
                 int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
@@ -4419,18 +4415,19 @@ namespace PEBakery.Core
                 elseFlag = true;
                 return endIdx;
             }
-
-            if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
+            else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
             {
                 info.Link.Add(info.Embed);
                 throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with [Else]", cmd);
             }
+            else // Normal codes
+            {
+                info.Link.Add(info.Embed);
+                info.LinkParsed = true;
 
-            info.Link.Add(info.Embed);
-            info.LinkParsed = true;
-
-            elseFlag = false;
-            return codeListIdx;
+                elseFlag = false;
+                return codeListIdx;
+            }
         }
 
         // Process nested Begin ~ End block
