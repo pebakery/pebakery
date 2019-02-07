@@ -526,7 +526,7 @@ namespace PEBakery.WPF
             while (0 < q.Count)
             {
                 ProjectTreeItemModel dirItem = q.Dequeue();
-                dirItem.IsExpanded = true;
+                dirItem.IsExpanded = false;
 
                 foreach (ProjectTreeItemModel subItem in dirItem.Children.Where(x => x.Script.Type == ScriptType.Directory))
                     q.Enqueue(subItem);
