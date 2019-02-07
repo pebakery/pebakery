@@ -11,7 +11,7 @@ PEBakery is a builder specialized in customizing Windows Preinstalled Environmen
 | Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master) |
 | Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
 
-PEBakery is backward compatible with WinBuilder 082.
+PEBakery is backward compatible with WinBuilder 082 and improves upon it.
 
 ## Disclaimer
 
@@ -28,7 +28,9 @@ A nightly build is provided for the testing purpose.
 - [Official Release](https://github.com/pebakery/pebakery/releases)
 - [Lastest Nightly (develop)](https://ci.appveyor.com/api/projects/ied206/PEBakery/artifacts/nightly.zip?branch=develop)
 
-## Prerequiste
+**CAUTON**: Do not forget to set [proper compatibility options](./COMPAT.md) per projects.
+
+## Prerequisite
 
 If you are using Windows 10 v1803 or later, no action is necessary.  
 If not, please install [.Net Framework 4.7.2](http://go.microsoft.com/fwlink/?LinkId=863262).
