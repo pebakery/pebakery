@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -213,6 +214,24 @@ namespace PEBakery.WPF
                 return false;
 
             return p.IsPathSettingEnabled();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class ProjectPathEnabledVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return Visibility.Collapsed;
+            if (!(value is Project p))
+                return Visibility.Collapsed;
+
+            return p.IsPathSettingEnabled() ? Visibility.Collapsed : Visibility.Visible; ;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
