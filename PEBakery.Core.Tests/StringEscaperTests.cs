@@ -367,7 +367,7 @@ namespace PEBakery.Core.Tests
         {
             EngineState s = EngineTests.CreateEngineState();
             EngineTests.PushDepthInfo(s, 1);
-            s.SectionReturnValue = "TEST";
+            s.ReturnValue = "TEST";
 
             const string src = "##1 ##a ##r #r";
             string dest = StringEscaper.ExpandSectionParams(s, src);

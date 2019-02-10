@@ -85,8 +85,6 @@ namespace PEBakery.Core
                 UseCustomUserAgent = false;
                 // Default custom User-Agent is set to Edge's on Windows 10 v1809
                 CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
-                // Or Firefox 64?
-                // Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0
             }
         }
 

@@ -28,7 +28,6 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -48,7 +47,6 @@ namespace PEBakery.Core.Commands
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
-            const string destVar = @"%StatusCode%";
 
             // Check PathSecurity in destPath
             if (!StringEscaper.PathSecurityCheck(destPath, out string pathErrorMsg))
@@ -103,11 +101,18 @@ namespace PEBakery.Core.Commands
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP status code [{statusCode}]"));
                     }
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
-                    logs.AddRange(varLogs);
+                    // PEBakery extension -> Report exit code via #r
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.ReturnValue = statusCode.ToString();
+                        if (statusCode < 100)
+                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                    }
                 }
                 else
                 { // Validate downloaded file with hash
@@ -137,7 +142,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            statusCode = 1;
+                            statusCode = 1; // 1 means hash mismatch
                             logs.Add(new LogInfo(LogState.Error, $"Downloaded file from [{url}] was corrupted"));
                         }
                     }
@@ -151,9 +156,16 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
                     }
-
-                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
-                    logs.AddRange(varLogs);
+                    
+                    // PEBakery extension -> Report exit code via #r
+                    if (!s.CompatDisableExtendedSectionParams)
+                    {
+                        s.ReturnValue = statusCode.ToString();
+                        if (statusCode < 100)
+                            logs.Add(new LogInfo(LogState.Success, $"Returned [{statusCode}] into [#r]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Success, $"Returned HTTP status code [{statusCode}] to [#r]"));
+                    }
                 }
             }
             finally

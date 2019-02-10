@@ -142,7 +142,8 @@ namespace PEBakery.WPF
                     Global.MainViewModel.WorkInProgress = true;
 
                     EngineState s = new EngineState(sc.Project, Global.Logger, Global.MainViewModel, EngineMode.RunMainAndOne, sc);
-                    s.SetOptions(Global.Setting, sc.Project.Compat);
+                    s.SetOptions(Global.Setting);
+                    s.SetCompat(sc.Project.Compat);
 
                     Engine.WorkingEngine = new Engine(s);
 

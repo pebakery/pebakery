@@ -1610,7 +1610,8 @@ namespace PEBakery.Core
                 mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
-                s.SetOptions(Global.Setting, section.Project.Compat);
+                s.SetOptions(Global.Setting);
+                s.SetCompat(section.Project.Compat);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
                     s.LogMode = LogMode.FullDefer;
 

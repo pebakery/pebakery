@@ -928,7 +928,7 @@ namespace PEBakery.Core
                 { // s.SectionReturnValue's default value is string.Empty
                     if (!s.CompatDisableExtendedSectionParams)
                     {
-                        s.SectionReturnValue = string.Empty;
+                        s.ReturnValue = string.Empty;
                         logs.Add(new LogInfo(LogState.Success, "ReturnValue [#r] deleted"));
                     }
                     else
@@ -1029,7 +1029,7 @@ namespace PEBakery.Core
                 {
                     if (!s.CompatDisableExtendedSectionParams)
                     {
-                        s.SectionReturnValue = finalValue;
+                        s.ReturnValue = finalValue;
                         logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
                     }
                     else

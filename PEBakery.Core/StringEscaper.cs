@@ -523,7 +523,7 @@ namespace PEBakery.Core
 
                 // Escape #r (Return Value)
                 if (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1)
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.SectionReturnValue);
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[rR])", s.ReturnValue);
             }
 
             // Escape #c (Loop Counter)
