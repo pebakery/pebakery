@@ -238,7 +238,7 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Normal Interface Properties
-        public const string DefaultTitleBar = "PEBakery";
+        public const string DefaultTitleBar = "PEBakery " + Global.Const.StringVersionFull;
         private string _titleBar = DefaultTitleBar;
         public string TitleBar
         {

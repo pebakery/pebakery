@@ -53,7 +53,6 @@ namespace PEBakery.Core
             public bool AllowLegacyRegWrite;
             public bool AllowLegacyInterfaceCommand;
             public bool AllowLegacySectionParamCommand;
-            public bool AllowExtendedSectionParams;
 
             public static Options CreateOptions(Setting setting, CompatOption compat)
             {
@@ -64,7 +63,6 @@ namespace PEBakery.Core
                     AllowLegacyRegWrite = compat.LegacyRegWrite,
                     AllowLegacyInterfaceCommand = compat.LegacyInterfaceCommand,
                     AllowLegacySectionParamCommand = compat.LegacySectionParamCommand,
-                    AllowExtendedSectionParams = !compat.DisableExtendedSectionParams
                 };
             }
         }
@@ -644,8 +642,8 @@ namespace PEBakery.Core
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        // Compatbility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
-                        // It will be done in RegWriteLegacy
+                        // Compatibility Shim for Win10PESE : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // It will be parsed in RegWriteLegacy
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
                         {
@@ -729,12 +727,17 @@ namespace PEBakery.Core
                     }
                 case CodeType.RegWriteLegacy:
                     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>
+                        // Compatibility shim for Win10PESE's Macro Library
+                        // Ex) RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        //     ValueType cannot be parsed as normal RegWrite in CodeParser.
+
+                        // Check for compat option
+                        if (!_opts.AllowLegacyRegWrite)
+                            throw new InvalidCommandException("<HKey> must be constant string", rawCode);
+
                         const int minArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
-
-                        // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
-                        // Because of this code, valType cannot be parsed in CodeParser
 
                         int cnt = args.Count;
                         bool noWarn = false;
@@ -2486,7 +2489,7 @@ namespace PEBakery.Core
         public static RegistryValueKind ParseRegistryValueKind(string typeStr)
         {
             // typeStr must be valid number
-            if (NumberHelper.ParseInt32(typeStr, out int typeInt) == false)
+            if (!NumberHelper.ParseInt32(typeStr, out int typeInt))
                 throw new InvalidCommandException($"[{typeStr}] is not a valid number");
 
             switch (typeInt)
@@ -2530,7 +2533,7 @@ namespace PEBakery.Core
         public static InterfaceElement ParseInterfaceElement(string str)
         {
             if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong InterfaceElement [{str}], Only alphabet and underscore can be used");
 
             bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) ||
                            !Enum.IsDefined(typeof(InterfaceElement), e);

@@ -418,8 +418,6 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            // string inParamRegex = s.CompatDisableExtendedSectionParams ? @"(?<!#)(#[1-9])" : @"(?<!#)(#[1-9][0-9]*)";
-            // Regex inRegex = new Regex(inParamRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             Regex inRegex = new Regex(@"(?<!#)(#[1-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             MatchCollection matches = inRegex.Matches(str);
             while (0 < matches.Count)

@@ -101,25 +101,37 @@ namespace PEBakery.Core.Tests
         #region Eval
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(DummySection(), Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, Project.Compat);
+            return Eval(s, parser, rawCode, type, check, out cmd);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption opts)
+        {
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, opts);
+            return Eval(s, parser, rawCode, type, check, out _);
+        }
+
+        public static List<LogInfo> Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, CompatOption opts, out CodeCommand cmd)
+        {
+            CodeParser parser = new CodeParser(DummySection(), Global.Setting, opts);
             return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out _);
         }
 
         public static List<LogInfo> Eval(EngineState s, ScriptSection section, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
         {
-            CodeParser parser = new CodeParser(section, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(section, Global.Setting, Project.Compat);
             return Eval(s, parser, rawCode, type, check, out cmd);
         }
 
@@ -203,6 +215,7 @@ namespace PEBakery.Core.Tests
         /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
+        /// <param name="cmds"></param>
         /// <returns></returns>
         public static List<LogInfo> EvalOptLines(EngineState s, CodeType? opType, List<string> rawCodes, ErrorCheck check, out CodeCommand[] cmds)
         {
@@ -247,6 +260,7 @@ namespace PEBakery.Core.Tests
         /// </summary>
         /// <param name="s"></param>
         /// <param name="parser"></param>
+        /// <param name="section"></param>
         /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
@@ -261,6 +275,7 @@ namespace PEBakery.Core.Tests
         /// </summary>
         /// <param name="s"></param>
         /// <param name="parser"></param>
+        /// <param name="section"></param>
         /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>

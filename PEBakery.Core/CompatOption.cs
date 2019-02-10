@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
@@ -60,6 +61,15 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Create empty compat options, with temp compatFile.
+        /// Useful in testing code.
+        /// </summary>
+        public CompatOption()
+        {
+            _compatFile = FileHelper.GetTempFile();
+        }
+
         /// <summary>
         /// Load compat options from a ini file.
         /// If compatFile does not exist, create an empty compat options.

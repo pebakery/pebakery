@@ -35,11 +35,15 @@ namespace PEBakery.Core
     {
         #region Field and Property
         private readonly Script _sc;
-        private readonly List<string> _visitedSections = new List<string>();
 
-        public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code);
+        // Coverage
+        private readonly List<string> _visitedSections = new List<string>();
+        public int CodeSectionCount => _sc.Sections.Count(x => x.Value.Type == SectionType.Code || x.Value.Type == SectionType.Interface);
         public int VisitedSectionCount => _visitedSections.Count;
         public double Coverage => CodeSectionCount == 0 ? 0 : (double)VisitedSectionCount / CodeSectionCount;
+
+        // Detect need of compat options
+
         #endregion
 
         #region Constructor

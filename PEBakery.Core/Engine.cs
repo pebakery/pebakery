@@ -33,8 +33,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -390,7 +388,7 @@ namespace PEBakery.Core
                 EngineLocalState ls = s.PeekLocalState();
                 s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
             }
-                
+
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)
@@ -1331,7 +1329,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         public void PopLocalState()
         {
-            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");           
+            Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
             _localStateStack.Pop();
         }
 

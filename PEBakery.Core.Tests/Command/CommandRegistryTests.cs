@@ -89,9 +89,12 @@ namespace PEBakery.Core.Tests.Command
 
             void SuccessTemplate(string rawCode,
                 RegistryKey hKey, RegistryValueKind compKind, string keyPath, string valueName, object comp,
-                ErrorCheck check = ErrorCheck.Success)
+                CompatOption opts = null, ErrorCheck check = ErrorCheck.Success)
             {
-                EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
+                if (opts == null)
+                    EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
+                else
+                    EngineTests.Eval(s, rawCode, CodeType.RegWriteLegacy, check, opts);
 
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
                 {
@@ -160,9 +163,10 @@ namespace PEBakery.Core.Tests.Command
                 EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
             }
 
-            string subKeyStr = RegWritePath;
+            const string subKeyStr = RegWritePath;
             Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
 
+            // Success
             SuccessTemplate($@"RegWrite,HKCU,0x0,{subKeyStr},None",
                 Registry.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
             SuccessTemplate($@"RegWrite,HKCU,0x1,{subKeyStr},String,SZ",
@@ -175,7 +179,7 @@ namespace PEBakery.Core.Tests.Command
                 Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
             SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""03,04""",
                 Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 03, 04 },
-                ErrorCheck.Overwrite);
+                null, ErrorCheck.Overwrite);
             SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,05,06,07,NOWARN",
                 Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 05, 06, 07 });
             SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""08,09"",NOWARN",
@@ -184,12 +188,24 @@ namespace PEBakery.Core.Tests.Command
                 Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
             SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,-1",
                 Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
-                ErrorCheck.Overwrite);
+                null, ErrorCheck.Overwrite);
             SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,4294967295",
                 Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
-                ErrorCheck.Overwrite);
+                null, ErrorCheck.Overwrite);
             SuccessTemplate($@"RegWrite,HKCU,0xB,{subKeyStr},QWORD,4294967296",
                 Registry.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", (ulong)4294967296);
+
+            // RegWriteLegacy
+            s.Variables.SetValue(VarsType.Local, "Compat", "HKCU");
+            SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                new CompatOption { LegacyRegWrite = true });
+            SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                new CompatOption(), ErrorCheck.ParserError);
+            s.Variables.Delete(VarsType.Local, "Compat");
+
+            // Error
             ErrorTemplate($@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);
 
             Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
