@@ -33,6 +33,55 @@ namespace PEBakery.Core
 {
     public class SyntaxChecker
     {
+        #region (docs) Compat Option Detector (Idea only)
+        /*
+        Detect patterns noting that a project requires compat options enabling.
+        Standalone to SyntaxChecker? Expand SyntaxChecker?
+
+        [Compat Option Detection Metric] 
+        1. Loop using letter
+            Ex) Loop,%ScriptFile%,ForLoop,A,Z
+        2. Use of deprecated legacy branch conditions
+            - NotExistFile
+            - NotExistDir
+            - NotExistSection
+            - NotExistRegSection
+            - NotExistRegKey
+            - NotExistVar
+        3. Use of RegWriteLegacy
+            Ex) RegWrite,#1,0x4,SOFTWARE\PEBakery\IntValue,DWORD,1234
+        4. Use of Visible
+            CodeCommand's Type is CodeType.Macro, and RawCode starts with "Visible"
+            Ex) Visible 
+        5. Use of GetParam
+            CodeCommand's Type is CodeType.Macro, and RawCode starts with "GetParam"
+            Ex) GetParam
+        6. Use of PackParam
+            CodeCommand's Type is CodeType.Macro, and RawCode starts with "PackParam"
+            Ex) Param
+        7. Reference of deprecated fixed variables
+            - %TempDir%
+            - %UserName%
+            - %UserProfile%
+            - %WindowsDir%
+            - %ProgramFilesDir%
+            - %ProgramFilesDir_x86%
+            - %WindowsVersion%
+            - %ProcessorType%
+        8. Set is overriding fixed variables
+            - %ScriptFile%
+            - %ScriptDir%
+            - %ScriptTitle%
+            - %ProjectTitle%
+            - %BaseDir%
+            - %Version%
+        9. Set is overriding #c
+            Ex) Set,#c,Override
+        10. Set is modifying interface control
+            Is Set command overwriting current interface's control?
+        */
+        #endregion
+
         #region Field and Property
         private readonly Script _sc;
 
@@ -42,8 +91,7 @@ namespace PEBakery.Core
         public int VisitedSectionCount => _visitedSections.Count;
         public double Coverage => CodeSectionCount == 0 ? 0 : (double)VisitedSectionCount / CodeSectionCount;
 
-        // Detect need of compat options
-
+        // Compat option detector
         #endregion
 
         #region Constructor

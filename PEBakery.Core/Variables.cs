@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -195,18 +196,20 @@ namespace PEBakery.Core
                 logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
 
                 // Processor Type
-                switch (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture)
+                switch (RuntimeInformation.OSArchitecture)
                 {
-                    case System.Runtime.InteropServices.Architecture.X86:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x86
+                    // https://docs.microsoft.com/en-us/windows/desktop/api/sysinfoapi/ns-sysinfoapi-_system_info
+                    // For compatibility with WinBuilder, use old SYSTEM_INFO.dwProcessorType description for x86 and x64.
+                    case Architecture.X86:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586")); 
                         break;
-                    case System.Runtime.InteropServices.Architecture.X64:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664")); // For compatability with winbuilder use old SYSTEM_INFO dwProcessorType descriptions for x64
+                    case Architecture.X64:
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664")); 
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm:
+                    case Architecture.Arm:
                         logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm"));
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm64:
+                    case Architecture.Arm64:
                         logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm64"));
                         break;
                     default:
@@ -286,9 +289,9 @@ namespace PEBakery.Core
 
             #region Project Variables
             // [Variables]
-            if (_project.MainScript.Sections.ContainsKey("Variables"))
+            if (_project.MainScript.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
-                logs = AddVariables(VarsType.Global, _project.MainScript.Sections["Variables"]);
+                logs = AddVariables(VarsType.Global, _project.MainScript.Sections[ScriptSection.Names.Variables]);
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeparator));
             }
             #endregion
@@ -306,9 +309,9 @@ namespace PEBakery.Core
             SetValue(VarsType.Fixed, "ScriptTitle", sc.Title);
 
             // [Variables]
-            if (sc.Sections.ContainsKey("Variables"))
+            if (sc.Sections.ContainsKey(ScriptSection.Names.Variables))
             {
-                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections[ScriptSection.Names.Variables]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));

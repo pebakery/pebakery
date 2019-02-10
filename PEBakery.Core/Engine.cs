@@ -241,9 +241,9 @@ namespace PEBakery.Core
                         // OnBuildExit event callback
                         if (s.RunMode == EngineMode.RunAll || s.TestMode)
                         {
-                            // OnBuildExit is not called on script interface control, or codebox
-                            // (which uses EngineMode.RunMainAndOne or EngineMode.RunOne)
-                            // But it should be called in full script unit test
+                            // - OnBuildExit is called in full project build or in unit test.
+                            // - OnBuildExit is not called on script interface control or CodeBox.
+                            //   - They use EngineMode.RunMainAndOne or EngineMode.RunOne
                             CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
                         }
 
@@ -970,7 +970,7 @@ namespace PEBakery.Core
         #region Utility Methods
         public static string GetEntrySection(EngineState s)
         {
-            string entrySection = "Process";
+            string entrySection = ScriptSection.Names.Process;
             switch (s.RunMode)
             {
                 case EngineMode.RunMainAndOne when s.CurrentScriptIdx != 0:

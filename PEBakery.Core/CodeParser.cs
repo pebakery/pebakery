@@ -4058,7 +4058,7 @@ namespace PEBakery.Core
                 cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
                 embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
             }
-            else // IfSubOpcode - Non-Compare series
+            else // BranchCondition - Non-Compare series
             {
                 int embIdx;
                 string condStr = args[cIdx];
