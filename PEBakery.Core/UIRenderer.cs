@@ -56,8 +56,7 @@ namespace PEBakery.Core
     public class UIRenderer
     {
         #region Fields and Properties
-        public const int MaxDpiScale = 4;
-        public const int MaxUrlDisplayLen = 47;
+        public const int MaxUrlDisplayLen = 50 - 3;
         private readonly Variables _variables;
 
         private readonly Canvas _canvas;
@@ -646,7 +645,7 @@ namespace PEBakery.Core
                 return null;
             }
 
-            if (!ImageHelper.GetImageType(imageSection, out ImageHelper.ImageType imgType))
+            if (!ImageHelper.GetImageFormat(imageSection, out ImageHelper.ImageFormat imgType))
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(imageSection)}] is not supported"));
                 return null;
@@ -661,7 +660,7 @@ namespace PEBakery.Core
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
                             break;
                         default:
@@ -683,8 +682,7 @@ namespace PEBakery.Core
                 if (!string.IsNullOrEmpty(info.Url))
                 {
                     url = StringEscaper.Unescape(info.Url);
-                    Uri uri = ParseUri(url);
-                    hasUrl = uri != null;
+                    hasUrl = StringEscaper.IsUrlValid(url);
                 }
 
                 string toolTip = info.ToolTip;
@@ -705,7 +703,7 @@ namespace PEBakery.Core
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             Border border = new Border
                             {
                                 Background = ImageHelper.SvgToDrawingBrush(ms),
@@ -768,10 +766,8 @@ namespace PEBakery.Core
             UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
 
             string url = StringEscaper.Unescape(info.Url);
-            if (url.IndexOf("://", StringComparison.Ordinal) != -1)
-                FileHelper.OpenUri(url); 
-            else
-                throw new InvalidCommandException($"Invalid URL [{url}]");
+            Debug.Assert(StringEscaper.IsUrlValid(url), $"Invalid URL [{url}]");
+            FileHelper.OpenUri(url);
         }
 
         /// <summary>
@@ -788,21 +784,33 @@ namespace PEBakery.Core
             Debug.Assert(uiCtrl.Type == UIControlType.Image, $"Wrong UIControlType in [{nameof(Image_Click_OpenImage)}]");
 
             string imageSection = StringEscaper.Unescape(uiCtrl.Text);
-            if (!ImageHelper.GetImageType(imageSection, out ImageHelper.ImageType t))
+            if (!ImageHelper.GetImageFormat(imageSection, out _))
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(imageSection)}] is not supported"));
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image format [{Path.GetExtension(imageSection)}] is not supported"));
                 return;
             }
 
-            string path = Path.ChangeExtension(FileHelper.GetTempFile(), "." + t.ToString().ToLower());
-            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+            try
             {
-                ms.Position = 0;
-                ms.CopyTo(fs);
+                string imageFile;
+                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
+                {
+                    // Do not clear tempDir right after calling OpenPath(). Doing this will trick the image viewer.
+                    // Instead, leave it to Global.Cleanup() when program is exited.
+                    string tempDir = FileHelper.GetTempDir();
+                    imageFile = Path.Combine(tempDir, imageSection);
+                    using (FileStream fs = new FileStream(imageFile, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.Position = 0;
+                        ms.CopyTo(fs);
+                    }
+                }
+                FileHelper.OpenPath(imageFile);
             }
-
-            FileHelper.OpenPath(path);
+            catch (Exception ex)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+            }
         }
         #endregion
 
@@ -900,7 +908,7 @@ namespace PEBakery.Core
                 !pictureSection.Equals(UIInfo_Button.NoPicture, StringComparison.OrdinalIgnoreCase) &&
                 EncodedFile.ContainsInterface(uiCtrl.Section.Script, pictureSection))
             { // Has Picture
-                if (!ImageHelper.GetImageType(pictureSection, out ImageHelper.ImageType imgType))
+                if (!ImageHelper.GetImageFormat(pictureSection, out ImageHelper.ImageFormat imgType))
                     return null;
 
                 FrameworkElement imageContent;
@@ -910,7 +918,7 @@ namespace PEBakery.Core
                 {
                     switch (imgType)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
                             Rect svgSize = svgDrawing.Bounds;
                             (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, uiCtrl.Width, uiCtrl.Height);
@@ -925,7 +933,7 @@ namespace PEBakery.Core
                             };
                             imageContent = border;
                             break;
-                        case ImageHelper.ImageType.Bmp:
+                        case ImageHelper.ImageFormat.Bmp:
                             BitmapSource srcBitmap = ImageHelper.ImageToBitmapImage(ms);
                             BitmapSource newBitmap = ImageHelper.MaskWhiteAsTransparent(srcBitmap);
                             Image bitmapImage = new Image
@@ -1040,8 +1048,7 @@ namespace PEBakery.Core
             };
 
             string url = StringEscaper.Unescape(info.Url);
-            Uri uri = ParseUri(url);
-            if (uri == null)
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
                 throw new InvalidCommandException($"Invalid URL [{url}]");
             Hyperlink link = new Hyperlink { NavigateUri = uri };
             link.Inlines.Add(StringEscaper.Unescape(uiCtrl.Text));
@@ -1553,26 +1560,6 @@ namespace PEBakery.Core
             if (toolTip == null)
                 return url;
             return StringEscaper.Unescape(toolTip) + Environment.NewLine + Environment.NewLine + url;
-        }
-
-        private static Uri ParseUri(string url)
-        {
-            if (!string.IsNullOrEmpty(url))
-            {
-                url = StringEscaper.Unescape(url);
-                if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
-                    return uri;
-
-                // Retry again with appending `http://` 
-                // Ex) PStart_WebLabel="PStart Homepage",1,10,668,122,98,18,www.pegtop.de/start/
-                if (url.IndexOf("://", StringComparison.Ordinal) == -1)
-                {
-                    if (Uri.TryCreate("http://" + url, UriKind.Absolute, out uri)) // Success
-                        return uri;
-                }
-            }
-
-            return null;
         }
 
         public static int GetMaxZIndex(Canvas canvas)

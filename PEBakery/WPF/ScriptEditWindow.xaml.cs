@@ -1946,7 +1946,7 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type))
                 {
                     SaveFileDialog dialog = new SaveFileDialog
                     {
@@ -2170,7 +2170,7 @@ namespace PEBakery.WPF
                         return;
                 }
 
-                if (!ImageHelper.GetImageType(fileName, out ImageHelper.ImageType type))
+                if (!ImageHelper.GetImageFormat(fileName, out ImageHelper.ImageFormat type))
                 {
                     MessageBox.Show($"[{fileName}] is an unsupported image format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -2179,7 +2179,7 @@ namespace PEBakery.WPF
                 using (MemoryStream ms = await EncodedFile.ExtractFileInMemAsync(Script, ScriptSection.Names.InterfaceEncoded, fileName))
                 {
                     int width, height;
-                    if (type == ImageHelper.ImageType.Svg)
+                    if (type == ImageHelper.ImageFormat.Svg)
                         (width, height) = ImageHelper.GetSvgSizeInt(ms);
                     else
                         (width, height) = ImageHelper.GetImageSize(ms);
@@ -3341,11 +3341,11 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageType type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type))
                 {
                     switch (type)
                     {
-                        case ImageHelper.ImageType.Svg:
+                        case ImageHelper.ImageFormat.Svg:
                             DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
                             Rect svgSize = svgDrawing.Bounds;
                             (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, 90, 90);

@@ -27,7 +27,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace PEBakery.Core
@@ -299,10 +298,27 @@ namespace PEBakery.Core
                         break;
                     case UIControlType.Image:
                         {
+                            // Check encoded image
                             string imageSection = StringEscaper.Unescape(uiCtrl.Text);
                             if (!imageSection.Equals(UIInfo_Image.NoResource, StringComparison.OrdinalIgnoreCase) &&
                                 !EncodedFile.ContainsInterface(_sc, imageSection))
                                 logs.Add(new LogInfo(LogState.Warning, $"Image resource [{imageSection}] does not exist", uiCtrl));
+
+                            UIInfo_Image info = uiCtrl.Info.Cast<UIInfo_Image>();
+
+                            // Check if image control have empty or invalid url.
+                            // Ex) Colors_Image=ThemeColors.jpg,1,5,11,228,260,80,
+                            if (info.Url != null)
+                            {
+                                string url = StringEscaper.Unescape(info.Url);
+                                if (!StringEscaper.IsUrlValid(url))
+                                {
+                                    if (url.IndexOf("://", StringComparison.Ordinal) != -1)
+                                        logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
+                                    else
+                                        logs.Add(new LogInfo(LogState.Warning, "URL does not have scheme. Did you omit \"http(s)://\"?", uiCtrl));
+                                }
+                            }
                         }
                         break;
                     case UIControlType.TextFile:
@@ -341,14 +357,16 @@ namespace PEBakery.Core
                         {
                             UIInfo_WebLabel info = uiCtrl.Info.Cast<UIInfo_WebLabel>();
 
+                            // Sometime developers forget to put proper scheme in WebLabel's url.
+                            // Ex) PStart_WebLabel="PStart Homepage",1,10,668,122,98,18,www.pegtop.de/start/
                             string url = StringEscaper.Unescape(info.Url);
-                            if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+                            if (!StringEscaper.IsUrlValid(url))
                             {
                                 if (url.IndexOf("://", StringComparison.Ordinal) != -1)
-                                    logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{info.Url}]", uiCtrl));
+                                    logs.Add(new LogInfo(LogState.Warning, $"Incorrect URL [{url}]", uiCtrl));
                                 else
-                                    logs.Add(new LogInfo(LogState.Warning, $"URL does not have scheme. Did you omit \"http://\"?", uiCtrl));
-                            }   
+                                    logs.Add(new LogInfo(LogState.Warning, "URL does not have scheme. Did you omit \"http(s)://\"?", uiCtrl));
+                            }
                         }
                         break;
                     case UIControlType.RadioButton:

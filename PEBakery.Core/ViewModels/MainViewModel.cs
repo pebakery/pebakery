@@ -1059,11 +1059,14 @@ namespace PEBakery.Core.ViewModels
                                 {
                                     b.AppendLine($"Section coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
 
-                                    string tempFile = FileHelper.GetTempFile("txt");
-                                    using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                    // Do not clear tempDir right after calling OpenTextFile(). Doing this will trick the text editor.
+                                    // Instead, leave it to Global.Cleanup() when program is exited.
+                                    string tempDir = FileHelper.GetTempDir();
+                                    string reportFile = Path.Combine(tempDir, Path.ChangeExtension(Path.GetFileName(sc.RealPath), null) + "_Report.txt");
+                                    using (StreamWriter w = new StreamWriter(reportFile, false, Encoding.UTF8))
                                         w.Write(b.ToString());
 
-                                    OpenTextFile(tempFile);
+                                    OpenTextFile(reportFile);
                                 }
                                 break;
                         }
@@ -1221,11 +1224,11 @@ namespace PEBakery.Core.ViewModels
                         // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type))
                             {
                                 switch (type)
                                 {
-                                    case ImageHelper.ImageType.Svg:
+                                    case ImageHelper.ImageFormat.Svg:
                                         DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
                                         Rect svgSize = svgDrawing.Bounds;
                                         ScriptLogoSvg = new DrawingBrush { Drawing = svgDrawing };

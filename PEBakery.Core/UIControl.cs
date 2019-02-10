@@ -198,12 +198,11 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ToString, ForgeRawLine
-        public override string ToString()
-        {
-            return ForgeRawLine(true);
-        }
+        #region ToString
+        public override string ToString() => RawLine;
+        #endregion
 
+        #region ForgeRawLine
         public string ForgeRawLine(bool includeKey)
         {
             StringBuilder b = new StringBuilder();
@@ -830,7 +829,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
-            if (Url != null)
+            if (!string.IsNullOrWhiteSpace(Url))
             {
                 b.Append(",");
                 b.Append(StringEscaper.DoubleQuote(Url));

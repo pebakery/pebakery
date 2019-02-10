@@ -28,7 +28,6 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -41,7 +40,7 @@ namespace PEBakery.Core
     public static class StringEscaper
     {
         #region Static Variables and Constructor
-        private static readonly string[] ForbiddenPaths = 
+        private static readonly string[] ForbiddenPaths =
         {
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -64,12 +63,12 @@ namespace PEBakery.Core
             // PathSecurityCheck should be able to process paths like [*.exe]
             // So remove filename if necessary.
             string fullPath;
-            int lastWildcardIdx = path.IndexOfAny(new char[] {'*', '?'});
+            int lastWildcardIdx = path.IndexOfAny(new char[] { '*', '?' });
             if (lastWildcardIdx != -1 && path.LastIndexOf('\\') < lastWildcardIdx)
                 fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
             else
                 fullPath = Path.GetFullPath(path);
-            
+
             foreach (string f in ForbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
@@ -82,7 +81,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region IsPathValid
+        #region IsValid Series
         public static bool IsPathValid(string path, IEnumerable<char> more = null)
         {
             // Windows Reserved Characters
@@ -152,6 +151,15 @@ namespace PEBakery.Core
             return true;
         }
 
+        /// <summary>
+        /// Check if given url is valid http or https url.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns>True if valid</returns>
+        public static bool IsUrlValid(string url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out _);
+        }
         #endregion
 
         #region EscapeString
@@ -319,7 +327,7 @@ namespace PEBakery.Core
                         b.Append(str.Substring(idx));
                         break;
                     }
-                    
+
                     // # (O)
                     b.Append(str.Substring(idx, hIdx - idx));
                     b.Append(@"##");
@@ -366,8 +374,8 @@ namespace PEBakery.Core
             // Escape characters
             str = Escape(str, fullEscape, escapePercent); // WB082 escape sequence
             // DoubleQuote escape
-            str = DoubleQuote(str); 
-                
+            str = DoubleQuote(str);
+
             return str;
         }
 

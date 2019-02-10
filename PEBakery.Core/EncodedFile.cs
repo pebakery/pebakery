@@ -172,18 +172,18 @@ namespace PEBakery.Core
         #endregion
 
         #region Dict ImageEncodeDict
-        public static readonly ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode> ImageEncodeDict = new ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode>(
-            new Dictionary<ImageHelper.ImageType, EncodeMode>
+        public static readonly ReadOnlyDictionary<ImageHelper.ImageFormat, EncodeMode> ImageEncodeDict = new ReadOnlyDictionary<ImageHelper.ImageFormat, EncodeMode>(
+            new Dictionary<ImageHelper.ImageFormat, EncodeMode>
             {
                 // Auto detect compress algorithm by extension.
                 // Note: .ico file can be either raw (bitmap) or compressed (png).
                 //       To be sure, use EncodeMode.ZLib in .ico file.
-                { ImageHelper.ImageType.Bmp, EncodeMode.ZLib },
-                { ImageHelper.ImageType.Jpg, EncodeMode.Raw },
-                { ImageHelper.ImageType.Png, EncodeMode.Raw },
-                { ImageHelper.ImageType.Gif, EncodeMode.Raw },
-                { ImageHelper.ImageType.Ico, EncodeMode.ZLib },
-                { ImageHelper.ImageType.Svg, EncodeMode.ZLib }
+                { ImageHelper.ImageFormat.Bmp, EncodeMode.ZLib },
+                { ImageHelper.ImageFormat.Jpg, EncodeMode.Raw },
+                { ImageHelper.ImageFormat.Png, EncodeMode.Raw },
+                { ImageHelper.ImageFormat.Gif, EncodeMode.Raw },
+                { ImageHelper.ImageFormat.Ico, EncodeMode.ZLib },
+                { ImageHelper.ImageFormat.Svg, EncodeMode.ZLib }
             });
         #endregion
 
@@ -277,7 +277,7 @@ namespace PEBakery.Core
                 throw new ArgumentException($"Filename [{fileName}] is reserved");
 
             EncodeMode type = EncodeMode.ZLib;
-            if (ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
+            if (ImageHelper.GetImageFormat(srcFilePath, out ImageHelper.ImageFormat imageType))
             {
                 if (ImageEncodeDict.ContainsKey(imageType))
                     type = ImageEncodeDict[imageType];
@@ -352,7 +352,7 @@ namespace PEBakery.Core
             if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
                 throw new ArgumentException($"[{fileName}] contains invalid character");
 
-            if (!ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
+            if (!ImageHelper.GetImageFormat(srcFilePath, out ImageHelper.ImageFormat imageType))
                 throw new ArgumentException($"Image [{Path.GetExtension(srcFilePath)}] is not supported");
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -535,7 +535,7 @@ namespace PEBakery.Core
             return Task.Run(() => ExtractLogo(sc, out _));
         }
 
-        public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
+        public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageFormat type)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -548,7 +548,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Logo does not exist in [{sc.Title}]");
 
             string logoFile = fileDict["Logo"];
-            if (!ImageHelper.GetImageType(logoFile, out type))
+            if (!ImageHelper.GetImageFormat(logoFile, out type))
                 throw new ArgumentException($"Image [{Path.GetExtension(logoFile)}] is not supported");
 
             string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile);

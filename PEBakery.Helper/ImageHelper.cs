@@ -41,20 +41,20 @@ namespace PEBakery.Helper
     public static class ImageHelper
     {
         #region ImageType
-        public enum ImageType
+        public enum ImageFormat
         {
             Bmp, Jpg, Png, Gif, Ico, Svg
         }
 
-        public static readonly ReadOnlyDictionary<string, ImageType> ImageTypeDict = new ReadOnlyDictionary<string, ImageType>(
-            new Dictionary<string, ImageType>(StringComparer.OrdinalIgnoreCase)
+        public static readonly ReadOnlyDictionary<string, ImageFormat> ImageFormatDict = new ReadOnlyDictionary<string, ImageFormat>(
+            new Dictionary<string, ImageFormat>(StringComparer.OrdinalIgnoreCase)
             {
-                { ".bmp", ImageType.Bmp },
-                { ".jpg", ImageType.Jpg },
-                { ".png", ImageType.Png },
-                { ".gif", ImageType.Gif },
-                { ".ico", ImageType.Ico },
-                { ".svg", ImageType.Svg },
+                { ".bmp", ImageFormat.Bmp },
+                { ".jpg", ImageFormat.Jpg },
+                { ".png", ImageFormat.Png },
+                { ".gif", ImageFormat.Gif },
+                { ".ico", ImageFormat.Ico },
+                { ".svg", ImageFormat.Svg },
             });
 
         /// <summary>
@@ -63,19 +63,19 @@ namespace PEBakery.Helper
         /// <param name="path"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool GetImageType(string path, out ImageType type)
+        public static bool GetImageFormat(string path, out ImageFormat type)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             string ext = Path.GetExtension(path);
-            if (ImageTypeDict.ContainsKey(ext))
+            if (ImageFormatDict.ContainsKey(ext))
             {
-                type = ImageTypeDict[ext];
+                type = ImageFormatDict[ext];
                 return true;
             }
             else
             {
-                type = ImageType.Bmp; // Dummy
+                type = ImageFormat.Bmp; // Dummy
                 return false;
             }
         }
