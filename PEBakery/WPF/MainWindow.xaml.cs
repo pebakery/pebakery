@@ -100,7 +100,8 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 EngineState s = new EngineState(p, Logger, Model);
-                s.SetOptions(Global.Setting, p.Compat);
+                s.SetOptions(Global.Setting);
+                s.SetCompat(p.Compat);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -300,7 +301,8 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
-                s.SetOptions(Global.Setting, sc.Project.Compat);
+                s.SetOptions(Global.Setting);
+                s.SetCompat(sc.Project.Compat);
 
                 Engine.WorkingEngine = new Engine(s);
 

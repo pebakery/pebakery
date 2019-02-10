@@ -143,15 +143,15 @@ namespace PEBakery.Core.Tests.Command
 
             // Turn off compat option
             s.CompatDisableExtendedSectionParams = false;
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
 
             // Turn on compat option
             s.CompatDisableExtendedSectionParams = true;
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.IsTrue(s.SectionReturnValue.Length == 0);
+            Assert.IsTrue(s.ReturnValue.Length == 0);
         }
 
         public void DelReturnValue(EngineState s)
@@ -160,15 +160,15 @@ namespace PEBakery.Core.Tests.Command
 
             // Turn off compat option
             s.CompatDisableExtendedSectionParams = false;
-            s.SectionReturnValue = "PEBakery";
+            s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Length == 0);
+            Assert.IsTrue(s.ReturnValue.Length == 0);
 
             // Turn on compat option
             s.CompatDisableExtendedSectionParams = true;
-            s.SectionReturnValue = "PEBakery";
+            s.ReturnValue = "PEBakery";
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
-            Assert.IsTrue(s.SectionReturnValue.Equals("PEBakery", StringComparison.Ordinal));
+            Assert.IsTrue(s.ReturnValue.Equals("PEBakery", StringComparison.Ordinal));
         }
 
         public void SetLoopCounter(EngineState s)

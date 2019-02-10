@@ -327,7 +327,7 @@ namespace PEBakery.Core
             s.CurrentSection = section;
 
             // Set SectionReturnValue to empty string
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
 
             Dictionary<int, string> inParamDict = new Dictionary<int, string>();
             for (int i = 0; i < inParams.Count; i++)
@@ -359,7 +359,7 @@ namespace PEBakery.Core
             s.CurrentSection = section;
 
             // Set SectionReturnValue to empty string
-            s.SectionReturnValue = string.Empty;
+            s.ReturnValue = string.Empty;
 
             // Must copy ParamDict by value, not reference
             outParams = outParams == null ? new List<string>() : new List<string>(outParams);
@@ -1105,7 +1105,7 @@ namespace PEBakery.Core
         public ScriptSection CurrentSection;
         public Dictionary<int, string> CurSectionInParams;
         public List<string> CurSectionOutParams = null;
-        public string SectionReturnValue = string.Empty;
+        public string ReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>(16);
         public bool ElseFlag = false;
         public LoopState LoopState = LoopState.Off;
@@ -1242,13 +1242,16 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region SetOptions
-        public void SetOptions(Setting setting, CompatOption compat)
+        #region SetOptions, SetCompat
+        public void SetOptions(Setting setting)
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
 
             LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDefer;
+        }
 
+        public void SetCompat(CompatOption compat)
+        {
             CompatDirCopyBug = compat.AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = compat.FileRenameCanMoveDir;
             CompatAllowLetterInLoop = compat.AllowLetterInLoop;
@@ -1265,7 +1268,7 @@ namespace PEBakery.Core
             ResetHaltFlags();
 
             // Engine State
-            SectionReturnValue = string.Empty;
+            ReturnValue = string.Empty;
             InitLocalStateStack();
             ElseFlag = false;
             LoopState = LoopState.Off;

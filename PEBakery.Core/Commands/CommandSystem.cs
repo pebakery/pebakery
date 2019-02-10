@@ -29,7 +29,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
@@ -222,7 +221,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
                         // Refresh Project
-                        s.MainViewModel.StartLoadingProjects(true, true).Wait(); 
+                        s.MainViewModel.StartLoadingProjects(true, true).Wait();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Section.Script.Project.ProjectName}]"));
                     }
@@ -665,12 +664,20 @@ namespace PEBakery.Core.Commands
                         }
 
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                        string exitCodeStr = proc.ExitCode.ToString();
                         string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
-                        LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+                        LogInfo log = Variables.SetVariable(s, exitOutVar, exitCodeStr).First();
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
                         else
                             logs.Add(log);
+
+                        // PEBakery extension -> Report exit code via #r
+                        if (!s.CompatDisableExtendedSectionParams)
+                        {
+                            s.ReturnValue = exitCodeStr;
+                            logs.Add(new LogInfo(LogState.Success, $"Returned exit code [{proc.ExitCode}] to [#r]"));
+                        }
 
                         if (redirectStandardStream)
                         {
