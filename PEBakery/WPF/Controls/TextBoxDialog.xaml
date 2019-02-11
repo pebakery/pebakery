@@ -33,7 +33,7 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Title="TextBoxDialog" 
-        Width="400" Height="160">
+        Width="400" Height="165">
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -41,7 +41,7 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="15"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -58,6 +58,7 @@
                    Text="Sample Message"/>
         <TextBox Grid.Row="1" Grid.Column="1"
                  x:Name="InputTextBox"
+                 VerticalAlignment="Stretch"
                  VerticalContentAlignment="Center"/>
         <StackPanel Grid.Row="3" Grid.Column="0"
                     Grid.ColumnSpan="2"

@@ -426,7 +426,6 @@
 
                                 <ComboBox Grid.Column="0"
                                           VerticalContentAlignment="Center"
-                                          Padding="3, 1, 3, 1"
                                           x:Name="UICtrlAddType"
                                           SelectedIndex="{Binding UICtrlAddTypeIndex}">
                                     <ComboBoxItem Content="TextBox"/>

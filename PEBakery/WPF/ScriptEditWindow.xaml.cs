@@ -2045,63 +2045,20 @@ namespace PEBakery.WPF
 
                     await Task.Run(() =>
                     {
-                        List<IniKey> switchButtons = new List<IniKey>();
-                        /*
                         // Tried to implement auto-generation of multi-interface button, but doing this the right way is very hard.
                         // Current implementation would cause a lot of duplicated sections, because PEBakery cannot sense whether a button for
                         // switching info another section is already present. Let's leave this to script developer.
 
-                        List<IniKey> switchCodes = new List<IniKey>();
-                        for (int i = 0; i < InterfaceSectionNames.Count; i++)
-                        {
-                            string targetInterface = InterfaceSectionNames[i];
-
-                            // [newInterfaceSectionName] - Buttons for switching interfaces to [InterfaceSectionNames]
-                            {
-                                // Avoid overwrite of existing section and UIControl
-                                string sectionToRun = $"SwitchInterface_{targetInterface}";
-                                if (Script.Sections.ContainsKey(sectionToRun))
-                                    sectionToRun = StringEscaper.GetUniqueKey(sectionToRun, Script.Sections.Select(x => x.Key));
-
-                                string switchButtonKey = $"SwitchInterfaceButton_{targetInterface}";
-                                if (Renderer.UICtrls.Any(x => x.Key.Equals(switchButtonKey, StringComparison.OrdinalIgnoreCase)))
-                                    switchButtonKey = StringEscaper.GetUniqueKey(switchButtonKey, Renderer.UICtrls.Select(x => x.Key));
-                                string switchButtonLine = $"{switchButtonKey},1,8,10,{i * 35 + 10},80,25,{sectionToRun},0,True";
-                                switchButtons.Add(new IniKey(newInterfaceSectionName, switchButtonKey, switchButtonLine));
-
-                                // [sectionToRun] - `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
-                                switchCodes.Add(new IniKey(sectionToRun, $"IniWrite,%ScriptFile%,Main,Interface,{targetInterface}"));
-                                switchCodes.Add(new IniKey(sectionToRun, "System,RefreshInterface"));
-                            }
-
-                            // [sectionToSwitch] - Button for switching interface to [newInterfaceSectionName]
-                            {
-                                // Avoid overwrite of existing section and UIControl
-                                string sectionToRun = $"SwitchInterface_{newInterfaceSectionName}";
-                                if (Script.Sections.ContainsKey(sectionToRun))
-                                    sectionToRun = StringEscaper.GetUniqueKey(sectionToRun, Script.Sections.Select(x => x.Key));
-
-                                string switchButtonKey = $"SwitchInterfaceButton_{newInterfaceSectionName}";
-                                if (Renderer.UICtrls.Any(x => x.Key.Equals(switchButtonKey, StringComparison.OrdinalIgnoreCase)))
-                                    switchButtonKey = StringEscaper.GetUniqueKey(switchButtonKey, Renderer.UICtrls.Select(x => x.Key));
-                                string switchButtonLine = $"{switchButtonKey},1,8,10,10,80,25,{sectionToRun},0,True";
-                                switchButtons.Add(new IniKey(targetInterface, switchButtonKey, switchButtonLine));
-
-                                // [sectionToRun] - `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
-                                switchCodes.Add(new IniKey(sectionToRun, $"IniWrite,%ScriptFile%,Main,Interface,{newInterfaceSectionName}"));
-                                switchCodes.Add(new IniKey(sectionToRun, "System,RefreshInterface"));
-                            }
-                        }
-                        IniReadWriter.WriteRawLines(Script.RealPath, switchCodes, true);
-                        */
-
                         // [Main] -> Interface, InterfaceList
+                        List<IniKey> switchButtons = new List<IniKey>();
                         InterfaceSectionNames.Add(newInterfaceSectionName);
                         switchButtons.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface, newInterfaceSectionName));
-                        switchButtons.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, string.Join(",", InterfaceSectionNames)));
+                        string newInterfaceList = string.Join(",", InterfaceSectionNames.Select(StringEscaper.DoubleQuote));
+                        switchButtons.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, newInterfaceList));
 
                         // Write section info to file
                         IniReadWriter.WriteKeys(Script.RealPath, switchButtons);
+                        IniReadWriter.AddSection(Script.RealPath, newInterfaceSectionName);
 
                         // Read from script
                         Script = Script.Project.RefreshScript(Script);
@@ -2147,26 +2104,24 @@ namespace PEBakery.WPF
                 }
 
                 // Must save current edits to switch active interface section
-                if (InterfaceNotSaved)
-                {
-                    MessageBoxResult result = MessageBox.Show(_window,
-                        "Deleted interface section cannot be recovered!\r\nAlso, the script must be saved before deleting interface.\r\nAre you sure to delete?",
-                        "Delete Confirmation",
-                        MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                    if (result == MessageBoxResult.Yes)
-                        await WriteScriptInterfaceAsync(null, false);
-                    else
-                        return;
-                }
+                MessageBoxResult result = MessageBox.Show(_window,
+                    "Deleted interface section cannot be recovered!\r\nAlso, the script must be saved before deleting interface.\r\nAre you sure to delete?",
+                    "Delete Confirmation",
+                    MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                if (result == MessageBoxResult.Yes)
+                    await WriteScriptInterfaceAsync(null, false);
+                else
+                    return;
 
                 await Task.Run(() =>
                 {
                     // Set InterfaceSectionNames and SelectedInterfaceSectionName
                     string sectionToDelete = SelectedInterfaceSectionName;
-                    Debug.Assert(InterfaceSectionNames.Contains(SelectedInterfaceSectionName, StringComparer.OrdinalIgnoreCase));
+                    Debug.Assert(InterfaceSectionNames.Contains(sectionToDelete, StringComparer.OrdinalIgnoreCase));
                     Debug.Assert(1 < InterfaceSectionNames.Count);
-                    InterfaceSectionNames.Remove(SelectedInterfaceSectionName);
-                    SelectedInterfaceSectionName = InterfaceSectionNames[0];
+                    InterfaceSectionNames.Remove(sectionToDelete);
+                    string defaultInterface = InterfaceSectionNames[0];
+                    Debug.Assert(0 < defaultInterface.Length, "New default interface is empty");
 
                     // Prepare to delete [sectionToDelete]
                     // Remove control's encoded file so we don't have orphaned Interface-Encoded attachments
@@ -2178,16 +2133,30 @@ namespace PEBakery.WPF
 
                     // [Main] -> Interface, InterfaceList
                     List<IniKey> setKeys = new List<IniKey>();
+                    List<IniKey> delKeys = new List<IniKey>();
+
                     // If only one interface is left, delete InterfaceList.
                     // If don't, overwrite InterfaceList with new section names.
                     if (InterfaceSectionNames.Count == 1)
-                        IniReadWriter.DeleteKey(Script.RealPath, ScriptSection.Names.Main, Script.Const.InterfaceList);
+                    {
+                        delKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList));
+                    }
                     else
-                        setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, string.Join(",", InterfaceSectionNames)));
-                    setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface, SelectedInterfaceSectionName));
+                    {
+                        string newInterfaceList = string.Join(",", InterfaceSectionNames.Select(StringEscaper.DoubleQuote));
+                        setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.InterfaceList, newInterfaceList));
+                    }
+
+                    if (defaultInterface.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase))
+                        delKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface));
+                    else
+                        setKeys.Add(new IniKey(ScriptSection.Names.Main, Script.Const.Interface, defaultInterface));
 
                     // Write to script
-                    IniReadWriter.WriteKeys(Script.RealPath, setKeys);
+                    if (0 < setKeys.Count)
+                        IniReadWriter.WriteKeys(Script.RealPath, setKeys);
+                    if (0 < delKeys.Count)
+                        IniReadWriter.DeleteKeys(Script.RealPath, delKeys);
                     IniReadWriter.DeleteSection(Script.RealPath, sectionToDelete);
 
                     // Read from script
