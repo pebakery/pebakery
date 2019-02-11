@@ -1,7 +1,7 @@
 ﻿/*
     MIT License (MIT)
 
-    Copyright (C) 2018-2019 Hajin Jang
+    Copyright (C) 2019 Hajin Jang
 	
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,9 @@ using System.Windows.Media;
 
 namespace PEBakery.WPF.Controls
 {
-    public partial class ColorPickerWindow : Window
+    public partial class ColorPickerDialog : Window
     {
-        public ColorPickerWindow(ColorPickerViewModel model)
+        public ColorPickerDialog(ColorPickerViewModel model)
         {
             DataContext = model;
             InitializeComponent();

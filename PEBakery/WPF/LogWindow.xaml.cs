@@ -378,7 +378,7 @@ namespace PEBakery.WPF
                 else // Export Build Logs
                     exportModel.SetBuildLog(_m.SelectedBuildIndex, _m.BuildLogShowComments, _m.BuildLogShowMacros);
 
-                LogExportWindow dialog = new LogExportWindow(exportModel) { Owner = this };
+                LogExportDialog dialog = new LogExportDialog(exportModel) { Owner = this };
                 dialog.ShowDialog();
             }
             finally

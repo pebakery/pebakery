@@ -895,7 +895,6 @@ namespace PEBakery.Core
         public override string ToString() => ForgeRawLine();
 
         public new static string Template(string key) => $"{key}={key},1,8,10,10,80,25,SectionName,0,True";
-
         #region Const 0
         public const string NoPicture = "0";
         #endregion

@@ -251,7 +251,7 @@ namespace PEBakery.WPF
             Model.WorkInProgress = true;
             try
             {
-                MessageBox.Show("To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -424,7 +424,7 @@ namespace PEBakery.WPF
             // Force update of script interface
             ScriptUpdateButton.Focus();
 
-            MessageBox.Show("To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
             /*
             Script sc = CurMainTree.Script;
             Project p = CurMainTree.Script.Project;

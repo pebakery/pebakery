@@ -149,9 +149,8 @@
     <Compile Include="Commands\CommandText.cs" />
     <Compile Include="Commands\CommandWim.cs" />
     <Compile Include="CompatOption.cs" />
-    <Compile Include="WpfControls\CustomMessageBox.cs" />
-    <Compile Include="WpfControls\CustomMessageBoxWindow.xaml.cs">
-      <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
+    <Compile Include="WpfControls\CustomMessageBox.xaml.cs">
+      <DependentUpon>CustomMessageBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="WpfControls\NumberBox.xaml.cs">
       <DependentUpon>NumberBox.xaml</DependentUpon>
@@ -207,7 +206,7 @@
     <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="WpfControls\CustomMessageBoxWindow.xaml">
+    <Page Include="WpfControls\CustomMessageBox.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

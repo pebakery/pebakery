@@ -569,22 +569,23 @@ namespace PEBakery.Core
         #endregion
 
         #region GetUniqueKey, GetUniqueFileName
-        public static string GetUniqueKey(string srcKey, IEnumerable<string> keys)
+        public static string GetUniqueKey(string srcKey, IEnumerable<string> keys, int startIdx = 1)
         {
-            int idx = 0;
+            int idx = startIdx;
             string key;
             bool duplicate;
             string[] keyArr = keys.ToArray();
             do
             {
-                idx++;
                 duplicate = false;
 
                 key = $"{srcKey}{idx:D2}";
+                idx++;
 
                 if (keyArr.Contains(key, StringComparer.OrdinalIgnoreCase))
                     duplicate = true;
-            } while (duplicate);
+            }
+            while (duplicate);
 
             return key;
         }

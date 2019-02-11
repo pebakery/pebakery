@@ -121,20 +121,42 @@ namespace PEBakery.Core
             if (_sc.MainInfo.ContainsKey(ScriptSection.Names.Interface))
             {
                 string ifaceSection = _sc.MainInfo[ScriptSection.Names.Interface];
+                processedInterfaces.Add(ifaceSection);
                 if (_sc.Sections.ContainsKey(ifaceSection))
-                {
-                    processedInterfaces.Add(ifaceSection);
                     logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
-                }
-
+                else
+                    logs.Add(new LogInfo(LogState.Error, $"Section [{ifaceSection}] does not exist (Interface={ifaceSection})"));
             }
-            // UICtrls - InterfaceList=
+            // UICtrls - InterfaceList= (Stage 1)
+            if (_sc.MainInfo.ContainsKey(Script.Const.InterfaceList))
+            { 
+                // Check if InterfaceList contains proper sections
+                string interfaceList = _sc.MainInfo[Script.Const.InterfaceList];
+                try
+                {
+                    string remainder = interfaceList;
+                    while (remainder != null)
+                    {
+                        string next;
+                        (next, remainder) = CodeParser.GetNextArgument(remainder);
+
+                        // Does section exist?
+                        if (!_sc.Sections.ContainsKey(next))
+                            logs.Add(new LogInfo(LogState.Error, $"Section [{next}] does not exist (InterfaceList={interfaceList})"));
+                    }
+                }
+                catch (InvalidCommandException e)
+                {
+                    logs.Add(new LogInfo(LogState.Error, e));
+                }
+            }
+            // UICtrls - InterfaceList= (Stage 2) 
             // Do not enable deepScan, SyntaxChecker have its own implementation of `IniWrite` pattern scanning
             foreach (string ifaceSection in _sc.GetInterfaceSectionNames(false)
-                .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase) &&
-                            _sc.Sections.ContainsKey(x)))
+                .Where(x => !processedInterfaces.Contains(x, StringComparer.OrdinalIgnoreCase)))
             {
-                logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
+                if (_sc.Sections.ContainsKey(ifaceSection))
+                    logs.AddRange(ValidateInterfaceSection(_sc.Sections[ifaceSection]));
             }
 
             // Result

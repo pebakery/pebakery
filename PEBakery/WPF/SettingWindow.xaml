@@ -40,9 +40,9 @@
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
+        WindowStartupLocation="CenterOwner"
         Title="PEBakery Settings"
         Width="600" Height="550"
-        WindowStartupLocation="CenterOwner"
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
         <!-- Global -->

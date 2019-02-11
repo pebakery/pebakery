@@ -598,11 +598,21 @@ namespace PEBakery.Core
                                         (next, remainder) = CodeParser.GetNextArgument(remainder);
 
                                         // Avoid duplicate, only add if section exists
-                                        if (_sections.ContainsKey(next) && !_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
-                                            _interfaceList.Add(next);
+                                        if (_sections.ContainsKey(next))
+                                        {
+                                            if (!_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
+                                                _interfaceList.Add(next);    
+                                        }
+                                        else
+                                        {
+                                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{next}] does not exist ({rawList}"));
+                                        }
                                     }
                                 }
-                                catch (InvalidCommandException) { } // Just Ignore
+                                catch (InvalidCommandException e)
+                                {
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, e));
+                                }
                             } // InterfaceList
                             _link = null;
                         }
@@ -857,9 +867,12 @@ namespace PEBakery.Core
                                 // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
                                 if (info.FileName.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     info.Section.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase) &&
-                                    info.Key.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase) &&
+                                    info.Key.Equals(ScriptSection.Names.Interface,StringComparison.OrdinalIgnoreCase) &&
                                     !CodeParser.StringContainsVariable(info.Value))
-                                    interfaceSections.Add(info.Value);
+                                {
+                                    if (!interfaceSections.Contains(info.Value, StringComparer.OrdinalIgnoreCase))
+                                        interfaceSections.Add(info.Value);
+                                }
                             }
                             break;
                     }

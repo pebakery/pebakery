@@ -63,10 +63,6 @@ namespace PEBakery.Core
         private readonly Window _window; // Can be null
         private readonly Script _sc;
         /// <summary>
-        /// Custom scale factor of interface. Independent from system monitor dpi.
-        /// </summary>
-        public double ScaleFactor;
-        /// <summary>
         /// true in MainWindow, false in ScriptEditWindow
         /// </summary>
         private readonly bool _viewMode;
@@ -80,13 +76,12 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, double scaleFactor, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
-            ScaleFactor = scaleFactor;
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
@@ -96,13 +91,12 @@ namespace PEBakery.Core
             Global.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, double scaleFactor, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
-            ScaleFactor = scaleFactor;
             _viewMode = viewMode;
             _ignoreWidthOfWebLabel = compatWebLabel;
 

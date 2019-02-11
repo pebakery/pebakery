@@ -373,22 +373,41 @@
 
                     <StackPanel Grid.Column="0"
                                 Margin="0, 0, 10, 0">
-                        <StackPanel Margin="0, 0, 0, 10"
-                                    Visibility="{Binding InterfaceSectionNames, Mode=OneWay, Converter={StaticResource ActiveInterfaceSectionVisibilityConverter}, FallbackValue=Visible}">
+                        <StackPanel Margin="0, 0, 0, 10">
                             <TextBlock Margin="0, 0, 0, 5"
                                        FontWeight="Bold"
                                        FontSize="13"
-                                       Text="Active Interface Section"/>
+                                       Text="Interface Section"/>
                             <Separator Margin="0, 0, 0, 5"
                                        SnapsToDevicePixels="True"
                                        BorderBrush="Black"
                                        BorderThickness="2"/>
-                            <ComboBox x:Name="ActiveSectionComboBox" 
-                                      Margin="3, 0, 3, 0"
-                                      VerticalContentAlignment="Center"
-                                      ItemsSource="{Binding InterfaceSectionNames}"
-                                      SelectedItem="{Binding SelectedInterfaceSectionName}"
-                                      SelectionChanged="ActiveSectionComboBox_SelectionChanged"/>
+                            <Grid Margin="3, 0, 3, 0" Height="25">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ComboBox Grid.Column="0" 
+                                          x:Name="ActiveSectionComboBox" 
+                                          VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding InterfaceSectionNames}"
+                                          SelectedItem="{Binding SelectedInterfaceSectionName}"
+                                          SelectionChanged="ActiveSectionComboBox_SelectionChanged"/>
+                                <Button Grid.Column="1"
+                                        Margin="5, 0, 0, 0"
+                                        x:Name="InterfaceSectionAddButton"
+                                        Command="{Binding InterfaceSectionAddCommand}">
+                                    <iconPacks:PackIconMaterial Kind="Plus" Width="Auto" Height="Auto" Margin="5"/>
+                                </Button>
+                                <Button Grid.Column="2"
+                                        Margin="5, 0, 0, 0"
+                                        x:Name="InterfaceSectionDeleteButton"
+                                        Command="{Binding InterfaceSectionDeleteCommand}">
+                                    <iconPacks:PackIconMaterial Kind="Minus" Width="Auto" Height="Auto" Margin="5"/>
+                                </Button>
+                            </Grid>
                         </StackPanel>
                         <StackPanel Margin="0, 0, 0, 10">
                             <TextBlock Margin="0, 0, 0, 5"
@@ -399,27 +418,16 @@
                                        SnapsToDevicePixels="True"
                                        BorderBrush="Black"
                                        BorderThickness="2"/>
-                            <Grid Margin="3, 0, 3, 0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="20"/>
-                                    <RowDefinition Height="20"/>
-                                    <RowDefinition Height="30"/>
-                                </Grid.RowDefinitions>
+                            <Grid Margin="3, 0, 3, 0" Height="25">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="60" />
                                     <ColumnDefinition />
+                                    <ColumnDefinition Width="30"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                           VerticalAlignment="Center"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Type" />
-                                <ComboBox Grid.Row="0" Grid.Column="1"
+                                <ComboBox Grid.Column="0"
                                           VerticalContentAlignment="Center"
                                           Padding="3, 1, 3, 1"
                                           x:Name="UICtrlAddType"
-                                          FontSize="11"
-                                          SelectionChanged="UICtrlAddType_SelectionChanged"
                                           SelectedIndex="{Binding UICtrlAddTypeIndex}">
                                     <ComboBoxItem Content="TextBox"/>
                                     <ComboBoxItem Content="TextLabel"/>
@@ -435,24 +443,12 @@
                                     <ComboBoxItem Content="FileBox"/>
                                     <ComboBoxItem Content="RadioGroup"/>
                                 </ComboBox>
-                                <TextBlock Grid.Row="1" Grid.Column="0"
-                                           VerticalAlignment="Center"
-                                           Margin="0, 0, 5, 0"
-                                           Text="Name" />
-                                <TextBox Grid.Row="1" Grid.Column="1"
-                                         VerticalContentAlignment="Center"
-                                         FontSize="11"
-                                         Text="{Binding UICtrlAddName}"/>
-                                <Button Grid.Row="2" Grid.Column="1"
-                                        Margin="0, 5, 0, 0"
+                                <Button Grid.Column="1"
+                                        Margin="5, 0, 0, 0"
                                         x:Name="UICtrlAddButton"
                                         Command="{Binding UICtrlAddCommand}">
                                     <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Plus"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
-                                                                    Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Add" VerticalAlignment="Center"/>
+                                        <iconPacks:PackIconMaterial Kind="Plus" Width="Auto" Height="Auto" Margin="5"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>

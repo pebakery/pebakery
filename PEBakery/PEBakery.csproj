@@ -140,8 +140,8 @@
     <Compile Include="WPF\Controls\ColorPicker.xaml.cs">
       <DependentUpon>ColorPicker.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\ColorPickerWindow.xaml.cs">
-      <DependentUpon>ColorPickerWindow.xaml</DependentUpon>
+    <Compile Include="WPF\Controls\ColorPickerDialog.xaml.cs">
+      <DependentUpon>ColorPickerDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\IconButton.cs" />
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
@@ -151,9 +151,12 @@
       <DependentUpon>NumberBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\ProgressRing.cs" />
+    <Compile Include="WPF\Controls\TextBoxDialog.xaml.cs">
+      <DependentUpon>TextBoxDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\Converter.cs" />
-    <Compile Include="WPF\LogExportWindow.xaml.cs">
-      <DependentUpon>LogExportWindow.xaml</DependentUpon>
+    <Compile Include="WPF\LogExportDialog.xaml.cs">
+      <DependentUpon>LogExportDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
@@ -179,7 +182,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WPF\Controls\ColorPickerWindow.xaml">
+    <Page Include="WPF\Controls\ColorPickerDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -199,7 +202,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WPF\LogExportWindow.xaml">
+    <Page Include="WPF\Controls\TextBoxDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WPF\LogExportDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

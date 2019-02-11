@@ -43,12 +43,12 @@ using System.Windows.Input;
 namespace PEBakery.WPF
 {
     [SuppressMessage("ReSharper", "RedundantExtendsListEntry")]
-    public partial class LogExportWindow : Window
+    public partial class LogExportDialog : Window
     {
         #region Field and Constructor
         private readonly LogExportModel _m;
 
-        public LogExportWindow(LogExportModel model)
+        public LogExportDialog(LogExportModel model)
         {
             DataContext = _m = model;
             InitializeComponent();
