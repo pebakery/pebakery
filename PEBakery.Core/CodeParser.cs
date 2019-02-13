@@ -4017,51 +4017,11 @@ namespace PEBakery.Core
                 cIdx++;
             }
 
-            BranchCondition cond;
-            CodeCommand embCmd;
-            if (StringContainsVariable(args[cIdx])) // BranchCondition - Compare series
+            // BranchCondition - Non-Compare series
             {
-                string condStr = args[cIdx + 1];
-                BranchConditionType condType;
-
-                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Equal;
-                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.EqualX;
-                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Smaller;
-                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
-                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.Bigger;
-                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.SmallerEqual;
-                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
-                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
-                    condType = BranchConditionType.BiggerEqual;
-                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
-                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (notFlag)
-                        throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                    notFlag = true;
-                    condType = BranchConditionType.Equal;
-                }
-                else
-                    throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-
-                string compArg1 = args[cIdx];
-                string compArg2 = args[cIdx + 2];
-                cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
-            }
-            else // BranchCondition - Non-Compare series
-            {
-                int embIdx;
+                int embIdx = -1;
                 string condStr = args[cIdx];
+                BranchCondition cond = null;
                 if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
@@ -4202,21 +4162,62 @@ namespace PEBakery.Core
                             cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
                             embIdx = cIdx + 2;
                         }
-                        else
-                        {
-                            throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-                        }
-                    }
-                    else
-                    {
-                        throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
                     }
                 }
 
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), lineIdx);
+                if (embIdx != -1 && cond != null)
+                {
+                    CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), lineIdx);
+                    return new CodeInfo_If(cond, embCmd);
+                }
             }
 
-            return new CodeInfo_If(cond, embCmd);
+            // BranchCondition - Compare series
+            // <a1>,<Compare>,<a2>,<EmbCmd...> - at least 4 args is required
+            if (cIdx + 3 < args.Count)
+            {
+                string condStr = args[cIdx + 1];
+                BranchConditionType condType;
+
+                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Equal;
+                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.EqualX;
+                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Smaller;
+                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
+                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.Bigger;
+                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.SmallerEqual;
+                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
+                    condType = BranchConditionType.BiggerEqual;
+                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
+                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase)) // Keep != 
+                {
+                    if (notFlag)
+                        throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
+                    notFlag = true;
+                    condType = BranchConditionType.Equal;
+                }
+                else
+                {
+                    throw new InvalidCommandException($"Incorrect branch condition [{condStr}]", rawCode);
+                }
+
+                string compArg1 = args[cIdx];
+                string compArg2 = args[cIdx + 2];
+                BranchCondition cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
+                CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
+                return new CodeInfo_If(cond, embCmd);
+            }
+
+            throw new InvalidCommandException("Incorrect branch condition", rawCode);
         }
 
         public CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, int lineIdx)

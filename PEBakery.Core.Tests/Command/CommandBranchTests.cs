@@ -31,6 +31,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using PEBakery.Helper;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
@@ -205,7 +207,7 @@ namespace PEBakery.Core.Tests.Command
             EngineState s = EngineTests.CreateEngineState();
             const BranchConditionType type = BranchConditionType.ExistSection;
 
-            string tempPath = Path.GetTempFileName();
+            string tempPath = FileHelper.GetTempFile();
             try
             {
                 using (StreamWriter w = new StreamWriter(tempPath, false, Encoding.UTF8))
@@ -237,7 +239,6 @@ namespace PEBakery.Core.Tests.Command
                 if (File.Exists(tempPath))
                     File.Delete(tempPath);
             }
-
         }
         #endregion
 
@@ -633,6 +634,14 @@ namespace PEBakery.Core.Tests.Command
             ComparisonTemplate(s, "10", "If,%Src%,!=,09,Set,%Dest%,T", "T");
             ComparisonTemplate(s, "10", "If,%Src%,!=,10,Set,%Dest%,T", "F");
             ComparisonTemplate(s, "10", "If,%Src%,!=,11,Set,%Dest%,T", "T");
+
+            // Ambiguity Test - WinBuilder treat this as a If,ExistSection command
+            {
+                s.Variables["Dest"] = "F";
+                EngineTests.EvalLines(s, new List<string> { "If,ExistSection,Equal,ExistSection,Set,%Dest%,T" }, ErrorCheck.Error, out CodeCommand[] cmds);
+                CodeInfo_If info = cmds[0].Info.Cast<CodeInfo_If>();
+                Assert.AreEqual(BranchConditionType.ExistSection, info.Condition.Type);
+            }
         }
         #endregion
 
@@ -964,18 +973,18 @@ namespace PEBakery.Core.Tests.Command
         #endregion
 
         #region Utility
-        public void SingleTemplate(EngineState s, string rawCode, string comp)
+        public void SingleTemplate(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, check);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
 
-        public void ComparisonTemplate(EngineState s, string src, string rawCode, string comp)
+        public void ComparisonTemplate(EngineState s, string src, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
         { // Use EvalLines instead of Eval, because Eval does not fold embedded command of If/Else
             s.Variables["Src"] = src;
             s.Variables["Dest"] = "F";
-            EngineTests.EvalLines(s, new List<string> { rawCode }, ErrorCheck.Success);
+            EngineTests.EvalLines(s, new List<string> { rawCode }, check);
             Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
         }
         #endregion
