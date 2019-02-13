@@ -84,7 +84,7 @@ namespace PEBakery.WPF.Controls
         private void ColorPickButton_Click(object sender, RoutedEventArgs e)
         {
             ColorPickerViewModel pickerModel = new ColorPickerViewModel(Color);
-            ColorPickerDialog picker = new ColorPickerDialog(pickerModel);
+            ColorPickerDialog picker = new ColorPickerDialog(pickerModel) { Owner = Window.GetWindow(this) };
 
             if (picker.ShowDialog() == true)
             {
