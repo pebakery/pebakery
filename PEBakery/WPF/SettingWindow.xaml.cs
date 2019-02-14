@@ -473,7 +473,7 @@ namespace PEBakery.WPF
             {
                 _projectSourceDirIndex = value;
 
-                Project p = DefaultProject;
+                Project p = SelectedProject;
                 if (0 <= value && value < ProjectSourceDirs.Count)
                 {
                     p.Variables.SetValue(VarsType.Fixed, "SourceDir", ProjectSourceDirs[value]);
