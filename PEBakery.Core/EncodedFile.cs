@@ -532,10 +532,10 @@ namespace PEBakery.Core
 
         public static Task<MemoryStream> ExtractLogoAsync(Script sc)
         {
-            return Task.Run(() => ExtractLogo(sc, out _));
+            return Task.Run(() => ExtractLogo(sc, out _, out _));
         }
 
-        public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageFormat type)
+        public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageFormat type, out string filename)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -548,6 +548,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Logo does not exist in [{sc.Title}]");
 
             string logoFile = fileDict["Logo"];
+            filename = logoFile;
             if (!ImageHelper.GetImageFormat(logoFile, out type))
                 throw new ArgumentException($"Image [{Path.GetExtension(logoFile)}] is not supported");
 

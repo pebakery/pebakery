@@ -1929,12 +1929,13 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type, out string filename))
                 {
                     SaveFileDialog dialog = new SaveFileDialog
                     {
                         InitialDirectory = Global.BaseDir,
                         OverwritePrompt = true,
+                        FileName = filename,
                         Filter = $"{type.ToString().ToUpper().Replace(".", String.Empty)} Image|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
@@ -2883,6 +2884,7 @@ namespace PEBakery.WPF
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
+                    FileName = fileName,
                     Filter = extFilter,
                     DefaultExt = ext,
                     AddExtension = true,
@@ -3389,6 +3391,7 @@ namespace PEBakery.WPF
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
+                    FileName = info.FileName,
                     Filter = $"{ext.ToUpper().Replace(".", string.Empty)} File|*{ext}"
                 };
 
@@ -3528,7 +3531,7 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type))
+                using (MemoryStream ms = EncodedFile.ExtractLogo(Script, out ImageHelper.ImageFormat type, out _))
                 {
                     switch (type)
                     {
