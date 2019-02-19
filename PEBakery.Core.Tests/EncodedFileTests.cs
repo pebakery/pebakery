@@ -401,7 +401,7 @@ namespace PEBakery.Core.Tests
             Script sc = s.Project.LoadScriptRuntime(scPath, new LoadScriptRuntimeOptions());
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type))
+            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
             {
                 Assert.IsTrue(type == ImageHelper.ImageFormat.Jpg);
                 extractDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, ms);
