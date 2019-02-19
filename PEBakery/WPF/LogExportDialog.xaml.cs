@@ -31,7 +31,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -81,7 +80,7 @@ namespace PEBakery.WPF
         {
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog
             {
-                Title = "Choose Destination Path",
+                Title = "Save Log As",
             };
 
             switch (_m.FileFormat)
@@ -95,6 +94,18 @@ namespace PEBakery.WPF
                 default:
                     Debug.Assert(false, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
                     break;
+            }
+
+            if (_m.ExportSystemLog)
+            {
+                DateTime localDate = DateTime.Now; // local time should be ok because the filename is likley only useful to the person exporting the log
+                dialog.FileName = $"System Log - {localDate.ToString("yyyy-MM-dd HHmmss", CultureInfo.InvariantCulture)}";
+            }
+            else if (_m.ExportBuildLog)
+            {
+                // TODO format default filename as "Build Log - <BuildInfo.StartTime (yyyy-MM-dd HHmmss)> <BuildInfo.Name>"
+                // Don't forget to remove any illegal chars \/:*?"<>| from <BuildInfo.Name> 
+                //dialog.FileName = "Build Log - ";
             }
 
             bool? result = dialog.ShowDialog();

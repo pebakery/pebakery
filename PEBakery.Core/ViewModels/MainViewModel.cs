@@ -1224,7 +1224,7 @@ namespace PEBakery.Core.ViewModels
                         // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type))
+                            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
                             {
                                 switch (type)
                                 {
