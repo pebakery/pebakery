@@ -101,7 +101,7 @@ Else,Begin
 	Set,%Dest%,T
 End
 
-[Process-IfElseChain]
+[Process-IfElseChain01]
 Set,%Dest%,F
 Set,#r,5
 If,#r,Equal,1,Set,%Dest%,F
@@ -109,6 +109,25 @@ Else,If,#r,Equal,2,Set,%Dest%,F
 Else,If,#r,Equal,3,Set,%Dest%,F
 Else,If,#r,Equal,4,Set,%Dest%,F
 Else,If,#r,Equal,5,Set,%Dest%,T
+
+[Process-IfElseChain02]
+Set,%Dest%,F
+Set,#r,5
+If,#r,Equal,1,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,2,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,3,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,4,Begin
+  Set,%Dest%,F
+End
+Else,If,#r,Equal,5,Begin
+  Set,%Dest%,T
+End
 
 [Process-IfBeginEnd]
 Set,%Dest%,F
