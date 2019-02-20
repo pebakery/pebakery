@@ -320,7 +320,7 @@ namespace PEBakery.Core
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
 
-            CodeParser parser = new CodeParser(section, new CodeParser.Options());
+            CodeParser parser = new CodeParser(section, CodeParser.Options.CreateOptions(Global.Setting, s.Project.Compat));
             (CodeCommand[] cmds, _) = parser.ParseStatements();
 
             // Set CurrentSection
