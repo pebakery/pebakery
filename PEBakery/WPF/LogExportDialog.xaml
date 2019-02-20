@@ -134,7 +134,7 @@
                               SelectedIndex="{Binding SelectedBuildEntryIndex}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Item1}"/>
+                                <TextBlock Text="{Binding Text}"/>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>

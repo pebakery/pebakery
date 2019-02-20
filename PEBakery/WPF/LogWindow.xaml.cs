@@ -110,7 +110,7 @@ namespace PEBakery.WPF
         {
             if (_m.BuildEntries != null &&
                 _m.SelectedBuildIndex < _m.BuildEntries.Count &&
-                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId &&
+                _m.BuildEntries[_m.SelectedBuildIndex].Id == e.Log.BuildId &&
                 _m.ScriptEntries != null &&
                 _m.SelectedScriptIndex < _m.ScriptEntries.Count &&
                 _m.ScriptEntries[_m.SelectedScriptIndex].Item2 == e.Log.ScriptId)
@@ -144,7 +144,7 @@ namespace PEBakery.WPF
         {
             if (_m.BuildEntries != null &&
                 0 <= _m.SelectedBuildIndex && _m.SelectedBuildIndex < _m.BuildEntries.Count &&
-                _m.BuildEntries[_m.SelectedBuildIndex].Item2 == e.Log.BuildId)
+                _m.BuildEntries[_m.SelectedBuildIndex].Id == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
                 {
@@ -422,7 +422,7 @@ namespace PEBakery.WPF
 
             // Set ObservableCollection
             SystemLogs = new ObservableCollection<LogModel.SystemLog>();
-            BuildEntries = new ObservableCollection<Tuple<string, int>>();
+            BuildEntries = new ObservableCollection<LogModel.BuildInfo>();
             ScriptEntries = new ObservableCollection<Tuple<string, int, int>>();
             LogStats = new ObservableCollection<Tuple<LogState, int>>();
             BuildLogs = new ObservableCollection<LogModel.BuildLog>();
@@ -464,9 +464,7 @@ namespace PEBakery.WPF
                 LogModel.BuildInfo[] buildEntries = LogDb.Table<LogModel.BuildInfo>()
                     .OrderByDescending(x => x.StartTime)
                     .ToArray();
-                BuildEntries = new ObservableCollection<Tuple<string, int>>(
-                    buildEntries.Select(x => new Tuple<string, int>(x.Text, x.Id))
-                );
+                BuildEntries = new ObservableCollection<LogModel.BuildInfo>(buildEntries);
             });
 
             SelectedBuildIndex = 0;
@@ -668,7 +666,7 @@ namespace PEBakery.WPF
 
                 if (0 <= value && 0 < _buildEntries.Count)
                 {
-                    int buildId = _buildEntries[value].Item2;
+                    int buildId = _buildEntries[value].Id;
                     RefreshScripts(buildId, false);
                 }
                 else
@@ -680,10 +678,10 @@ namespace PEBakery.WPF
             }
         }
 
-        // Build Name, Build Id
+        // Time, Build Name, Build Id 
         private readonly object _buildEntriesLock = new object();
-        private ObservableCollection<Tuple<string, int>> _buildEntries;
-        public ObservableCollection<Tuple<string, int>> BuildEntries
+        private ObservableCollection<LogModel.BuildInfo> _buildEntries;
+        public ObservableCollection<LogModel.BuildInfo> BuildEntries
         {
             get => _buildEntries;
             set => SetCollectionProperty(ref _buildEntries, _buildEntriesLock, value);
