@@ -101,9 +101,20 @@ Else,Begin
 	Set,%Dest%,T
 End
 
+[Process-IfElseChain]
+Set,%Dest%,F
+Set,#r,5
+If,#r,Equal,1,Set,%Dest%,F
+Else,If,#r,Equal,2,Set,%Dest%,F
+Else,If,#r,Equal,3,Set,%Dest%,F
+Else,If,#r,Equal,4,Set,%Dest%,F
+Else,If,#r,Equal,5,Set,%Dest%,T
+
 [Process-IfBeginEnd]
 Set,%Dest%,F
 Set,#r,True
 If,#r,Equal,True,Begin
     Set,%Dest%,T
 End
+
+

@@ -322,7 +322,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_If info = cmd.Info.Cast<CodeInfo_If>();
             EngineLocalState ls = s.PeekLocalState();
 
-            if (CheckBranchCondition(s, info.Condition, out string msg))
+            if (EvalBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, ls.Depth));
 
@@ -353,7 +353,10 @@ namespace PEBakery.Core.Commands
 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, ls.Depth));
 
-                s.ElseFlag = false;
+                // Do not turn of ElseFlag for If command, to allow If-Else chain.
+                // https://github.com/pebakery/pebakery/issues/114
+                if (!(info.Link.Count == 1 && info.Link[0].Type == CodeType.If))
+                    s.ElseFlag = false;
             }
             else
             {
@@ -378,9 +381,9 @@ namespace PEBakery.Core.Commands
             Engine.RunCommands(s, section, link, s.CurSectionInParams, s.CurSectionOutParams, true);
         }
 
-        #region BranchConditionCheck
+        #region EvalBranchCondition
         [SuppressMessage("ReSharper", "RedundantAssignment")]
-        public static bool CheckBranchCondition(EngineState s, BranchCondition c, out string logMessage)
+        public static bool EvalBranchCondition(EngineState s, BranchCondition c, out string logMessage)
         {
             bool match = false;
             switch (c.Type)
