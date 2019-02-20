@@ -34,6 +34,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
@@ -98,14 +100,27 @@ namespace PEBakery.WPF
 
             if (_m.ExportSystemLog)
             {
-                DateTime localDate = DateTime.Now; // local time should be ok because the filename is likley only useful to the person exporting the log
-                dialog.FileName = $"System Log - {localDate.ToString("yyyy-MM-dd HHmmss", CultureInfo.InvariantCulture)}";
+                // Local time should be ok because the filename is likely only useful to the person exporting the log
+                DateTime localTime = DateTime.Now;
+                dialog.FileName = $"SystemLog_{localTime.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)}";
             }
             else if (_m.ExportBuildLog)
             {
-                // TODO format default filename as "Build Log - <BuildInfo.StartTime (yyyy-MM-dd HHmmss)> <BuildInfo.Name>"
-                // Don't forget to remove any illegal chars \/:*?"<>| from <BuildInfo.Name> 
-                //dialog.FileName = "Build Log - ";
+                Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
+                LogModel.BuildInfo bi = _m.BuildEntries[_m.SelectedBuildEntryIndex];
+
+                // Filter invalid filename chars
+                List<char> filteredChars = new List<char>(bi.Name.Length);
+                List<char> invalidChars = Path.GetInvalidFileNameChars().ToList();
+                invalidChars.Add('['); // Remove [ and ], too
+                invalidChars.Add(']');
+                foreach (char ch in bi.Name)
+                {
+                    if (!invalidChars.Contains(ch))
+                        filteredChars.Add(ch);
+                }
+                string filteredName = new string(filteredChars.ToArray());
+                dialog.FileName = $"BuildLog_{bi.StartTime.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)}_{filteredName}";
             }
 
             bool? result = dialog.ShowDialog();
@@ -126,7 +141,7 @@ namespace PEBakery.WPF
                     else if (_m.ExportBuildLog)
                     {
                         Debug.Assert(0 < _m.BuildEntries.Count, "Internal Logic Error at LogExportWindow.ExportCommand_Executed");
-                        int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Item2;
+                        int buildId = _m.BuildEntries[_m.SelectedBuildEntryIndex].Id;
                         _m.Logger.ExportBuildLog(_m.FileFormat, destFile, buildId, new LogExporter.BuildLogOptions
                         {
                             IncludeComments = _m.BuildLogIncludeComments,
@@ -164,10 +179,10 @@ namespace PEBakery.WPF
     public class LogExportModel : ViewModelBase
     {
         #region Constructor, SetSystemLog, SetBuildLog
-        public LogExportModel(Logger logger, IEnumerable<Tuple<string, int>> buildEntries)
+        public LogExportModel(Logger logger, IReadOnlyList<LogModel.BuildInfo> buildEntries)
         {
             Logger = logger;
-            BuildEntries = new ObservableCollection<Tuple<string, int>>(buildEntries);
+            BuildEntries = new ObservableCollection<LogModel.BuildInfo>(buildEntries);
         }
 
         public void SetSystemLog()
@@ -259,8 +274,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Build Log Export
-        private ObservableCollection<Tuple<string, int>> _buildEntries = new ObservableCollection<Tuple<string, int>>();
-        public ObservableCollection<Tuple<string, int>> BuildEntries
+        private ObservableCollection<LogModel.BuildInfo> _buildEntries = new ObservableCollection<LogModel.BuildInfo>();
+        public ObservableCollection<LogModel.BuildInfo> BuildEntries
         {
             get => _buildEntries;
             set
@@ -306,17 +321,17 @@ namespace PEBakery.WPF
         #endregion
 
         #region Progress
-    private bool _inProgress = false;
-    public bool InProgress
-    {
-        get => _inProgress;
-        set
+        private bool _inProgress = false;
+        public bool InProgress
         {
-            _inProgress = value;
-            OnPropertyUpdate(nameof(InProgress));
+            get => _inProgress;
+            set
+            {
+                _inProgress = value;
+                OnPropertyUpdate(nameof(InProgress));
+            }
         }
-    }
-    #endregion
+        #endregion
     }
     #endregion
 
