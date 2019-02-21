@@ -127,7 +127,8 @@ namespace PEBakery.WPF
                     }
                 }
                 string filteredName = new string(filteredChars.ToArray());
-                dialog.FileName = $"BuildLog_{bi.StartTime.ToString("yyyy_MM_dd_HHmmss", CultureInfo.InvariantCulture)}_{filteredName}";
+                // The log stores dateTime as UTC so its safe to use ToLocalTime() to convert to the users timezone
+                dialog.FileName = $"BuildLog_{bi.StartTime.ToLocalTime().ToString("yyyy_MM_dd_HHmmss", CultureInfo.InvariantCulture)}_{filteredName}";
             }
 
             bool? result = dialog.ShowDialog();
