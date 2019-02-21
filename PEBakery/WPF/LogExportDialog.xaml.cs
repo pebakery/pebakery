@@ -102,7 +102,7 @@ namespace PEBakery.WPF
             {
                 // Local time should be ok because the filename is likely only useful to the person exporting the log
                 DateTime localTime = DateTime.Now;
-                dialog.FileName = $"SystemLog_{localTime.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)}";
+                dialog.FileName = $"SystemLog_{localTime.ToString("yyyy_MM_dd_HHmmss", CultureInfo.InvariantCulture)}";
             }
             else if (_m.ExportBuildLog)
             {
@@ -112,15 +112,22 @@ namespace PEBakery.WPF
                 // Filter invalid filename chars
                 List<char> filteredChars = new List<char>(bi.Name.Length);
                 List<char> invalidChars = Path.GetInvalidFileNameChars().ToList();
-                invalidChars.Add('['); // Remove [ and ], too
+                invalidChars.Add('['); // Remove [ and ]
                 invalidChars.Add(']');
+                invalidChars.Add(' '); // Spaces are not very script or web friendly, let's remove them too.
                 foreach (char ch in bi.Name)
                 {
-                    if (!invalidChars.Contains(ch))
+                    if (invalidChars.Contains(ch))
+                    {
+                        filteredChars.Add(Convert.ToChar("_")); // Replace invalid chars and spaces with an underscore
+                    }
+                    else
+                    {
                         filteredChars.Add(ch);
+                    }
                 }
                 string filteredName = new string(filteredChars.ToArray());
-                dialog.FileName = $"BuildLog_{bi.StartTime.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)}_{filteredName}";
+                dialog.FileName = $"BuildLog_{bi.StartTime.ToString("yyyy_MM_dd_HHmmss", CultureInfo.InvariantCulture)}_{filteredName}";
             }
 
             bool? result = dialog.ShowDialog();
