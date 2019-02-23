@@ -256,18 +256,15 @@ namespace PEBakery.Core
                             });
                             s.CursorWait = false;
                         }
-
-                        if (!s.TestMode)
-                        { // Disable MessageBox in TestMode for automated CI test
-                            if (alertUserHalt)
-                                MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertErrorHalt)
-                                MessageBox.Show("Build stopped by error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertCmdHalt)
-                                MessageBox.Show("Build stopped by Halt command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                            else if (alertPassCurrentScriptFlag)
-                                MessageBox.Show("Build stopped by Exit command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
+                        
+                        if (alertUserHalt)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by user"));
+                        else if (alertErrorHalt)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by error"));
+                        else if (alertCmdHalt)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by Halt command"));
+                        else if (alertPassCurrentScriptFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by Exit command"));
 
                         break;
                     }

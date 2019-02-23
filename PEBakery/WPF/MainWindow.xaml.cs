@@ -131,7 +131,7 @@ namespace PEBakery.WPF
                 // Report elapsed time
                 ct.Cancel();
                 await printStatus;
-                Model.StatusBarText = $"{p.ProjectName} build done ({s.Elapsed:h\\:mm\\:ss})";
+                Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;
@@ -329,7 +329,7 @@ namespace PEBakery.WPF
 
                 ct.Cancel();
                 await printStatus;
-                Model.StatusBarText = $"{sc.Title} took {t:h\\:mm\\:ss}";
+                Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
