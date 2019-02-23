@@ -79,7 +79,7 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"[{destArchive}] should be a file, not a directory");
             if (File.Exists(destArchive))
             {
-                logs.Add(new LogInfo(LogState.Overwrite, $"Archive [{destArchive}] will be appended"));
+                logs.Add(new LogInfo(LogState.Overwrite, $"Appending to archive [{destArchive}]"));
                 appendMode = true;
             }
 
@@ -340,7 +340,7 @@ namespace PEBakery.Core.Commands
                 using (SevenZipExtractor extractor = new SevenZipExtractor(srcCab))
                 {
                     if (extractor.Format != InArchiveFormat.Cab)
-                        return LogInfo.LogErrorMessage(logs, "Expand command must be used with cabinet archive");
+                        return LogInfo.LogErrorMessage(logs, "The Expand command only supports cabinet (.cab) archives");
 
                     if (reportProgress)
                     {
@@ -440,7 +440,7 @@ namespace PEBakery.Core.Commands
             string wildcard = Path.GetFileName(srcFile);
             if (wildcard.IndexOfAny(new char[] {'*', '?'}) != -1)
             {
-                logs.Add(new LogInfo(LogState.Warning, "CopyOrExpand does not support filename with wildcard"));
+                logs.Add(new LogInfo(LogState.Warning, "CopyOrExpand does not support wildcards in the filename"));
                 return logs;
             }
 

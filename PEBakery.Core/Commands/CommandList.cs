@@ -173,7 +173,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            logs.Add(new LogInfo(LogState.Ignore, "No item was deleted"));
+                            logs.Add(new LogInfo(LogState.Ignore, "No items were deleted"));
                         }
                     }
                     break;
@@ -268,7 +268,7 @@ namespace PEBakery.Core.Commands
                         else if (order.Equals("DESC", StringComparison.OrdinalIgnoreCase))
                             reverse = true;
                         else
-                            return LogInfo.LogErrorMessage(logs, "Order should be [ASC] or [DESC]");
+                            return LogInfo.LogErrorMessage(logs, "Order must be [ASC] or [DESC]");
 
                         List<string> list = StringEscaper.UnpackListStr(listStr, delimiter);
                         switch (type)

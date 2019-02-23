@@ -150,7 +150,7 @@ namespace PEBakery.Core.Commands
             }
             else if (s.LoopState != LoopState.Off)
             { // If loop is already turned on, throw error
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, ls.Depth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Nested loops are not supported", cmd, ls.Depth));
             }
             else
             {
@@ -730,7 +730,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -803,7 +803,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -876,7 +876,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 
@@ -921,7 +921,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logMessage = $"Wim [{wimFile}] does not exist";
+                                logMessage = $"Wim file [{wimFile}] does not exist";
                             }
                         }
 

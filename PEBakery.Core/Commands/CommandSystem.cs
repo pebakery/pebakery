@@ -73,7 +73,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"Wrong mouse cursor icon [{iconStr}]"));
+                            logs.Add(new LogInfo(LogState.Error, $"[{iconStr}] is not a valid mouse cursor icon"));
                         }
                     }
                     break;
@@ -160,7 +160,7 @@ namespace PEBakery.Core.Commands
 
                         FileInfo f = new FileInfo(path);
                         if (f.Directory == null)
-                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information of [{path}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information for [{path}]");
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
                         long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 

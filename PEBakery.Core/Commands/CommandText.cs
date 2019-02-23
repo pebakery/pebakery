@@ -157,7 +157,7 @@ namespace PEBakery.Core.Commands
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : \r\n{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines prepended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
             else if (mode == TXTAddLineMode.Append)
             {

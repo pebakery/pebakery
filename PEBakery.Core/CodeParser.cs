@@ -2130,11 +2130,11 @@ namespace PEBakery.Core
                             {
                                 string varKey = arg.Substring(outKey.Length);
                                 if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
-                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
                                 outParams.Add(varKey);
                             }
                             else
-                                throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                                throw new InvalidCommandException($"Parameter of [{type}] must start with [In=] or [Out=]", rawCode);
                         }
 
                         return new CodeInfo_RunExec(scriptFile, sectionName, inParams, outParams);
@@ -2197,11 +2197,11 @@ namespace PEBakery.Core
                             {
                                 string varKey = arg.Substring(outKey.Length);
                                 if (Variables.DetectType(varKey) != Variables.VarKeyType.Variable)
-                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable, folded with %", rawCode);
+                                    throw new InvalidCommandException($"Out parameter [{varKey}] must be a normal variable enclosed in % characters", rawCode);
                                 outParams.Add(varKey);
                             }
                             else
-                                throw new InvalidCommandException($"Parameter of [{type}] should start with [In=] or [Out=]", rawCode);
+                                throw new InvalidCommandException($"Parameter of [{type}] must start with [In=] or [Out=]", rawCode);
                         }
 
                         return new CodeInfo_Loop(args[0], args[1], args[2], args[3], inParams, outParams);

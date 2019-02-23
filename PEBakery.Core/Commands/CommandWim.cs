@@ -274,7 +274,7 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
                         }
                         else
                         {
@@ -292,7 +292,7 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}m {sec}s";
+                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaining Time : {min}m {sec}s";
                         }
                         else
                         {
@@ -1790,7 +1790,7 @@ namespace PEBakery.Core.Commands
                         if (File.Exists(destWimPath))
                         { // Append to existing wim file
                             // Set Compression Type
-                            // Use of compress argument [NONE|XPRESS|LZX|LZMS] is prohibitted
+                            // Use of compress argument [NONE|XPRESS|LZX|LZMS] is prohibited
                             if (info.Recompress != null)
                             {
                                 string compStr = StringEscaper.Preprocess(s, info.Recompress);

@@ -567,7 +567,7 @@ namespace PEBakery.Core.Commands
                             if (max < 0)
                                 return LogInfo.LogErrorMessage(logs, $"[{max}] must be positive integer");
                             if (max <= min)
-                                return LogInfo.LogErrorMessage(logs, "Maximum bound must be larger than minimum value");
+                                return LogInfo.LogErrorMessage(logs, "Maximum bounds must be larger than minimum value");
                         }
 
                         int destInt = s.Random.Next() % (max - min) + min;
