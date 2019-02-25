@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -48,11 +49,11 @@ namespace PEBakery.Core
     {
         /*
          * Variables Search Order
-         * if (OverridableFixedVariables) // WinBuilder Compatible
+         * if (OverridableFixedVariables) // WinBuilder Compatible, enabled by compat option
          *    1. Local Variables
          *    2. Global Variables
          *    3. Fixed Variables
-         * else // PEBakery standard
+         * else // PEBakery Standard
          *    1. Fixed Variables
          *    2. Local Variables
          *    3. Global Variables
@@ -201,10 +202,10 @@ namespace PEBakery.Core
                     // https://docs.microsoft.com/en-us/windows/desktop/api/sysinfoapi/ns-sysinfoapi-_system_info
                     // For compatibility with WinBuilder, use old SYSTEM_INFO.dwProcessorType description for x86 and x64.
                     case Architecture.X86:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586")); 
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "586"));
                         break;
                     case Architecture.X64:
-                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664")); 
+                        logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "8664"));
                         break;
                     case Architecture.Arm:
                         logs.Add(SetValue(VarsType.Fixed, "ProcessorType", "Arm"));
@@ -422,18 +423,52 @@ namespace PEBakery.Core
             return new Dictionary<string, string>(GetVarsMatchesType(type), StringComparer.OrdinalIgnoreCase);
         }
 
-        public void SetVarDict(VarsType type, Dictionary<string, string> varDict)
+        /// <summary>
+        /// Overwrite variable dicts.
+        /// </summary>
+        /// <param name="type">Which variables to ovewrite?</param>
+        /// <param name="varDict">New key-values to overwrite.</param>
+        /// <param name="keysToPreserve">Do not overwrite these variables. It should not contain %. </param>
+        public void SetVarDict(VarsType type, Dictionary<string, string> varDict, IEnumerable<string> keysToPreserve = null)
         {
+            Dictionary<string, string> newDict = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+
+            // Preserve keys 
+            if (keysToPreserve != null)
+            {
+                Dictionary<string, string> oldDict = null;
+                switch (type)
+                {
+                    case VarsType.Local:
+                        oldDict = _localVars;
+                        break;
+                    case VarsType.Global:
+                        oldDict = _globalVars;
+                        break;
+                    case VarsType.Fixed:
+                        oldDict = _fixedVars;
+                        break;
+                }
+                Debug.Assert(oldDict != null, "Invalid VarsType");
+
+                foreach (string key in keysToPreserve)
+                {
+                    Debug.Assert(key != null, "Invalid key name");
+                    if (oldDict.ContainsKey(key))
+                        newDict[key] = oldDict[key];
+                }
+            }
+
             switch (type)
             {
                 case VarsType.Local:
-                    _localVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _localVars = newDict;
                     break;
                 case VarsType.Global:
-                    _globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _globalVars = newDict;
                     break;
                 case VarsType.Fixed:
-                    _fixedVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    _fixedVars = newDict;
                     break;
             }
         }
@@ -1044,7 +1079,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Warning, "LoopCounter [#c] cannot be overriden"));
                         return logs;
                     }
-                        
+
                     switch (s.LoopState)
                     {
                         case LoopState.OnIndex:

@@ -452,7 +452,7 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo), "Invalid CodeInfo");
 
-                        if (Engine.DisableSetLocal(s, cmd.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
+                        if (Engine.DisableSetLocal(s)) // If SetLocal is disabled, SetLocalStack is decremented.
                             logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.LocalVarsStateStack.Count + 1}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));

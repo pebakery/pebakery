@@ -317,7 +317,7 @@ namespace PEBakery.Core
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
 
-            CodeParser parser = new CodeParser(section, CodeParser.Options.CreateOptions(Global.Setting, s.Project.Compat));
+            CodeParser parser = new CodeParser(section, Global.Setting, s.Project.Compat);
             (CodeCommand[] cmds, _) = parser.ParseStatements();
 
             // Set CurrentSection
@@ -404,7 +404,7 @@ namespace PEBakery.Core
                     break;
             }
 
-            if (DisableSetLocal(s, section))
+            if (DisableSetLocal(s))
             {
                 int stackDepth = s.LocalVarsStateStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.PeekDepth));
@@ -903,7 +903,7 @@ namespace PEBakery.Core
             });
         }
 
-        public static bool DisableSetLocal(EngineState s, ScriptSection section)
+        public static bool DisableSetLocal(EngineState s)
         {
             if (0 < s.LocalVarsStateStack.Count)
             {
@@ -912,7 +912,18 @@ namespace PEBakery.Core
                 if (ls.Equals(last.LocalState))
                 {
                     s.LocalVarsStateStack.Pop();
-                    s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
+
+                    // Restore local variables
+                    if (s.CurSectionOutParams == null)
+                    {
+                        s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
+                    }
+                    else
+                    {
+                        var keysToPreserve = s.CurSectionOutParams.Select(key => Variables.GetVariableName(s, key));
+                        s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup, keysToPreserve);
+                    }
+
                     return true;
                 }
             }
