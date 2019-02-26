@@ -46,7 +46,6 @@ namespace PEBakery.Core
         #region Variables and Constructor
         public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         public static int WorkingLock = 0;
-        public static bool StopBuildOnError = true;
 
         // ReSharper disable once InconsistentNaming
         public EngineState s;
@@ -189,12 +188,13 @@ namespace PEBakery.Core
 
                     // OnScriptExit event callback
                     {
+                        // Backup halt flags
                         bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
                         bool bakErrorHalt = s.ErrorHaltFlag;
                         bool bakUserHalt = s.UserHaltFlag;
                         bool bakCmdHalt = s.CmdHaltFlag;
 
-                        string eventParam = FinishEventParam();
+                        string eventParam = FinishEventParam(s);
 
                         // Reset Halt Flags before running OnScriptExit
                         // Otherwise only first command is executed
@@ -202,6 +202,7 @@ namespace PEBakery.Core
 
                         CheckAndRunCallback(s, ref s.OnScriptExit, eventParam, "OnScriptExit");
 
+                        // Restore halt flags
                         s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
                         s.ErrorHaltFlag = bakErrorHalt;
                         s.UserHaltFlag = bakUserHalt;
@@ -220,10 +221,11 @@ namespace PEBakery.Core
                     if (s.Scripts.Count - 1 <= s.CurrentScriptIdx ||
                         runOneScriptExit || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     { // End of Build
-                        bool alertPassCurrentScriptFlag = s.PassCurrentScriptFlag;
-                        bool alertErrorHalt = s.ErrorHaltFlag;
-                        bool alertUserHalt = s.UserHaltFlag;
-                        bool alertCmdHalt = s.CmdHaltFlag;
+                        // Backup halt flags
+                        bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
+                        bool bakErrorHalt = s.ErrorHaltFlag;
+                        bool bakUserHalt = s.UserHaltFlag;
+                        bool bakCmdHalt = s.CmdHaltFlag;
 
                         if (s.UserHaltFlag)
                         {
@@ -232,7 +234,7 @@ namespace PEBakery.Core
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Build stop requested by user"));
                         }
 
-                        string eventParam = FinishEventParam();
+                        string eventParam = FinishEventParam(s);
 
                         // Reset Halt Flags before running OnBuildExit
                         // Otherwise only first command is executed
@@ -256,15 +258,21 @@ namespace PEBakery.Core
                             });
                             s.CursorWait = false;
                         }
-                        
-                        if (alertUserHalt)
+
+                        // Restore halt flags
+                        s.PassCurrentScriptFlag = bakPassCurrentScriptFlag;
+                        s.ErrorHaltFlag = bakErrorHalt;
+                        s.UserHaltFlag = bakUserHalt;
+                        s.CmdHaltFlag = bakCmdHalt;
+
+                        if (s.UserHaltFlag)
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by user"));
-                        else if (alertErrorHalt)
+                        else if (s.ErrorHaltFlag)
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by error"));
-                        else if (alertCmdHalt)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by Halt command"));
-                        else if (alertPassCurrentScriptFlag)
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by Exit command"));
+                        else if (s.CmdHaltFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Halt] command"));
+                        else if (s.PassCurrentScriptFlag)
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, "Build stopped by [Exit] command"));
 
                         break;
                     }
@@ -312,7 +320,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, List<string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
+            int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -344,7 +352,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, ScriptSection section, Dictionary<int, string> inParams, List<string> outParams, EngineLocalState ls)
         {
             // Push ExecutionDepth
-            int newDepth = s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
+            int newDepth = s.PushLocalState(ls.IsMacro, ls.RefScriptId);
 
             if (section.Lines == null)
                 s.Logger.BuildWrite(s, new LogInfo(LogState.CriticalError, $"Unable to load section [{section.Name}]", newDepth));
@@ -383,7 +391,7 @@ namespace PEBakery.Core
             if (pushDepth)
             {
                 EngineLocalState ls = s.PeekLocalState();
-                s.PushLocalState(s, ls.IsMacro, ls.RefScriptId);
+                s.PushLocalState(ls.IsMacro, ls.RefScriptId);
             }
 
 
@@ -411,7 +419,7 @@ namespace PEBakery.Core
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.PeekDepth));
             }
 
-            DisableErrorOff(s, section, s.PeekDepth, ErrorOffState.ForceDisable);
+            DisableErrorOff(s, ErrorOffState.ForceDisable);
 
             if (pushDepth)
                 s.PopLocalState();
@@ -827,12 +835,12 @@ namespace PEBakery.Core
             }
 
             // Mute LogState.{Error|Warning} if ErrorOff is enabled, and disable ErrorOff when necessary
-            ProcessErrorOff(s, cmd.Section, ls.Depth, cmd.LineIdx, logs);
+            ProcessErrorOff(s, cmd.LineIdx, logs);
 
             // Stop build on error
-            if (StopBuildOnError)
+            if (s.StopBuildOnError)
             {
-                if (0 < logs.Count(x => x.State == LogState.Error))
+                if (logs.Any(x => x.State == LogState.Error))
                     s.ErrorHaltFlag = true;
             }
 
@@ -881,7 +889,7 @@ namespace PEBakery.Core
             cbCmd = null;
         }
 
-        public string FinishEventParam()
+        public static string FinishEventParam(EngineState s)
         {
             if (s.UserHaltFlag)
                 return "STOP";
@@ -933,7 +941,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ErrorOff
-        public static void ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
+        public static void ProcessErrorOff(EngineState s, int lineIdx, List<LogInfo> logs)
         {
             if (s.ErrorOff == null)
                 return;
@@ -943,10 +951,10 @@ namespace PEBakery.Core
             MuteLogError(logs);
 
             // 
-            DisableErrorOff(s, section, depth, lineIdx);
+            DisableErrorOff(s, lineIdx);
         }
 
-        public static void DisableErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx)
+        public static void DisableErrorOff(EngineState s, int lineIdx)
         {
             if (s.ErrorOff is ErrorOffState es)
             {
@@ -1120,9 +1128,9 @@ namespace PEBakery.Core
         public long LoopCounter = 0;
         public char LoopLetter = ' '; // Use capital alphabet
         public bool PassCurrentScriptFlag = false; // Exit Command
-        public bool ErrorHaltFlag = false;
+        public bool ErrorHaltFlag = false; // Did error occur?
         public bool CmdHaltFlag = false; // Halt Command
-        public bool UserHaltFlag = false;
+        public bool UserHaltFlag = false; // Did user clicked stop button?
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
@@ -1154,6 +1162,7 @@ namespace PEBakery.Core
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
+        public bool StopBuildOnError = true;
 
         // Compat Options
         public bool CompatDirCopyBug = false;
@@ -1254,6 +1263,7 @@ namespace PEBakery.Core
         public void SetOptions(Setting setting)
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
+            StopBuildOnError = setting.General.StopBuildOnError;
 
             LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDefer;
         }
@@ -1317,7 +1327,7 @@ namespace PEBakery.Core
         /// Push new local state.
         /// </summary>
         /// <returns>New execution depth.</returns>
-        public int PushLocalState(EngineState s, bool isMacro, int refScriptId)
+        public int PushLocalState(bool isMacro, int refScriptId)
         {
             Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
 

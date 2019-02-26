@@ -131,7 +131,25 @@ namespace PEBakery.WPF
                 // Report elapsed time
                 ct.Cancel();
                 await printStatus;
-                Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
+                if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
+                {
+                    string reason = null;
+                    if (s.CmdHaltFlag)
+                        reason = "[Halt] command";
+                    else if (s.UserHaltFlag)
+                        reason = "user";
+                    else if (s.ErrorHaltFlag)
+                        reason = "error";
+                    else if (s.PassCurrentScriptFlag)
+                        reason = "[Exit] command";
+                    Debug.Assert(reason != null, "Invalid reason string");
+
+                    Model.StatusBarText = $"{p.ProjectName} build stopped by {reason}. ({s.Elapsed:h\\:mm\\:ss})";
+                }
+                else
+                {
+                    Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
+                }
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;

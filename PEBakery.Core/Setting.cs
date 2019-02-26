@@ -500,7 +500,6 @@ namespace PEBakery.Core
             AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !General.EnableLongFilePath);
 
             // Static
-            Engine.StopBuildOnError = General.StopBuildOnError;
             Logger.DebugLevel = Log.DebugLevel;
             Logger.MinifyHtmlExport = Log.MinifyHtmlExport;
 

@@ -46,8 +46,7 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, $"Invalid command [{info.MacroType}]", cmd, s.PeekDepth));
-                return;
+                throw new ExecuteException($"Invalid command [{info.MacroType}]");
             }
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
@@ -67,7 +66,7 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                s.PushLocalState(s, true, s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script));
+                s.PushLocalState(true, s.Logger.BuildRefScriptWrite(s, macroCmd.Section.Script));
 
                 Engine.ExecuteCommand(s, cmd);
                 s.PopLocalState();

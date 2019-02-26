@@ -186,7 +186,7 @@ namespace PEBakery.Core
                             RenderBevel(uiCtrl);
                             break;
                         case UIControlType.FileBox:
-                            clean = RenderFileBox(uiCtrl, _variables);
+                            clean = RenderFileBox(uiCtrl);
                             break;
                         case UIControlType.RadioGroup:
                             clean = RenderRadioGroup(uiCtrl);
@@ -1245,7 +1245,7 @@ namespace PEBakery.Core
         #endregion
 
         #region FileBox
-        public RenderCleanInfo RenderFileBox(UIControl uiCtrl, Variables variables)
+        public RenderCleanInfo RenderFileBox(UIControl uiCtrl)
         {
             UIInfo_FileBox info = uiCtrl.Info.Cast<UIInfo_FileBox>();
 
@@ -1625,7 +1625,25 @@ namespace PEBakery.Core
                 // Cancel and Wait until PrintBuildElapsedStatus stops
                 ct.Cancel();
                 await printStatus;
-                mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
+                if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
+                {
+                    string reason = null;
+                    if (s.CmdHaltFlag)
+                        reason = "[Halt] command";
+                    else if (s.UserHaltFlag)
+                        reason = "user";
+                    else if (s.ErrorHaltFlag)
+                        reason = "error";
+                    else if (s.PassCurrentScriptFlag)
+                        reason = "[Exit] command";
+                    Debug.Assert(reason != null, "Invalid reason string");
+
+                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                }
+                else
+                {
+                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
+                }
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)

@@ -31,6 +31,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -137,11 +138,12 @@ namespace PEBakery.WPF
                     Project project = _m.CurrentProject;
                     Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
 
-                    Global.MainViewModel.BuildTreeItems.Clear();
-                    Global.MainViewModel.SwitchNormalBuildInterface = false;
-                    Global.MainViewModel.WorkInProgress = true;
+                    MainViewModel mainModel = Global.MainViewModel;
+                    mainModel.BuildTreeItems.Clear();
+                    mainModel.SwitchNormalBuildInterface = false;
+                    mainModel.WorkInProgress = true;
 
-                    EngineState s = new EngineState(sc.Project, Global.Logger, Global.MainViewModel, EngineMode.RunMainAndOne, sc);
+                    EngineState s = new EngineState(sc.Project, Global.Logger, mainModel, EngineMode.RunMainAndOne, sc);
                     s.SetOptions(Global.Setting);
                     s.SetCompat(sc.Project.Compat);
 
@@ -157,13 +159,31 @@ namespace PEBakery.WPF
                     // Report elapsed build time
                     ct.Cancel();
                     await printStatus;
-                    Global.MainViewModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
+                    if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
+                    {
+                        string reason = null;
+                        if (s.CmdHaltFlag)
+                            reason = "[Halt] command";
+                        else if (s.UserHaltFlag)
+                            reason = "user";
+                        else if (s.ErrorHaltFlag)
+                            reason = "error";
+                        else if (s.PassCurrentScriptFlag)
+                            reason = "[Exit] command";
+                        Debug.Assert(reason != null, "Invalid reason string");
 
-                    Global.MainViewModel.WorkInProgress = false;
-                    Global.MainViewModel.SwitchNormalBuildInterface = true;
-                    Global.MainViewModel.BuildTreeItems.Clear();
+                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                    }
+                    else
+                    {
+                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
+                    }
 
-                    s.MainViewModel.DisplayScript(Global.MainViewModel.CurMainTree.Script);
+                    mainModel.WorkInProgress = false;
+                    mainModel.SwitchNormalBuildInterface = true;
+                    mainModel.BuildTreeItems.Clear();
+
+                    s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
                     if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
                         Application.Current?.Dispatcher.Invoke(() =>
