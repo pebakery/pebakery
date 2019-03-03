@@ -1638,11 +1638,11 @@ namespace PEBakery.Core
                         reason = "[Exit] command";
                     Debug.Assert(reason != null, "Invalid reason string");
 
-                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
                 }
                 else
                 {
-                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
                 }
 
                 // Build Ended, Switch to Normal View

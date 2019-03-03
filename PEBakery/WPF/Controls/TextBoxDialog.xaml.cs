@@ -22,19 +22,9 @@
 	SOFTWARE.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using MahApps.Metro.IconPacks;
 
 namespace PEBakery.WPF.Controls
@@ -76,6 +66,7 @@ namespace PEBakery.WPF.Controls
         public TextBoxDialog(string title, string message, PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
+            RegisterTextBoxEvents();
 
             Title = title;
             MessageText = message;
@@ -86,6 +77,7 @@ namespace PEBakery.WPF.Controls
         public TextBoxDialog(string title, string message, string defaultInput, PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
+            RegisterTextBoxEvents();
 
             Title = title;
             MessageText = message;
@@ -96,6 +88,7 @@ namespace PEBakery.WPF.Controls
         public TextBoxDialog(Window owner, string title, string message, PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
+            RegisterTextBoxEvents();
 
             Owner = owner;
             Title = title;
@@ -107,6 +100,7 @@ namespace PEBakery.WPF.Controls
         public TextBoxDialog(Window owner, string title, string message, string defaultInput, PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
+            RegisterTextBoxEvents();
 
             Owner = owner;
             Title = title;
@@ -125,6 +119,36 @@ namespace PEBakery.WPF.Controls
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
+        }
+
+        /// <summary>
+        /// Select all text in a TextBox control when the control gets the focus.
+        /// </summary>
+        protected void RegisterTextBoxEvents()
+        {
+            EventManager.RegisterClassHandler(typeof(TextBox), UIElement.PreviewMouseLeftButtonDownEvent,
+              new MouseButtonEventHandler(TextBoxHandleMouseButton), true);
+            EventManager.RegisterClassHandler(typeof(TextBox), UIElement.GotKeyboardFocusEvent,
+              new RoutedEventHandler(TextBoxSelectAllText), true);
+        }
+
+        private static void TextBoxHandleMouseButton(object sender, MouseButtonEventArgs e)
+        {
+            var textbox = (sender as TextBox);
+            if (textbox != null && !textbox.IsKeyboardFocusWithin)
+            {
+                if (e.OriginalSource.GetType().Name == "TextBoxView")
+                {
+                    e.Handled = true;
+                    textbox.Focus();
+                }
+            }
+        }
+
+        private static void TextBoxSelectAllText(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is TextBox textBox)
+                textBox.SelectAll();
         }
         #endregion
     }

@@ -34,7 +34,7 @@
         WindowStartupLocation="CenterOwner"
         Title="TextBoxDialog" 
         Width="400" Height="165">
-    <Grid Margin="15">
+    <Grid Margin="15" FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition/>

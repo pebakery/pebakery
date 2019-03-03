@@ -151,7 +151,7 @@ namespace PEBakery.WPF
             try
             {
                 // Must save current edits to switch active interface section
-                MessageBoxResult result = MessageBox.Show(this, "The script must be saved before switching interface.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                MessageBoxResult result = MessageBox.Show(this, "The script must be saved before switching to another interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
                 {
                     await m.WriteScriptInterfaceAsync(m.SelectedInterfaceSectionName, false);
@@ -2022,7 +2022,7 @@ namespace PEBakery.WPF
                 // Must save current edits to switch active interface section
                 if (InterfaceNotSaved)
                 {
-                    MessageBoxResult result = MessageBox.Show(_window, "The script must be saved before adding interface.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                    MessageBoxResult result = MessageBox.Show(_window, "The script must be saved before adding a new interface.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                     if (result == MessageBoxResult.Yes)
                         await WriteScriptInterfaceAsync(null, false);
                     else
@@ -2032,7 +2032,7 @@ namespace PEBakery.WPF
                 string newInterfaceSectionName = StringEscaper.GetUniqueKey(ScriptSection.Names.Interface + "_", Script.Sections.Select(x => x.Key), 2);
                 TextBoxDialog dialog = new TextBoxDialog(_window,
                     "New Interface Section",
-                    "Please type new interface section name",
+                    "Please enter a name for the new Interface section",
                     newInterfaceSectionName,
                     PackIconMaterialKind.PlaylistPlus);
                 if (dialog.ShowDialog() == true)
@@ -2094,7 +2094,7 @@ namespace PEBakery.WPF
 
                 if (InterfaceSectionNames.Count == 1)
                 { // Cannot delete default interface section
-                    MessageBox.Show(_window, $"Cannot delete last interface section [{SelectedInterfaceSectionName}].", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"You cannot delete the default interface section [{SelectedInterfaceSectionName}].", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -2106,7 +2106,7 @@ namespace PEBakery.WPF
 
                 // Must save current edits to switch active interface section
                 MessageBoxResult result = MessageBox.Show(_window,
-                    "Deleted interface section cannot be recovered!\r\nAlso, the script must be saved before deleting interface.\r\nAre you sure to delete?",
+                    "The script must be saved before deleting an interface.\r\n\r\nWarning: Deleted interface sections cannot be recovered!\r\n\r\nAre you sure you want to delete?",
                     "Delete Confirmation",
                     MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
                 if (result == MessageBoxResult.Yes)
@@ -2204,7 +2204,7 @@ namespace PEBakery.WPF
                 string newControlKey = StringEscaper.GetUniqueKey(type.ToString(), Renderer.UICtrls.Select(x => x.Key));
                 TextBoxDialog dialog = new TextBoxDialog(_window,
                     "New Interface Control",
-                    "Please type new interface control name",
+                    "Please enter a name for the new control",
                     newControlKey,
                     PackIconMaterialKind.PlaylistPlus);
                 if (dialog.ShowDialog() != true)
