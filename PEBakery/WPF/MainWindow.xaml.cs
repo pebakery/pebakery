@@ -40,6 +40,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
@@ -128,28 +129,7 @@ namespace PEBakery.WPF
 #endif
 
                 // Cancel and wait until PrintBuildElapsedStatus stops
-                // Report elapsed time
                 ct.Cancel();
-                await printStatus;
-                if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
-                {
-                    string reason = null;
-                    if (s.CmdHaltFlag)
-                        reason = "[Halt] command";
-                    else if (s.UserHaltFlag)
-                        reason = "user";
-                    else if (s.ErrorHaltFlag)
-                        reason = "error";
-                    else if (s.PassCurrentScriptFlag)
-                        reason = "[Exit] command";
-                    Debug.Assert(reason != null, "Invalid reason string");
-
-                    Model.StatusBarText = $"{p.ProjectName} build stopped by {reason}. ({s.Elapsed:h\\:mm\\:ss})";
-                }
-                else
-                {
-                    Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
-                }
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;
@@ -158,6 +138,14 @@ namespace PEBakery.WPF
                 Model.SwitchNormalBuildInterface = true;
                 Model.BuildTreeItems.Clear();
                 Model.DisplayScript(Model.CurMainTree.Script);
+
+                // Report elapsed time
+                await printStatus;
+                string reason = s.RunResultReport();
+                if (reason != null)
+                    Model.StatusBarText = $"{p.ProjectName} build stopped by {reason}. ({s.Elapsed:h\\:mm\\:ss})";
+                else
+                    Model.StatusBarText = $"{p.ProjectName} build finished. ({s.Elapsed:h\\:mm\\:ss})";
 
                 if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
                 { // Open BuildLogWindow
@@ -252,7 +240,15 @@ namespace PEBakery.WPF
             // Force update of script interface
             LogWindowButton.Focus();
 
-            LogDialog = new LogWindow { Owner = this };
+            // Reset TaskBar progress state when build is not running
+            if (Engine.WorkingEngine == null)
+                Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
+
+            // If LogWindow button was colored by ReportLogState, show build log instead of system log
+            int selectedTabIndex = Global.MainViewModel.ReportLogState != LogState.None ? 1 : 0;
+            Global.MainViewModel.ReportLogState = LogState.None;
+
+            LogDialog = new LogWindow(selectedTabIndex) { Owner = this };
             LogDialog.Show();
         }
 

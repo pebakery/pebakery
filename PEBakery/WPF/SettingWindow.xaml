@@ -321,7 +321,7 @@
                                   IsChecked="{Binding GeneralOptimizeCode}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
-                                  Content="Show LogWindow after build"
+                                  Content="Show log viewer after build"
                                   IsChecked="{Binding GeneralShowLogAfterBuild}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"

@@ -37,6 +37,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace PEBakery.Core
 {
@@ -825,6 +826,12 @@ namespace PEBakery.Core
                 logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, ls.Depth));
                 s.ErrorHaltFlag = true;
             }
+            catch (ExecuteException e)
+            {
+                // ExecuteException is for commands not returning List<LogInfo>.
+                // Do not use LogInfo's default exception message generator here.
+                logs.Add(new LogInfo(LogState.Error, e.Message, cmd, ls.Depth));
+            }
             catch (InvalidCodeCommandException e)
             {
                 logs.Add(new LogInfo(LogState.Error, e, e.Cmd, ls.Depth));
@@ -1310,6 +1317,48 @@ namespace PEBakery.Core
             ErrorHaltFlag = false;
             UserHaltFlag = false;
             CmdHaltFlag = false;
+        }
+        #endregion
+
+        #region RunResultReport
+        public string RunResultReport()
+        {
+            string reason = null;
+            if (CmdHaltFlag || UserHaltFlag || ErrorHaltFlag || PassCurrentScriptFlag)
+            {
+                LogState logState = LogState.Success;
+                if (CmdHaltFlag)
+                {
+                    reason = "[Halt] command";
+                    logState = LogState.Error;
+                }
+                else if (UserHaltFlag)
+                {
+                    reason = "user";
+                    logState = LogState.Error;
+                }
+                else if (ErrorHaltFlag)
+                {
+                    reason = "error";
+                    logState = LogState.Error;
+                }
+                else if (PassCurrentScriptFlag) // Keep this check at last line, must have lowest priority
+                {
+                    reason = "[Exit] command";
+                    logState = LogState.Warning;
+                }
+                Debug.Assert(reason != null, "Invalid reason string");
+
+                MainViewModel.ReportLogState = logState;
+                MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
+                MainViewModel.BuildFullProgressBarValue = MainViewModel.BuildFullProgressBarMax;
+            }
+            else
+            {
+                MainViewModel.ReportLogState = LogState.Success;
+            }
+
+            return reason;
         }
         #endregion
 

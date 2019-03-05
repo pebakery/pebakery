@@ -1622,32 +1622,20 @@ namespace PEBakery.Core
                 // Run
                 await Engine.WorkingEngine.Run(logMsg);
 
-                // Cancel and Wait until PrintBuildElapsedStatus stops
+                // Cancel and wait until PrintBuildElapsedStatus stops
                 ct.Cancel();
-                await printStatus;
-                if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
-                {
-                    string reason = null;
-                    if (s.CmdHaltFlag)
-                        reason = "[Halt] command";
-                    else if (s.UserHaltFlag)
-                        reason = "user";
-                    else if (s.ErrorHaltFlag)
-                        reason = "error";
-                    else if (s.PassCurrentScriptFlag)
-                        reason = "[Exit] command";
-                    Debug.Assert(reason != null, "Invalid reason string");
-
-                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
-                }
-                else
-                {
-                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
-                }
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = true;
+
+                // Report elapsed time
+                await printStatus;
+                string reason = s.RunResultReport();
+                if (reason != null)
+                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                else
+                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
 
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)

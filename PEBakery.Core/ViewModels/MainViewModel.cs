@@ -187,6 +187,27 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
+        private Color _topPanelReportSuccess = Colors.Green;
+        public Color TopPanelReportSuccess
+        {
+            get => _topPanelReportSuccess;
+            set => SetProperty(ref _topPanelReportSuccess, value);
+        }
+
+        private Color _topPanelReportWarning = Colors.OrangeRed;
+        public Color TopPanelReportWarning
+        {
+            get => _topPanelReportWarning;
+            set => SetProperty(ref _topPanelReportWarning, value);
+        }
+
+        private Color _topPanelReportError = Colors.Red;
+        public Color TopPanelReportError
+        {
+            get => _topPanelReportError;
+            set => SetProperty(ref _topPanelReportError, value);
+        }
+
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
         public Color TreePanelBackground
         {
@@ -272,6 +293,13 @@ namespace PEBakery.Core.ViewModels
         {
             get => _scriptDescriptionText;
             set => SetProperty(ref _scriptDescriptionText, value);
+        }
+
+        private LogState _reportLogState;
+        public LogState ReportLogState
+        {
+            get => _reportLogState;
+            set => SetProperty(ref _reportLogState, value);
         }
 
         #region ScriptLogo
@@ -615,7 +643,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildConOutRedirectVisibility, value);
         }
 
-        private FontHelper.FontInfo _monospacedFont;
+        private FontHelper.FontInfo _monospacedFont = FontHelper.FontInfo.DefaultMonospaced;
         public FontHelper.FontInfo MonospacedFont
         {
             get => _monospacedFont;
@@ -674,9 +702,9 @@ namespace PEBakery.Core.ViewModels
             get => _buildCommandProgressVisibility;
             set => SetProperty(ref _buildCommandProgressVisibility, value);
         }
+        #endregion
 
-        // TaskBar Progress State
-        //
+        #region TaskBar Progress State
         // None - Hidden
         // Indeterminate - Pulsing green indicator
         // Normal - Green

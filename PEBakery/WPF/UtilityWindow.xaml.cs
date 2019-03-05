@@ -156,32 +156,22 @@ namespace PEBakery.WPF
                     await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
                     // Cancel and Wait until PrintBuildElapsedStatus stops
-                    // Report elapsed build time
                     ct.Cancel();
-                    await printStatus;
-                    if (s.CmdHaltFlag || s.UserHaltFlag || s.ErrorHaltFlag || s.PassCurrentScriptFlag)
-                    {
-                        string reason = null;
-                        if (s.CmdHaltFlag)
-                            reason = "[Halt] command";
-                        else if (s.UserHaltFlag)
-                            reason = "user";
-                        else if (s.ErrorHaltFlag)
-                            reason = "error";
-                        else if (s.PassCurrentScriptFlag)
-                            reason = "[Exit] command";
-                        Debug.Assert(reason != null, "Invalid reason string");
 
-                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
-                    }
-                    else
-                    {
-                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
-                    }
-
+                    // Turn off progress ring
                     mainModel.WorkInProgress = false;
+
+                    // Build ended, Switch to Normal View
                     mainModel.SwitchNormalBuildInterface = true;
                     mainModel.BuildTreeItems.Clear();
+                    
+                    // Report elapsed build time
+                    await printStatus;
+                    string reason = s.RunResultReport();
+                    if (reason != null)
+                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                    else
+                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
                     s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
                     if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)

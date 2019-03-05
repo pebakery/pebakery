@@ -127,16 +127,16 @@ namespace PEBakery.WPF
             switch (result)
             {
                 case SyntaxChecker.Result.Clean:
-                    brush = new SolidColorBrush(Colors.Green);
+                    brush = Brushes.Green;
                     break;
                 case SyntaxChecker.Result.Warning:
-                    brush = new SolidColorBrush(Colors.OrangeRed);
+                    brush = Brushes.OrangeRed;
                     break;
                 case SyntaxChecker.Result.Error:
-                    brush = new SolidColorBrush(Colors.Red);
+                    brush = Brushes.Red;
                     break;
                 default:
-                    brush = new SolidColorBrush(Colors.Gray);
+                    brush = Brushes.Gray;
                     break;
             }
             return brush;
@@ -442,7 +442,7 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region FontHelper
+    #region Font
     public class FontInfoDescriptionConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -514,6 +514,24 @@ namespace PEBakery.WPF
             return Binding.DoNothing;
         }
     }
+
+    public class BoolToFontWeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return FontWeights.Regular;
+            if (!(value is bool b))
+                return FontWeights.Regular;
+
+            return b ? FontWeights.Bold : FontWeights.Regular;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
     #endregion
 
     #region InverseBool
@@ -574,6 +592,47 @@ namespace PEBakery.WPF
                 return null;
 
             return b.Color;
+        }
+    }
+
+    public class MultiColorToSolidColorBrushConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values == null || values.Length != 5)
+                return null;
+            if (!(values[0] is LogState logState && 
+                values[1] is Color normal && 
+                values[2] is Color success && 
+                values[3] is Color warning &&
+                values[4] is Color error))
+                return null;
+
+            Color color;
+            switch (logState)
+            {
+                case LogState.Success:
+                    color = success;
+                    break;
+                case LogState.Warning:
+                    color = warning;
+                    break;
+                case LogState.Error:
+                    color = error;
+                    break;
+                default:
+                    color = normal;
+                    break;
+            }
+
+            SolidColorBrush brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing };
         }
     }
     #endregion

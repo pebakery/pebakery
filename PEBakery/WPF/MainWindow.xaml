@@ -40,6 +40,7 @@
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         Closing="Window_Closing"
         Width="{Binding WindowWidth, Mode=OneWayToSource, FallbackValue=900}" Height="720"
@@ -137,6 +138,7 @@
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
+        <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
@@ -256,13 +258,25 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="5"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="LogWindowButton"
                                Style="{StaticResource MainIconButtonStyle}"
                                Command="local:MainViewCommands.LogWindowCommand"
                                IconMaterialKind="CommentCheck"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                    <cc:IconButton.BaseForeground>
+                        <MultiBinding Converter="{StaticResource MultiColorToSolidColorBrushConverter}" 
+                                      Mode="OneWay" FallbackValue="White">
+                            <MultiBinding.Bindings>
+                                <Binding Path="ReportLogState"/>
+                                <Binding Path="TopPanelForeground"/>
+                                <Binding Path="TopPanelReportSuccess"/>
+                                <Binding Path="TopPanelReportWarning"/>
+                                <Binding Path="TopPanelReportError"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </cc:IconButton.BaseForeground>
+                </cc:IconButton>
                 <TextBlock Grid.Row="2" Grid.Column="5"
                            Text="Logs"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -419,6 +433,7 @@
                        Background="{Binding StatusBarBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=LightGray}"
                        Foreground="{Binding StatusBarForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                        Visibility="{Binding BottomStatusBarVisibility}"/>
+
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>

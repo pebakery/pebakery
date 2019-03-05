@@ -37,6 +37,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
@@ -181,6 +182,13 @@ namespace PEBakery.WPF
 
             // Save Build-Full log column layout
             WriteLayoutToSetting();
+
+            // Reset LogWindow Button color to normal
+            Global.MainViewModel.ReportLogState = LogState.None;
+
+            // Reset TaskBar progress state when build is not running
+            if (Engine.WorkingEngine == null)
+                Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
 
             Interlocked.Decrement(ref LogWindow.Count);
             CommandManager.InvalidateRequerySuggested();
