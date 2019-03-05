@@ -1633,9 +1633,9 @@ namespace PEBakery.Core
                 await printStatus;
                 string reason = s.RunResultReport();
                 if (reason != null)
-                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
                 else
-                    mainModel.StatusBarText = $"{logMsg} took {s.Elapsed:h\\:mm\\:ss}";
+                    mainModel.StatusBarText = $"{logMsg} processed in {s.Elapsed:h\\:mm\\:ss}";
 
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)
