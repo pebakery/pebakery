@@ -184,7 +184,7 @@ namespace PEBakery.WPF
             WriteLayoutToSetting();
 
             // Reset LogWindow Button color to normal
-            Global.MainViewModel.ReportLogState = LogState.None;
+            Global.MainViewModel.BuildEndedWithIssue = false;
 
             // Reset TaskBar progress state when build is not running
             if (Engine.WorkingEngine == null)

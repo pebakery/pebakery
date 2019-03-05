@@ -1326,36 +1326,23 @@ namespace PEBakery.Core
             string reason = null;
             if (CmdHaltFlag || UserHaltFlag || ErrorHaltFlag || PassCurrentScriptFlag)
             {
-                LogState logState = LogState.Success;
                 if (CmdHaltFlag)
-                {
                     reason = "[Halt] command";
-                    logState = LogState.Error;
-                }
                 else if (UserHaltFlag)
-                {
                     reason = "user";
-                    logState = LogState.Error;
-                }
                 else if (ErrorHaltFlag)
-                {
                     reason = "error";
-                    logState = LogState.Error;
-                }
                 else if (PassCurrentScriptFlag) // Keep this check at last line, must have lowest priority
-                {
                     reason = "[Exit] command";
-                    logState = LogState.Warning;
-                }
                 Debug.Assert(reason != null, "Invalid reason string");
 
-                MainViewModel.ReportLogState = logState;
+                MainViewModel.BuildEndedWithIssue = true;
                 MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
                 MainViewModel.BuildFullProgressBarValue = MainViewModel.BuildFullProgressBarMax;
             }
             else
             {
-                MainViewModel.ReportLogState = LogState.Success;
+                MainViewModel.BuildEndedWithIssue = false;
             }
 
             return reason;

@@ -244,9 +244,9 @@ namespace PEBakery.WPF
             if (Engine.WorkingEngine == null)
                 Global.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.None;
 
-            // If LogWindow button was colored by ReportLogState, show build log instead of system log
-            int selectedTabIndex = Global.MainViewModel.ReportLogState != LogState.None ? 1 : 0;
-            Global.MainViewModel.ReportLogState = LogState.None;
+            // If last build ended with issue, show build log instead of system log
+            int selectedTabIndex = Global.MainViewModel.BuildEndedWithIssue ? 1 : 0;
+            Global.MainViewModel.BuildEndedWithIssue = false;
 
             LogDialog = new LogWindow(selectedTabIndex) { Owner = this };
             LogDialog.Show();

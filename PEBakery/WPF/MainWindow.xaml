@@ -268,11 +268,9 @@
                         <MultiBinding Converter="{StaticResource MultiColorToSolidColorBrushConverter}" 
                                       Mode="OneWay" FallbackValue="White">
                             <MultiBinding.Bindings>
-                                <Binding Path="ReportLogState"/>
+                                <Binding Path="BuildEndedWithIssue"/>
                                 <Binding Path="TopPanelForeground"/>
-                                <Binding Path="TopPanelReportSuccess"/>
-                                <Binding Path="TopPanelReportWarning"/>
-                                <Binding Path="TopPanelReportError"/>
+                                <Binding Path="TopPanelReportIssueColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
                     </cc:IconButton.BaseForeground>

@@ -599,33 +599,14 @@ namespace PEBakery.WPF
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (values == null || values.Length != 5)
+            if (values == null || values.Length != 3)
                 return null;
-            if (!(values[0] is LogState logState && 
-                values[1] is Color normal && 
-                values[2] is Color success && 
-                values[3] is Color warning &&
-                values[4] is Color error))
+            if (!(values[0] is bool hasIssue && 
+                values[1] is Color normal &&  
+                values[2] is Color issue))
                 return null;
 
-            Color color;
-            switch (logState)
-            {
-                case LogState.Success:
-                    color = success;
-                    break;
-                case LogState.Warning:
-                    color = warning;
-                    break;
-                case LogState.Error:
-                    color = error;
-                    break;
-                default:
-                    color = normal;
-                    break;
-            }
-
-            SolidColorBrush brush = new SolidColorBrush(color);
+            SolidColorBrush brush = new SolidColorBrush(hasIssue ? issue : normal);
             brush.Freeze();
             return brush;
         }

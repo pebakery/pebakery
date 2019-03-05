@@ -187,25 +187,11 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _topPanelForeground, value);
         }
 
-        private Color _topPanelReportSuccess = Colors.Green;
-        public Color TopPanelReportSuccess
+        private Color _topPanelReportIssueColor = Colors.OrangeRed;
+        public Color TopPanelReportIssueColor
         {
-            get => _topPanelReportSuccess;
-            set => SetProperty(ref _topPanelReportSuccess, value);
-        }
-
-        private Color _topPanelReportWarning = Colors.OrangeRed;
-        public Color TopPanelReportWarning
-        {
-            get => _topPanelReportWarning;
-            set => SetProperty(ref _topPanelReportWarning, value);
-        }
-
-        private Color _topPanelReportError = Colors.Red;
-        public Color TopPanelReportError
-        {
-            get => _topPanelReportError;
-            set => SetProperty(ref _topPanelReportError, value);
+            get => _topPanelReportIssueColor;
+            set => SetProperty(ref _topPanelReportIssueColor, value);
         }
 
         private Color _treePanelBackground = Color.FromRgb(204, 204, 204);
@@ -295,11 +281,11 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _scriptDescriptionText, value);
         }
 
-        private LogState _reportLogState;
-        public LogState ReportLogState
+        private bool _buildEndedWithIssue = false;
+        public bool BuildEndedWithIssue
         {
-            get => _reportLogState;
-            set => SetProperty(ref _reportLogState, value);
+            get => _buildEndedWithIssue;
+            set => SetProperty(ref _buildEndedWithIssue, value);
         }
 
         #region ScriptLogo

@@ -687,6 +687,13 @@ namespace PEBakery.WPF
             set => SetProperty(ref _themeCustomTopPanelForeground, value);
         }
 
+        private Color _themeCustomTopPanelReportIssue;
+        public Color ThemeCustomTopPanelReportIssue
+        {
+            get => _themeCustomTopPanelReportIssue;
+            set => SetProperty(ref _themeCustomTopPanelReportIssue, value);
+        }
+
         private Color _themeCustomTreePanelBackground;
         public Color ThemeCustomTreePanelBackground
         {
@@ -1284,6 +1291,7 @@ namespace PEBakery.WPF
             ThemeType = Setting.Theme.ThemeType;
             ThemeCustomTopPanelBackground = Setting.Theme.CustomTopPanelBackground;
             ThemeCustomTopPanelForeground = Setting.Theme.CustomTopPanelForeground;
+            ThemeCustomTopPanelReportIssue = Setting.Theme.CustomTopPanelReportIssue;
             ThemeCustomTreePanelBackground = Setting.Theme.CustomTreePanelBackground;
             ThemeCustomTreePanelForeground = Setting.Theme.CustomTreePanelForeground;
             ThemeCustomTreePanelHighlight = Setting.Theme.CustomTreePanelHighlight;
@@ -1342,6 +1350,7 @@ namespace PEBakery.WPF
             Setting.Theme.ThemeType = ThemeType;
             Setting.Theme.CustomTopPanelBackground = ThemeCustomTopPanelBackground;
             Setting.Theme.CustomTopPanelForeground = ThemeCustomTopPanelForeground;
+            Setting.Theme.CustomTopPanelReportIssue = ThemeCustomTopPanelReportIssue;
             Setting.Theme.CustomTreePanelBackground = ThemeCustomTreePanelBackground;
             Setting.Theme.CustomTreePanelForeground = ThemeCustomTreePanelForeground;
             Setting.Theme.CustomTreePanelHighlight = ThemeCustomTreePanelHighlight;

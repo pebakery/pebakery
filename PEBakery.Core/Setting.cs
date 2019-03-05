@@ -150,9 +150,7 @@ namespace PEBakery.Core
             // Custom
             public Color CustomTopPanelBackground;
             public Color CustomTopPanelForeground;
-            public Color CustomTopPanelReportSuccess;
-            public Color CustomTopPanelReportWarning;
-            public Color CustomTopPanelReportError;
+            public Color CustomTopPanelReportIssue;
             public Color CustomTreePanelBackground;
             public Color CustomTreePanelForeground;
             public Color CustomTreePanelHighlight;
@@ -172,9 +170,7 @@ namespace PEBakery.Core
                 // Apply Classic Theme to Custom Properties
                 CustomTopPanelBackground = Colors.LightBlue;
                 CustomTopPanelForeground = Colors.Black;
-                CustomTopPanelReportSuccess = Colors.Green;
-                CustomTopPanelReportWarning = Colors.OrangeRed;
-                CustomTopPanelReportError = Colors.Red;
+                CustomTopPanelReportIssue = Colors.Red;
                 CustomTreePanelBackground = Colors.LightGreen;
                 CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
@@ -227,7 +223,7 @@ namespace PEBakery.Core
                     }
                 }
             }
-            public Color TopPanelReportSuccess
+            public Color TopPanelReportIssue
             {
                 get
                 {
@@ -237,45 +233,9 @@ namespace PEBakery.Core
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
-                            return Colors.Green;
+                            return Colors.Orange;
                         case ThemeType.Custom:
-                            return CustomTopPanelReportSuccess;
-                        default:
-                            throw new InvalidOperationException("Undefined theme preset");
-                    }
-                }
-            }
-            public Color TopPanelReportWarning
-            {
-                get
-                {
-                    switch (ThemeType)
-                    {
-                        case ThemeType.Black:
-                        case ThemeType.Red:
-                        case ThemeType.Green:
-                        case ThemeType.Blue:
-                            return Colors.OrangeRed;
-                        case ThemeType.Custom:
-                            return CustomTopPanelReportWarning;
-                        default:
-                            throw new InvalidOperationException("Undefined theme preset");
-                    }
-                }
-            }
-            public Color TopPanelReportError
-            {
-                get
-                {
-                    switch (ThemeType)
-                    {
-                        case ThemeType.Black:
-                        case ThemeType.Red:
-                        case ThemeType.Green:
-                        case ThemeType.Blue:
-                            return Colors.Red;
-                        case ThemeType.Custom:
-                            return CustomTopPanelReportError;
+                            return CustomTopPanelReportIssue;
                         default:
                             throw new InvalidOperationException("Undefined theme preset");
                     }
@@ -572,9 +532,7 @@ namespace PEBakery.Core
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
             Global.MainViewModel.TopPanelForeground = Theme.TopPanelForeground;
-            Global.MainViewModel.TopPanelReportSuccess = Theme.TopPanelReportSuccess;
-            Global.MainViewModel.TopPanelReportWarning = Theme.TopPanelReportWarning;
-            Global.MainViewModel.TopPanelReportError = Theme.TopPanelReportError;
+            Global.MainViewModel.TopPanelReportIssueColor = Theme.TopPanelReportIssue;
             Global.MainViewModel.TreePanelBackground = Theme.TreePanelBackground;
             Global.MainViewModel.TreePanelForeground = Theme.TreePanelForeground;
             Global.MainViewModel.TreePanelHighlight = Theme.TreePanelHighlight;
@@ -632,9 +590,7 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType)), // Enum (ThemeType)
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportSuccess)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportWarning)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportError)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight)), // Color
@@ -730,9 +686,7 @@ namespace PEBakery.Core
                 Theme.ThemeType = DictParser.ParseIntEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTopPanelReportSuccess = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportSuccess), Theme.CustomTopPanelReportSuccess);
-                Theme.CustomTopPanelReportWarning = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportWarning), Theme.CustomTopPanelReportWarning);
-                Theme.CustomTopPanelReportError = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportError), Theme.CustomTopPanelReportError);
+                Theme.CustomTopPanelReportIssue = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
                 Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
                 Theme.CustomTreePanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
                 Theme.CustomTreePanelHighlight = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
@@ -817,9 +771,7 @@ namespace PEBakery.Core
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), ((int)Theme.ThemeType).ToString()), // Integer
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportSuccess), WriteColor(Theme.CustomTopPanelReportSuccess)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportWarning), WriteColor(Theme.CustomTopPanelReportWarning)), // Color
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportError), WriteColor(Theme.CustomTopPanelReportError)), // Color
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), WriteColor(Theme.CustomTopPanelReportIssue)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), WriteColor(Theme.CustomTreePanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), WriteColor(Theme.CustomTreePanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), WriteColor(Theme.CustomTreePanelHighlight)), // Color
