@@ -28,6 +28,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+             xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
              mc:Ignorable="d" 
              x:Name="ColorEditorControl"
              d:DesignWidth="300" d:DesignHeight="20">
@@ -60,7 +61,7 @@
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="R"/>
-        <cc:NumberBox Grid.Column="3"
+        <ccc:NumberBox Grid.Column="3"
                       x:Name="RedNumberBox"
                       Minimum="0"
                       Maximum="255"
@@ -70,7 +71,7 @@
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="G"/>
-        <cc:NumberBox Grid.Column="5"
+        <ccc:NumberBox Grid.Column="5"
                       x:Name="GreenNumberBox"
                       Minimum="0"
                       Maximum="255"
@@ -80,7 +81,7 @@
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    Text="B"/>
-        <cc:NumberBox Grid.Column="7"
+        <ccc:NumberBox Grid.Column="7"
                       x:Name="BlueNumberBox"
                       Minimum="0"
                       Maximum="255"

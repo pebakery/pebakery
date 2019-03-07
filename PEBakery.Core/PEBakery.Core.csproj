@@ -177,6 +177,7 @@
     <Compile Include="ViewModels\RelayCommand.cs" />
     <Compile Include="ViewModels\ViewModelBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WpfControls\SelectTextOnFocus.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">

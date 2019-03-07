@@ -34,6 +34,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         FontSize="12"
         FontFamily="Segoe UI"
@@ -440,7 +441,7 @@
                                        Margin="0, 0, 0, 5"
                                        VerticalAlignment="Center"
                                        Text="Script Scale Factor (%)"/>
-                            <cc:NumberBox Grid.Row="2" Grid.Column="2"
+                            <ccc:NumberBox Grid.Row="2" Grid.Column="2"
                                           Margin="0, 0, 0, 5"
                                           Height="25"
                                           VerticalContentAlignment="Center"

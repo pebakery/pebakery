@@ -147,9 +147,6 @@
     <Compile Include="WPF\Controls\CorrectMenuItem.cs" />
     <Compile Include="WPF\Controls\EditCanvas.cs" />
     <Compile Include="WPF\Controls\DragCanvas.cs" />
-    <Compile Include="WPF\Controls\NumberBox.xaml.cs">
-      <DependentUpon>NumberBox.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WPF\Controls\ProgressRing.cs" />
     <Compile Include="WPF\Controls\TextBoxDialog.xaml.cs">
       <DependentUpon>TextBoxDialog.xaml</DependentUpon>
@@ -187,10 +184,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WPF\Controls\DonutLogo.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="WPF\Controls\NumberBox.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

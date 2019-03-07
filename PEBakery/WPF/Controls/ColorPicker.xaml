@@ -28,6 +28,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+             xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
              mc:Ignorable="d" 
              d:DesignWidth="410" d:DesignHeight="360"
              x:Name="ColorPickerControl"
@@ -152,39 +153,39 @@
                        FontWeight="SemiBold"
                        VerticalAlignment="Center"
                        Text="Red"/>
-            <cc:NumberBox Grid.Row="3"
-                          FontSize="14"
-                          x:Name="RedNumberBox"
-                          ValueChanged="RedNumberBox_ValueChanged"
-                          Minimum="0" 
-                          Maximum="255"
-                          Value="255"/>
+            <ccc:NumberBox Grid.Row="3"
+                           FontSize="14"
+                           x:Name="RedNumberBox"
+                           ValueChanged="RedNumberBox_ValueChanged"
+                           Minimum="0" 
+                           Maximum="255"
+                           Value="255"/>
             <TextBlock Grid.Row="4"
                        Margin="0, 10, 0, 0"
                        FontSize="15"
                        FontWeight="SemiBold"
                        VerticalAlignment="Center"
                        Text="Green"/>
-            <cc:NumberBox Grid.Row="5"
-                          FontSize="14"
-                          x:Name="GreenNumberBox"
-                          ValueChanged="GreenNumberBox_ValueChanged"
-                          Minimum="0" 
-                          Maximum="255"
-                          Value="0"/>
+            <ccc:NumberBox Grid.Row="5"
+                           FontSize="14"
+                           x:Name="GreenNumberBox"
+                           ValueChanged="GreenNumberBox_ValueChanged"
+                           Minimum="0" 
+                           Maximum="255"
+                           Value="0"/>
             <TextBlock Grid.Row="6" 
                        Margin="0, 10, 0, 0"
                        FontSize="15"
                        FontWeight="SemiBold"
                        VerticalAlignment="Center"
                        Text="Blue"/>
-            <cc:NumberBox Grid.Row="7"
-                          FontSize="14"
-                          x:Name="BlueNumberBox"
-                          ValueChanged="BlueNumberBox_ValueChanged"
-                          Minimum="0" 
-                          Maximum="255"
-                          Value="0"/>
+            <ccc:NumberBox Grid.Row="7"
+                           FontSize="14"
+                           x:Name="BlueNumberBox"
+                           ValueChanged="BlueNumberBox_ValueChanged"
+                           Minimum="0" 
+                           Maximum="255"
+                           Value="0"/>
         </Grid>
     </Grid>
 </UserControl>
