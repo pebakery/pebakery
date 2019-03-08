@@ -60,7 +60,7 @@
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
     </Window.Resources>
-    <Grid>
+    <Grid ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="60"/>

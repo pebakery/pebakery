@@ -39,7 +39,7 @@ namespace PEBakery.Core.WpfControls
         }
 
         public static readonly DependencyProperty ActiveProperty = DependencyProperty.RegisterAttached(nameof(Active),
-            typeof(bool), typeof(SelectTextOnFocus), new FrameworkPropertyMetadata(false, OnActiveChanged));
+            typeof(bool), typeof(SelectTextOnFocus), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits, OnActiveChanged));
         #endregion
 
         #region Depedency Property Get/Set

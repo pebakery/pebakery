@@ -38,6 +38,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:vm="clr-namespace:PEBakery.Core.ViewModels;assembly=PEBakery.Core"
         mc:Ignorable="d"
@@ -156,7 +157,7 @@
             </Setter>
         </Style>
     </Window.Resources>
-    <DockPanel>
+    <DockPanel ccc:SelectTextOnFocus.Active="True">
         <Grid DockPanel.Dock="Top"
               Height="{Binding TopPanelHeight, Mode=OneWay, FallbackValue=80}" 
               Background="{Binding TopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"

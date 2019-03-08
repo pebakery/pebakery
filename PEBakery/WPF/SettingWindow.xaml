@@ -122,7 +122,7 @@
         <local:ThemeTypeIsCustomConverter x:Key="ThemeTypeIsCustomConverter"/>
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
     </Window.Resources>
-    <Grid>
+    <Grid ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="50"/>

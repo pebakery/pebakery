@@ -34,6 +34,7 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         FontFamily="Segoe UI"

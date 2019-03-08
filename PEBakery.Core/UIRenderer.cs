@@ -278,7 +278,10 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
+            {
                 ManageTextBoxEvent(box, true);
+                box.SetValue(SelectTextOnFocus.ActiveProperty, true);
+            }
 
             if (uiCtrl.Text.Length == 0)
             { // No caption
@@ -1271,7 +1274,10 @@ namespace PEBakery.Core
             };
 
             if (_viewMode)
+            {
                 ManageFileBoxEvent(box, button, true);
+                box.SetValue(SelectTextOnFocus.ActiveProperty, true);
+            }
 
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition());
