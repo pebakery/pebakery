@@ -33,6 +33,7 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:cc="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         mc:Ignorable="d"
         Title="Edit Script"
         FontFamily="Segoe UI"
@@ -59,7 +60,7 @@
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
     </Window.Resources>
-    <Grid>
+    <Grid ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="60"/>
@@ -169,13 +170,13 @@
                                        VerticalAlignment="Center"
                                        FontWeight="Bold"
                                        Text="Level"/>
-                            <cc:NumberBox Grid.Row="2" Grid.Column="3"
-                                          x:Name="ScriptLevel"
-                                          VerticalAlignment="Center"
-                                          Minimum="-256"
-                                          Maximum="255"
-                                          IncrementUnit="1"
-                                          Value="{Binding ScriptLevel, Mode=TwoWay}"/>
+                            <ccc:NumberBox Grid.Row="2" Grid.Column="3"
+                                           x:Name="ScriptLevel"
+                                           VerticalAlignment="Center"
+                                           Minimum="-256"
+                                           Maximum="255"
+                                           IncrementUnit="1"
+                                           Value="{Binding ScriptLevel, Mode=TwoWay}"/>
 
                             <!-- Selected -->
                             <TextBlock Grid.Row="3" Grid.Column="2"
@@ -496,7 +497,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="X" />
-                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -505,7 +506,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Y"/>
-                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -514,7 +515,7 @@
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Width"/>
-                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -523,7 +524,7 @@
                                         <TextBlock Grid.Row="4" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Height" />
-                                        <cc:NumberBox Grid.Row="4" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="4" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -585,7 +586,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
                                                           Minimum="0"
@@ -631,7 +632,7 @@
                                         <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Value" />
-                                        <cc:NumberBox Grid.Row="0" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="0" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -639,7 +640,7 @@
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Min" />
-                                        <cc:NumberBox Grid.Row="1" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="1" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -647,7 +648,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Max" />
-                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="2" Grid.Column="1"
                                                           Minimum="0"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -655,7 +656,7 @@
                                         <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="Tick" />
-                                        <cc:NumberBox Grid.Row="3" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="3" Grid.Column="1"
                                                           Minimum="1"
                                                           VerticalContentAlignment="Center"
                                                           FontSize="11"
@@ -962,7 +963,7 @@
                                         <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Margin="0, 0, 5, 0"
                                                    Text="FontSize" />
-                                        <cc:NumberBox Grid.Row="2" Grid.Column="1"
+                                        <ccc:NumberBox Grid.Row="2" Grid.Column="1"
                                                               Minimum="0"
                                                               IncrementUnit="1"
                                                               IsEnabled="{Binding UICtrlBevelCaptionEnabled}"
@@ -1163,7 +1164,7 @@
                             <TextBlock Grid.Column="0" 
                                        VerticalAlignment="Center"
                                        Text="Script Scale Factor (%)"/>
-                            <cc:NumberBox Grid.Column="1"
+                            <ccc:NumberBox Grid.Column="1"
                                           Height="25"
                                           VerticalContentAlignment="Center"
                                           Minimum="50"

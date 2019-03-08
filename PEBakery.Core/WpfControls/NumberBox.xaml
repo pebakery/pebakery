@@ -28,6 +28,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:cc="clr-namespace:PEBakery.Core.WpfControls"
              mc:Ignorable="d" 
              d:DesignHeight="20" d:DesignWidth="100"
              Focusable="True"
@@ -46,6 +47,7 @@
 
         <TextBox Grid.Row="0" Grid.RowSpan="2"
                  Grid.Column="0"
+                 cc:SelectTextOnFocus.Active="True"
                  TextAlignment="Right"
                  VerticalContentAlignment="Center"
                  PreviewTextInput="TextBox_PreviewTextInput"
