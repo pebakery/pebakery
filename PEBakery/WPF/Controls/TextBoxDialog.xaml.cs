@@ -79,8 +79,6 @@ namespace PEBakery.WPF.Controls
             MessageText = message;
             InputText = defaultInput;
             MessageIcon = icon;
-
-            InputTextBox.SelectAll();
         }
 
         public TextBoxDialog(Window owner, string title, string message, PackIconMaterialKind icon = PackIconMaterialKind.None)
@@ -103,8 +101,6 @@ namespace PEBakery.WPF.Controls
             MessageText = message;
             InputText = defaultInput;
             MessageIcon = icon;
-
-            InputTextBox.SelectAll();
         }
         #endregion
 
