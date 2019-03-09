@@ -1111,7 +1111,7 @@ namespace PEBakery.Core.ViewModels
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref ScriptRefreshing);
-                if (Engine.WorkingEngine != null)
+                if (Engine.WorkingEngine == null)
                     WorkInProgress = true;
                 try
                 {
@@ -1136,7 +1136,7 @@ namespace PEBakery.Core.ViewModels
                 }
                 finally
                 {
-                    if (Engine.WorkingEngine != null)
+                    if (Engine.WorkingEngine == null)
                         WorkInProgress = false;
                     Interlocked.Decrement(ref ScriptRefreshing);
 
