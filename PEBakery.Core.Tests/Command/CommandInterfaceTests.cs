@@ -364,9 +364,9 @@ namespace PEBakery.Core.Tests.Command
         {
             EngineState s = EngineTests.CreateEngineState();
             string srcFile = StringEscaper.Preprocess(s, Path.Combine("%ProjectDir%", TestSuiteInterface, "ReadInterface.script"));
-            string scriptFile = Path.GetTempFileName();
+            string scriptFile = FileHelper.GetTempFile();
 
-            void SingleTemplate(string rawCode, string key, string comp, ErrorCheck check = ErrorCheck.Success)
+            void SingleTemplate(string rawCode, string key, string varResult, string lineResult, ErrorCheck check = ErrorCheck.Success)
             {
                 File.Copy(srcFile, scriptFile, true);
                 try
@@ -374,8 +374,14 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.Eval(s, rawCode, CodeType.WriteInterface, check);
                     if (check == ErrorCheck.Success)
                     {
+                        if (varResult != null)
+                        {
+                            Assert.IsTrue(s.Variables.ContainsKey(VarsType.Local, key));
+                            Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
+                        }
+
                         string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
-                        Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+                        Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                     }
                 }
                 finally
@@ -384,7 +390,7 @@ namespace PEBakery.Core.Tests.Command
                         File.Delete(scriptFile);
                 }
             }
-            void OptTemplate(List<string> rawCodes, (string key, string value)[] compTuples, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
+            void OptTemplate(List<string> rawCodes, (string key, string varResult, string lineResult)[] resultTuples, bool optSuccess, ErrorCheck check = ErrorCheck.Success)
             {
                 File.Copy(srcFile, scriptFile, true);
                 try
@@ -393,12 +399,20 @@ namespace PEBakery.Core.Tests.Command
                     EngineTests.EvalOptLines(s, opType, rawCodes, check);
                     if (check == ErrorCheck.Success)
                     {
-                        for (int i = 0; i < compTuples.Length; i++)
+                        for (int i = 0; i < resultTuples.Length; i++)
                         {
-                            string key = compTuples[i].key;
-                            string value = compTuples[i].value;
+                            string key = resultTuples[i].key;
+                            string varResult = resultTuples[i].varResult;
+                            string lineResult = resultTuples[i].lineResult;
+
+                            if (varResult != null)
+                            {
+                                Assert.IsTrue(s.Variables.ContainsKey(VarsType.Local, key));
+                                Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
+                            }
+
                             string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
-                            Assert.IsTrue(dest.Equals(value, StringComparison.Ordinal));
+                            Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                         }
                     }
                 }
@@ -411,141 +425,143 @@ namespace PEBakery.Core.Tests.Command
 
             // Common
             SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
-                @"PEBakery,1,0,20,20,200,21,StringValue");
+                null, @"PEBakery,1,0,20,20,200,21,StringValue");
             SingleTemplate($@"WriteInterface,Visible,{scriptFile},Interface,pTextBox1,False", @"pTextBox1",
-                @"Display,0,0,20,20,200,21,StringValue");
+                null, @"Display,0,0,20,20,200,21,StringValue");
             SingleTemplate($@"WriteInterface,PosX,{scriptFile},Interface,pTextBox1,30", @"pTextBox1",
-                @"Display,1,0,30,20,200,21,StringValue");
+                null, @"Display,1,0,30,20,200,21,StringValue");
             SingleTemplate($@"WriteInterface,PosY,{scriptFile},Interface,pTextBox1,30", @"pTextBox1",
-                @"Display,1,0,20,30,200,21,StringValue");
+                null, @"Display,1,0,20,30,200,21,StringValue");
             SingleTemplate($@"WriteInterface,Width,{scriptFile},Interface,pTextBox1,30", @"pTextBox1",
-                @"Display,1,0,20,20,30,21,StringValue");
+                null, @"Display,1,0,20,20,30,21,StringValue");
             SingleTemplate($@"WriteInterface,Height,{scriptFile},Interface,pTextBox1,10", @"pTextBox1",
-                @"Display,1,0,20,20,200,10,StringValue");
+                null, @"Display,1,0,20,20,200,10,StringValue");
             SingleTemplate($@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
-                @"Display,1,0,20,20,200,21,StringValue,__PEBakery");
+                null, @"Display,1,0,20,20,200,21,StringValue,__PEBakery");
 
             // 0 - TextBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
-                @"Display,1,0,20,20,200,21,PEBakery");
+                "PEBakery", @"Display,1,0,20,20,200,21,PEBakery");
 
             // 1 - TextLabel
             SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1",
-                @"PEBakery,1,1,20,50,230,18,8,Normal");
+                null, @"PEBakery,1,1,20,50,230,18,8,Normal");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextLabel1,PEBakery", @"pTextLabel1",
-                @"PEBakery,1,1,20,50,230,18,8,Normal");
+                null, @"PEBakery,1,1,20,50,230,18,8,Normal");
             SingleTemplate($@"WriteInterface,FontSize,{scriptFile},Interface,pTextLabel1,10", @"pTextLabel1",
-                @"Display,1,1,20,50,230,18,10,Normal");
+                null, @"Display,1,1,20,50,230,18,10,Normal");
             SingleTemplate($@"WriteInterface,FontWeight,{scriptFile},Interface,pTextLabel1,Bold", @"pTextLabel1",
-                @"Display,1,1,20,50,230,18,8,Bold");
+                null, @"Display,1,1,20,50,230,18,8,Bold");
             SingleTemplate($@"WriteInterface,FontWeight,{scriptFile},Interface,pTextLabel1,Error", @"pTextLabel1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 2 - NumberBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,2", @"pNumberBox1",
-                @"pNumberBox1,1,2,20,70,40,22,2,0,100,1");
+                "2", @"pNumberBox1,1,2,20,70,40,22,2,0,100,1");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,200", @"pNumberBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pNumberBox1,Str", @"pNumberBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,NumberMin,{scriptFile},Interface,pNumberBox1,10", @"pNumberBox1",
-                @"pNumberBox1,1,2,20,70,40,22,10,10,100,1");
+                "10", @"pNumberBox1,1,2,20,70,40,22,10,10,100,1");
             SingleTemplate($@"WriteInterface,NumberMax,{scriptFile},Interface,pNumberBox1,1", @"pNumberBox1",
-                @"pNumberBox1,1,2,20,70,40,22,1,0,1,1");
+                "1", @"pNumberBox1,1,2,20,70,40,22,1,0,1,1");
             SingleTemplate($@"WriteInterface,NumberTick,{scriptFile},Interface,pNumberBox1,5", @"pNumberBox1",
-                @"pNumberBox1,1,2,20,70,40,22,3,0,100,5");
+                null, @"pNumberBox1,1,2,20,70,40,22,3,0,100,5");
             SingleTemplate($@"WriteInterface,NumberMin,{scriptFile},Interface,pNumberBox1,Error", @"pNumberBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 3 - CheckBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pCheckBox1,False", @"pCheckBox1",
-                @"pCheckBox1,1,3,20,100,200,18,False");
+                "False", @"pCheckBox1,1,3,20,100,200,18,False");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pCheckBox1,Hello", @"pCheckBox1",
-                @"pCheckBox1,1,3,20,100,200,18,True,_Hello_,False");
+                null, @"pCheckBox1,1,3,20,100,200,18,True,_Hello_,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pCheckBox1,None", @"pCheckBox1",
-                @"pCheckBox1,1,3,20,100,200,18,True");
+                null, @"pCheckBox1,1,3,20,100,200,18,True");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pCheckBox1,True", @"pCheckBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 4 - ComboBox
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pComboBox1,B", @"pComboBox1",
-                @"B,1,4,20,130,150,21,A,B,C,D");
+                "B", @"B,1,4,20,130,150,21,A,B,C,D");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pComboBox1,E", @"pComboBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z", @"pComboBox1",
-                @"X,1,4,20,130,150,21,X,Y,Z");
+                "X", @"X,1,4,20,130,150,21,X,Y,Z");
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X$Y$Z,Delim=$", @"pComboBox1",
-                @"X,1,4,20,130,150,21,X,Y,Z");
+                "X", @"X,1,4,20,130,150,21,X,Y,Z");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pComboBox1,Hello", @"pComboBox1",
-                @"A,1,4,20,130,150,21,A,B,C,D,_Hello_,False");
+                null, @"A,1,4,20,130,150,21,A,B,C,D,_Hello_,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pComboBox1,None", @"pComboBox1",
-                @"A,1,4,20,130,150,21,A,B,C,D");
+                null, @"A,1,4,20,130,150,21,A,B,C,D");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pComboBox1,True", @"pComboBox1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 5 - Image
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pImage1,PEBakery", @"pImage1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pImage1,https://github.com/pebakery/pebakery", @"pImage1",
-                @"Logo.jpg,1,5,20,230,40,40,https://github.com/pebakery/pebakery");
+                null, @"Logo.jpg,1,5,20,230,40,40,https://github.com/pebakery/pebakery");
 
             // 6 - TextFile
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pTextFile1,PEBakery", @"pTextFile1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 8 - Button
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pButton1,PEBakery", @"pButton1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,World", @"pButton1",
-                @"ShowProgress,1,8,240,115,80,25,World,0,False");
+                null, @"ShowProgress,1,8,240,115,80,25,World,0,False");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pButton1,""""", @"pButton1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,None", @"pButton1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pButton1,True", @"pButton1",
-                @"ShowProgress,1,8,240,115,80,25,Hello,0,True");
+                null, @"ShowProgress,1,8,240,115,80,25,Hello,0,True");
 
             // 10 - WebLabel
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pWebLabel1,PEBakery", @"pWebLabel1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Url,{scriptFile},Interface,pWebLabel1,https://github.com/pebakery", @"pWebLabel1",
-                @"GitHub,1,10,250,160,32,18,https://github.com/pebakery");
+                null, @"GitHub,1,10,250,160,32,18,https://github.com/pebakery");
 
             // 11 - RadioButton
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioButton1,True", @"pRadioButton1",
-                @"pRadioButton1,1,11,250,180,100,20,True");
+                "True", @"pRadioButton1,1,11,250,180,100,20,True");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pRadioButton1,Hello", @"pRadioButton1",
-                @"pRadioButton1,1,11,250,180,100,20,False,_Hello_,False");
+                null, @"pRadioButton1,1,11,250,180,100,20,False,_Hello_,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioButton1,None", @"pRadioButton1",
-                @"pRadioButton1,1,11,250,180,100,20,False");
+                null, @"pRadioButton1,1,11,250,180,100,20,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioButton1,True", @"pRadioButton1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 12 - Bevel
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pBevel1,PEBakery", @"pBevel1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // 13 - FileBox
+            SingleTemplate($@"WriteInterface,Text,{scriptFile},Interface,pFileBox1,D:\PEBakery\Launcher.exe", @"pFileBox1",
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,13,240,230,200,20,file");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pFileBox1,D:\PEBakery\Launcher.exe", @"pFileBox1",
-                @"D:\PEBakery\Launcher.exe,1,13,240,230,200,20,file");
+                @"D:\PEBakery\Launcher.exe", @"D:\PEBakery\Launcher.exe,1,13,240,230,200,20,file");
 
             // 14 - RadioGroup
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2", @"pRadioGroup1",
-                @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2");
+                "2", @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2");
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,3", @"pRadioGroup1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,Items", @"pRadioGroup1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X|Y|Z", @"pRadioGroup1",
-                @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
+                "0", @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
             SingleTemplate($@"WriteInterface,Items,{scriptFile},Interface,pRadioGroup1,X$Y$Z,Delim=$", @"pRadioGroup1",
-                @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
+                "0", @"pRadioGroup1,1,14,20,160,150,60,X,Y,Z,0");
             SingleTemplate($@"WriteInterface,SectionName,{scriptFile},Interface,pRadioGroup1,Hello", @"pRadioGroup1",
-                @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0,_Hello_,False");
+                null, @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0,_Hello_,False");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,None", @"pRadioGroup1",
-                @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0");
+                null, @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0");
             SingleTemplate($@"WriteInterface,HideProgress,{scriptFile},Interface,pRadioGroup1,True", @"pRadioGroup1",
-                null, ErrorCheck.Error);
+                null, null, ErrorCheck.Error);
 
             // Optimization
             OptTemplate(new List<string>
@@ -553,11 +569,11 @@ namespace PEBakery.Core.Tests.Command
                 $@"WriteInterface,Value,{scriptFile},Interface,pRadioGroup1,2",
                 $@"WriteInterface,Items,{scriptFile},Interface,pComboBox1,X|Y|Z",
                 $@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery",
-            }, new (string, string)[]
+            }, new (string, string, string)[]
             {
-                ("pRadioGroup1",  @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2"),
-                (@"pComboBox1", @"X,1,4,20,130,150,21,X,Y,Z"),
-                ("pTextBox1", @"Display,1,0,20,20,200,21,StringValue,__PEBakery"),
+                ("pRadioGroup1", "2", @"pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2"),
+                (@"pComboBox1", "X", @"X,1,4,20,130,150,21,X,Y,Z"),
+                ("pTextBox1", null, @"Display,1,0,20,20,200,21,StringValue,__PEBakery"),
             }, true);
         }
         #endregion

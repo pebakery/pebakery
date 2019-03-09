@@ -238,7 +238,7 @@ namespace PEBakery.Core
             return IniReadWriter.WriteKey(Section.Script.RealPath, Section.Name, Key, ForgeRawLine(false));
         }
 
-        public static bool Update(List<UIControl> uiCtrls)
+        public static bool Update(IReadOnlyList<UIControl> uiCtrls)
         {
             if (uiCtrls.Count == 0)
                 return true;
@@ -292,41 +292,44 @@ namespace PEBakery.Core
             switch (Type)
             {
                 case UIControlType.TextLabel:
+                    // Text
                     if (strict)
                         value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.TextBox:
-                    {
+                    { // Value
                         UIInfo_TextBox info = Info.Cast<UIInfo_TextBox>();
                         value = StringEscaper.Unescape(info.Value);
                     }
                     break;
                 case UIControlType.NumberBox:
-                    {
+                    { // Value
                         UIInfo_NumberBox info = Info.Cast<UIInfo_NumberBox>();
                         value = info.Value.ToString();
                     }
                     break;
                 case UIControlType.CheckBox:
-                    {
+                    { // Value
                         UIInfo_CheckBox info = Info.Cast<UIInfo_CheckBox>();
                         value = info.Value ? "True" : "False";
                     }
                     break;
                 case UIControlType.ComboBox:
+                    // Text
                     value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.RadioButton:
-                    {
+                    { // Selected
                         UIInfo_RadioButton info = Info.Cast<UIInfo_RadioButton>();
                         value = info.Selected ? "True" : "False";
                     }
                     break;
                 case UIControlType.FileBox:
+                    // Text
                     value = StringEscaper.Unescape(Text);
                     break;
                 case UIControlType.RadioGroup:
-                    {
+                    { // Selected
                         UIInfo_RadioGroup info = Info.Cast<UIInfo_RadioGroup>();
                         value = info.Selected.ToString();
                     }
@@ -343,13 +346,14 @@ namespace PEBakery.Core
             switch (Type)
             {
                 case UIControlType.TextLabel:
+                    // Text
                     Text = StringEscaper.Escape(newValue);
 
                     logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                     success = true;
                     break;
                 case UIControlType.TextBox:
-                    {
+                    { // Value
                         UIInfo_TextBox uiInfo = Info.Cast<UIInfo_TextBox>();
                         uiInfo.Value = StringEscaper.Escape(newValue);
 
@@ -358,7 +362,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.NumberBox:
-                    {
+                    { // Value
                         UIInfo_NumberBox uiInfo = Info.Cast<UIInfo_NumberBox>();
 
                         // WB082 just write string value in case of error, but PEBakery will throw error
@@ -383,7 +387,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.CheckBox:
-                    {
+                    { // Value
                         UIInfo_CheckBox uiInfo = Info.Cast<UIInfo_CheckBox>();
 
                         if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
@@ -408,7 +412,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case UIControlType.ComboBox:
-                    {
+                    { // Text
                         UIInfo_ComboBox uiInfo = Info.Cast<UIInfo_ComboBox>();
 
                         int idx = uiInfo.Items.FindIndex(x => newValue.Equals(StringEscaper.Unescape(x), StringComparison.OrdinalIgnoreCase));

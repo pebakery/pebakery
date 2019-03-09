@@ -879,9 +879,9 @@ namespace PEBakery.Core
         /// <summary>
         /// Public interface for variables write/delete operation 
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="varKey"></param>
-        /// <param name="varValue"></param>
+        /// <param name="s">EngineState</param>
+        /// <param name="varKey">Key with its prefix/postfix. Ex) %A%, #1, #c, etc</param>
+        /// <param name="varValue">Value to write. Put "NIL" for deletion</param>
         /// <param name="global"></param>
         /// <param name="permanent"></param>
         /// <param name="expand"></param>

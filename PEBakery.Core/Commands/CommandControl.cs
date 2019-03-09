@@ -91,9 +91,10 @@ namespace PEBakery.Core.Commands
 
                             if (valid)
                             {
+                                // Update uiCtrl into file
                                 uiCtrl.Update();
 
-                                // Also update variables
+                                // Also update local variables
                                 logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
                                 return logs;
                             }
