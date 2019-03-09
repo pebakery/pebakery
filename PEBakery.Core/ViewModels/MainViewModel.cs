@@ -1111,7 +1111,8 @@ namespace PEBakery.Core.ViewModels
             return Task.Run(() =>
             {
                 Interlocked.Increment(ref ScriptRefreshing);
-                WorkInProgress = true;
+                if (Engine.WorkingEngine != null)
+                    WorkInProgress = true;
                 try
                 {
                     Stopwatch watch = Stopwatch.StartNew();
@@ -1135,7 +1136,8 @@ namespace PEBakery.Core.ViewModels
                 }
                 finally
                 {
-                    WorkInProgress = false;
+                    if (Engine.WorkingEngine != null)
+                        WorkInProgress = false;
                     Interlocked.Decrement(ref ScriptRefreshing);
 
                     // Enable Button/Context Menu Commands
