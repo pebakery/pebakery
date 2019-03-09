@@ -116,6 +116,7 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-IfElse");
             ScriptTemplate(scPath, "Process-IfElseChain01");
             ScriptTemplate(scPath, "Process-IfElseChain02");
+            ScriptTemplate(scPath, "Process-IfElseChain03");
         }
         #endregion
 

@@ -355,7 +355,8 @@ namespace PEBakery.Core.Commands
 
                 // Do not turn of ElseFlag for If command, to allow If-Else chain.
                 // https://github.com/pebakery/pebakery/issues/114
-                if (!(info.Link.Count == 1 && info.Link[0].Type == CodeType.If))
+                CodeCommand[] filtered = info.Link.Where(x => x.Type != CodeType.Comment).ToArray();
+                if (!(filtered.Length == 1 && filtered[0].Type == CodeType.If))
                     s.ElseFlag = false;
             }
             else
