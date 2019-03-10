@@ -572,7 +572,6 @@ namespace PEBakery.Core.Commands
 
         private readonly static Dictionary<UIControlType, InterfaceElement[]> _writeNeedVarUpdateDict = new Dictionary<UIControlType, InterfaceElement[]>()
         {
-            [UIControlType.TextLabel] = new InterfaceElement[] { InterfaceElement.Text },
             [UIControlType.TextBox] = new InterfaceElement[] { InterfaceElement.Value },
             [UIControlType.NumberBox] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.NumberMin, InterfaceElement.NumberMax, },
             [UIControlType.CheckBox] = new InterfaceElement[] { InterfaceElement.Value },
