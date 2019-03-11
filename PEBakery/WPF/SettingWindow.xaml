@@ -513,7 +513,6 @@
                         <Button Grid.Row="0" Grid.Column="3" 
                                 VerticalContentAlignment="Center"
                                 HorizontalContentAlignment="Center"
-                                IsEnabled="{Binding InterfaceUseCustomEditor}"
                                 Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
                             <Button.Content>

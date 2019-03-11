@@ -274,7 +274,7 @@ namespace PEBakery.WPF
 
         private void SelectCustomEditorPathCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.Setting.Interface.UseCustomEditor;
+            e.CanExecute = _m != null && _m.CanExecuteCommand && _m.InterfaceUseCustomEditor;
         }
 
         private void SelectCustomEditorPathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
