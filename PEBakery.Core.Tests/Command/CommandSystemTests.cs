@@ -164,7 +164,7 @@ namespace PEBakery.Core.Tests.Command
 
             void SingleTemplate(List<string> rawCodes, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.Delete(VarsType.Local, "Dest");
+                s.Variables.DeleteValue(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
                 EngineTests.EvalLines(s, rawCodes, check);
@@ -178,7 +178,7 @@ namespace PEBakery.Core.Tests.Command
             }
             void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.Delete(VarsType.Local, "Dest");
+                s.Variables.DeleteValue(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
                 (EngineState st, _) = EngineTests.EvalScript(treePath, check);
@@ -234,7 +234,7 @@ namespace PEBakery.Core.Tests.Command
 
                 void BaseTemplate(string rawCode, string exitKey, string compStr, bool enableCompat = false, ErrorCheck check = ErrorCheck.Success)
                 {
-                    s.Variables.Delete(VarsType.Local, exitKey);
+                    s.Variables.DeleteValue(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
                     if (enableCompat)
@@ -256,7 +256,7 @@ namespace PEBakery.Core.Tests.Command
                 {
                     File.Copy(srcBatch, destBatch, true);
 
-                    s.Variables.Delete(VarsType.Local, exitKey);
+                    s.Variables.DeleteValue(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
                     EngineTests.Eval(s, rawCode, CodeType.ShellExecuteDelete, check);

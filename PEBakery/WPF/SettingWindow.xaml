@@ -1014,9 +1014,10 @@
                     x:Name="SaveSettingButton"
                     Command="local:SettingViewCommands.SaveSettingCommand"
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                    Content="Save"/>
+                    Content="{Binding SaveButtonContent}"/>
             <Button Grid.Row="0"
                     Grid.Column="4"
+                    IsEnabled="{Binding CanExecuteCommand}"
                     IsCancel="True"
                     Content="Cancel"/>
         </Grid>

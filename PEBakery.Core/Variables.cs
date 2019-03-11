@@ -498,7 +498,7 @@ namespace PEBakery.Core
             return result ? Expand(value) : string.Empty;
         }
 
-        public bool Delete(VarsType type, string key)
+        public bool DeleteValue(VarsType type, string key)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             if (!vars.ContainsKey(key))
@@ -913,8 +913,8 @@ namespace PEBakery.Core
 
                     if (permanent)
                     {
-                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
-                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        bool globalResult = s.Variables.DeleteValue(VarsType.Global, key);
+                        bool localResult = s.Variables.DeleteValue(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
                             // Delete variable line from file
@@ -938,8 +938,8 @@ namespace PEBakery.Core
                     }
                     else // Global, Local
                     {
-                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
-                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        bool globalResult = s.Variables.DeleteValue(VarsType.Global, key);
+                        bool localResult = s.Variables.DeleteValue(VarsType.Local, key);
                         if (globalResult)
                             logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                         else if (localResult)
@@ -1007,7 +1007,7 @@ namespace PEBakery.Core
 
                         // Remove local variable if exist
                         if (log.State == LogState.Success)
-                            s.Variables.Delete(VarsType.Local, key);
+                            s.Variables.DeleteValue(VarsType.Local, key);
                     }
                     else if (permanent)
                     {
@@ -1037,7 +1037,7 @@ namespace PEBakery.Core
                             }
 
                             // Remove local variable if exist
-                            s.Variables.Delete(VarsType.Local, key);
+                            s.Variables.DeleteValue(VarsType.Local, key);
                         }
                         else
                         { // SetValue failed

@@ -59,6 +59,12 @@ namespace PEBakery.Core
             public const string Selected = "Selected";
             public const string Interface = "Interface";
             public const string InterfaceList = "InterfaceList";
+            // PathSetting
+            public const string PathSetting = "PathSetting";
+            public const string SourceDir = "SourceDir";
+            public const string TargetDir = "TargetDir";
+            public const string IsoFile = "ISOFile";
+
         }
         #endregion
 

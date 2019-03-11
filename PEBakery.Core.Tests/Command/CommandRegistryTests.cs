@@ -203,7 +203,7 @@ namespace PEBakery.Core.Tests.Command
             SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
                 Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
                 new CompatOption(), ErrorCheck.ParserError);
-            s.Variables.Delete(VarsType.Local, "Compat");
+            s.Variables.DeleteValue(VarsType.Local, "Compat");
 
             // Error
             ErrorTemplate($@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);

@@ -355,7 +355,7 @@ namespace PEBakery.Core.Tests.Command
         #region Template
         public void ReadTemplate(EngineState s, string rawCode, string listStr, string destCheck, ErrorCheck check = ErrorCheck.Success)
         {
-            s.Variables.Delete(VarsType.Local, "Dest");
+            s.Variables.DeleteValue(VarsType.Local, "Dest");
             s.Variables["ListStr"] = listStr;
 
             EngineTests.Eval(s, rawCode, CodeType.List, check);
@@ -369,7 +369,7 @@ namespace PEBakery.Core.Tests.Command
         public void WriteTemplate(EngineState s, string rawCode, string listStr, string destCheck, ErrorCheck check = ErrorCheck.Success)
         {
             if (listStr == null)
-                s.Variables.Delete(VarsType.Local, "listStr");
+                s.Variables.DeleteValue(VarsType.Local, "listStr");
             else
                 s.Variables["ListStr"] = listStr;
 
