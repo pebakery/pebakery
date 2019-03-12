@@ -1560,7 +1560,7 @@ namespace PEBakery.Core
             CreateTable<LogModel.BuildLog>();
         }
 
-        #region ClearTable
+        #region ClearTable, ClearBuildLog
         public struct ClearTableOptions
         {
             public bool SystemLog;
@@ -1572,16 +1572,31 @@ namespace PEBakery.Core
 
         public void ClearTable(ClearTableOptions opts)
         {
-            if (opts.SystemLog)
-                DeleteAll<LogModel.SystemLog>();
-            if (opts.BuildInfo)
-                DeleteAll<LogModel.BuildInfo>();
-            if (opts.Script)
-                DeleteAll<LogModel.Script>();
-            if (opts.BuildLog)
-                DeleteAll<LogModel.BuildLog>();
-            if (opts.Variable)
-                DeleteAll<LogModel.Variable>();
+            RunInTransaction(() =>
+            {
+                if (opts.SystemLog)
+                    DeleteAll<LogModel.SystemLog>();
+                if (opts.BuildInfo)
+                    DeleteAll<LogModel.BuildInfo>();
+                if (opts.Script)
+                    DeleteAll<LogModel.Script>();
+                if (opts.BuildLog)
+                    DeleteAll<LogModel.BuildLog>();
+                if (opts.Variable)
+                    DeleteAll<LogModel.Variable>();
+            });
+            Execute("VACUUM");
+        }
+
+        public void ClearBuildLog(int buildId)
+        {
+            RunInTransaction(() =>
+            {
+                Table<LogModel.Variable>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.BuildLog>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.Script>().Delete(x => x.BuildId == buildId);
+                Table<LogModel.BuildInfo>().Delete(x => x.Id == buildId);
+            });
             Execute("VACUUM");
         }
         #endregion

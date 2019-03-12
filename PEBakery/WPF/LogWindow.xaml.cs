@@ -343,35 +343,65 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                await Task.Run(() =>
+                switch (_m.SelectedTabIndex)
                 {
-                    switch (_m.SelectedTabIndex)
-                    {
-                        case 0: // System Log 
+                    case 0: // System Log 
+                        await Task.Run(() =>
+                        {
                             _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
                             {
                                 SystemLog = true,
                             });
-                            _m.RefreshSystemLog();
-                            break;
-                        case 1: // Build Log
-                            _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
-                            {
-                                BuildInfo = true,
-                                BuildLog = true,
-                                Script = true,
-                                Variable = true,
-                            });
-                            _m.RefreshBuildLog();
-                            break;
-                    }
-                });
+                        });
+                        _m.RefreshSystemLog();
+                        break;
+                    case 1: // Build Log
+                        // Open Context Menu
+                        ContextMenu menu = FindResource("ClearBuildLogContextMenu") as ContextMenu;
+                        Debug.Assert(menu != null);
+                        if (e.Source is Button button)
+                        {
+                            menu.PlacementTarget = button;
+                            menu.IsOpen = true;
+                        }
+                        // Will be redirected to ClearCurrentBuildCommand_Executed or ClearEntireCommand_Executed
+
+                        break;
+                }
             }
             finally
             {
                 _m.CanExecuteCommand = true;
                 CommandManager.InvalidateRequerySuggested();
             }
+        }
+
+        private async void ClearCurrentBuildCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.CheckSelectBuildIndex())
+                return;
+            int buildId = _m.BuildEntries[_m.SelectedBuildIndex].Id;
+
+            await Task.Run(() =>
+            {
+                _m.Logger.Db.ClearBuildLog(buildId);
+            });
+            _m.RefreshBuildLog();
+        }
+
+        private async void ClearEntireCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            await Task.Run(() =>
+            {
+                _m.Logger.Db.ClearTable(new LogDatabase.ClearTableOptions
+                {
+                    BuildInfo = true,
+                    BuildLog = true,
+                    Script = true,
+                    Variable = true,
+                });
+            });
+            _m.RefreshBuildLog();
         }
 
         private void ExportCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -931,6 +961,8 @@ namespace PEBakery.WPF
                 new KeyGesture(Key.F5),
             });
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearCurrentBuildCommand = new RoutedUICommand("Clear only current build", "ClearCurrentBuild", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear entire build", "ClearEntireBuild", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
         public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
         public static readonly RoutedCommand ResetLayoutCommand = new RoutedUICommand("Reset Layout", "Reset Layout", typeof(LogViewCommands));

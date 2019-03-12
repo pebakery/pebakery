@@ -59,6 +59,14 @@
                         Command="local:LogViewCommands.ClearCommand"
                         CanExecute="ClearCommand_CanExecute"
                         Executed="ClearCommand_Executed"/>
+        <CommandBinding x:Name="ClearCurrentBuildCommand"
+                        Command="local:LogViewCommands.ClearCurrentBuildCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearCurrentBuildCommand_Executed"/>
+        <CommandBinding x:Name="ClearEntireBuildCommand"
+                        Command="local:LogViewCommands.ClearEntireBuildCommand"
+                        CanExecute="ClearCommand_CanExecute"
+                        Executed="ClearEntireCommand_Executed"/>
         <CommandBinding x:Name="ExportCommand"
                         Command="local:LogViewCommands.ExportCommand"
                         CanExecute="Command_CanExecute"
@@ -116,6 +124,10 @@
             <CheckBox IsChecked="{Binding BuildFullLogLineNumberVisible}" Content="Line #" />
             <Separator />
             <MenuItem Header="Reset Layout" Command="local:LogViewCommands.ResetLayoutCommand"/>
+        </ContextMenu>
+        <ContextMenu x:Key="ClearBuildLogContextMenu" x:Shared="true">
+            <MenuItem Command="local:LogViewCommands.ClearCurrentBuildCommand"/>
+            <MenuItem Command="local:LogViewCommands.ClearEntireBuildCommand"/>
         </ContextMenu>
         <!-- Converters -->
         <local:LocalTimeToStrConverter x:Key="LocalTimeToStrConverter"/>
@@ -511,8 +523,7 @@
                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                     Visibility="{Binding BuildLogSelected}"
                     ContextMenu="{DynamicResource FullBuildLogColumnContextMenu}"
-                    Content="Options">
-            </Button>
+                    Content="Options"/>
         </DockPanel>
     </Grid>
 </Window>
