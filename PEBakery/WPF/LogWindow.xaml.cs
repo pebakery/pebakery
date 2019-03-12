@@ -357,6 +357,7 @@ namespace PEBakery.WPF
                         break;
                     case 1: // Build Log
                         // Open Context Menu
+                        // Will be redirected to ClearCurrentBuildCommand_Executed or ClearEntireCommand_Executed
                         ContextMenu menu = FindResource("ClearBuildLogContextMenu") as ContextMenu;
                         Debug.Assert(menu != null);
                         if (e.Source is Button button)
@@ -364,8 +365,6 @@ namespace PEBakery.WPF
                             menu.PlacementTarget = button;
                             menu.IsOpen = true;
                         }
-                        // Will be redirected to ClearCurrentBuildCommand_Executed or ClearEntireCommand_Executed
-
                         break;
                 }
             }
@@ -962,7 +961,7 @@ namespace PEBakery.WPF
             });
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
         public static readonly RoutedCommand ClearCurrentBuildCommand = new RoutedUICommand("Clear only current build", "ClearCurrentBuild", typeof(LogViewCommands));
-        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear entire build", "ClearEntireBuild", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear entire builds", "ClearEntireBuild", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
         public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
         public static readonly RoutedCommand ResetLayoutCommand = new RoutedUICommand("Reset Layout", "Reset Layout", typeof(LogViewCommands));
