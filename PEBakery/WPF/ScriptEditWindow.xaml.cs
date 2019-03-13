@@ -71,7 +71,7 @@ namespace PEBakery.WPF
             bool scriptSaved = false;
             if (m.ScriptHeaderNotSaved)
             {
-                switch (MessageBox.Show(this, "The script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show(this, "The script header was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         if (m.WriteScriptGeneral(false))
@@ -95,7 +95,7 @@ namespace PEBakery.WPF
 
             if (m.InterfaceNotSaved)
             {
-                switch (MessageBox.Show(this, "The interface was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show(this, "The interface was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
@@ -2688,19 +2688,19 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else if (sender.Equals("TextFileAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface must be saved before editing a text file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing a text file.\r\n\r\nSave changes?";
                     extFilter = "Text Files|*.txt;*.rtf|All Files|*.*";
                 }
                 else if (sender.Equals("ButtonPictureAttach", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                     extFilter = "Image Files|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg";
                 }
                 else
@@ -2930,17 +2930,17 @@ namespace PEBakery.WPF
                 if (sender.Equals("ImageReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Image;
-                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                 }
                 else if (sender.Equals("TextFileReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.TextFile;
-                    saveConfirmMsg = "The interface must be saved before editing text a file.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing text a file.\r\n\r\nSave changes?";
                 }
                 else if (sender.Equals("ButtonPictureReset", StringComparison.Ordinal))
                 {
                     selectedType = UIControlType.Button;
-                    saveConfirmMsg = "The interface must be saved before editing an image.\r\nSave changes?";
+                    saveConfirmMsg = "The interface must be saved before editing an image.\r\n\r\nSave changes?";
                 }
                 else
                 {
@@ -3321,7 +3321,7 @@ namespace PEBakery.WPF
                     if (EncodedFile.ContainsFile(Script, item.Name, AttachNewFileName))
                     {
                         MessageBoxResult result = MessageBox.Show(
-                            $"The attached file [{AttachNewFileName}] will be overwritten.\r\nWould you like to proceed?",
+                            $"The attached file [{AttachNewFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
                             "Confirm",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Error);
@@ -3527,7 +3527,7 @@ namespace PEBakery.WPF
                 if (errMsg != null)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show(_window, $"Unable to read script logo\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Unable to read script logo\r\n\r\n[Message]\r\n\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 

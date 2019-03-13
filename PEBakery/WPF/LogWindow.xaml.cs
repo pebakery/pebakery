@@ -960,8 +960,8 @@ namespace PEBakery.WPF
                 new KeyGesture(Key.F5),
             });
         public static readonly RoutedCommand ClearCommand = new RoutedUICommand("Clear logs", "Clear", typeof(LogViewCommands));
-        public static readonly RoutedCommand ClearCurrentBuildCommand = new RoutedUICommand("Clear only current build", "ClearCurrentBuild", typeof(LogViewCommands));
-        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear entire builds", "ClearEntireBuild", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearCurrentBuildCommand = new RoutedUICommand("Clear current build log", "ClearCurrentBuild", typeof(LogViewCommands));
+        public static readonly RoutedCommand ClearEntireBuildCommand = new RoutedUICommand("Clear all build logs", "ClearEntireBuild", typeof(LogViewCommands));
         public static readonly RoutedCommand ExportCommand = new RoutedUICommand("Export logs", "Export", typeof(LogViewCommands));
         public static readonly RoutedCommand LogOptionsCommand = new RoutedUICommand("Log Options", "Options", typeof(LogViewCommands));
         public static readonly RoutedCommand ResetLayoutCommand = new RoutedUICommand("Reset Layout", "Reset Layout", typeof(LogViewCommands));

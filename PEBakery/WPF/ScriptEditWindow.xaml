@@ -1121,7 +1121,7 @@
                                                      VerticalContentAlignment="Center"
                                                      PreviewTextInput="SectionName_PreviewTextInput"
                                                      Text="{Binding UICtrlSectionToRun, UpdateSourceTrigger=Default}"
-                                                     ToolTip="Keep here blank to disable optional engine run."/>
+                                                     ToolTip="Leave this field blank to disable optional engine run."/>
                                             <CheckBox Content="Hide Progress"
                                                       IsChecked="{Binding UICtrlHideProgress}"/>
                                         </StackPanel>
