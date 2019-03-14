@@ -554,17 +554,17 @@
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
                                 x:Name="BlackThemeButton"
-                                Background="Black"
+                                Background="#FF2C2C2C"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Content="Black">
+                                Content="Dark">
                             <Button.CommandParameter>
                                 <s:Int32>0</s:Int32>
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="3" 
-                                Background="DarkRed"
+                                Background="#FFA4373A"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -574,7 +574,7 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="4" 
-                                Background="DarkGreen"
+                                Background="#FF2A6E52"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -584,7 +584,7 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="5" 
-                                Background="DarkBlue"
+                                Background="#FF2C6E97"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"

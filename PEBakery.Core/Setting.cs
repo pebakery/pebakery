@@ -134,7 +134,7 @@ namespace PEBakery.Core
 
         public enum ThemeType
         {
-            Black = 0,
+            Dark = 0,
             Red = 1,
             Green = 2,
             Blue = 3,
@@ -166,18 +166,30 @@ namespace PEBakery.Core
 
             public void Default()
             {
-                ThemeType = ThemeType.Black;
+                ThemeType = ThemeType.Dark;
                 // Apply Classic Theme to Custom Properties
-                CustomTopPanelBackground = Colors.LightBlue;
-                CustomTopPanelForeground = Colors.Black;
+                //CustomTopPanelBackground = Colors.LightBlue;
+                //CustomTopPanelForeground = Colors.Black;
+                //CustomTopPanelReportIssue = Colors.Red;
+                //CustomTreePanelBackground = Colors.LightGreen;
+                //CustomTreePanelForeground = Colors.Black;
+                //CustomTreePanelHighlight = Colors.Red;
+                //CustomScriptPanelBackground = Colors.LightYellow;
+                //CustomScriptPanelForeground = Colors.Black;
+                //CustomStatusBarBackground = Colors.LightGray;
+                //CustomStatusBarForeground = Colors.Black;
+
+                //TODO: Remove this before merging and put classic theme back to custom
+                CustomTopPanelBackground = Color.FromRgb(44, 44, 44);
+                CustomTopPanelForeground = Colors.White;
                 CustomTopPanelReportIssue = Colors.Red;
-                CustomTreePanelBackground = Colors.LightGreen;
-                CustomTreePanelForeground = Colors.Black;
+                CustomTreePanelBackground = Color.FromRgb(66, 66, 66);
+                CustomTreePanelForeground = Color.FromRgb(215, 215, 215);
                 CustomTreePanelHighlight = Colors.Red;
-                CustomScriptPanelBackground = Colors.LightYellow;
-                CustomScriptPanelForeground = Colors.Black;
-                CustomStatusBarBackground = Colors.LightGray;
-                CustomStatusBarForeground = Colors.Black;
+                CustomScriptPanelBackground = Color.FromRgb(83, 83, 83);
+                CustomScriptPanelForeground = Colors.White;
+                CustomStatusBarBackground = Color.FromRgb(44, 44, 44);
+                CustomStatusBarForeground = Color.FromRgb(240, 240, 240);
             }
 
             #region Properties
@@ -187,14 +199,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Colors.Black;
+                        case ThemeType.Dark:
+                            return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
-                            return Colors.DarkRed;
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Colors.DarkGreen;
+                            return Color.FromRgb(42, 110, 82);
                         case ThemeType.Blue:
-                            return Colors.DarkBlue;
+                            return Color.FromRgb(47, 82, 108); // darker 47 82 108 or lighter 44 110 151
                         case ThemeType.Custom:
                             return CustomTopPanelBackground;
                         default:
@@ -208,8 +220,8 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                            return Colors.White;
                         case ThemeType.Red:
                             return Colors.White;
                         case ThemeType.Green:
@@ -229,7 +241,7 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -247,14 +259,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(204, 204, 204);
+                        case ThemeType.Dark:
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 180, 180);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Green:
-                            return Color.FromRgb(180, 255, 180);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Blue:
-                            return Color.FromRgb(180, 180, 255);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomTreePanelBackground;
                         default:
@@ -268,7 +280,8 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                            return Colors.Black; // Color.FromRgb(215, 215, 215);
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -286,14 +299,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Colors.Red;
+                        case ThemeType.Dark:
+                            return Color.FromRgb(83, 83, 83);
                         case ThemeType.Red:
-                            return Colors.DarkRed;
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Colors.DarkGreen;
+                            return Color.FromRgb(42, 110, 82);
                         case ThemeType.Blue:
-                            return Colors.DarkBlue;
+                            return Color.FromRgb(47, 82, 108);
                         case ThemeType.Custom:
                             return CustomTreePanelHighlight;
                         default:
@@ -307,14 +320,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 230, 230);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Green:
-                            return Color.FromRgb(230, 255, 230);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Blue:
-                            return Color.FromRgb(230, 230, 255);
+                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomScriptPanelBackground;
                         default:
@@ -328,7 +341,8 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                            return Colors.Black;
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -346,14 +360,14 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
-                            return Color.FromRgb(238, 238, 238);
+                        case ThemeType.Dark:
+                            return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
-                            return Color.FromRgb(255, 210, 210);
+                            return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
-                            return Color.FromRgb(210, 255, 210);
+                            return Color.FromRgb(42, 110, 82);
                         case ThemeType.Blue:
-                            return Color.FromRgb(210, 210, 255);
+                            return Color.FromRgb(47, 82, 108);
                         case ThemeType.Custom:
                             return CustomStatusBarBackground;
                         default:
@@ -367,11 +381,13 @@ namespace PEBakery.Core
                 {
                     switch (ThemeType)
                     {
-                        case ThemeType.Black:
+                        case ThemeType.Dark:
+                            return Color.FromRgb(240, 240, 240);
                         case ThemeType.Red:
                         case ThemeType.Green:
+                            return Colors.White;
                         case ThemeType.Blue:
-                            return Colors.Black;
+                            return Colors.White;
                         case ThemeType.Custom:
                             return CustomStatusBarForeground;
                         default:
