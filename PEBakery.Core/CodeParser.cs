@@ -1593,7 +1593,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 06 Archive
                 case CodeType.Compress:
-                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>[,CompressLevel]
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1645,12 +1645,27 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel);
                     }
                 case CodeType.Decompress:
-                    { // Decompress,<SrcArchive>,<DestDir>
-                        const int argCount = 2;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    { // Decompress,<SrcArchive>,<DestDir>[,Password=<Str>]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_Decompress(args[0], args[1]);
+                        string password = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            const string passwordKey = "Password=";
+                            if (arg.StartsWith(passwordKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (password != null)
+                                    throw new InvalidCommandException("Argument <Password> cannot be duplicated", rawCode);
+                                password = arg.Substring(passwordKey.Length);
+                            }
+                        }
+
+                        return new CodeInfo_Decompress(args[0], args[1], password);
                     }
                 case CodeType.Expand:
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]

@@ -2106,7 +2106,7 @@ namespace PEBakery.Core
     #region CodeInfo 06 - Archive
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
-    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel]
+    { // Compress,<Format>,<SrcPath>,<DestArchive>[,Password=<Str>][,CompressLevel]
         public ArchiveFile.ArchiveCompressFormat Format;
         public string SrcPath;
         public string DestArchive;
@@ -2144,21 +2144,22 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(CompressLevel.ToString().ToUpper());
             }
-
             return b.ToString();
         }
     }
 
     [Serializable]
     public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<SrcArchive>,<DestDir>
+    { // Decompress,<SrcArchive>,<DestDir>[,Password=<Str>]
         public string SrcArchive;
         public string DestDir;
+        public string Password;
 
-        public CodeInfo_Decompress(string srcArchive, string destArchive)
+        public CodeInfo_Decompress(string srcArchive, string destArchive, string password)
         {
             SrcArchive = srcArchive;
             DestDir = destArchive;
+            Password = password;
         }
 
         public override string ToString()
@@ -2167,6 +2168,11 @@ namespace PEBakery.Core
             b.Append(SrcArchive);
             b.Append(",");
             b.Append(DestDir);
+            if (Password != null)
+            {
+                b.Append(",");
+                b.Append(Password);
+            }
             return b.ToString();
         }
     }

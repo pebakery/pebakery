@@ -318,21 +318,24 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void FileTemplate(string archiveFile, string compFile)
+            void FileTemplate(string archiveFile, string originDir, string originFile, string password = null)
             {
                 Debug.Assert(archiveFile != null);
-                string archiveType = Path.GetExtension(archiveFile).Substring(1);
-                string archiveName = archiveFile.Substring(0, archiveFile.Length - (archiveType.Length + 1));
 
                 EngineState s = EngineTests.CreateEngineState();
                 string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-                string srcPath = Path.Combine(dirPath, archiveName, compFile);
+                string srcPath = Path.Combine(dirPath, originDir, originFile);
                 string destDir = FileHelper.GetTempDir();
-                string destPath = Path.Combine(destDir, compFile);
+                string destPath = Path.Combine(destDir, originFile);
 
                 try
                 {
-                    string rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
+                    string rawCode;
+                    if (password == null)
+                        rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\"";
+                    else
+                        rawCode = $"Decompress,\"%TestBench%\\CommandArchive\\{archiveFile}\",\"{destDir}\",Password={password}";
+
                     EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
 
                     using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -355,9 +358,13 @@ namespace PEBakery.Core.Tests.Command
             DirTemplate("France.zip");
             DirTemplate("France.7z");
             DirTemplate("France.rar"); // RAR5
-            FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo.jpg");
-            FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo.jpg");
-            FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo.jpg"); // RAR2.9
+            FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
+            FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo", "Korean_IME_Logo.jpg"); // RAR2.9
+            // Decompress password-protected archives
+            FileTemplate("Password_ZipCrypto.zip", "Password", "Password.txt", "abcxyz");
+            FileTemplate("Password_AES256.zip", "Password", "Password.txt", "abcxyz");
+            FileTemplate("Password_AES256.7z", "Password", "Password.txt", "abcxyz");
         }
         #endregion
 

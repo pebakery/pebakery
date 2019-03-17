@@ -87,46 +87,83 @@ namespace PEBakery.Core.Commands
             Directory.CreateDirectory(FileHelper.GetDirNameEx(destArchive));
 
             // Prepare SevenZipSharp compressor
-            SevenZipCompressor compressor = new SevenZipCompressor
+            string tempDir = FileHelper.GetTempDir();
+            try
             {
-                ArchiveFormat = outFormat,
-                CompressionMode = appendMode ? CompressionMode.Append : CompressionMode.Create,
-                CompressionLevel = compLevel,
-            };            
-
-            // Set filename encoding to UTF-8
-            // 7z files always use Unicode filename, so no action is required.
-            switch (outFormat)
-            {
-                case OutArchiveFormat.Zip:
-                    compressor.CustomParameters["cu"] = "on"; // Force UTF-8 for filename
-                    break;
-            }
-
-            string wildcard = Path.GetFileName(srcPath);
-            if (!StringHelper.IsWildcard(wildcard))
-            { // No wildcard
-                if (File.Exists(srcPath))
+                SevenZipCompressor compressor = new SevenZipCompressor(tempDir)
                 {
-                    // Compressor Options
-                    compressor.DirectoryStructure = false;
+                    ArchiveFormat = outFormat,
+                    CompressionMode = appendMode ? CompressionMode.Append : CompressionMode.Create,
+                    CompressionLevel = compLevel,
+                };
 
-                    // Compressor Callbacks
-                    compressor.Compressing += ReportCompressProgress;
-
-                    s.MainViewModel.SetBuildCommandProgress("Compress Progress");
-                    try
-                    {
-                        compressor.CompressFiles(destArchive, srcPath);
-                    }
-                    finally
-                    {
-                        compressor.Compressing -= ReportCompressProgress;
-                        s.MainViewModel.ResetBuildCommandProgress();
-                    }
+                // Set filename encoding to UTF-8
+                // 7z files always use Unicode filename, so no action is required.
+                switch (outFormat)
+                {
+                    case OutArchiveFormat.Zip:
+                        compressor.CustomParameters["cu"] = "on"; // Force UTF-8 for filename
+                        break;
                 }
-                else if (Directory.Exists(srcPath))
-                {
+
+                string wildcard = Path.GetFileName(srcPath);
+                if (!StringHelper.IsWildcard(wildcard))
+                { // No wildcard
+                    if (File.Exists(srcPath))
+                    {
+                        // Compressor Options
+                        compressor.DirectoryStructure = false;
+
+                        // Compressor Callbacks
+                        compressor.Compressing += ReportCompressProgress;
+
+                        s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                        try
+                        {
+                            compressor.CompressFiles(destArchive, srcPath);
+                        }
+                        finally
+                        {
+                            compressor.Compressing -= ReportCompressProgress;
+                            s.MainViewModel.ResetBuildCommandProgress();
+                        }
+                    }
+                    else if (Directory.Exists(srcPath))
+                    {
+                        // Compressor Options
+                        compressor.DirectoryStructure = true;
+                        compressor.PreserveDirectoryRoot = true;
+                        compressor.IncludeEmptyDirectories = true;
+
+                        // Compressor Callbacks
+                        compressor.Compressing += ReportCompressProgress;
+
+                        s.MainViewModel.SetBuildCommandProgress("Compress Progress");
+                        try
+                        {
+                            compressor.CompressDirectory(srcPath, destArchive);
+                        }
+                        finally
+                        {
+                            compressor.Compressing -= ReportCompressProgress;
+                            s.MainViewModel.ResetBuildCommandProgress();
+                        }
+                    }
+                    else
+                    {
+                        return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
+                    }
+
+                    if (File.Exists(destArchive))
+                        logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+                }
+                else
+                { // With wildcard
+                    string srcDirToFind = Path.GetDirectoryName(srcPath);
+                    string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
+
                     // Compressor Options
                     compressor.DirectoryStructure = true;
                     compressor.PreserveDirectoryRoot = true;
@@ -138,57 +175,30 @@ namespace PEBakery.Core.Commands
                     s.MainViewModel.SetBuildCommandProgress("Compress Progress");
                     try
                     {
-                        compressor.CompressDirectory(srcPath, destArchive);
+                        compressor.CompressFiles(destArchive, files);
+                        foreach (string f in files)
+                        {
+                            logs.Add(new LogInfo(LogState.Success, $"Compressed [{f}]"));
+                        }
                     }
                     finally
                     {
                         compressor.Compressing -= ReportCompressProgress;
                         s.MainViewModel.ResetBuildCommandProgress();
                     }
-                }
-                else
-                {
-                    return LogInfo.LogErrorMessage(logs, $"Cannot find [{srcPath}]");
-                }
 
-                if (File.Exists(destArchive))
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
-                else
-                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+                    if (File.Exists(destArchive))
+                        logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files compressed to [{destArchive}]"));
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+                }
             }
-            else
-            { // With wildcard
-                string srcDirToFind = Path.GetDirectoryName(srcPath);
-                string[] files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
-
-                // Compressor Options
-                compressor.DirectoryStructure = true;
-                compressor.PreserveDirectoryRoot = true;
-                compressor.IncludeEmptyDirectories = true;
-
-                // Compressor Callbacks
-                compressor.Compressing += ReportCompressProgress;
-
-                s.MainViewModel.SetBuildCommandProgress("Compress Progress");
-                try
-                {
-                    compressor.CompressFiles(destArchive, files);
-                    foreach (string f in files)
-                    {
-                        logs.Add(new LogInfo(LogState.Success, $"Compressed [{f}]"));
-                    }
-                }
-                finally
-                {
-                    compressor.Compressing -= ReportCompressProgress;
-                    s.MainViewModel.ResetBuildCommandProgress();
-                }
-
-                if (File.Exists(destArchive))
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files compressed to [{destArchive}]"));
-                else
-                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{srcPath}] failed"));
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir);
             }
+            
 
             return logs;
         }
@@ -227,8 +237,19 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            using (SevenZipExtractor extractor = new SevenZipExtractor(srcArchive))
+            SevenZipExtractor extractor = null;
+            try
             {
+                if (info.Password == null)
+                {
+                    extractor = new SevenZipExtractor(srcArchive);
+                }
+                else
+                {
+                    string password = StringEscaper.Preprocess(s, info.Password);
+                    extractor = new SevenZipExtractor(srcArchive, password);
+                }
+
                 extractor.Extracting += ReportDecompressProgress;
                 s.MainViewModel.SetBuildCommandProgress("Decompress Progress");
                 try
@@ -240,6 +261,11 @@ namespace PEBakery.Core.Commands
                     extractor.Extracting -= ReportDecompressProgress;
                     s.MainViewModel.ResetBuildCommandProgress();
                 }
+            }
+            finally
+            {
+                Debug.Assert(extractor != null);
+                extractor.Dispose();
             }
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] decompressed to [{destDir}]"));
@@ -373,7 +399,7 @@ namespace PEBakery.Core.Commands
                     { // Unable to find specified file
                         logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{singleFile}] from [{srcCab}]"));
                     }
-                    
+
                 }
             }
 
@@ -438,7 +464,7 @@ namespace PEBakery.Core.Commands
             // - Some files are matched with wildcard : Reports success, but no files are copied.
             // - No files are matched with wildcard   : Reports error.
             string wildcard = Path.GetFileName(srcFile);
-            if (wildcard.IndexOfAny(new char[] {'*', '?'}) != -1)
+            if (wildcard.IndexOfAny(new char[] { '*', '?' }) != -1)
             {
                 logs.Add(new LogInfo(LogState.Warning, "CopyOrExpand does not support wildcards in the filename"));
                 return logs;
