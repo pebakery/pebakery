@@ -665,12 +665,31 @@ namespace PEBakery.Core.Commands
 
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
                         string exitCodeStr = proc.ExitCode.ToString();
-                        string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
-                        LogInfo log = Variables.SetVariable(s, exitOutVar, exitCodeStr).First();
+                        LogInfo log = Variables.SetVariable(s, "%ExitCode%", exitCodeStr).First();
                         if (log.State == LogState.Success)
-                            logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [%ExitCode%]"));
                         else
                             logs.Add(log);
+
+                        // [Comments by @homes32]
+                        // %ExitCode% will always be filled, regardless of whether or not the developer has pre-defined it. 
+                        // %ExitOutVar% must be defined before it can be used.
+                        if (info.ExitOutVar != null)
+                        {
+                            string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
+                            if (exitOutVar != null && s.Variables.ContainsKey(exitOutVar))
+                            {
+                                log = Variables.SetVariable(s, info.ExitOutVar, exitCodeStr).First();
+                                if (log.State == LogState.Success)
+                                    logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{info.ExitOutVar}]"));
+                                else
+                                    logs.Add(log);
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Warning, $"Specified variable name [{info.ExitOutVar}] is not pre-defined"));
+                            }                            
+                        }
 
                         // PEBakery extension -> Report exit code via #r
                         if (!s.CompatDisableExtendedSectionParams)

@@ -237,6 +237,9 @@ namespace PEBakery.Core.Tests.Command
                     s.Variables.DeleteValue(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables[exitKey] = string.Empty;
+
                     if (enableCompat)
                         EngineTests.Eval(s, rawCode, CodeType.ShellExecute, check, new CompatOption { DisableExtendedSectionParams = true });
                     else
@@ -250,6 +253,10 @@ namespace PEBakery.Core.Tests.Command
                         if (!enableCompat)
                             Assert.IsTrue(s.ReturnValue.Equals(compStr, StringComparison.Ordinal));
                     }
+
+                    s.Variables.DeleteValue(VarsType.Local, "ExitCode");
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables.DeleteValue(VarsType.Local, exitKey);
                 }
 
                 void DeleteTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
@@ -259,6 +266,9 @@ namespace PEBakery.Core.Tests.Command
                     s.Variables.DeleteValue(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables[exitKey] = string.Empty;
+
                     EngineTests.Eval(s, rawCode, CodeType.ShellExecuteDelete, check);
                     if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                     {
@@ -266,13 +276,19 @@ namespace PEBakery.Core.Tests.Command
                         Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                         Assert.IsFalse(File.Exists(destBatch));
                     }
+
+                    s.Variables.DeleteValue(VarsType.Local, "ExitCode");
+                    if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
+                        s.Variables.DeleteValue(VarsType.Local, exitKey);
                 }
 
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78");
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78", true);
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},3,,%Dest%", "Dest", "3");
+                BaseTemplate($@"ShellExecute,Open,{pbBatch},3,,%Dest%", "ExitCode", "3", false, ErrorCheck.Warning);
                 DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},78", "ExitCode", "78");
                 DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},3,,%Dest%", "Dest", "3");
+                DeleteTemplate($@"ShellExecuteDelete,Open,{destBatch},3,,%Dest%", "ExitCode", "3", ErrorCheck.Warning);
             }
             finally
             {
