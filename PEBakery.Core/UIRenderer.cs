@@ -1182,12 +1182,7 @@ namespace PEBakery.Core
                 Panel.SetZIndex(bevel, -1); // Should have lowest z-index
 
             SetToolTip(bevel, info.ToolTip);
-            if (info.FontSize == null)
-            { // No caption (WinBuilder compatible)
-                SetEditModeProperties(bevel, uiCtrl);
-                DrawToCanvas(bevel, uiCtrl);
-            }
-            else
+            if (info.FontSize != null)
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 int fontSize = info.FontSize ?? UIControl.DefaultFontPoint;
 
@@ -1229,21 +1224,15 @@ namespace PEBakery.Core
                 }
 
                 Canvas subCanvas = new Canvas();
-                Canvas.SetLeft(bevel, 0);
-                Canvas.SetTop(bevel, 0);
-                bevel.Width = uiCtrl.Width;
-                bevel.Height = uiCtrl.Height;
-                subCanvas.Children.Add(bevel);
+                bevel.Child = subCanvas;
+
                 Canvas.SetLeft(textBorder, CalcFontPointScale(fontSize) / 3);
                 Canvas.SetTop(textBorder, -1 * CalcFontPointScale(fontSize));
                 subCanvas.Children.Add(textBorder);
-                SetEditModeProperties(subCanvas, uiCtrl);
-
-                if (!_viewMode)
-                    Panel.SetZIndex(subCanvas, -1); // Should have lowest z-index
-
-                DrawToCanvas(subCanvas, uiCtrl);
             }
+
+            SetEditModeProperties(bevel, uiCtrl);
+            DrawToCanvas(bevel, uiCtrl);
         }
         #endregion
 
