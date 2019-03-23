@@ -146,7 +146,13 @@ namespace PEBakery.WPF.Controls
             public UIControl UIControl { get; set; }
             public List<UIControl> UIControls { get; set; }
             public bool MultiSelect => UIControls != null;
+            /// <summary>
+            /// Delta of X coord or width
+            /// </summary>
             public double DeltaX { get; set; }
+            /// <summary>
+            /// Delta of Y coord or height
+            /// </summary>
             public double DeltaY { get; set; }
             public bool ForceUpdate { get; set; }
             public UIControlDraggedEventArgs(UIControl uiCtrl, double deltaX, double deltaY, bool forceUpdate = false)
@@ -164,11 +170,9 @@ namespace PEBakery.WPF.Controls
                 ForceUpdate = forceUpdate;
             }
         }
-        public delegate void UIControlMovedEventHandler(object sender, UIControlDraggedEventArgs e);
-        public event UIControlMovedEventHandler UIControlMoved;
-
-        public delegate void UIControlResizedEventHandler(object sender, UIControlDraggedEventArgs e);
-        public event UIControlResizedEventHandler UIControlResized;
+        public delegate void UIControlDraggedEventHandler(object sender, UIControlDraggedEventArgs e);
+        public event UIControlDraggedEventHandler UIControlMoved;
+        public event UIControlDraggedEventHandler UIControlResized;
         #endregion
 
         #region Mouse Event Handler
@@ -210,9 +214,8 @@ namespace PEBakery.WPF.Controls
             // Which element was selected?
             FrameworkElement focusedElement = FindRootFrameworkElement(e.Source);
 
-            // No UIControl was selected
-            if (focusedElement == null)
-            { // Clicked background -> Reset selected elements
+            void ResetSelectedElements()
+            {
                 _dragMode = DragMode.DragToSelect;
 
                 _isBeingDragged = true;
@@ -225,6 +228,12 @@ namespace PEBakery.WPF.Controls
                 Children.Add(_dragAreaRectangle);
 
                 ClearSelectedElements(true);
+            }
+
+            // No UIControl was selected
+            if (focusedElement == null)
+            { // Clicked background -> Reset selected elements
+                ResetSelectedElements();
             }
             else if (focusedElement is Border dragHandle && dragHandle.Tag is DragHandleTag info)
             { // Clicked drag handle
@@ -271,20 +280,8 @@ namespace PEBakery.WPF.Controls
                 SetMouseCursor();
             }
             else
-            {
-                // Clicked background -> Reset selected elements
-                _dragMode = DragMode.DragToSelect;
-
-                _isBeingDragged = true;
-
-                // Do not call UIRenderer.DrawToCanvas here, we don't need to expand canvas here
-                _dragAreaRectangle = new Rectangle
-                {
-                    Fill = new SolidColorBrush(Color.FromArgb(32, 0, 0, 0)),
-                };
-                Children.Add(_dragAreaRectangle);
-
-                ClearSelectedElements(true);
+            { // Clicked background -> Reset selected elements
+                ResetSelectedElements();
             }
 
             e.Handled = true;
@@ -400,7 +397,7 @@ namespace PEBakery.WPF.Controls
                 // If selected correctly, _selectedElements should have been cleaned.
                 if (_selectedElements.Count == 0)
                 {
-                    
+
                 }
                 return;
             }
@@ -419,9 +416,7 @@ namespace PEBakery.WPF.Controls
                         {
                             Rect elementRect = GetElementRect(element);
                             if (dragRect.Contains(elementRect) && element.Tag is UIControl)
-                            {
                                 _selectedElements.Add(new SelectedElement(element));
-                            }
                         }
 
                         DrawSelectedElements();
@@ -470,8 +465,8 @@ namespace PEBakery.WPF.Controls
                         UIControl uiCtrl = _selected.UIControl;
 
                         Rect newCtrlRect = CalcNewSize(_dragStartCursorPos, nowCursorPos, uiCtrl.Rect, _selectedClickPos);
-                        double deltaX = newCtrlRect.X - uiCtrl.X;
-                        double deltaY = newCtrlRect.Y - uiCtrl.Y;
+                        double deltaX = Math.Max(Math.Abs(newCtrlRect.X - uiCtrl.X), Math.Abs(newCtrlRect.Width - uiCtrl.Width));
+                        double deltaY = Math.Max(Math.Abs(newCtrlRect.Y - uiCtrl.Y), Math.Abs(newCtrlRect.Height - uiCtrl.Height));
 
                         // UIControl should have position/size of int
                         uiCtrl.X = (int)newCtrlRect.X;

@@ -47,8 +47,8 @@ namespace PEBakery.WPF
                 InitializeComponent();
 
                 m.InterfaceCanvas.UIControlSelected += InterfaceCanvas_UIControlSelected;
-                m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlMoved;
-                m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlMoved;
+                m.InterfaceCanvas.UIControlMoved += InterfaceCanvas_UIControlDragged;
+                m.InterfaceCanvas.UIControlResized += InterfaceCanvas_UIControlDragged;
                 m.UIControlModified += ViewModel_UIControlModified;
 
                 m.ReadScriptGeneral();
@@ -123,8 +123,8 @@ namespace PEBakery.WPF
         private void Window_Closed(object sender, EventArgs e)
         {
             m.InterfaceCanvas.UIControlSelected -= InterfaceCanvas_UIControlSelected;
-            m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlMoved;
-            m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlMoved;
+            m.InterfaceCanvas.UIControlMoved -= InterfaceCanvas_UIControlDragged;
+            m.InterfaceCanvas.UIControlResized -= InterfaceCanvas_UIControlDragged;
             m.UIControlModified -= ViewModel_UIControlModified;
 
             m.Renderer.Clear();
@@ -206,7 +206,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void InterfaceCanvas_UIControlMoved(object sender, DragCanvas.UIControlDraggedEventArgs e)
+        private void InterfaceCanvas_UIControlDragged(object sender, DragCanvas.UIControlDraggedEventArgs e)
         {
             if (!e.MultiSelect)
             {
@@ -222,6 +222,7 @@ namespace PEBakery.WPF
         {
             if (e.MultiSelect)
             {
+                /*
                 foreach (UIControl uiCtrl in e.UIControls)
                 {
                     // m.WriteUIControlInfo(uiCtrl) is ignored here
@@ -229,7 +230,7 @@ namespace PEBakery.WPF
                     Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
                     m.Renderer.UICtrls[idx] = uiCtrl;
                 }
-
+                */
                 m.InterfaceCanvas.ClearSelectedElements(true);
                 m.Renderer.Render();
                 m.InterfaceCanvas.DrawSelectedElements(e.UIControls);
@@ -241,9 +242,11 @@ namespace PEBakery.WPF
                 if (!e.InfoNotUpdated)
                     m.WriteUIControlInfo(uiCtrl);
 
+                /*
                 int idx = m.Renderer.UICtrls.FindIndex(x => x.Key.Equals(uiCtrl.Key));
                 Debug.Assert(idx != -1, "Internal Logic Error at ViewModel_UIControlModified");
                 m.Renderer.UICtrls[idx] = uiCtrl;
+                */
 
                 m.InterfaceCanvas.ClearSelectedElements(true);
                 m.Renderer.Render();
