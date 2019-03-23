@@ -390,17 +390,8 @@ namespace PEBakery.WPF.Controls
             Point nowCursorPos = e.GetPosition(this);
             ReleaseMouseCapture();
 
-            // Check drag-to-select
             if (!_isBeingDragged)
-            {
-                // OnPreviewMouseLeftButtonDown event must have been fired prior.
-                // If selected correctly, _selectedElements should have been cleaned.
-                if (_selectedElements.Count == 0)
-                {
-
-                }
                 return;
-            }
 
             switch (_dragMode)
             {
