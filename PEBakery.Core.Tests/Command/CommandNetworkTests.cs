@@ -55,6 +55,8 @@ namespace PEBakery.Core.Tests.Command
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
             // Chrome
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36",
         };
 
         [TestMethod]
@@ -83,6 +85,7 @@ namespace PEBakery.Core.Tests.Command
             WebGet_2(s);
             WebGet_3(s);
             WebGet_Compat(s);
+            WebGet_TimeOut(s);
             WebGet_MD5(s);
             WebGet_SHA1(s);
             WebGet_SHA256(s);
@@ -182,6 +185,50 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
+        public void WebGet_TimeOut(EngineState s)
+        {
+            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
+            string destFile = FileHelper.GetTempFile("html");
+            try
+            {
+                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                // Try downloading index.html from GitHub.
+                string rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=30";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
+
+                Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
+
+
+                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                // Try downloading index.html from GitHub.
+                rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=0";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+
+                Assert.IsFalse(File.Exists(destFile));
+                Assert.IsTrue(s.ReturnValue.Length == 0);
+
+
+                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                // Try downloading index.html from GitHub.
+                rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=-10";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+
+                Assert.IsFalse(File.Exists(destFile));
+                Assert.IsTrue(s.ReturnValue.Length == 0);
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
+            }
+        }
         public void WebGet_MD5(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.

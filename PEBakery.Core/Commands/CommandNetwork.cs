@@ -47,6 +47,15 @@ namespace PEBakery.Core.Commands
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
+            int timeOut = 10;
+            if (info.TimeOut != null)
+            {
+                string timeOutStr = StringEscaper.Preprocess(s, info.TimeOut);
+                if (!NumberHelper.ParseInt32(timeOutStr, out timeOut))
+                    return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
+                if (timeOut <= 0)
+                    return LogInfo.LogErrorMessage(logs, $"TimeOut [{timeOutStr}] is not a valid positive integer");
+            }
 
             // Check PathSecurity in destPath
             if (!StringEscaper.PathSecurityCheck(destPath, out string pathErrorMsg))
@@ -85,7 +94,7 @@ namespace PEBakery.Core.Commands
                 if (info.HashType == HashHelper.HashType.None)
                 { // Standard WebGet
                     string tempPath = FileHelper.GetTempFile(destFileExt);
-                    var task = DownloadHttpFile(s, url, tempPath);
+                    var task = DownloadHttpFile(s, url, tempPath, timeOut);
                     task.Wait();
                     (bool result, int statusCode, string errorMsg) = task.Result;
                     if (result)
@@ -119,7 +128,7 @@ namespace PEBakery.Core.Commands
                     Debug.Assert(info.HashDigest != null);
 
                     string tempPath = FileHelper.GetTempFile(destFileExt);
-                    var task = DownloadHttpFile(s, url, tempPath);
+                    var task = DownloadHttpFile(s, url, tempPath, timeOut);
                     task.Wait();
                     (bool result, int statusCode, string errorMsg) = task.Result;
                     if (result)
@@ -181,7 +190,7 @@ namespace PEBakery.Core.Commands
         /// Download a file with HttpClient.
         /// </summary>
         /// <returns>true in case of success.</returns>
-        private static async Task<(bool Result, int StatusCode, string ErrorMsg)> DownloadHttpFile(EngineState s, string url, string destPath)
+        private static async Task<(bool Result, int StatusCode, string ErrorMsg)> DownloadHttpFile(EngineState s, string url, string destPath, int timeOut)
         {
             Uri uri = new Uri(url);
 
