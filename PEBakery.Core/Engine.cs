@@ -1070,13 +1070,6 @@ namespace PEBakery.Core
         RunOne,
     }
 
-    public enum LoopState
-    {
-        Off,
-        OnIndex,
-        OnDriveLetter,
-    }
-
     public enum LogMode
     {
         /// <summary>
@@ -1105,14 +1098,15 @@ namespace PEBakery.Core
     [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
     public class EngineState
     {
-        #region Field and Properties
+        #region Fields and Properties
+        // Fields
         public Project Project;
         public List<Script> Scripts;
         public Variables Variables => Project.Variables;
         public Macro Macro;
         public Logger Logger;
         public EngineMode RunMode;
-        public LogMode LogMode = LogMode.NoDefer; // For performance (deferred logging)
+        public LogMode LogMode = LogMode.NoDefer; // Deferred logging is used for performance
         public MainViewModel MainViewModel;
         public Random Random;
 
@@ -1131,9 +1125,6 @@ namespace PEBakery.Core
         public string ReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>(16);
         public bool ElseFlag = false;
-        public LoopState LoopState = LoopState.Off;
-        public long LoopCounter = 0;
-        public char LoopLetter = ' '; // Use capital alphabet
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false; // Did error occur?
         public bool CmdHaltFlag = false; // Halt Command
@@ -1141,6 +1132,12 @@ namespace PEBakery.Core
         public bool CursorWait = false;
         public int BuildId = 0; // Used in logging
         public int ScriptId = 0; // Used in logging
+
+        // Loop State Stack
+        /// <summary>
+        /// Should be managed only in CommandBranch.Loop
+        /// </summary>
+        public readonly Stack<EngineLoopState> LoopStateStack = new Stack<EngineLoopState>(4);
 
         // Local State Stack
         /// <summary>
@@ -1296,9 +1293,7 @@ namespace PEBakery.Core
             ReturnValue = string.Empty;
             InitLocalStateStack();
             ElseFlag = false;
-            LoopState = LoopState.Off;
-            LoopCounter = 0;
-            LoopLetter = ' ';
+            LoopStateStack.Clear();
 
             // Command State
             OnBuildExit = null;
@@ -1400,6 +1395,40 @@ namespace PEBakery.Core
             return _localStateStack.Peek();
         }
         #endregion
+    }
+    #endregion
+
+    #region struct EngineLoopState
+    public struct EngineLoopState
+    {
+        public enum LoopState
+        {
+            OnIndex,
+            OnDriveLetter,
+        }
+
+        public LoopState State;
+        public long CounterIndex;
+        public char CounterLetter;
+
+        public EngineLoopState(long ctrIdx)
+        {
+            State = LoopState.OnIndex;
+            CounterIndex = ctrIdx;
+            CounterLetter = '\0';
+        }
+
+        public EngineLoopState(char ctrLetter)
+        {
+            State = LoopState.OnDriveLetter;
+            CounterIndex = 0;
+            if ('A' <= ctrLetter && ctrLetter <= 'Z' || ctrLetter == '\0')
+                CounterLetter = ctrLetter;
+            else if ('a' <= ctrLetter && ctrLetter <= 'z')
+                CounterLetter = char.ToUpper(ctrLetter); // Use capital alphabet
+            else
+                throw new CriticalErrorException("Invalid LoopLetter Handling");
+        }
     }
     #endregion
 

@@ -527,14 +527,18 @@ namespace PEBakery.Core
             }
 
             // Escape #c (Loop Counter)
-            switch (s.LoopState)
+            if (0 < s.LoopStateStack.Count)
             {
-                case LoopState.OnIndex:
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", s.LoopCounter.ToString());
-                    break;
-                case LoopState.OnDriveLetter:
-                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", s.LoopLetter.ToString());
-                    break;
+                EngineLoopState loop = s.LoopStateStack.Peek();
+                switch (loop.State)
+                {
+                    case EngineLoopState.LoopState.OnIndex:
+                        str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterIndex.ToString());
+                        break;
+                    case EngineLoopState.LoopState.OnDriveLetter:
+                        str = StringHelper.ReplaceRegex(str, @"(?<!#)(#[cC])", loop.CounterLetter.ToString());
+                        break;
+                }
             }
 
             return str;

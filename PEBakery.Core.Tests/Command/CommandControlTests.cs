@@ -173,60 +173,54 @@ namespace PEBakery.Core.Tests.Command
 
         public void SetLoopCounter(EngineState s)
         {
+            s.LoopStateStack.Clear();
+
             // Simulate Loop command
             const string rawLoopCode = "Set,#c,110";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Success);
-            Assert.AreEqual(110, s.LoopCounter);
+            EngineLoopState loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(110, loop.CounterIndex);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
 
             // Simulate LoopLetter command
             const string rawLoopLetterCode = "Set,#c,Z";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Success);
-            Assert.AreEqual('Z', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual('Z', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual('C', loop.CounterLetter);
 
             // Error 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.Off;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.OnDriveLetter;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.Off;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
 
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
-            s.LoopState = LoopState.OnIndex;
+            s.LoopStateStack.Clear();
             EngineTests.Eval(s, rawLoopLetterCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual('C', s.LoopLetter);
+            Assert.AreEqual(0, s.LoopStateStack.Count);
         }
 
         public void DelLoopCounter(EngineState s)
@@ -234,34 +228,30 @@ namespace PEBakery.Core.Tests.Command
             const string rawCode = "Set,#c,NIL";
 
             s.CompatOverridableLoopCounter = true;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            EngineLoopState loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
 
             s.CompatOverridableLoopCounter = false;
-            s.LoopState = LoopState.OnIndex;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState(100));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(100, loop.CounterIndex);
+            Assert.AreEqual('\0', loop.CounterLetter);
 
-            s.LoopState = LoopState.OnDriveLetter;
-            s.LoopCounter = 100;
-            s.LoopLetter = 'C';
+            s.LoopStateStack.Push(new EngineLoopState('C'));
             EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Warning);
-            Assert.AreEqual(100, s.LoopCounter);
-            Assert.AreEqual('C', s.LoopLetter);
+            loop = s.LoopStateStack.Pop();
+            Assert.AreEqual(0, loop.CounterIndex);
+            Assert.AreEqual('C', loop.CounterLetter);
         }
         #endregion
 

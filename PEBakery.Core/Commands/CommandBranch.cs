@@ -134,23 +134,15 @@ namespace PEBakery.Core.Commands
 
             if (info.Break)
             {
-                if (s.LoopState == LoopState.Off)
+                if (s.LoopStateStack.Count == 0)
                 {
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Loop is not running", cmd, ls.Depth));
                 }
                 else
                 {
-                    s.LoopState = LoopState.Off;
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking loop", cmd, ls.Depth));
-
-                    // Reset LoopCounter, to be sure
-                    s.LoopLetter = ' ';
-                    s.LoopCounter = 0;
+                    s.LoopStateStack.Pop();
                 }
-            }
-            else if (s.LoopState != LoopState.Off)
-            { // If loop is already turned on, throw error
-                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Nested loops are not supported", cmd, ls.Depth));
             }
             else
             {
@@ -244,13 +236,13 @@ namespace PEBakery.Core.Commands
                     case CodeType.LoopEx:
                         for (long i = startIdx; i <= endIdx; i++)
                         { // Counter Variable is [#c]
-                            s.LoopCounter = i;
-
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{i}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
-                            // Set s.LoopState
-                            s.LoopState = LoopState.OnIndex;
+                            // Push EngineLoopState
+                            EngineLoopState loop = new EngineLoopState(i);
+                            s.LoopStateStack.Push(loop);
+                            int stackCount = s.LoopStateStack.Count;
 
                             // Run Loop Section
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
@@ -259,18 +251,24 @@ namespace PEBakery.Core.Commands
                                 RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
                             });
 
-                            // Reset s.LoopState
-                            if (s.LoopState == LoopState.Off) // Loop,Break
+                            // Loop,Break can pop loop state stack.
+                            // Check stackCount to know if Loop,Break was called.
+                            if (stackCount != s.LoopStateStack.Count)
                                 break;
-                            s.LoopState = LoopState.Off;
 
-                            string msg;
-                            if (s.LoopCounter == i)
-                                msg = $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})";
-                            else
-                                msg = $"End of Loop with [{s.LoopCounter}] (Overridden) ({loopIdx}/{loopCount})";
+                            // Pop EngineLoopState
+                            EngineLoopState popLoop = s.LoopStateStack.Pop();
 
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, s.PeekDepth));
+                            // Log message
+                            string msg = $"End of Loop with [{i}] ({loopIdx}/{loopCount})";
+                            if (s.CompatOverridableLoopCounter)
+                            {
+                                if (popLoop.CounterIndex != i)
+                                    msg = $"End of Loop with [{popLoop.CounterIndex}] (Overridden) ({loopIdx}/{loopCount})";
+                            }
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, ls.Depth));
+
+                            // Increase loop index
                             loopIdx += 1;
                         }
                         break;
@@ -278,42 +276,45 @@ namespace PEBakery.Core.Commands
                     case CodeType.LoopLetterEx:
                         for (char ch = startLetter; ch <= endLetter; ch++)
                         { // Counter Variable is [#c]
-                            s.LoopLetter = ch;
-
-                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{ch}] ({loopIdx}/{loopCount})", cmd, ls.Depth));
                             s.Logger.LogSectionParameter(s, ls.Depth, newInParams, info.OutParams, cmd);
 
-                            // Set s.LoopState
-                            s.LoopState = LoopState.OnDriveLetter;
+                            // Push EngineLoopState
+                            EngineLoopState loop = new EngineLoopState(ch);
+                            s.LoopStateStack.Push(loop);
+                            int stackCount = s.LoopStateStack.Count;
 
+                            // Run Loop Section
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
                                 RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
                             });
 
-                            // Reset s.LoopState
-                            if (s.LoopState == LoopState.Off) // Loop,Break
+                            // Loop,Break can pop loop state stack.
+                            // Check stackCount to know if Loop,Break was called.
+                            if (stackCount != s.LoopStateStack.Count)
                                 break;
-                            s.LoopState = LoopState.Off;
 
-                            string msg;
-                            if (s.LoopLetter == ch)
-                                msg = $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})";
-                            else
-                                msg = $"End of Loop with [{s.LoopLetter}] (Overridden) ({loopIdx}/{loopCount})";
+                            // Pop EngineLoopState
+                            EngineLoopState popLoop = s.LoopStateStack.Pop();
 
+                            // Log message
+                            string msg = $"End of Loop with [{ch}] ({loopIdx}/{loopCount})";
+                            if (s.CompatOverridableLoopCounter)
+                            {
+                                if (popLoop.CounterLetter != ch)
+                                    msg = $"End of Loop with [{popLoop.CounterLetter}] (Overridden) ({loopIdx}/{loopCount})";
+                            }
                             s.Logger.BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, ls.Depth));
+
+                            // Increase loop index
                             loopIdx += 1;
                         }
                         break;
                     default:
                         throw new InternalException("Internal Logic Error at CommandBranch.Loop");
                 }
-
-                // Reset LoopCounter, to be sure
-                s.LoopLetter = ' ';
-                s.LoopCounter = 0;
             }
         }
 

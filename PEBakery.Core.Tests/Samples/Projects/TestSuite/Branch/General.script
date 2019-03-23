@@ -78,6 +78,10 @@ LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z,Out=%Dest%
 Set,%Dest%,""
 LoopLetterEx,%ScriptFile%,LoopOutParam,C,E,In=Z
 
+[Process-LoopNest]
+Set,%Dest%,NIL
+Loop,%ScriptFile%,LoopNestFirst,1,3
+
 [LoopTest]
 List,Append,%Dest%,#c
 List,Append,%Dest%,#1
@@ -90,6 +94,14 @@ List,Append,#o1,#1
 List,Append,%Dest%,#c
 List,Append,%Dest%,#1
 If,#c,Equal,#2,Loop,BREAK
+
+[LoopNestFirst]
+List,Append,%Dest%,#c
+Loop,%ScriptFile%,LoopNestSecond,4,5
+List,Append,%Dest%,#c
+
+[LoopNestSecond]
+List,Append,%Dest%,#c
 
 [Process-IfElse]
 Set,%Dest%,F

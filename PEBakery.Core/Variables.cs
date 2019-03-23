@@ -1080,30 +1080,47 @@ namespace PEBakery.Core
                         return logs;
                     }
 
-                    switch (s.LoopState)
+                    // Escape #c (Loop Counter)
+                    if (0 < s.LoopStateStack.Count)
                     {
-                        case LoopState.OnIndex:
-                            if (!NumberHelper.ParseInt64(finalValue, out long ctr))
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
-                                return logs;
-                            }
-                            s.LoopCounter = ctr;
-                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopCounter}]"));
-                            break;
-                        case LoopState.OnDriveLetter:
-                            bool valid = finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0]);
-                            if (!valid)
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
-                                return logs;
-                            }
-                            s.LoopLetter = char.ToUpper(finalValue[0]);
-                            logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{s.LoopLetter}]"));
-                            break;
-                        default:
-                            logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
-                            return logs;
+                        EngineLoopState peekLoop = s.LoopStateStack.Peek();
+                        switch (peekLoop.State)
+                        {
+                            case EngineLoopState.LoopState.OnIndex:
+                                if (!NumberHelper.ParseInt64(finalValue, out long ctr))
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Loop is iterating an index, but new value [{finalValue}] is not a valid integer"));
+                                    return logs;
+                                }
+
+                                // C#'s struct is immutable, so do pop and push.
+                                EngineLoopState idxLoop = new EngineLoopState(ctr);
+                                s.LoopStateStack.Pop();
+                                s.LoopStateStack.Push(idxLoop);
+
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{ctr}]"));
+                                break;
+                            case EngineLoopState.LoopState.OnDriveLetter:
+                                if (!(finalValue.Length == 1 && StringHelper.IsAlphabet(finalValue[0])))
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Loop is iterating a drive letter, but new value [{finalValue}] is not a valid drive letter"));
+                                    return logs;
+                                }
+
+                                // C#'s struct is immutable, so do pop and push.
+                                // EngineLoopState's constructor performs conversion to capital alphabet.
+                                EngineLoopState charLoop = new EngineLoopState(finalValue[0]);
+                                s.LoopStateStack.Pop();
+                                s.LoopStateStack.Push(charLoop);
+
+                                logs.Add(new LogInfo(LogState.Success, $"LoopCounter [#c] set to [{charLoop.CounterLetter}]"));
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Error, "Loop is not running, unable to update LoopCounter [#c]"));
+                        return logs;
                     }
                 }
                 else

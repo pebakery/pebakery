@@ -95,6 +95,8 @@ namespace PEBakery.Core.Tests.Command
             ScriptTemplate(scPath, "Process-LoopCompat02", "C|Z|D|Z|E|Z", true);
             ScriptTemplate(scPath, "Process-LoopCompat01", string.Empty, false, ErrorCheck.Error);
             ScriptTemplate(scPath, "Process-LoopCompat02", string.Empty, false, ErrorCheck.Error);
+
+            ScriptTemplate(scPath, "Process-LoopNest", "1|4|5|1|2|4|5|2|3|4|5|3", false);
         }
         #endregion
 
