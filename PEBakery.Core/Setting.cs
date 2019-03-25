@@ -135,10 +135,10 @@ namespace PEBakery.Core
         public enum ThemeType
         {
             Dark = 0,
-            Darker = 1,
-            Red = 10,
-            Green = 20,
-            Blue = 30,
+            Darker = 4,
+            Red = 1,
+            Green = 2,
+            Blue = 3,
             Custom = 255,
         }
 
@@ -169,28 +169,16 @@ namespace PEBakery.Core
             {
                 ThemeType = ThemeType.Dark;
                 // Apply Classic Theme to Custom Properties
-                //CustomTopPanelBackground = Colors.LightBlue;
-                //CustomTopPanelForeground = Colors.Black;
-                //CustomTopPanelReportIssue = Colors.Red;
-                //CustomTreePanelBackground = Colors.LightGreen;
-                //CustomTreePanelForeground = Colors.Black;
-                //CustomTreePanelHighlight = Colors.Red;
-                //CustomScriptPanelBackground = Colors.LightYellow;
-                //CustomScriptPanelForeground = Colors.Black;
-                //CustomStatusBarBackground = Colors.LightGray;
-                //CustomStatusBarForeground = Colors.Black;
-
-                //TODO: Remove this before merging and put classic theme back to custom
-                CustomTopPanelBackground = Color.FromRgb(44, 44, 44);
-                CustomTopPanelForeground = Colors.White;
+                CustomTopPanelBackground = Colors.LightBlue;
+                CustomTopPanelForeground = Colors.Black;
                 CustomTopPanelReportIssue = Colors.Red;
-                CustomTreePanelBackground = Color.FromRgb(66, 66, 66);
-                CustomTreePanelForeground = Color.FromRgb(215, 215, 215);
+                CustomTreePanelBackground = Colors.LightGreen;
+                CustomTreePanelForeground = Colors.Black;
                 CustomTreePanelHighlight = Colors.Red;
-                CustomScriptPanelBackground = Color.FromRgb(83, 83, 83);
-                CustomScriptPanelForeground = Colors.White;
-                CustomStatusBarBackground = Color.FromRgb(44, 44, 44);
-                CustomStatusBarForeground = Color.FromRgb(240, 240, 240);
+                CustomScriptPanelBackground = Colors.LightYellow;
+                CustomScriptPanelForeground = Colors.Black;
+                CustomStatusBarBackground = Colors.LightGray;
+                CustomStatusBarForeground = Colors.Black;
             }
 
             #region Properties
@@ -627,7 +615,7 @@ namespace PEBakery.Core
                 new IniKey(ScriptSetting.SectionName, nameof(Script.EnableCache)), // Boolean
                 new IniKey(ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck)), // Boolean
                 // Log
-                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // Enum (LogDebugLevel)
+                new IniKey(LogSetting.SectionName, nameof(Log.DebugLevel)), // String (Enum)
                 new IniKey(LogSetting.SectionName, nameof(Log.DeferredLogging)), // Boolean
                 new IniKey(LogSetting.SectionName, nameof(Log.MinifyHtmlExport)), // Boolean
                 // LogViewer
@@ -708,7 +696,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                Theme.ThemeType = DictParser.ParseIntEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
+                Theme.ThemeType = DictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
                 Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
                 Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
                 Theme.CustomTopPanelReportIssue = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
@@ -793,7 +781,7 @@ namespace PEBakery.Core
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), ((int)Interface.InterfaceSize).ToString()), // Integer
                 // Theme
-                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), ((int)Theme.ThemeType).ToString()), // Integer
+                new IniKey(ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType.ToString()), // String
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), WriteColor(Theme.CustomTopPanelBackground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), WriteColor(Theme.CustomTopPanelForeground)), // Color
                 new IniKey(ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), WriteColor(Theme.CustomTopPanelReportIssue)), // Color
@@ -843,6 +831,23 @@ namespace PEBakery.Core
         public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
         {
             return dict[key] ?? defaultValue;
+        }
+
+        public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
+            where TEnum : struct, Enum
+        {
+            string valStr = dict[key];
+            if (valStr == null) // No warning, just use default value
+                return defaultValue;
+
+            if (valStr != null)
+            {
+                if (Enum.TryParse(valStr, true, out TEnum kind) || Enum.IsDefined(typeof(TEnum), kind))
+                    return kind;
+            }
+
+            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+            return defaultValue;
         }
 
         public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue)
