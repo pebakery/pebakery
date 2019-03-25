@@ -544,6 +544,7 @@
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
@@ -553,7 +554,7 @@
                                    HorizontalAlignment="Center"
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
-                                x:Name="BlackThemeButton"
+                                x:Name="DarkThemeButton"
                                 Background="#FF2C2C2C"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
@@ -564,36 +565,47 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="3" 
+                                x:Name="DarkerThemeButton"
+                                Background="#FF2C2C2C"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Darker">
+                            <Button.CommandParameter>
+                                <s:Int32>1</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="4" 
                                 Background="#FFA4373A"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Red">
                             <Button.CommandParameter>
-                                <s:Int32>1</s:Int32>
+                                <s:Int32>10</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        <Button Grid.Column="4" 
+                        <Button Grid.Column="5" 
                                 Background="#FF2A6E52"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Green">
                             <Button.CommandParameter>
-                                <s:Int32>2</s:Int32>
+                                <s:Int32>20</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        <Button Grid.Column="5" 
+                        <Button Grid.Column="6" 
                                 Background="#FF2C6E97"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                 Content="Blue">
                             <Button.CommandParameter>
-                                <s:Int32>3</s:Int32>
+                                <s:Int32>30</s:Int32>
                             </Button.CommandParameter>
                         </Button>
-                        <Button Grid.Column="6" 
+                        <Button Grid.Column="7" 
                                 Background="{Binding ThemeCustomTopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Foreground="{Binding ThemeCustomTopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Command="local:SettingViewCommands.SelectThemeCommand"

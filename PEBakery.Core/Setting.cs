@@ -135,9 +135,10 @@ namespace PEBakery.Core
         public enum ThemeType
         {
             Dark = 0,
-            Red = 1,
-            Green = 2,
-            Blue = 3,
+            Darker = 1,
+            Red = 10,
+            Green = 20,
+            Blue = 30,
             Custom = 255,
         }
 
@@ -200,6 +201,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
+                        case ThemeType.Darker:
                             return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
                             return Color.FromRgb(164, 55, 58);
@@ -221,11 +223,9 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
-                            return Colors.White;
+                        case ThemeType.Darker:
                         case ThemeType.Red:
-                            return Colors.White;
                         case ThemeType.Green:
-                            return Colors.White;
                         case ThemeType.Blue:
                             return Colors.White;
                         case ThemeType.Custom:
@@ -242,6 +242,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
+                        case ThemeType.Darker:
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -260,11 +261,12 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
-                            return Color.FromRgb(241, 241, 241);
+                            // return Color.FromRgb(204, 204, 204); // Original Black Theme's color
+                            return Color.FromRgb(215, 215, 215);
+                        case ThemeType.Darker:
+                            return Color.FromRgb(66, 66, 66);
                         case ThemeType.Red:
-                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Green:
-                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Blue:
                             return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
@@ -282,6 +284,8 @@ namespace PEBakery.Core
                     {
                         case ThemeType.Dark:
                             return Colors.Black; // Color.FromRgb(215, 215, 215);
+                        case ThemeType.Darker:
+                            return Color.FromRgb(215, 215, 215);
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -300,6 +304,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
+                        case ThemeType.Darker:
                             return Color.FromRgb(83, 83, 83);
                         case ThemeType.Red:
                             return Color.FromRgb(164, 55, 58);
@@ -322,10 +327,10 @@ namespace PEBakery.Core
                     {
                         case ThemeType.Dark:
                             return Color.FromRgb(241, 241, 241);
+                        case ThemeType.Darker:
+                            return Color.FromRgb(83, 83, 83);
                         case ThemeType.Red:
-                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Green:
-                            return Color.FromRgb(241, 241, 241);
                         case ThemeType.Blue:
                             return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
@@ -343,6 +348,8 @@ namespace PEBakery.Core
                     {
                         case ThemeType.Dark:
                             return Colors.Black;
+                        case ThemeType.Darker:
+                            return Colors.White;
                         case ThemeType.Red:
                         case ThemeType.Green:
                         case ThemeType.Blue:
@@ -361,6 +368,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
+                        case ThemeType.Darker:
                             return Color.FromRgb(44, 44, 44);
                         case ThemeType.Red:
                             return Color.FromRgb(164, 55, 58);
@@ -382,6 +390,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
+                        case ThemeType.Darker:
                             return Color.FromRgb(240, 240, 240);
                         case ThemeType.Red:
                         case ThemeType.Green:
