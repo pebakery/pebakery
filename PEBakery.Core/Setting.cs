@@ -138,7 +138,8 @@ namespace PEBakery.Core
             Darker = 4,
             Red = 1,
             Green = 2,
-            Blue = 3,
+            Ocean = 3,
+            Marine = 5,
             Custom = 255,
         }
 
@@ -195,8 +196,10 @@ namespace PEBakery.Core
                             return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
                             return Color.FromRgb(42, 110, 82);
-                        case ThemeType.Blue:
-                            return Color.FromRgb(47, 82, 108); // darker 47 82 108 or lighter 44 110 151
+                        case ThemeType.Ocean:
+                            return Color.FromRgb(47, 82, 108);
+                        case ThemeType.Marine:
+                            return Color.FromRgb(44, 110, 151);
                         case ThemeType.Custom:
                             return CustomTopPanelBackground;
                         default:
@@ -214,7 +217,8 @@ namespace PEBakery.Core
                         case ThemeType.Darker:
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.White;
                         case ThemeType.Custom:
                             return CustomTopPanelForeground;
@@ -233,7 +237,8 @@ namespace PEBakery.Core
                         case ThemeType.Darker:
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.Orange;
                         case ThemeType.Custom:
                             return CustomTopPanelReportIssue;
@@ -255,7 +260,8 @@ namespace PEBakery.Core
                             return Color.FromRgb(66, 66, 66);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomTreePanelBackground;
@@ -276,7 +282,8 @@ namespace PEBakery.Core
                             return Color.FromRgb(215, 215, 215);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.Black;
                         case ThemeType.Custom:
                             return CustomTreePanelForeground;
@@ -298,7 +305,8 @@ namespace PEBakery.Core
                             return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
                             return Color.FromRgb(42, 110, 82);
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Color.FromRgb(47, 82, 108);
                         case ThemeType.Custom:
                             return CustomTreePanelHighlight;
@@ -319,7 +327,8 @@ namespace PEBakery.Core
                             return Color.FromRgb(83, 83, 83);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Color.FromRgb(241, 241, 241);
                         case ThemeType.Custom:
                             return CustomScriptPanelBackground;
@@ -340,7 +349,8 @@ namespace PEBakery.Core
                             return Colors.White;
                         case ThemeType.Red:
                         case ThemeType.Green:
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.Black;
                         case ThemeType.Custom:
                             return CustomScriptPanelForeground;
@@ -362,8 +372,10 @@ namespace PEBakery.Core
                             return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
                             return Color.FromRgb(42, 110, 82);
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
                             return Color.FromRgb(47, 82, 108);
+                        case ThemeType.Marine:
+                            return Color.FromRgb(44, 110, 151);
                         case ThemeType.Custom:
                             return CustomStatusBarBackground;
                         default:
@@ -383,7 +395,8 @@ namespace PEBakery.Core
                         case ThemeType.Red:
                         case ThemeType.Green:
                             return Colors.White;
-                        case ThemeType.Blue:
+                        case ThemeType.Ocean:
+                        case ThemeType.Marine:
                             return Colors.White;
                         case ThemeType.Custom:
                             return CustomStatusBarForeground;

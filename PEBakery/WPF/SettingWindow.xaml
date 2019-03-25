@@ -537,7 +537,8 @@
                                BorderThickness="2"/>
                     <Grid Height="25" Margin="5, 0, 5, 0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
@@ -548,10 +549,11 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    VerticalAlignment="Center"
-                                   Text="Select Theme"/>
+                                   Text="Select Theme:"/>
                         <TextBlock Grid.Column="1"
                                    VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"
+                                   HorizontalAlignment="Left"
+                                   FontWeight="Bold"
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
                                 x:Name="DarkThemeButton"
@@ -600,12 +602,22 @@
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                                Content="Blue">
+                                Content="Ocean">
                             <Button.CommandParameter>
                                 <s:Int32>3</s:Int32>
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="7" 
+                                Background="#2C6E97"
+                                Foreground="White"
+                                Command="local:SettingViewCommands.SelectThemeCommand"
+                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                Content="Marine">
+                            <Button.CommandParameter>
+                                <s:Int32>5</s:Int32>
+                            </Button.CommandParameter>
+                        </Button>
+                        <Button Grid.Column="8" 
                                 Background="{Binding ThemeCustomTopPanelBackground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Foreground="{Binding ThemeCustomTopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}}"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
