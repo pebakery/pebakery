@@ -125,6 +125,7 @@
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CodeOptimizer.cs" />
     <Compile Include="CodeParser.cs" />
+    <Compile Include="HttpFileDownloader.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

@@ -75,6 +75,7 @@ namespace PEBakery.Helper
         #endregion
     }
 
+    #region HttpClientDownloader
     public class HttpClientDownloader
     {
         #region Const
@@ -199,4 +200,5 @@ namespace PEBakery.Helper
         }
         #endregion
     }
+    #endregion
 }

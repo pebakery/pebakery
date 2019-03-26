@@ -35,20 +35,47 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
+    #region PEBakery's new update scheme
     /*
-     * - script.project
-     * [Update]
-     * // ProjectMethod={Static|...}
-     * ProjectBaseUrl=<Url>
-     *
-     * - Per script
-     * [Update]
-     * ScriptType={Project|Standalone}
-     * ScriptUrl=<Url>
-     */
+    - script.project
+    [Update]
+    // ProjectMethod={Static|...}
+    ProjectBaseUrl=<Url>
+    
+    - Per script
+    [Update]
+    ScriptType={Project|Standalone}
+    ScriptUrl=<Url>
+    */
+    #endregion
+
+    #region Classic updates.ini
+    /*
+    - Classic updates.ini
+    [Updates]
+    Win10PESE=Folder
+    Tools=Folder
+
+    [Updates\Win10PESE]
+    Win10PESE\Apps=Folder
+    Win10PESE\Build=Folder
+
+    [Updates\Win10PESE\Apps\Network]
+    Win10PESE\Apps\Network\Firewall=Folder
+    Win10PESE\Apps\Network\Remote Connect=Folder
+    Flash_Add.Script=Projects/Win10PESE/Apps/Network/Flash_Add.Script,93cc0d650b4e1ff459c43d45a531903f,015,Flash#$sAdd,Adds#$sFlash#$sPlayer.,Lancelot,http://TheOven.org,#23082,2,
+    Flash_Package.script=Projects/Win10PESE/Apps/Network/Flash_Package.script,bc42776b7140ea8d022b49d5b6c2f0de,030,Flash#$sPackage#$sx86,(v32.0.0.114#$s-#$s(x86#$s18#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#9821195,0,
+    Flash_Package64.script=Projects/Win10PESE/Apps/Network/Flash_Package64.script,a637cba7ddc866126cf903c07f9e4f79,030,Flash#$sPackage#$sx64,(v32.0.0.114#$s-#$s(x64#$s25#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#11565119,0,
+    folder.project=Projects/Win10PESE/Apps/Network/folder.project,5799a43137daa1554d36361da513b9a5,003,Net,Web#$sBrowsers#$sand#$sother#$sInternet#$srelated#$saddons,TheOven#$sChefs#$s(Galapo#$c#$sLancelot),http://TheOven.org,#4375,0,
+    Mozilla_Firefox_ESR.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR.Script,0b0a4fcaf7113aa4de40f7c10e1fd7a2,009,Mozilla#$sFirefox#$sESR#$s(P),(x86/x64#$sNT6x)#$sMozilla#$sFirefox#$sESR#$s(Extended#$sSupport#$sRelease).#$sCommitted#$sto#$syou#$c#$syour#$sprivacy#$sand#$san#$sopen#$sWeb.,ChrisR,http://TheOven.org,#3249630,2,
+    Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
+    */
+    #endregion
+
     public class FileUpdater
     {
         #region Const and Enum
@@ -66,8 +93,21 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Fields and Properties
+        private readonly MainViewModel _m;
+        private readonly string _userAgent;
+        #endregion
+
+        #region Constructor
+        public FileUpdater(MainViewModel mainViewModel, string customUserAgent)
+        {
+            _m = mainViewModel;
+            _userAgent = customUserAgent ?? Engine.DefaultUserAgent;
+        }
+        #endregion
+
         #region UpdateScript, UpdateScripts
-        public static (Script newScript, string msg) UpdateScript(Project p, Script sc, FileUpdaterOptions opts)
+        public (Script newScript, string msg) UpdateScript(Project p, Script sc)
         {
             if (!sc.Sections.ContainsKey(UpdateSection))
                 return (null, "Unable to find script update information");
@@ -99,11 +139,24 @@ namespace PEBakery.Core
             }
 
             string tempFile = FileHelper.GetTempFile();
-            opts.Model?.SetBuildCommandProgress("Download Progress");
+            _m?.SetBuildCommandProgress("Download Progress");
             try
             {
-                (bool result, string errorMsg) = DownloadFile(url, tempFile, opts);
-                if (result)
+                HttpFileDownloader downloader = new HttpFileDownloader(_m, 10, _userAgent);
+                HttpFileDownloader.Report report;
+                try
+                {
+                    Task<HttpFileDownloader.Report> task = downloader.Download(url, tempFile, null);
+                    task.Wait();
+
+                    report = task.Result;
+                }
+                catch (Exception e)
+                {
+                    report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+                }
+
+                if (report.Result)
                 { // Success
                     File.Copy(tempFile, sc.DirectRealPath, true);
                     Script newScript = p.RefreshScript(sc);
@@ -111,19 +164,19 @@ namespace PEBakery.Core
                 }
                 else
                 { // Failure
-                    return (null, errorMsg);
+                    return (null, report.ErrorMsg);
                 }
             }
             finally
             {
-                opts.Model?.ResetBuildCommandProgress();
+                _m?.ResetBuildCommandProgress();
 
                 if (File.Exists(tempFile))
                     File.Delete(tempFile);
             }
         }
 
-        public static List<LogInfo> UpdateProject(Project p, FileUpdaterOptions opts)
+        public List<LogInfo> UpdateProject(Project p)
         {
             List<LogInfo> logs = new List<LogInfo>();
             return logs;
@@ -202,7 +255,6 @@ namespace PEBakery.Core
         #endregion
 
         #region {Backup,Restore}Interface
-
         private struct InterfaceSectionBackup
         {
             public string SectionName;
@@ -267,85 +319,12 @@ namespace PEBakery.Core
         #region Utility
         private static ScriptUpdateType ParseScriptUpdateType(string str)
         {
-            if (str.Equals("Project"))
+            if (str.Equals("Project", StringComparison.OrdinalIgnoreCase))
                 return ScriptUpdateType.Project;
-            if (str.Equals("Standalone"))
+            if (str.Equals("Standalone", StringComparison.OrdinalIgnoreCase))
                 return ScriptUpdateType.Standalone;
             return ScriptUpdateType.None;
         }
-
-        private static (bool, string) DownloadFile(string url, string destFile, FileUpdaterOptions opts)
-        {
-            Uri uri = new Uri(url);
-
-            bool result = true;
-            string errorMsg = null;
-            Stopwatch watch = Stopwatch.StartNew();
-            using (WebClient client = new WebClient())
-            {
-                client.Headers.Add("User-Agent", opts.UserAgent ?? Engine.DefaultUserAgent);
-                if (opts.Model != null)
-                {
-                    client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>
-                    {
-                        opts.Model.BuildCommandProgressValue = e.ProgressPercentage;
-
-                        TimeSpan t = watch.Elapsed;
-                        double totalSec = t.TotalSeconds;
-                        string downloaded = NumberHelper.ByteSizeToSIUnit(e.BytesReceived, 1);
-                        string total = NumberHelper.ByteSizeToSIUnit(e.TotalBytesToReceive, 1);
-                        if (NumberHelper.DoubleEquals(totalSec, 0))
-                        {
-                            opts.Model.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
-                        }
-                        else
-                        {
-                            long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
-                            string speedStr = NumberHelper.ByteSizeToSIUnit((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
-
-                            // ReSharper disable once PossibleLossOfFraction
-                            TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);
-                            int hour = (int)r.TotalHours;
-                            int min = r.Minutes;
-                            int sec = r.Seconds;
-                            opts.Model.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaining Time : {hour}h {min}m {sec}s";
-                        }
-                    };
-                }
-
-                AutoResetEvent resetEvent = new AutoResetEvent(false);
-                client.DownloadFileCompleted += (object sender, AsyncCompletedEventArgs e) =>
-                {
-                    // Check if error occured
-                    if (e.Cancelled || e.Error != null)
-                    {
-                        result = false;
-                        if (e.Error is WebException webEx)
-                            errorMsg = $"[{webEx.Status}] {webEx.Message}";
-
-                        if (File.Exists(destFile))
-                            File.Delete(destFile);
-                    }
-
-                    resetEvent.Set();
-                };
-
-                client.DownloadFileAsync(uri, destFile);
-
-                resetEvent.WaitOne();
-            }
-            watch.Stop();
-
-            return (result, errorMsg);
-        }
         #endregion
     }
-
-    #region FileUpdaterOptions
-    public struct FileUpdaterOptions
-    {
-        public string UserAgent { get; set; }
-        public MainViewModel Model { get; set; }
-    }
-    #endregion
 }

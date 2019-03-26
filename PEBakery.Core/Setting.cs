@@ -276,7 +276,7 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
-                            return Colors.Black; // Color.FromRgb(215, 215, 215);
+                            return Colors.Black;
                         case ThemeType.Darker:
                             return Color.FromRgb(215, 215, 215);
                         case ThemeType.Red:
@@ -393,7 +393,6 @@ namespace PEBakery.Core
                             return Color.FromRgb(240, 240, 240);
                         case ThemeType.Red:
                         case ThemeType.Green:
-                            return Colors.White;
                         case ThemeType.Ocean:
                         case ThemeType.Marine:
                             return Colors.White;
