@@ -557,7 +557,7 @@
                                    Text="{Binding ThemeType}"/>
                         <Button Grid.Column="2" 
                                 x:Name="DarkThemeButton"
-                                Background="#FF2C2C2C"
+                                Background="#424242"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -568,7 +568,7 @@
                         </Button>
                         <Button Grid.Column="3" 
                                 x:Name="DarkerThemeButton"
-                                Background="#FF2C2C2C"
+                                Background="#2C2C2C"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -588,7 +588,7 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="5" 
-                                Background="#FF2A6E52"
+                                Background="#2A6E52"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -598,7 +598,7 @@
                             </Button.CommandParameter>
                         </Button>
                         <Button Grid.Column="6" 
-                                Background="#FF2C6E97"
+                                Background="#2F526C"
                                 Foreground="White"
                                 Command="local:SettingViewCommands.SelectThemeCommand"
                                 AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"

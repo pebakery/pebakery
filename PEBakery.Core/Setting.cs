@@ -254,7 +254,6 @@ namespace PEBakery.Core
                     switch (ThemeType)
                     {
                         case ThemeType.Dark:
-                            // return Color.FromRgb(204, 204, 204); // Original Black Theme's color
                             return Color.FromRgb(215, 215, 215);
                         case ThemeType.Darker:
                             return Color.FromRgb(66, 66, 66);
