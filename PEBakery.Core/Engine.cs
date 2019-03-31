@@ -1135,7 +1135,7 @@ namespace PEBakery.Core
 
         // Loop State Stack
         /// <summary>
-        /// Should be managed only in CommandBranch.Loop
+        /// Should be managed only in CommandBranch.Loop (and in Variables with compat option)
         /// </summary>
         public readonly Stack<EngineLoopState> LoopStateStack = new Stack<EngineLoopState>(4);
 

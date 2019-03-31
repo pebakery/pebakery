@@ -164,7 +164,7 @@ namespace PEBakery.Core.Tests.Command
 
             void SingleTemplate(List<string> rawCodes, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.DeleteValue(VarsType.Local, "Dest");
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
                 EngineTests.EvalLines(s, rawCodes, check);
@@ -178,7 +178,7 @@ namespace PEBakery.Core.Tests.Command
             }
             void ScriptTemplate(string treePath, string destComp, string retComp, ErrorCheck check = ErrorCheck.Success)
             {
-                s.Variables.DeleteValue(VarsType.Local, "Dest");
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
                 s.ReturnValue = string.Empty;
 
                 (EngineState st, _) = EngineTests.EvalScript(treePath, check);
@@ -234,7 +234,7 @@ namespace PEBakery.Core.Tests.Command
 
                 void BaseTemplate(string rawCode, string exitKey, string compStr, bool enableCompat = false, ErrorCheck check = ErrorCheck.Success)
                 {
-                    s.Variables.DeleteValue(VarsType.Local, exitKey);
+                    s.Variables.DeleteKey(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
                     if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
@@ -254,16 +254,16 @@ namespace PEBakery.Core.Tests.Command
                             Assert.IsTrue(s.ReturnValue.Equals(compStr, StringComparison.Ordinal));
                     }
 
-                    s.Variables.DeleteValue(VarsType.Local, "ExitCode");
+                    s.Variables.DeleteKey(VarsType.Local, "ExitCode");
                     if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
-                        s.Variables.DeleteValue(VarsType.Local, exitKey);
+                        s.Variables.DeleteKey(VarsType.Local, exitKey);
                 }
 
                 void DeleteTemplate(string rawCode, string exitKey, string compStr, ErrorCheck check = ErrorCheck.Success)
                 {
                     File.Copy(srcBatch, destBatch, true);
 
-                    s.Variables.DeleteValue(VarsType.Local, exitKey);
+                    s.Variables.DeleteKey(VarsType.Local, exitKey);
                     s.ReturnValue = string.Empty;
 
                     if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
@@ -277,9 +277,9 @@ namespace PEBakery.Core.Tests.Command
                         Assert.IsFalse(File.Exists(destBatch));
                     }
 
-                    s.Variables.DeleteValue(VarsType.Local, "ExitCode");
+                    s.Variables.DeleteKey(VarsType.Local, "ExitCode");
                     if (!exitKey.Equals("ExitCode", StringComparison.OrdinalIgnoreCase))
-                        s.Variables.DeleteValue(VarsType.Local, exitKey);
+                        s.Variables.DeleteKey(VarsType.Local, exitKey);
                 }
 
                 BaseTemplate($@"ShellExecute,Open,{pbBatch},78", "ExitCode", "78");

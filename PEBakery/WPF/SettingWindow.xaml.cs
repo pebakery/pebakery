@@ -1509,9 +1509,9 @@ namespace PEBakery.WPF
                         new IniKey(ScriptSection.Names.Main, Script.Const.IsoFile),
                     });
 
-                    p.Variables.DeleteValue(VarsType.Fixed, Script.Const.SourceDir);
-                    p.Variables.DeleteValue(VarsType.Fixed, Script.Const.TargetDir);
-                    p.Variables.DeleteValue(VarsType.Fixed, Script.Const.IsoFile);
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.SourceDir);
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.TargetDir);
+                    p.Variables.DeleteKey(VarsType.Fixed, Script.Const.IsoFile);
 
                     p.MainScript.MainInfo.Remove(Script.Const.SourceDir);
                     p.MainScript.MainInfo.Remove(Script.Const.TargetDir);

@@ -762,7 +762,7 @@ namespace PEBakery.Core.Tests.Command
                     w.Write(sampleStr);
                 }
 
-                s.Variables.DeleteValue(VarsType.Local, "Dest");
+                s.Variables.DeleteKey(VarsType.Local, "Dest");
                 EngineTests.Eval(s, rawCode, type, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {
@@ -794,7 +794,7 @@ namespace PEBakery.Core.Tests.Command
                 }
 
                 for (int i = 0; i < compStrs.Length; i++)
-                    s.Variables.DeleteValue(VarsType.Local, $"Dest{i}");
+                    s.Variables.DeleteKey(VarsType.Local, $"Dest{i}");
                 EngineTests.EvalOptLines(s, opType, rawCodes, check);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
                 {

@@ -231,16 +231,24 @@ namespace PEBakery.Core.Commands
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
-                        bool src1 = false;
-                        if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        bool src1;
+                        if (NumberHelper.ParseInt64(srcStr1, out long srcInt1)) // C-Style Boolean
+                            src1 = srcInt1 != 0;
+                        else if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src1 = true;
-                        else if (!srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src1 = false;
+                        else 
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not valid boolean value");
 
-                        bool src2 = false;
-                        if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        bool src2;
+                        if (NumberHelper.ParseInt64(srcStr2, out long srcInt2)) // C-Style Boolean
+                            src2 = srcInt2 != 0;
+                        else if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src2 = true;
-                        else if (!srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src2 = false;
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not valid boolean value");
 
                         bool dest;
@@ -266,11 +274,15 @@ namespace PEBakery.Core.Commands
                     {
                         MathInfo_BoolNot subInfo = info.SubInfo.Cast<MathInfo_BoolNot>();
 
-                        bool src = false;
+                        bool src;
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
-                        if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        if (NumberHelper.ParseInt64(srcStr, out long srcInt)) // C-Style Boolean
+                            src = srcInt != 0;
+                        else if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src = true;
-                        else if (!srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            src = false;
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not valid boolean value");
 
                         bool dest = !src;

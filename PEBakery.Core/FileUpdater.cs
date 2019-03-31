@@ -84,7 +84,6 @@ namespace PEBakery.Core
         private const string BaseUrlKey = @"ProjectBaseUrl";
         private const string ScriptTypeKey = @"ScriptType";
         private const string ScriptUrlKey = @"ScriptUrl";
-
         private enum ScriptUpdateType
         {
             None,

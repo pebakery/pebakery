@@ -1007,10 +1007,10 @@ namespace PEBakery.Core
                             // Need to create directory script instance?
                             Script ts = AllScripts.FirstOrDefault(x =>
                                 x.Level == sc.Level &&
-                                x.IsDirLink == sc.IsDirLink && 
+                                x.IsDirLink == sc.IsDirLink &&
                                 x.TreePath.Equals(pathKey, StringComparison.OrdinalIgnoreCase));
                             if (ts == null)
-                            { 
+                            {
                                 string dirRealPath = Path.GetDirectoryName(realPath);
                                 string dirTreePath = Path.Combine(ProjectName, pathKey);
 
