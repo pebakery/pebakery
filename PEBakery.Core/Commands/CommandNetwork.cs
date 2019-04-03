@@ -30,8 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -169,7 +167,7 @@ namespace PEBakery.Core.Commands
                     {
                         s.CancelWebGet = null;
                     }
-                    
+
                     int statusCode = report.StatusCode;
                     if (report.Result)
                     { // Success -> Check hash
@@ -205,7 +203,7 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
                     }
-                    
+
                     // PEBakery extension -> Report exit code via #r
                     if (!s.CompatDisableExtendedSectionParams)
                     {

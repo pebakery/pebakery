@@ -392,13 +392,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event Handler - Attachment
-        private void ScriptAttachTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void ScriptAttachFoldersListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.NewValue is AttachedFileItem item)
-            {
-                m.AttachSelected = item;
-                m.UpdateAttachFileDetail();
-            }
+            if (m.SelectedAttachedFolder != null)
+                m.AttachedFiles = m.SelectedAttachedFolder.Children;
+            else
+                m.AttachedFiles.Clear();
         }
         #endregion
 
@@ -444,6 +443,10 @@ namespace PEBakery.WPF
             _window = window;
             MainViewModel = mainViewModel;
             InterfaceScaleFactor = Global.Setting.Interface.ScaleFactor;
+
+            // Init ObservableCollection
+            AttachedFolders = new ObservableCollection<AttachFolderItem>();
+            AttachedFiles = new ObservableCollection<AttachFileItem>();
 
             // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
@@ -1710,132 +1713,34 @@ namespace PEBakery.WPF
         #region Property - Attachment
         public bool ScriptAttachUpdated { get; set; } = false;
 
-        public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();
-
-        public AttachedFileItem AttachSelected;
-
-        public Visibility AttachDetailFileVisibility
+        private readonly object _attachedFoldersLock = new object();
+        private ObservableCollection<AttachFolderItem> _attachedFolders;
+        public ObservableCollection<AttachFolderItem> AttachedFolders
         {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Collapsed;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Collapsed;
-                return Visibility.Visible;
-            }
+            get => _attachedFolders;
+            set => SetCollectionProperty(ref _attachedFolders, _attachedFoldersLock, value);
         }
 
-        public Visibility AttachDetailFolderVisibility
+        private AttachFolderItem _selectedAttachedFolder;
+        public AttachFolderItem SelectedAttachedFolder
         {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Collapsed;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Visible;
-                return Visibility.Collapsed;
-            }
+            get => _selectedAttachedFolder;
+            set => SetProperty(ref _selectedAttachedFolder, value);
         }
 
-        public Visibility AttachAddFolderVisibility
+        private readonly object _attachedFilesLock = new object();
+        private ObservableCollection<AttachFileItem> _attachedFiles;
+        public ObservableCollection<AttachFileItem> AttachedFiles
         {
-            get
-            {
-                if (AttachSelected == null)
-                    return Visibility.Visible;
-                if (AttachSelected.IsFolder)
-                    return Visibility.Visible;
-                return Visibility.Collapsed;
-            }
+            get => _attachedFiles;
+            set => SetCollectionProperty(ref _attachedFiles, _attachedFilesLock, value);
         }
 
-        private string _addFolderName = string.Empty;
-        public string AddFolderName
+        private AttachFileItem _selectedAttachedFile;
+        public AttachFileItem SelectedAttachedFile
         {
-            get => _addFolderName;
-            set
-            {
-                _addFolderName = value;
-                OnPropertyUpdate(nameof(AddFolderName));
-            }
-        }
-
-        public string AttachFileName
-        {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Empty value
-                return AttachSelected.Name;
-            }
-        }
-
-        public string AttachFileRawSize
-        {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Invalid value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.RawSize, 1);
-                return $"{str} ({AttachSelected.Detail.RawSize})";
-            }
-        }
-
-        public string AttachFileEncodedSize
-        {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Invalid value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                string str = NumberHelper.ByteSizeToSIUnit(AttachSelected.Detail.EncodedSize, 1);
-                return $"{str} ({AttachSelected.Detail.EncodedSize})";
-            }
-        }
-
-        public string AttachFileCompression
-        {
-            get
-            {
-                if (AttachSelected == null || AttachSelected.IsFolder)
-                    return string.Empty; // Empty value
-                Debug.Assert(AttachSelected.Detail != null);
-
-                return AttachSelected.Detail.EncodeMode == null ? "-" : EncodedFile.EncodeModeStr(AttachSelected.Detail.EncodeMode, false);
-            }
-        }
-
-        private string _attachNewFilePath = string.Empty;
-        public string AttachNewFilePath
-        {
-            get => _attachNewFilePath;
-            set => SetProperty(ref _attachNewFilePath, value);
-        }
-
-        private string _attachNewFileName = string.Empty;
-        public string AttachNewFileName
-        {
-            get => _attachNewFileName;
-            set
-            {
-                _attachNewFileName = value;
-                OnPropertyUpdate(nameof(AttachNewFileName));
-            }
-        }
-
-        private int _attachNewCompressionIndex = 1;
-        public int AttachNewCompressionIndex
-        {
-            get => _attachNewCompressionIndex;
-            set
-            {
-                _attachNewCompressionIndex = value;
-                OnPropertyUpdate(nameof(AttachNewCompressionIndex));
-            }
+            get => _selectedAttachedFile;
+            set => SetProperty(ref _selectedAttachedFile, value);
         }
 
         private double _attachProgressValue = -1;
@@ -1852,7 +1757,7 @@ namespace PEBakery.WPF
             set => SetProperty(ref _attachProgressIndeterminate, value);
         }
         #endregion
-
+            /*
         #region UpdateAttachFileDetail
         public void UpdateAttachFileDetail()
         {
@@ -1865,7 +1770,7 @@ namespace PEBakery.WPF
             OnPropertyUpdate(nameof(AttachAddFolderVisibility));
         }
         #endregion
-
+    */
         #region InvokeUIControlEvent
         public bool UIControlModifiedEventToggle = false;
         public void InvokeUIControlEvent(bool infoNotUpdated)
@@ -2592,7 +2497,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void UICtrlListItemBoxDeleteCommand_Execute(object paramaeter)
+        private void UICtrlListItemBoxDeleteCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3072,28 +2977,34 @@ namespace PEBakery.WPF
         private ICommand _addFolderCommand;
         private ICommand _extractFolderCommand;
         private ICommand _deleteFolderCommand;
-        private ICommand _attachNewFileChooseCommand;
         private ICommand _attachFileCommand;
         public ICommand AddFolderCommand => GetRelayCommand(ref _addFolderCommand, "Add folder", AddFolderCommand_Execute, CanExecuteFunc);
-        public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, CanExecuteFunc);
-        public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, CanExecuteFunc);
-        public ICommand AttachNewFileChooseCommand => GetRelayCommand(ref _attachNewFileChooseCommand, "Choose file to attach", AttachNewFileChooseCommand_Execute, CanExecuteFunc);
-        public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, CanExecuteFunc);
+        public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, FolderSelected_CanExecute);
+        public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, FolderSelected_CanExecute);
+        public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, FolderSelected_CanExecute);
+
+        private bool FolderSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null;
+        }
 
         private void AddFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                string folderName = AddFolderName.Trim();
-                AddFolderName = string.Empty;
-
+                TextBoxDialog dialog = new TextBoxDialog(_window, "Add new folder", "Please input new folder's name.", PackIconMaterialKind.FolderPlus);
+                if (dialog.ShowDialog() != true)
+                    return;
+                
+                string folderName = dialog.InputText;
                 if (folderName.Length == 0)
                 {
                     MessageBox.Show(_window, "The folder name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
+                AttachProgressIndeterminate = true;
                 try
                 {
                     if (EncodedFile.ContainsFolder(Script, folderName))
@@ -3107,14 +3018,19 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show(_window, $"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window,
+                        $"Unable to add folder.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    AttachProgressIndeterminate = false;
                 }
 
                 ScriptAttachUpdated = true;
                 ReadScriptAttachment();
 
-                AttachSelected = null;
-                UpdateAttachFileDetail();
+                SelectScriptAttachedFolder(folderName);
             }
             finally
             {
@@ -3123,33 +3039,28 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ExtractFolderCommand_Execute(object parameter)
+        private async void ExtractFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+                EncodedFileInfo[] fileInfos = folder.Children.Select(x => x.Info).ToArray();
+                if (fileInfos.Length == 0)
+                {
+                    MessageBox.Show(_window, $"Folder [{folder.FolderName}] is empty.", "No Files", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
-
-                Debug.Assert(item.Detail == null);
+                }
 
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
                 if (dialog.ShowDialog(_window) == true)
                 {
                     string destDir = dialog.SelectedPath;
 
-                    (List<EncodedFileInfo> fileInfos, string errMsg) = EncodedFile.GetFolderInfo(Script, item.Name, false);
-                    if (errMsg != null)
-                    {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                        MessageBox.Show(_window, $"Extraction failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
                     StringBuilder b = new StringBuilder();
                     bool fileOverwrote = false;
-                    for (int i = 0; i < fileInfos.Count; i++)
+                    for (int i = 0; i < fileInfos.Length; i++)
                     {
                         EncodedFileInfo info = fileInfos[i];
 
@@ -3159,7 +3070,7 @@ namespace PEBakery.WPF
                             fileOverwrote = true;
 
                             b.Append(destFile);
-                            if (i + 1 < fileInfos.Count)
+                            if (i + 1 < fileInfos.Length)
                                 b.Append(", ");
                         }
                     }
@@ -3185,23 +3096,68 @@ namespace PEBakery.WPF
                     if (!proceedExtract)
                         return;
 
-                    foreach (EncodedFileInfo info in fileInfos)
+                    List<string> successFiles = new List<string>();
+                    List<(string, Exception)> failureFiles = new List<(string, Exception)>();
+                    AttachProgressValue = 0;
+                    try
                     {
-                        try
+                        int idx = 0;
+                        IProgress<double> progress = new Progress<double>(x =>
                         {
-                            string destFile = Path.Combine(destDir, info.FileName);
-                            using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                            // ReSharper disable once AccessToModifiedClosure
+                            AttachProgressValue = (x + idx) / fileInfos.Length;
+                        });
+
+                        foreach (EncodedFileInfo fi in fileInfos)
+                        {
+                            try
                             {
-                                EncodedFile.ExtractFile(Script, info.FolderName, info.FileName, fs, null);
+                                string destFile = Path.Combine(destDir, fi.FileName);
+                                using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                                {
+                                    await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                                }
+
+                                successFiles.Add(fi.FileName);
+                            }
+                            catch (Exception ex)
+                            {
+                                failureFiles.Add((fi.FileName, ex));
                             }
 
-                            MessageBox.Show(_window, "File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                            idx += 1;
                         }
-                        catch (Exception ex)
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                    }
+
+                    // Success Report
+                    b.Clear();
+                    if (1 < successFiles.Count)
+                    {
+                        b.AppendLine($"{successFiles.Count} files were successfully extracted.");
+                        foreach (string fileName in successFiles)
+                            b.AppendLine($"- {fileName}");
+                    }
+                    else if (successFiles.Count == 1)
+                    {
+                        b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
+                    }
+                    MessageBox.Show(_window, b.ToString(), "Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Failure Report
+                    if (1 <= failureFiles.Count)
+                    {
+                        b.Clear();
+                        b.AppendLine($"Unable to extract {successFiles.Count} files.");
+                        foreach ((string fileName, Exception ex) in failureFiles)
                         {
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                            MessageBox.Show(_window, $"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
                         }
+                        MessageBox.Show(_window, b.ToString(), "Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -3217,29 +3173,25 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail == null);
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
 
                 MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure you want to delete [{item.Name}]?",
+                    $"Are you sure you want to delete [{folder.FolderName}]?",
                     "Confirm Delete",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Error);
                 if (result == MessageBoxResult.No)
                     return;
 
+                AttachProgressIndeterminate = true;
+
                 string errMsg;
-                (Script, errMsg) = await EncodedFile.DeleteFolderAsync(Script, item.Name);
+                (Script, errMsg) = await EncodedFile.DeleteFolderAsync(Script, folder.FolderName);
                 if (errMsg == null)
                 {
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
-
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
                 }
                 else // Failure
                 {
@@ -3250,35 +3202,7 @@ namespace PEBakery.WPF
             finally
             {
                 CanExecuteCommand = true;
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        private void AttachNewFileChooseCommand_Execute(object parameter)
-        {
-            CanExecuteCommand = false;
-            try
-            {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail == null);
-
-                OpenFileDialog dialog = new OpenFileDialog
-                {
-                    Filter = "All Files|*.*",
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    AttachNewFilePath = dialog.FileName;
-                    AttachNewFileName = Path.GetFileName(dialog.FileName);
-                }
-            }
-            finally
-            {
-                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -3288,55 +3212,40 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+
+                ScriptAttachFileDialog dialog = new ScriptAttachFileDialog { Owner = _window };
+                if (dialog.ShowDialog() != true)
                     return;
+                string srcFilePath = dialog.FilePath;
+                string srcFileName = dialog.FileName;
+                EncodedFile.EncodeMode mode = dialog.EncodeMode;
 
-                Debug.Assert(item.Detail == null);
-
-                string srcFile = AttachNewFilePath;
-
-                if (srcFile.Length == 0)
+                if (srcFilePath.Length == 0)
                 {
                     MessageBox.Show(_window, "You must choose a file to attach", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (!File.Exists(srcFile))
+                if (!File.Exists(srcFilePath))
                 {
-                    MessageBox.Show(_window, $"Invalid path:\r\n[{srcFile}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Invalid path:\r\n[{srcFilePath}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(AttachNewFileName))
+                if (string.IsNullOrWhiteSpace(srcFileName))
                 {
                     MessageBox.Show(_window, "The file name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                EncodedFile.EncodeMode mode;
-                switch (AttachNewCompressionIndex)
-                {
-                    case 0:
-                        mode = EncodedFile.EncodeMode.Raw;
-                        break;
-                    case 1:
-                        mode = EncodedFile.EncodeMode.ZLib;
-                        break;
-                    case 2:
-                        mode = EncodedFile.EncodeMode.XZ;
-                        break;
-                    default:
-                        MessageBox.Show(_window, "Internal Logic Error at ScriptEditWindow.AttachFileButton_Click", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                }
-
                 try
                 {
-                    if (EncodedFile.ContainsFile(Script, item.Name, AttachNewFileName))
+                    if (EncodedFile.ContainsFile(Script, folder.FolderName, srcFileName))
                     {
                         MessageBoxResult result = MessageBox.Show(
-                            $"The attached file [{AttachNewFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
+                            $"The attached file [{srcFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
                             "Confirm",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Error);
@@ -3349,7 +3258,7 @@ namespace PEBakery.WPF
                         CanExecuteCommand = false;
                         AttachProgressValue = 0;
                         IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                        await EncodedFile.AttachFileAsync(Script, item.Name, AttachNewFileName, srcFile, mode, progress);
+                        await EncodedFile.AttachFileAsync(Script, folder.FolderName, srcFileName, srcFilePath, mode, progress);
                     }
                     finally
                     {
@@ -3358,14 +3267,11 @@ namespace PEBakery.WPF
                     }
                     MessageBox.Show(_window, "File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    AttachNewFilePath = string.Empty;
-                    AttachNewFileName = string.Empty;
-
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
 
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
+                    SelectScriptAttachedFolder(folder.FolderName);
+                    SelectScriptAttachedFile(srcFileName);
                 }
                 catch (Exception ex)
                 {
@@ -3384,30 +3290,35 @@ namespace PEBakery.WPF
         #region Command - Attachment (File)
         private ICommand _extractFileCommand;
         private ICommand _deleteFileCommand;
+        private ICommand _openFileCommand;
         private ICommand _inspectFileCommand;
-        public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract attached file", ExtractFileCommand_Execute, CanExecuteFunc);
-        public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete attached file", DeleteFileCommand_Execute, CanExecuteFunc);
-        public ICommand InspectFileCommand => GetRelayCommand(ref _inspectFileCommand, "Inspect attached file", InspectFileCommand_Execute, CanExecuteFunc);
+        public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract file", ExtractFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete file", DeleteFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand InspectFileCommand => GetRelayCommand(ref _inspectFileCommand, "Inspect file", InspectFileCommand_Execute, FileSelected_CanExecute);
+
+        private bool FileSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFile != null;
+        }
 
         private async void ExtractFileCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
+                AttachFileItem file = SelectedAttachedFile;
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
 
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
-
-                Debug.Assert(info.FileName != null);
-                string ext = Path.GetExtension(info.FileName);
+                Debug.Assert(fi.FileName != null);
+                string ext = Path.GetExtension(fi.FileName);
                 SaveFileDialog dialog = new SaveFileDialog
                 {
                     OverwritePrompt = true,
-                    FileName = info.FileName,
-                    Filter = $"{ext.ToUpper().Replace(".", string.Empty)} File|*{ext}"
+                    FileName = fi.FileName,
+                    Filter = $"{ext.ToUpper().TrimStart('.')} file|*{ext}"
                 };
 
                 if (dialog.ShowDialog() == true)
@@ -3422,7 +3333,7 @@ namespace PEBakery.WPF
                             IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
                             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
                             {
-                                await EncodedFile.ExtractFileAsync(Script, info.FolderName, info.FileName, fs, progress);
+                                await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                             }
                         }
                         finally
@@ -3452,34 +3363,75 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
-
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
+                AttachFileItem file = SelectedAttachedFile;
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
 
                 MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure you want to delete [{info.FileName}]?",
+                    $"Are you sure you want to delete [{fi.FileName}]?",
                     "Confirm Delete",
                     MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.No)
                     return;
 
+                AttachProgressIndeterminate = true;
+
                 string errMsg;
-                (Script, errMsg) = EncodedFile.DeleteFile(Script, info.FolderName, info.FileName);
+                (Script, errMsg) = EncodedFile.DeleteFile(Script, fi.FolderName, fi.FileName);
                 if (errMsg == null)
                 {
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
-
-                    AttachSelected = null;
-                    UpdateAttachFileDetail();
                 }
                 else // Failure
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async void OpenFileCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                AttachFileItem file = SelectedAttachedFile;
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
+
+                // Do not clear tempDir right after calling OpenPath(). Doing this will trick the opened process.
+                // Instead, leave it to Global.Cleanup() when program is exited.
+                string tempDir = FileHelper.GetTempDir();
+                try
+                {
+                    AttachProgressValue = 0;
+                    IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+
+                    string tempFile = Path.Combine(tempDir, fi.FileName);
+                    using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
+                    {
+                        await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                    }
+
+                    FileHelper.OpenPath(tempFile);
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show(_window, $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    AttachProgressValue = -1;
                 }
             }
             finally
@@ -3495,27 +3447,26 @@ namespace PEBakery.WPF
             AttachProgressIndeterminate = true;
             try
             {
-                AttachedFileItem item = AttachSelected;
-                if (item == null)
-                    return;
+                AttachFileItem file = SelectedAttachedFile;
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
 
-                Debug.Assert(item.Detail != null);
-                EncodedFileInfo info = item.Detail;
-                string dirName = info.FolderName;
-                string fileName = info.FileName;
+                string dirName = fi.FolderName;
+                string fileName = fi.FileName;
 
-                if (info.EncodeMode != null)
+                if (fi.EncodeMode != null)
                     return;
 
                 string errMsg;
-                (info, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                (fi, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
                 if (errMsg == null)
-                {
-                    item.Detail = info;
-                    UpdateAttachFileDetail();
+                { // Success
+                    file.Info = fi;
+                    file.PropertyUpdate();
                 }
-                else // Failure
-                {
+                else 
+                { // Failure
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show(_window, $"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -3636,6 +3587,7 @@ namespace PEBakery.WPF
         public void ReadScriptAttachment()
         {
             // Attachment
+            AttachedFolders.Clear();
             AttachedFiles.Clear();
 
             (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, false);
@@ -3646,17 +3598,31 @@ namespace PEBakery.WPF
                 return;
             }
 
-            foreach (var kv in fileDict)
-            {
-                string dirName = kv.Key;
+            foreach (var kv in fileDict.OrderBy(kv => kv.Key, StringComparer.InvariantCulture))
+                AttachedFolders.Add(new AttachFolderItem(kv.Key, kv.Value));
+        }
 
-                AttachedFileItem item = new AttachedFileItem(true, dirName);
-                foreach (EncodedFileInfo fi in kv.Value)
+        public void SelectScriptAttachedFolder(string folderName)
+        {
+            foreach (AttachFolderItem fi in AttachedFolders)
+            {
+                if (fi.FolderName.Equals(folderName, StringComparison.Ordinal))
                 {
-                    AttachedFileItem child = new AttachedFileItem(false, fi.FileName, fi);
-                    item.Children.Add(child);
+                    SelectedAttachedFolder = fi;
+                    break;
                 }
-                AttachedFiles.Add(item);
+            }
+        }
+
+        public void SelectScriptAttachedFile(string fileName)
+        {
+            foreach (AttachFileItem fi in AttachedFiles)
+            {
+                if (fi.FileName.Equals(fileName, StringComparison.Ordinal))
+                {
+                    SelectedAttachedFile = fi;
+                    break;
+                }
             }
         }
 
@@ -3956,71 +3922,83 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region AttachedFilesItem
-    public class AttachedFileItem : INotifyPropertyChanged
+    #region AttachFolderItem, AttachFileItem
+    public class AttachFolderItem : ViewModelBase
     {
         #region Constructor
-        public AttachedFileItem(bool isFolder, string name, EncodedFileInfo detail = null)
+        public AttachFolderItem(string folderName, IReadOnlyList<EncodedFileInfo> infos)
         {
-            if (!isFolder && detail == null) // If file, info must not be null
-                throw new ArgumentException($"File's [{nameof(detail)}] must not be null");
-            if (isFolder && detail != null) // If folder, info must be null
-                throw new ArgumentException($"Folder's [{nameof(detail)}] must be null");
+            FolderName = folderName;
+            Children = new ObservableCollection<AttachFileItem>(infos.Select(x => new AttachFileItem(x)));
+        }
 
-            IsFolder = isFolder;
-            Name = name;
-            Detail = detail;
-            Icon = isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File;
-
-            Children = new ObservableCollection<AttachedFileItem>();
+        public AttachFolderItem(string folderName, IReadOnlyList<AttachFileItem> files)
+        {
+            FolderName = folderName;
+            Children = new ObservableCollection<AttachFileItem>(files);
         }
         #endregion
 
-        #region Property - TreeView
-        private bool _isFolder;
-        public bool IsFolder
+        #region Property
+        private string _folderName;
+        public string FolderName
         {
-            get => _isFolder;
-            set
-            {
-                _isFolder = value;
-                OnPropertyUpdate(nameof(IsFolder));
-            }
+            get => _folderName;
+            set => SetProperty(ref _folderName, value);
         }
 
-        private string _name;
-        public string Name
+        private readonly object _childrenLock = new object();
+        private ObservableCollection<AttachFileItem> _children;
+        public ObservableCollection<AttachFileItem> Children
         {
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyUpdate(nameof(Name));
-            }
+            get => _children;
+            set => SetCollectionProperty(ref _children, _childrenLock, value);
         }
 
-        // null if folder
-        public EncodedFileInfo Detail;
+        public int FileCount => Children.Count;
+        #endregion
+    }
 
-        public ObservableCollection<AttachedFileItem> Children { get; private set; }
-
-        private PackIconMaterialKind _icon;
-        public PackIconMaterialKind Icon
+    public class AttachFileItem : ViewModelBase
+    {
+        #region Constructor
+        public AttachFileItem(EncodedFileInfo info)
         {
-            get => _icon;
-            set
-            {
-                _icon = value;
-                OnPropertyUpdate(nameof(Icon));
-            }
+            Info = info ?? throw new ArgumentNullException(nameof(info));
         }
         #endregion
 
-        #region OnPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyUpdate(string propertyName)
+        #region Property
+        public EncodedFileInfo Info;
+        public string FileName => Info.FileName;
+        public string RawSize => $"{NumberHelper.ByteSizeToSIUnit(Info.RawSize, 1)} ({Info.RawSize})";
+        public string EncodedSize => $"{NumberHelper.ByteSizeToSIUnit(Info.EncodedSize, 1)} ({Info.EncodedSize})";
+        public string Compression
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get
+            {
+                switch (Info.EncodeMode)
+                {
+                    case EncodedFile.EncodeMode.Raw:
+                        return "None";
+                    case EncodedFile.EncodeMode.ZLib:
+                        return "Deflate";
+                    case EncodedFile.EncodeMode.XZ:
+                        return "LZMA2";
+                    case null:
+                        return "Not Inspected";
+                    default:
+                        return "Unknown";
+                }
+            }
+        }
+
+        public void PropertyUpdate()
+        {
+            OnPropertyUpdate(nameof(FileName));
+            OnPropertyUpdate(nameof(RawSize));
+            OnPropertyUpdate(nameof(EncodedSize));
+            OnPropertyUpdate(nameof(Compression));
         }
         #endregion
     }

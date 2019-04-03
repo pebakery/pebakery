@@ -158,6 +158,9 @@
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WPF\ScriptAttachFileDialog.xaml.cs">
+      <DependentUpon>ScriptAttachFileDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\ScriptEditWindow.xaml.cs">
       <DependentUpon>ScriptEditWindow.xaml</DependentUpon>
     </Compile>
@@ -219,6 +222,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="WPF\ScriptAttachFileDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="WPF\ScriptEditWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

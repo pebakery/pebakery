@@ -297,7 +297,7 @@ namespace PEBakery.Core
         #region ForceStop
         public void ForceStop()
         {
-            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+            s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
             if (s.RunningSubProcess != null)
             {
                 try { s.RunningSubProcess.Kill(); }
