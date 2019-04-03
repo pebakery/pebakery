@@ -66,9 +66,9 @@ See [here](https://github.com/pebakery/pebakery/projects/2).
 
 ## Screenshots
 
-### PEBakery Nightly (20190207)
+### PEBakery Nightly (20190404)
 
-![Win10XPE with PEBakery 20190207](./Image/PEBakery-nightly-Win10XPE.png)
+![Win10XPE with PEBakery 20190404](./Image/PEBakery-nightly-Win10XPE.png)
 
 ### PEBakery Beta 5
 
