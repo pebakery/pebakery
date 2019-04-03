@@ -656,9 +656,13 @@ namespace PEBakery.Core.Tests
             Script sc = s.Project.LoadScriptRuntime(originScript, new LoadScriptRuntimeOptions());
 
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-            void Template(bool detail, Dictionary<string, List<EncodedFileInfo>> compDict)
+            void Template(bool inspectEncodedSize, Dictionary<string, List<EncodedFileInfo>> compDict)
             {
-                (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) = EncodedFile.GetAllFilesInfo(sc, detail);
+                EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
+                {
+                    InspectEncodeMode = inspectEncodedSize,
+                };
+                (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) = EncodedFile.GetAllFilesInfo(sc, opts);
                 Assert.IsNull(errMsg);
                 Assert.AreEqual(compDict.Count, infoDict.Count);
                 foreach (var kv in compDict)

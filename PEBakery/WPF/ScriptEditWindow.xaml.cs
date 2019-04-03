@@ -1756,21 +1756,29 @@ namespace PEBakery.WPF
             get => _attachProgressIndeterminate;
             set => SetProperty(ref _attachProgressIndeterminate, value);
         }
-        #endregion
-            /*
-        #region UpdateAttachFileDetail
-        public void UpdateAttachFileDetail()
+
+        private bool _attachEnableAdvancedView = false;
+        public bool AttachEnableAdvancedView
         {
-            OnPropertyUpdate(nameof(AttachFileName));
-            OnPropertyUpdate(nameof(AttachFileRawSize));
-            OnPropertyUpdate(nameof(AttachFileEncodedSize));
-            OnPropertyUpdate(nameof(AttachFileCompression));
-            OnPropertyUpdate(nameof(AttachDetailFileVisibility));
-            OnPropertyUpdate(nameof(AttachDetailFolderVisibility));
-            OnPropertyUpdate(nameof(AttachAddFolderVisibility));
+            get => _attachEnableAdvancedView;
+            set => SetProperty(ref _attachEnableAdvancedView, value);
+        }
+
+        private bool _attachIncludeInterfaceEncoded = false;
+        public bool AttachIncludeInterfaceEncoded
+        {
+            get => _attachIncludeInterfaceEncoded;
+            set => SetProperty(ref _attachIncludeInterfaceEncoded, value);
+        }
+
+        private bool _attachIncludeAuthorEncoded = false;
+        public bool AttachIncludeAuthorEncoded
+        {
+            get => _attachIncludeAuthorEncoded;
+            set => SetProperty(ref _attachIncludeAuthorEncoded, value);
         }
         #endregion
-    */
+
         #region InvokeUIControlEvent
         public bool UIControlModifiedEventToggle = false;
         public void InvokeUIControlEvent(bool infoNotUpdated)
@@ -3180,7 +3188,7 @@ namespace PEBakery.WPF
                     $"Are you sure you want to delete [{folder.FolderName}]?",
                     "Confirm Delete",
                     MessageBoxButton.YesNo,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Question);
                 if (result == MessageBoxResult.No)
                     return;
 
@@ -3480,6 +3488,83 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Command - Attachment (Advanced)
+        private ICommand _enableAdvancedViewCommand;
+        private ICommand _enableAuthorEncodedCommand;
+        private ICommand _enableInterfaceEncodedCommand;
+        public ICommand EnableAdvancedViewCommand => GetRelayCommand(ref _enableAdvancedViewCommand, "Enable advanced view", EnableAdvancedViewCommand_Execute, CanExecuteFunc);
+        public ICommand EnableAuthorEncodedCommand => GetRelayCommand(ref _enableAuthorEncodedCommand, "Enable [AuthorEncoded]", EnableAuthorEncodedCommand_Execute, AdvancedView_CanExecute);
+        public ICommand EnableInterfaceEncodedCommand => GetRelayCommand(ref _enableInterfaceEncodedCommand, "Enable [InterfaceEncoded]", EnableInterfaceEncodedCommand_Execute, AdvancedView_CanExecute);
+
+        private bool AdvancedView_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && AttachEnableAdvancedView;
+        }
+
+        private void EnableAdvancedViewCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                if (AttachEnableAdvancedView)
+                {
+                    MessageBoxResult result = MessageBox.Show(_window, 
+                        "Advanced view can easily corrupt a script!\r\nYou must know what you are doing.\r\n\r\nAre you sure to enable advanced view?", 
+                        "Are you sure?", 
+                        MessageBoxButton.YesNo, 
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.No)
+                        AttachEnableAdvancedView = false;
+                }
+                else
+                { // Turn off all advanced view
+                    AttachIncludeAuthorEncoded = false;
+                    AttachIncludeInterfaceEncoded = false;
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void EnableAuthorEncodedCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                ReadScriptAttachment();
+
+                if (AttachIncludeAuthorEncoded)
+                    SelectScriptAttachedFolder(ScriptSection.Names.AuthorEncoded);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private void EnableInterfaceEncodedCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                ReadScriptAttachment();
+
+                if (AttachIncludeInterfaceEncoded)
+                    SelectScriptAttachedFolder(ScriptSection.Names.InterfaceEncoded);
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        #endregion
+
         #region Methods - ReadScript
         public void ReadScriptGeneral()
         {
@@ -3590,7 +3675,13 @@ namespace PEBakery.WPF
             AttachedFolders.Clear();
             AttachedFiles.Clear();
 
-            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, false);
+            EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
+            {
+                IncludeAuthorEncoded = AttachIncludeAuthorEncoded, 
+                IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
+                InspectEncodeMode = false,
+            };
+            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, opts);
             if (errMsg != null)
             {
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));

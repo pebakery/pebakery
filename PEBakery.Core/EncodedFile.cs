@@ -660,12 +660,12 @@ namespace PEBakery.Core
             return (info, null);
         }
 
-        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string folderName, bool detail = false)
+        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string folderName, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetFolderInfo(sc, folderName, detail));
+            return Task.Run(() => GetFolderInfo(sc, folderName, inspectEncodeMode));
         }
 
-        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string folderName, bool detail = false)
+        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -693,7 +693,7 @@ namespace PEBakery.Core
                 if (info.EncodedSize == -1)
                     return (null, $"Unable to parse encoded size of [{fileName}]");
 
-                if (detail)
+                if (inspectEncodeMode)
                 {
                     string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
                     info.EncodeMode = GetEncodeMode(sc.RealPath, section);
@@ -705,12 +705,19 @@ namespace PEBakery.Core
             return (infos, null);
         }
 
-        public static Task<(Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg)> GetAllFilesInfoAsync(Script sc, bool detail = false)
+        public struct GetFileInfoOptions
         {
-            return Task.Run(() => GetAllFilesInfo(sc, detail));
+            public bool IncludeAuthorEncoded;
+            public bool IncludeInterfaceEncoded;
+            public bool InspectEncodeMode;
         }
 
-        public static (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) GetAllFilesInfo(Script sc, bool detail = false)
+        public static Task<(Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg)> GetAllFilesInfoAsync(Script sc, GetFileInfoOptions opts)
+        {
+            return Task.Run(() => GetAllFilesInfo(sc, opts));
+        }
+
+        public static (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) GetAllFilesInfo(Script sc, GetFileInfoOptions opts)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -734,6 +741,11 @@ namespace PEBakery.Core
                 folderNames.RemoveAt(ieIdx);
             }
 
+            if (opts.IncludeAuthorEncoded && sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
+                folderNames.Add(ScriptSection.Names.AuthorEncoded);
+            if (opts.IncludeInterfaceEncoded && sc.Sections.ContainsKey(ScriptSection.Names.InterfaceEncoded))
+                folderNames.Add(ScriptSection.Names.InterfaceEncoded);
+
             foreach (string folderName in folderNames)
             {
                 if (!infoDict.ContainsKey(folderName))
@@ -744,12 +756,12 @@ namespace PEBakery.Core
                     continue;
 
                 /*
-                   Example
+                Example
 
-                   [Fonts]
-                   README.txt=522,696
-                   D2Coding-OFL-License.txt=2102,2803
-                   D2Coding-Ver1.2-TTC-20161024.7z=3118244,4157659
+                [Fonts]
+                README.txt=522,696
+                D2Coding-OFL-License.txt=2102,2803
+                D2Coding-Ver1.2-TTC-20161024.7z=3118244,4157659
                 */
                 Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
                 foreach (var kv in fileDict)
@@ -763,6 +775,10 @@ namespace PEBakery.Core
                         FileName = fileName
                     };
 
+                    // In [AuthorEncoded], "Logo=" line does not contain proper encoded file information
+                    if (opts.IncludeAuthorEncoded && fileName.Equals("Logo", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     if (!fileDict.ContainsKey(fileName))
                         return (null, $"File index of [{fileName}] does not exist");
 
@@ -772,7 +788,7 @@ namespace PEBakery.Core
                     if (info.EncodedSize == -1)
                         return (null, $"Unable to parse encoded size of [{fileName}]");
 
-                    if (detail)
+                    if (opts.InspectEncodeMode)
                     {
                         string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
                         info.EncodeMode = GetEncodeMode(sc.RealPath, section);
@@ -791,7 +807,7 @@ namespace PEBakery.Core
         /// <param name="fileIndex">String of file index Ex) "522,696"</param>
         /// <returns>
         /// If succeed, return (rawSize, encodedSize)
-        /// If failes, return (-1, -1)
+        /// If fails, return (-1, -1)
         /// </returns>
         private static (int rawSize, int encodedSize) ParseFileIndex(string fileIndex)
         {

@@ -1341,6 +1341,33 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
+                        <StackPanel Margin="0, 0, 0, 10">
+                            <DockPanel Margin="0, 0, 0, 5">
+                                <CheckBox DockPanel.Dock="Right"
+                                          VerticalAlignment="Bottom"
+                                          Command="{Binding EnableAdvancedViewCommand}"
+                                          IsChecked="{Binding AttachEnableAdvancedView}"/>
+                                <TextBlock DockPanel.Dock="Left"
+                                           FontWeight="Bold"
+                                           FontSize="13"
+                                           Text="Advanced View"/>
+                            </DockPanel>
+                            <Separator Margin="0, 0, 0, 5"
+                                       SnapsToDevicePixels="True"
+                                       BorderBrush="Black"
+                                       BorderThickness="2"/>
+                            <StackPanel Margin="3, 0, 3, 0"
+                                        IsEnabled="{Binding AttachEnableAdvancedView}">
+                                <CheckBox Height="20" Content="AuthorEncoded"
+                                          VerticalContentAlignment="Center"
+                                          Command="{Binding EnableAuthorEncodedCommand}"
+                                          IsChecked="{Binding AttachIncludeAuthorEncoded}"/>
+                                <CheckBox Height="20" Content="InterfaceEncoded"
+                                          VerticalContentAlignment="Center"
+                                          Command="{Binding EnableInterfaceEncodedCommand}"
+                                          IsChecked="{Binding AttachIncludeInterfaceEncoded}"/>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                     <!-- List of Folders -->
                     <ListView Grid.Row="0" Grid.Column="1"
