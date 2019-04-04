@@ -3391,6 +3391,8 @@ namespace PEBakery.WPF
                 {
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(fi.FolderName);
                 }
                 else // Failure
                 {

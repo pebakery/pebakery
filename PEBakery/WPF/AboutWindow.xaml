@@ -113,11 +113,8 @@
                         <TextBlock VerticalAlignment="Bottom"
                                    Margin="0, 0, 0, 0"
                                    FontSize="14"
-                                   Text="Copyright (C) 2016-2019 Hajin Jang "/>
-                        <TextBlock VerticalAlignment="Bottom"
-                                   Margin="0, 0, 0, 0"
-                                   FontSize="12"
-                                   Text="(aka ied206, joveler)"/>
+                                   Text="Copyright (C) 2016-2019 Hajin Jang, PEBakery Contributors"/>
+                        
                     </StackPanel>
                     
                 </StackPanel>

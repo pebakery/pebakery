@@ -1371,10 +1371,13 @@
                     </StackPanel>
                     <!-- List of Folders -->
                     <ListView Grid.Row="0" Grid.Column="1"
-                             x:Name="ScriptAttachFoldersListView"
-                             ItemsSource="{Binding AttachedFolders}"
-                             SelectedItem="{Binding SelectedAttachedFolder}"
-                             SelectionChanged="ScriptAttachFoldersListView_SelectionChanged">
+                              x:Name="ScriptAttachFoldersListView"
+                              ItemsSource="{Binding AttachedFolders}"
+                              SelectedItem="{Binding SelectedAttachedFolder}"
+                              SelectionChanged="ScriptAttachFoldersListView_SelectionChanged"
+                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              Style="{StaticResource ListItemFocusColorOverride}"
+                              AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
                                 <GridViewColumn Header="FolderName"
@@ -1389,7 +1392,10 @@
                     <!-- List of Files -->
                     <ListView Grid.Row="0" Grid.Column="2"
                               ItemsSource="{Binding AttachedFiles}"
-                              SelectedItem="{Binding SelectedAttachedFile}">
+                              SelectedItem="{Binding SelectedAttachedFile}"
+                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              Style="{StaticResource ListItemFocusColorOverride}"
+                              AlternationCount="2">
                         <ListView.View>
                             <cc:AutoSizedGridView>
                                 <GridViewColumn Header="FileName"
