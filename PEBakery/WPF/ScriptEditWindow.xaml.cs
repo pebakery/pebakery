@@ -399,6 +399,21 @@ namespace PEBakery.WPF
             else
                 m.AttachedFiles.Clear();
         }
+
+        private void ScriptAttachFilesListView_Selected(object sender, SelectionChangedEventArgs e)
+        {
+            foreach (object item in e.RemovedItems)
+            {
+                Debug.Assert(item.GetType() == typeof(AttachFileItem));
+                m.SelectedAttachedFiles.Remove((AttachFileItem)item);
+            }
+
+            foreach (object item in e.AddedItems)
+            {
+                Debug.Assert(item.GetType() == typeof(AttachFileItem));
+                m.SelectedAttachedFiles.Add((AttachFileItem)item);
+            }
+        }
         #endregion
 
         #region Command - Save
@@ -447,6 +462,7 @@ namespace PEBakery.WPF
             // Init ObservableCollection
             AttachedFolders = new ObservableCollection<AttachFolderItem>();
             AttachedFiles = new ObservableCollection<AttachFileItem>();
+            SelectedAttachedFiles = new List<AttachFileItem>();
 
             // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
@@ -1736,11 +1752,11 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _attachedFiles, _attachedFilesLock, value);
         }
 
-        private AttachFileItem _selectedAttachedFile;
-        public AttachFileItem SelectedAttachedFile
+        private List<AttachFileItem> _selectedAttachedFiles;
+        public List<AttachFileItem> SelectedAttachedFiles
         {
-            get => _selectedAttachedFile;
-            set => SetProperty(ref _selectedAttachedFile, value);
+            get => _selectedAttachedFiles;
+            set => SetProperty(ref _selectedAttachedFiles, value);
         }
 
         private double _attachProgressValue = -1;
@@ -3004,7 +3020,7 @@ namespace PEBakery.WPF
                 TextBoxDialog dialog = new TextBoxDialog(_window, "Add new folder", "Please input new folder's name.", PackIconMaterialKind.FolderPlus);
                 if (dialog.ShowDialog() != true)
                     return;
-                
+
                 string folderName = dialog.InputText;
                 if (folderName.Length == 0)
                 {
@@ -3153,7 +3169,7 @@ namespace PEBakery.WPF
                     {
                         b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
                     }
-                    MessageBox.Show(_window, b.ToString(), "Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(_window, b.ToString(), "Extraction Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     // Failure Report
                     if (1 <= failureFiles.Count)
@@ -3165,7 +3181,7 @@ namespace PEBakery.WPF
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                             b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
                         }
-                        MessageBox.Show(_window, b.ToString(), "Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(_window, b.ToString(), "Extraction Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -3302,12 +3318,17 @@ namespace PEBakery.WPF
         private ICommand _inspectFileCommand;
         public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract file", ExtractFileCommand_Execute, FileSelected_CanExecute);
         public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete file", DeleteFileCommand_Execute, FileSelected_CanExecute);
-        public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSelected_CanExecute);
+        public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSingleSelected_CanExecute);
         public ICommand InspectFileCommand => GetRelayCommand(ref _inspectFileCommand, "Inspect file", InspectFileCommand_Execute, FileSelected_CanExecute);
 
         private bool FileSelected_CanExecute(object parameter)
         {
-            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFile != null;
+            return CanExecuteCommand && SelectedAttachedFolder != null && 0 < SelectedAttachedFiles.Count;
+        }
+
+        private bool FileSingleSelected_CanExecute(object parameter)
+        {
+            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFiles.Count == 1;
         }
 
         private async void ExtractFileCommand_Execute(object parameter)
@@ -3315,47 +3336,130 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                AttachFileItem file = SelectedAttachedFile;
-                Debug.Assert(file != null);
-                EncodedFileInfo fi = file.Info;
-                Debug.Assert(fi != null);
-
-                Debug.Assert(fi.FileName != null);
-                string ext = Path.GetExtension(fi.FileName);
-                SaveFileDialog dialog = new SaveFileDialog
+                if (SelectedAttachedFiles.Count == 1)
                 {
-                    OverwritePrompt = true,
-                    FileName = fi.FileName,
-                    Filter = $"{ext.ToUpper().TrimStart('.')} file|*{ext}"
-                };
+                    AttachFileItem file = SelectedAttachedFiles[0];
+                    Debug.Assert(file != null);
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
 
-                if (dialog.ShowDialog() == true)
-                {
-                    string destPath = dialog.FileName;
+                    Debug.Assert(fi.FileName != null);
+                    string ext = Path.GetExtension(fi.FileName);
+                    SaveFileDialog dialog = new SaveFileDialog
+                    {
+                        OverwritePrompt = true,
+                        Title = "Select a path to extract file",
+                        FileName = fi.FileName,
+                        Filter = $"{ext.ToUpper().TrimStart('.')} file|*{ext}"
+                    };
+
+                    if (dialog.ShowDialog() != true)
+                        return;
+
+                    string destFile = dialog.FileName;
                     try
                     {
-                        try
+                        CanExecuteCommand = false;
+                        AttachProgressValue = 0;
+                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+                        using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                         {
-                            CanExecuteCommand = false;
-                            AttachProgressValue = 0;
-                            IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-                            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-                            {
-                                await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
-                            }
-                        }
-                        finally
-                        {
-                            AttachProgressValue = -1;
-                            CanExecuteCommand = true;
+                            await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                         }
 
-                        MessageBox.Show(_window, "File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show(_window, $"File [{fi.FileName}] successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                         MessageBox.Show(_window, $"Extraction failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+                }
+                else if (1 < SelectedAttachedFiles.Count)
+                {
+                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
+                    {
+                        UseDescriptionForTitle = true,
+                        Description = "Select a folder to extract files",
+                    };
+
+                    if (dialog.ShowDialog() != true)
+                        return;
+
+                    string destDir = dialog.SelectedPath;
+
+                    List<string> successFiles = new List<string>();
+                    List<(string, Exception)> failureFiles = new List<(string, Exception)>();
+                    AttachProgressValue = 0;
+                    CanExecuteCommand = false;
+                    try
+                    {
+                        int idx = 0;
+                        IProgress<double> progress = new Progress<double>(x =>
+                        {
+                            // ReSharper disable once AccessToModifiedClosure
+                            AttachProgressValue = (x + idx) / SelectedAttachedFiles.Count;
+                        });
+
+                        foreach (AttachFileItem file in SelectedAttachedFiles)
+                        {
+                            EncodedFileInfo fi = file.Info;
+                            Debug.Assert(fi != null);
+
+                            try
+                            {
+                                string destFile = Path.Combine(destDir, fi.FileName);
+                                using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                                {
+                                    await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
+                                }
+
+                                successFiles.Add(fi.FileName);
+                            }
+                            catch (Exception ex)
+                            {
+                                failureFiles.Add((fi.FileName, ex));
+                            }
+
+                            idx += 1;
+                        }
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+
+                    // Success Report
+                    StringBuilder b = new StringBuilder();
+                    if (1 < successFiles.Count)
+                    {
+                        b.AppendLine($"{successFiles.Count} files were successfully extracted.");
+                        foreach (string fileName in successFiles)
+                            b.AppendLine($"- {fileName}");
+                    }
+                    else if (successFiles.Count == 1)
+                    {
+                        b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
+                    }
+                    MessageBox.Show(_window, b.ToString(), "Extraction Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Failure Report
+                    if (1 <= failureFiles.Count)
+                    {
+                        b.Clear();
+                        b.AppendLine($"Unable to extract {successFiles.Count} files.");
+                        foreach ((string fileName, Exception ex) in failureFiles)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                            b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
+                        }
+                        MessageBox.Show(_window, b.ToString(), "Extraction Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -3366,38 +3470,77 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DeleteFileCommand_Execute(object parameter)
+        private async void DeleteFileCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
             {
-                AttachFileItem file = SelectedAttachedFile;
-                Debug.Assert(file != null);
-                EncodedFileInfo fi = file.Info;
-                Debug.Assert(fi != null);
-
-                MessageBoxResult result = MessageBox.Show(
-                    $"Are you sure you want to delete [{fi.FileName}]?",
-                    "Confirm Delete",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.No)
-                    return;
-
-                AttachProgressIndeterminate = true;
-
-                string errMsg;
-                (Script, errMsg) = EncodedFile.DeleteFile(Script, fi.FolderName, fi.FileName);
-                if (errMsg == null)
+                if (SelectedAttachedFiles.Count == 1)
                 {
-                    ScriptAttachUpdated = true;
-                    ReadScriptAttachment();
+                    AttachFileItem file = SelectedAttachedFiles[0];
+                    Debug.Assert(file != null);
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
 
-                    SelectScriptAttachedFolder(fi.FolderName);
+                    MessageBoxResult result = MessageBox.Show(
+                        $"Are you sure you want to delete [{fi.FileName}]?",
+                        "Confirm Delete",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.No)
+                        return;
+
+                    AttachProgressIndeterminate = true;
+
+                    string errMsg;
+                    (Script, errMsg) = await EncodedFile.DeleteFileAsync(Script, fi.FolderName, fi.FileName);
+                    if (errMsg == null)
+                    {
+                        ScriptAttachUpdated = true;
+                        ReadScriptAttachment();
+
+                        SelectScriptAttachedFolder(fi.FolderName);
+                    }
+                    else // Failure
+                    {
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                        MessageBox.Show(_window, $"Unable to delete file [{fi.FileName}]\r\n- {errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-                else // Failure
+                else if (1 < SelectedAttachedFiles.Count)
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBoxResult result = MessageBox.Show(
+                        $"Are you sure you want to delete {SelectedAttachedFiles.Count} files?",
+                        "Confirm Delete",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.No)
+                        return;
+
+                    AttachProgressIndeterminate = true;
+                    string folderName = SelectedAttachedFolder.FolderName;
+                    string[] fileNames = SelectedAttachedFiles.Select(fi => fi.FileName).ToArray();
+
+                    List<string> errorMessages;
+                    (Script, errorMessages) = await EncodedFile.DeleteFilesAsync(Script, folderName, fileNames);
+
+                    if (errorMessages.Count == 0)
+                    {
+                        ScriptAttachUpdated = true;
+                        ReadScriptAttachment();
+
+                        SelectScriptAttachedFolder(folderName);
+                    }
+                    else
+                    {
+                        // Failure Report
+                        StringBuilder b = new StringBuilder();
+                        b.AppendLine($"Unable to delete {errorMessages.Count} files.");
+                        foreach (string errMsg in errorMessages)
+                        {
+                            Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                            b.AppendLine($"- {errMsg}");
+                        }
+                        MessageBox.Show(_window, b.ToString(), "Delete Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
             finally
@@ -3410,22 +3553,23 @@ namespace PEBakery.WPF
 
         private async void OpenFileCommand_Execute(object parameter)
         {
+            Debug.Assert(SelectedAttachedFiles.Count == 1);
             CanExecuteCommand = false;
+            AttachProgressValue = 0;
             try
             {
-                AttachFileItem file = SelectedAttachedFile;
+                AttachFileItem file = SelectedAttachedFiles[0];
                 Debug.Assert(file != null);
                 EncodedFileInfo fi = file.Info;
                 Debug.Assert(fi != null);
+
+                IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
 
                 // Do not clear tempDir right after calling OpenPath(). Doing this will trick the opened process.
                 // Instead, leave it to Global.Cleanup() when program is exited.
                 string tempDir = FileHelper.GetTempDir();
                 try
                 {
-                    AttachProgressValue = 0;
-                    IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
-
                     string tempFile = Path.Combine(tempDir, fi.FileName);
                     using (FileStream fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
                     {
@@ -3437,16 +3581,15 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show(_window, $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                finally
-                {
-                    AttachProgressValue = -1;
+                    MessageBox.Show(_window,
+                        $"Unable to open file [{fi.FileName}].\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
             {
                 CanExecuteCommand = true;
+                AttachProgressValue = -1;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -3457,28 +3600,45 @@ namespace PEBakery.WPF
             AttachProgressIndeterminate = true;
             try
             {
-                AttachFileItem file = SelectedAttachedFile;
-                Debug.Assert(file != null);
-                EncodedFileInfo fi = file.Info;
-                Debug.Assert(fi != null);
+                List<string> failures = new List<string>();
 
-                string dirName = fi.FolderName;
-                string fileName = fi.FileName;
+                foreach (AttachFileItem file in SelectedAttachedFiles)
+                {
+                    EncodedFileInfo fi = file.Info;
+                    Debug.Assert(fi != null);
 
-                if (fi.EncodeMode != null)
-                    return;
+                    string dirName = fi.FolderName;
+                    string fileName = fi.FileName;
 
-                string errMsg;
-                (fi, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
-                if (errMsg == null)
-                { // Success
-                    file.Info = fi;
-                    file.PropertyUpdate();
+                    if (fi.EncodeMode != null)
+                        return;
+
+                    string errMsg;
+                    (fi, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                    if (errMsg == null)
+                    { // Success
+                        file.Info = fi;
+                        file.PropertyUpdate();
+                    }
+                    else
+                    { // Failure
+                        failures.Add(fi.FileName);
+                    }
                 }
-                else 
-                { // Failure
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show(_window, $"Unable to inspect file [{fileName}]\r\n\r\n[Message]\r\n{errMsg}", "Inspect Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                if (0 < failures.Count)
+                {
+                    StringBuilder b = new StringBuilder();
+                    if (failures.Count == 1)
+                        b.AppendLine("Unable to inspect 1 file.");
+                    else
+                        b.AppendLine($"Unable to inspect {failures.Count} files.");
+                    foreach (string failure in failures)
+                    {
+                        b.AppendLine($"- {failure}");
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to inspect [{failure}]"));
+                    }
+                    MessageBox.Show(_window, b.ToString(), "Inspect Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -3510,10 +3670,10 @@ namespace PEBakery.WPF
             {
                 if (AttachEnableAdvancedView)
                 {
-                    MessageBoxResult result = MessageBox.Show(_window, 
-                        "Advanced view can easily corrupt a script!\r\nYou must know what you are doing.\r\n\r\nAre you sure to enable advanced view?", 
-                        "Are you sure?", 
-                        MessageBoxButton.YesNo, 
+                    MessageBoxResult result = MessageBox.Show(_window,
+                        "Advanced view can easily corrupt a script!\r\nYou must know what you are doing.\r\n\r\nAre you sure to enable advanced view?",
+                        "Are you sure?",
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Warning);
 
                     if (result == MessageBoxResult.No)
@@ -3679,7 +3839,7 @@ namespace PEBakery.WPF
 
             EncodedFile.GetFileInfoOptions opts = new EncodedFile.GetFileInfoOptions
             {
-                IncludeAuthorEncoded = AttachIncludeAuthorEncoded, 
+                IncludeAuthorEncoded = AttachIncludeAuthorEncoded,
                 IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
                 InspectEncodeMode = false,
             };
@@ -3713,7 +3873,8 @@ namespace PEBakery.WPF
             {
                 if (fi.FileName.Equals(fileName, StringComparison.Ordinal))
                 {
-                    SelectedAttachedFile = fi;
+                    SelectedAttachedFiles.Clear();
+                    SelectedAttachedFiles.Add(fi);
                     break;
                 }
             }

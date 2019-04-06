@@ -1822,13 +1822,14 @@ namespace PEBakery.Ini.Tests
                     w.WriteLine("21=國");
                 }
 
-                List<string> sections = new List<string>()
+                List<string> sections = new List<string>
                 {
                     "Section1",
                     "Section3",
                 };
 
-                Assert.IsTrue(IniReadWriter.DeleteSections(tempFile, sections));
+                bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
+                Assert.IsTrue(results.All(x => x));
 
                 string read;
                 Encoding encoding = EncodingHelper.DetectBom(tempFile);
@@ -1872,13 +1873,14 @@ namespace PEBakery.Ini.Tests
                     w.WriteLine("21=國");
                 }
 
-                List<string> sections = new List<string>()
+                List<string> sections = new List<string>
                 {
                     "Section4",
                     "Section2",
                 };
 
-                Assert.IsFalse(IniReadWriter.DeleteSections(tempFile, sections));
+                bool[] results = IniReadWriter.DeleteSections(tempFile, sections);
+                Assert.IsTrue(results.Any(x => !x));
 
                 string read;
                 Encoding encoding = EncodingHelper.DetectBom(tempFile);
@@ -1893,9 +1895,6 @@ namespace PEBakery.Ini.Tests
                 b.AppendLine("01=B");
                 b.AppendLine("02=C");
                 b.AppendLine();
-                b.AppendLine("[Section2]");
-                b.AppendLine("10=한");
-                b.AppendLine("11=국");
                 b.AppendLine("[Section3]");
                 b.AppendLine("20=韓");
                 b.AppendLine("21=國");

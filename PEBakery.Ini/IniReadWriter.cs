@@ -796,7 +796,7 @@ namespace PEBakery.Ini
                     string currentSection = null;
 
                     while ((rawLine = r.ReadLine()) != null)
-                    { // Read text line by linev
+                    { // Read text line by line
                         bool thisLineProcessed = false;
                         string line = rawLine.Trim();
 
@@ -1270,17 +1270,17 @@ namespace PEBakery.Ini
         #region DeleteSection
         public static bool DeleteSection(string file, IniKey iniKey)
         {
-            return InternalDeleteSection(file, new string[] { iniKey.Section });
+            return InternalDeleteSection(file, new string[] { iniKey.Section })[0];
         }
         public static bool DeleteSection(string file, string section)
         {
-            return InternalDeleteSection(file, new string[] { section });
+            return InternalDeleteSection(file, new string[] { section })[0];
         }
-        public static bool DeleteSections(string file, IEnumerable<IniKey> iniKeys)
+        public static bool[] DeleteSections(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalDeleteSection(file, iniKeys.Select(x => x.Section));
         }
-        public static bool DeleteSections(string file, IEnumerable<string> sections)
+        public static bool[] DeleteSections(string file, IEnumerable<string> sections)
         {
             return InternalDeleteSection(file, sections);
         }
@@ -1290,9 +1290,10 @@ namespace PEBakery.Ini
         /// <param name="file"></param>
         /// <param name="sections"></param>
         /// <returns></returns>
-        private static bool InternalDeleteSection(string file, IEnumerable<string> sections)
+        private static bool[] InternalDeleteSection(string file, IEnumerable<string> sections)
         {
             List<string> sectionList = sections.ToList();
+            bool[] processed = new bool[sectionList.Count];
 
             ReaderWriterLockSlim rwLock;
             if (LockDict.ContainsKey(file))
@@ -1309,7 +1310,7 @@ namespace PEBakery.Ini
             try
             {
                 if (!File.Exists(file))
-                    return false;
+                    return processed;
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = MiniHelper.DetectBom(file);
@@ -1319,7 +1320,7 @@ namespace PEBakery.Ini
                     if (r.Peek() == -1)
                     {
                         r.Close();
-                        return false;
+                        return processed;
                     }
 
                     string rawLine;
@@ -1341,10 +1342,13 @@ namespace PEBakery.Ini
                             // Only sections contained in iniKeys will be targeted
                             for (int i = 0; i < sectionList.Count; i++)
                             {
+                                if (processed[i])
+                                    continue;
+
                                 if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
                                 { // Delete this section!
                                     ignoreCurrentSection = true;
-                                    sectionList.RemoveAt(i);
+                                    processed[i] = true;
                                     break; // for shorter O(n)
                                 }
                             }
@@ -1355,15 +1359,10 @@ namespace PEBakery.Ini
                     }
                 }
 
-                if (sectionList.Count == 0)
-                {
+                if (processed.Any(x => x))
                     MiniHelper.FileReplaceEx(tempPath, file);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+
+                return processed;
             }
             finally
             {
@@ -1482,7 +1481,7 @@ namespace PEBakery.Ini
                 foreach (var kvKey in kvSec.Value)
                     keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                result = result & InternalWriteKeys(destFile, keys);
+                result &= InternalWriteKeys(destFile, keys);
             }
 
             return result;
@@ -1508,7 +1507,7 @@ namespace PEBakery.Ini
                     foreach (var kvKey in kvSec.Value)
                         keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                    result = result & InternalWriteKeys(destFile, keys);
+                    result &= InternalWriteKeys(destFile, keys);
                 }
             }
 
@@ -1590,10 +1589,8 @@ namespace PEBakery.Ini
                             tw.WriteLine(rawLine);
                         enableCopy = true;
 
-                        // TODO: Try using Span<byte> to reduce memory allocation
-                        string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
-
                         // Found target section, so return
+                        string foundSection = line.Substring(1, line.Length - 2); // Remove [ and ]
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             return;
                     }

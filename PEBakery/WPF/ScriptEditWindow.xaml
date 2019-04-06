@@ -1391,11 +1391,13 @@
                     </ListView>
                     <!-- List of Files -->
                     <ListView Grid.Row="0" Grid.Column="2"
+                              x:Name="ScriptAttachFilesListView"
                               ItemsSource="{Binding AttachedFiles}"
-                              SelectedItem="{Binding SelectedAttachedFile}"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
-                              AlternationCount="2">
+                              AlternationCount="2"
+                              SelectionChanged="ScriptAttachFilesListView_Selected"
+                              SelectionMode="Extended">
                         <ListView.View>
                             <cc:AutoSizedGridView>
                                 <GridViewColumn Header="FileName"

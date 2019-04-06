@@ -877,6 +877,85 @@ namespace PEBakery.Core
             return (sc, errorMsg);
         }
 
+        public static Task<(Script, List<string>)> DeleteFilesAsync(Script sc, string folderName, IReadOnlyList<string> fileNames)
+        {
+            return Task.Run(() => DeleteFiles(sc, folderName, fileNames));
+        }
+
+        public static (Script, List<string>) DeleteFiles(Script sc, string folderName, IReadOnlyList<string> fileNames)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+            if (folderName == null)
+                throw new ArgumentNullException(nameof(folderName));
+            if (fileNames == null)
+                throw new ArgumentNullException(nameof(fileNames));
+
+            List<string> errorMessages = new List<string>();
+
+            // Backup
+            string backupFile = FileHelper.GetTempFile("script");
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                if (!sc.Sections.ContainsKey(folderName))
+                {
+                    errorMessages.Add($"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+                    return (sc, errorMessages);
+                }
+
+                // Get encoded file index
+                List<IniKey> iniKeys = new List<IniKey>();
+                Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
+                foreach (string fileName in fileNames)
+                {
+                    if (fileDict.ContainsKey(fileName))
+                        iniKeys.Add(new IniKey(folderName, fileName));
+                    else
+                        errorMessages.Add($"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+                }
+
+                // Delete encoded file index
+                List<int> removeIdx = new List<int>();
+                bool[] results = IniReadWriter.DeleteKeys(sc.RealPath, iniKeys);
+                for (int i = 0; i < results.Length; i++)
+                {
+                    if (!results[i])
+                    {
+                        errorMessages.Add($"Unable to delete index of encoded file [{iniKeys[i].Value}] from [{sc.RealPath}]");
+                        removeIdx.Add(i);
+                    }
+                }
+
+                // Filter out invalid iniKeys
+                foreach (int idx in removeIdx.OrderByDescending(i => i))
+                    iniKeys.RemoveAt(idx);
+
+                // Delete encoded file section
+                var sectionNames = iniKeys.Select(x => ScriptSection.Names.GetEncodedSectionName(x.Section, x.Key));
+                results = IniReadWriter.DeleteSections(sc.RealPath, sectionNames);
+                for (int i = 0; i < results.Length; i++)
+                {
+                    if (!results[i])
+                        errorMessages.Add($"Unable to delete section of encoded file [{iniKeys[i].Value}] from [{sc.RealPath}]");
+                }   
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMessages);
+        }
+
         public static Task<(Script, string)> DeleteFolderAsync(Script sc, string folderName)
         {
             return Task.Run(() => DeleteFolder(sc, folderName));

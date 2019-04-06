@@ -29,6 +29,7 @@ using PEBakery.Ini;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {
@@ -564,20 +565,21 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            bool result = IniReadWriter.DeleteSections(fileName, sections);
-
-            if (result)
+            bool[] results = IniReadWriter.DeleteSections(fileName, sections);
+            int success = results.Count(x => x);
+            int failure = results.Count(x => !x);
+            for (int i = 0; i < sections.Length; i++)
             {
-                for (int i = 0; i < sections.Length; i++)
+                if (results[i])
                     logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] deleted", infoOp.Cmds[i]));
-                logs.Add(new LogInfo(LogState.Success, $"Deleted [{sections.Length}] sections from [{fileName}]", cmd));
-            }
-            else
-            {
-                for (int i = 0; i < sections.Length; i++)
+                else
                     logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sections[i]}]", infoOp.Cmds[i]));
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete [{sections.Length}] sections from [{fileName}]", cmd));
             }
+
+            if (0 < success)
+                logs.Add(new LogInfo(LogState.Success, $"Deleted [{success}] sections from [{fileName}]", cmd));
+            if (0 < failure)
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete [{failure}] sections from [{fileName}]", cmd));
 
             return logs;
         }
