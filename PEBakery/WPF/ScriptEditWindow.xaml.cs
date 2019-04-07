@@ -1889,7 +1889,6 @@ namespace PEBakery.WPF
                 {
                     SaveFileDialog dialog = new SaveFileDialog
                     {
-                        InitialDirectory = Global.BaseDir,
                         OverwritePrompt = true,
                         FileName = filename,
                         Filter = $"{type.ToString().ToUpper().Replace(".", String.Empty)} Image|*.{type}",
