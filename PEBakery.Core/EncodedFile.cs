@@ -161,8 +161,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Const Strings, String Factory
-        public const long InterfaceImageSizeLimit = 4 * 1024 * 1024; // 4MB
+        #region Const
+        public const long DecodeInMemorySizeLimit = 4 * 1024 * 1024; // 4MB
         public const long InterfaceTextSizeLimit = 16 * 1024; // 16KB
         private const long BufferSize = 64 * 1024; // 64KB
         private const long ReportInterval = 1024 * 1024; // 1MB
@@ -578,12 +578,12 @@ namespace PEBakery.Core
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
 
-        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string folderName, string fileName, bool detail = false)
+        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetFileInfo(sc, folderName, fileName, detail));
+            return Task.Run(() => GetFileInfo(sc, folderName, fileName, inspectEncodeMode));
         }
 
-        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string folderName, string fileName, bool detail = false)
+        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -608,21 +608,21 @@ namespace PEBakery.Core
             if (info.EncodedSize == -1)
                 return (null, $"Unable to parse encoded size of [{fileName}]");
 
-            if (detail)
+            if (inspectEncodeMode)
             {
                 string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
-                info.EncodeMode = GetEncodeMode(sc.RealPath, section);
+                info.EncodeMode = ReadEncodeMode(sc.RealPath, section);
             }
 
             return (info, null);
         }
 
-        public static Task<(EncodedFileInfo info, string errMsg)> GetLogoInfoAsync(Script sc, bool detail = false)
+        public static Task<(EncodedFileInfo info, string errMsg)> GetLogoInfoAsync(Script sc, bool inspectEncodeMode = false)
         {
-            return Task.Run(() => GetLogoInfo(sc, detail));
+            return Task.Run(() => GetLogoInfo(sc, inspectEncodeMode));
         }
 
-        public static (EncodedFileInfo info, string errMsg) GetLogoInfo(Script sc, bool detail = false)
+        public static (EncodedFileInfo info, string errMsg) GetLogoInfo(Script sc, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -647,14 +647,14 @@ namespace PEBakery.Core
             if (info.EncodedSize == -1)
                 return (null, $"Unable to parse encoded size of [{info.FileName}]");
 
-            if (detail)
+            if (inspectEncodeMode)
             {
                 string section = ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, info.FileName);
                 if (!sc.Sections.ContainsKey(section))
                     throw new InvalidOperationException($"[{info.FileName}] does not exist in interface of [{sc.RealPath}]");
 
                 string[] encoded = sc.Sections[section].Lines;
-                info.EncodeMode = GetEncodeModeInMem(encoded);
+                info.EncodeMode = ReadEncodeModeInMem(encoded);
             }
 
             return (info, null);
@@ -696,7 +696,7 @@ namespace PEBakery.Core
                 if (inspectEncodeMode)
                 {
                     string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
-                    info.EncodeMode = GetEncodeMode(sc.RealPath, section);
+                    info.EncodeMode = ReadEncodeMode(sc.RealPath, section);
                 }
 
                 infos.Add(info);
@@ -791,7 +791,7 @@ namespace PEBakery.Core
                     if (opts.InspectEncodeMode)
                     {
                         string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
-                        info.EncodeMode = GetEncodeMode(sc.RealPath, section);
+                        info.EncodeMode = ReadEncodeMode(sc.RealPath, section);
                     }
 
                     infoDict[folderName].Add(info);
@@ -799,6 +799,27 @@ namespace PEBakery.Core
             }
 
             return (infoDict, null);
+        }
+
+        public static Task<EncodeMode> GetEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
+        {
+            return Task.Run(() => GetEncodeMode(sc, folderName, fileName, inMem));
+        }
+
+        public static EncodeMode GetEncodeMode(Script sc, string folderName, string fileName, bool inMem = false)
+        {
+            string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
+            if (inMem)
+            {
+                if (!sc.Sections.ContainsKey(section))
+                    throw new InvalidOperationException($"Unable to find encoded section of [{fileName}]");
+                string[] encoded = sc.Sections[section].Lines;
+                return ReadEncodeModeInMem(encoded);
+            }
+            else
+            {
+                return ReadEncodeMode(sc.RealPath, section);
+            }
         }
 
         /// <summary>
@@ -1741,8 +1762,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetEncodeMode
-        private static EncodeMode GetEncodeMode(string scPath, string section)
+        #region ReadEncodeMode
+        private static EncodeMode ReadEncodeMode(string scPath, string section)
         {
             string tempDecode = FileHelper.GetTempFile();
             try
@@ -1769,7 +1790,7 @@ namespace PEBakery.Core
                     Debug.Assert(readByte == finalFooterLen);
 
                     // 0x00 - 0x04 : 4B -> CRC32
-                    uint full_crc32 = BitConverter.ToUInt32(finalFooter, 0x00);
+                    uint fullCrc32 = BitConverter.ToUInt32(finalFooter, 0x00);
                     // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
                     int compressedFooterLen = (int)BitConverter.ToUInt32(finalFooter, 0x0C);
                     int compressedFooterIdx = finalFooterIdx - compressedFooterLen;
@@ -1779,7 +1800,7 @@ namespace PEBakery.Core
                     // [Stage 3] Validate final footer
                     if (compressedBodyLen != compressedFooterIdx)
                         throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
-                    if (full_crc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
+                    if (fullCrc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
                         throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
                     // [Stage 4] Decompress first footer
@@ -1835,8 +1856,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetEncodeModeInMem
-        private static EncodeMode GetEncodeModeInMem(string[] encodedLines)
+        #region ReadEncodeModeInMem
+        private static EncodeMode ReadEncodeModeInMem(string[] encodedLines)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded = SplitBase64.DecodeInMem(IniReadWriter.FilterInvalidIniLines(encodedLines));

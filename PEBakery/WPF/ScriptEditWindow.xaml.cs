@@ -1840,6 +1840,18 @@ namespace PEBakery.WPF
                     return;
 
                 string srcFile = dialog.FileName;
+                long fileSize = new FileInfo(srcFile).Length;
+                if (EncodedFile.DecodeInMemorySizeLimit <= fileSize)
+                {
+                    string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(EncodedFile.DecodeInMemorySizeLimit, 0);
+                    MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
+                        "Warning",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Exclamation);
+                    if (result == MessageBoxResult.No)
+                        return;
+                }
+
                 try
                 {
                     string srcFileName = Path.GetFileName(srcFile);
@@ -1852,7 +1864,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show(_window, $"Logo attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"Unable to attach logo.\r\n- {Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -2717,11 +2729,11 @@ namespace PEBakery.WPF
                     !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase)) // rtf file can include image, so do not use lower limit
                     sizeLimit = EncodedFile.InterfaceTextSizeLimit;
                 else
-                    sizeLimit = EncodedFile.InterfaceImageSizeLimit;
+                    sizeLimit = EncodedFile.DecodeInMemorySizeLimit;
                 if (sizeLimit <= fileLen)
                 {
                     string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
-                    MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but may cause PEBakery to appear unresponsive during certain operations.\r\n\r\nDo you want to continue?",
+                    MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
                         "Warning",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Exclamation);
@@ -3843,6 +3855,7 @@ namespace PEBakery.WPF
                 IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
                 InspectEncodeMode = false,
             };
+            
             (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, opts);
             if (errMsg != null)
             {
@@ -3851,8 +3864,18 @@ namespace PEBakery.WPF
                 return;
             }
 
+            List<EncodedFileInfo> files = new List<EncodedFileInfo>();
             foreach (var kv in fileDict.OrderBy(kv => kv.Key, StringComparer.InvariantCulture))
+            {
                 AttachedFolders.Add(new AttachFolderItem(kv.Key, kv.Value));
+                files.AddRange(kv.Value);
+            }
+
+            Parallel.ForEach(files, fi =>
+            {
+                if (fi.EncodedSize <= EncodedFile.DecodeInMemorySizeLimit)
+                    fi.EncodeMode = EncodedFile.GetEncodeMode(Script, fi.FolderName, fi.FileName, true);
+            });
         }
 
         public void SelectScriptAttachedFolder(string folderName)
@@ -4225,8 +4248,8 @@ namespace PEBakery.WPF
         #region Property
         public EncodedFileInfo Info;
         public string FileName => Info.FileName;
-        public string RawSize => $"{NumberHelper.ByteSizeToSIUnit(Info.RawSize, 1)} ({Info.RawSize})";
-        public string EncodedSize => $"{NumberHelper.ByteSizeToSIUnit(Info.EncodedSize, 1)} ({Info.EncodedSize})";
+        public string RawSize => $"{NumberHelper.ByteSizeToSIUnit(Info.RawSize, 0)} ({Info.RawSize})";
+        public string EncodedSize => $"{NumberHelper.ByteSizeToSIUnit(Info.EncodedSize, 0)} ({Info.EncodedSize})";
         public string Compression
         {
             get
