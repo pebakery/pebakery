@@ -3028,14 +3028,14 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                TextBoxDialog dialog = new TextBoxDialog(_window, "Add new folder", "Please input new folder's name.", PackIconMaterialKind.FolderPlus);
+                TextBoxDialog dialog = new TextBoxDialog(_window, "Add Folder", "Please enter a name for the new folder.", PackIconMaterialKind.FolderPlus);
                 if (dialog.ShowDialog() != true)
                     return;
 
                 string folderName = dialog.InputText;
                 if (folderName.Length == 0)
                 {
-                    MessageBox.Show(_window, "The folder name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "The folder name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -3084,7 +3084,7 @@ namespace PEBakery.WPF
                 EncodedFileInfo[] fileInfos = folder.Children.Select(x => x.Info).ToArray();
                 if (fileInfos.Length == 0)
                 {
-                    MessageBox.Show(_window, $"Folder [{folder.FolderName}] is empty.", "No Files", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(_window, $"Unable to extract files. The folder [{folder.FolderName}] is empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -3113,8 +3113,8 @@ namespace PEBakery.WPF
                     bool proceedExtract = false;
                     if (fileOverwrote)
                     {
-                        MessageBoxResult owResult = MessageBox.Show(_window, $"The file [{b}] will be overwritten.\r\nWould you like to proceed?",
-                                                                    "Overwrite?",
+                        MessageBoxResult owResult = MessageBox.Show(_window, $"The file [{b}] will be overwritten.\r\n\r\nWould you like to proceed?",
+                                                                    "Confirm Overwrite",
                                                                     MessageBoxButton.YesNo,
                                                                     MessageBoxImage.Information);
 
@@ -3259,7 +3259,7 @@ namespace PEBakery.WPF
 
                 if (srcFilePath.Length == 0)
                 {
-                    MessageBox.Show(_window, "You must choose a file to attach", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, "You must choose a file to attach!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -3281,7 +3281,7 @@ namespace PEBakery.WPF
                     {
                         MessageBoxResult result = MessageBox.Show(
                             $"The attached file [{srcFileName}] will be overwritten.\r\n\r\nWould you like to proceed?",
-                            "Confirm",
+                            "Confirm Overwrite",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Error);
                         if (result == MessageBoxResult.No)
@@ -3359,7 +3359,7 @@ namespace PEBakery.WPF
                     SaveFileDialog dialog = new SaveFileDialog
                     {
                         OverwritePrompt = true,
-                        Title = "Select a path to extract file",
+                        Title = "Extract file",
                         FileName = fi.FileName,
                         Filter = $"{ext.ToUpper().TrimStart('.')} file|*{ext}"
                     };
@@ -3396,7 +3396,7 @@ namespace PEBakery.WPF
                     VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                     {
                         UseDescriptionForTitle = true,
-                        Description = "Select a folder to extract files",
+                        Description = "Extract files",
                     };
 
                     if (dialog.ShowDialog() != true)
@@ -3682,8 +3682,8 @@ namespace PEBakery.WPF
                 if (AttachEnableAdvancedView)
                 {
                     MessageBoxResult result = MessageBox.Show(_window,
-                        "Advanced view can easily corrupt a script!\r\nYou must know what you are doing.\r\n\r\nAre you sure to enable advanced view?",
-                        "Are you sure?",
+                        "Advanced view allows access resources embedded in the script's interface and is intended for expert users only!\r\nIf you do not understand the inner workings of PEBakery's interface and attachment handling you can easily corrupt your script!\r\n\r\nAre you sure you want to enable advanced view?",
+                        "Warning",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Warning);
 

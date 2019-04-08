@@ -8,7 +8,8 @@
         xmlns:ccc="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
-        Title="Attach new file" 
+        ResizeMode="NoResize"
+        Title="Attach File" 
         Width="480" Height="180">
     <Grid Margin="10" ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
