@@ -1403,11 +1403,11 @@
                             <StackPanel Margin="3, 0, 3, 0"
                                         IsEnabled="{Binding AttachEnableAdvancedView}">
                                 <CheckBox Height="20" Content="AuthorEncoded"
-                                          VerticalContentAlignment="Center"
+                                          VerticalContentAlignment="Top"
                                           Command="{Binding EnableAuthorEncodedCommand}"
                                           IsChecked="{Binding AttachIncludeAuthorEncoded}"/>
                                 <CheckBox Height="20" Content="InterfaceEncoded"
-                                          VerticalContentAlignment="Center"
+                                          VerticalContentAlignment="Top"
                                           Command="{Binding EnableInterfaceEncodedCommand}"
                                           IsChecked="{Binding AttachIncludeInterfaceEncoded}"/>
                             </StackPanel>
@@ -1422,14 +1422,14 @@
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
                         <ListView.View>
-                            <cc:AutoSizedGridView>
+                            <GridView>
                                 <GridViewColumn Header="FolderName"
                                                 Width="150"
                                                 DisplayMemberBinding="{Binding FolderName}"/>
                                 <GridViewColumn Header="Files"
                                                 Width="40"
                                                 DisplayMemberBinding="{Binding FileCount}"/>
-                            </cc:AutoSizedGridView>
+                            </GridView>
                         </ListView.View>
                     </ListView>
                     <!-- List of Files -->
@@ -1441,7 +1441,7 @@
                               AlternationCount="2"
                               SelectionMode="Extended">
                         <ListView.View>
-                            <cc:AutoSizedGridView>
+                            <GridView>
                                 <GridViewColumn Header="FileName"
                                                 Width="200"
                                                 DisplayMemberBinding="{Binding FileName}"/>
@@ -1454,7 +1454,7 @@
                                 <GridViewColumn Header="Compression"
                                                 Width="100"
                                                 DisplayMemberBinding="{Binding Compression}"/>
-                            </cc:AutoSizedGridView>
+                            </GridView>
                         </ListView.View>
                     </ListView>
                     <!-- Progress Bar -->

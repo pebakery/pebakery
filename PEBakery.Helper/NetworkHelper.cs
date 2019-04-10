@@ -24,13 +24,10 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -69,7 +66,7 @@ namespace PEBakery.Helper
                     {
                         return false;
                     }
-                } 
+                }
             }
         }
         #endregion
@@ -125,9 +122,9 @@ namespace PEBakery.Helper
         }
 
         public HttpClientDownloader(
-            HttpClient httpClient, Uri uri, Stream destStream, 
+            HttpClient httpClient, Uri uri, Stream destStream,
             int bufferSize,
-            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress, 
+            IProgress<(long Position, long ContentLength, TimeSpan Elapsed)> progress,
             TimeSpan reportInterval,
             CancellationToken? cancelToken = null)
         {
@@ -149,7 +146,7 @@ namespace PEBakery.Helper
                 Stopwatch watch = Stopwatch.StartNew();
                 DateTime lastReport = DateTime.UtcNow;
 
-                // Did server returned success status code?
+                // Did server return success status code?
                 StatusCode = res.StatusCode;
                 res.EnsureSuccessStatusCode();
 
@@ -166,11 +163,11 @@ namespace PEBakery.Helper
                 byte[] buffer = new byte[_bufferSize];
                 using (Stream srcStream = await res.Content.ReadAsStreamAsync())
                 {
-                    int bytesRead = 0;
+                    int bytesRead;
                     do
                     {
                         if (_cancelToken is CancellationToken token)
-                            bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length, token); 
+                            bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length, token);
                         else
                             bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length);
 

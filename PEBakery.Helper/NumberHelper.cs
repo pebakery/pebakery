@@ -589,11 +589,11 @@ namespace PEBakery.Helper
             return true;
         }
 
-        private const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;
-        private const long TB = 1024L * 1024L * 1024L * 1024L;
-        private const long GB = 1024L * 1024L * 1024L;
-        private const long MB = 1024L * 1024L;
-        private const long KB = 1024L;
+        public const long PetaByte = 1024L * 1024L * 1024L * 1024L * 1024L;
+        public const long TeraByte = 1024L * 1024L * 1024L * 1024L;
+        public const long GigaByte = 1024L * 1024L * 1024L;
+        public const long MegaByte = 1024L * 1024L;
+        public const long KiloByte = 1024L;
 
         public static string ByteSizeToSIUnit(long byteSize, int decPoint = 3)
         {
@@ -610,16 +610,16 @@ namespace PEBakery.Helper
             }
 
             string str;
-            if (PB <= byteSize)
-                str = $"{((decimal)byteSize / PB).ToString(formatString)}PB";
-            else if (TB <= byteSize)
-                str = $"{((decimal)byteSize / TB).ToString(formatString)}TB";
-            else if (GB <= byteSize)
-                str = $"{((decimal)byteSize / GB).ToString(formatString)}GB";
-            else if (MB <= byteSize)
-                str = $"{((decimal)byteSize / MB).ToString(formatString)}MB";
+            if (PetaByte <= byteSize)
+                str = $"{((decimal)byteSize / PetaByte).ToString(formatString)}PB";
+            else if (TeraByte <= byteSize)
+                str = $"{((decimal)byteSize / TeraByte).ToString(formatString)}TB";
+            else if (GigaByte <= byteSize)
+                str = $"{((decimal)byteSize / GigaByte).ToString(formatString)}GB";
+            else if (MegaByte <= byteSize)
+                str = $"{((decimal)byteSize / MegaByte).ToString(formatString)}MB";
             else
-                str = $"{((decimal)byteSize / KB).ToString(formatString)}KB";
+                str = $"{((decimal)byteSize / KiloByte).ToString(formatString)}KB";
 
             return str;
         }
@@ -627,29 +627,29 @@ namespace PEBakery.Helper
         public static string NaturalByteSizeToSIUnit(long byteSize)
         {
             string str;
-            if (PB <= byteSize)
+            if (PetaByte <= byteSize)
             {
-                decimal rounded = Math.Round((decimal) byteSize / PB, 1);
+                decimal rounded = Math.Round((decimal)byteSize / PetaByte, 1);
                 str = $"{rounded}PB";
             }
-            else if (TB <= byteSize)
+            else if (TeraByte <= byteSize)
             {
-                decimal rounded = Math.Round((decimal)byteSize / TB, 1);
+                decimal rounded = Math.Round((decimal)byteSize / TeraByte, 1);
                 str = $"{rounded}TB";
-            }   
-            else if (GB <= byteSize)
+            }
+            else if (GigaByte <= byteSize)
             {
-                decimal rounded = Math.Round((decimal)byteSize / GB, 1);
+                decimal rounded = Math.Round((decimal)byteSize / GigaByte, 1);
                 str = $"{rounded}GB";
-            }   
-            else if (MB <= byteSize)
+            }
+            else if (MegaByte <= byteSize)
             {
-                decimal rounded = Math.Round((decimal)byteSize / MB, 1);
+                decimal rounded = Math.Round((decimal)byteSize / MegaByte, 1);
                 str = $"{rounded}MB";
             }
             else
             {
-                decimal rounded = Math.Ceiling((decimal)byteSize / KB);
+                decimal rounded = Math.Ceiling((decimal)byteSize / KiloByte);
                 str = $"{rounded}KB";
             }
 
@@ -663,53 +663,53 @@ namespace PEBakery.Helper
 
             if (str.EndsWith("PB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = PB;
+                multiplier = PetaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("TB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = TB;
+                multiplier = TeraByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("GB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = GB;
+                multiplier = GigaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = MB;
+                multiplier = MegaByte;
                 subStrEndIdx = 2;
             }
             else if (str.EndsWith("KB", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = KB;
+                multiplier = KiloByte;
                 subStrEndIdx = 2;
             }
 
             if (str.EndsWith("P", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = PB;
+                multiplier = PetaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("T", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = TB;
+                multiplier = TeraByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("G", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = GB;
+                multiplier = GigaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("M", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = MB;
+                multiplier = MegaByte;
                 subStrEndIdx = 1;
             }
             else if (str.EndsWith("K", StringComparison.OrdinalIgnoreCase))
             {
-                multiplier = KB;
+                multiplier = KiloByte;
                 subStrEndIdx = 1;
             }
 

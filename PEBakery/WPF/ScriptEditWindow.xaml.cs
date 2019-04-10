@@ -3004,7 +3004,7 @@ namespace PEBakery.WPF
             return CanExecuteCommand && SelectedAttachedFolder != null;
         }
 
-        private void AddFolderCommand_Execute(object parameter)
+        private async void AddFolderCommand_Execute(object parameter)
         {
             CanExecuteCommand = false;
             try
@@ -3029,7 +3029,7 @@ namespace PEBakery.WPF
                         return;
                     }
 
-                    Script = EncodedFile.AddFolder(Script, folderName, false);
+                    Script = await EncodedFile.AddFolderAsync(Script, folderName, false);
                 }
                 catch (Exception ex)
                 {
@@ -4360,8 +4360,8 @@ namespace PEBakery.WPF
         #region Property
         public EncodedFileInfo Info;
         public string FileName => Info.FileName;
-        public string RawSize => $"{NumberHelper.NaturalByteSizeToSIUnit(Info.RawSize)} ({Info.RawSize:N0})";
-        public string EncodedSize => $"{NumberHelper.NaturalByteSizeToSIUnit(Info.EncodedSize)} ({Info.EncodedSize:N0})";
+        public string RawSize => NumberHelper.NaturalByteSizeToSIUnit(Info.RawSize);
+        public string EncodedSize => NumberHelper.NaturalByteSizeToSIUnit(Info.EncodedSize);
         public string Compression
         {
             get
