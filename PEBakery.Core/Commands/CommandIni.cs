@@ -54,7 +54,7 @@ namespace PEBakery.Core.Commands
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            string value = IniReadWriter.WriteKey(fileName, sectionName, key);
+            string value = IniReadWriter.ReadKey(fileName, sectionName, key);
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and it's value [{value}] read from [{fileName}]"));

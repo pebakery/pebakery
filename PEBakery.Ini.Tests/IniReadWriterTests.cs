@@ -51,7 +51,7 @@ namespace PEBakery.Ini.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                Assert.IsNull(IniReadWriter.WriteKey(tempFile, "Section", "Key"));
+                Assert.IsNull(IniReadWriter.ReadKey(tempFile, "Section", "Key"));
             }
             finally
             {
@@ -72,11 +72,11 @@ namespace PEBakery.Ini.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsFalse(IniReadWriter.WriteKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsFalse(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
 
             }
             finally
@@ -108,14 +108,14 @@ namespace PEBakery.Ini.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
-                Assert.IsTrue(IniReadWriter.WriteKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
+                Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
             }
             finally
             {

@@ -1507,7 +1507,7 @@ namespace PEBakery.Core
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
                     IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)

@@ -92,7 +92,7 @@ namespace PEBakery.Ini
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        public static string WriteKey(string file, string section, string key)
+        public static string ReadKey(string file, string section, string key)
         {
             IniKey[] iniKeys = InternalReadKeys(file, new IniKey[] { new IniKey(section, key) });
             return iniKeys[0].Value;

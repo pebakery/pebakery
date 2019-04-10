@@ -76,7 +76,7 @@ namespace PEBakery.Core.Tests.Command
                         EngineTests.Eval(s, parser, rawCode, CodeType.Visible, check);
                         if (check == ErrorCheck.Success)
                         {
-                            string dest = IniReadWriter.WriteKey(scriptFile, "Interface", key);
+                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                             Assert.IsTrue(dest.Equals(compStr, StringComparison.Ordinal));
                         }
                     }
@@ -108,7 +108,7 @@ namespace PEBakery.Core.Tests.Command
                         {
                             foreach ((string key, string value) in compTuples)
                             {
-                                string dest = IniReadWriter.WriteKey(scriptFile, "Interface", key);
+                                string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                                 Assert.IsTrue(dest.Equals(value, StringComparison.Ordinal));
                             }
                         }
@@ -380,7 +380,7 @@ namespace PEBakery.Core.Tests.Command
                             Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
                         }
 
-                        string dest = IniReadWriter.WriteKey(scriptFile, "Interface", key);
+                        string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                         Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                     }
                 }
@@ -411,7 +411,7 @@ namespace PEBakery.Core.Tests.Command
                                 Assert.IsTrue(varResult.Equals(s.Variables.GetValue(VarsType.Local, key), StringComparison.Ordinal));
                             }
 
-                            string dest = IniReadWriter.WriteKey(scriptFile, "Interface", key);
+                            string dest = IniReadWriter.ReadKey(scriptFile, "Interface", key);
                             Assert.IsTrue(dest.Equals(lineResult, StringComparison.Ordinal));
                         }
                     }
