@@ -63,7 +63,9 @@ namespace PEBakery.Core
         public LogState State;
         public string Message;
         public CodeCommand Command;
+        // ReSharper disable once InconsistentNaming
         public UIControl UIControl;
+        public bool IsException;
         public int Depth;
         #endregion
 
@@ -74,6 +76,7 @@ namespace PEBakery.Core
             Message = message;
             Command = null;
             UIControl = null;
+            IsException = false;
             Depth = 0;
         }
 
@@ -83,6 +86,7 @@ namespace PEBakery.Core
             Message = message;
             Command = command;
             UIControl = null;
+            IsException = false;
             Depth = 0;
         }
 
@@ -92,6 +96,7 @@ namespace PEBakery.Core
             Message = message;
             Command = null;
             UIControl = null;
+            IsException = false;
             Depth = depth;
         }
 
@@ -101,6 +106,7 @@ namespace PEBakery.Core
             Message = message;
             Command = command;
             UIControl = null;
+            IsException = false;
             Depth = depth;
         }
         #endregion
@@ -112,6 +118,7 @@ namespace PEBakery.Core
             Message = Logger.LogExceptionMessage(e);
             Command = null;
             UIControl = null;
+            IsException = true;
             Depth = 0;
         }
 
@@ -121,6 +128,7 @@ namespace PEBakery.Core
             Message = Logger.LogExceptionMessage(e);
             Command = command;
             UIControl = null;
+            IsException = true;
             Depth = 0;
         }
 
@@ -130,6 +138,7 @@ namespace PEBakery.Core
             Message = Logger.LogExceptionMessage(e);
             Command = null;
             UIControl = null;
+            IsException = true;
             Depth = depth;
         }
 
@@ -139,6 +148,7 @@ namespace PEBakery.Core
             Message = Logger.LogExceptionMessage(e);
             Command = command;
             UIControl = null;
+            IsException = true;
             Depth = depth;
         }
         #endregion
@@ -150,6 +160,7 @@ namespace PEBakery.Core
             Message = message;
             Command = null;
             UIControl = uiCtrl;
+            IsException = false;
             Depth = 0;
         }
 
@@ -159,6 +170,7 @@ namespace PEBakery.Core
             Message = Logger.LogExceptionMessage(e);
             Command = null;
             UIControl = uiCtrl;
+            IsException = false;
             Depth = 0;
         }
         #endregion
@@ -170,6 +182,7 @@ namespace PEBakery.Core
             Message = buildLog.Message;
             Command = null;
             UIControl = null;
+            IsException = false;
             Depth = buildLog.Depth;
         }
         #endregion
@@ -856,15 +869,12 @@ namespace PEBakery.Core
             };
 
             LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
+            if (log.IsException)
+                flags |= LogModel.BuildLogFlag.Exception;
             if (ls.IsMacro)
-            {
                 flags |= LogModel.BuildLogFlag.Macro;
-            }
-            else
-            {
-                if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
-                    flags |= LogModel.BuildLogFlag.RefScript;
-            }
+            else if (ls.IsRefScript && s.ScriptId != ls.RefScriptId)
+                flags |= LogModel.BuildLogFlag.RefScript;
 
             if (log.Command == null)
             {
@@ -919,7 +929,12 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    dbCode.Flags = log.Command.Type == CodeType.Comment ? LogModel.BuildLogFlag.Comment : LogModel.BuildLogFlag.None;
+                    LogModel.BuildLogFlag flags = LogModel.BuildLogFlag.None;
+                    if (log.Command.Type == CodeType.Comment)
+                        flags |= LogModel.BuildLogFlag.Comment;
+                    if (log.IsException)
+                        flags |= LogModel.BuildLogFlag.Exception;
+                    dbCode.Flags = flags;
 
                     if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
@@ -992,7 +1007,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, Dictionary<int, string> inParams, List<string> outParams, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -1034,7 +1049,7 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, inParams, outParams, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogEndOfSection(EngineState s, ScriptSection section, int depth, bool logScriptName, CodeCommand cmd = null)
         {
             // If logger is disabled or suspended, skip
             if (SuspendBuildLog || s.DisableLogger)
@@ -1132,7 +1147,7 @@ namespace PEBakery.Core
             return logFormat;
         }
 
-        public void ExportSystemLog(LogExportType type, string exportFile, bool embedResource)
+        public void ExportSystemLog(LogExportType type, string exportFile)
         {
             if (type == LogExportType.Html && MinifyHtmlExport)
             {
@@ -1413,6 +1428,10 @@ namespace PEBakery.Core
             /// This log was generated from referenced script.
             /// </summary>
             RefScript = 0x04,
+            /// <summary>
+            /// This log was generated by unforeseen exception.
+            /// </summary>
+            Exception = 0x08,
         }
 
         public static string BuildLogFlagToString(BuildLogFlag flags)
@@ -1428,6 +1447,10 @@ namespace PEBakery.Core
                 str += 'M';
             else if ((flags & BuildLogFlag.RefScript) == BuildLogFlag.RefScript)
                 str += 'R';
+
+            // Exception
+            if ((flags & BuildLogFlag.Exception) == BuildLogFlag.Exception)
+                str += 'E';
 
             return str;
         }
@@ -1469,7 +1492,7 @@ namespace PEBakery.Core
             public int LineIdx { get; set; }
             [MaxLength(65535)]
             public string RawCode { get; set; }
-            public LogModel.BuildLogFlag Flags { get; set; }
+            public BuildLogFlag Flags { get; set; }
 
             [Ignore]
             public string Text => Export(LogExportType.Text, true);

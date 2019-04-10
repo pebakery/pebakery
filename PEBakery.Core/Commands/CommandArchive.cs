@@ -264,8 +264,7 @@ namespace PEBakery.Core.Commands
             }
             finally
             {
-                Debug.Assert(extractor != null);
-                extractor.Dispose();
+                extractor?.Dispose();
             }
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] decompressed to [{destDir}]"));

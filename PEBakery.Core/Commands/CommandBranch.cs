@@ -46,7 +46,6 @@ namespace PEBakery.Core.Commands
         public struct RunExecOptions
         {
             public bool PreserveCurrentParams { get; set; }
-            public bool ForceLog { get; set; }
             public bool IsMacro { get; set; }
         }
 
@@ -82,7 +81,7 @@ namespace PEBakery.Core.Commands
 
             // Prepare to branch to a new section
             ScriptSection targetSection = sc.Sections[sectionName];
-            s.Logger.LogStartOfSection(s, targetSection, s.PeekDepth, inCurrentScript, newInParams, info.OutParams, cmd, opts.ForceLog);
+            s.Logger.LogStartOfSection(s, targetSection, s.PeekDepth, inCurrentScript, newInParams, info.OutParams, cmd);
 
             // Backup Variables and Macros for Exec
             Dictionary<string, string> localVars = null;
@@ -124,7 +123,7 @@ namespace PEBakery.Core.Commands
                 s.Macro.SetLocalMacros(localMacros);
             }
 
-            s.Logger.LogEndOfSection(s, targetSection, ls.Depth, inCurrentScript, cmd, opts.ForceLog);
+            s.Logger.LogEndOfSection(s, targetSection, ls.Depth, inCurrentScript, cmd);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)

@@ -85,7 +85,7 @@ namespace PEBakery.Core
             s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
 
             // Determine EntrySection
-            string entrySection = Engine.GetEntrySection(s);
+            string entrySection = GetEntrySection(s);
 
             // Log Script Build Start Message
             string msg;
@@ -172,12 +172,12 @@ namespace PEBakery.Core
                     ReadyRunScript(s);
 
                     // Run Main Section
-                    string entrySection = Engine.GetEntrySection(s);
+                    string entrySection = GetEntrySection(s);
                     if (s.CurrentScript.Sections.ContainsKey(entrySection))
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        Engine.RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalState());
+                        RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalState());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -185,7 +185,7 @@ namespace PEBakery.Core
                     FinishRunScript(s);
 
                     if (s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
-                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+                        s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
 
                     // OnScriptExit event callback
                     {
@@ -394,7 +394,6 @@ namespace PEBakery.Core
                 EngineLocalState ls = s.PeekLocalState();
                 s.PushLocalState(ls.IsMacro, ls.RefScriptId);
             }
-
 
             List<LogInfo> allLogs = s.TestMode ? new List<LogInfo>() : null;
             foreach (CodeCommand cmd in cmds)

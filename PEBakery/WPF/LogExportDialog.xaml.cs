@@ -144,7 +144,7 @@ namespace PEBakery.WPF
                 {
                     if (_m.ExportSystemLog)
                     {
-                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile, true);
+                        _m.Logger.ExportSystemLog(_m.FileFormat, destFile);
                     }
                     else if (_m.ExportBuildLog)
                     {
