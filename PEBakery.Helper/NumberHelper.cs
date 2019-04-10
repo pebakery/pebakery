@@ -624,6 +624,38 @@ namespace PEBakery.Helper
             return str;
         }
 
+        public static string NaturalByteSizeToSIUnit(long byteSize)
+        {
+            string str;
+            if (PB <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal) byteSize / PB, 1);
+                str = $"{rounded}PB";
+            }
+            else if (TB <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / TB, 1);
+                str = $"{rounded}TB";
+            }   
+            else if (GB <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / GB, 1);
+                str = $"{rounded}GB";
+            }   
+            else if (MB <= byteSize)
+            {
+                decimal rounded = Math.Round((decimal)byteSize / MB, 1);
+                str = $"{rounded}MB";
+            }
+            else
+            {
+                decimal rounded = Math.Ceiling((decimal)byteSize / KB);
+                str = $"{rounded}KB";
+            }
+
+            return str;
+        }
+
         public static decimal HumanReadableStringToByteSize(string str)
         {
             long multiplier = 1;

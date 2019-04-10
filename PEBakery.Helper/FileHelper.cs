@@ -73,14 +73,14 @@ namespace PEBakery.Helper
         #endregion
 
         #region Temp Path
-        private static readonly object _tempPathLock = new object();
         private static int _tempPathCounter = 0;
-        private static readonly RNGCryptoServiceProvider _secureRandom = new RNGCryptoServiceProvider();
+        private static readonly object TempPathLock = new object();
+        private static readonly RNGCryptoServiceProvider SecureRandom = new RNGCryptoServiceProvider();
 
         private static string _baseTempDir = null;
         public static string BaseTempDir()
         {
-            lock (_tempPathLock)
+            lock (TempPathLock)
             {
                 if (_baseTempDir == null)
                 {
@@ -90,7 +90,7 @@ namespace PEBakery.Helper
                     do
                     {
                         // Get 4B of random 
-                        _secureRandom.GetBytes(randBytes);
+                        SecureRandom.GetBytes(randBytes);
                         uint randInt = BitConverter.ToUInt32(randBytes, 0);
 
                         _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
@@ -111,7 +111,7 @@ namespace PEBakery.Helper
         /// </summary>
         public static void CleanBaseTempDir()
         {
-            lock (_tempPathLock)
+            lock (TempPathLock)
             {
                 if (_baseTempDir == null)
                     return;
@@ -134,7 +134,7 @@ namespace PEBakery.Helper
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
             string baseTempDir = BaseTempDir();
 
-            lock (_tempPathLock)
+            lock (TempPathLock)
             {
                 string tempDir;
                 do
@@ -164,7 +164,7 @@ namespace PEBakery.Helper
             // Use tmp by default / Remove '.' from ext
             ext = ext == null ? "tmp" : ext.Trim('.');
 
-            lock (_tempPathLock)
+            lock (TempPathLock)
             {
                 string tempFile;
                 do

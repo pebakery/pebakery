@@ -458,6 +458,169 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region RenameFile, RenameFolder
+        public static Task<(Script, string)> RenameFileAsync(Script sc, string folderName, string oldFileName, string newFileName)
+        {
+            return Task.Run(() => RenameFile(sc, folderName, oldFileName, newFileName));
+        }
+
+        public static (Script, string) RenameFile(Script sc, string folderName, string oldFileName, string newFileName)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+            if (folderName == null)
+                throw new ArgumentNullException(nameof(folderName));
+            if (oldFileName == null)
+                throw new ArgumentNullException(nameof(oldFileName));
+            if (newFileName == null)
+                throw new ArgumentNullException(nameof(newFileName));
+            string errorMsg = null;
+
+            // If oldFileName and newFileName is equal, report success without doing anything
+            if (oldFileName.Equals(newFileName, StringComparison.OrdinalIgnoreCase))
+                return (sc, null);
+
+            // Backup
+            string backupFile = FileHelper.GetTempFile("script");
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                if (!sc.Sections.ContainsKey(folderName))
+                    return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+
+                // Get encoded file index
+                Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
+                if (!fileDict.ContainsKey(oldFileName))
+                    return (sc, $"Index of encoded file [{oldFileName}] not found in [{sc.RealPath}]");
+
+                // Rename encoded file index
+                if (!IniReadWriter.RenameKey(sc.RealPath, folderName, oldFileName, newFileName))
+                    errorMsg = $"Unable to rename index of encoded file to [{newFileName}] from [{oldFileName}]";
+
+                // Rename encoded file section
+                string oldEncodedSection = ScriptSection.Names.GetEncodedSectionName(folderName, oldFileName);
+                string newEncodedSection = ScriptSection.Names.GetEncodedSectionName(folderName, newFileName);
+                if (!IniReadWriter.RenameSection(sc.RealPath, oldEncodedSection, newEncodedSection))
+                    errorMsg = $"Unable to rename encoded file to [{newFileName}] from [{oldFileName}]";
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
+        }
+
+        public static Task<(Script, string)> RenameFolderAsync(Script sc, string oldFolderName, string newFolderName)
+        {
+            return Task.Run(() => RenameFolder(sc, oldFolderName, newFolderName));
+        }
+
+        public static (Script, string) RenameFolder(Script sc, string oldFolderName, string newFolderName)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+            if (oldFolderName == null)
+                throw new ArgumentNullException(nameof(oldFolderName));
+            if (newFolderName == null)
+                throw new ArgumentNullException(nameof(newFolderName));
+            string errorMsg = null;
+
+            // If oldFileName and newFileName is equal, report success without doing anything
+            if (oldFolderName.Equals(newFolderName, StringComparison.OrdinalIgnoreCase))
+                return (sc, null);
+
+            // Check if oldFileName is valid
+            if (oldFolderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                return (sc, $"[{ScriptSection.Names.AuthorEncoded}] cannot be renamed");
+            if (oldFolderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                return (sc, $"[{ScriptSection.Names.InterfaceEncoded}] cannot be renamed");
+
+            // Check if newFileName is valid
+            if (newFolderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                return (sc, $"Encoded folder [{oldFolderName}] cannot be renamed to [{ScriptSection.Names.AuthorEncoded}]");
+            if (newFolderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                return (sc, $"Encoded folder [{oldFolderName}] cannot be renamed to [{ScriptSection.Names.InterfaceEncoded}]");
+
+            // Check if script has [EncodedFolders]
+            if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
+                return (sc, $"Encoded folders not found in [{sc.RealPath}]");
+
+            // Check if script has an index of [oldFolderName]
+            List<string> folders = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
+            if (!folders.Contains(oldFolderName, StringComparer.OrdinalIgnoreCase))
+                return (sc, $"Index of encoded folder [{oldFolderName}] not found in [{sc.RealPath}]");
+
+            // Backup
+            string backupFile = FileHelper.GetTempFile("script");
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                // Rename index of encoded folder
+                int idx = folders.FindIndex(x => x.Equals(oldFolderName, StringComparison.OrdinalIgnoreCase));
+                folders[idx] = newFolderName;
+
+                // Cannot use RenameKey, since [EncodedFolders] does not use '=' in its content.
+                // Rewrite entire [EncodedFolders] with DeleteSection and WriteRawLine.
+                if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
+                    return (sc, $"Unable to rename index of encoded folder to [{newFolderName}] from [{oldFolderName}]");
+                foreach (IniKey key in folders.Select(x => new IniKey(ScriptSection.Names.EncodedFolders, x)))
+                {
+                    if (!IniReadWriter.WriteRawLine(sc.RealPath, key))
+                        return (sc, $"Unable to rename index of encoded folder to [{newFolderName}] from [{oldFolderName}]");
+                }
+
+                // Check if script has [oldFolderName]
+                if (!sc.Sections.ContainsKey(oldFolderName))
+                    return (sc, $"Index of encoded folder [{oldFolderName}] not found in [{sc.RealPath}]");
+
+                // Rename section [oldFolderName] to [newFolderName]
+                // Do continue even renaming failed, to ensure other orphan sections are cleared up.
+                if (!IniReadWriter.RenameSection(sc.RealPath, oldFolderName, newFolderName))
+                    errorMsg = $"Unable to rename encoded folder to [{newFolderName}] from [{oldFolderName}]";
+
+                // Get index of files 
+                Dictionary<string, string> fileDict = sc.Sections[oldFolderName].IniDict;
+                if (oldFolderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (fileDict.ContainsKey("Logo"))
+                        fileDict.Remove("Logo");
+                }
+
+                // Rename encoded file section
+                foreach (string file in fileDict.Keys)
+                {
+                    string oldSectionName = ScriptSection.Names.GetEncodedSectionName(oldFolderName, file);
+                    string newSectionName = ScriptSection.Names.GetEncodedSectionName(newFolderName, file);
+                    if (!IniReadWriter.RenameSection(sc.RealPath, oldSectionName, newSectionName))
+                        errorMsg = $"Unable to rename encoded folder to [{newFolderName}] from [{oldFolderName}]";
+                }
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            sc = sc.Project.RefreshScript(sc);
+            return (sc, errorMsg);
+        }
+        #endregion
+
         #region ExtractFile, ExtractFolder, ExtractLogo, ExtractInterface
         public static Task<long> ExtractFileAsync(Script sc, string folderName, string fileName, Stream outStream, IProgress<double> progress)
         {
@@ -577,7 +740,6 @@ namespace PEBakery.Core
         #endregion
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
-
         public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
             return Task.Run(() => GetFileInfo(sc, folderName, fileName, inspectEncodeMode));
@@ -959,7 +1121,7 @@ namespace PEBakery.Core
                 {
                     if (!results[i])
                         errorMessages.Add($"Unable to delete section of encoded file [{iniKeys[i].Value}] from [{sc.RealPath}]");
-                }   
+                }
             }
             catch
             { // Error -> Rollback!
@@ -984,7 +1146,6 @@ namespace PEBakery.Core
 
         public static (Script, string) DeleteFolder(Script sc, string folderName)
         {
-            // TODO: Optimize IniReadWriter call
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
             if (folderName == null)
@@ -1003,13 +1164,15 @@ namespace PEBakery.Core
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     List<string> folders = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
-                    int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
                         return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     // Delete index of encoded folder
+                    int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
                     folders.RemoveAt(idx);
-                    // Cannot use DeleteKey, since [EncodedFolders] does not use '=' in its content
+
+                    // Cannot use RenameKey, since [EncodedFolders] does not use '=' in its content.
+                    // Rewrite entire [EncodedFolders] with DeleteSection and WriteRawLine.
                     if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
                         return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
 
@@ -1028,20 +1191,19 @@ namespace PEBakery.Core
                 {
                     Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
 
+                    // Delete section [folderName]
+                    if (!IniReadWriter.DeleteSection(sc.RealPath, folderName))
+                        errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
+
                     // Get index of files
                     if (folderName.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase))
                     {
                         if (fileDict.ContainsKey("Logo"))
                             fileDict.Remove("Logo");
                     }
-                    var files = fileDict.Keys;
-
-                    // Delete section [folderName]
-                    if (!IniReadWriter.DeleteSection(sc.RealPath, folderName))
-                        errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
 
                     // Delete encoded file section
-                    foreach (string file in files)
+                    foreach (string file in fileDict.Keys)
                     {
                         if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(folderName, file)))
                             errorMsg = $"Encoded folder [{folderName}] not found in [{sc.RealPath}]";
@@ -1345,7 +1507,7 @@ namespace PEBakery.Core
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = IniReadWriter.ReadKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
+                    string lastLogo = IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo");
                     IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.AuthorEncoded, "Logo", fileName);
 
                     if (lastLogo != null)

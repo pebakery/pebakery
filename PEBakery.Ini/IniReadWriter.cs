@@ -32,6 +32,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+// ReSharper disable UnusedMember.Global
 
 namespace PEBakery.Ini
 {
@@ -91,7 +92,7 @@ namespace PEBakery.Ini
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        public static string ReadKey(string file, string section, string key)
+        public static string WriteKey(string file, string section, string key)
         {
             IniKey[] iniKeys = InternalReadKeys(file, new IniKey[] { new IniKey(section, key) });
             return iniKeys[0].Value;
@@ -328,11 +329,8 @@ namespace PEBakery.Ini
                         }
 
                         // lineBuffer 내에 있는 key들을 검사해서 덮어 쓸 것들을 확인한다.
-                        foreach (var tup in lineBuffer)
+                        foreach ((string targetLine, string targetRawLine) in lineBuffer)
                         {
-                            string targetLine = tup.Item1;
-                            string targetRawLine = tup.Item2;
-
                             int eIdx = targetLine.IndexOf('=');
                             if (eIdx == -1 || // No identifier '='
                                 eIdx == 0 || // Key length is 0
@@ -442,7 +440,7 @@ namespace PEBakery.Ini
                             // Parse section only if corresponding iniKeys exist
                             if (inTargetSection)
                                 lineBuffer.Add(new Tuple<string, string>(line, rawLine));
-                            else // Passthrough
+                            else // Pass-through
                                 w.WriteLine(rawLine);
                         }
 
@@ -589,7 +587,7 @@ namespace PEBakery.Ini
 
                                 // Append Mode : Add to last line of section
                                 if (append && inTargetSection)
-                                { // End of targetSeciton and start of foundSection
+                                { // End of targetSection and start of foundSection
                                     for (int i = 0; i < iniKeys.Count; i++)
                                     {
                                         if (processedKeys.Contains(i))
@@ -672,7 +670,7 @@ namespace PEBakery.Ini
                         {
                             // Append Mode : Add to last line of section
                             if (append && inTargetSection)
-                            { // End of targetSeciton and start of foundSection
+                            { // End of targetSection and start of foundSection
                                 for (int i = 0; i < iniKeys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
@@ -701,7 +699,7 @@ namespace PEBakery.Ini
 
                             // Not in section, so create new section
                             for (int i = 0; i < iniKeys.Count; i++)
-                            { // At this time, only unfound section remains in iniKeys
+                            { // At this time, only not found section remains in iniKeys
                                 if (processedKeys.Contains(i))
                                     continue;
 
@@ -735,6 +733,146 @@ namespace PEBakery.Ini
                 {
                     return false;
                 }
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
+        }
+        #endregion
+
+        #region RenameKey
+        public static bool RenameKey(string file, string section, string key, string value)
+        {
+            return InternalRenameKeys(file, new IniKey[] { new IniKey(section, key, value) })[0];
+        }
+
+        public static bool RenameKey(string file, IniKey iniKey)
+        {
+            return InternalRenameKeys(file, new IniKey[] { iniKey })[0];
+        }
+
+        public static bool[] RenameKeys(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalRenameKeys(file, iniKeys.ToList());
+        }
+
+        /// <summary>
+        /// Internal method for RenameKeys
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="iniKeys">Use Value for new names of Key</param>
+        /// <returns></returns>
+        private static bool[] InternalRenameKeys(string file, IEnumerable<IniKey> iniKeys)
+        {
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                if (!File.Exists(file))
+                    return processed; // All False
+
+                string tempPath = Path.GetTempFileName();
+                Encoding encoding = MiniHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    if (r.Peek() == -1)
+                    {
+                        r.Close();
+                        return processed; // All False
+                    }
+
+                    string rawLine;
+                    bool inTargetSection = false;
+                    string currentSection = null;
+
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        bool thisLineProcessed = false;
+                        string line = rawLine.Trim();
+
+                        // Ignore comments. If you deleted all keys successfully, also skip.
+                        if (processed.Count(x => !x) == 0
+                            || line.StartsWith("#", StringComparison.Ordinal)
+                            || line.StartsWith(";", StringComparison.Ordinal)
+                            || line.StartsWith("//", StringComparison.Ordinal))
+                        {
+                            w.WriteLine(rawLine);
+                            continue;
+                        }
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                        {
+                            string foundSection = line.Substring(1, line.Length - 2);
+
+                            // Start of the section
+                            inTargetSection = false;
+                            // Only sections contained in iniKeys will be targeted
+                            for (int i = 0; i < keys.Length; i++)
+                            {
+                                if (processed[i])
+                                    continue;
+
+                                if (foundSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                            thisLineProcessed = true;
+                            w.WriteLine(rawLine);
+                        }
+
+                        // key=value
+                        int idx = line.IndexOf('=');
+                        if (idx != -1 && idx != 0) // Key exists
+                        {
+                            if (inTargetSection) // process here only if we are in target section
+                            {
+                                string lineKey = line.Substring(0, idx).Trim();
+                                string lineValue = line.Substring(idx + 1).Trim();
+                                for (int i = 0; i < keys.Length; i++)
+                                {
+                                    if (processed[i])
+                                        continue;
+
+                                    IniKey key = keys[i];
+                                    if (currentSection.Equals(key.Section, StringComparison.OrdinalIgnoreCase)
+                                        && lineKey.Equals(key.Key, StringComparison.OrdinalIgnoreCase))
+                                    { // key exists, so do not write this line, which lead to 'deletion'
+                                        w.WriteLine($"{key.Value}={lineValue}");
+                                        thisLineProcessed = true;
+                                        processed[i] = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
+                    }
+                }
+
+                if (processed.Any(x => x))
+                    MiniHelper.FileReplaceEx(tempPath, file);
+
+                return processed;
             }
             finally
             {
@@ -1108,7 +1246,7 @@ namespace PEBakery.Ini
                         { // If sections were not added, add it now
                             List<int> processedIdxs = new List<int>(sectionList.Count);
                             for (int i = 0; i < sectionList.Count; i++)
-                            { // At this time, only unfound section remains in iniKeys
+                            { // At this time, only not found section remains in iniKeys
                                 if (processedSections.Any(s => s.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(sectionList[i]);
@@ -1259,6 +1397,108 @@ namespace PEBakery.Ini
 
                 MiniHelper.FileReplaceEx(tempPath, file);
                 return true;
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
+        }
+        #endregion
+
+        #region RenameSection
+        public static bool RenameSection(string file, IniKey iniKey)
+        {
+            return InternalRenameSection(file, new IniKey[] { iniKey })[0];
+        }
+        public static bool RenameSection(string file, string srcSection, string destSection)
+        {
+            return InternalRenameSection(file, new IniKey[] { new IniKey(srcSection, destSection) })[0];
+        }
+        public static bool[] RenameSections(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalRenameSection(file, iniKeys);
+        }
+
+        /// <summary>
+        /// Internal method for RenameSection
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="iniKeys">Section is src section name, Key is dest section name</param>
+        /// <returns></returns>
+        private static bool[] InternalRenameSection(string file, IEnumerable<IniKey> iniKeys)
+        {
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterWriteLock();
+            try
+            {
+                if (!File.Exists(file))
+                    return processed;
+
+                string tempPath = Path.GetTempFileName();
+                Encoding encoding = MiniHelper.DetectBom(file);
+                using (StreamReader r = new StreamReader(file, encoding, false))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+                {
+                    if (r.Peek() == -1)
+                    {
+                        r.Close();
+                        return processed;
+                    }
+
+                    string rawLine;
+
+                    // Main Logic
+                    while ((rawLine = r.ReadLine()) != null)
+                    { // Read text line by line
+                        string line = rawLine.Trim();
+                        bool thisLineProcessed = false;
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[", StringComparison.Ordinal) &&
+                            line.EndsWith("]", StringComparison.Ordinal))
+                        {
+                            string foundSection = line.Substring(1, line.Length - 2);
+
+                            // Start of the section;
+                            // Only sections contained in iniKeys will be targeted
+                            for (int i = 0; i < keys.Length; i++)
+                            {
+                                if (processed[i])
+                                    continue;
+
+                                IniKey key = keys[i];
+                                if (foundSection.Equals(key.Section, StringComparison.OrdinalIgnoreCase))
+                                { // Rename this section
+                                    w.WriteLine($"[{key.Key}]");
+                                    thisLineProcessed = true;
+                                    processed[i] = true;
+                                    break; // for shorter O(n)
+                                }
+                            }
+                        }
+
+                        if (!thisLineProcessed)
+                            w.WriteLine(rawLine);
+                    }
+                }
+
+                if (processed.Any(x => x))
+                    MiniHelper.FileReplaceEx(tempPath, file);
+
+                return processed;
             }
             finally
             {
@@ -1616,7 +1856,7 @@ namespace PEBakery.Ini
 
         public static List<string> FilterCommentLines(IEnumerable<string> lines)
         {
-            return lines.Where(x => 0 < x.Length && !IniReadWriter.IsLineComment(x)).ToList();
+            return lines.Where(x => 0 < x.Length && !IsLineComment(x)).ToList();
         }
 
         public static List<string> FilterInvalidIniLines(IEnumerable<string> lines)
@@ -1777,10 +2017,10 @@ namespace PEBakery.Ini
         public static Dictionary<string, string>[] ParseSectionsToDicts(string file, string[] sections)
         {
             List<string>[] lines = ParseIniSections(file, sections);
-            Dictionary<string, string>[] dicts = new Dictionary<string, string>[lines.Length];
+            Dictionary<string, string>[] dict = new Dictionary<string, string>[lines.Length];
             for (int i = 0; i < lines.Length; i++)
-                dicts[i] = ParseIniLinesIniStyle(lines[i]);
-            return dicts;
+                dict[i] = ParseIniLinesIniStyle(lines[i]);
+            return dict;
         }
         /// <summary>
         /// Parse sections to string 2D array.

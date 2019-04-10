@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
+// #define EXPERIMENTAL_GLOBAL_TEXTBOX_AUTOFOCUS
+
 namespace PEBakery
 {
     // ReSharper disable RedundantExtendsListEntry
@@ -11,9 +13,13 @@ namespace PEBakery
         internal void App_Startup(object sender, StartupEventArgs e)
         {
             Global.PreInit(e.Args, false);
-            //RegisterTextBoxEvents();
+
+#if EXPERIMENTAL_GLOBAL_TEXTBOX_AUTOFOCUS
+            RegisterTextBoxEvents();
+#endif
         }
 
+#if EXPERIMENTAL_GLOBAL_TEXTBOX_AUTOFOCUS
         #region Event Handler
         /// <summary>
         /// Select all text in a TextBox control when the control gets the focus.
@@ -45,5 +51,6 @@ namespace PEBakery
                 textBox.SelectAll();
         }
         #endregion
+    #endif
     }
 }

@@ -755,6 +755,125 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
+        #region RenameFile, RenameFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void RenameFile()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string originScriptPath = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile", "ExtractFileTests.script");
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string folderName, string oldFileName, string newFileName, bool result)
+            {
+                string destDir = FileHelper.GetTempDir();
+                string destScript = Path.Combine(destDir, "RenameFileTest.script");
+
+                try
+                {
+                    File.Copy(originScriptPath, destScript, true);
+
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.RenameFile(sc, folderName, oldFileName, newFileName);
+                    if (errMsg != null)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+
+                    Assert.IsTrue(result);
+
+                    Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, oldFileName)));
+                    Assert.IsTrue(sc.Sections.ContainsKey(GetSectionName(folderName, newFileName)));
+
+                    Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
+                    Assert.IsFalse(fileDict.ContainsKey(oldFileName));
+                    Assert.IsTrue(fileDict.ContainsKey(newFileName));
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("FolderExample", "Type1.jpg", "JPEG.jpg", true);
+            Template("FolderExample", "Type2.7z", "LZMA2.7z", true);
+            Template("FolderExample", "Type3.pdf", "Postscript.pdf", true);
+            Template(AuthorEncoded, "Logo.jpg", "L.jpg", true);
+            Template(InterfaceEncoded, "PEBakeryAlphaMemory.jpg", "P.jpg", true);
+
+            Template("BannerImage", "Should.fail", "Should.fail.2", false);
+            Template("ShouldFail", "Should.fail", "Should.fail.2", false);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void RenameFolder()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            string originScriptPath = Path.Combine(StringEscaper.Preprocess(s, "%TestBench%"), "EncodedFile", "ExtractFileTests.script");
+
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+            void Template(string oldFolderName, string newFolderName, bool result)
+            {
+                string destDir = FileHelper.GetTempDir();
+                string destScript = Path.Combine(destDir, "RenameFolderTest.script");
+
+                try
+                {
+                    File.Copy(originScriptPath, destScript, true);
+
+                    Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
+
+                    Dictionary<string, string> fileDict = null;
+                    if (result)
+                        fileDict = sc.Sections[oldFolderName].IniDict;
+
+                    string errMsg;
+                    (sc, errMsg) = EncodedFile.RenameFolder(sc, oldFolderName, newFolderName);
+
+                    if (errMsg != null)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+                    Assert.IsTrue(result);
+
+                    Assert.IsFalse(sc.Sections.ContainsKey(oldFolderName));
+                    Assert.IsTrue(sc.Sections.ContainsKey(newFolderName));
+                    Assert.IsFalse(IniReadWriter.ContainsSection(destScript, oldFolderName));
+                    Assert.IsTrue(IniReadWriter.ContainsSection(destScript, newFolderName));
+
+                    string[] folders = sc.Sections[EncodedFolders].Lines;
+                    Assert.IsFalse(folders.Contains(oldFolderName, StringComparer.OrdinalIgnoreCase));
+                    Assert.IsTrue(folders.Contains(newFolderName, StringComparer.OrdinalIgnoreCase));
+
+                    foreach (string fileName in fileDict.Keys)
+                    {
+                        Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(oldFolderName, fileName)));
+                        Assert.IsTrue(sc.Sections.ContainsKey(GetSectionName(newFolderName, fileName)));
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("FolderExample", "RenamedExample", true);
+            Template("BannerImage", "BannerRenamed", true);
+            Template(AuthorEncoded, "Hello", false);
+            Template(InterfaceEncoded, "World", false);
+            Template("FolderExample", AuthorEncoded, false);
+            Template("BannerImage", InterfaceEncoded, false);
+            Template("ShouldFail", "ShouldNotRename", false);
+        }
+        #endregion
+
         #region DeleteFile, DeleteFolder, DeleteLogo
         [TestMethod]
         [TestCategory("EncodedFile")]

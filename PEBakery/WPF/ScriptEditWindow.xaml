@@ -60,6 +60,26 @@
         <local:AttachProgressValueToEnabledConverter x:Key="AttachProgressValueToEnabledConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:ActiveInterfaceSectionVisibilityConverter x:Key="ActiveInterfaceSectionVisibilityConverter"/>
+        <Style x:Key="MultiSelectAlternativeListViewColor" BasedOn="{StaticResource AlternativeListViewColor}" TargetType="{x:Type ListViewItem}">
+            <Style.Triggers>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="White"/>
+                </Trigger>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                    <Setter Property="TextBlock.Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="#f2f2f2"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="LightBlue"/>
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="Background" Value="LightBlue"/>
+                </Trigger>
+            </Style.Triggers>
+            <!-- ReSharper disable once Xaml.BindingWithContextNotResolved -->
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+        </Style>
     </Window.Resources>
     <Grid ccc:SelectTextOnFocus.Active="True">
         <Grid.RowDefinitions>
@@ -1244,6 +1264,18 @@
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="RenameFolderButton"
+                                        Margin="0, 0, 0, 5"
+                                        Height="25"
+                                        Command="{Binding RenameFolderCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Pencil"
+                                                                    Width="Auto" Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Rename Folder"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button x:Name="ExtractFolderButton"
                                         Margin="0, 0, 0, 5"
                                         Height="25"
@@ -1289,6 +1321,18 @@
                                                                     Height="Auto"
                                                                     Margin="0, 5, 5, 5"/>
                                         <TextBlock Text="Attach File"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="RenameFileButton"
+                                        Margin="0, 0, 0, 5"
+                                        Height="25"
+                                        Command="{Binding RenameFileCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Pencil"
+                                                                    Width="Auto" Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Rename File"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -1374,7 +1418,6 @@
                               x:Name="ScriptAttachFoldersListView"
                               ItemsSource="{Binding AttachedFolders}"
                               SelectedItem="{Binding SelectedAttachedFolder}"
-                              SelectionChanged="ScriptAttachFoldersListView_SelectionChanged"
                               ItemContainerStyle="{StaticResource AlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2">
@@ -1393,10 +1436,9 @@
                     <ListView Grid.Row="0" Grid.Column="2"
                               x:Name="ScriptAttachFilesListView"
                               ItemsSource="{Binding AttachedFiles}"
-                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              ItemContainerStyle="{StaticResource MultiSelectAlternativeListViewColor}"
                               Style="{StaticResource ListItemFocusColorOverride}"
                               AlternationCount="2"
-                              SelectionChanged="ScriptAttachFilesListView_Selected"
                               SelectionMode="Extended">
                         <ListView.View>
                             <cc:AutoSizedGridView>

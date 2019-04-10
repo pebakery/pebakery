@@ -391,31 +391,6 @@ namespace PEBakery.WPF
         #endregion
         #endregion
 
-        #region Event Handler - Attachment
-        private void ScriptAttachFoldersListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (m.SelectedAttachedFolder != null)
-                m.AttachedFiles = m.SelectedAttachedFolder.Children;
-            else
-                m.AttachedFiles.Clear();
-        }
-
-        private void ScriptAttachFilesListView_Selected(object sender, SelectionChangedEventArgs e)
-        {
-            foreach (object item in e.RemovedItems)
-            {
-                Debug.Assert(item.GetType() == typeof(AttachFileItem));
-                m.SelectedAttachedFiles.Remove((AttachFileItem)item);
-            }
-
-            foreach (object item in e.AddedItems)
-            {
-                Debug.Assert(item.GetType() == typeof(AttachFileItem));
-                m.SelectedAttachedFiles.Add((AttachFileItem)item);
-            }
-        }
-        #endregion
-
         #region Command - Save
         private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -462,7 +437,7 @@ namespace PEBakery.WPF
             // Init ObservableCollection
             AttachedFolders = new ObservableCollection<AttachFolderItem>();
             AttachedFiles = new ObservableCollection<AttachFileItem>();
-            SelectedAttachedFiles = new List<AttachFileItem>();
+            // SelectedAttachedFiles = new List<AttachFileItem>();
 
             // InterfaceCanvas
             DragCanvas canvas = new DragCanvas
@@ -782,7 +757,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.RawSize, 1);
+                string str = NumberHelper.NaturalByteSizeToSIUnit(ScriptLogoInfo.RawSize);
                 return $"{str} ({ScriptLogoInfo.RawSize})";
             }
         }
@@ -794,7 +769,7 @@ namespace PEBakery.WPF
                 if (ScriptLogoInfo == null)
                     return string.Empty; // Invalid value
 
-                string str = NumberHelper.ByteSizeToSIUnit(ScriptLogoInfo.EncodedSize, 1);
+                string str = NumberHelper.NaturalByteSizeToSIUnit(ScriptLogoInfo.EncodedSize);
                 return $"{str} ({ScriptLogoInfo.EncodedSize})";
             }
         }
@@ -1741,7 +1716,16 @@ namespace PEBakery.WPF
         public AttachFolderItem SelectedAttachedFolder
         {
             get => _selectedAttachedFolder;
-            set => SetProperty(ref _selectedAttachedFolder, value);
+            set
+            {
+                _selectedAttachedFolder = value;
+                OnPropertyUpdate();
+
+                if (value != null)
+                    AttachedFiles = SelectedAttachedFolder.Children;
+                else
+                    AttachedFiles.Clear();
+            }
         }
 
         private readonly object _attachedFilesLock = new object();
@@ -1752,12 +1736,7 @@ namespace PEBakery.WPF
             set => SetCollectionProperty(ref _attachedFiles, _attachedFilesLock, value);
         }
 
-        private List<AttachFileItem> _selectedAttachedFiles;
-        public List<AttachFileItem> SelectedAttachedFiles
-        {
-            get => _selectedAttachedFiles;
-            set => SetProperty(ref _selectedAttachedFiles, value);
-        }
+        public AttachFileItem[] SelectedAttachedFiles => AttachedFiles.Where(x => x.IsSelected).ToArray();
 
         private double _attachProgressValue = -1;
         public double AttachProgressValue
@@ -1843,7 +1822,7 @@ namespace PEBakery.WPF
                 long fileSize = new FileInfo(srcFile).Length;
                 if (EncodedFile.DecodeInMemorySizeLimit <= fileSize)
                 {
-                    string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(EncodedFile.DecodeInMemorySizeLimit, 0);
+                    string sizeLimitStr = NumberHelper.NaturalByteSizeToSIUnit(EncodedFile.DecodeInMemorySizeLimit);
                     MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
                         "Warning",
                         MessageBoxButton.YesNo,
@@ -1891,7 +1870,7 @@ namespace PEBakery.WPF
                     {
                         OverwritePrompt = true,
                         FileName = filename,
-                        Filter = $"{type.ToString().ToUpper().Replace(".", String.Empty)} Image|*.{type}",
+                        Filter = $"{type.ToString().ToUpper().Replace(".", string.Empty)} Image|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
                     };
@@ -2590,7 +2569,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAdd_Click";
+                const string internalErrorMsg = "Internal Logic Error at UICtrlListItemBoxAddCommand";
 
                 Debug.Assert(SelectedUICtrl != null, internalErrorMsg);
 
@@ -2731,7 +2710,7 @@ namespace PEBakery.WPF
                     sizeLimit = EncodedFile.DecodeInMemorySizeLimit;
                 if (sizeLimit <= fileLen)
                 {
-                    string sizeLimitStr = NumberHelper.ByteSizeToSIUnit(sizeLimit, 0);
+                    string sizeLimitStr = NumberHelper.NaturalByteSizeToSIUnit(sizeLimit);
                     MessageBoxResult result = MessageBox.Show(_window, $"You are attaching a file that is larger than {sizeLimitStr}.\r\n\r\nLarge files are supported, but PEBakery would be unresponsive when rendering a script.\r\n\r\nDo you want to continue?",
                         "Warning",
                         MessageBoxButton.YesNo,
@@ -3010,10 +2989,12 @@ namespace PEBakery.WPF
 
         #region Command - Attachment (Folder)
         private ICommand _addFolderCommand;
+        private ICommand _renameFolderCommand;
         private ICommand _extractFolderCommand;
         private ICommand _deleteFolderCommand;
         private ICommand _attachFileCommand;
         public ICommand AddFolderCommand => GetRelayCommand(ref _addFolderCommand, "Add folder", AddFolderCommand_Execute, CanExecuteFunc);
+        public ICommand RenameFolderCommand => GetRelayCommand(ref _renameFolderCommand, "Rename folder", RenameFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand ExtractFolderCommand => GetRelayCommand(ref _extractFolderCommand, "Extract folder", ExtractFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand DeleteFolderCommand => GetRelayCommand(ref _deleteFolderCommand, "Delete folder", DeleteFolderCommand_Execute, FolderSelected_CanExecute);
         public ICommand AttachFileCommand => GetRelayCommand(ref _attachFileCommand, "Attach file", AttachFileCommand_Execute, FolderSelected_CanExecute);
@@ -3070,6 +3051,57 @@ namespace PEBakery.WPF
             finally
             {
                 CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async void RenameFolderCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                AttachFolderItem folder = SelectedAttachedFolder;
+                Debug.Assert(folder != null);
+
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                        "Rename folder",
+                        "Please input new folder name.",
+                        PackIconMaterialKind.Pencil)
+                {
+                    InputText = folder.FolderName
+                };
+
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string newFolderName = dialog.InputText;
+                if (newFolderName.Length == 0)
+                {
+                    MessageBox.Show(_window, "New folder name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                AttachProgressIndeterminate = true;
+
+                string errMsg;
+                (Script, errMsg) = await EncodedFile.RenameFolderAsync(Script, folder.FolderName, newFolderName);
+                if (errMsg == null)
+                {
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(newFolderName);
+                }
+                else // Failure
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -3323,10 +3355,12 @@ namespace PEBakery.WPF
         #endregion
 
         #region Command - Attachment (File)
+        private ICommand _renameFileCommand;
         private ICommand _extractFileCommand;
         private ICommand _deleteFileCommand;
         private ICommand _openFileCommand;
         private ICommand _inspectFileCommand;
+        public ICommand RenameFileCommand => GetRelayCommand(ref _renameFileCommand, "Rename file", RenameFileCommand_Execute, FileSingleSelected_CanExecute);
         public ICommand ExtractFileCommand => GetRelayCommand(ref _extractFileCommand, "Extract file", ExtractFileCommand_Execute, FileSelected_CanExecute);
         public ICommand DeleteFileCommand => GetRelayCommand(ref _deleteFileCommand, "Delete file", DeleteFileCommand_Execute, FileSelected_CanExecute);
         public ICommand OpenFileCommand => GetRelayCommand(ref _openFileCommand, "Open file", OpenFileCommand_Execute, FileSingleSelected_CanExecute);
@@ -3334,12 +3368,85 @@ namespace PEBakery.WPF
 
         private bool FileSelected_CanExecute(object parameter)
         {
-            return CanExecuteCommand && SelectedAttachedFolder != null && 0 < SelectedAttachedFiles.Count;
+            return CanExecuteCommand && SelectedAttachedFolder != null && 0 < SelectedAttachedFiles.Length;
         }
 
         private bool FileSingleSelected_CanExecute(object parameter)
         {
-            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFiles.Count == 1;
+            return CanExecuteCommand && SelectedAttachedFolder != null && SelectedAttachedFiles.Length == 1;
+        }
+
+        private async void RenameFileCommand_Execute(object parameter)
+        {
+            CanExecuteCommand = false;
+            try
+            {
+                AttachFileItem file = SelectedAttachedFiles[0];
+                Debug.Assert(file != null);
+                EncodedFileInfo fi = file.Info;
+                Debug.Assert(fi != null);
+
+                TextBoxDialog dialog = new TextBoxDialog(_window,
+                    "Rename file",
+                    "Please input new file name.",
+                    PackIconMaterialKind.Pencil)
+                {
+                    InputText = fi.FileName
+                };
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                string newFileName = dialog.InputText;
+                if (newFileName.Length == 0)
+                {
+                    MessageBox.Show(_window, "New file name cannot be empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Debug.Assert(fi.FileName != null);
+                Debug.Assert(newFileName != null);
+                string oldExt = Path.GetExtension(fi.FileName);
+                string newExt = Path.GetExtension(newFileName);
+                if (!oldExt.Equals(newExt, StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBoxResult result = MessageBox.Show(_window,
+                        $"File's extension is being changed to [{newExt}] from [{oldExt}].\r\nAre you sure to continue?",
+                        "Extension Changed",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Information);
+                    if (result != MessageBoxResult.Yes)
+                        return;
+                }
+
+                CanExecuteCommand = false;
+                AttachProgressIndeterminate = true;
+
+                string errorMsg;
+                (Script, errorMsg) = await EncodedFile.RenameFileAsync(Script, fi.FolderName, fi.FileName, newFileName);
+                if (errorMsg == null)
+                {
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(fi.FolderName);
+                    SelectScriptAttachedFile(newFileName);
+                }
+                else
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
+                    MessageBox.Show(_window,
+                        $"Unable to rename [{fi.FileName}] to [{newFileName}].\r\n- {errorMsg}",
+                        "Rename Failure",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                CanExecuteCommand = true;
+                AttachProgressIndeterminate = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private async void ExtractFileCommand_Execute(object parameter)
@@ -3347,7 +3454,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                if (SelectedAttachedFiles.Count == 1)
+                if (SelectedAttachedFiles.Length == 1)
                 {
                     AttachFileItem file = SelectedAttachedFiles[0];
                     Debug.Assert(file != null);
@@ -3391,7 +3498,7 @@ namespace PEBakery.WPF
                         CanExecuteCommand = true;
                     }
                 }
-                else if (1 < SelectedAttachedFiles.Count)
+                else if (1 < SelectedAttachedFiles.Length)
                 {
                     VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
                     {
@@ -3414,7 +3521,7 @@ namespace PEBakery.WPF
                         IProgress<double> progress = new Progress<double>(x =>
                         {
                             // ReSharper disable once AccessToModifiedClosure
-                            AttachProgressValue = (x + idx) / SelectedAttachedFiles.Count;
+                            AttachProgressValue = (x + idx) / SelectedAttachedFiles.Length;
                         });
 
                         foreach (AttachFileItem file in SelectedAttachedFiles)
@@ -3486,7 +3593,7 @@ namespace PEBakery.WPF
             CanExecuteCommand = false;
             try
             {
-                if (SelectedAttachedFiles.Count == 1)
+                if (SelectedAttachedFiles.Length == 1)
                 {
                     AttachFileItem file = SelectedAttachedFiles[0];
                     Debug.Assert(file != null);
@@ -3517,10 +3624,10 @@ namespace PEBakery.WPF
                         MessageBox.Show(_window, $"Unable to delete file [{fi.FileName}]\r\n- {errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
-                else if (1 < SelectedAttachedFiles.Count)
+                else if (1 < SelectedAttachedFiles.Length)
                 {
                     MessageBoxResult result = MessageBox.Show(
-                        $"Are you sure you want to delete {SelectedAttachedFiles.Count} files?",
+                        $"Are you sure you want to delete {SelectedAttachedFiles.Length} files?",
                         "Confirm Delete",
                         MessageBoxButton.YesNo, MessageBoxImage.Question);
                     if (result == MessageBoxResult.No)
@@ -3564,7 +3671,7 @@ namespace PEBakery.WPF
 
         private async void OpenFileCommand_Execute(object parameter)
         {
-            Debug.Assert(SelectedAttachedFiles.Count == 1);
+            Debug.Assert(SelectedAttachedFiles.Length == 1);
             CanExecuteCommand = false;
             AttachProgressValue = 0;
             try
@@ -3854,7 +3961,7 @@ namespace PEBakery.WPF
                 IncludeInterfaceEncoded = AttachIncludeInterfaceEncoded,
                 InspectEncodeMode = false,
             };
-            
+
             (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, opts);
             if (errMsg != null)
             {
@@ -3884,8 +3991,11 @@ namespace PEBakery.WPF
                 if (fi.FolderName.Equals(folderName, StringComparison.Ordinal))
                 {
                     SelectedAttachedFolder = fi;
+                    foreach (AttachFileItem item in AttachedFiles)
+                        item.IsSelected = false;
                     break;
                 }
+
             }
         }
 
@@ -3895,9 +4005,12 @@ namespace PEBakery.WPF
             {
                 if (fi.FileName.Equals(fileName, StringComparison.Ordinal))
                 {
-                    SelectedAttachedFiles.Clear();
-                    SelectedAttachedFiles.Add(fi);
+                    fi.IsSelected = true;
                     break;
+                }
+                else
+                {
+                    fi.IsSelected = false;
                 }
             }
         }
@@ -4247,8 +4360,8 @@ namespace PEBakery.WPF
         #region Property
         public EncodedFileInfo Info;
         public string FileName => Info.FileName;
-        public string RawSize => $"{NumberHelper.ByteSizeToSIUnit(Info.RawSize, 0)} ({Info.RawSize})";
-        public string EncodedSize => $"{NumberHelper.ByteSizeToSIUnit(Info.EncodedSize, 0)} ({Info.EncodedSize})";
+        public string RawSize => $"{NumberHelper.NaturalByteSizeToSIUnit(Info.RawSize)} ({Info.RawSize:N0})";
+        public string EncodedSize => $"{NumberHelper.NaturalByteSizeToSIUnit(Info.EncodedSize)} ({Info.EncodedSize:N0})";
         public string Compression
         {
             get
@@ -4267,6 +4380,13 @@ namespace PEBakery.WPF
                         return "Unknown";
                 }
             }
+        }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
         }
 
         public void PropertyUpdate()
