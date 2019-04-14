@@ -38,6 +38,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace PEBakery.Core.Commands
 {
@@ -936,9 +937,9 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            using (Ping pinger = new Ping())
+                            using (Ping ping = new Ping())
                             {
-                                PingReply reply = pinger.Send(host);
+                                PingReply reply = ping.Send(host);
                                 Debug.Assert(reply != null, nameof(reply) + " != null");
                                 if (reply.Status == IPStatus.Success)
                                     match = true;
@@ -1005,8 +1006,8 @@ namespace PEBakery.Core.Commands
                                 defaultChoice = false;
                         }
 
-                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
-                        s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                        TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+                        s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
 
                         if (autoTimeout)
                         {
@@ -1058,7 +1059,7 @@ namespace PEBakery.Core.Commands
                         if (c.NotFlag)
                             match = !match;
 
-                        s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
+                        s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;
                     }
                     break;
                 default:

@@ -30,6 +30,7 @@ using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -37,6 +38,7 @@ namespace PEBakery.Core.Commands
 {
     public class CommandArchive
     {
+        [SuppressMessage("ReSharper", "RedundantNameQualifier")]
         public static List<LogInfo> Compress(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -198,7 +200,7 @@ namespace PEBakery.Core.Commands
                 if (Directory.Exists(tempDir))
                     Directory.Delete(tempDir);
             }
-            
+
 
             return logs;
         }
