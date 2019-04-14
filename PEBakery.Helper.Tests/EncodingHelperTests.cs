@@ -154,7 +154,6 @@ namespace PEBakery.Helper.Tests
             LogTemplate("Random.bin");
             LogTemplate("Banner.zip");
             LogTemplate("Banner.7z");
-            
         }
         #endregion
     }

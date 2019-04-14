@@ -59,6 +59,7 @@ namespace PEBakery.Core
         // Start-time variables
         public static string[] Args;
         public static string BaseDir;
+        public static string MagicFile;
 
         // Buffer Pool
         public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
@@ -84,6 +85,9 @@ namespace PEBakery.Core
 
             // Initialize native libraries
             NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
+            
+            // Prepare libmagic database
+            MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
 
             // Load BuildDate
             BuildDate = BuildTimestamp.ReadDateTime();
@@ -220,11 +224,13 @@ namespace PEBakery.Core
             string xzPath = Path.Combine(baseDir, arch, "liblzma.dll");
             string wimlibPath = Path.Combine(baseDir, arch, "libwim-15.dll");
             string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
+            string magicPath = Path.Combine(baseDir, arch, "libmagic-1.dll");
 
             Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, 64 * 1024); // 64K
             Joveler.Compression.XZ.XZInit.GlobalInit(xzPath, 64 * 1024); // 64K
             ManagedWimLib.Wim.GlobalInit(wimlibPath);
             SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
+            Joveler.FileMagician.Magic.GlobalInit(magicPath);
         }
 
         public static void NativeGlobalCleanup()
@@ -232,6 +238,7 @@ namespace PEBakery.Core
             Joveler.Compression.ZLib.ZLibInit.GlobalCleanup();
             Joveler.Compression.XZ.XZInit.GlobalCleanup();
             ManagedWimLib.Wim.GlobalCleanup();
+            Joveler.FileMagician.Magic.GlobalCleanup();
         }
         #endregion
     }

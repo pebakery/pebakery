@@ -34,6 +34,7 @@ namespace PEBakery.Core.Tests
 
             // Init NativeAssembly
             Global.NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
+            EngineTests.MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
 
             // Use InMemory Database for Tests
             Logger.DebugLevel = LogDebugLevel.PrintExceptionStackTrace;
@@ -43,6 +44,7 @@ namespace PEBakery.Core.Tests
             // Set Global 
             Global.Logger = EngineTests.Logger;
             Global.BaseDir = EngineTests.BaseDir;
+            Global.MagicFile = EngineTests.MagicFile;
             Global.BuildDate = BuildTimestamp.ReadDateTime();
 
             // IsOnline?

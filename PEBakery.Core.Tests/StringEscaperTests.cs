@@ -53,7 +53,7 @@ namespace PEBakery.Core.Tests
 
         public void Escape_1()
         {
-            string src = StringEscaperTests.SampleString;
+            string src = SampleString;
             string dest = StringEscaper.Escape(src, false, false);
             const string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -61,7 +61,7 @@ namespace PEBakery.Core.Tests
 
         public void Escape_2()
         {
-            string src = StringEscaperTests.SampleString;
+            string src = SampleString;
             string dest = StringEscaper.Escape(src, true, false);
             const string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -69,7 +69,7 @@ namespace PEBakery.Core.Tests
 
         public void Escape_3()
         {
-            string src = StringEscaperTests.SampleString;
+            string src = SampleString;
             string dest = StringEscaper.Escape(src, true, true);
             const string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -77,8 +77,8 @@ namespace PEBakery.Core.Tests
 
         public void Escape_4()
         {
-            string[] srcs = { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            List<string> dests = StringEscaper.Escape(srcs, true);
+            string[] srcStrs = { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
+            List<string> destStrs = StringEscaper.Escape(srcStrs, true);
             string[] comps =
             {
                "Comma#$s[#$c]",
@@ -86,8 +86,8 @@ namespace PEBakery.Core.Tests
                "DoubleQuote#$s[#$q]",
             };
 
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+            for (int i = 0; i < destStrs.Count; i++)
+                Assert.IsTrue(destStrs[i].Equals(comps[i], StringComparison.Ordinal));
         }
         #endregion
 
@@ -103,7 +103,7 @@ namespace PEBakery.Core.Tests
 
         public void QuoteEscape_1()
         {
-            string src = StringEscaperTests.SampleString;
+            string src = SampleString;
             string dest = StringEscaper.QuoteEscape(src, false, false);
             const string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -126,8 +126,8 @@ namespace PEBakery.Core.Tests
 
         public void QuoteEscape_3()
         {
-            string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
-            List<string> dests = StringEscaper.QuoteEscape(srcs);
+            string[] srcStrs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
+            List<string> destStrs = StringEscaper.QuoteEscape(srcStrs);
             string[] comps = new string[]
             {
                "\"Comma [,]\"",
@@ -135,8 +135,8 @@ namespace PEBakery.Core.Tests
                "\"DoubleQuote [#$q]\"",
             };
 
-            for (int i = 0; i < dests.Count; i++)
-                Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
+            for (int i = 0; i < destStrs.Count; i++)
+                Assert.IsTrue(destStrs[i].Equals(comps[i], StringComparison.Ordinal));
         }
         #endregion
 
@@ -906,6 +906,41 @@ namespace PEBakery.Core.Tests
                 "4",
                 "5"
             }, "12", "1122123124125");
+        }
+        #endregion
+
+        #region IsText
+        private readonly Dictionary<string, bool> _isTextResultDict = new Dictionary<string, bool>(StringComparer.Ordinal)
+        {
+            ["Banner.7z"] = false,
+            ["Banner.svg"] = true,
+            ["Banner.zip"] = false,
+            ["CP949.txt"] = true,
+            ["Random.bin"] = false,
+            ["ShiftJIS.html"] = true,
+            ["Type3.pdf"] = false,
+            ["UTF16BE.txt"] = true,
+            ["UTF16LE.txt"] = true,
+            ["UTF8.txt"] = true,
+            ["UTF8woBOM.txt"] = true,
+            ["Zero.bin"] = false,
+        };
+
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void IsText()
+        {
+            string testBench = EngineTests.Project.Variables.Expand("%TestBench%");
+            string srcDir = Path.Combine(testBench, "StringEscaper", "IsText");
+            string[] files = Directory.GetDirectories(srcDir);
+            foreach (string file in files)
+            {
+                string fileName = Path.GetFileName(file);
+                Assert.IsNotNull(fileName);
+                bool expected = _isTextResultDict[fileName];
+                bool ret = StringEscaper.IsText(file);
+                Assert.AreEqual(expected, ret);
+            }
         }
         #endregion
 

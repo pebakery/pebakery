@@ -34,6 +34,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Joveler.FileMagician;
 
 namespace PEBakery.Core
 {
@@ -295,7 +296,7 @@ namespace PEBakery.Core
             return unescaped;
         }
 
-        private static readonly Dictionary<string, string> _fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> FullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @",", @"#$c" },
             { "\"", @"#$q" },
@@ -304,7 +305,7 @@ namespace PEBakery.Core
             { Environment.NewLine, @"#$x" },
         };
 
-        private static readonly Dictionary<string, string> _escapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> EscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "\"", @"#$q" },
             { "\t", @"#$t" },
@@ -336,7 +337,7 @@ namespace PEBakery.Core
                 str = b.ToString();
             }
 
-            Dictionary<string, string> dict = fullEscape ? _fullEscapeSeqs : _escapeSeqs;
+            Dictionary<string, string> dict = fullEscape ? FullEscapeSeqs : EscapeSeqs;
             str = dict.Keys.Aggregate(str, (from, to) => from.Replace(to, dict[to]));
 
             if (escapePercent)
@@ -688,7 +689,7 @@ namespace PEBakery.Core
             for (int i = 0; i < list.Length; i++)
             {
                 byte[] bin = Encoding.Unicode.GetBytes(list[i]);
-                b.Append(StringEscaper.PackRegBinary(bin));
+                b.Append(PackRegBinary(bin));
                 if (i + 1 < list.Length)
                     b.Append(",00,00,");
             }
@@ -768,6 +769,36 @@ namespace PEBakery.Core
         public static string PackListStr(IList<string> list, string seperator)
         {
             return string.Join(seperator, list);
+        }
+        #endregion
+
+        #region IsText
+        /// <summary>
+        /// Check if a file is a text or binary using libmagic.
+        /// </summary>
+        public static bool IsText(string filePath)
+        {
+            string ret;
+            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
+            {
+                ret = magic.CheckFile(filePath);
+            }
+
+            return !ret.Equals("binary", StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Check if a file is a text or binary using libmagic.
+        /// </summary>
+        public static bool IsText(byte[] buffer)
+        {
+            string ret;
+            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
+            {
+                ret = magic.CheckBuffer(buffer);
+            }
+
+            return !ret.Equals("binary", StringComparison.Ordinal);
         }
         #endregion
     }
