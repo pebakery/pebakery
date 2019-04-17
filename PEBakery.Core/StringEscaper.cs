@@ -34,7 +34,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Joveler.FileMagician;
 
 namespace PEBakery.Core
 {
@@ -744,7 +743,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ProcessScriptVersionString
+        #region ProcessVersionString
         public static string ProcessVersionString(string str)
         {
             // Integer - Ex) 001 -> 1
@@ -769,36 +768,6 @@ namespace PEBakery.Core
         public static string PackListStr(IList<string> list, string seperator)
         {
             return string.Join(seperator, list);
-        }
-        #endregion
-
-        #region IsText
-        /// <summary>
-        /// Check if a file is a text or binary using libmagic.
-        /// </summary>
-        public static bool IsText(string filePath)
-        {
-            string ret;
-            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
-            {
-                ret = magic.CheckFile(filePath);
-            }
-
-            return !ret.Equals("binary", StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Check if a file is a text or binary using libmagic.
-        /// </summary>
-        public static bool IsText(byte[] buffer)
-        {
-            string ret;
-            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
-            {
-                ret = magic.CheckBuffer(buffer);
-            }
-
-            return !ret.Equals("binary", StringComparison.Ordinal);
         }
         #endregion
     }

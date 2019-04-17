@@ -909,41 +909,6 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
-        #region IsText
-        private readonly Dictionary<string, bool> _isTextResultDict = new Dictionary<string, bool>(StringComparer.Ordinal)
-        {
-            ["Banner.7z"] = false,
-            ["Banner.svg"] = true,
-            ["Banner.zip"] = false,
-            ["CP949.txt"] = true,
-            ["Random.bin"] = false,
-            ["ShiftJIS.html"] = true,
-            ["Type3.pdf"] = false,
-            ["UTF16BE.txt"] = true,
-            ["UTF16LE.txt"] = true,
-            ["UTF8.txt"] = true,
-            ["UTF8woBOM.txt"] = true,
-            ["Zero.bin"] = false,
-        };
-
-        [TestMethod]
-        [TestCategory("StringEscaper")]
-        public void IsText()
-        {
-            string testBench = EngineTests.Project.Variables.Expand("%TestBench%");
-            string srcDir = Path.Combine(testBench, "StringEscaper", "IsText");
-            string[] files = Directory.GetDirectories(srcDir);
-            foreach (string file in files)
-            {
-                string fileName = Path.GetFileName(file);
-                Assert.IsNotNull(fileName);
-                bool expected = _isTextResultDict[fileName];
-                bool ret = StringEscaper.IsText(file);
-                Assert.AreEqual(expected, ret);
-            }
-        }
-        #endregion
-
         #region Utility
         private static string _sampleString = null;
         public static string SampleString

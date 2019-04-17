@@ -138,6 +138,14 @@ Joveler.Compression.ZLib
     Copyright (C) Hajin Jang
     https://github.com/ied206/Joveler.Compression
 
+Joveler.FileMagician
+    The 2-Clause BSD License
+    https://opensource.org/licenses/BSD-2-Clause
+
+    Copyright (C) Ian F. Darwin and Christos Zoulas
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/Joveler.FileMagician
+
 MahApps.Metro.IconPacks
     MIT License
     https://opensource.org/licenses/MIT
