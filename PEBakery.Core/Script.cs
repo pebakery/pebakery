@@ -309,7 +309,7 @@ namespace PEBakery.Core
             {
                 int idx = 0;
                 int sectionIdx = 0;
-                string line;
+                string rawLine;
                 string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
@@ -325,17 +325,18 @@ namespace PEBakery.Core
                     }
                 }
 
-                while ((line = r.ReadLine()) != null)
+                while ((rawLine = r.ReadLine()) != null)
                 { // Read text line by line
                     idx++;
-                    line = line.Trim();
+                    ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
-                    if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
+                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) && 
+                        line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         FinalizeSection();
 
                         sectionIdx = idx;
-                        currentSection = line.Substring(1, line.Length - 2);
+                        currentSection = line.Slice(1, line.Length - 2).ToString();
                         type = DetectTypeOfSection(currentSection, false);
                         if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
@@ -343,7 +344,7 @@ namespace PEBakery.Core
                     }
                     else if (inSection && loadSection)
                     { // line of section
-                        lines.Add(line);
+                        lines.Add(line.ToString());
                     }
 
                     if (r.Peek() == -1) // End of .script
