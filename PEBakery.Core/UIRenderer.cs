@@ -55,6 +55,19 @@ namespace PEBakery.Core
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class UIRenderer
     {
+        #region (Draft) Deferred Content Rendering
+        /*
+        Current UIRender can only work sequentially in UI thread, causing blocking (~100ms).
+        While most of the UIElement construction can be done only in UI thread,
+        extraction of the encoded files can be done in background thread.
+
+        Idea : EncodedFile.ExtractInterface should be run in parallel.
+               Deferred content rendering for Image, TextFile, Button control has to be implemented.
+               Then contents can be prepared (or extracted) in parallel.
+        Result : While blocking problem itself cannot be solved, the blocking time would be decreased.
+        */
+        #endregion
+
         #region Fields and Properties
         public const int MaxUrlDisplayLen = 50 - 3;
         private readonly Variables _variables;
