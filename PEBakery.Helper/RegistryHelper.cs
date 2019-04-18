@@ -27,115 +27,75 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Security;
-// ReSharper disable FieldCanBeMadeReadOnly.Local
-// ReSharper disable MemberCanBePrivate.Local
-// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Helper
 {
     #region RegistryHelper
     public static class RegistryHelper
     {
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GetCurrentProcess();
-        [DllImport("advapi32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool OpenProcessToken(IntPtr ProcessHandle, UInt32 DesiredAccess, out IntPtr TokenHandle);
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
-        [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        private static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
-        [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
-        [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool CloseHandle(IntPtr hObject);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct LUID
-        {
-            public uint LowPart;
-            public int HighPart;
-        }
-        // ReSharper disable once UnusedMember.Local
-        [StructLayout(LayoutKind.Sequential)]
-        private struct LUID_AND_ATTRIBUTES
-        {
-            public LUID pLuid;
-            public uint Attributes;
-        }
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct TOKEN_PRIVILEGES
-        {
-            public int Count;
-            public LUID Luid;
-            public uint Attr;
-        }
-
-        // ReSharper disable once UnusedMember.Local
-        private const int ANYSIZE_ARRAY = 1;
-        private const uint SE_PRIVILEGE_ENABLED = 0x00000002;
-        private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
-        private const uint TOKEN_QUERY = 0x0008;
-
-        /*
-        public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
-        public const UInt32 HKCU = 0x80000001; // HKEY_CURRENT_USER
-        public const UInt32 HKLM = 0x80000002; // HKEY_LOCAL_MACHINE
-        public const UInt32 HKU = 0x80000003; // HKEY_USERS
-        public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
-        public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
-        */
-
+        #region P/Invoke Methods
         public static void GetAdminPrivileges()
         {
-            TOKEN_PRIVILEGES pRestoreToken = new TOKEN_PRIVILEGES();
-            TOKEN_PRIVILEGES pBackupToken = new TOKEN_PRIVILEGES();
+            NativeMethods.TOKEN_PRIVILEGES pRestoreToken = new NativeMethods.TOKEN_PRIVILEGES();
+            NativeMethods.TOKEN_PRIVILEGES pBackupToken = new NativeMethods.TOKEN_PRIVILEGES();
 
-            if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out IntPtr hToken))
+            // Because this handle is a pseudo handle, it does not need to be closed.
+            // https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-getcurrentprocess#remarks
+            IntPtr procHandle = NativeMethods.GetCurrentProcess();
+
+            const uint desiredAccess = NativeMethods.TOKEN_ADJUST_PRIVILEGES | NativeMethods.TOKEN_QUERY;
+            if (!NativeMethods.OpenProcessToken(procHandle, desiredAccess, out IntPtr hToken))
                 throw new BetterWin32Errors.Win32Exception("OpenProcessToken failed");
-
-            if (!LookupPrivilegeValue(null, "SeRestorePrivilege", out LUID restoreLUID))
-                throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
-
-            if (!LookupPrivilegeValue(null, "SeBackupPrivilege", out LUID backupLUID))
-                throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
-
-            pRestoreToken.Count = 1;
-            pRestoreToken.Luid = restoreLUID;
-            pRestoreToken.Attr = SE_PRIVILEGE_ENABLED;
-
-            pBackupToken.Count = 1;
-            pBackupToken.Luid = backupLUID;
-            pBackupToken.Attr = SE_PRIVILEGE_ENABLED;
-
-            if (!AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
+            try
             {
-                BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
-                else
-                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
-            }
+                if (!NativeMethods.LookupPrivilegeValue(null, "SeRestorePrivilege", out NativeMethods.LUID restoreLuid))
+                    throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
 
-            if (!AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
-            {
-                BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
-                else
-                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+                if (!NativeMethods.LookupPrivilegeValue(null, "SeBackupPrivilege", out NativeMethods.LUID backupLuid))
+                    throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
+
+                pRestoreToken.Count = 1;
+                pRestoreToken.Luid = restoreLuid;
+                pRestoreToken.Attr = NativeMethods.SE_PRIVILEGE_ENABLED;
+
+                pBackupToken.Count = 1;
+                pBackupToken.Luid = backupLuid;
+                pBackupToken.Attr = NativeMethods.SE_PRIVILEGE_ENABLED;
+
+                if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
+                {
+                    BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                    if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    else
+                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+                }
+
+                if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
+                {
+                    BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                    if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    else
+                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+                }
             }
-            CloseHandle(hToken);
+            finally
+            {
+                NativeMethods.CloseHandle(hToken);
+            }
         }
+
+        public static int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile)
+        {
+            return NativeMethods.RegLoadKey(hKey, lpSubKey, lpFile);
+        }
+
+        public static int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey)
+        {
+            return NativeMethods.RegUnLoadKey(hKey, lpSubKey);
+        }
+        #endregion
 
         #region Parse
         public static RegistryKey ParseStringToRegKey(string rootKey)
@@ -228,9 +188,9 @@ namespace PEBakery.Helper
             using (RegistryKey destSubKey = destKey.CreateSubKey(destSubKeyPath, true))
             {
                 if (srcSubKey == null)
-                    throw new ArgumentException($"Unable to find subkey [{srcSubKeyPath}]");
+                    throw new ArgumentException($"Unable to find sub-key [{srcSubKeyPath}]");
                 if (destSubKey == null)
-                    throw new ArgumentException($"Unalbe to create dest subkey [{destSubKeyPath}]");
+                    throw new ArgumentException($"Unable to create dest sub-key [{destSubKeyPath}]");
 
                 CopySubKey(srcSubKey, destSubKey);
             }

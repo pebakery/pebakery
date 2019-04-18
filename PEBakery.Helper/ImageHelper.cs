@@ -282,14 +282,14 @@ namespace PEBakery.Helper
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
-                        int rgb24idx = (x + y * src.PixelWidth) * 3;
-                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+                        int rgb24Idx = (x + y * src.PixelWidth) * 3;
+                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
 
                         byte a = 255;
-                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24idx);
+                        (byte r, byte g, byte b) = ReadFromBrg24Bitmap(srcPixels, rgb24Idx);
                         if (r == 255 && g == 255 && b == 255)
                             a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
                     }
                 }
 
@@ -311,12 +311,12 @@ namespace PEBakery.Helper
                 {
                     for (int x = 0; x < src.PixelWidth; x++)
                     {
-                        int rgba32idx = (x + y * src.PixelWidth) * 4;
+                        int rgba32Idx = (x + y * src.PixelWidth) * 4;
 
-                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32idx);
+                        (byte r, byte g, byte b, byte a) = ReadFromBrga32Bitmap(srcPixels, rgba32Idx);
                         if (r == 255 && g == 255 && b == 255 & a == 255)
                             a = 0; // Max transparency
-                        WriteToBrga32Bitmap(destPixels, rgba32idx, r, g, b, a);
+                        WriteToBrga32Bitmap(destPixels, rgba32Idx, r, g, b, a);
                     }
                 }
 

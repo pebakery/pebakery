@@ -204,7 +204,7 @@ namespace PEBakery.Helper
             }
 
             // [Stage 2] Check if a chunk can be decoded as system default ANSI locale.
-            // Many multibyte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
+            // Many multi-byte encodings have 'unused area'. If a file contains one of these area, treat it as a binary.
             // Ex) EUC-KR's layout : https://en.wikipedia.org/wiki/CP949#/media/File:Unified_Hangul_Code.svg
             bool isText = true;
             Encoding ansiEnc = Encoding.GetEncoding(DefaultAnsi.CodePage, new EncoderExceptionFallback(), new DecoderExceptionFallback());

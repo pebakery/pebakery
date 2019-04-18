@@ -240,18 +240,6 @@ namespace PEBakery.Helper
                 File.Delete(src);
             }
         }
-
-        public static string RemoveFirstDir(string src, int removeNumber)
-        {
-            int idx = src.IndexOf(Path.DirectorySeparatorChar);
-            return idx == -1 ? null : src.Substring(idx + 1);
-        }
-
-        public static string RemoveLastDir(string src, int removeNumber)
-        {
-            int idx = src.LastIndexOf(Path.DirectorySeparatorChar);
-            return idx == -1 ? null : src.Substring(0, idx);
-        }
         #endregion
 
         #region GetFileSize
@@ -265,7 +253,7 @@ namespace PEBakery.Helper
         #region File Byte Operations
         public static bool FindByteSignature(string srcFile, byte[] signature, out long offset)
         {
-            long size = FileHelper.GetFileSize(srcFile);
+            long size = GetFileSize(srcFile);
 
             bool found = false;
             using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
@@ -514,19 +502,19 @@ namespace PEBakery.Helper
         public static void DirectoryDeleteEx(string path)
         {
             DirectoryInfo root = new DirectoryInfo(path);
-            Stack<DirectoryInfo> fols = new Stack<DirectoryInfo>();
-            fols.Push(root);
-            while (fols.Count > 0)
+            Stack<DirectoryInfo> dirInfos = new Stack<DirectoryInfo>();
+            dirInfos.Push(root);
+            while (dirInfos.Count > 0)
             {
-                DirectoryInfo fol = fols.Pop();
-                fol.Attributes = fol.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                DirectoryInfo fol = dirInfos.Pop();
+                fol.Attributes &= ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
                 foreach (DirectoryInfo d in fol.GetDirectories())
                 {
-                    fols.Push(d);
+                    dirInfos.Push(d);
                 }
                 foreach (FileInfo f in fol.GetFiles())
                 {
-                    f.Attributes = f.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                    f.Attributes &= ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
                     f.Delete();
                 }
             }

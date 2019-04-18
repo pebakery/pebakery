@@ -25,8 +25,12 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
+
 // ReSharper disable IdentifierTypo
 
 namespace PEBakery.Helper
@@ -251,6 +255,63 @@ namespace PEBakery.Helper
         #region EncodingHelper
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetACP();
+        #endregion
+
+        #region RegistryHelper
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr GetCurrentProcess();
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool OpenProcessToken(IntPtr ProcessHandle, UInt32 DesiredAccess, out IntPtr TokenHandle);
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+        [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
+        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        [SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CloseHandle(IntPtr hObject);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct LUID
+        {
+            public uint LowPart;
+            public int HighPart;
+        }
+        // ReSharper disable once UnusedMember.Local
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct LUID_AND_ATTRIBUTES
+        {
+            public LUID pLuid;
+            public uint Attributes;
+        }
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        internal struct TOKEN_PRIVILEGES
+        {
+            public int Count;
+            public LUID Luid;
+            public uint Attr;
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        internal const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+        internal const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        internal const uint TOKEN_QUERY = 0x0008;
+
+        /*
+        public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
+        public const UInt32 HKCU = 0x80000001; // HKEY_CURRENT_USER
+        public const UInt32 HKLM = 0x80000002; // HKEY_LOCAL_MACHINE
+        public const UInt32 HKU = 0x80000003; // HKEY_USERS
+        public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
+        public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
+        */
         #endregion
     }
 }

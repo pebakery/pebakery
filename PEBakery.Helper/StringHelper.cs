@@ -249,10 +249,10 @@ namespace PEBakery.Helper
 
         public static (string, string) FormatOpenCommand(string str, string openFile)
         {
-            string formated = StringHelper.ReplaceEx(str, "%1", openFile, StringComparison.Ordinal);
-            int exeEndIdx = formated.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
-            string exe = formated.Substring(0, exeEndIdx).Trim().Trim('\"').Trim();
-            string arguments = formated.Substring(exeEndIdx).Trim().Trim('\"').Trim();
+            string formatted = ReplaceEx(str, "%1", openFile, StringComparison.Ordinal);
+            int exeEndIdx = formatted.LastIndexOf(".exe", StringComparison.OrdinalIgnoreCase) + 4;
+            string exe = formatted.Substring(0, exeEndIdx).Trim().Trim('\"').Trim();
+            string arguments = formatted.Substring(exeEndIdx).Trim().Trim('\"').Trim();
 
             return (exe, arguments);
         }

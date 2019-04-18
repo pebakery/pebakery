@@ -144,7 +144,7 @@ namespace PEBakery.Helper
             long nextReport = reportInterval;
             long offset = stream.Position;
             byte[] buffer = new byte[BufferSize];
-            int bytesRead = 0;
+            int bytesRead;
             do
             {
                 bytesRead = stream.Read(buffer, 0, buffer.Length);
@@ -164,7 +164,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region DetectHashType
-        public static HashType DetectHashType(byte[] data)
+        public static HashType DetectHashType(ReadOnlySpan<byte> data)
         {
             return InternalDetectHashType(data.Length);
         }

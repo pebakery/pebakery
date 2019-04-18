@@ -48,7 +48,7 @@ namespace PEBakery.Helper
             using (HttpClient client = new HttpClient())
             {
                 // Disguise as a normal Firefox browser.
-                const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0";
+                const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0";
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
                 // GET https://github.com
