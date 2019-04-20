@@ -30,37 +30,125 @@ using Joveler.FileMagician;
 
 namespace PEBakery.Core
 {
+    /// <inheritdoc />
     /// <summary>
     /// Wrapper class of Joveler.FileMagician library.
     /// </summary>
-    public static class FileTypeDetector
+    public class FileTypeDetector : IDisposable
     {
+        #region Fields and Properties
+        private readonly object _lock = new object();
+        private Magic _magic;
+        #endregion
+
+        #region Constructor
+        public FileTypeDetector(string magicFile)
+        {
+            _magic = Magic.Open(magicFile);
+        }
+        #endregion
+
+        #region Disposable Pattern
+        ~FileTypeDetector()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing)
+                return;
+
+            lock (_lock)
+            {
+                _magic?.Dispose();
+                _magic = null;
+            }
+        }
+        #endregion
+
+        #region FileType
+        /// <summary>
+        /// Get file type of file.
+        /// </summary>
+        public string FileType(string filePath)
+        {
+            lock (_lock)
+            {
+                return _magic.CheckFile(filePath);
+            }
+        }
+
+        /// <summary>
+        /// Get file type of buffer.
+        /// </summary>
+        public string FileType(ReadOnlySpan<byte> span)
+        {
+            lock (_lock)
+            {
+                return _magic.CheckBuffer(span);
+            }
+        }
+        #endregion
+
+        #region MimeType
+        /// <summary>
+        /// Get mime type of file.
+        /// </summary>
+        public string MimeType(string filePath)
+        {
+            lock (_lock)
+            {
+                _magic.SetFlags(MagicFlags.MIME_TYPE);
+                return _magic.CheckFile(filePath);
+            }
+        }
+
+        /// <summary>
+        /// Get mime type of buffer.
+        /// </summary>
+        public string MimeType(ReadOnlySpan<byte> span)
+        {
+            lock (_lock)
+            {
+                _magic.SetFlags(MagicFlags.MIME_TYPE);
+                return _magic.CheckBuffer(span);
+            }
+        }
+        #endregion
+
         #region IsText
         /// <summary>
-        /// Check if a file is a text or binary using libmagic.
+        /// Check if a file is a text or binary.
         /// </summary>
-        public static bool IsText(string filePath)
+        public bool IsText(string filePath)
         {
             string ret;
-            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
+            lock (_lock)
             {
-                ret = magic.CheckFile(filePath);
+                _magic.SetFlags(MagicFlags.MIME_ENCODING);
+                ret = _magic.CheckFile(filePath);
             }
-
             return !ret.Equals("binary", StringComparison.Ordinal);
         }
 
         /// <summary>
-        /// Check if a file is a text or binary using libmagic.
+        /// Check if a file is a text or binary.
         /// </summary>
-        public static bool IsText(Span<byte> span)
+        public bool IsText(ReadOnlySpan<byte> span)
         {
             string ret;
-            using (Magic magic = Magic.Open(Global.MagicFile, MagicFlags.MIME_ENCODING))
+            lock (_lock)
             {
-                ret = magic.CheckBuffer(span);
+                _magic.SetFlags(MagicFlags.MIME_ENCODING);
+                ret = _magic.CheckBuffer(span);
             }
-
             return !ret.Equals("binary", StringComparison.Ordinal);
         }
         #endregion

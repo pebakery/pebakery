@@ -278,7 +278,7 @@ namespace PEBakery.Core
         #region TextBox
         public RenderCleanInfo RenderTextBox(UIControl uiCtrl)
         {
-            // WB082 textbox control's y coord is of textbox's, not textlabel's.
+            // WB082 textbox control's y co-ord is of textbox's, not textlabel's.
             UIInfo_TextBox info = uiCtrl.Info.Cast<UIInfo_TextBox>();
 
             TextBox box = new TextBox

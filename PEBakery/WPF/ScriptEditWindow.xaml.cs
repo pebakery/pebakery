@@ -2672,7 +2672,7 @@ namespace PEBakery.WPF
                     !srcFileExt.Equals(".txt", StringComparison.OrdinalIgnoreCase) &&
                     !srcFileExt.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!FileTypeDetector.IsText(srcFilePath))
+                    if (!Global.FileTypeDetector.IsText(srcFilePath))
                     { // File is expected to be binary
                         MessageBoxResult result = MessageBox.Show(_window, $"{srcFileName} appears to be a binary file.\r\n\r\nBinary files may not display correctly and can negatively impact rendering performance.\r\n\r\nDo you want to continue?",
                             "Warning",

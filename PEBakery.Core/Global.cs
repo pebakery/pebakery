@@ -70,6 +70,7 @@ namespace PEBakery.Core
         public static Setting Setting;
         public static ProjectCollection Projects;
         public static ScriptCache ScriptCache;
+        public static FileTypeDetector FileTypeDetector;
         #endregion
 
         #region Init
@@ -88,6 +89,7 @@ namespace PEBakery.Core
             
             // Prepare libmagic database
             MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
+            FileTypeDetector = new FileTypeDetector(MagicFile);
 
             // Load BuildDate
             BuildDate = BuildTimestamp.ReadDateTime();
@@ -198,6 +200,7 @@ namespace PEBakery.Core
         {
             ScriptCache?.WaitClose();
             Logger?.Dispose();
+            FileTypeDetector?.Dispose();
             NativeGlobalCleanup();
 
             FileHelper.CleanBaseTempDir();
