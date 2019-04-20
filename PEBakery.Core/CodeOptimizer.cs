@@ -29,15 +29,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace PEBakery.Core
 {
     // [Basic of Code Optimization]
-    // If a seqeunce of commands access same file, one file will be opened many time.
+    // If a sequence of commands access same file, one file will be opened many time.
     // -> Pack them into one command to reduce disk access
-
     public static class CodeOptimizer
     {
         #region OptimizedCodeTypes
