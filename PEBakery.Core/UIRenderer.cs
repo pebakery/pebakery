@@ -57,15 +57,38 @@ namespace PEBakery.Core
     {
         #region (Draft) Deferred Content Rendering
         /*
-        Current UIRender can only work sequentially in UI thread, causing blocking (~100ms).
+        Current UIRender can only work sequentially in UI thread, causing blocking (~300ms).
         While most of the UIElement construction can be done only in UI thread,
         extraction of the encoded files can be done in background thread.
 
         Idea : EncodedFile.ExtractInterface should be run in parallel.
                Deferred content rendering for Image, TextFile, Button control has to be implemented.
                Then contents can be prepared (or extracted) in parallel.
-        Result : While blocking problem itself cannot be solved, the blocking time would be decreased.
+
+        Test result : Threading overhead is much more larger than the performance gain.
+                      Unless view and model can be separated in UIRenderer, do not turn on this feature. 
         */
+        #endregion
+
+        #region Deferred Content Render
+        private delegate void RenderContentMethod(UIControl uiCtrl, FrameworkElement element, Stream ms);
+        private class DeferredContent
+        {
+            // ReSharper disable once InconsistentNaming
+            public readonly UIControl Control;
+            public readonly FrameworkElement RenderTarget;
+            public readonly string EncodedFileName;
+            public readonly RenderContentMethod RenderMethod;
+            public MemoryStream ExtractedContent;
+
+            public DeferredContent(UIControl uiCtrl, FrameworkElement renderTarget, string encodedFileName, RenderContentMethod renderMethod)
+            {
+                Control = uiCtrl;
+                RenderTarget = renderTarget;
+                EncodedFileName = encodedFileName;
+                RenderMethod = renderMethod;
+            }
+        }
         #endregion
 
         #region Fields and Properties
@@ -79,23 +102,29 @@ namespace PEBakery.Core
         /// true in MainWindow, false in ScriptEditWindow
         /// </summary>
         private readonly bool _viewMode;
+        private readonly bool _deferredContentRender;
         // Compatibility Option
         private readonly bool _ignoreWidthOfWebLabel = false;
 
+        // Deferred Content Render
+        
+        private readonly List<DeferredContent> _deferredContents = new List<DeferredContent>();
+
         public readonly List<UIControl> UICtrls;
-        private UIControl[] _visibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
-        private UIControl[] _radioButtons => _visibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+        private UIControl[] VisibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
+        private UIControl[] RadioButtons => VisibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
         private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, Window window, Script script, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, bool viewMode, bool deferredContentRender, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
             _viewMode = viewMode;
+            _deferredContentRender = deferredContentRender;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = LoadInterfaces(script);
@@ -104,13 +133,14 @@ namespace PEBakery.Core
             Global.Logger.SystemWrite(errLogs);
         }
 
-        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, bool viewMode, bool compatWebLabel)
+        public UIRenderer(Canvas canvas, Window window, Script script, List<UIControl> uiCtrls, bool viewMode, bool deferredContentRender, bool compatWebLabel)
         {
             _variables = script.Project.Variables;
             _canvas = canvas;
             _window = window;
             _sc = script;
             _viewMode = viewMode;
+            _deferredContentRender = deferredContentRender;
             _ignoreWidthOfWebLabel = compatWebLabel;
 
             UICtrls = uiCtrls ?? new List<UIControl>(0);
@@ -157,7 +187,7 @@ namespace PEBakery.Core
 
             InitCanvas(_canvas);
             _cleanInfos.Clear();
-            foreach (UIControl uiCtrl in _visibleCtrls)
+            foreach (UIControl uiCtrl in VisibleCtrls)
             {
                 try
                 {
@@ -219,6 +249,10 @@ namespace PEBakery.Core
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCtrl.RawLine}]"));
                 }
             }
+
+            // Deferred content render for parallel extraction
+            if (_deferredContentRender)
+                RenderDeferredContents();
         }
         #endregion
 
@@ -663,29 +697,45 @@ namespace PEBakery.Core
 
             if (_viewMode)
             {
-                Brush brush;
-
-                // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
-                {
-                    switch (imgType)
-                    {
-                        case ImageHelper.ImageFormat.Svg:
-                            brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
-                            break;
-                        default:
-                            brush = ImageHelper.ImageToImageBrush(ms);
-                            break;
-                    }
-                }
-
                 Style imageButtonStyle = Application.Current.FindResource("ImageButtonStyle") as Style;
                 Debug.Assert(imageButtonStyle != null);
                 Button button = new Button
                 {
                     Style = imageButtonStyle,
-                    Background = brush,
                 };
+
+                // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
+                switch (imgType)
+                {
+                    case ImageHelper.ImageFormat.Svg:
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, button, imageSection, Image_ViewMode_RenderSvg);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
+                            {
+                                Image_ViewMode_RenderSvg(uiCtrl, button, ms);
+                            }
+                        }
+                        break;
+                    default:
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, button, imageSection, Image_ViewMode_RenderNormal);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
+                            {
+                                Image_ViewMode_RenderNormal(uiCtrl, button, ms);
+                            }
+                        }
+                        break;
+                }
 
                 bool hasUrl = false;
                 string url = null;
@@ -709,31 +759,55 @@ namespace PEBakery.Core
                 FrameworkElement element;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
+                switch (imgType)
                 {
-                    switch (imgType)
-                    {
-                        case ImageHelper.ImageFormat.Svg:
-                            Border border = new Border
+                    case ImageHelper.ImageFormat.Svg:
+                        Border svgBorder = new Border
+                        {
+                            UseLayoutRounding = true,
+                        };
+
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, svgBorder, imageSection, Image_EditMode_RenderSvg);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                             {
-                                Background = ImageHelper.SvgToDrawingBrush(ms),
-                                UseLayoutRounding = true,
-                            };
-                            element = border;
-                            break;
-                        default:
-                            Image image = new Image
+                                Image_EditMode_RenderSvg(uiCtrl, svgBorder, ms);
+                            }
+                        }
+
+                        element = svgBorder;
+                        break;
+                    default:
+                        Image image = new Image
+                        {
+                            StretchDirection = StretchDirection.Both,
+                            Stretch = Stretch.Fill,
+                            UseLayoutRounding = true,
+                        };
+                        RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, image, imageSection, Image_EditMode_RenderNormal);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, imageSection))
                             {
-                                StretchDirection = StretchDirection.Both,
-                                Stretch = Stretch.Fill,
-                                UseLayoutRounding = true,
-                                Source = ImageHelper.ImageToBitmapImage(ms),
-                            };
-                            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                            element = image;
-                            break;
-                    }
+                                Image_EditMode_RenderNormal(uiCtrl, image, ms);
+                            }
+                        }
+
+                        element = image;
+                        break;
                 }
+
 
                 SetToolTip(element, info.ToolTip);
                 SetEditModeProperties(element, uiCtrl);
@@ -822,6 +896,54 @@ namespace PEBakery.Core
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
             }
         }
+
+        private static void Image_ViewMode_RenderSvg(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Button button = element as Button;
+            Debug.Assert(button != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            Brush brush = new DrawingBrush { Drawing = ImageHelper.SvgToDrawingGroup(ms) };
+            button.Background = brush;
+        }
+
+        private static void Image_ViewMode_RenderNormal(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Button button = element as Button;
+            Debug.Assert(button != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            Brush brush = ImageHelper.ImageToImageBrush(ms);
+            button.Background = brush;
+        }
+
+        private static void Image_EditMode_RenderSvg(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Border svgBorder = element as Border;
+            Debug.Assert(svgBorder != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            DrawingBrush brush = ImageHelper.SvgToDrawingBrush(ms);
+            svgBorder.Background = brush;
+        }
+
+        private static void Image_EditMode_RenderNormal(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Image image = element as Image;
+            Debug.Assert(image != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
+            image.Source = bitmap;
+        }
         #endregion
 
         #region TextFile
@@ -838,6 +960,8 @@ namespace PEBakery.Core
             }
             else
             {
+                
+
                 string ext = Path.GetExtension(textSection);
                 if (ext.Equals(".rtf", StringComparison.OrdinalIgnoreCase))
                 { // RichTextBox
@@ -848,11 +972,26 @@ namespace PEBakery.Core
                         FontSize = CalcFontPointScale(),
                     };
 
-                    TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
-                    using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
-                    {
-                        textRange.Load(ms, DataFormats.Rtf);
+                    if (!EncodedFile.ContainsInterface(uiCtrl.Section.Script, textSection))
+                    { // Wrong encoded text
+                        string errMsg = $"Unable to find encoded rtf [{textSection}]";
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"{errMsg} ({uiCtrl.RawLine})"));
                     }
+                    else
+                    {
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, rtfBox, textSection, TextFile_RenderRichText);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
+                            {
+                                TextFile_RenderRichText(uiCtrl, rtfBox, ms);
+                            }
+                        }
+                    } 
 
                     box = rtfBox;
                 }
@@ -874,13 +1013,16 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
+                        if (_deferredContentRender)
                         {
-                            Encoding encoding = EncodingHelper.DetectBom(ms);
-                            ms.Position = 0;
-                            using (StreamReader sr = new StreamReader(ms, encoding, false))
+                            DeferredContent dc = new DeferredContent(uiCtrl, textBox, textSection, TextFile_RenderText);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, textSection))
                             {
-                                textBox.Text = sr.ReadToEnd();
+                                TextFile_RenderText(uiCtrl, textBox, ms);
                             }
                         }
                     }
@@ -896,6 +1038,34 @@ namespace PEBakery.Core
             SetToolTip(box, info.ToolTip);
             SetEditModeProperties(box, uiCtrl);
             DrawToCanvas(box, uiCtrl);
+        }
+
+        private static void TextFile_RenderRichText(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            RichTextBox rtfBox = element as RichTextBox;
+            Debug.Assert(rtfBox != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            TextRange textRange = new TextRange(rtfBox.Document.ContentStart, rtfBox.Document.ContentEnd);
+            textRange.Load(ms, DataFormats.Rtf);
+        }
+
+        private static void TextFile_RenderText(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            TextBox textBox = element as TextBox;
+            Debug.Assert(textBox != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            Encoding encoding = EncodingHelper.DetectBom(ms);
+            ms.Position = 0;
+            using (StreamReader sr = new StreamReader(ms, encoding, false))
+            {
+                textBox.Text = sr.ReadToEnd();
+            }
         }
         #endregion
 
@@ -924,58 +1094,83 @@ namespace PEBakery.Core
                 FrameworkElement imageContent;
 
                 // Use EncodedFile.ExtractInterface for maximum performance (at the cost of high memory usage)
-                using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
+                switch (imgType)
                 {
-                    switch (imgType)
-                    {
-                        case ImageHelper.ImageFormat.Svg:
-                            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
-                            Rect svgSize = svgDrawing.Bounds;
-                            (double width, double height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, uiCtrl.Width, uiCtrl.Height);
-                            Border border = new Border
-                            {
-                                Width = width,
-                                Height = height,
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                VerticalAlignment = VerticalAlignment.Center,
-                                UseLayoutRounding = true,
-                                Background = new DrawingBrush { Drawing = svgDrawing },
-                            };
-                            imageContent = border;
-                            break;
-                        case ImageHelper.ImageFormat.Bmp:
-                            BitmapSource srcBitmap = ImageHelper.ImageToBitmapImage(ms);
-                            BitmapSource newBitmap = ImageHelper.MaskWhiteAsTransparent(srcBitmap);
-                            Image bitmapImage = new Image
-                            {
-                                Width = newBitmap.PixelWidth,
-                                Height = newBitmap.PixelHeight,
-                                Stretch = Stretch.Uniform, // Ignore image's DPI
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                VerticalAlignment = VerticalAlignment.Center,
-                                UseLayoutRounding = true,
-                                Source = newBitmap,
-                            };
-                            RenderOptions.SetBitmapScalingMode(bitmapImage, BitmapScalingMode.HighQuality);
-                            imageContent = bitmapImage;
-                            break;
-                        default:
-                            BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
-                            Image image = new Image
-                            {
-                                Width = bitmap.PixelWidth,
-                                Height = bitmap.PixelHeight,
-                                Stretch = Stretch.Uniform, // Ignore image's DPI
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                VerticalAlignment = VerticalAlignment.Center,
-                                UseLayoutRounding = true,
+                    case ImageHelper.ImageFormat.Svg:
+                        
+                        Border svgBorder = new Border
+                        {
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            UseLayoutRounding = true,
+                        };
 
-                                Source = bitmap,
-                            };
-                            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                            imageContent = image;
-                            break;
-                    }
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, svgBorder, pictureSection, Button_RenderSvgImage);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
+                            {
+                                Button_RenderBitmapImage(uiCtrl, svgBorder, ms);
+                            }  
+                        }
+
+                        imageContent = svgBorder;
+                        break;
+                    case ImageHelper.ImageFormat.Bmp:
+                        
+                        Image bitmapImage = new Image
+                        {
+                            Stretch = Stretch.Uniform, // Ignore image's DPI
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            UseLayoutRounding = true,
+                        };
+
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, bitmapImage, pictureSection, Button_RenderBitmapImage);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
+                            {
+                                Button_RenderBitmapImage(uiCtrl, bitmapImage, ms);
+                            }
+                        }
+
+                        RenderOptions.SetBitmapScalingMode(bitmapImage, BitmapScalingMode.HighQuality);
+                        imageContent = bitmapImage;
+                        break;
+                    default:
+                        Image image = new Image
+                        {
+                            Stretch = Stretch.Uniform, // Ignore image's DPI
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            UseLayoutRounding = true,
+                        };
+
+                        if (_deferredContentRender)
+                        {
+                            DeferredContent dc = new DeferredContent(uiCtrl, image, pictureSection, Button_RenderNormalImage);
+                            _deferredContents.Add(dc);
+                        }
+                        else
+                        {
+                            using (MemoryStream ms = EncodedFile.ExtractInterface(uiCtrl.Section.Script, pictureSection))
+                            {
+                                Button_RenderNormalImage(uiCtrl, image, ms);
+                            }
+                        }
+
+                        RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                        imageContent = image;
+                        break;
                 }
 
                 if (uiCtrl.Text.Length == 0)
@@ -1043,6 +1238,49 @@ namespace PEBakery.Core
 
             UIInfo_Button info = uiCtrl.Info.Cast<UIInfo_Button>();
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
+        }
+
+        private static void Button_RenderSvgImage(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Border svgBorder = element as Border;
+            Debug.Assert(svgBorder != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            DrawingGroup svgDrawing = ImageHelper.SvgToDrawingGroup(ms);
+            Rect svgSize = svgDrawing.Bounds;
+            (svgBorder.Width, svgBorder.Height) = ImageHelper.StretchSizeAspectRatio(svgSize.Width, svgSize.Height, uiCtrl.Width, uiCtrl.Height);
+            svgBorder.Background = new DrawingBrush { Drawing = svgDrawing };
+        }
+
+        private static void Button_RenderBitmapImage(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Image bitmapImage = element as Image;
+            Debug.Assert(bitmapImage != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            BitmapSource srcBitmap = ImageHelper.ImageToBitmapImage(ms);
+            BitmapSource newBitmap = ImageHelper.MaskWhiteAsTransparent(srcBitmap);
+            bitmapImage.Width = newBitmap.PixelWidth;
+            bitmapImage.Height = newBitmap.PixelHeight;
+            bitmapImage.Source = newBitmap;
+        }
+
+        private static void Button_RenderNormalImage(UIControl uiCtrl, FrameworkElement element, Stream ms)
+        {
+            Debug.Assert(ms != null, "MemoryStream is null");
+            Debug.Assert(element != null, "FrameworkElement is null");
+
+            Image image = element as Image;
+            Debug.Assert(image != null, $"Invalid FrameworkElement {element.GetType()}");
+
+            BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
+            image.Width = bitmap.PixelWidth;
+            image.Height = bitmap.PixelHeight;
+            image.Source = bitmap;
         }
         #endregion
 
@@ -1153,7 +1391,7 @@ namespace PEBakery.Core
             info.Selected = true;
 
             // Uncheck the other RadioButtons
-            List<UIControl> updateList = _radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+            List<UIControl> updateList = RadioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (UIControl uncheck in updateList)
             {
                 UIInfo_RadioButton unInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
@@ -1478,6 +1716,43 @@ namespace PEBakery.Core
             RunOneSection(uiCtrl.Type, uiCtrl.Key, info.SectionName, info.HideProgress);
         }
         #endregion
+        #endregion
+
+        #region Deferred Content Render (EncodedFile)
+        public void RenderDeferredContents()
+        {
+            if (_deferredContents.Count == 0)
+                return;
+
+            try
+            {
+                // Parallel extraction of encoded file
+                //  new ParallelOptions { MaxDegreeOfParallelism = 1},
+                Parallel.ForEach(_deferredContents, dc =>
+                {
+                    MemoryStream ms = EncodedFile.ExtractInterface(_sc, dc.EncodedFileName);
+                    dc.ExtractedContent = ms;
+                });
+
+                foreach (DeferredContent dc in _deferredContents)
+                {
+                    dc.RenderMethod(dc.Control, dc.RenderTarget, dc.ExtractedContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+            }
+            finally
+            {
+                foreach (DeferredContent dc in _deferredContents)
+                {
+                    dc.ExtractedContent?.Dispose();
+                }
+
+                _deferredContents.Clear();
+            }
+        }
         #endregion
 
         #region Render Utility

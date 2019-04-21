@@ -3937,7 +3937,7 @@ namespace PEBakery.WPF
                 uiCtrls = new List<UIControl>();
             }
 
-            Renderer = new UIRenderer(InterfaceCanvas, _window, Script, uiCtrls.ToList(), false, Script.Project.Compat.IgnoreWidthOfWebLabel);
+            Renderer = new UIRenderer(InterfaceCanvas, _window, Script, uiCtrls.ToList(), false, false, Script.Project.Compat.IgnoreWidthOfWebLabel);
 
             InterfaceUICtrls = new ObservableCollection<string>(uiCtrls.Select(x => x.Key));
             InterfaceUICtrlIndex = -1;
