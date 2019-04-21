@@ -192,6 +192,7 @@ namespace PEBakery.Core.Commands
                 {
                     case RegistryValueKind.None:
                         {
+                            // Do not put null to value! use empty byte array.
                             subKey.SetValue(valueName, new byte[0], RegistryValueKind.None);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_NONE"));
                         }

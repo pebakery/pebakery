@@ -207,7 +207,16 @@ namespace PEBakery.Helper
             {
                 RegistryValueKind kind = srcSubKey.GetValueKind(valueName);
                 object value = srcSubKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                destSubKey.SetValue(valueName, value, kind);
+
+                if (kind == RegistryValueKind.None)
+                {
+                    // Do not put null to value! use empty byte array.
+                    destSubKey.SetValue(valueName, new byte[0], kind);
+                }
+                else
+                {
+                    destSubKey.SetValue(valueName, value, kind);
+                }
             }
 
             foreach (string subKeyName in srcSubKey.GetSubKeyNames())
