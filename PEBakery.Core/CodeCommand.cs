@@ -528,24 +528,24 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
         [NonSerialized]
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
-        public string[] ValueDatas;
+        public string[] ValueDataList;
         public bool NoWarn;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas, bool noWarn)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDataList, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
             KeyPath = keyPath;
             ValueName = valueName;
             ValueData = valueData;
-            ValueDatas = valueDatas;
+            ValueDataList = valueDataList;
             NoWarn = noWarn;
         }
 
@@ -558,17 +558,17 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");
-            if (ValueDatas == null)
+            if (ValueDataList == null)
             {
                 b.Append(ValueName);
                 b.Append(",");
             }
             else
             {
-                for (int i = 0; i < ValueDatas.Length; i++)
+                for (int i = 0; i < ValueDataList.Length; i++)
                 {
-                    b.Append(ValueDatas[i]);
-                    if (i + 1 < ValueDatas.Length)
+                    b.Append(ValueDataList[i]);
+                    if (i + 1 < ValueDataList.Length)
                         b.Append(",");
                 }
             }
@@ -580,21 +580,21 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWriteLegacy : CodeInfo // Compatibility Shim for Win10PESE
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>
         public string HKey;
         public string ValueType;
         public string KeyPath;
         public string ValueName;
-        public string[] ValueDatas;
+        public string[] ValueDataList;
         public bool NoWarn;
 
-        public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string valueName, string[] valueDatas, bool noWarn)
+        public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string valueName, string[] valueDataList, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
             KeyPath = keyPath;
             ValueName = valueName;
-            ValueDatas = valueDatas;
+            ValueDataList = valueDataList;
             NoWarn = noWarn;
         }
 
@@ -606,7 +606,7 @@ namespace PEBakery.Core
             b.Append(ValueType);
             b.Append(",");
             b.Append(KeyPath);
-            foreach (string valueData in ValueDatas)
+            foreach (string valueData in ValueDataList)
             {
                 b.Append(",");
                 b.Append(valueData);

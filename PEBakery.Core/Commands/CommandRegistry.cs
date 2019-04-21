@@ -129,7 +129,8 @@ namespace PEBakery.Core.Commands
                 switch (kind)
                 {
                     case RegistryValueKind.None:
-                        return LogInfo.LogErrorMessage(logs, $"Cannot read empty value [{fullKeyPath}\\{valueName}]");
+                        valueDataStr = string.Empty;
+                        break;
                     case RegistryValueKind.String:
                     case RegistryValueKind.ExpandString:
                         valueDataStr = (string)valueData;
@@ -213,7 +214,7 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.MultiString:
                         {
-                            string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
+                            string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
                             subKey.SetValue(valueName, multiStrs, RegistryValueKind.MultiString);
                             string valueData = StringEscaper.PackRegMultiBinary(multiStrs);
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_MULTI_SZ [{valueData}]"));
@@ -222,15 +223,15 @@ namespace PEBakery.Core.Commands
                     case RegistryValueKind.Binary:
                         {
                             if (info.ValueData == null)
-                            { // Use info.ValueDatas
-                                string[] binStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
+                            { // Use info.ValueDataList
+                                string[] binStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
                                 string valueData = StringEscaper.PackRegBinary(binStrs);
                                 if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
                                     return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
                                 subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
                                 logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                             }
-                            else if (info.ValueDatas == null)
+                            else if (info.ValueDataList == null)
                             { // Use info.ValueData
                                 string valueData = StringEscaper.Preprocess(s, info.ValueData);
                                 if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
@@ -290,7 +291,7 @@ namespace PEBakery.Core.Commands
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
             List<string> args = new List<string> { hKeyStr, valTypeStr, info.KeyPath, info.ValueName };
-            args.AddRange(info.ValueDatas);
+            args.AddRange(info.ValueDataList);
             if (info.NoWarn)
                 args.Add("NOWARN");
 
@@ -298,7 +299,7 @@ namespace PEBakery.Core.Commands
             CodeParser parser = new CodeParser(cmd.Section, Global.Setting, s.Project.Compat);
             CodeInfo newInfo = parser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.LineIdx);
             CodeCommand newCmd = new CodeCommand(cmd.RawCode, CodeType.RegWrite, newInfo, cmd.LineIdx);
-            return CommandRegistry.RegWrite(s, newCmd);
+            return RegWrite(s, newCmd);
         }
 
         public static List<LogInfo> RegDelete(EngineState s, CodeCommand cmd)
@@ -425,7 +426,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -452,7 +453,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -477,7 +478,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
@@ -518,7 +519,7 @@ namespace PEBakery.Core.Commands
                         {
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguments"));
                                 return logs;
                             }
 
