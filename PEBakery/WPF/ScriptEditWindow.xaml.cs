@@ -3919,7 +3919,8 @@ namespace PEBakery.WPF
                 InterfaceSectionName = SelectedInterfaceSectionName;
             }
 
-            // Make a copy of uiCtrls, to prevent change in interface should not affect script file immediately.
+            // Change made to interface should not affect script file immediately.
+            // Make a copy of uiCtrls to prevent this.
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIRenderer.LoadInterfaces(Script, InterfaceSectionName);
             if (uiCtrls == null) // No Interface -> empty list
             {
