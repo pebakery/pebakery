@@ -539,23 +539,23 @@ namespace PEBakery.Core.Tests.Command
             string destSet = Path.Combine(RegCopyPath, "Dest");
 
             // Success
-            Single_Template($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet}", Registry.CurrentUser,
+            SingleTemplate($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet}", Registry.CurrentUser,
                 singleSrcSet, destSet);
-            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
+            WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20", "Set31" });
-            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
+            WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20" });
 
             // Error
-            Single_Template($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
+            SingleTemplate($@"RegCopy,HKCU,{singleSrcSet},HKCU,{destSet},WILDCARD", Registry.CurrentUser,
                 singleSrcSet, destSet, ErrorCheck.Error);
-            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet}", Registry.CurrentUser,
+            WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet1},HKCU,{destSet}", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20", "Set31" },
                 ErrorCheck.Error);
-            Wildcard_Template($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet}", Registry.CurrentUser,
+            WildcardTemplate($@"RegCopy,HKCU,{multiSrcSet2},HKCU,{destSet}", Registry.CurrentUser,
                 RegCopyPath, new string[] { "Set10", "Set20", "Set31" },
                 destSet, new string[] { "Set10", "Set20" },
                 ErrorCheck.Error);
@@ -567,6 +567,7 @@ namespace PEBakery.Core.Tests.Command
                 {
                     Assert.IsNotNull(key);
 
+                    key.SetValue("None", new byte[0], RegistryValueKind.None);
                     key.SetValue("Binary", new byte[] { 0x01, 0x02, 0x03 }, RegistryValueKind.Binary);
                     key.SetValue("Integer", 1225, RegistryValueKind.DWord);
                     key.SetValue("String", "English", RegistryValueKind.String);
@@ -587,7 +588,11 @@ namespace PEBakery.Core.Tests.Command
                 {
                     Assert.IsNotNull(key);
 
-                    byte[] bin = key.GetValue("Binary") as byte[];
+                    byte[] bin = key.GetValue("None") as byte[];
+                    Assert.IsNotNull(bin);
+                    Assert.AreEqual(0, bin.Length);
+
+                    bin = key.GetValue("Binary") as byte[];
                     Assert.IsNotNull(bin);
                     Assert.IsTrue(bin.SequenceEqual(new byte[] { 0x01, 0x02, 0x03 }));
 
@@ -615,7 +620,7 @@ namespace PEBakery.Core.Tests.Command
             #endregion
 
             #region Template
-            void Single_Template(string rawCode, RegistryKey hKey,
+            void SingleTemplate(string rawCode, RegistryKey hKey,
                 string srcKeyPath,
                 string destKeyPath,
                 ErrorCheck check = ErrorCheck.Success)
@@ -638,7 +643,7 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            void Wildcard_Template(string rawCode, RegistryKey hKey,
+            void WildcardTemplate(string rawCode, RegistryKey hKey,
                 string srcKeyPath, string[] srcTargets,
                 string destKeyPath, string[] destTargets,
                 ErrorCheck check = ErrorCheck.Success)
