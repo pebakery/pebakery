@@ -63,7 +63,7 @@ namespace PEBakery.Core.Tests.Command
         [TestCategory("Command")]
         [TestCategory("CommandRegistry")]
         public void RegRead()
-        { // Note: Only subKey is not going to be changed in later release of Windows should be used!
+        { // Note: Only subKeys which are not going to be changed in later release of Windows should be used!
             EngineState s = EngineTests.CreateEngineState();
 
             // REG_SZ
@@ -165,50 +165,54 @@ namespace PEBakery.Core.Tests.Command
 
             const string subKeyStr = RegWritePath;
             Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
+            try
+            {
+                // Success
+                SuccessTemplate($@"RegWrite,HKCU,0x0,{subKeyStr},None",
+                    Registry.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
+                SuccessTemplate($@"RegWrite,HKCU,0x1,{subKeyStr},String,SZ",
+                    Registry.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
+                SuccessTemplate($@"RegWrite,HKCU,0x2,{subKeyStr},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
+                    Registry.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+                SuccessTemplate($@"RegWrite,HKCU,0x7,{subKeyStr},MultiString,1,2,3",
+                    Registry.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
+                SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,00,01,02",
+                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
+                SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""03,04""",
+                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 03, 04 },
+                    null, ErrorCheck.Overwrite);
+                SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,05,06,07,NOWARN",
+                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 05, 06, 07 });
+                SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""08,09"",NOWARN",
+                    Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 08, 09 });
+                SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,1234",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
+                SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,-1",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
+                    null, ErrorCheck.Overwrite);
+                SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,4294967295",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
+                    null, ErrorCheck.Overwrite);
+                SuccessTemplate($@"RegWrite,HKCU,0xB,{subKeyStr},QWORD,4294967296",
+                    Registry.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", (ulong)4294967296);
 
-            // Success
-            SuccessTemplate($@"RegWrite,HKCU,0x0,{subKeyStr},None",
-                Registry.CurrentUser, RegistryValueKind.None, subKeyStr, "None", null);
-            SuccessTemplate($@"RegWrite,HKCU,0x1,{subKeyStr},String,SZ",
-                Registry.CurrentUser, RegistryValueKind.String, subKeyStr, "String", "SZ");
-            SuccessTemplate($@"RegWrite,HKCU,0x2,{subKeyStr},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
-                Registry.CurrentUser, RegistryValueKind.ExpandString, subKeyStr, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
-            SuccessTemplate($@"RegWrite,HKCU,0x7,{subKeyStr},MultiString,1,2,3",
-                Registry.CurrentUser, RegistryValueKind.MultiString, subKeyStr, "MultiString", new string[] { "1", "2", "3" });
-            SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,00,01,02",
-                Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 00, 01, 02 });
-            SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""03,04""",
-                Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 03, 04 },
-                null, ErrorCheck.Overwrite);
-            SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,05,06,07,NOWARN",
-                Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 05, 06, 07 });
-            SuccessTemplate($@"RegWrite,HKCU,0x3,{subKeyStr},Binary,""08,09"",NOWARN",
-                Registry.CurrentUser, RegistryValueKind.Binary, subKeyStr, "Binary", new byte[] { 08, 09 });
-            SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,1234",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u);
-            SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,-1",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
-                null, ErrorCheck.Overwrite);
-            SuccessTemplate($@"RegWrite,HKCU,0x4,{subKeyStr},DWORD,4294967295",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 4294967295u,
-                null, ErrorCheck.Overwrite);
-            SuccessTemplate($@"RegWrite,HKCU,0xB,{subKeyStr},QWORD,4294967296",
-                Registry.CurrentUser, RegistryValueKind.QWord, subKeyStr, "QWORD", (ulong)4294967296);
+                // RegWriteLegacy
+                s.Variables.SetValue(VarsType.Local, "Compat", "HKCU");
+                SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                    new CompatOption { LegacyRegWrite = true });
+                SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
+                    Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
+                    new CompatOption(), ErrorCheck.ParserError);
+                s.Variables.DeleteKey(VarsType.Local, "Compat");
 
-            // RegWriteLegacy
-            s.Variables.SetValue(VarsType.Local, "Compat", "HKCU");
-            SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
-                new CompatOption { LegacyRegWrite = true });
-            SuccessTemplate($@"RegWrite,%Compat%,0x4,{subKeyStr},DWORD,1234",
-                Registry.CurrentUser, RegistryValueKind.DWord, subKeyStr, "DWORD", 1234u,
-                new CompatOption(), ErrorCheck.ParserError);
-            s.Variables.DeleteKey(VarsType.Local, "Compat");
-
-            // Error
-            ErrorTemplate($@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);
-
-            Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
+                // Error
+                ErrorTemplate($@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);
+            }
+            finally
+            {
+                Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
+            }
         }
         #endregion
 
@@ -572,6 +576,10 @@ namespace PEBakery.Core.Tests.Command
                     key.SetValue("Integer", 1225, RegistryValueKind.DWord);
                     key.SetValue("String", "English", RegistryValueKind.String);
 
+                    // .Net Framework's RegistryKey.SetValue do not allow arbitrary type
+                    // Enabling this line will throw ArgumentException.
+                    // key.SetValue("Strange", new byte[0], (RegistryValueKind)0x200000);
+
                     using (RegistryKey subKey = key.CreateSubKey("SubKey", true))
                     {
                         Assert.IsNotNull(subKey);
@@ -602,6 +610,11 @@ namespace PEBakery.Core.Tests.Command
                     string str = key.GetValue("String") as string;
                     Assert.IsNotNull(str);
                     Assert.IsTrue(str.Equals("English", StringComparison.Ordinal));
+
+                    // .Net Framework's RegistryKey.SetValue do not allow arbitrary type
+                    // bin = key.GetValue("Strange") as byte[];
+                    // Assert.IsNotNull(bin);
+                    // Assert.AreEqual(0, bin.Length);
 
                     using (RegistryKey subKey = key.OpenSubKey("SubKey", false))
                     {

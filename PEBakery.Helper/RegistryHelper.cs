@@ -182,6 +182,8 @@ namespace PEBakery.Helper
         #endregion
 
         #region CopySubKey
+        private static readonly byte[] EmptyByteArray = new byte[0];
+
         public static void CopySubKey(RegistryKey srcKey, string srcSubKeyPath, RegistryKey destKey, string destSubKeyPath)
         {
             using (RegistryKey srcSubKey = srcKey.OpenSubKey(srcSubKeyPath, false))
@@ -206,17 +208,8 @@ namespace PEBakery.Helper
             foreach (string valueName in srcSubKey.GetValueNames())
             {
                 RegistryValueKind kind = srcSubKey.GetValueKind(valueName);
-                object value = srcSubKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-
-                if (kind == RegistryValueKind.None)
-                {
-                    // Do not put null to value! use empty byte array.
-                    destSubKey.SetValue(valueName, new byte[0], kind);
-                }
-                else
-                {
-                    destSubKey.SetValue(valueName, value, kind);
-                }
+                object value = srcSubKey.GetValue(valueName, EmptyByteArray, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                destSubKey.SetValue(valueName, value, kind);
             }
 
             foreach (string subKeyName in srcSubKey.GetSubKeyNames())
