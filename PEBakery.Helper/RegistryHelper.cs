@@ -27,6 +27,13 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PEBakery.Helper
 {
@@ -39,20 +46,21 @@ namespace PEBakery.Helper
             NativeMethods.TOKEN_PRIVILEGES pRestoreToken = new NativeMethods.TOKEN_PRIVILEGES();
             NativeMethods.TOKEN_PRIVILEGES pBackupToken = new NativeMethods.TOKEN_PRIVILEGES();
 
-            // Because this handle is a pseudo handle, it does not need to be closed.
+            // Because procHandle is a pseudo handle, it does not need to be closed.
             // https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-getcurrentprocess#remarks
             IntPtr procHandle = NativeMethods.GetCurrentProcess();
 
             const uint desiredAccess = NativeMethods.TOKEN_ADJUST_PRIVILEGES | NativeMethods.TOKEN_QUERY;
             if (!NativeMethods.OpenProcessToken(procHandle, desiredAccess, out IntPtr hToken))
-                throw new BetterWin32Errors.Win32Exception("OpenProcessToken failed");
+                throw new Win32Exception("OpenProcessToken failed");
+
             try
             {
                 if (!NativeMethods.LookupPrivilegeValue(null, "SeRestorePrivilege", out NativeMethods.LUID restoreLuid))
-                    throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
+                    throw new Win32Exception("LookupPrivilegeValue failed");
 
                 if (!NativeMethods.LookupPrivilegeValue(null, "SeBackupPrivilege", out NativeMethods.LUID backupLuid))
-                    throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
+                    throw new Win32Exception("LookupPrivilegeValue failed");
 
                 pRestoreToken.Count = 1;
                 pRestoreToken.Luid = restoreLuid;
@@ -64,20 +72,20 @@ namespace PEBakery.Helper
 
                 if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
                 {
-                    BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                    if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    BetterWin32Errors.Win32Error ret = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                    if (ret == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                     else
-                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed");
                 }
 
                 if (!NativeMethods.AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
                 {
-                    BetterWin32Errors.Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
-                    if (error == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
-                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                    BetterWin32Errors.Win32Error ret = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                    if (ret == BetterWin32Errors.Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
                     else
-                        throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+                        throw new Win32Exception((int)ret, "AdjustTokenPrivileges failed");
                 }
             }
             finally
@@ -181,44 +189,185 @@ namespace PEBakery.Helper
         }
         #endregion
 
-        #region CopySubKey
-        private static readonly byte[] EmptyByteArray = new byte[0];
-
+        #region CopySubKey (SHCopyKey wrapper)
         public static void CopySubKey(RegistryKey srcKey, string srcSubKeyPath, RegistryKey destKey, string destSubKeyPath)
         {
-            using (RegistryKey srcSubKey = srcKey.OpenSubKey(srcSubKeyPath, false))
             using (RegistryKey destSubKey = destKey.CreateSubKey(destSubKeyPath, true))
             {
-                if (srcSubKey == null)
-                    throw new ArgumentException($"Unable to find sub-key [{srcSubKeyPath}]");
                 if (destSubKey == null)
-                    throw new ArgumentException($"Unable to create dest sub-key [{destSubKeyPath}]");
+                    throw new ArgumentException($"Unable to create dest subkey [{destSubKeyPath}]");
 
-                CopySubKey(srcSubKey, destSubKey);
+                int ret = NativeMethods.SHCopyKey(srcKey.Handle, srcSubKeyPath, destSubKey.Handle, 0);
+                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                    throw new Win32Exception(ret, "SHCopyKey failed");
+            }
+        }
+        #endregion
+
+        #region RegGetValue, RegSetValue
+        /// <summary>
+        /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static object RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, uint valueType)
+        {
+            return RegGetValue(hKey, subKeyPath, valueName, (RegistryValueKind) valueType);
+        }
+
+        /// <summary>
+        /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
+        /// </summary>
+        public static unsafe object RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, RegistryValueKind valueType)
+        {
+            void CheckReturnValue(int ret)
+            {
+                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                    throw new Win32Exception(ret, "RegQueryValueEx failed");
+            }
+
+            using (RegistryKey subKey = hKey.CreateSubKey(subKeyPath, false))
+            {
+                if (subKey == null)
+                    throw new ArgumentException($"Unable to open subkey [{subKeyPath}]");
+
+                if (valueType == RegistryValueKind.Unknown ||
+                    !Enum.IsDefined(typeof(RegistryValueKind), valueType))
+                {
+                    uint dataSize = 0;
+
+                    // We don't know how to interprete byte array into C# objects.
+                    // Let's return raw byte array we received from RegQueryValueEx.
+                    int ret = NativeMethods.RegQueryValueEx(subKey.Handle, valueName, null, null, null, &dataSize);
+                    CheckReturnValue(ret);
+
+                    byte[] data = new byte[dataSize];
+                    fixed (byte* dataPtr = data)
+                    {
+                        ret = NativeMethods.RegQueryValueEx(subKey.Handle, valueName, null, null, dataPtr, &dataSize);
+                    }
+                    CheckReturnValue(ret);
+
+                    return data;
+                }
+                else
+                {
+                    object value = subKey.GetValue(valueName);
+                    return value;
+                }
             }
         }
 
-        public static void CopySubKey(RegistryKey srcSubKey, RegistryKey destSubKey)
+        /// <summary>
+        /// Wrapper of Win32 RegSetValueEx, which bypass value type checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void RegSetValue(RegistryKey key, string subKeyPath, string valueName, object value, RegistryValueKind valueType)
         {
-            if (srcSubKey == null)
-                throw new ArgumentNullException(nameof(srcSubKey));
-            if (destSubKey == null)
-                throw new ArgumentNullException(nameof(destSubKey));
+            RegSetValue(key, subKeyPath, valueName, value, (uint) valueType);
+        }
 
-            foreach (string valueName in srcSubKey.GetValueNames())
+        /// <summary>
+        /// Wrapper of Win32 RegSetValueEx, which bypass value type checking.
+        /// </summary>
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        public static unsafe void RegSetValue(RegistryKey key, string subKeyPath, string valueName, object value, uint valueType)
+        {
+            void CheckReturnValue(int ret)
             {
-                RegistryValueKind kind = srcSubKey.GetValueKind(valueName);
-                object value = srcSubKey.GetValue(valueName, EmptyByteArray, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                destSubKey.SetValue(valueName, value, kind);
+                if (ret != (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
+                    throw new Win32Exception(ret, "RegSetValueEx failed");
             }
 
-            foreach (string subKeyName in srcSubKey.GetSubKeyNames())
+            using (RegistryKey subKey = key.CreateSubKey(subKeyPath, true))
             {
-                using (RegistryKey copySrcSubKey = srcSubKey.OpenSubKey(subKeyName, false))
-                using (RegistryKey copyDestSubKey = destSubKey.CreateSubKey(subKeyName, true))
+                if (subKey == null)
+                    throw new ArgumentException($"Unable to open subkey [{subKeyPath}]");
+
+                int ret;
+                if (value is int int32t)
                 {
-                    CopySubKey(copySrcSubKey, copyDestSubKey);
+                    ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, &int32t, sizeof(uint));
                 }
+                else if (value is uint uint32t)
+                {
+                    ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, &uint32t, sizeof(uint));
+                }
+                else if (value is long int64t)
+                {
+                    ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, &int64t, sizeof(ulong));
+                }
+                else if (value is ulong uint64t)
+                {
+                    ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, &uint64t, sizeof(ulong));
+                }
+                else if (value is byte[] bytes)
+                {
+                    fixed (byte* bufPtr = bytes)
+                    {
+                        ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, bufPtr, (uint)bytes.Length);
+                    }
+                }
+                else if (value is string str)
+                {
+                    // For string-based types, such as REG_SZ, the string must be null-terminated. 
+                    // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regsetvalueexw
+
+                    byte[] rawStr = Encoding.Unicode.GetBytes(str);
+
+                    // Put arbitrary NULL at the end to the buffer
+                    byte[] buffer = new byte[rawStr.Length + 2];
+                    rawStr.CopyTo(buffer, 0);
+                    buffer[rawStr.Length] = 0;
+                    buffer[rawStr.Length + 1] = 0;
+
+                    fixed (byte* bufPtr = buffer)
+                    {
+                        ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, bufPtr, (uint)buffer.Length);
+                    }
+                }
+                else if (value is string[] strs)
+                {
+                    // With the REG_MULTI_SZ data type, the string must be terminated with two null characters.
+                    // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regsetvalueexw
+
+                    int bufferSize = 2; // +2 for last continued NULL char
+                    byte[][] rawStrs = new byte[strs.Length][];
+                    for (int i = 0; i < strs.Length; i++)
+                    {
+                        string s = strs[i];
+
+                        byte[] rawStr = Encoding.Unicode.GetBytes(s);
+
+                        rawStrs[i] = rawStr;
+                        bufferSize += rawStr.Length + 2; // +2 for NULL char
+                    }
+
+                    // Put arbitrary NULL as a delimiter to the buffer
+                    int bufPos = 0;
+                    byte[] buffer = new byte[bufferSize];
+                    foreach (byte[] rawStr in rawStrs)
+                    {
+                        rawStr.CopyTo(buffer, bufPos);
+                        buffer[rawStr.Length] = 0;
+                        buffer[rawStr.Length + 1] = 0;
+
+                        bufPos += rawStr.Length + 2; // +2 for NULL char
+                    }
+                    // Add last continued NULL char
+                    buffer[bufPos] = 0;
+                    buffer[bufPos + 1] = 0;
+
+                    fixed (byte* bufPtr = buffer)
+                    {
+                        ret = NativeMethods.RegSetValueEx(subKey.Handle, valueName, 0, valueType, bufPtr, (uint)buffer.Length);
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException($"Unsupported object type [{value.GetType()}]");
+                }
+                
+                CheckReturnValue(ret);
             }
         }
         #endregion

@@ -32,6 +32,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PEBakery.Helper;
 
 
 namespace PEBakery.Core.Tests.Command
@@ -576,9 +577,9 @@ namespace PEBakery.Core.Tests.Command
                     key.SetValue("Integer", 1225, RegistryValueKind.DWord);
                     key.SetValue("String", "English", RegistryValueKind.String);
 
-                    // .Net Framework's RegistryKey.SetValue do not allow arbitrary type
-                    // Enabling this line will throw ArgumentException.
-                    // key.SetValue("Strange", new byte[0], (RegistryValueKind)0x200000);
+                    // .Net Framework's RegistryKey.SetValue do not allow arbitrary type, so call Win32 API directly.
+                    RegistryHelper.RegSetValue(hKey, subKeyPath, "Strange10", new byte[0], 0x100000);
+                    RegistryHelper.RegSetValue(hKey, subKeyPath, "Strange20", new byte[] { 0x01, 0x02, 0x03 }, 0x200000);
 
                     using (RegistryKey subKey = key.CreateSubKey("SubKey", true))
                     {
@@ -611,10 +612,15 @@ namespace PEBakery.Core.Tests.Command
                     Assert.IsNotNull(str);
                     Assert.IsTrue(str.Equals("English", StringComparison.Ordinal));
 
-                    // .Net Framework's RegistryKey.SetValue do not allow arbitrary type
-                    // bin = key.GetValue("Strange") as byte[];
-                    // Assert.IsNotNull(bin);
-                    // Assert.AreEqual(0, bin.Length);
+                    // .Net Framework's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
+                    bin = RegistryHelper.RegGetValue(hKey, subKeyPath, "Strange10", RegistryValueKind.Unknown) as byte[];
+                    Assert.IsNotNull(bin);
+                    Assert.AreEqual(0, bin.Length);
+
+                    // .Net Framework's RegistryKey.GetValue cannot handle arbitrary type. Call Win32 API directly.
+                    bin = RegistryHelper.RegGetValue(hKey, subKeyPath, "Strange20", RegistryValueKind.Unknown) as byte[];
+                    Assert.IsNotNull(bin);
+                    Assert.IsTrue(bin.SequenceEqual(new byte[] { 0x01, 0x02, 0x03 }));
 
                     using (RegistryKey subKey = key.OpenSubKey("SubKey", false))
                     {

@@ -260,18 +260,33 @@ namespace PEBakery.Helper
         #region RegistryHelper
         [DllImport("kernel32.dll")]
         internal static extern IntPtr GetCurrentProcess();
+
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool OpenProcessToken(IntPtr ProcessHandle, UInt32 DesiredAccess, out IntPtr TokenHandle);
+        internal static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
+        internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);
+
         [DllImport("advapi32.dll", SetLastError = true)]
         internal static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
+
         [DllImport("advapi32.dll", SetLastError = true)]
         internal static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern unsafe int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName, uint* lpReserved, uint* lpType, void* lpData, uint* lpcbData);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern unsafe int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName, uint reserved, uint dwType, void* lpData, uint cbData);
+
+        [DllImport("shlwapi.dll", SetLastError = true)]
+        internal static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]

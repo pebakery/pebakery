@@ -550,6 +550,9 @@ namespace PEBakery.Core.Commands
 
             CodeInfo_RegImport info = cmd.Info.Cast<CodeInfo_RegImport>();
 
+            // Consider using RegRestoreKeyW
+            // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regrestorekeyw
+
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
             using (Process proc = new Process())
@@ -576,12 +579,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport), "Invalid CodeInfo");
-            CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
-            Debug.Assert(info != null, "Invalid CodeInfo");
+            CodeInfo_RegExport info = cmd.Info.Cast<CodeInfo_RegExport>();
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
+
+            // TODO: Consider using RegSaveKeyW
+            // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regsavekeyw
 
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
