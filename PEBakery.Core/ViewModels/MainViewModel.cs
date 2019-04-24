@@ -1204,7 +1204,7 @@ namespace PEBakery.Core.ViewModels
                 // Render script interface
                 ClearScriptInterface();
 
-                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, true, false, sc.Project.Compat.IgnoreWidthOfWebLabel);
+                _renderer = new UIRenderer(MainCanvas, Application.Current?.MainWindow, sc, true, sc.Project.Compat.IgnoreWidthOfWebLabel);
                 _renderer.Render();
             });
         }
