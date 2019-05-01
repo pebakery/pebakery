@@ -663,7 +663,6 @@ namespace PEBakery.Core
             if (prepareBuild)
             {
                 dbScript.Name = "Prepare Build";
-                dbScript.Version = "0";
             }
 
             if (s.LogMode == LogMode.FullDefer)
