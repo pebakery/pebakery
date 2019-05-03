@@ -26,7 +26,6 @@
 */
 
 using System;
-using System.IO;
 using Joveler.FileMagician;
 
 namespace PEBakery.Core
@@ -34,22 +33,24 @@ namespace PEBakery.Core
     /// <inheritdoc />
     /// <summary>
     /// Wrapper class of Joveler.FileMagician library.
+    /// Magic database is lazy-loaded.
     /// </summary>
     public class FileTypeDetector : IDisposable
     {
-        #region Const
-        private const int BufferSize = 256 * 1024; // 256KB, taken from libmagic
-        #endregion
-
         #region Fields and Properties
-        private readonly object _lock = new object();
         private Magic _magic;
+        private bool _magicFileLoaded;
+        private readonly string _magicFile;
+        private readonly object _lock = new object();
         #endregion
 
         #region Constructor
         public FileTypeDetector(string magicFile)
         {
-            _magic = Magic.Open(magicFile);
+            _magicFile = magicFile;
+            _magicFileLoaded = false;
+
+            _magic = Magic.Open();
         }
         #endregion
 
@@ -88,14 +89,6 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Get file type of file.
-        /// </summary>
-        public string FileType(string filePath, int bufferSize)
-        {
-            return CheckFile(filePath, MagicFlags.NONE, bufferSize);
-        }
-
-        /// <summary>
         /// Get file type of buffer.
         /// </summary>
         public string FileType(ReadOnlySpan<byte> span)
@@ -111,14 +104,6 @@ namespace PEBakery.Core
         public string MimeType(string filePath)
         {
             return CheckFile(filePath, MagicFlags.MIME_TYPE);
-        }
-
-        /// <summary>
-        /// Get mime type of file.
-        /// </summary>
-        public string MimeType(string filePath, int bufferSize)
-        {
-            return CheckFile(filePath, MagicFlags.MIME_TYPE, bufferSize);
         }
 
         /// <summary>
@@ -143,15 +128,6 @@ namespace PEBakery.Core
         /// <summary>
         /// Check if a file is a text or binary.
         /// </summary>
-        public bool IsText(string filePath, int bufferSize)
-        {
-            string ret = CheckFile(filePath, MagicFlags.MIME_ENCODING, bufferSize);
-            return !ret.Equals("binary", StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Check if a file is a text or binary.
-        /// </summary>
         public bool IsText(ReadOnlySpan<byte> span)
         {
             string ret = CheckBuffer(span, MagicFlags.MIME_ENCODING);
@@ -163,22 +139,18 @@ namespace PEBakery.Core
         /// <summary>
         /// Get file type of file.
         /// </summary>
-        private string CheckFile(string filePath, MagicFlags flags, int bufferSize = BufferSize)
+        private string CheckFile(string filePath, MagicFlags flags)
         {
-            byte[] buffer = new byte[bufferSize];
-            ReadOnlySpan<byte> span;
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
-            {
-                int bytesRead = fs.Read(buffer, 0, buffer.Length);
-                span = buffer.AsSpan(0, bytesRead);
-            }
-
             lock (_lock)
             {
-                // Avoid direct calling of _magic.CheckFile().
-                // libmagic does not use UTF-16 in Windows, so it may not be able to handle some characters.
+                if (!_magicFileLoaded)
+                {
+                    _magic.Load(_magicFile);
+                    _magicFileLoaded = true;
+                }
+
                 _magic.SetFlags(flags);
-                return _magic.CheckBuffer(span);
+                return _magic.CheckFile(filePath);
             }
         }
 
@@ -189,6 +161,12 @@ namespace PEBakery.Core
         {
             lock (_lock)
             {
+                if (!_magicFileLoaded)
+                {
+                    _magic.Load(_magicFile);
+                    _magicFileLoaded = true;
+                }
+
                 _magic.SetFlags(flags);
                 return _magic.CheckBuffer(span);
             }
