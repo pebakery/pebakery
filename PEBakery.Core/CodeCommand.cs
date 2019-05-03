@@ -87,6 +87,8 @@ namespace PEBakery.Core
         GetParam = 8198, PackParam = 8199, // Will be deprecated
         // 82 System
         System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        // 98 Debug
+        Debug = 9800,
         // 99 External Macro
         Macro = 9900,
     }
