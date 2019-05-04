@@ -110,7 +110,7 @@ namespace PEBakery.Core.Commands
             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
             {
                 IsMacro = opts.IsMacro | ls.IsMacro,
-                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
+                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
             });
 
             // Restore Variables and Macros for Exec
@@ -248,7 +248,7 @@ namespace PEBakery.Core.Commands
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
-                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
                             });
 
                             // Loop,Break can pop loop state stack.
@@ -288,7 +288,7 @@ namespace PEBakery.Core.Commands
                             Engine.RunSection(s, targetSection, newInParams, info.OutParams, new EngineLocalState
                             {
                                 IsMacro = ls.IsMacro,
-                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc),
+                                RefScriptId = inCurrentScript ? 0 : s.Logger.BuildRefScriptWrite(s, sc, false),
                             });
 
                             // Loop,Break can pop loop state stack.

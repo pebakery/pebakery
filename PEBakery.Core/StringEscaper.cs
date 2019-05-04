@@ -621,16 +621,16 @@ namespace PEBakery.Core
         #region Registry
         public static string PackRegBinary(byte[] bin, bool escape = false)
         { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
-            string seperator = ",";
+            string separator = ",";
             if (escape)
-                seperator = "#$c";
+                separator = "#$c";
 
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < bin.Length; i++)
             {
                 b.Append(bin[i].ToString("X2"));
                 if (i + 1 < bin.Length)
-                    b.Append(seperator);
+                    b.Append(separator);
             }
 
             return b.ToString();
@@ -638,16 +638,16 @@ namespace PEBakery.Core
 
         public static string PackRegBinary(string[] strs, bool escape = false)
         { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
-            string seperator = ",";
+            string separator = ",";
             if (escape)
-                seperator = "#$c";
+                separator = "#$c";
 
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < strs.Length; i++)
             {
                 b.Append(strs[i]);
                 if (i + 1 < strs.Length)
-                    b.Append(seperator);
+                    b.Append(separator);
             }
 
             return b.ToString();

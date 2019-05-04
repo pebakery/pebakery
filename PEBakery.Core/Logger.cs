@@ -472,8 +472,8 @@ namespace PEBakery.Core
         public static bool MinifyHtmlExport;
 
         private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
-        private readonly ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>> _scriptWatchDict = new ConcurrentDictionary<int, Tuple<LogModel.Script, Stopwatch>>();
-        private readonly ConcurrentDictionary<string, int> _scriptRefIdDict = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<int, (LogModel.Script Script, Stopwatch Watch)> _scriptWatchDict = new ConcurrentDictionary<int, (LogModel.Script, Stopwatch)>();
+        private readonly ConcurrentDictionary<string, LogModel.Script> _scriptRefIdDict = new ConcurrentDictionary<string, LogModel.Script>(StringComparer.Ordinal);
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
@@ -620,9 +620,14 @@ namespace PEBakery.Core
             if (s.DisableLogger)
                 return;
 
-            _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
-            if (dbBuild == null)
-                throw new KeyNotFoundException($"Unable to find LogModel.BuildInfo instance, id = {s.BuildId}");
+            bool ret = _buildDict.TryRemove(s.BuildId, out LogModel.BuildInfo dbBuild);
+            if (!ret)
+            {
+                string errMsg = $"Build {s.BuildId} was not logged properly";
+                SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Debug.Assert(false, errMsg);
+                return;
+            }
 
             dbBuild.EndTime = s.EndTime;
             switch (s.LogMode)
@@ -644,7 +649,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Script Init/Finish
-        public int BuildScriptInit(EngineState s, Script sc, int order, bool prepareBuild)
+        public int BuildScriptInit(EngineState s, Script sc, int order)
         {
             if (s.DisableLogger)
                 return 0;
@@ -658,12 +663,8 @@ namespace PEBakery.Core
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
                 Version = sc.TidyVersion,
+                Flags = LogModel.ScriptFlags.Build,
             };
-
-            if (prepareBuild)
-            {
-                dbScript.Name = "Prepare Build";
-            }
 
             if (s.LogMode == LogMode.FullDefer)
             {
@@ -676,7 +677,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptWatchDict[dbScript.Id] = new Tuple<LogModel.Script, Stopwatch>(dbScript, Stopwatch.StartNew());
+            _scriptWatchDict[dbScript.Id] = (dbScript, Stopwatch.StartNew());
 
             // Fire Event
             if (s.LogMode == LogMode.NoDefer)
@@ -699,16 +700,20 @@ namespace PEBakery.Core
             int buildId = s.BuildId;
             int scriptId = s.ScriptId;
 
-            // Scripts 
-            _scriptWatchDict.TryRemove(scriptId, out Tuple<LogModel.Script, Stopwatch> tuple);
-            if (tuple == null)
-                throw new KeyNotFoundException($"Unable to find LogModel.Script Instance, id = {scriptId}");
+            // Log elapsed time
+            bool ret = _scriptWatchDict.TryRemove(scriptId, out (LogModel.Script Script, Stopwatch Watch) tuple);
+            if (!ret)
+            {
+                string errMsg = $"Script {s.ScriptId} was not logged properly";
+                SystemWrite(new LogInfo(LogState.Error, errMsg));
+                Debug.Assert(false, errMsg);
+                return;
+            }
 
-            LogModel.Script dbScript = tuple.Item1;
-            Stopwatch watch = tuple.Item2;
+            (LogModel.Script dbScript, Stopwatch watch) = tuple;
             watch.Stop();
+            dbScript.Elapsed = watch.ElapsedMilliseconds;
 
-            dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
             if (localVars != null)
             {
                 List<LogModel.Variable> varLogs = new List<LogModel.Variable>(localVars.Count);
@@ -743,26 +748,38 @@ namespace PEBakery.Core
                 ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
 
-        public int BuildRefScriptWrite(EngineState s, Script sc)
+        /// <summary>
+        /// Log referenced script.
+        /// </summary>
+        /// <param name="s">EngineSection</param>
+        /// <param name="sc">Script</param>
+        /// <param name="isMacro">MacroScript?</param>
+        /// <returns></returns>
+        public int BuildRefScriptWrite(EngineState s, Script sc, bool isMacro)
         {
-            // If logger is disabled or suspended, skip
-            if (SuspendBuildLog || s.DisableLogger)
+            // If logger is disabled, skip
+            if (s.DisableLogger)
                 return 0;
 
+            // If this script is already logged to database, just return cached id.
             if (_scriptRefIdDict.ContainsKey(sc.FullIdentifier))
-                return _scriptRefIdDict[sc.FullIdentifier];
+                return _scriptRefIdDict[sc.FullIdentifier].Id;
 
             LogModel.Script dbScript = new LogModel.Script
             {
                 BuildId = s.BuildId,
                 Level = sc.Level,
-                Order = 0, // Reference script log must set this to 0 
+                Order = 0, // Referenced script log must set this to 0 
                 Name = sc.Title,
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
                 Version = sc.Version,
-                ElapsedMilliSec = 0,
+                Flags = LogModel.ScriptFlags.Referenced,
+                Elapsed = 0, // Not valid on referenced script
             };
+
+            if (isMacro)
+                dbScript.Flags |= LogModel.ScriptFlags.Macro;
 
             if (s.LogMode == LogMode.FullDefer)
             {
@@ -775,7 +792,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptRefIdDict[sc.FullIdentifier] = dbScript.Id;
+            _scriptRefIdDict[sc.FullIdentifier] = dbScript;
             return dbScript.Id;
         }
         #endregion
@@ -847,9 +864,9 @@ namespace PEBakery.Core
 
             EngineLocalState ls = s.PeekLocalState();
 
-            // Normally this should be already done in Engine.ExecuteCommand.
-            // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
-            // => Need to double-check 'muting logs' at Logger.BuildWrite.
+            // Normally this should be already done in Engine.ExecuteCommand().
+            // But some commands like RunExec bypass Engine.ExecuteCommand() and call Logger.BuildWrite() directly when logging.
+            // => Need to double-check 'muting logs' at Logger.BuildWrite().
             LogState state;
             if (s.ErrorOff != null &&
                 (log.State == LogState.Error || log.State == LogState.Warning || log.State == LogState.Overwrite))
@@ -1354,6 +1371,24 @@ namespace PEBakery.Core
             }
         }
 
+        [Flags]
+        public enum ScriptFlags
+        {
+            None = 0,
+            /// <summary>
+            /// Active build script
+            /// </summary>
+            Build = 1,
+            /// <summary>
+            /// Macro script
+            /// </summary>
+            Macro = 2,
+            /// <summary>
+            /// Referenced script (includes macro script)
+            /// </summary>
+            Referenced = 4,
+        }
+
         public class Script
         {
             [PrimaryKey, AutoIncrement]
@@ -1372,12 +1407,13 @@ namespace PEBakery.Core
             public string RealPath { get; set; }
             public string TreePath { get; set; }
             public string Version { get; set; }
-            public long ElapsedMilliSec { get; set; }
+            public ScriptFlags Flags { get; set; }
+            /// <summary>
+            /// Elapsed time in milliseconds
+            /// </summary>
+            public long Elapsed { get; set; }
 
-            public override string ToString()
-            {
-                return $"{BuildId},{Id} = {Level} {Name} {Version}";
-            }
+            public override string ToString() => $"({BuildId}, {Id}) = {Level} {Name} {Version}";
 
             /// <summary>
             /// 
@@ -1463,6 +1499,8 @@ namespace PEBakery.Core
                 flags |= BuildLogFlag.Macro;
             if (str.Contains('R'))
                 flags |= BuildLogFlag.RefScript;
+            if (str.Contains('E'))
+                flags |= BuildLogFlag.Exception;
             return flags;
         }
 
@@ -1486,10 +1524,10 @@ namespace PEBakery.Core
             public int RefScriptId { get; set; }
             public int Depth { get; set; }
             public LogState State { get; set; }
-            [MaxLength(65535)]
+            [MaxLength(4096)]
             public string Message { get; set; }
             public int LineIdx { get; set; }
-            [MaxLength(65535)]
+            [MaxLength(4096)]
             public string RawCode { get; set; }
             public BuildLogFlag Flags { get; set; }
 

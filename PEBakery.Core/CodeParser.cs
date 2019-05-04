@@ -637,7 +637,7 @@ namespace PEBakery.Core
                         return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
                     }
                 case CodeType.RegWrite:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>,[NOWARN]
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDataList>,[NOWARN]
                         const int minArgCount = 3;
                         if (CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);

@@ -121,34 +121,42 @@ namespace PEBakery.Core.Commands
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
-                object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                if (valueData == null)
-                    return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
-
-                RegistryValueKind kind = subKey.GetValueKind(valueName);
-                switch (kind)
+                RegistryValueKind kind = subKey.GetValueKind(valueName);               
+                if (kind == RegistryValueKind.Unknown)
                 {
-                    case RegistryValueKind.None:
-                        valueDataStr = string.Empty;
-                        break;
-                    case RegistryValueKind.String:
-                    case RegistryValueKind.ExpandString:
-                        valueDataStr = (string)valueData;
-                        break;
-                    case RegistryValueKind.Binary:
-                        valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
-                        break;
-                    case RegistryValueKind.DWord:
-                        valueDataStr = ((uint)(int)valueData).ToString();
-                        break;
-                    case RegistryValueKind.MultiString:
-                        valueDataStr = StringEscaper.PackRegMultiString((string[])valueData);
-                        break;
-                    case RegistryValueKind.QWord:
-                        valueDataStr = ((ulong)(long)valueData).ToString();
-                        break;
-                    default:
-                        return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
+                    object valueData = RegistryHelper.RegGetValue(info.HKey, keyPath, valueName, RegistryValueKind.Unknown);
+                    valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
+                }
+                else
+                {
+                    object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (valueData == null)
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
+
+                    switch (kind)
+                    {
+                        case RegistryValueKind.None:
+                            valueDataStr = string.Empty;
+                            break;
+                        case RegistryValueKind.String:
+                        case RegistryValueKind.ExpandString:
+                            valueDataStr = (string)valueData;
+                            break;
+                        case RegistryValueKind.Binary:
+                            valueDataStr = StringEscaper.PackRegBinary((byte[])valueData);
+                            break;
+                        case RegistryValueKind.DWord:
+                            valueDataStr = ((uint)(int)valueData).ToString();
+                            break;
+                        case RegistryValueKind.MultiString:
+                            valueDataStr = StringEscaper.PackRegMultiString((string[])valueData);
+                            break;
+                        case RegistryValueKind.QWord:
+                            valueDataStr = ((ulong)(long)valueData).ToString();
+                            break;
+                        default:
+                            return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
+                    }
                 }
             }
 
@@ -584,9 +592,8 @@ namespace PEBakery.Core.Commands
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
             string regFile = StringEscaper.Preprocess(s, info.RegFile);
 
-            // TODO: Consider using RegSaveKeyW
-            // https://docs.microsoft.com/en-us/windows/desktop/api/winreg/nf-winreg-regsavekeyw
-
+            // RegSaveKeyW saves key in the HIVE format, not .REG format
+            // .REG file format is baked in to reg.exe/regedit.exe, so no way to access it with APIl
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
                 throw new InternalException("Internal Logic Error at RegExport");

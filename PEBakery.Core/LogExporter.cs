@@ -199,7 +199,7 @@ namespace PEBakery.Core
                                 {
                                     _w.WriteLine(wLog.Export(LogExportType.Text, false));
                                     if (wLog.RefScriptId != 0 && wLog.RefScriptId != wLog.ScriptId)
-                                    {
+                                    { // Referenced scripts
                                         _w.Write("  ");
                                         _w.WriteLine(ExportRefScriptText(wLog, refScLogs));
                                     }
@@ -215,6 +215,7 @@ namespace PEBakery.Core
                             .Where(x => x.BuildId == buildId)
                             .ToArray();
 
+                        // Script - Processed Scripts
                         LogModel.Script[] processedScripts = scripts
                             .Where(x => 0 < x.Order)
                             .OrderBy(x => x.Order)
@@ -222,14 +223,29 @@ namespace PEBakery.Core
                         _w.WriteLine("<Scripts>");
                         {
                             int count = processedScripts.Length;
-                            int idx = 1;
-                            foreach (LogModel.Script sc in processedScripts)
+                            for (int i = 0; i < processedScripts.Length; i++)
                             {
-                                _w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
-                                idx++;
+                                LogModel.Script sc = processedScripts[i];
+                                _w.WriteLine($"[{i + 1}/{count}] {sc.Name} v{sc.Version} ({sc.Elapsed / 1000.0:0.000}s)");
                             }
+                            _w.WriteLine($"Total {count} scripts");
+                            _w.WriteLine();
+                            _w.WriteLine();
+                        }
 
-                            _w.WriteLine($"Total {count} Scripts");
+                        // Script - Referenced Scripts
+                        LogModel.Script[] refScripts = scripts
+                            .Where(x => (x.Flags & LogModel.ScriptFlags.Referenced) != 0)
+                            .OrderBy(x => (x.Flags & LogModel.ScriptFlags.Macro) == 0) // Put macro script first
+                            .ToArray();
+                        _w.WriteLine("<Referenced Scripts>");
+                        {
+                            foreach (LogModel.Script sc in refScripts)
+                            {
+                                if ((sc.Flags & LogModel.ScriptFlags.Macro) != 0) // Macro Script
+                                    _w.Write("[Macro] ");
+                                _w.WriteLine($"{sc.Name} v{sc.Version}");
+                            }
                             _w.WriteLine();
                             _w.WriteLine();
                         }
@@ -401,7 +417,7 @@ namespace PEBakery.Core
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
                                     Version = $"v{scLog.Version}",
-                                    TimeStr = $"{scLog.ElapsedMilliSec / 1000.0:0.000}s",
+                                    TimeStr = $"{scLog.Elapsed / 1000.0:0.000}s",
                                 });
                                 idx++;
                             }

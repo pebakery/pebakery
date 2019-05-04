@@ -44,6 +44,9 @@ namespace PEBakery.Helper
                 // In .Net Framework, Encoding.Default is system's active code page.
                 // In .Net Core, System.Default is always UTF8.
                 // To prepare .Net Core migration, implement .Net Framework's Encoding.Default.
+                // 
+                // .Net Core does not know about ANSI encodings, so do not forget to install this package.
+                // https://www.nuget.org/packages/System.Text.Encoding.CodePages/
                 int codepage = NativeMethods.GetACP();
                 switch (codepage)
                 {

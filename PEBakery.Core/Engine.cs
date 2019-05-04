@@ -81,8 +81,7 @@ namespace PEBakery.Core
                 s.CurrentScript = sc;
 
             // Init Per-Script Log
-            bool prepareBuild = s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0;
-            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1, prepareBuild && s.RunMode != EngineMode.RunOne);
+            s.ScriptId = s.Logger.BuildScriptInit(s, s.CurrentScript, s.CurrentScriptIdx + 1);
 
             // Determine EntrySection
             string entrySection = GetEntrySection(s);
@@ -123,26 +122,27 @@ namespace PEBakery.Core
             s.MainViewModel.BuildScriptProgressBarValue = 0;
             s.MainViewModel.BuildFullProgressBarValue = s.CurrentScriptIdx;
 
-            if (!prepareBuild || s.RunMode == EngineMode.RunAll)
+            // Skip displaying script information when running single scripts
+            if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
+                return;
+
+            // Display script information
+            s.MainViewModel.DisplayScriptTexts(sc, s);
+            s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
+            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
             {
-                s.MainViewModel.DisplayScriptTexts(sc, s);
+                s.MainViewModel.DisplayScriptLogo(sc);
 
-                s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
+                // BuildTree is empty -> return
+                if (s.MainViewModel.BuildTreeItems.Count == 0)
+                    return;
 
-                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
-                {
-                    s.MainViewModel.DisplayScriptLogo(sc);
-
-                    if (0 < s.MainViewModel.BuildTreeItems.Count)
-                    {
-                        if (s.MainViewModel.CurBuildTree != null)
-                            s.MainViewModel.CurBuildTree.BuildFocus = false;
-                        s.MainViewModel.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
-                        if (s.MainViewModel.CurBuildTree != null)
-                            s.MainViewModel.CurBuildTree.BuildFocus = true;
-                    }
-                }));
-            }
+                if (s.MainViewModel.CurBuildTree != null)
+                    s.MainViewModel.CurBuildTree.BuildFocus = false;
+                s.MainViewModel.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(s.MainViewModel.BuildTreeItems[0], s.CurrentScript.RealPath);
+                if (s.MainViewModel.CurBuildTree != null)
+                    s.MainViewModel.CurBuildTree.BuildFocus = true;
+            }));
         }
 
         private static void FinishRunScript(EngineState s)
@@ -162,6 +162,9 @@ namespace PEBakery.Core
                 s.StartTime = DateTime.UtcNow;
                 s.BuildId = s.Logger.BuildInit(s, runName);
 
+                if (s.Macro.MacroEnabled)
+                    s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
+
                 s.MainViewModel.BuildFullProgressBarMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
 
                 // Update project variables
@@ -177,7 +180,7 @@ namespace PEBakery.Core
                     {
                         ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         s.Logger.LogStartOfSection(s, mainSection, 0, true, null, null);
-                        RunSection(s, mainSection, new List<string>(), new List<string>(), new EngineLocalState());
+                        RunSection(s, mainSection, new List<string>(0), new List<string>(0), new EngineLocalState());
                         s.Logger.LogEndOfSection(s, mainSection, 0, true, null);
                     }
 
@@ -1201,7 +1204,7 @@ namespace PEBakery.Core
             Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            logger.BuildWrite(BuildId, macroLogs);
+            logger.SystemWrite(macroLogs);
 
             RunMode = mode;
             switch (RunMode)
@@ -1220,7 +1223,7 @@ namespace PEBakery.Core
                     { // Run one script, executing MainScript before it.
                         if (runSingle == null)
                             throw new ArgumentNullException(nameof(runSingle));
-                        if (runSingle.Equals(project.MainScript) && entrySection.Equals("Process", StringComparison.Ordinal))
+                        if (runSingle.Equals(project.MainScript) && entrySection.Equals(ScriptSection.Names.Process, StringComparison.Ordinal))
                             goto case EngineMode.RunOne;
 
                         Scripts = new List<Script>(2) { project.MainScript, runSingle };
