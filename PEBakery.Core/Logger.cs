@@ -472,7 +472,7 @@ namespace PEBakery.Core
         public static bool MinifyHtmlExport;
 
         private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
-        private readonly ConcurrentDictionary<int, (LogModel.Script Script, Stopwatch Watch)> _scriptWatchDict = new ConcurrentDictionary<int, (LogModel.Script, Stopwatch)>();
+        private readonly ConcurrentDictionary<int, LogModel.Script> _scriptDict = new ConcurrentDictionary<int, LogModel.Script>();
         private readonly ConcurrentDictionary<string, LogModel.Script> _scriptRefIdDict = new ConcurrentDictionary<string, LogModel.Script>(StringComparer.Ordinal);
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
@@ -555,6 +555,7 @@ namespace PEBakery.Core
             // Build Id
             LogModel.BuildInfo dbBuild = new LogModel.BuildInfo
             {
+                PEBakeryVersion = Global.Const.StringVersionFull,
                 StartTime = s.StartTime,
                 Name = name,
             };
@@ -629,7 +630,7 @@ namespace PEBakery.Core
                 return;
             }
 
-            dbBuild.EndTime = s.EndTime;
+            dbBuild.FinishTime = s.EndTime;
             switch (s.LogMode)
             {
                 case LogMode.PartDefer:
@@ -663,7 +664,8 @@ namespace PEBakery.Core
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
                 Version = sc.TidyVersion,
-                Flags = LogModel.ScriptFlags.Build,
+                StartTime = DateTime.UtcNow,
+                FinishTime = DateTime.MinValue, 
             };
 
             if (s.LogMode == LogMode.FullDefer)
@@ -677,7 +679,7 @@ namespace PEBakery.Core
                 Db.Insert(dbScript);
             }
 
-            _scriptWatchDict[dbScript.Id] = (dbScript, Stopwatch.StartNew());
+            _scriptDict[dbScript.Id] = dbScript;
 
             // Fire Event
             if (s.LogMode == LogMode.NoDefer)
@@ -701,7 +703,7 @@ namespace PEBakery.Core
             int scriptId = s.ScriptId;
 
             // Log elapsed time
-            bool ret = _scriptWatchDict.TryRemove(scriptId, out (LogModel.Script Script, Stopwatch Watch) tuple);
+            bool ret = _scriptDict.TryRemove(scriptId, out LogModel.Script dbScript);
             if (!ret)
             {
                 string errMsg = $"Script {s.ScriptId} was not logged properly";
@@ -709,10 +711,7 @@ namespace PEBakery.Core
                 Debug.Assert(false, errMsg);
                 return;
             }
-
-            (LogModel.Script dbScript, Stopwatch watch) = tuple;
-            watch.Stop();
-            dbScript.Elapsed = watch.ElapsedMilliseconds;
+            dbScript.FinishTime = DateTime.UtcNow;
 
             if (localVars != null)
             {
@@ -763,23 +762,23 @@ namespace PEBakery.Core
 
             // If this script is already logged to database, just return cached id.
             if (_scriptRefIdDict.ContainsKey(sc.FullIdentifier))
-                return _scriptRefIdDict[sc.FullIdentifier].Id;
+            {
+                LogModel.Script storedScript = _scriptRefIdDict[sc.FullIdentifier];
+                return storedScript.Id;
+            }
 
             LogModel.Script dbScript = new LogModel.Script
             {
                 BuildId = s.BuildId,
                 Level = sc.Level,
-                Order = 0, // Referenced script log must set this to 0 
+                Order = isMacro ? -1 : 0, // Referenced script log must set this to 0 
                 Name = sc.Title,
                 RealPath = sc.RealPath,
                 TreePath = sc.TreePath,
-                Version = sc.Version,
-                Flags = LogModel.ScriptFlags.Referenced,
-                Elapsed = 0, // Not valid on referenced script
+                Version = sc.TidyVersion,
+                StartTime = DateTime.UtcNow,
+                FinishTime = DateTime.UtcNow, // Not valid on referenced script
             };
-
-            if (isMacro)
-                dbScript.Flags |= LogModel.ScriptFlags.Macro;
 
             if (s.LogMode == LogMode.FullDefer)
             {
@@ -1355,8 +1354,11 @@ namespace PEBakery.Core
         {
             [PrimaryKey, AutoIncrement]
             public int Id { get; set; }
+            // ReSharper disable once InconsistentNaming
+            [MaxLength(32)]
+            public string PEBakeryVersion { get; set; }
             public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
+            public DateTime FinishTime { get; set; }
             [MaxLength(256)]
             public string Name { get; set; }
 
@@ -1371,24 +1373,6 @@ namespace PEBakery.Core
             }
         }
 
-        [Flags]
-        public enum ScriptFlags
-        {
-            None = 0,
-            /// <summary>
-            /// Active build script
-            /// </summary>
-            Build = 1,
-            /// <summary>
-            /// Macro script
-            /// </summary>
-            Macro = 2,
-            /// <summary>
-            /// Referenced script (includes macro script)
-            /// </summary>
-            Referenced = 4,
-        }
-
         public class Script
         {
             [PrimaryKey, AutoIncrement]
@@ -1396,22 +1380,18 @@ namespace PEBakery.Core
             [Indexed]
             public int BuildId { get; set; }
             /// <summary>
-            /// Referenced scripts   : Set to 0 (Usually macro script)
+            /// Macro script         : Set to -1
+            /// Referenced scripts   : Set to 0
             /// Active build scripts : Starts from 1
             /// </summary>
             public int Order { get; set; }
             public int Level { get; set; }
-            [MaxLength(256)]
             public string Name { get; set; }
-            [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
             public string RealPath { get; set; }
             public string TreePath { get; set; }
             public string Version { get; set; }
-            public ScriptFlags Flags { get; set; }
-            /// <summary>
-            /// Elapsed time in milliseconds
-            /// </summary>
-            public long Elapsed { get; set; }
+            public DateTime StartTime { get; set; }
+            public DateTime FinishTime { get; set; }
 
             public override string ToString() => $"({BuildId}, {Id}) = {Level} {Name} {Version}";
 

@@ -29,6 +29,7 @@ using RazorEngine.Templating;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -117,14 +118,17 @@ namespace PEBakery.Core
                 case LogExportType.Text:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
-                        if (dbBuild.EndTime == DateTime.MinValue)
-                            dbBuild.EndTime = DateTime.UtcNow;
-
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
+                        _w.WriteLine($"Built    by PEBakery {dbBuild.PEBakeryVersion}");
+                        _w.WriteLine($"Exported by PEBakery {Global.Const.StringVersionFull}");
+                        _w.WriteLine();
                         _w.WriteLine($"Started  at {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
-                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
-                        TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
-                        _w.WriteLine($"Took {t:h\\:mm\\:ss}");
+                        if (dbBuild.FinishTime != DateTime.MinValue)
+                        { // Put these lines only if a build successfully finished
+                            _w.WriteLine($"Finished at {dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                            TimeSpan elapsed = dbBuild.FinishTime - dbBuild.StartTime;
+                            _w.WriteLine($"Took {elapsed:h\\:mm\\:ss}");
+                        }
                         _w.WriteLine();
                         _w.WriteLine();
 
@@ -134,7 +138,7 @@ namespace PEBakery.Core
                         foreach (LogState state in states)
                         {
                             int count = _db.Table<LogModel.BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
-                            _w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
+                            _w.WriteLine($"{state,-10}: {count}");
                         }
                         _w.WriteLine();
                         _w.WriteLine();
@@ -220,32 +224,75 @@ namespace PEBakery.Core
                             .Where(x => 0 < x.Order)
                             .OrderBy(x => x.Order)
                             .ToArray();
+                        int pathColumnPos;
                         _w.WriteLine("<Scripts>");
                         {
-                            int count = processedScripts.Length;
+                            (string Title, string Elapsed, string Path)[] scriptStrs = new (string, string, string)[processedScripts.Length];
                             for (int i = 0; i < processedScripts.Length; i++)
                             {
                                 LogModel.Script sc = processedScripts[i];
-                                _w.WriteLine($"[{i + 1}/{count}] {sc.Name} v{sc.Version} ({sc.Elapsed / 1000.0:0.000}s)");
+
+                                string titleStr = $"[{i + 1,3}/{processedScripts.Length,3}] {sc.Name} v{sc.Version}";
+                                string elapsedStr;
+                                if (sc.FinishTime != DateTime.MinValue)
+                                {
+                                    TimeSpan elapsed = sc.FinishTime - sc.StartTime;
+                                    elapsedStr = $"{elapsed.TotalSeconds:0.0}s";
+                                }
+                                else
+                                {
+                                    elapsedStr = "-";
+                                }
+
+                                scriptStrs[i] = (titleStr, elapsedStr, sc.TreePath);
                             }
-                            _w.WriteLine($"Total {count} scripts");
+
+                            int titleMaxLen = scriptStrs.Max(x => x.Title.Length);
+                            int elapsedMaxLen = scriptStrs.Max(x => x.Elapsed.Length);
+                            pathColumnPos = titleMaxLen + elapsedMaxLen + 3;
+                            foreach ((string title, string elapsed, string path) in scriptStrs)
+                            {
+                                _w.WriteLine($"{title.PadRight(titleMaxLen)} | {elapsed.PadLeft(elapsedMaxLen)} | {path}");
+                            }
+
                             _w.WriteLine();
                             _w.WriteLine();
                         }
 
                         // Script - Referenced Scripts
                         LogModel.Script[] refScripts = scripts
-                            .Where(x => (x.Flags & LogModel.ScriptFlags.Referenced) != 0)
-                            .OrderBy(x => (x.Flags & LogModel.ScriptFlags.Macro) == 0) // Put macro script first
+                            .Where(x => x.Order <= 0)
+                            .OrderBy(x => x.Order) // Put macro script first
+                            .ThenBy(x => x.StartTime)
                             .ToArray();
                         _w.WriteLine("<Referenced Scripts>");
                         {
+                            int idx = 1;
+                            int refScriptCount = refScripts.Count(x => x.Order == 0); // Exclude macro script from counting
+                            List<(string Title, string Path)> scriptStrs = new List<(string, string)>(refScripts.Length);
                             foreach (LogModel.Script sc in refScripts)
                             {
-                                if ((sc.Flags & LogModel.ScriptFlags.Macro) != 0) // Macro Script
-                                    _w.Write("[Macro] ");
-                                _w.WriteLine($"{sc.Name} v{sc.Version}");
+                                string idxStr;
+                                if (sc.Order == -1)
+                                {
+                                    idxStr = "[ Macro ]";
+                                }
+                                else
+                                {
+                                    idxStr = $"[{idx,3}/{refScriptCount,3}]";
+                                    idx += 1;
+                                }
+
+                                string titleStr = $"{idxStr} {sc.Name} v{sc.Version}";
+                                pathColumnPos = Math.Max(titleStr.Length, pathColumnPos);
+                                scriptStrs.Add((titleStr, sc.TreePath));
                             }
+
+                            foreach ((string title, string path) in scriptStrs)
+                            {
+                                _w.WriteLine($"{title.PadRight(pathColumnPos)} | {path}");
+                            }
+
                             _w.WriteLine();
                             _w.WriteLine();
                         }
@@ -303,16 +350,17 @@ namespace PEBakery.Core
                 case LogExportType.Html:
                     {
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
-                        if (dbBuild.EndTime == DateTime.MinValue)
-                            dbBuild.EndTime = DateTime.UtcNow;
+                        if (dbBuild.FinishTime == DateTime.MinValue)
+                            dbBuild.FinishTime = DateTime.UtcNow;
                         RazorModel.ExportBuildLog m = new RazorModel.ExportBuildLog
                         {
                             // Information
-                            PEBakeryVersion = Global.Const.StringVersionFull,
+                            BuiltEngineVersion = dbBuild.PEBakeryVersion,
+                            ExportEngineVersion = Global.Const.StringVersionFull,
                             BuildName = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
-                            BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
-                            BuildTookTimeStr = $"{dbBuild.EndTime - dbBuild.StartTime:h\\:mm\\:ss}",
+                            BuildEndTimeStr = dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
+                            BuildTookTimeStr = $"{dbBuild.FinishTime - dbBuild.StartTime:h\\:mm\\:ss}",
                             ShowLogFlags = opts.ShowLogFlags,
                             // Embed
                             EmbedBootstrapCss = Properties.Resources.HtmlBootstrapCss,
@@ -402,7 +450,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        // Scripts
+                        // Scripts - Build Scripts
                         var scripts = _db.Table<LogModel.Script>()
                             .Where(x => x.BuildId == buildId && 0 < x.Order)
                             .OrderBy(x => x.Order);
@@ -411,15 +459,48 @@ namespace PEBakery.Core
                             int idx = 1;
                             foreach (LogModel.Script scLog in scripts)
                             {
+                                TimeSpan elapsed = scLog.FinishTime - scLog.StartTime;
                                 m.Scripts.Add(new RazorModel.ScriptLog
                                 {
-                                    Index = idx,
+                                    IndexStr = idx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
                                     Version = $"v{scLog.Version}",
-                                    TimeStr = $"{scLog.Elapsed / 1000.0:0.000}s",
+                                    TimeStr = $"{elapsed.TotalSeconds:0.0}s",
                                 });
                                 idx++;
+                            }
+                        }
+
+                        // Script - Referenced Scripts
+                        m.RefScripts = new List<RazorModel.ScriptLog>();
+                        {
+                            var refScripts = _db.Table<LogModel.Script>()
+                                .Where(x => x.BuildId == buildId && x.Order <= 0)
+                                .OrderBy(x => x.Order) // Put macro script first
+                                .ThenBy(x => x.StartTime);
+
+                            int idx = 0;
+                            foreach (LogModel.Script scLog in refScripts)
+                            {
+                                string idxStr;
+                                if (scLog.Order == -1)
+                                {
+                                    idxStr = "Macro";
+                                }
+                                else
+                                {
+                                    idx += 1;
+                                    idxStr = idx.ToString();
+                                }
+
+                                m.RefScripts.Add(new RazorModel.ScriptLog
+                                {
+                                    IndexStr = idxStr,
+                                    Name = scLog.Name,
+                                    Path = scLog.TreePath,
+                                    Version = $"v{scLog.Version}",
+                                });
                             }
                         }
 
@@ -467,7 +548,7 @@ namespace PEBakery.Core
 
                                 RazorModel.ScriptLog pModel = new RazorModel.ScriptLog
                                 {
-                                    Index = pIdx,
+                                    IndexStr = pIdx.ToString(),
                                     Name = scLog.Name,
                                     Path = scLog.TreePath,
                                 };
@@ -563,11 +644,12 @@ namespace PEBakery.Core
                 public string Message { get; set; }
             }
 
+            [SuppressMessage("ReSharper", "InconsistentNaming")]
             public class ExportBuildLog
             {
                 // Information
-                // ReSharper disable once InconsistentNaming
-                public string PEBakeryVersion { get; set; }
+                public string BuiltEngineVersion { get; set; }
+                public string ExportEngineVersion { get; set; }
                 public string BuildName { get; set; }
                 public string BuildStartTimeStr { get; set; }
                 public string BuildEndTimeStr { get; set; }
@@ -580,6 +662,7 @@ namespace PEBakery.Core
                 // Data
                 public List<LogStat> LogStats { get; set; }
                 public List<ScriptLog> Scripts { get; set; }
+                public List<ScriptLog> RefScripts { get; set; }
                 public List<VariableLog> Variables { get; set; }
                 public Dictionary<ScriptLog, Tuple<CodeLog, string>[]> ErrorCodeDict { get; set; }
                 public Dictionary<ScriptLog, Tuple<CodeLog, string>[]> WarnCodeDict { get; set; }
@@ -594,7 +677,7 @@ namespace PEBakery.Core
 
             public class ScriptLog
             {
-                public int Index { get; set; }
+                public string IndexStr { get; set; }
                 public string Name { get; set; }
                 public string Path { get; set; }
                 public string Version { get; set; }
