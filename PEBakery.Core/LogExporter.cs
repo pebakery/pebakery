@@ -60,6 +60,9 @@ namespace PEBakery.Core
                 case LogExportType.Text:
                     {
                         _w.WriteLine("- PEBakery System Log -");
+                        _w.WriteLine($"Exported by PEBakery {Global.Const.StringVersionFull}");
+                        _w.WriteLine($"Exported at {DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine();
                         var logs = _db.Table<LogModel.SystemLog>().OrderBy(x => x.Time);
                         foreach (LogModel.SystemLog log in logs)
                         {
@@ -75,7 +78,8 @@ namespace PEBakery.Core
                         RazorModel.ExportSystemLog m = new RazorModel.ExportSystemLog
                         {
                             // Information
-                            PEBakeryVersion = Global.Const.StringVersionFull,
+                            ExportEngineVersion = Global.Const.StringVersionFull,
+                            ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
                             EmbedBootstrapCss = Properties.Resources.HtmlBootstrapCss,
                             EmbedJQuerySlim = Properties.Resources.HtmlJQuerySlim,
@@ -164,7 +168,7 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.BuildLog eLog in eLogs)
                                 {
-                                    _w.WriteLine(eLog.Export(LogExportType.Text, false));
+                                    _w.WriteLine(eLog.Export(LogExportType.Text, false, false));
                                     if (eLog.RefScriptId != 0 && eLog.RefScriptId != eLog.ScriptId)
                                     {
                                         _w.Write("  ");
@@ -201,7 +205,7 @@ namespace PEBakery.Core
 
                                 foreach (LogModel.BuildLog wLog in wLogs)
                                 {
-                                    _w.WriteLine(wLog.Export(LogExportType.Text, false));
+                                    _w.WriteLine(wLog.Export(LogExportType.Text, false, false));
                                     if (wLog.RefScriptId != 0 && wLog.RefScriptId != wLog.ScriptId)
                                     { // Referenced scripts
                                         _w.Write("  ");
@@ -326,7 +330,7 @@ namespace PEBakery.Core
                                     cLogs = cLogs.Where(x => (x.Flags & LogModel.BuildLogFlag.Macro) != LogModel.BuildLogFlag.Macro);
                                 cLogs = cLogs.OrderBy(x => x.Id);
                                 foreach (LogModel.BuildLog log in cLogs)
-                                    _w.WriteLine(log.Export(LogExportType.Text, true));
+                                    _w.WriteLine(log.Export(LogExportType.Text, true, opts.ShowLogFlags));
 
                                 // Log local variables
                                 var vLogs = _db.Table<LogModel.Variable>()
@@ -410,7 +414,7 @@ namespace PEBakery.Core
                                             new RazorModel.CodeLog
                                             {
                                                 State = x.State,
-                                                Message = x.Export(LogExportType.Html, false),
+                                                Message = x.Export(LogExportType.Html, false, false),
                                                 Href = errIdx++,
                                             }, ExportRefScriptText(x, refScLogs))).ToArray();
                                 }
@@ -443,7 +447,7 @@ namespace PEBakery.Core
                                             new RazorModel.CodeLog
                                             {
                                                 State = x.State,
-                                                Message = x.Export(LogExportType.Html, false),
+                                                Message = x.Export(LogExportType.Html, false, false),
                                                 Href = warnIdx++,
                                             }, ExportRefScriptText(x, refScLogs))).ToArray();
                                 }
@@ -559,7 +563,8 @@ namespace PEBakery.Core
                                     RazorModel.CodeLog item = new RazorModel.CodeLog
                                     {
                                         State = log.State,
-                                        Message = log.Export(LogExportType.Html, true),
+                                        // HTML log export handles flags itself
+                                        Message = log.Export(LogExportType.Html, true, false),
                                         Flags = log.Flags,
                                     };
 
@@ -628,7 +633,8 @@ namespace PEBakery.Core
             {
                 // Information
                 // ReSharper disable once InconsistentNaming
-                public string PEBakeryVersion { get; set; }
+                public string ExportEngineVersion { get; set; }
+                public string ExportTimeStr { get; set; }
                 // Embed
                 public string EmbedBootstrapCss { get; set; }
                 public string EmbedJQuerySlim { get; set; }

@@ -153,9 +153,9 @@
                     <CheckBox Height="20"
                               VerticalAlignment="Top"
                               VerticalContentAlignment="Center"
-                              IsEnabled="{Binding BuildLogShowLogFlagsEnabled}"
+                              IsEnabled="{Binding BuildLogOptionEnabled}"
                               IsChecked="{Binding BuildLogShowLogFlags}"
-                              Content="Show Log Flags (HTML Only)"/>
+                              Content="Show Log Flags"/>
                 </StackPanel>
             </GroupBox>
             <ProgressBar Height="20"

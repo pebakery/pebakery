@@ -203,7 +203,7 @@
 
                     <TabControl Margin="15, 15, 15, 0"
                                 Grid.Row="2">
-                        <TabItem Header="Statistics">
+                        <TabItem Header="Statistics" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       Style="{StaticResource ListItemFocusColorOverride}"
                                       ItemsSource="{Binding LogStats}"
@@ -221,7 +221,7 @@
                                 </ListView.View>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Simple Logs">
+                        <TabItem Header="Simple Logs" Width="90">
                             <ListView Name="BuildLogSimpleListView"
                                       SelectedIndex="{Binding SimpleBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
@@ -245,7 +245,7 @@
                                 </ListView.ContextMenu>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Full Logs">
+                        <TabItem Header="Full Logs" Width="90">
                             <ListView Name="BuildLogDetailListView"
                                       SelectedIndex="{Binding FullBuildLogSelectedIndex}"
                                       HorizontalContentAlignment="Stretch"
@@ -426,7 +426,7 @@
                                 </ListView.ItemContainerStyle>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Variables">
+                        <TabItem Header="Variables" Width="90">
                             <ListView HorizontalContentAlignment="Stretch"
                                       SelectedIndex="{Binding VariableLogSelectedIndex}"
                                       Style="{StaticResource ListItemFocusColorOverride}"

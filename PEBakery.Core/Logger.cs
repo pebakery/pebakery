@@ -1512,8 +1512,8 @@ namespace PEBakery.Core
             public BuildLogFlag Flags { get; set; }
 
             [Ignore]
-            public string Text => Export(LogExportType.Text, true);
-            public string Export(LogExportType type, bool logDepth)
+            public string Text => Export(LogExportType.Text, true, false);
+            public string Export(LogExportType type, bool logDepth, bool logFlags)
             {
                 string str = string.Empty;
                 switch (type)
@@ -1532,16 +1532,37 @@ namespace PEBakery.Core
                             if (State == LogState.None)
                             { // No State
                                 if (RawCode == null)
-                                    b.Append(Message);
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append(Message);
+                                    else
+                                        b.Append($"[{BuildLogFlagToString(Flags)}] {Message}");
+                                }
                                 else
-                                    b.Append($"{Message} ({RawCode})");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"{Message} ({RawCode})");
+                                    else
+                                        b.Append($"[{BuildLogFlagToString(Flags)}] {Message} ({RawCode})");
+                                }
                             }
                             else
                             { // Has State
                                 if (RawCode == null)
-                                    b.Append($"[{State}] {Message}");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"[{State}] {Message}");
+                                    else
+                                        b.Append($"[{State}] [{BuildLogFlagToString(Flags)}] {Message}");
+                                }
                                 else
-                                    b.Append($"[{State}] {Message} ({RawCode})");
+                                {
+                                    if (!logFlags || Flags == BuildLogFlag.None)
+                                        b.Append($"[{State}] {Message} ({RawCode})");
+                                    else
+                                        b.Append($"[{State}] [{BuildLogFlagToString(Flags)}] {Message} ({RawCode})");
+
+                                }
                             }
 
                             if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
