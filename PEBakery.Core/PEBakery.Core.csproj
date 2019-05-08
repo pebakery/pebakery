@@ -141,6 +141,7 @@
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CodeOptimizer.cs" />
     <Compile Include="CodeParser.cs" />
+    <Compile Include="Commands\CommandDebug.cs" />
     <Compile Include="HttpFileDownloader.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
