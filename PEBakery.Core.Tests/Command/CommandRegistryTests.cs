@@ -167,6 +167,7 @@ namespace PEBakery.Core.Tests.Command
 
                 // Error
                 WriteErrorTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x4,{subKeyStr}", ErrorCheck.ParserError);
+                WriteErrorTemplate(s, CodeType.RegWrite, $@"RegWrite,HKCU,0x200000,{subKeyStr},Extra,00,01,02", ErrorCheck.ParserError);
             }
             finally
             {
