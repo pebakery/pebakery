@@ -4861,6 +4861,53 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region DebugType, DebugInfo
+    public enum DebugType
+    {
+        Breakpoint = 0,
+    }
+
+    [Serializable]
+    public class DebugInfo : CodeInfo { }
+
+    [Serializable]
+    public class DebugInfo_Breakpoint : DebugInfo
+    { // Debug,Breakpoint,[BranchCondition]
+        public BranchCondition Cond; // Optional
+
+        public DebugInfo_Breakpoint(BranchCondition cond)
+        {
+            Cond = cond;
+        }
+
+        public override string ToString() => Cond == null ? string.Empty : Cond.ToString();
+    }
+    #endregion
+
+    #region CodeInfo 98 - Debug
+    [Serializable]
+    public class CodeInfo_Debug : CodeInfo
+    {
+        public DebugType Type;
+        public DebugInfo SubInfo;
+
+        public CodeInfo_Debug(DebugType type, DebugInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
     #region CodeInfo 99 - Macro
     [Serializable]
     public class CodeInfo_Macro : CodeInfo

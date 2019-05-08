@@ -464,7 +464,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     if (s.CompatDirCopyBug)
-                    { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy _bug_
+                    { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] FileCopy _bug_
                         Debug.Assert(compatFiles != null, $"Wrong {nameof(compatFiles)}");
                         foreach (FileInfo f in compatFiles)
                         {
@@ -473,8 +473,8 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    // Copy first sublevel directory with wildcard
-                    // Note wildcard will not be applied to subdirectory copy
+                    // Copy first sub-level directory with wildcard
+                    // Note wildcard will not be applied to sub-directory copy
                     foreach (DirectoryInfo d in subDirs)
                     {
                         FileHelper.DirCopy(d.FullName, Path.Combine(destDir, d.Name), new FileHelper.DirCopyOptions

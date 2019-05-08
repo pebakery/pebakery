@@ -808,6 +808,11 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
+                    #region 98 Debug
+                    case CodeType.Debug:
+                        logs.AddRange(CommandDebug.DebugCmd(s, cmd));
+                        break;
+                    #endregion
                     #region 99 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);

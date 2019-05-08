@@ -2476,6 +2476,10 @@ namespace PEBakery.Core
                         return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
+                #region 98 Debug
+                case CodeType.Debug:
+                    return ParseCodeInfoDebug(rawCode, args);
+                #endregion
                 #region 99 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
@@ -4005,6 +4009,57 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ParseCodeInfoDebug, ParseDebugType
+        public CodeInfo_Debug ParseCodeInfoDebug(string rawCode, List<string> args)
+        {
+            DebugType type = ParseDebugType(args[0]);
+            DebugInfo info;
+
+            // Remove DebugType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case DebugType.Breakpoint:
+                    { // Debug,Breakpoint,[BranchCondition]
+                        BranchCondition cond = null;
+
+                        // BranchCondition was written
+                        if (0 < args.Count)
+                        {
+                            int skipArgs;
+                            (cond, skipArgs) = ParseBranchCondition(rawCode, args);
+                            if (args.Count != skipArgs)
+                                throw new InvalidCommandException("Command [Debug,Breakpoint] cannot have additional arguments after [BranchCondition]", rawCode);
+                        }
+
+                        info = new DebugInfo_Breakpoint(cond);
+                    }
+                    break;
+                // Error
+                default:
+                    throw new InternalParserException($"Wrong DebugType [{type}]");
+            }
+
+            return new CodeInfo_Debug(type, info);
+        }
+
+        public static DebugType ParseDebugType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as DebugType");
+
+            bool invalid = !Enum.TryParse(typeStr, true, out DebugType type) ||
+                           !Enum.IsDefined(typeof(DebugType), type);
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid DebugType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
         public static bool StringContainsVariable(string str)
         {
@@ -4023,10 +4078,10 @@ namespace PEBakery.Core
                    sectionReturnValueMatch;
         }
 
-        public CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, int lineIdx)
+        public (BranchCondition Cond, int SkipArgs) ParseBranchCondition(string rawCode, List<string> args)
         {
-            if (args.Count < 2)
-                throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
+            if (args.Count < 1)
+                throw new InvalidCommandException("Unable to parse BranchCondition from empty arguments", rawCode);
 
             int cIdx = 0;
             bool notFlag = false;
@@ -4036,6 +4091,12 @@ namespace PEBakery.Core
                 cIdx++;
             }
 
+            void CheckArgumentCount(BranchConditionType condType, int minArgCount)
+            {
+                if (args.Count < minArgCount)
+                    throw new InvalidCommandException($"BranchCondition [{condType}] must have at least [{minArgCount}] arguments", rawCode);
+            }
+
             // BranchCondition - Non-Compare series
             {
                 int embIdx = -1;
@@ -4043,96 +4104,115 @@ namespace PEBakery.Core
                 BranchCondition cond = null;
                 if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistFile, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
                 }
                 else if (condStr.Equals("ExistDir", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistDir, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistDir, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistDir, notFlag, args[cIdx + 1]);
                 }
                 else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistSection, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("ExistRegSection", StringComparison.OrdinalIgnoreCase))
                 { // Will-be-deprecated
-                    cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistRegSection, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("ExistRegSubKey", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistRegSubKey, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.ExistRegSubKey, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegSubKey, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("ExistRegKey", StringComparison.OrdinalIgnoreCase))
                 { // Will-be-deprecated
-                    cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.ExistRegKey, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                 }
                 else if (condStr.Equals("ExistRegValue", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistRegValue, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.ExistRegValue, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegValue, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                 }
                 else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
                     embIdx = cIdx + 5;
+                    CheckArgumentCount(BranchConditionType.ExistRegMulti, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
                 }
                 else if (condStr.Equals("ExistVar", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistVar, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
                 }
                 else if (condStr.Equals("ExistMacro", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.ExistMacro, embIdx);
+                    cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
                 }
                 else if (condStr.Equals("WimExistIndex", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.WimExistIndex, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
+                    CheckArgumentCount(BranchConditionType.WimExistIndex, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistIndex, notFlag, args[cIdx + 1], args[cIdx + 2]);
                 }
                 else if (condStr.Equals("WimExistFile", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.WimExistFile, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistFile, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistFile, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                 }
                 else if (condStr.Equals("WimExistDir", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.WimExistDir, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistDir, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistDir, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                 }
                 else if (condStr.Equals("WimExistImageInfo", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.WimExistImageInfo, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
+                    CheckArgumentCount(BranchConditionType.WimExistImageInfo, embIdx);
+                    cond = new BranchCondition(BranchConditionType.WimExistImageInfo, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                    
                 }
                 else if (condStr.Equals("Ping", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
+                    CheckArgumentCount(BranchConditionType.Ping, embIdx);
+                    cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
                 }
                 else if (condStr.Equals("Online", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.Online, notFlag);
                     embIdx = cIdx + 1;
+                    CheckArgumentCount(BranchConditionType.Online, embIdx);
+                    cond = new BranchCondition(BranchConditionType.Online, notFlag);
                 }
                 else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
                 {
                     Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                     if (m.Success)
                     {
-                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                         embIdx = cIdx + 4;
+                        CheckArgumentCount(BranchConditionType.Question, embIdx);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     }
                     else
                     {
-                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1]);
                         embIdx = cIdx + 2;
+                        CheckArgumentCount(BranchConditionType.Question, embIdx);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1]);
                     }
                 }
                 else
@@ -4143,51 +4223,57 @@ namespace PEBakery.Core
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistFile, true, args[cIdx + 1]);
                             embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistFile, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistFile, true, args[cIdx + 1]);
+                            
                         }
                         else if (condStr.Equals("NotExistDir", StringComparison.OrdinalIgnoreCase))
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistDir, true, args[cIdx + 1]);
                             embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistDir, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistDir, true, args[cIdx + 1]);
                         }
                         else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase))
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
                             embIdx = cIdx + 3;
+                            CheckArgumentCount(BranchConditionType.ExistSection, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
                         }
                         else if (condStr.Equals("NotExistRegSection", StringComparison.OrdinalIgnoreCase))
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistRegSection, true, args[cIdx + 1], args[cIdx + 2]);
                             embIdx = cIdx + 3;
+                            CheckArgumentCount(BranchConditionType.ExistRegSection, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistRegSection, true, args[cIdx + 1], args[cIdx + 2]);
                         }
                         else if (condStr.Equals("NotExistRegKey", StringComparison.OrdinalIgnoreCase))
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistRegKey, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                             embIdx = cIdx + 4;
+                            CheckArgumentCount(BranchConditionType.ExistRegKey, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistRegKey, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                         }
                         else if (condStr.Equals("NotExistVar", StringComparison.OrdinalIgnoreCase))
                         {
                             if (notFlag)
                                 throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
-                            cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
                             embIdx = cIdx + 2;
+                            CheckArgumentCount(BranchConditionType.ExistVar, embIdx);
+                            cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
                         }
                     }
                 }
 
                 if (embIdx != -1 && cond != null)
                 {
-                    CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), lineIdx);
-                    return new CodeInfo_If(cond, embCmd);
+                    return (cond, embIdx);
                 }
             }
 
@@ -4232,11 +4318,20 @@ namespace PEBakery.Core
                 string compArg1 = args[cIdx];
                 string compArg2 = args[cIdx + 2];
                 BranchCondition cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
-                CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), lineIdx);
-                return new CodeInfo_If(cond, embCmd);
+                return (cond, cIdx + 3);
             }
 
             throw new InvalidCommandException("Incorrect branch condition", rawCode);
+        }
+
+        public CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, int lineIdx)
+        {
+            if (args.Count < 2)
+                throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
+
+            (BranchCondition cond, int skipArgs) = ParseBranchCondition(rawCode, args);
+            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(skipArgs).ToList(), lineIdx);
+            return new CodeInfo_If(cond, embCmd);
         }
 
         public CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, int lineIdx)
