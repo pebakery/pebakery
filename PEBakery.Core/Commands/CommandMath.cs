@@ -226,7 +226,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BoolOr:
                 case MathType.BoolXor:
                     {
-                        MathInfo_BoolLogicOper subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOper>();
+                        MathInfo_BoolLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BoolLogicOperation>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
@@ -293,7 +293,7 @@ namespace PEBakery.Core.Commands
                 case MathType.BitOr:
                 case MathType.BitXor:
                     {
-                        MathInfo_BitLogicOper subInfo = info.SubInfo.Cast<MathInfo_BitLogicOper>();
+                        MathInfo_BitLogicOperation subInfo = info.SubInfo.Cast<MathInfo_BitLogicOperation>();
 
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);

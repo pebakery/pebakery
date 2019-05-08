@@ -759,15 +759,15 @@ namespace PEBakery.Core
 
         #region List as Concatinated String
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static List<string> UnpackListStr(string listStr, string seperator)
+        public static List<string> UnpackListStr(string listStr, string separator)
         {
-            return StringHelper.SplitEx(listStr, seperator, StringComparison.OrdinalIgnoreCase);
+            return StringHelper.SplitEx(listStr, separator, StringComparison.OrdinalIgnoreCase);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string PackListStr(IList<string> list, string seperator)
+        public static string PackListStr(IList<string> list, string separator)
         {
-            return string.Join(seperator, list);
+            return string.Join(separator, list);
         }
         #endregion
     }

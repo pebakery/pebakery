@@ -636,10 +636,8 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             List<IniKey> keyList = new List<IniKey>(infoOp.Infos.Count);
-            for (int i = 0; i < infoOp.Infos.Count; i++)
+            foreach (CodeInfo_IniWriteTextLine info in infoOp.Infos)
             {
-                CodeInfo_IniWriteTextLine info = infoOp.Infos[i];
-
                 string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string line = StringEscaper.Preprocess(s, info.Line);
 

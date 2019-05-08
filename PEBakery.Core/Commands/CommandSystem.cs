@@ -134,6 +134,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetFreeDrive subInfo = info.SubInfo.Cast<SystemInfo_GetFreeDrive>();
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
+                        // ReSharper disable once StringLiteralTypo
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
 
@@ -162,9 +163,9 @@ namespace PEBakery.Core.Commands
                         if (f.Directory == null)
                             return LogInfo.LogErrorMessage(logs, $"Unable to get drive information for [{path}]");
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
-                        long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
+                        long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMB.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -647,7 +648,7 @@ namespace PEBakery.Core.Commands
                         // Wait until exit
                         proc.WaitForExit();
 
-                        // Unregister process instance from EngineState
+                        // Un-register process instance from EngineState
                         s.RunningSubProcess = null;
 
                         watch.Stop();

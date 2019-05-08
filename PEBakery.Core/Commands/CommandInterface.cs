@@ -570,15 +570,15 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private readonly static Dictionary<UIControlType, InterfaceElement[]> _writeNeedVarUpdateDict = new Dictionary<UIControlType, InterfaceElement[]>()
+        private static readonly Dictionary<UIControlType, InterfaceElement[]> WriteNeedVarUpdateDict = new Dictionary<UIControlType, InterfaceElement[]>()
         {
             [UIControlType.TextBox] = new InterfaceElement[] { InterfaceElement.Value },
             [UIControlType.NumberBox] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.NumberMin, InterfaceElement.NumberMax, },
             [UIControlType.CheckBox] = new InterfaceElement[] { InterfaceElement.Value },
-            [UIControlType.ComboBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value, InterfaceElement.Items }, 
+            [UIControlType.ComboBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value, InterfaceElement.Items },
             [UIControlType.RadioButton] = new InterfaceElement[] { InterfaceElement.Value },
             [UIControlType.FileBox] = new InterfaceElement[] { InterfaceElement.Text, InterfaceElement.Value },
-            [UIControlType.RadioGroup] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.Items }, 
+            [UIControlType.RadioGroup] = new InterfaceElement[] { InterfaceElement.Value, InterfaceElement.Items },
         };
 
         // ReSharper disable once UnusedMethodReturnValue.Local
@@ -1033,7 +1033,7 @@ namespace PEBakery.Core.Commands
                 uiCtrl.Update();
 
                 // Also update local variables
-                if (_writeNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && _writeNeedVarUpdateDict[uiCtrl.Type].Contains(info.Element))
+                if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(info.Element))
                 {
                     string readValue = uiCtrl.GetValue(false);
                     if (readValue != null)
@@ -1113,7 +1113,7 @@ namespace PEBakery.Core.Commands
                 // Also update local variables
                 foreach ((UIControl uiCtrl, InterfaceElement element) in updatedCtrls)
                 {
-                    if (_writeNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && _writeNeedVarUpdateDict[uiCtrl.Type].Contains(element))
+                    if (WriteNeedVarUpdateDict.ContainsKey(uiCtrl.Type) && WriteNeedVarUpdateDict[uiCtrl.Type].Contains(element))
                     {
                         string readValue = uiCtrl.GetValue(false);
                         if (readValue != null)
@@ -1163,8 +1163,8 @@ namespace PEBakery.Core.Commands
                     throw new InternalException("Internal Logic Error at Message");
             }
 
-            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
-            s.MainViewModel.TaskBarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+            TaskbarItemProgressState oldTaskBarItemProgressState = s.MainViewModel.TaskBarProgressState; // Save our progress state
+            s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Paused;
 
             if (info.Timeout == null)
             {
@@ -1185,7 +1185,7 @@ namespace PEBakery.Core.Commands
                 });
             }
 
-            s.MainViewModel.TaskBarProgressState = oldTaskbarItemProgressState;
+            s.MainViewModel.TaskBarProgressState = oldTaskBarItemProgressState;
 
             string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             string firstLine = message;
@@ -1365,7 +1365,12 @@ namespace PEBakery.Core.Commands
                     s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, ls.Depth));
                     logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, ls.Depth + 1));
                     s.Logger.BuildWrite(s, subLogs);
-                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, ls.Depth));
+                    string importVarCount;
+                    if (1 < subLogs.Count)
+                        importVarCount = $"Imported {subLogs.Count} variables";
+                    else
+                        importVarCount = "Imported 1 variable";
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, importVarCount, cmd, ls.Depth));
                 }
             }
 

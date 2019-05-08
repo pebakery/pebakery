@@ -82,10 +82,6 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ExportCodeParserOptions
-
-        #endregion
-
         #region ParseStatement, ParseStatements
         public CodeCommand ParseStatement(string rawCode)
         {
@@ -104,7 +100,7 @@ namespace PEBakery.Core
 
         public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync()
         {
-            return Task.Run(() => ParseStatements());
+            return Task.Run(ParseStatements);
         }
 
         public Task<(CodeCommand[] cmds, List<LogInfo> errLogs)> ParseStatementsAsync(IList<string> lines)
@@ -691,16 +687,16 @@ namespace PEBakery.Core
                                 break;
                             case RegistryValueKind.MultiString:
                                 if (4 == cnt)
-                                { // RegWrite,HKLM,0x7,"Tmp_Software\Safer Networking Limited\Spybot - Search & Destroy 2","Download Directories" 
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\PEBakery","Download Directories" 
                                     return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
                                 }
                                 else if (5 <= cnt)
-                                { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim","MSGOTHIC.TTC,MS UI Gothic","MINGLIU.TTC,PMingLiU","SIMSUN.TTC,SimSun"
-                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                    if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
+                                { // RegWrite,HKLM,0x7,"Tmp_Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink","Lucida Console","MALGUN.TTF,Malgun Gothic","GULIM.TTC,Gulim"
+                                    string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                    if (valueDataList.Length == 1 && valueDataList[0].Equals(string.Empty, StringComparison.Ordinal))
                                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
                                     else
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.Binary:
@@ -710,8 +706,8 @@ namespace PEBakery.Core
                                     return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], null, noWarn);
                                 else if (6 <= cnt)
                                 {
-                                    string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                    string[] valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDataList, noWarn);
                                 }
                                 break;
                             case RegistryValueKind.DWord:
@@ -726,8 +722,8 @@ namespace PEBakery.Core
                         throw new InvalidCommandException("Invalid RegWrite Syntax", rawCode);
                     }
                 case CodeType.RegWriteLegacy:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>
-                        // Compatibility shim for Win10PESE's Macro Library
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDataList>
+                        // Compatibility shim for Macro Library of Win10PESE
                         // Ex) RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         //     ValueType cannot be parsed as normal RegWrite in CodeParser.
 
@@ -751,11 +747,11 @@ namespace PEBakery.Core
                         if (4 <= cnt)
                             valueName = args[3];
 
-                        string[] valueDatas = null;
+                        string[] valueDataList = null;
                         if (5 <= cnt)
-                            valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
+                            valueDataList = args.Skip(4).Take(cnt - 4).ToArray();
 
-                        return new CodeInfo_RegWriteLegacy(args[0], args[1], args[2], valueName, valueDatas, noWarn);
+                        return new CodeInfo_RegWriteLegacy(args[0], args[1], args[2], valueName, valueDataList, noWarn);
                     }
                 case CodeType.RegDelete:
                     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
@@ -1876,7 +1872,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 10 Interface
                 case CodeType.Visible:
-                    { // Visible,<%InterfaceKey%>,<Visiblity>
+                    { // Visible,<%InterfaceKey%>,<Visibility>
                         // [,PERMANENT] - for compability of WB082
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
@@ -1893,7 +1889,7 @@ namespace PEBakery.Core
                             Variables.DetectType(args[1]) != Variables.VarKeyType.None)
                             visibility = args[1];
                         else
-                            throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
+                            throw new InvalidCommandException("Visibility must be one of True, False, or variable key.", rawCode);
 
                         if (2 < args.Count)
                         {
@@ -2188,7 +2184,7 @@ namespace PEBakery.Core
                 case CodeType.LoopEx:
                 case CodeType.LoopLetterEx:
                     {
-                        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+                        // LoopEx,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
                         // LoopEx,BREAK
                         // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
                         // LoopLetterEx,BREAK
@@ -2540,7 +2536,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as RegMultiType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) ||
                            !Enum.IsDefined(typeof(RegMultiType), type);
@@ -2608,7 +2604,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as UserInputType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) ||
                            !Enum.IsDefined(typeof(UserInputType), type);
@@ -2897,7 +2893,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Split:
-                    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVar>
+                    { // StrFormat,Split,<SrcString>,<Delimiter>,<Index>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -2936,7 +2932,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as StrFormatType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out StrFormatType type) ||
                            !Enum.IsDefined(typeof(StrFormatType), type);
@@ -3181,7 +3177,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        info = new MathInfo_BoolLogicOper(args[0], args[1], args[2]);
+                        info = new MathInfo_BoolLogicOperation(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.BoolNot:
@@ -3213,7 +3209,7 @@ namespace PEBakery.Core
                         if (Variables.DetectType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        info = new MathInfo_BitLogicOper(args[0], args[1], args[2]);
+                        info = new MathInfo_BitLogicOperation(args[0], args[1], args[2]);
                     }
                     break;
                 case MathType.BitNot:
@@ -3384,7 +3380,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as MathType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out MathType type) ||
                            !Enum.IsDefined(typeof(MathType), type);
@@ -3734,7 +3730,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as ListType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out ListType type) ||
                            !Enum.IsDefined(typeof(ListType), type);
@@ -3997,7 +3993,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as SystemType");
 
             bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) ||
                            !Enum.IsDefined(typeof(SystemType), type);
@@ -4358,7 +4354,7 @@ namespace PEBakery.Core
                 {
                     throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                 }
-                else // Singleline If
+                else // Single-line If
                 {
                     info.Link.Add(info.Embed);
                     info.LinkParsed = true;
@@ -4419,7 +4415,7 @@ namespace PEBakery.Core
                         ifInfo.Link.Add(ifInfo.Embed);
                         throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                     }
-                    else // Singleline If
+                    else // Single-line If
                     {
                         ifInfo.Link.Add(ifInfo.Embed);
                         ifInfo.LinkParsed = true;
@@ -4496,10 +4492,9 @@ namespace PEBakery.Core
                     CodeCommand ifCmd = info.Embed;
                     if (ifCmd.Type == CodeType.If) // Nested If
                     {
-                        CodeInfo_If embedInfo = ifCmd.Info as CodeInfo_If;
                         while (true)
                         {
-                            if (embedInfo == null)
+                            if (!(ifCmd.Info is CodeInfo_If embedInfo))
                                 throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                             if (embedInfo.Embed.Type == CodeType.If) // Nested If
@@ -4513,7 +4508,9 @@ namespace PEBakery.Core
                                 break;
                             }
                             else
+                            {
                                 break;
+                            }
                         }
                     }
                     else if (ifCmd.Type == CodeType.Begin)

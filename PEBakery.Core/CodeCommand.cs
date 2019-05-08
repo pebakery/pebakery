@@ -164,7 +164,6 @@ namespace PEBakery.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : CodeInfo
         {
-            Debug.Assert(GetType() == typeof(T), "Invalid CodeInfo");
             T cast = this as T;
             Debug.Assert(cast != null, "Invalid CodeInfo");
             return cast;
@@ -1090,10 +1089,6 @@ namespace PEBakery.Core
         }
     }
 
-    /// <summary>
-    /// PEBakery script language does not support array, so this command is provided only for logging
-    /// TODO: Rework this command so it can be used in practical manner?
-    /// </summary>
     [Serializable]
     public class CodeInfo_IniReadSection : CodeInfo
     { // IniReadSection,<FileName>,<Section>,<%DestVar%>,[Delim=<Str>]
@@ -1428,7 +1423,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WimExtract : CodeInfo
     { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=<Str>],[CHECK],[NOACL],[NOATTRIB]
-        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractBulk
+        // For extracting multiple path at once, rely on WimExtractOp or WimExtractBulk
         public string SrcWim;
         public string ImageIndex;
         public string ExtractPath;
@@ -3399,7 +3394,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo_BoolLogicOper : MathInfo
+    public class MathInfo_BoolLogicOperation : MathInfo
     {
         // Math,BoolAnd,<%DestVar%>,<Src1>,<Src2>
         // Math,BoolOr,<%DestVar%>,<Src1>,<Src2>
@@ -3409,7 +3404,7 @@ namespace PEBakery.Core
         public string Src1;
         public string Src2;
 
-        public MathInfo_BoolLogicOper(string destVar, string src1, string src2)
+        public MathInfo_BoolLogicOperation(string destVar, string src1, string src2)
         {
             DestVar = destVar;
             Src1 = src1;
@@ -3441,7 +3436,7 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class MathInfo_BitLogicOper : MathInfo
+    public class MathInfo_BitLogicOperation : MathInfo
     {
         // Math,BitAnd,<%DestVar%>,<Src1>,<Src2>
         // Math,BitOr,<%DestVar%>,<Src1>,<Src2>
@@ -3451,7 +3446,7 @@ namespace PEBakery.Core
         public string Src1; // Should be unsigned
         public string Src2; // Should be unsigned
 
-        public MathInfo_BitLogicOper(string destVar, string src1, string src2)
+        public MathInfo_BitLogicOperation(string destVar, string src1, string src2)
         {
             DestVar = destVar;
             Src1 = src1;
@@ -3494,13 +3489,13 @@ namespace PEBakery.Core
         public uint BitSize; // Optional, [8|16|32|64]
         public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint botSoze, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string direction, string shift, uint bitSize, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
             Direction = direction;
             Shift = shift;
-            BitSize = botSoze;
+            BitSize = bitSize;
             Unsigned = _unsigned;
         }
 
@@ -3982,8 +3977,8 @@ namespace PEBakery.Core
         None = 0,
         // Comparison
         Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
-        // Existance
-        // Note : Wrong terminoloy with ExistRegSection/ExistRegKey!
+        // Existence
+        // Note : Wrong terminology with ExistRegSection/ExistRegKey!
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
         ExistFile, // <FilePath>
@@ -4247,7 +4242,7 @@ namespace PEBakery.Core
         // LoopLetter,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InParams]
         // LoopLetter,BREAK
 
-        // LoopEx,<criptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
+        // LoopEx,<ScriptFile>,<Section>,<StartIndex>,<EndIndex>[,InOutParams]
         // LoopEx,BREAK
         // LoopLetterEx,<ScriptFile>,<Section>,<StartLetter>,<EndLetter>[,InOutParams]
         // LoopLetterEx,BREAK
@@ -4324,14 +4319,6 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
-        public CodeInfo_If(BranchCondition cond, List<CodeCommand> link)
-        {
-            Condition = cond;
-            Embed = null;
-
-            LinkParsed = true;
-            Link = link;
-        }
 
         public override string ToString()
         {
@@ -4359,13 +4346,6 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
-        public CodeInfo_Else(List<CodeCommand> link)
-        {
-            Embed = null;
-
-            LinkParsed = true;
-            Link = link;
-        }
 
         public override string ToString()
         {
