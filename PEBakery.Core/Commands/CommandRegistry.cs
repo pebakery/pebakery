@@ -121,7 +121,7 @@ namespace PEBakery.Core.Commands
                 if (subKey == null)
                     return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
-                RegistryValueKind kind = subKey.GetValueKind(valueName);               
+                RegistryValueKind kind = subKey.GetValueKind(valueName);
                 if (kind == RegistryValueKind.Unknown)
                 {
                     object valueData = RegistryHelper.RegGetValue(info.HKey, keyPath, valueName, RegistryValueKind.Unknown);
@@ -185,6 +185,28 @@ namespace PEBakery.Core.Commands
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
             string fullValuePath = $"{hKeyStr}\\{keyPath}\\{valueName}";
 
+            (byte[] BinData, string ValueData) ParseByteArrayFromString()
+            {
+                if (info.ValueData == null)
+                { // Use info.ValueDataList
+                    string[] binStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
+                    string valueData = StringEscaper.PackRegBinary(binStrs);
+                    if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
+                        return (null, valueData);
+                    return (binData, valueData);
+                }
+
+                if (info.ValueDataList == null)
+                { // Use info.ValueData
+                    string valueData = StringEscaper.Preprocess(s, info.ValueData);
+                    if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
+                        return (null, valueData);
+                    return (binData, valueData);
+                }
+
+                throw new InternalException("Internal Parser Error");
+            }
+
             using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
             {
                 if (valueName == null)
@@ -193,12 +215,24 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                object checkData = subKey.GetValue(valueName);
-                if (checkData != null)
+                bool existValue = RegistryHelper.RegExistValue(info.HKey, keyPath, valueName);
+                if (existValue)
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Registry value [{fullValuePath}] already exists"));
 
                 switch (info.ValueType)
                 {
+                    case RegistryValueKind.Unknown:
+                        { // RegWriteEx only
+                            if (cmd.Type != CodeType.RegWriteEx)
+                                throw new InternalException("[RegistryValueKind.Unknown] must be handled by [RegWriteEx], not [RegWrite]");
+
+                            (byte[] binData, string valueData) = ParseByteArrayFromString();
+                            if (binData == null)
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
+                            RegistryHelper.RegSetValue(info.HKey, keyPath, valueName, binData, info.ValueTypeInt);
+                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to [ValueType 0x{info.ValueTypeInt:X}] [{valueData}]"));
+                        }
+                        break;
                     case RegistryValueKind.None:
                         {
                             // Do not put null to value! use empty byte array.
@@ -230,27 +264,12 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.Binary:
                         {
-                            if (info.ValueData == null)
-                            { // Use info.ValueDataList
-                                string[] binStrs = StringEscaper.Preprocess(s, info.ValueDataList).ToArray();
-                                string valueData = StringEscaper.PackRegBinary(binStrs);
-                                if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
-                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                                subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
-                                logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
-                            }
-                            else if (info.ValueDataList == null)
-                            { // Use info.ValueData
-                                string valueData = StringEscaper.Preprocess(s, info.ValueData);
-                                if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
-                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
-                                subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
-                                logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Parser Error");
-                            }
+                            (byte[] binData, string valueData) = ParseByteArrayFromString();
+                            if (binData == null)
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
+
+                            subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
+                            logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                         }
                         break;
                     case RegistryValueKind.DWord:

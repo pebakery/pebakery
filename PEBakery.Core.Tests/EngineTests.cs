@@ -58,13 +58,13 @@ namespace PEBakery.Core.Tests
         #endregion
 
         #region CreateEngineState, DummySection
-        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = "Process")
+        public static EngineState CreateEngineState(bool doCopy = true, Script sc = null, string entrySection = ScriptSection.Names.Process)
         {
             // Clone is needed for parallel test execution (Partial Deep Clone)
             EngineState s;
             if (doCopy)
             {
-                Project project = EngineTests.Project.PartialDeepCopy();
+                Project project = Project.PartialDeepCopy();
                 MainViewModel model = new MainViewModel();
                 if (sc == null)
                     s = new EngineState(project, Logger, model, EngineMode.RunAll);
@@ -203,7 +203,7 @@ namespace PEBakery.Core.Tests
             // Create CodeCommand
             List<LogInfo> errorLogs;
             ScriptSection dummySection = DummySection();
-            CodeParser parser = new CodeParser(dummySection, Global.Setting, EngineTests.Project.Compat);
+            CodeParser parser = new CodeParser(dummySection, Global.Setting, Project.Compat);
             (cmds, errorLogs) = parser.ParseStatements(rawCodes);
             if (errorLogs.Any(x => x.State == LogState.Error))
             {

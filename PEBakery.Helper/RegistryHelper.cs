@@ -29,10 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -204,6 +201,24 @@ namespace PEBakery.Helper
         }
         #endregion
 
+        #region RegExistValue
+        /// <summary>
+        /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
+        /// </summary>
+        public static unsafe bool RegExistValue(RegistryKey hKey, string subKeyPath, string valueName)
+        {
+            using (RegistryKey subKey = hKey.CreateSubKey(subKeyPath, false))
+            {
+                if (subKey == null)
+                    return false;
+
+                uint dataSize = 0;
+                int ret = NativeMethods.RegQueryValueEx(subKey.Handle, valueName, null, null, null, &dataSize);
+                return ret != (int)BetterWin32Errors.Win32Error.ERROR_FILE_NOT_FOUND;
+            }
+        }
+        #endregion
+
         #region RegGetValue, RegSetValue
         /// <summary>
         /// Wrapper of Win32 RegQueryValueEx, which bypass value type checking.
@@ -211,7 +226,7 @@ namespace PEBakery.Helper
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object RegGetValue(RegistryKey hKey, string subKeyPath, string valueName, uint valueType)
         {
-            return RegGetValue(hKey, subKeyPath, valueName, (RegistryValueKind) valueType);
+            return RegGetValue(hKey, subKeyPath, valueName, (RegistryValueKind)valueType);
         }
 
         /// <summary>
@@ -233,13 +248,15 @@ namespace PEBakery.Helper
                 if (valueType == RegistryValueKind.Unknown ||
                     !Enum.IsDefined(typeof(RegistryValueKind), valueType))
                 {
-                    uint dataSize = 0;
-
                     // We don't know how to interprete byte array into C# objects.
                     // Let's return raw byte array we received from RegQueryValueEx.
+
+                    // Get required buffer size
+                    uint dataSize = 0;
                     int ret = NativeMethods.RegQueryValueEx(subKey.Handle, valueName, null, null, null, &dataSize);
                     CheckReturnValue(ret);
 
+                    // Get actual data
                     byte[] data = new byte[dataSize];
                     fixed (byte* dataPtr = data)
                     {
@@ -263,7 +280,7 @@ namespace PEBakery.Helper
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RegSetValue(RegistryKey key, string subKeyPath, string valueName, object value, RegistryValueKind valueType)
         {
-            RegSetValue(key, subKeyPath, valueName, value, (uint) valueType);
+            RegSetValue(key, subKeyPath, valueName, value, (uint)valueType);
         }
 
         /// <summary>
@@ -366,7 +383,7 @@ namespace PEBakery.Helper
                 {
                     throw new ArgumentException($"Unsupported object type [{value.GetType()}]");
                 }
-                
+
                 CheckReturnValue(ret);
             }
         }

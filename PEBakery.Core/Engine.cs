@@ -513,6 +513,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandRegistry.RegRead(s, cmd));
                         break;
                     case CodeType.RegWrite:
+                    case CodeType.RegWriteEx:
                         logs.AddRange(CommandRegistry.RegWrite(s, cmd));
                         break;
                     case CodeType.RegWriteLegacy: // WB082 Compatibility Shim
@@ -819,7 +820,7 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region Error
-                    case CodeType.Retrieve: // Must be translated by CodeParser to different commands
+                    case CodeType.Retrieve: // Must be translated prior to different commands by CodeParser.
                         logs.Add(new LogInfo(LogState.CriticalError, "Internal Logic Error at Engine.ExecuteCommand"));
                         break;
                     default:

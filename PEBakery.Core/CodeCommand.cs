@@ -48,7 +48,7 @@ namespace PEBakery.Core
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         PathMove = 160,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport, RegCopy,
+        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegWriteEx, RegDelete, RegMulti, RegImport, RegExport, RegCopy,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
@@ -529,20 +529,25 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
+    {
+        // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
+        // RegWriteEx,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDataList>,[NOWARN]
+
         [NonSerialized]
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
+        public uint ValueTypeInt;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
         public string[] ValueDataList;
         public bool NoWarn;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDataList, bool noWarn)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, uint valueTypeInt, string keyPath, string valueName, string valueData, string[] valueDataList, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
+            ValueTypeInt = valueTypeInt;
             KeyPath = keyPath;
             ValueName = valueName;
             ValueData = valueData;
@@ -555,7 +560,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(RegistryHelper.RegKeyToString(HKey));
             b.Append(",0x");
-            b.Append(((byte)ValueType).ToString("X"));
+            b.Append(ValueTypeInt.ToString("X"));
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");
