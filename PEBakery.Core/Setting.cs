@@ -848,9 +848,6 @@ namespace PEBakery.Core
             where TEnum : struct, Enum
         {
             string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
             if (valStr != null)
             {
                 if (Enum.TryParse(valStr, true, out TEnum kind) || Enum.IsDefined(typeof(TEnum), kind))
