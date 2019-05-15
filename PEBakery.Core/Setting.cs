@@ -299,7 +299,7 @@ namespace PEBakery.Core
                     {
                         case ThemeType.Dark:
                         case ThemeType.Darker:
-                            return Color.FromRgb(83, 83, 83);
+                            return Color.FromRgb(230, 0, 0);
                         case ThemeType.Red:
                             return Color.FromRgb(164, 55, 58);
                         case ThemeType.Green:
