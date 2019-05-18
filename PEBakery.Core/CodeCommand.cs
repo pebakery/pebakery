@@ -3981,12 +3981,12 @@ namespace PEBakery.Core
     {
         None = 0,
         // Comparison
-        Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
+        Equal = 100, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual, // <%Var%>,Operator,<Value>
         // Existence
         // Note : Wrong terminology with ExistRegSection/ExistRegKey!
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx for details
         // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
-        ExistFile, // <FilePath>
+        ExistFile = 200, // <FilePath>
         ExistDir, // <DirPath>
         ExistSection, // <IniFile>,<Section>
         ExistRegSection, ExistRegSubKey, // <RootKey>,<SubKey> 
@@ -3995,16 +3995,16 @@ namespace PEBakery.Core
         ExistVar, // <%Var%>
         ExistMacro, // <MacroName>
         // Wim
-        WimExistIndex, // <WimFile>,<ImageIndex>
+        WimExistIndex = 300, // <WimFile>,<ImageIndex>
         WimExistFile, // <WimFile>,<ImageIndex>,<FilePath>
         WimExistDir, // <WimFile>,<ImageIndex>,<DirPath>
         WimExistImageInfo, // <WimFile>,<ImageIndex>,<Key>
         // ETC
-        Ping, // <Host>
+        Ping = 400, // <Host>
         Online, // No Argument 
         Question, // <Message> or <Message>,<Timeout>,<DefaultChoice>
         // Deprecated
-        License
+        License = 900
     }
 
     [Serializable]

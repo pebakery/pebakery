@@ -103,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ControlsHelper.cs" />
+    <Compile Include="SilentDictParser.cs" />
     <Compile Include="EncodingHelper.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="FontHelper.cs" />

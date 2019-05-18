@@ -98,7 +98,7 @@ namespace PEBakery.Helper
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt16(string str, out Int16 value)
+        public static bool ParseInt16(string str, out short value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -107,16 +107,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return short.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return short.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt16(string str, out UInt16 value)
+        public static bool ParseUInt16(string str, out ushort value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -125,16 +125,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ushort.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return ushort.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt32(string str, out Int32 value)
+        public static bool ParseInt32(string str, out int value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -143,16 +143,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int32.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return int.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt32(string str, out UInt32 value)
+        public static bool ParseUInt32(string str, out uint value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -161,16 +161,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt32.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return uint.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return uint.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
-        public static bool ParseInt64(string str, out Int64 value)
+        public static bool ParseInt64(string str, out long value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -179,16 +179,16 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return Int64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int64.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
+                return long.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseUInt64(string str, out UInt64 value)
+        public static bool ParseUInt64(string str, out ulong value)
         {
             if (string.IsNullOrWhiteSpace(str))
             {
@@ -197,9 +197,9 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return UInt64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+                return ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return UInt64.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return ulong.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
@@ -258,12 +258,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt8(string str, out byte value)
         {
-            if (NumberHelper.ParseUInt8(str, out byte uInt))
+            if (ParseUInt8(str, out byte uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt8(str, out sbyte sInt))
+            else if (ParseInt8(str, out sbyte sInt))
             {
                 value = (byte)sInt;
                 return true;
@@ -281,12 +281,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt16(string str, out ushort value)
         {
-            if (NumberHelper.ParseUInt16(str, out ushort uInt))
+            if (ParseUInt16(str, out ushort uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt16(str, out short sInt))
+            else if (ParseInt16(str, out short sInt))
             {
                 value = (ushort)sInt;
                 return true;
@@ -304,12 +304,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt32(string str, out uint value)
         {
-            if (NumberHelper.ParseUInt32(str, out uint uInt))
+            if (ParseUInt32(str, out uint uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt32(str, out int sInt))
+            else if (ParseInt32(str, out int sInt))
             {
                 value = (uint)sInt;
                 return true;
@@ -327,12 +327,12 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseSignedAsUInt64(string str, out ulong value)
         {
-            if (NumberHelper.ParseUInt64(str, out ulong uInt))
+            if (ParseUInt64(str, out ulong uInt))
             {
                 value = uInt;
                 return true;
             }
-            else if (NumberHelper.ParseInt64(str, out long sInt))
+            else if (ParseInt64(str, out long sInt))
             {
                 value = (ulong)sInt;
                 return true;

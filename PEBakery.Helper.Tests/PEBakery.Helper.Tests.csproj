@@ -46,6 +46,7 @@
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.1.4.0\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
@@ -55,6 +56,7 @@
     <Compile Include="FileHelperTests.cs" />
     <Compile Include="HtmlHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SilentDictParserTests.cs" />
     <Compile Include="StringHelperTests.cs" />
     <Compile Include="TestSetup.cs" />
   </ItemGroup>

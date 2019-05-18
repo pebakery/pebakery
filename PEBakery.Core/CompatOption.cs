@@ -154,23 +154,23 @@ namespace PEBakery.Core
                 StringComparer.OrdinalIgnoreCase);
 
             // Asterisk
-            AsteriskBugDirCopy = DictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy);
-            AsteriskBugDirLink = DictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink);
+            AsteriskBugDirCopy = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirCopy), AsteriskBugDirCopy);
+            AsteriskBugDirLink = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AsteriskBugDirLink), AsteriskBugDirLink);
             // Command
-            FileRenameCanMoveDir = DictParser.ParseBoolean(keyDict, SectionName, nameof(FileRenameCanMoveDir), FileRenameCanMoveDir);
-            AllowLetterInLoop = DictParser.ParseBoolean(keyDict, SectionName, nameof(AllowLetterInLoop), AllowLetterInLoop);
-            LegacyBranchCondition = DictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyBranchCondition), LegacyBranchCondition);
-            LegacyRegWrite = DictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyRegWrite), LegacyRegWrite);
-            AllowSetModifyInterface = DictParser.ParseBoolean(keyDict, SectionName, nameof(AllowSetModifyInterface), AllowSetModifyInterface);
-            LegacyInterfaceCommand = DictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyInterfaceCommand), LegacyInterfaceCommand);
-            LegacySectionParamCommand = DictParser.ParseBoolean(keyDict, SectionName, nameof(LegacySectionParamCommand), LegacySectionParamCommand);
+            FileRenameCanMoveDir = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(FileRenameCanMoveDir), FileRenameCanMoveDir);
+            AllowLetterInLoop = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AllowLetterInLoop), AllowLetterInLoop);
+            LegacyBranchCondition = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyBranchCondition), LegacyBranchCondition);
+            LegacyRegWrite = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyRegWrite), LegacyRegWrite);
+            AllowSetModifyInterface = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(AllowSetModifyInterface), AllowSetModifyInterface);
+            LegacyInterfaceCommand = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacyInterfaceCommand), LegacyInterfaceCommand);
+            LegacySectionParamCommand = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(LegacySectionParamCommand), LegacySectionParamCommand);
             // Script Interface
-            IgnoreWidthOfWebLabel = DictParser.ParseBoolean(keyDict, SectionName, nameof(IgnoreWidthOfWebLabel), IgnoreWidthOfWebLabel);
+            IgnoreWidthOfWebLabel = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(IgnoreWidthOfWebLabel), IgnoreWidthOfWebLabel);
             // Variable
-            OverridableFixedVariables = DictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableFixedVariables), OverridableFixedVariables);
-            OverridableLoopCounter = DictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableLoopCounter), OverridableLoopCounter);
-            EnableEnvironmentVariables = DictParser.ParseBoolean(keyDict, SectionName, nameof(EnableEnvironmentVariables), EnableEnvironmentVariables);
-            DisableExtendedSectionParams = DictParser.ParseBoolean(keyDict, SectionName, nameof(DisableExtendedSectionParams), DisableExtendedSectionParams);
+            OverridableFixedVariables = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableFixedVariables), OverridableFixedVariables);
+            OverridableLoopCounter = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(OverridableLoopCounter), OverridableLoopCounter);
+            EnableEnvironmentVariables = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(EnableEnvironmentVariables), EnableEnvironmentVariables);
+            DisableExtendedSectionParams = SettingDictParser.ParseBoolean(keyDict, SectionName, nameof(DisableExtendedSectionParams), DisableExtendedSectionParams);
         }
 
         public void WriteToFile()

@@ -376,12 +376,7 @@ namespace PEBakery.Core
                     return false;
             }
 
-            foreach (string folder in encodedFolders)
-            {
-                if (folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
+            return encodedFolders.Any(folder => folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase));
         }
 
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
@@ -588,10 +583,7 @@ namespace PEBakery.Core
                             }
                             if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {
-                                if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    _mandatory = true;
-                                else
-                                    _mandatory = false;
+                                _mandatory = mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase);
                             }
                             if (mainSection.IniDict.ContainsKey(Const.InterfaceList))
                             { // Hint for multiple Interface. Useful when supporting multi-interface editing.
@@ -623,18 +615,30 @@ namespace PEBakery.Core
                             } // InterfaceList
                             _link = null;
                         }
-                        else
+                        else // _ignoreMain is true
                         {
-                            _title = Path.GetFileName(RealPath);
-                            _description = string.Empty;
-                            _level = 0;
+                            if (_sections.ContainsKey(ScriptSection.Names.Main))
+                            { // Try to parse basic information if it is available
+                                ScriptSection mainSection = _sections[ScriptSection.Names.Main];
+                                Dictionary<string, string> mainIniDict = mainSection.IniDict;
+
+                                _title = SilentDictParser.ParseString(mainIniDict, "Title", Path.GetFileName(RealPath));
+                                _description = SilentDictParser.ParseString(mainIniDict, "Description", string.Empty);
+                                _level = SilentDictParser.ParseInteger(mainIniDict, "Level", 0, null, null);
+                            }
+                            else
+                            {
+                                _title = Path.GetFileName(RealPath);
+                                _description = string.Empty;
+                                _level = 0;
+                            }
                         }
 
                         // Add default interface section if not added
                         if (!_interfaceList.Contains(InterfaceSectionName, StringComparer.OrdinalIgnoreCase))
                             _interfaceList.Add(InterfaceSectionName);
 
-                        // Inspect previously not inspectd sections
+                        // Inspect previously not inspected sections
                         DetectTypeOfNotInspectedCodeSection();
                     }
                     break;

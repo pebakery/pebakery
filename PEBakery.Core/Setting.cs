@@ -30,7 +30,6 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -662,7 +661,7 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> projectDict = keyDict[ProjectSetting.SectionName];
 
-                Project.DefaultProject = DictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
+                Project.DefaultProject = SettingDictParser.ParseString(projectDict, nameof(Project.DefaultProject), string.Empty);
             }
 
             // General
@@ -670,12 +669,12 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> generalDict = keyDict[GeneralSetting.SectionName];
 
-                General.OptimizeCode = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
-                General.ShowLogAfterBuild = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
-                General.StopBuildOnError = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
-                General.EnableLongFilePath = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
-                General.UseCustomUserAgent = DictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
-                General.CustomUserAgent = DictParser.ParseString(generalDict, nameof(General.CustomUserAgent), General.CustomUserAgent);
+                General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
+                General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
+                General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
+                General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
+                General.UseCustomUserAgent = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
+                General.CustomUserAgent = SettingDictParser.ParseString(generalDict, nameof(General.CustomUserAgent), General.CustomUserAgent);
             }
 
             // Interface
@@ -690,16 +689,16 @@ namespace PEBakery.Core
                     monoFontFamily = new FontFamily(ifaceDict[nameof(Interface.MonospacedFontFamily)]);
                 if (ifaceDict[nameof(Interface.MonospacedFontWeight)] != null)
                     monoFontWeight = FontHelper.ParseFontWeight(ifaceDict[nameof(Interface.MonospacedFontWeight)]);
-                int monoFontSize = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, -1);
+                int monoFontSize = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.MonospacedFontSize), Interface.MonospacedFont.PointSize, 1, null);
                 Interface.MonospacedFont = new FontHelper.FontInfo(monoFontFamily, monoFontWeight, monoFontSize);
 
-                Interface.UseCustomTitle = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle);
-                Interface.CustomTitle = DictParser.ParseString(ifaceDict, nameof(Interface.CustomTitle), Interface.CustomTitle);
-                Interface.UseCustomEditor = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
-                Interface.CustomEditorPath = DictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
-                Interface.ScaleFactor = DictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
-                Interface.DisplayShellExecuteConOut = DictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
-                Interface.InterfaceSize = DictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
+                Interface.UseCustomTitle = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomTitle), Interface.UseCustomTitle);
+                Interface.CustomTitle = SettingDictParser.ParseString(ifaceDict, nameof(Interface.CustomTitle), Interface.CustomTitle);
+                Interface.UseCustomEditor = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.UseCustomEditor), Interface.UseCustomEditor);
+                Interface.CustomEditorPath = SettingDictParser.ParseString(ifaceDict, nameof(Interface.CustomEditorPath), Interface.CustomEditorPath);
+                Interface.ScaleFactor = SettingDictParser.ParseInteger(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.ScaleFactor), Interface.ScaleFactor, 70, 200);
+                Interface.DisplayShellExecuteConOut = SettingDictParser.ParseBoolean(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.DisplayShellExecuteConOut), Interface.DisplayShellExecuteConOut);
+                Interface.InterfaceSize = SettingDictParser.ParseIntEnum(ifaceDict, InterfaceSetting.SectionName, nameof(Interface.InterfaceSize), Interface.InterfaceSize);
             }
 
             // Theme
@@ -707,17 +706,17 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ThemeSetting.SectionName];
 
-                Theme.ThemeType = DictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
-                Theme.CustomTopPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
-                Theme.CustomTopPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
-                Theme.CustomTopPanelReportIssue = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
-                Theme.CustomTreePanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
-                Theme.CustomTreePanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
-                Theme.CustomTreePanelHighlight = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
-                Theme.CustomScriptPanelBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
-                Theme.CustomScriptPanelForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
-                Theme.CustomStatusBarBackground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
-                Theme.CustomStatusBarForeground = DictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
+                Theme.ThemeType = SettingDictParser.ParseStrEnum(scDict, ThemeSetting.SectionName, nameof(Theme.ThemeType), Theme.ThemeType);
+                Theme.CustomTopPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelBackground), Theme.CustomTopPanelBackground);
+                Theme.CustomTopPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelForeground), Theme.CustomTopPanelForeground);
+                Theme.CustomTopPanelReportIssue = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTopPanelReportIssue), Theme.CustomTopPanelReportIssue);
+                Theme.CustomTreePanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelBackground), Theme.CustomTreePanelBackground);
+                Theme.CustomTreePanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelForeground), Theme.CustomTreePanelForeground);
+                Theme.CustomTreePanelHighlight = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomTreePanelHighlight), Theme.CustomTreePanelHighlight);
+                Theme.CustomScriptPanelBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelBackground), Theme.CustomScriptPanelBackground);
+                Theme.CustomScriptPanelForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomScriptPanelForeground), Theme.CustomScriptPanelForeground);
+                Theme.CustomStatusBarBackground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarBackground), Theme.CustomStatusBarBackground);
+                Theme.CustomStatusBarForeground = SettingDictParser.ParseColor(scDict, ThemeSetting.SectionName, nameof(Theme.CustomStatusBarForeground), Theme.CustomStatusBarForeground);
             }
 
             // Script
@@ -725,8 +724,8 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> scDict = keyDict[ScriptSetting.SectionName];
 
-                Script.EnableCache = DictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
-                Script.AutoSyntaxCheck = DictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
+                Script.EnableCache = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.EnableCache), Script.EnableCache);
+                Script.AutoSyntaxCheck = SettingDictParser.ParseBoolean(scDict, ScriptSetting.SectionName, nameof(Script.AutoSyntaxCheck), Script.AutoSyntaxCheck);
             }
 
             // Log
@@ -734,9 +733,9 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> logDict = keyDict[LogSetting.SectionName];
 
-                Log.DebugLevel = DictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
-                Log.DeferredLogging = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
-                Log.MinifyHtmlExport = DictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
+                Log.DebugLevel = SettingDictParser.ParseIntEnum(logDict, LogSetting.SectionName, nameof(Log.DebugLevel), Log.DebugLevel);
+                Log.DeferredLogging = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.DeferredLogging), Log.DeferredLogging);
+                Log.MinifyHtmlExport = SettingDictParser.ParseBoolean(logDict, LogSetting.SectionName, nameof(Log.MinifyHtmlExport), Log.MinifyHtmlExport);
             }
 
             // LogViewer
@@ -744,24 +743,24 @@ namespace PEBakery.Core
             {
                 Dictionary<string, string> logViewDict = keyDict[LogViewerSetting.SectionName];
 
-                LogViewer.LogWindowWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, -1);
-                LogViewer.LogWindowHeight = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, -1);
-                LogViewer.BuildFullLogTimeVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible);
-                LogViewer.BuildFullLogTimeWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogScriptOriginVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible);
-                LogViewer.BuildFullLogScriptOriginWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogDepthVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible);
-                LogViewer.BuildFullLogDepthWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogStateVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible);
-                LogViewer.BuildFullLogStateWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogFlagsVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible);
-                LogViewer.BuildFullLogFlagsWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogMessageVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible);
-                LogViewer.BuildFullLogMessageWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogRawCodeVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible);
-                LogViewer.BuildFullLogRawCodeWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth, LogViewerSetting.MinColumnWidth, -1);
-                LogViewer.BuildFullLogLineNumberVisible = DictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible);
-                LogViewer.BuildFullLogLineNumberWidth = DictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth, LogViewerSetting.MinColumnWidth, -1);
+                LogViewer.LogWindowWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowWidth), LogViewer.LogWindowWidth, 600, null);
+                LogViewer.LogWindowHeight = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.LogWindowHeight), LogViewer.LogWindowHeight, 480, null);
+                LogViewer.BuildFullLogTimeVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeVisible), LogViewer.BuildFullLogTimeVisible);
+                LogViewer.BuildFullLogTimeWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogTimeWidth), LogViewer.BuildFullLogTimeWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogScriptOriginVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginVisible), LogViewer.BuildFullLogScriptOriginVisible);
+                LogViewer.BuildFullLogScriptOriginWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogScriptOriginWidth), LogViewer.BuildFullLogScriptOriginWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogDepthVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthVisible), LogViewer.BuildFullLogDepthVisible);
+                LogViewer.BuildFullLogDepthWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogDepthWidth), LogViewer.BuildFullLogDepthWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogStateVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateVisible), LogViewer.BuildFullLogStateVisible);
+                LogViewer.BuildFullLogStateWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogStateWidth), LogViewer.BuildFullLogStateWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogFlagsVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsVisible), LogViewer.BuildFullLogFlagsVisible);
+                LogViewer.BuildFullLogFlagsWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogFlagsWidth), LogViewer.BuildFullLogFlagsWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogMessageVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageVisible), LogViewer.BuildFullLogMessageVisible);
+                LogViewer.BuildFullLogMessageWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogMessageWidth), LogViewer.BuildFullLogMessageWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogRawCodeVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeVisible), LogViewer.BuildFullLogRawCodeVisible);
+                LogViewer.BuildFullLogRawCodeWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogRawCodeWidth), LogViewer.BuildFullLogRawCodeWidth, LogViewerSetting.MinColumnWidth, null);
+                LogViewer.BuildFullLogLineNumberVisible = SettingDictParser.ParseBoolean(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberVisible), LogViewer.BuildFullLogLineNumberVisible);
+                LogViewer.BuildFullLogLineNumberWidth = SettingDictParser.ParseInteger(logViewDict, LogViewerSetting.SectionName, nameof(LogViewer.BuildFullLogLineNumberWidth), LogViewer.BuildFullLogLineNumberWidth, LogViewerSetting.MinColumnWidth, null);
             }
         }
 
@@ -836,173 +835,54 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region DictParser
-    public static class DictParser
+    #region SettingDictParser
+    public static class SettingDictParser
     {
         public static string ParseString(Dictionary<string, string> dict, string key, string defaultValue)
         {
-            return dict[key] ?? defaultValue;
+            return SilentDictParser.ParseString(dict, key, defaultValue);
+        }
+
+        public static bool ParseBoolean(Dictionary<string, string> dict, string section, string key, bool defaultValue)
+        {
+            bool val = SilentDictParser.ParseBoolean(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
+        }
+
+        public static int ParseInteger(Dictionary<string, string> dict, string section, string key, int defaultValue, int? min, int? max)
+        {
+            int val = SilentDictParser.ParseInteger(dict, key, defaultValue, min, max, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
         public static TEnum ParseStrEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
             where TEnum : struct, Enum
         {
-            string valStr = dict[key];
-            if (valStr != null)
-            {
-                if (Enum.TryParse(valStr, true, out TEnum kind) || Enum.IsDefined(typeof(TEnum), kind))
-                    return kind;
-            }
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
-        }
-
-        public static bool ParseBoolean(Dictionary<string, string> dict, string key, bool defaultValue)
-        {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return defaultValue;
-        }
-
-        public static bool ParseBoolean(Dictionary<string, string> dict, string section, string key, bool defaultValue)
-        {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
-        }
-
-        public static int ParseInteger(Dictionary<string, string> dict, string key, int defaultValue, int min, int max)
-        {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-            {
-                if (min == -1)
-                { // No Min
-                    if (max == -1) // No Max
-                        return valInt;
-                    if (valInt <= max) // Have Min
-                        return valInt;
-                }
-                else
-                { // Have Min
-                    if (max == -1 && min <= valInt) // No Max
-                        return valInt;
-                    if (min <= valInt && valInt <= max) // Have Min
-                        return valInt;
-                }
-            }
-
-            return defaultValue;
-        }
-
-        public static int ParseInteger(Dictionary<string, string> dict, string section, string key, int defaultValue, int min, int max)
-        {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-            {
-                if (min == -1)
-                { // No Min
-                    if (max == -1) // No Max
-                        return valInt;
-                    if (valInt <= max) // Have Min
-                        return valInt;
-                }
-                else
-                { // Have Min
-                    if (max == -1 && min <= valInt) // No Max
-                        return valInt;
-                    if (min <= valInt && valInt <= max) // Have Min
-                        return valInt;
-                }
-            }
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
+            TEnum val = SilentDictParser.ParseStrEnum(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
         public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string section, string key, TEnum defaultValue)
             where TEnum : Enum
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
-            {
-                if (Enum.IsDefined(typeof(TEnum), valInt))
-                    return (TEnum)Enum.ToObject(typeof(TEnum), valInt);
-            }
-
-            Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-            return defaultValue;
+            TEnum val = SilentDictParser.ParseIntEnum(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
 
         public static Color ParseColor(Dictionary<string, string> dict, string section, string key, Color defaultValue)
         {
-            string valStr = dict[key];
-            if (valStr == null) // No warning, just use default value
-                return defaultValue;
-
-            // Format = R, G, B (in base 10)
-            string[] colorStrs = valStr.Split(',').Select(x => x.Trim()).ToArray();
-            if (colorStrs.Length != 3)
-            {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
-                return defaultValue;
-            }
-
-            byte[] c = new byte[3]; // R, G, B
-            for (int i = 0; i < 3; i++)
-            {
-                string colorStr = colorStrs[i];
-                if (!byte.TryParse(colorStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte valByte))
-                {
-                    char ch;
-                    switch (i)
-                    {
-                        case 0: // Red
-                            ch = 'R';
-                            break;
-                        case 1: // Green
-                            ch = 'G';
-                            break;
-                        case 2: // Blue
-                            ch = 'B';
-                            break;
-                        default: // Unknown
-                            ch = 'U';
-                            break;
-                    }
-                    Debug.Assert(ch != 'U', "Unknown color parsing index");
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong [{ch}] value: {colorStr}"));
-                    return defaultValue;
-                }
-                c[i] = valByte;
-            }
-
-            return Color.FromRgb(c[0], c[1], c[2]);
+            Color val = SilentDictParser.ParseColor(dict, key, defaultValue, out bool notFound);
+            if (notFound)
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {dict[key]}"));
+            return val;
         }
     }
     #endregion
