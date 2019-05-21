@@ -182,17 +182,17 @@ namespace PEBakery.Core
                 return _description;
             }
         }
-        public string Version
+        public string RawVersion
         {
             get
             {
                 if (_type == ScriptType.Link && _linkLoaded)
-                    return _link.Version;
+                    return _link.RawVersion;
                 return _version;
             }
         }
 
-        public string TidyVersion => StringEscaper.ProcessVersionString(Version) ?? Version;
+        public string TidyVersion => StringEscaper.ProcessVersionString(RawVersion) ?? RawVersion;
         public int Level
         {
             get

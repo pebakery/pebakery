@@ -467,7 +467,7 @@ namespace PEBakery.Helper
         /// Extended VersionEx to support single integer
         /// Ex) 5 vs 5.1.2600.1234
         /// </summary>
-        public class VersionEx
+        public class VersionEx : IComparable<VersionEx>
         {
             public int Major { get; }
             public int Minor { get; }
@@ -508,37 +508,38 @@ namespace PEBakery.Helper
                 catch { return null; }
             }
 
-            public int CompareTo(VersionEx value)
+            public int CompareTo(VersionEx other)
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (other == null)
+                    throw new ArgumentNullException(nameof(other));
 
-                if (Major != value.Major)
+                if (Major != other.Major)
                 {
-                    if (Major > value.Major)
+                    if (Major > other.Major)
                         return 1;
                     else
                         return -1;
                 }
 
-                if (Minor != value.Minor)
+                if (Minor != other.Minor)
                 {
-                    if (Minor > value.Minor)
+                    if (Minor > other.Minor)
                         return 1;
                     else
                         return -1;
                 }
 
-                if (Build != value.Build)
+                if (Build != other.Build)
                 {
-                    if (Build > value.Build)
+                    if (Build > other.Build)
                         return 1;
                     else
                         return -1;
                 }
 
-                if (Revision != value.Revision)
+                if (Revision != other.Revision)
                 {
-                    if (Revision > value.Revision)
+                    if (Revision > other.Revision)
                         return 1;
                     else
                         return -1;

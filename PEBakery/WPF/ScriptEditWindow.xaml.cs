@@ -3889,7 +3889,7 @@ namespace PEBakery.WPF
 
             ScriptTitle = Script.Title;
             ScriptAuthor = Script.Author;
-            ScriptVersion = Script.Version;
+            ScriptVersion = Script.RawVersion;
             ScriptDate = GetStringValue("Date");
             ScriptLevel = Script.Level;
             ScriptDescription = StringEscaper.Unescape(Script.Description);

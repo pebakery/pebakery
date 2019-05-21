@@ -29,13 +29,11 @@ using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
+using PEBakery.Ini;
 
 namespace PEBakery.Core
 {
@@ -53,7 +51,7 @@ namespace PEBakery.Core
     */
     #endregion
 
-    #region Classic updates.ini
+    #region Classic updates.ini (No plan to implement)
     /*
     - Classic updates.ini
     [Updates]
@@ -93,48 +91,67 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields and Properties
+        private readonly Project _p;
         private readonly MainViewModel _m;
         private readonly string _userAgent;
+
+        private readonly string _projectBaseUrl;
         #endregion
 
         #region Constructor
-        public FileUpdater(MainViewModel mainViewModel, string customUserAgent)
+        public FileUpdater(Project p, MainViewModel mainViewModel, string customUserAgent)
         {
+            _p = p;
+
+            // Get Project BaseUrl if available
+            if (_p.MainScript.Sections.ContainsKey(UpdateSection))
+            {
+                Dictionary<string, string> pUpdateDict = _p.MainScript.Sections[UpdateSection].IniDict;
+                if (pUpdateDict.ContainsKey(BaseUrlKey))
+                {
+                    string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('/');
+                    if (StringHelper.GetUriProtocol(pBaseUrl) != null)
+                        _projectBaseUrl = pBaseUrl;
+                }
+            }
+
             _m = mainViewModel;
             _userAgent = customUserAgent ?? Engine.DefaultUserAgent;
         }
         #endregion
 
         #region UpdateScript, UpdateScripts
-        public (Script newScript, string msg) UpdateScript(Project p, Script sc)
+        public (Script newScript, string msg) UpdateScript(Script sc, bool preserveInterfaceState)
         {
             if (!sc.Sections.ContainsKey(UpdateSection))
-                return (null, "Unable to find script update information");
+                return (null, $"Script {sc.Title} does not provide proper update information: {UpdateSection} section");
             Dictionary<string, string> scUpdateDict = sc.Sections[UpdateSection].IniDict;
 
             // Parse ScriptUpdateType
             if (!scUpdateDict.ContainsKey(ScriptTypeKey))
-                return (null, "Unable to find script update type");
+                return (null, $"Script {sc.Title} does not provide proper update information: {ScriptTypeKey} key");
             ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[ScriptTypeKey]);
             if (scType == ScriptUpdateType.None)
-                return (null, "Invalid script update type");
+                return (null, $"Script {sc.Title} does not provide proper update information: {ScriptTypeKey} value");
 
             // Get ScriptUrl
             if (!scUpdateDict.ContainsKey(ScriptUrlKey))
-                return (null, "Unable to find script server url");
+                return (null, $"Script {sc.Title} does not provide proper update information: {ScriptUrlKey}");
             string url = scUpdateDict[ScriptUrlKey].TrimStart('/');
 
             if (scType == ScriptUpdateType.Project)
             {
-                // Get BaseUrl
-                if (!p.MainScript.Sections.ContainsKey(UpdateSection))
-                    return (null, "Unable to find project update information");
-                Dictionary<string, string> pUpdateDict = p.MainScript.Sections[UpdateSection].IniDict;
-                if (!pUpdateDict.ContainsKey(BaseUrlKey))
-                    return (null, "Unable to find project update base url");
-                string pBaseUrl = pUpdateDict[BaseUrlKey].TrimEnd('/');
+                if (_projectBaseUrl == null)
+                    return (null, $"Project {_p.ProjectName} does not provide proper update information: {BaseUrlKey}");
+                
+                url = $"{_projectBaseUrl}/{url}";
+            }
 
-                url = $"{url}\\{pBaseUrl}";
+            // Backup interface state of original script
+            InterfaceSectionBackup ifaceBak = null;
+            if (preserveInterfaceState)
+            {
+                ifaceBak = BackupInterface(sc);
             }
 
             string tempFile = FileHelper.GetTempFile();
@@ -145,7 +162,7 @@ namespace PEBakery.Core
                 HttpFileDownloader.Report report;
                 try
                 {
-                    Task<HttpFileDownloader.Report> task = downloader.Download(url, tempFile, null);
+                    Task<HttpFileDownloader.Report> task = downloader.Download(url, tempFile);
                     task.Wait();
 
                     report = task.Result;
@@ -155,16 +172,31 @@ namespace PEBakery.Core
                     report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
                 }
 
-                if (report.Result)
-                { // Success
-                    File.Copy(tempFile, sc.DirectRealPath, true);
-                    Script newScript = p.RefreshScript(sc);
-                    return newScript != null ? (newScript, $"Updated script [{sc.Title}] to [v{sc.Version}] from [v{newScript.Version}]") : (null, @"Downloaded script is corrupted");
-                }
-                else
-                { // Failure
+                // Download failure
+                if (!report.Result)
                     return (null, report.ErrorMsg);
+
+                // Check downloaded script's version
+                string newVerStr = IniReadWriter.ReadKey(tempFile, "Main", "Version");
+                NumberHelper.VersionEx localSemVer = NumberHelper.VersionEx.Parse(sc.TidyVersion);
+                NumberHelper.VersionEx remoteSemVer = NumberHelper.VersionEx.Parse(newVerStr);
+                if (remoteSemVer.CompareTo(localSemVer) != 1) // newSemVer < oldSemVer || newSemVer == oldSemVer
+                    return (null, $"Remote script [{remoteSemVer}] is not newer than local script [{localSemVer}]");
+
+                // Overwrite backup state to new script
+                File.Copy(tempFile, sc.DirectRealPath, true);
+                Script newScript = _p.RefreshScript(sc);
+                if (newScript == null)
+                    return (null, "Downloaded script is corrupted");
+
+                // Overwrite backup state to new script
+                if (preserveInterfaceState)
+                {
+                    Debug.Assert(ifaceBak != null, "Internal Error at FileUpdater.UpdateScript");
+                    RestoreInterface(ref newScript, ifaceBak);
                 }
+
+                return (newScript, $"Updated script [{sc.Title}] to [v{sc.RawVersion}] from [v{newScript.RawVersion}]");
             }
             finally
             {
@@ -175,7 +207,7 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> UpdateProject(Project p)
+        public List<LogInfo> UpdateProject()
         {
             List<LogInfo> logs = new List<LogInfo>();
             return logs;
@@ -254,10 +286,10 @@ namespace PEBakery.Core
         #endregion
 
         #region {Backup,Restore}Interface
-        private struct InterfaceSectionBackup
+        public class InterfaceSectionBackup
         {
-            public string SectionName;
-            public List<UIControl> ValueCtrls;
+            public readonly string SectionName;
+            public readonly List<UIControl> ValueCtrls;
 
             public InterfaceSectionBackup(string sectionName, List<UIControl> valueCtrls)
             {
@@ -266,9 +298,13 @@ namespace PEBakery.Core
             }
         }
 
-        private static InterfaceSectionBackup BackupInterface(Script sc)
+        public static InterfaceSectionBackup BackupInterface(Script sc)
         {
             (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+
+            // Unable to interface section
+            if (ifaceSectionName == null)
+                return null;
 
             // Collect uiCtrls which have value
             List<UIControl> valueCtrls = new List<UIControl>();
@@ -282,7 +318,7 @@ namespace PEBakery.Core
             return new InterfaceSectionBackup(ifaceSectionName, valueCtrls);
         }
 
-        private static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
+        public static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
         {
             (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
 
@@ -293,9 +329,8 @@ namespace PEBakery.Core
             List<UIControl> newCtrls = new List<UIControl>(uiCtrls.Count);
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                // Get old uiCtrl, equaility identified by Key and Type.
-                UIControl bakCtrl = bakCtrls.FirstOrDefault(bak =>
-                    bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase) && bak.Type == uiCtrl.Type);
+                // Get old uiCtrl, equality identified by Type and Key.
+                UIControl bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
                 if (bakCtrl == null)
                     continue;
 

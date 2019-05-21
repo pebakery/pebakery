@@ -438,14 +438,16 @@ namespace PEBakery.WPF
             // Force update of script interface
             ScriptUpdateButton.Focus();
 
-            MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
-            /*
-            Script sc = CurMainTree.Script;
-            Project p = CurMainTree.Script.Project;
+            // MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            
+            Script sc = Model.CurMainTree.Script;
+            Project p = Model.CurMainTree.Script.Project;
 
-            Model.BuildTree.Children.Clear();
-            ScriptListToTreeViewModel(p, new List<Script> { sc }, false, Model.BuildTree, null);
-            CurBuildTree = null;
+            // Populate BuildTree
+            Model.BuildTreeItems.Clear();
+            ProjectTreeItemModel rootItem = MainViewModel.PopulateOneTreeItem(sc, null, null);
+            Model.BuildTreeItems.Add(rootItem);
+            Model.CurBuildTree = null;
 
             // Switch to Build View
             Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
@@ -456,26 +458,25 @@ namespace PEBakery.WPF
 
             Stopwatch watch = Stopwatch.StartNew();
 
+            // Run Updater
             Script newScript = null;
             string msg = string.Empty;
             Task task = Task.Run(() =>
             {
-                FileUpdaterOptions opts = new FileUpdaterOptions { Model = Model };
-                if (Setting.General_UseCustomUserAgent)
-                    opts.UserAgent = Setting.General_CustomUserAgent;
-
-                (newScript, msg) = FileUpdater.UpdateScript(p, sc, opts);
+                string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
+                FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
+                (newScript, msg) = updater.UpdateScript(sc, true);
             });
             task.Wait();
 
             if (newScript == null)
             { // Failure
-                MessageBox.Show(msg, "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(msg, "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 Global.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
             }
             else
             {
-                PostRefreshScript(CurMainTree, newScript);
+                Model.PostRefreshScript(Model.CurMainTree, newScript);
 
                 MessageBox.Show(msg, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 Global.Logger.SystemWrite(new LogInfo(LogState.Success, msg));
@@ -483,7 +484,7 @@ namespace PEBakery.WPF
 
             watch.Stop();
             TimeSpan t = watch.Elapsed;
-            Model.StatusBarText = $"{p.ProjectName} build done ({t:h\\:mm\\:ss})";
+            Model.StatusBarText = $"Updated {sc.Title} ({t:h\\:mm\\:ss})";
 
             // Turn off progress ring
             Model.BuildScriptFullProgressVisibility = Visibility.Visible;
@@ -491,8 +492,7 @@ namespace PEBakery.WPF
 
             // Build Ended, Switch to Normal View
             Model.SwitchNormalBuildInterface = true;
-            DrawScript(CurMainTree.Script);
-            */
+            Model.DisplayScript(Model.CurMainTree.Script);
         }
 
         private void ScriptSyntaxCheckCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -592,9 +592,9 @@ namespace PEBakery.WPF
                     watch.Start();
                     Model.DisplayScript(item.Script);
                     watch.Stop();
+
                     double msec = watch.Elapsed.TotalMilliseconds;
-                    string filename = Path.GetFileName(Model.CurMainTree.Script.TreePath);
-                    Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
+                    Model.StatusBarText = $"{item.Script.Title} rendered ({msec:0}ms)";
                 });
             }
         }

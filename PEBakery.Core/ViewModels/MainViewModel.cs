@@ -1146,7 +1146,7 @@ namespace PEBakery.Core.ViewModels
             });
         }
 
-        private void PostRefreshScript(ProjectTreeItemModel node, Script sc)
+        public void PostRefreshScript(ProjectTreeItemModel node, Script sc)
         {
             node.Script = sc;
             node.ParentCheckedPropagation();
@@ -1307,17 +1307,17 @@ namespace PEBakery.Core.ViewModels
                 ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
 
                 // Script Version
-                string verStr = StringEscaper.ProcessVersionString(sc.Version);
+                string verStr = StringEscaper.ProcessVersionString(sc.RawVersion);
                 if (verStr == null)
                 {
                     if (s != null)
                     { // Normal mode -> Notify script developer to fix
                         ScriptVersionText = "Error";
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.RawVersion}]"));
                     }
                     else
                     { // Build mode -> Suppress error log
-                        ScriptVersionText = sc.Version;
+                        ScriptVersionText = sc.RawVersion;
                     }
                 }
                 else

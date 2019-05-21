@@ -101,7 +101,7 @@ namespace PEBakery.Core.Commands
                         s.CancelWebGet = ct;
 
                         Task<HttpFileDownloader.Report> task = downloader.Download(url, tempPath, ct.Token);
-                        task.Wait();
+                        task.Wait(ct.Token);
 
                         report = task.Result;
                     }
@@ -155,7 +155,7 @@ namespace PEBakery.Core.Commands
                         s.CancelWebGet = ct;
 
                         Task<HttpFileDownloader.Report> task = downloader.Download(url, tempPath, ct.Token);
-                        task.Wait();
+                        task.Wait(ct.Token);
 
                         report = task.Result;
                     }

@@ -134,7 +134,7 @@ namespace PEBakery.Core
     HideProgress : (Bool)   
 
     [ToolTip]
-    <StringValue> : ToolTip to show at mousehover event, always start with __
+    <StringValue> : ToolTip to show at mouse-hover event, always start with __
     */
     #endregion
 
