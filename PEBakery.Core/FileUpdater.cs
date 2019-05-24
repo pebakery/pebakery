@@ -121,7 +121,7 @@ namespace PEBakery.Core
         #endregion
 
         #region UpdateScript, UpdateScripts
-        public (Script newScript, string msg) UpdateScript(Script sc, bool preserveInterfaceState)
+        public (Script newScript, string msg) UpdateScript(Script sc, bool preserveScriptState)
         {
             if (!sc.Sections.ContainsKey(UpdateSection))
                 return (null, $"Script {sc.Title} does not provide proper update information: {UpdateSection} section");
@@ -149,7 +149,7 @@ namespace PEBakery.Core
 
             // Backup interface state of original script
             InterfaceSectionBackup ifaceBak = null;
-            if (preserveInterfaceState)
+            if (preserveScriptState)
             {
                 ifaceBak = BackupInterface(sc);
             }
@@ -190,7 +190,7 @@ namespace PEBakery.Core
                     return (null, "Downloaded script is corrupted");
 
                 // Overwrite backup state to new script
-                if (preserveInterfaceState)
+                if (preserveScriptState)
                 {
                     Debug.Assert(ifaceBak != null, "Internal Error at FileUpdater.UpdateScript");
                     RestoreInterface(ref newScript, ifaceBak);

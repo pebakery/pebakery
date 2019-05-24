@@ -73,7 +73,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, "*", SearchOption.AllDirectories);
@@ -131,7 +131,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -184,7 +184,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7z(srcDir, destArchive, decompDir);
+                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(appendFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, appendFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -232,7 +232,7 @@ namespace PEBakery.Core.Tests.Command
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
                     string exeDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-                    EngineTests.ExtractWith7z(exeDir, destArchive, decompDir);
+                    EngineTests.ExtractWith7Z(exeDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcDir, wildcard, SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, wildcard, SearchOption.AllDirectories);
@@ -362,9 +362,11 @@ namespace PEBakery.Core.Tests.Command
             FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo", "Korean_IME_Logo.jpg");
             FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo", "Korean_IME_Logo.jpg"); // RAR2.9
             // Decompress password-protected archives
+            // ReSharper disable StringLiteralTypo
             FileTemplate("Password_ZipCrypto.zip", "Password", "Password.txt", "abcxyz");
             FileTemplate("Password_AES256.zip", "Password", "Password.txt", "abcxyz");
             FileTemplate("Password_AES256.7z", "Password", "Password.txt", "abcxyz");
+            // ReSharper restore StringLiteralTypo
         }
         #endregion
 

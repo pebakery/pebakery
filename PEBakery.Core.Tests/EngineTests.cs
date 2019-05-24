@@ -224,7 +224,7 @@ namespace PEBakery.Core.Tests
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <returns></returns>
@@ -239,7 +239,7 @@ namespace PEBakery.Core.Tests
         /// Eval for multiple lines of code
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="opType">Use null to check if rawCodes is not opitimzed</param>
+        /// <param name="opType">Use null to check if rawCodes is not optimized</param>
         /// <param name="rawCodes"></param>
         /// <param name="check"></param>
         /// <param name="cmds"></param>
@@ -428,7 +428,7 @@ namespace PEBakery.Core.Tests
         #endregion
 
         #region ExtractWith7z
-        public static int ExtractWith7z(string sampleDir, string srcArchive, string destDir)
+        public static int ExtractWith7Z(string sampleDir, string srcArchive, string destDir)
         {
             string binary;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
