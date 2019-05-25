@@ -1203,8 +1203,17 @@ namespace PEBakery.Core
     #region struct LoadScriptRuntimeOptions
     public struct LoadScriptRuntimeOptions
     {
+        /// <summary>
+        /// Do not check integrity of [Main] section
+        /// </summary>
         public bool IgnoreMain;
+        /// <summary>
+        /// Add to project tree if the script was not
+        /// </summary>
         public bool AddToProjectTree;
+        /// <summary>
+        /// Overwrite script if project tree already has it
+        /// </summary>
         public bool OverwriteToProjectTree;
     }
     #endregion

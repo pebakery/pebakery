@@ -52,6 +52,7 @@ namespace PEBakery.Core
     #endregion
 
     #region Classic updates.ini (No plan to implement)
+    // ReSharper disable CommentTypo
     /*
     - Classic updates.ini
     [Updates]
@@ -72,6 +73,7 @@ namespace PEBakery.Core
     Mozilla_Firefox_ESR.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR.Script,0b0a4fcaf7113aa4de40f7c10e1fd7a2,009,Mozilla#$sFirefox#$sESR#$s(P),(x86/x64#$sNT6x)#$sMozilla#$sFirefox#$sESR#$s(Extended#$sSupport#$sRelease).#$sCommitted#$sto#$syou#$c#$syour#$sprivacy#$sand#$san#$sopen#$sWeb.,ChrisR,http://TheOven.org,#3249630,2,
     Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
     */
+    // ReSharper restore CommentTypo
     #endregion
 
     public class FileUpdater
@@ -148,10 +150,10 @@ namespace PEBakery.Core
             }
 
             // Backup interface state of original script
-            InterfaceSectionBackup ifaceBak = null;
+            ScriptStateBackup ifaceBak = null;
             if (preserveScriptState)
             {
-                ifaceBak = BackupInterface(sc);
+                ifaceBak = BackupScriptState(sc);
             }
 
             string tempFile = FileHelper.GetTempFile();
@@ -176,25 +178,39 @@ namespace PEBakery.Core
                 if (!report.Result)
                     return (null, report.ErrorMsg);
 
+                // Check if remote script is valid
+                Script remoteScript = _p.LoadScriptRuntime(tempFile, new LoadScriptRuntimeOptions
+                {
+                    IgnoreMain = false,
+                    AddToProjectTree = false,
+                    OverwriteToProjectTree = false,
+                });
+                if (remoteScript == null)
+                    return (null, $"Remote script {sc.Title} is corrupted");
+
                 // Check downloaded script's version
                 string newVerStr = IniReadWriter.ReadKey(tempFile, "Main", "Version");
                 NumberHelper.VersionEx localSemVer = NumberHelper.VersionEx.Parse(sc.TidyVersion);
                 NumberHelper.VersionEx remoteSemVer = NumberHelper.VersionEx.Parse(newVerStr);
+                if (localSemVer == null)
+                    return (null, $"Local script {sc.Title} does not provide proper version information");
+                if (remoteSemVer == null)
+                    return (null, $"Remote script {sc.Title} does not provide proper version information");
                 if (remoteSemVer.CompareTo(localSemVer) != 1) // newSemVer < oldSemVer || newSemVer == oldSemVer
                     return (null, $"Remote script [{remoteSemVer}] is not newer than local script [{localSemVer}]");
-
-                // Overwrite backup state to new script
-                File.Copy(tempFile, sc.DirectRealPath, true);
-                Script newScript = _p.RefreshScript(sc);
-                if (newScript == null)
-                    return (null, "Downloaded script is corrupted");
 
                 // Overwrite backup state to new script
                 if (preserveScriptState)
                 {
                     Debug.Assert(ifaceBak != null, "Internal Error at FileUpdater.UpdateScript");
-                    RestoreInterface(ref newScript, ifaceBak);
+                    RestoreScriptState(remoteScript, ifaceBak);
                 }
+
+                // Overwrite backup state to new script
+                File.Copy(tempFile, sc.DirectRealPath, true);
+                Script newScript = _p.RefreshScript(sc);
+                if (newScript == null)
+                    return (null, $"Remote script {sc.Title} is corrupted");
 
                 return (newScript, $"Updated script [{sc.Title}] to [v{sc.RawVersion}] from [v{newScript.RawVersion}]");
             }
@@ -285,68 +301,92 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region {Backup,Restore}Interface
-        public class InterfaceSectionBackup
+        #region Backup & Restore Script
+        private class ScriptStateBackup
         {
-            public readonly string SectionName;
-            public readonly List<UIControl> ValueCtrls;
+            public readonly SelectedState Selected;
+            public readonly Dictionary<string, List<UIControl>> IfaceSectionDict;
 
-            public InterfaceSectionBackup(string sectionName, List<UIControl> valueCtrls)
+            public ScriptStateBackup(SelectedState selected, Dictionary<string, List<UIControl>> ifaceSectionDict)
             {
-                SectionName = sectionName;
-                ValueCtrls = valueCtrls;
+                Selected = selected;
+                IfaceSectionDict = ifaceSectionDict;
             }
         }
 
-        public static InterfaceSectionBackup BackupInterface(Script sc)
+        private static ScriptStateBackup BackupScriptState(Script sc)
         {
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
+            Dictionary<string, List<UIControl>> ifaceDict = 
+                new Dictionary<string, List<UIControl>>(ifaceSectionNames.Count, StringComparer.OrdinalIgnoreCase);
 
-            // Unable to interface section
-            if (ifaceSectionName == null)
-                return null;
-
-            // Collect uiCtrls which have value
-            List<UIControl> valueCtrls = new List<UIControl>();
-            foreach (UIControl uiCtrl in uiCtrls)
+            foreach (string ifaceSectionName in ifaceSectionNames)
             {
-                string value = uiCtrl.GetValue(false);
-                if (value != null)
-                    valueCtrls.Add(uiCtrl);
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+
+                // Unable to interface section
+                if (ifaceSectionName == null)
+                    return null;
+
+                // Collect uiCtrls which have value
+                List<UIControl> valueCtrls = new List<UIControl>(uiCtrls.Count);
+                foreach (UIControl uiCtrl in uiCtrls)
+                {
+                    string value = uiCtrl.GetValue(false);
+                    if (value != null)
+                        valueCtrls.Add(uiCtrl);
+                }
+
+                ifaceDict[ifaceSectionName] = valueCtrls;
             }
 
-            return new InterfaceSectionBackup(ifaceSectionName, valueCtrls);
+            return new ScriptStateBackup(sc.Selected, ifaceDict);
         }
 
-        public static bool RestoreInterface(ref Script sc, InterfaceSectionBackup backup)
+        /// <summary>
+        /// To the best-effort to restore script state
+        /// </summary>
+        /// <param name="sc"></param>
+        /// <param name="backup"></param>
+        /// <returns></returns>
+        private static Script RestoreScriptState(Script sc, ScriptStateBackup backup)
         {
-            (string ifaceSectionName, List<UIControl> uiCtrls, _) = sc.GetInterfaceControls();
+            List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
 
-            if (!ifaceSectionName.Equals(backup.SectionName, StringComparison.OrdinalIgnoreCase))
-                return false;
+            // Restore selected state
+            IniReadWriter.WriteKey(sc.RealPath, "Main", "Selected", backup.Selected.ToString());
 
-            List<UIControl> bakCtrls = backup.ValueCtrls;
-            List<UIControl> newCtrls = new List<UIControl>(uiCtrls.Count);
-            foreach (UIControl uiCtrl in uiCtrls)
+            // Restore interfaces
+            List<UIControl> newCtrls = new List<UIControl>();
+            foreach (var kv in backup.IfaceSectionDict)
             {
-                // Get old uiCtrl, equality identified by Type and Key.
-                UIControl bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
-                if (bakCtrl == null)
+                string ifaceSectionName = kv.Key;
+                List<UIControl> bakCtrls = kv.Value;
+
+                if (!ifaceSectionNames.Contains(ifaceSectionName))
                     continue;
 
-                // Get old value
-                string bakValue = bakCtrl.GetValue(false);
-                Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                foreach (UIControl uiCtrl in uiCtrls)
+                {
+                    // Get old uiCtrl, equality identified by Type and Key.
+                    UIControl bakCtrl = bakCtrls.FirstOrDefault(bak => bak.Type == uiCtrl.Type && bak.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase));
+                    if (bakCtrl == null)
+                        continue;
 
-                // Add to newCtrls only if apply was successful
-                if (uiCtrl.SetValue(bakValue, false, out _))
-                    newCtrls.Add(uiCtrl);
+                    // Get old value
+                    string bakValue = bakCtrl.GetValue(false);
+                    Debug.Assert(bakValue != null, "Internal Logic Error at FileUpdater.RestoreInterface");
+
+                    // Add to newCtrls only if apply was successful
+                    if (uiCtrl.SetValue(bakValue, false, out _))
+                        newCtrls.Add(uiCtrl);
+                }
             }
 
             // Write to file
             UIControl.Update(newCtrls);
-            sc = sc.Project.RefreshScript(sc);
-            return true;
+            return sc.Project.RefreshScript(sc);
         }
         #endregion
 

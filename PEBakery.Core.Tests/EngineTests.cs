@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Tests
 {
@@ -450,6 +451,25 @@ namespace PEBakery.Core.Tests
             proc.Start();
             proc.WaitForExit();
             return proc.ExitCode;
+        }
+        #endregion
+
+        #region FileEqual
+        public static bool FileEqual(string x, string y)
+        {
+            byte[] h1;
+            using (FileStream fs = new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                h1 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+            }
+
+            byte[] h2;
+            using (FileStream fs = new FileStream(y, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                h2 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+            }
+
+            return h1.SequenceEqual(h2);
         }
         #endregion
     }

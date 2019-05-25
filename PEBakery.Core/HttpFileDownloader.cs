@@ -21,7 +21,7 @@ namespace PEBakery.Core
         #region Constructor
         public HttpFileDownloader(MainViewModel m, int timeOut, string customUserAgent)
         {
-            _m = m ?? throw new ArgumentNullException(nameof(m));
+            _m = m;
             _timeOut = timeOut;
             _userAgent = customUserAgent ?? Engine.DefaultUserAgent;
         }
@@ -67,56 +67,61 @@ namespace PEBakery.Core
                     client.DefaultRequestHeaders.UserAgent.ParseAdd(_userAgent);
 
                     // Progress Report
-                    Progress<(long Position, long ContentLength, TimeSpan Elapsed)> progress = new Progress<(long, long, TimeSpan)>(x =>
+                    Progress<(long Position, long ContentLength, TimeSpan Elapsed)> progress = null;
+                    if (_m != null)
                     {
-                        (long position, long contentLength, TimeSpan t) = x;
-                        string elapsedStr = $"Elapsed Time: {(int)t.TotalHours}h {t.Minutes}m {t.Seconds}s";
+                        progress = new Progress<(long, long, TimeSpan)>(x =>
+                        {
+                            (long position, long contentLength, TimeSpan t) = x;
+                            string elapsedStr = $"Elapsed Time: {(int)t.TotalHours}h {t.Minutes}m {t.Seconds}s";
 
-                        if (0 < contentLength)
-                        { // Server returned proper content length.
-                            Debug.Assert(position <= contentLength);
-                            double percent = position * 100.0 / contentLength;
-                            _m.BuildCommandProgressValue = percent;
+                            if (0 < contentLength)
+                            { // Server returned proper content length.
+                                Debug.Assert(position <= contentLength);
+                                double percent = position * 100.0 / contentLength;
+                                _m.BuildCommandProgressValue = percent;
 
-                            string receivedStr = $"Received : {NumberHelper.ByteSizeToSIUnit(position, 1)} ({percent:0.0}%)";
+                                string receivedStr = $"Received : {NumberHelper.ByteSizeToSIUnit(position, 1)} ({percent:0.0}%)";
 
-                            int totalSec = (int)t.TotalSeconds;
-                            string total = NumberHelper.ByteSizeToSIUnit(contentLength, 1);
-                            if (totalSec == 0)
-                            {
-                                _m.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\n{receivedStr}\r\n{elapsedStr}";
+                                int totalSec = (int)t.TotalSeconds;
+                                string total = NumberHelper.ByteSizeToSIUnit(contentLength, 1);
+                                if (totalSec == 0)
+                                {
+                                    _m.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\n{receivedStr}\r\n{elapsedStr}";
+                                }
+                                else
+                                {
+                                    long bytePerSec = position / totalSec; // Byte per sec
+                                    string speedStr = NumberHelper.ByteSizeToSIUnit(bytePerSec, 1) + "/s"; // KB/s, MB/s, ...
+
+                                    // ReSharper disable once PossibleLossOfFraction
+                                    TimeSpan r = TimeSpan.FromSeconds((contentLength - position) / bytePerSec);
+                                    string remainStr = $"Remaining Time : {(int)r.TotalHours}h {r.Minutes}m {r.Seconds}s";
+                                    _m.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\n{receivedStr}\r\nSpeed : {speedStr}\r\n{elapsedStr}\r\n{remainStr}";
+                                }
                             }
                             else
-                            {
-                                long bytePerSec = position / totalSec; // Byte per sec
-                                string speedStr = NumberHelper.ByteSizeToSIUnit(bytePerSec, 1) + "/s"; // KB/s, MB/s, ...
+                            { // Ex) Response do not have content length info. Ex) Google Drive
+                                if (!_m.BuildCommandProgressIndeterminate)
+                                    _m.BuildCommandProgressIndeterminate = true;
 
-                                // ReSharper disable once PossibleLossOfFraction
-                                TimeSpan r = TimeSpan.FromSeconds((contentLength - position) / bytePerSec);
-                                string remainStr = $"Remaining Time : {(int)r.TotalHours}h {r.Minutes}m {r.Seconds}s";
-                                _m.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\n{receivedStr}\r\nSpeed : {speedStr}\r\n{elapsedStr}\r\n{remainStr}";
-                            }  
-                        }
-                        else
-                        { // Ex) Response do not have content length info. Ex) Google Drive
-                            if (!_m.BuildCommandProgressIndeterminate)
-                                _m.BuildCommandProgressIndeterminate = true;
+                                string receivedStr = $"Received : {NumberHelper.ByteSizeToSIUnit(position, 1)}";
 
-                            string receivedStr = $"Received : {NumberHelper.ByteSizeToSIUnit(position, 1)}";
-
-                            int totalSec = (int)t.TotalSeconds;
-                            if (totalSec == 0)
-                            {
-                                _m.BuildCommandProgressText = $"{url}\r\n{receivedStr}\r\n{elapsedStr}";
+                                int totalSec = (int)t.TotalSeconds;
+                                if (totalSec == 0)
+                                {
+                                    _m.BuildCommandProgressText = $"{url}\r\n{receivedStr}\r\n{elapsedStr}";
+                                }
+                                else
+                                {
+                                    long bytePerSec = position / totalSec; // Byte per sec
+                                    string speedStr = NumberHelper.ByteSizeToSIUnit(bytePerSec, 1) + "/s"; // KB/s, MB/s, ...
+                                    _m.BuildCommandProgressText = $"{url}\r\n{receivedStr}\r\nSpeed : {speedStr}\r\n{elapsedStr}";
+                                }
                             }
-                            else
-                            {
-                                long bytePerSec = position / totalSec; // Byte per sec
-                                string speedStr = NumberHelper.ByteSizeToSIUnit(bytePerSec, 1) + "/s"; // KB/s, MB/s, ...
-                                _m.BuildCommandProgressText = $"{url}\r\n{receivedStr}\r\nSpeed : {speedStr}\r\n{elapsedStr}";
-                            }
-                        }
-                    });
+                        });
+                    }
+                        
 
                     // Download file from uri
                     using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
