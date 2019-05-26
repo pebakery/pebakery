@@ -121,8 +121,7 @@ namespace PEBakery.Core
                             }
                         });
                     }
-                        
-
+                    
                     // Download file from uri
                     using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
                     {

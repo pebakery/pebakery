@@ -752,7 +752,7 @@ namespace PEBakery.Core
 
             // Semantic versioning - Ex) 5.1.2600 
             // If str does not conform to semantic versioning, return null
-            NumberHelper.VersionEx semVer = NumberHelper.VersionEx.Parse(str);
+            VersionEx semVer = VersionEx.Parse(str);
             return semVer?.ToString();
         }
         #endregion

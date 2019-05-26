@@ -1,6 +1,6 @@
 {
+  "meta_schema_ver": "0.1",
   "pebakery_min_ver": "0.9.6",
-  "pebakery_meta_ver": "1.0",
   "script_main": {
     "title": "PreserveInterface",
     "desc": "Standalone PreserveInterface",

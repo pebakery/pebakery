@@ -117,6 +117,7 @@
     <Compile Include="RegistryHelper.cs" />
     <Compile Include="StringHelper.cs" />
     <Compile Include="ThirdParty\TextEncodingDetect.cs" />
+    <Compile Include="VersionEx.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

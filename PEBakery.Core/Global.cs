@@ -49,6 +49,8 @@ namespace PEBakery.Core
             public const string ScriptCacheRevision = "r13";
             public const string StringVersion = "0.9.6";
             public const string StringVersionFull = "0.9.6 beta6";
+
+            public static readonly VersionEx VersionInstance = VersionEx.Parse(StringVersion);
         }
         #endregion
 

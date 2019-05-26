@@ -142,9 +142,12 @@ namespace PEBakery.Core.Tests
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                (Script newScript, _) = updater.UpdateScript(sc, true);
+                // ReSharper disable once UnusedVariable
+                (Script newScript, string errMsg) = updater.UpdateScript(sc, true);
 
                 // Validate updated script
+                if (newScript == null)
+                    Console.WriteLine(errMsg);
                 Assert.IsNotNull(newScript);
                 Assert.IsTrue(newScript.TidyVersion.Equals("1.2", StringComparison.Ordinal));
                 Assert.AreEqual(SelectedState.True, newScript.Selected);
@@ -157,9 +160,15 @@ namespace PEBakery.Core.Tests
                     new IniKey("Interface", "CheckBox01"),
                     new IniKey("Interface", "Button01"),
                     new IniKey("Interface", "CheckBox03"),
+                    new IniKey("ThirdInterface", "RadioGroup01"),
+                    new IniKey("FourthInterface", "RadioButton01"),
+                    new IniKey("FourthInterface", "RadioButton02"),
+                    new IniKey("FourthInterface", "RadioButton03"),
                 };
+
                 keys = IniReadWriter.ReadKeys(newScript.RealPath, keys);
-                Dictionary<string, string> ifaceDict = keys.ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, string> ifaceDict = keys.Where(x => x.Section.Equals("Interface"))
+                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
                 Assert.IsTrue(ifaceDict["checkbox02"].Equals("checkbox02,1,3,10,10,200,18,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["ComboBox02"].Equals("C,1,4,262,120,150,22,A,B,C", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["bvl_Top"].Equals("\"Updated\",1,12,254,101,228,70,8,Normal", StringComparison.Ordinal));
@@ -167,6 +176,18 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(ifaceDict["CheckBox01"].Equals("CheckBox01,1,3,42,98,173,18,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["Button01"].Equals("Button01,1,8,262,46,80,25,TestSection,0,False", StringComparison.Ordinal));
                 Assert.IsTrue(ifaceDict["CheckBox03"].Equals("CheckBox03,1,3,100,400,200,18,True", StringComparison.Ordinal));
+
+                ifaceDict = keys.Where(x => x.Section.Equals("ThirdInterface"))
+                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                Assert.IsTrue(ifaceDict["RadioGroup01"].Equals("RadioGroup01,1,14,10,30,150,60,A,B,C,1", StringComparison.Ordinal));
+
+                ifaceDict = keys.Where(x => x.Section.Equals("FourthInterface"))
+                    .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                Assert.IsTrue(ifaceDict["RadioButton01"].Equals("A,1,11,10,30,120,20,False", StringComparison.Ordinal));
+                Assert.IsTrue(ifaceDict["RadioButton02"].Equals("B,1,11,10,50,120,20,False", StringComparison.Ordinal));
+                Assert.IsTrue(ifaceDict["RadioButton03"].Equals("C,1,11,10,70,120,20,True", StringComparison.Ordinal));
+
+                Assert.IsFalse(IniReadWriter.ContainsSection(newScript.RealPath, "SecondInterface"));
             }
             finally
             {

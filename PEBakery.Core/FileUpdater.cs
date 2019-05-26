@@ -30,9 +30,12 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using PEBakery.Ini;
 
 namespace PEBakery.Core
@@ -125,6 +128,12 @@ namespace PEBakery.Core
         #region UpdateScript, UpdateScripts
         public (Script newScript, string msg) UpdateScript(Script sc, bool preserveScriptState)
         {
+            // Parse version of local script
+            VersionEx localSemVer = VersionEx.Parse(sc.TidyVersion);
+            if (localSemVer == null) // Never be triggered, because constructor of Script class check it
+                return (null, "Local script does not provide proper version information");
+
+            // Check local script's [Update] section
             if (!sc.Sections.ContainsKey(UpdateSection))
                 return (null, $"Script {sc.Title} does not provide proper update information: {UpdateSection} section");
             Dictionary<string, string> scUpdateDict = sc.Sections[UpdateSection].IniDict;
@@ -136,18 +145,20 @@ namespace PEBakery.Core
             if (scType == ScriptUpdateType.None)
                 return (null, $"Script {sc.Title} does not provide proper update information: {ScriptTypeKey} value");
 
-            // Get ScriptUrl
+            // Get ScriptUrl (.script and .meta.json)
             if (!scUpdateDict.ContainsKey(ScriptUrlKey))
                 return (null, $"Script {sc.Title} does not provide proper update information: {ScriptUrlKey}");
-            string url = scUpdateDict[ScriptUrlKey].TrimStart('/');
+            string scriptUrl = scUpdateDict[ScriptUrlKey].TrimStart('/');
 
             if (scType == ScriptUpdateType.Project)
             {
                 if (_projectBaseUrl == null)
                     return (null, $"Project {_p.ProjectName} does not provide proper update information: {BaseUrlKey}");
-                
-                url = $"{_projectBaseUrl}/{url}";
+
+                scriptUrl = $"{_projectBaseUrl}/{scriptUrl}";
             }
+
+            string metaJsonUrl = Path.ChangeExtension(scriptUrl, ".meta.json");
 
             // Backup interface state of original script
             ScriptStateBackup ifaceBak = null;
@@ -156,15 +167,19 @@ namespace PEBakery.Core
                 ifaceBak = BackupScriptState(sc);
             }
 
-            string tempFile = FileHelper.GetTempFile();
+            // Download files
+            string metaJsonFile = FileHelper.GetTempFile();
+            string tempScriptFile = FileHelper.GetTempFile();
             _m?.SetBuildCommandProgress("Download Progress");
             try
             {
                 HttpFileDownloader downloader = new HttpFileDownloader(_m, 10, _userAgent);
                 HttpFileDownloader.Report report;
+
+                // Download .meta.json
                 try
                 {
-                    Task<HttpFileDownloader.Report> task = downloader.Download(url, tempFile);
+                    Task<HttpFileDownloader.Report> task = downloader.Download(metaJsonUrl, metaJsonFile);
                     task.Wait();
 
                     report = task.Result;
@@ -174,29 +189,50 @@ namespace PEBakery.Core
                     report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
                 }
 
-                // Download failure
+                if (!report.Result)
+                    return (null, report.ErrorMsg);
+
+                // Check .meta.json
+                (MetaJsonRoot metaJson, string errMsg) = CheckMetaJson(metaJsonFile);
+                if (metaJson == null)
+                    return (null, errMsg);
+                if (metaJson.ScriptMain.ParsedVersion <= localSemVer)
+                    return (null, "Update is not available");
+
+                // Download .scripts
+                try
+                {
+                    Task<HttpFileDownloader.Report> task = downloader.Download(scriptUrl, tempScriptFile);
+                    task.Wait();
+
+                    report = task.Result;
+                }
+                catch (Exception e)
+                {
+                    report = new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+                }
+
                 if (!report.Result)
                     return (null, report.ErrorMsg);
 
                 // Check if remote script is valid
-                Script remoteScript = _p.LoadScriptRuntime(tempFile, new LoadScriptRuntimeOptions
+                Script remoteScript = _p.LoadScriptRuntime(tempScriptFile, new LoadScriptRuntimeOptions
                 {
                     IgnoreMain = false,
                     AddToProjectTree = false,
                     OverwriteToProjectTree = false,
                 });
                 if (remoteScript == null)
-                    return (null, $"Remote script {sc.Title} is corrupted");
+                    return (null, "Remote script is corrupted");
 
-                // Check downloaded script's version
-                string newVerStr = IniReadWriter.ReadKey(tempFile, "Main", "Version");
-                NumberHelper.VersionEx localSemVer = NumberHelper.VersionEx.Parse(sc.TidyVersion);
-                NumberHelper.VersionEx remoteSemVer = NumberHelper.VersionEx.Parse(newVerStr);
-                if (localSemVer == null)
-                    return (null, $"Local script {sc.Title} does not provide proper version information");
+                // Check downloaded script's version and check
+                string newVerStr = IniReadWriter.ReadKey(tempScriptFile, "Main", "Version");
+                VersionEx remoteSemVer = VersionEx.Parse(newVerStr);
                 if (remoteSemVer == null)
-                    return (null, $"Remote script {sc.Title} does not provide proper version information");
-                if (remoteSemVer.CompareTo(localSemVer) != 1) // newSemVer < oldSemVer || newSemVer == oldSemVer
+                    return (null, "Remote script does not provide proper version information");
+                if (!remoteSemVer.Equals(metaJson.ScriptMain.ParsedVersion))
+                    return (null, "Version of remote script is inconsistent with .meta.json");
+                if (remoteSemVer <= localSemVer)
                     return (null, $"Remote script [{remoteSemVer}] is not newer than local script [{localSemVer}]");
 
                 // Overwrite backup state to new script
@@ -206,8 +242,8 @@ namespace PEBakery.Core
                     RestoreScriptState(remoteScript, ifaceBak);
                 }
 
-                // Overwrite backup state to new script
-                File.Copy(tempFile, sc.DirectRealPath, true);
+                // Copy remote scripts into new script
+                File.Copy(tempScriptFile, sc.DirectRealPath, true);
                 Script newScript = _p.RefreshScript(sc);
                 if (newScript == null)
                     return (null, $"Remote script {sc.Title} is corrupted");
@@ -218,8 +254,8 @@ namespace PEBakery.Core
             {
                 _m?.ResetBuildCommandProgress();
 
-                if (File.Exists(tempFile))
-                    File.Delete(tempFile);
+                if (File.Exists(tempScriptFile))
+                    File.Delete(tempScriptFile);
             }
         }
 
@@ -317,7 +353,7 @@ namespace PEBakery.Core
         private static ScriptStateBackup BackupScriptState(Script sc)
         {
             List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
-            Dictionary<string, List<UIControl>> ifaceDict = 
+            Dictionary<string, List<UIControl>> ifaceDict =
                 new Dictionary<string, List<UIControl>>(ifaceSectionNames.Count, StringComparer.OrdinalIgnoreCase);
 
             foreach (string ifaceSectionName in ifaceSectionNames)
@@ -398,6 +434,136 @@ namespace PEBakery.Core
             if (str.Equals("Standalone", StringComparison.OrdinalIgnoreCase))
                 return ScriptUpdateType.Standalone;
             return ScriptUpdateType.None;
+        }
+        #endregion
+
+        #region .meta.json Class
+        /// <summary>
+        /// Check .meta.json
+        /// </summary>
+        /// <param name="metaJsonFile"></param>
+        public (MetaJsonRoot MetaJson, string ErrorMsg) CheckMetaJson(string metaJsonFile)
+        {
+            // Prepare JsonSerializer
+            JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
+            JsonSerializer serializer = JsonSerializer.Create(settings);
+
+            // Read json file
+            MetaJsonRoot jsonRoot;
+            using (StreamReader sr = new StreamReader(metaJsonFile, Encoding.UTF8, false))
+            using (JsonTextReader jr = new JsonTextReader(sr))
+            {
+                jsonRoot = serializer.Deserialize<MetaJsonRoot>(jr);
+            }
+
+            if (!jsonRoot.CheckSchema(out string errorMsg))
+                return (null, errorMsg);
+
+            if (!jsonRoot.ScriptMain.CheckSchema(out errorMsg))
+                return (null, errorMsg);
+
+            return (jsonRoot, null);
+        }
+
+        // ReSharper disable once ClassNeverInstantiated.Local
+        public class MetaJsonRoot
+        {
+            [JsonProperty(PropertyName = "meta_schema_ver")]
+            public string MetaSchemaVer { get; set; }
+            [JsonProperty(PropertyName = "pebakery_min_ver")]
+            public string PEBakeryMinVer { get; set; }
+            [JsonProperty(PropertyName = "script_main")]
+            public MetaJsonScriptMain ScriptMain { get; set; }
+
+            private static readonly VersionEx SchemaParseVer = new VersionEx(0, 1);
+
+            /// <summary>
+            /// Return true if schema is valid
+            /// </summary>
+            /// <returns></returns>
+            public bool CheckSchema(out string errorMsg)
+            {
+                errorMsg = string.Empty;
+
+                // Check if properties are not null
+                if (MetaSchemaVer == null || PEBakeryMinVer == null || ScriptMain == null)
+                {
+                    errorMsg = "Meta file of remote script is corrupted";
+                    return false;
+                }
+
+                // Check if version string are valid
+                VersionEx metaSchemaVer = VersionEx.Parse(MetaSchemaVer);
+                VersionEx engineMinVer = VersionEx.Parse(PEBakeryMinVer);
+                if (metaSchemaVer == null)
+                {
+                    errorMsg = "Meta file of remote script is corrupted";
+                    return false;
+                }
+                if (engineMinVer == null)
+                {
+                    errorMsg = "Meta file of remote script is corrupted";
+                    return false;
+                }
+
+                // Check meta_schema_ver
+                if (SchemaParseVer < metaSchemaVer)
+                {
+                    errorMsg = "Meta file of remote script requires newer version of PEBakery";
+                    return false;
+                }
+
+                // Check pebakery_min_ver
+                if (Global.Const.VersionInstance < engineMinVer)
+                {
+                    errorMsg = $"Remote script requires PEBakery {Global.Const.StringVersion} or higher";
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        public class MetaJsonScriptMain
+        {
+            [JsonProperty(PropertyName = "title")]
+            public string Title { get; set; }
+            [JsonProperty(PropertyName = "desc")]
+            public string Desc { get; set; }
+            [JsonProperty(PropertyName = "author")]
+            public string Author { get; set; }
+            [JsonProperty(PropertyName = "version")]
+            public string Version { get; set; }
+
+            private VersionEx _parsedVersion;
+            public VersionEx ParsedVersion
+            {
+                get
+                {
+                    if (_parsedVersion == null)
+                        _parsedVersion = VersionEx.Parse(Version);
+
+                    return _parsedVersion;
+                }
+            }
+
+            /// <summary>
+            /// Return true if schema is valid
+            /// </summary>
+            /// <returns></returns>
+            public bool CheckSchema(out string errorMsg)
+            {
+                errorMsg = string.Empty;
+
+                // Check if properties are not null
+                if (Title == null || Desc == null || Author == null || ParsedVersion == null)
+                {
+                    errorMsg = "Meta file of remote script is corrupted";
+                    return false;
+                }
+
+                return true;
+            }
         }
         #endregion
     }
