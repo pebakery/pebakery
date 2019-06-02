@@ -48,7 +48,7 @@ namespace PEBakery.Core
         #region Fields
         private readonly string _baseDir;
 
-        // These fields are being used only in preloading/loading stage
+        // These fields are being used only in pre-loading/loading stage
         private readonly List<string> _projectNames = new List<string>();
         /// <summary>
         /// Dictionary for script parsing information
@@ -606,7 +606,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields
-        private int _mainScriptIdx;
+        private int _mainScriptIdx = -1; // -1 means not initialized
         #endregion
 
         #region Properties
@@ -620,7 +620,8 @@ namespace PEBakery.Core
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
         public List<ScriptParseInfo> DirEntries { get; set; }
         public Variables Variables { get; set; }
-        public CompatOption Compat { get; private set; }
+        public CompatOption Compat { get; }
+        public ProjectUpdateInfo UpdateInfo { get; private set; }
 
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
@@ -730,9 +731,62 @@ namespace PEBakery.Core
             });
 
             // mainScriptIdx
-            SetMainScriptIdx();
+            SetMainScriptIndex();
+
+            // Read [ProjectUpdate]
+            ReadUpdateSection();
 
             return logs;
+        }
+        #endregion
+
+        #region SetMainScriptIdx, ReadUpdateSection
+        public void SetMainScriptIndex()
+        {
+            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
+            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
+            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
+        }
+
+        public void ReadUpdateSection()
+        {
+            Debug.Assert(_mainScriptIdx != -1, $"Please call {nameof(SetMainScriptIndex)} first");
+
+            // If [ProjectUpdateSection] is not available, return empty ProjectUpdateInfo
+            if (!MainScript.Sections.ContainsKey(ProjectUpdateInfo.Const.ProjectUpdateSection))
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+            
+            // Read [ProjectUpdateSection]
+            Dictionary<string, string> pUpdateDict = MainScript.Sections[ProjectUpdateInfo.Const.ProjectUpdateSection].IniDict;
+
+            // Read AvailableChannel=, SelectedChannel=, BaseUrl
+            if (!(pUpdateDict.ContainsKey(ProjectUpdateInfo.Const.SelectedChannel) &&
+                  pUpdateDict.ContainsKey(ProjectUpdateInfo.Const.BaseUrl)))
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+
+            // Check integrity of IniDict value
+            string selectedChannel = pUpdateDict[ProjectUpdateInfo.Const.SelectedChannel];
+            string pBaseUrl = pUpdateDict[ProjectUpdateInfo.Const.BaseUrl].TrimEnd('/');
+            if (StringHelper.GetUriProtocol(pBaseUrl) == null)
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+                return;
+            }
+
+            try
+            {
+                UpdateInfo = new ProjectUpdateInfo(selectedChannel, pBaseUrl);
+            }
+            catch (ArgumentException)
+            {
+                UpdateInfo = new ProjectUpdateInfo();
+            }
         }
         #endregion
 
@@ -746,10 +800,10 @@ namespace PEBakery.Core
         public void SortAllScripts()
         {
             AllScripts = InternalSortScripts(AllScripts, DirEntries);
-            SetMainScriptIdx();
+            SetMainScriptIndex();
         }
 
-        private List<Script> InternalSortScripts(List<Script> scripts, List<ScriptParseInfo> dpis)
+        private List<Script> InternalSortScripts(IReadOnlyList<Script> scripts, IReadOnlyList<ScriptParseInfo> dpis)
         {
             KwayTree<Script> scTree = new KwayTree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -831,13 +885,6 @@ namespace PEBakery.Core
                 newList.Add(sc);
 
             return newList;
-        }
-
-        public void SetMainScriptIdx()
-        {
-            Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1, $"[{AllScripts.Count(x => x.IsMainScript)}] MainScript reported instead of [1]");
-            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
-            Debug.Assert(_mainScriptIdx != -1, $"Unable to find MainScript of [{ProjectName}]");
         }
         #endregion
 

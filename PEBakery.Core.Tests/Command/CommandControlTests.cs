@@ -30,7 +30,7 @@ using PEBakery.Ini;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command
 {
@@ -39,7 +39,6 @@ namespace PEBakery.Core.Tests.Command
     {
         #region Set
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Set()
         {
@@ -257,108 +256,48 @@ namespace PEBakery.Core.Tests.Command
 
         #region AddVariables
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void AddVariables()
         {
-            AddVariables_1();
-            AddVariables_2();
-        }
-
-        public void AddVariables_1()
-        { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
             EngineState s = EngineTests.CreateEngineState();
-            const string tempFile = "AddVariables_1.script";
-            string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            string pDir = Path.GetDirectoryName(pPath);
-            Assert.IsNotNull(pDir);
-            Directory.CreateDirectory(pDir);
+            string scPath = Path.Combine(EngineTests.BaseDir, Project.Names.Projects, "TestSuite", "Control", "General.script");
 
-            using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
+            void Template(string rawCode, VarsType varsType)
             {
-                w.WriteLine("[TestVars]");
-                w.WriteLine("%A%=1");
-                w.WriteLine("%B%=2");
-                w.WriteLine("%C%=3");
+                EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+
+                Assert.IsTrue(s.Variables.GetValue(varsType, "A").Equals("1", StringComparison.Ordinal));
+                Assert.IsTrue(s.Variables.GetValue(varsType, "B").Equals("2", StringComparison.Ordinal));
+                Assert.IsTrue(s.Variables.GetValue(varsType, "C").Equals("3", StringComparison.Ordinal));
             }
 
-            string rawCode = $@"AddVariables,%ProjectTemp%\{tempFile},TestVars";
-            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
-
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "A").Equals("1", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "B").Equals("2", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "C").Equals("3", StringComparison.Ordinal));
-
-            File.Delete(pPath);
-        }
-
-        public void AddVariables_2()
-        { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
-            EngineState s = EngineTests.CreateEngineState();
-            const string tempFile = "AddVariables_2.script";
-            string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
-            string pDir = Path.GetDirectoryName(pPath);
-            Assert.IsNotNull(pDir);
-            Directory.CreateDirectory(pDir);
-
-            using (StreamWriter w = new StreamWriter(pPath, false, Encoding.UTF8))
-            {
-                w.WriteLine("[TestVars]");
-                w.WriteLine("%A%=1");
-                w.WriteLine("%B%=2");
-                w.WriteLine("%C%=3");
-            }
-
-            string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars,GLOBAL";
-            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
-
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "A").Equals("1", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "B").Equals("2", StringComparison.Ordinal));
-            Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "C").Equals("3", StringComparison.Ordinal));
-
-            File.Delete(pPath);
+            Template($"AddVariables,{scPath},TestVars", VarsType.Local);
+            Template($"AddVariables,{scPath},TestVars,GLOBAL", VarsType.Global);
         }
         #endregion
 
         #region Exit
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Exit()
         {
-            Exit_1();
-            Exit_2();
-        }
+            void Template(string rawCode, ErrorCheck check)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                EngineTests.Eval(s, rawCode, CodeType.Exit, check);
 
-        public void Exit_1()
-        {
-            const string rawCode = "Exit,UnitTest";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Warning);
+                Assert.IsTrue(s.PassCurrentScriptFlag);
+            }
 
-            Assert.IsTrue(s.PassCurrentScriptFlag);
-        }
-
-        public void Exit_2()
-        {
-            const string rawCode = "Exit,UnitTest,NOWARN";
-            EngineState s = EngineTests.CreateEngineState();
-            EngineTests.Eval(s, rawCode, CodeType.Exit, ErrorCheck.Success);
-
-            Assert.IsTrue(s.PassCurrentScriptFlag);
+            Template("Exit,UnitTest", ErrorCheck.Warning);
+            Template("Exit,UnitTest,NOWARN", ErrorCheck.Success);
         }
         #endregion
 
         #region Halt
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Halt()
-        {
-            Halt_1();
-        }
-
-        public void Halt_1()
         {
             const string rawCode = "Halt,UnitTest";
             EngineState s = EngineTests.CreateEngineState();
@@ -370,14 +309,8 @@ namespace PEBakery.Core.Tests.Command
 
         #region Wait
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Wait()
-        {
-            Wait_1();
-        }
-
-        public void Wait_1()
         {
             Stopwatch w = Stopwatch.StartNew();
 
@@ -392,25 +325,50 @@ namespace PEBakery.Core.Tests.Command
 
         #region Beep
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Beep()
         {
-            EngineState s = EngineTests.CreateEngineState();
+            void Template(string rawCode, BeepType beepType)
+            {
+                CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
+                CodeCommand cmd = parser.ParseStatement(rawCode);
 
-            Beep_Template(s, "Beep,OK", BeepType.OK);
-            Beep_Template(s, "Beep,Error", BeepType.Error);
-            Beep_Template(s, "Beep,Asterisk", BeepType.Asterisk);
-            Beep_Template(s, "Beep,Confirmation", BeepType.Confirmation);
+                CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
+                Assert.AreEqual(beepType, info.Type);
+            }
+
+            Template("Beep,OK", BeepType.OK);
+            Template("Beep,Error", BeepType.Error);
+            Template("Beep,Asterisk", BeepType.Asterisk);
+            Template("Beep,Confirmation", BeepType.Confirmation);
         }
+        #endregion
 
-        public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
+        #region GetParam
+        [TestMethod]
+        [TestCategory("CommandControl")]
+        public void GetParam()
         {
-            CodeParser parser = new CodeParser(EngineTests.DummySection(), Global.Setting, EngineTests.Project.Compat);
-            CodeCommand cmd = parser.ParseStatement(rawCode);
+            string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
+            
+            void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
+            {
+                void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = true;
 
-            CodeInfo_Beep info = cmd.Info.Cast<CodeInfo_Beep>();
-            Assert.IsTrue(info.Type == beepType);
+                (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetState, entrySection);
+                if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+                {
+                    string destStr = s.Variables.GetValue(VarsType.Local, "Dest");
+                    Assert.IsTrue(destStr.Equals("T", StringComparison.Ordinal));
+                }
+            }
+
+            ScriptTemplate(scPath, "Process-GetParam00", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam01", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam09", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam12", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam16", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam18", ErrorCheck.Warning);
         }
         #endregion
     }

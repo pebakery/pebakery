@@ -38,7 +38,6 @@ namespace PEBakery.Core.Tests.Command
     {
         #region Compress
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Compress()
         {
@@ -73,7 +72,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcFullPath, "*", SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, "*", SearchOption.AllDirectories);
@@ -131,7 +130,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -184,7 +183,7 @@ namespace PEBakery.Core.Tests.Command
                             break;
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
-                    EngineTests.ExtractWith7Z(srcDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(srcDir, destArchive, decompDir);
 
                     using (FileStream srcStream = new FileStream(appendFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(Path.Combine(decompDir, appendFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -232,7 +231,7 @@ namespace PEBakery.Core.Tests.Command
                     }
                     EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success);
                     string exeDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-                    EngineTests.ExtractWith7Z(exeDir, destArchive, decompDir);
+                    TestSetup.ExtractWith7Z(exeDir, destArchive, decompDir);
 
                     string[] srcFiles = Directory.GetFiles(srcDir, wildcard, SearchOption.AllDirectories);
                     string[] destFiles = Directory.GetFiles(decompDir, wildcard, SearchOption.AllDirectories);
@@ -276,7 +275,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region Decompress
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Decompress()
         {
@@ -372,7 +370,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region Expand
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void Expand()
         {
@@ -489,7 +486,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region CopyOrExpand
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandArchive")]
         public void CopyOrExpand()
         {

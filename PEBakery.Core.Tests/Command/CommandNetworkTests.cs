@@ -28,6 +28,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -38,29 +39,60 @@ namespace PEBakery.Core.Tests.Command
     [TestClass]
     public class CommandNetworkTests
     {
-        #region WebGet
-        private const string GnuHelloSigUrl = "https://ftp.gnu.org/gnu/hello/hello-2.10.tar.gz.sig";
-        private const string GnuHelloSigMD5 = "e6074bb23a0f184e00fdfb5c546b3bc2";
-        private const string GnuHelloSigSHA1 = "9dc7a584db576910856ac7aa5cffbaeefe9cf427";
-        private const string GnuHelloSigSHA256 = "4ea69de913428a4034d30dcdcb34ab84f5c4a76acf9040f3091f0d3fac411b60";
-        private const string GnuHelloSigSHA384 = "a4f4a418eb3c6d94bf5d6e2542055df12ef9f503a28a4d5ee02fedc56a5c6d11975e76327274c9a3e386cc39618e4445";
-        private const string GnuHelloSigSHA512 = "9584e91bc471c69a1e0ecb90fc69649170c0b43c966a3b932cf9c87c12c8b33f142af06520f61039189691a3e16b826f4e79dba17b7174c17f6bd6c77472c18c";
+        #region Fields and Properties
+        // ReSharper disable StringLiteralTypo
+        private static string _sampleSrcFile;
+        private static string _sampleFileUrl;
+        private static readonly Dictionary<HashHelper.HashType, string> SampleDigestDict =
+            new Dictionary<HashHelper.HashType, string>
+            {
+                [HashHelper.HashType.MD5] = "ddc79d50c92bba1ce70529c2999b2849",
+                [HashHelper.HashType.SHA1] = "c565c60689bd51a0a0f5013290c1dfbcefd4a318",
+                [HashHelper.HashType.SHA256] = "0f197f2578c73cf86e3b6c6f053a790dd2438102fb245694958c59f0cd1733d5",
+                [HashHelper.HashType.SHA384] = "ff284e5211277d364a15514b465afd86c980658af814decc7782786e56547bfe420fe0590b1c27005cba8e78a46f9b3c",
+                [HashHelper.HashType.SHA512] = "de4faf4db469c022c1731fde2a2383466e378709259d9734e64090a27b937c52a9a079867eefb6e7b0751815dc6362e6f162a6f2e6e01b7c3fa924ebe2decaee"
+            };
+        // ReSharper restore StringLiteralTypo
 
-        private readonly string[] UserAgentPool =
+        private readonly string[] _userAgentPool =
         {
-            // Edge (Windows 10 v1809)
-            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763",
+            // Edge 
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763", // Windows 10 v1809
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18362", // Windows 10 v1903
             // Firefox
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0",
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0",
+            @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0",
             // Chrome
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
             @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36",
         };
+        #endregion
 
+        #region Class Init/Cleanup
+#pragma warning disable IDE0060
+        [ClassInitialize]
+        public static void ServerInit(TestContext testContext)
+        {
+            TestSetup.StartWebFileServer();
+
+            _sampleSrcFile = Path.Combine(TestSetup.WebRoot, "CommandNetwork", "xz-a4.pdf");
+            _sampleFileUrl = $"{TestSetup.UrlRoot}/CommandNetwork/xz-a4.pdf";
+        }
+
+        [ClassCleanup]
+        public static void ServerCleanup()
+        {
+            _sampleSrcFile = null;
+            _sampleFileUrl = null;
+        }
+#pragma warning restore IDE0060
+        #endregion
+
+        #region WebGet
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandNetwork")]
         public void WebGet()
         {
@@ -70,37 +102,60 @@ namespace PEBakery.Core.Tests.Command
             }
             else
             {
-                Console.WriteLine(@"Network is offline. Ignoring WebGet tests...");
+                Console.WriteLine(@"Network is offline. Ignoring some WebGet tests...");
                 return;
             }
 
             EngineState s = EngineTests.CreateEngineState();
 
             // Avoid using PEBakery default user agent so often to specific homepage.
-            int idx = s.Random.Next(UserAgentPool.Length);
-            s.CustomUserAgent = UserAgentPool[idx];
+            int idx = s.Random.Next(_userAgentPool.Length);
+            s.CustomUserAgent = _userAgentPool[idx];
 
             // IsOnline ensures access only to GitHub!
-            WebGet_1(s);
-            WebGet_2(s);
-            WebGet_3(s);
+            WebGet_Http(s);
             WebGet_Compat(s);
             WebGet_TimeOut(s);
-            WebGet_MD5(s);
-            WebGet_SHA1(s);
-            WebGet_SHA256(s);
-            WebGet_SHA384(s);
-            WebGet_SHA512(s);
+            WebGet_HashSuccess(s);
             WebGet_HashError(s);
+
+            if (EngineTests.IsOnline)
+            {
+                WebGet_Https(s);
+                WebGet_NonExistDomain(s);
+            }
         }
 
-        public void WebGet_1(EngineState s)
+        public void WebGet_Http(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
+            string destFile = FileHelper.ReserveTempFile("html");
             try
             {
-                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                // Try downloading index.html from GitHub.
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+                string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\"";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
+
+                Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
+                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
+            }
+        }
+
+        public void WebGet_Https(EngineState s)
+        {
+            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
+            string destFile = FileHelper.ReserveTempFile("html");
+            try
+            {
                 s.ReturnValue = string.Empty;
 
                 // Try downloading index.html from GitHub.
@@ -117,40 +172,27 @@ namespace PEBakery.Core.Tests.Command
             }
         }
 
-        public void WebGet_2(EngineState s)
+        public void WebGet_NonExistDomain(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
+            string destFile = FileHelper.ReserveTempFile("html");
             try
             {
-                File.Delete(destFile);
                 s.ReturnValue = string.Empty;
 
+                // Test without NOERR
                 string testUrl = GenerateNeverExistUrl();
                 string rawCode = $"WebGet,\"{testUrl}/Sample.txt\",\"{destFile}\"";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Equals("0", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
-            }
-        }
 
-        public void WebGet_3(EngineState s)
-        {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
-            {
+                // Test with NOERR
                 File.Delete(destFile);
                 s.ReturnValue = string.Empty;
 
-                string testUrl = GenerateNeverExistUrl();
-                string rawCode = $"WebGet,\"{testUrl}/Sample.txt\",\"{destFile}\",NOERR";
+                rawCode = $"WebGet,\"{testUrl}/Sample.txt\",\"{destFile}\",NOERR";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Warning);
 
                 Assert.IsFalse(File.Exists(destFile));
@@ -172,10 +214,12 @@ namespace PEBakery.Core.Tests.Command
                 File.Delete(destFile);
                 s.ReturnValue = string.Empty;
 
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\"";
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+                string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\"";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success, new CompatOption { DisableExtendedSectionParams = true });
 
                 Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
                 Assert.IsTrue(s.ReturnValue.Length == 0);
             }
             finally
@@ -188,36 +232,36 @@ namespace PEBakery.Core.Tests.Command
         public void WebGet_TimeOut(EngineState s)
         {
             // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
+            string destFile = FileHelper.ReserveTempFile("html");
             try
             {
-                File.Delete(destFile);
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+
+                // Download index.html (1/3) - Success
                 s.ReturnValue = string.Empty;
 
-                // Try downloading index.html from GitHub.
-                string rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=30";
+                string rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",TimeOut=30";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
                 Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
 
-
+                // Download index.html (2/3) - Fail
                 File.Delete(destFile);
                 s.ReturnValue = string.Empty;
 
-                // Try downloading index.html from GitHub.
-                rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=0";
+                rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",TimeOut=0";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Length == 0);
 
-
+                // Download index.html (3/3) - Fail
                 File.Delete(destFile);
                 s.ReturnValue = string.Empty;
 
-                // Try downloading index.html from GitHub.
-                rawCode = $"WebGet,\"https://github.com\",\"{destFile}\",TimeOut=-10";
+                rawCode = $"WebGet,\"{TestSetup.UrlRoot}/index.html\",\"{destFile}\",TimeOut=-10";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
 
                 Assert.IsFalse(File.Exists(destFile));
@@ -229,130 +273,53 @@ namespace PEBakery.Core.Tests.Command
                     File.Delete(destFile);
             }
         }
-        public void WebGet_MD5(EngineState s)
+        public void WebGet_HashSuccess(EngineState s)
         {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
+            foreach (HashHelper.HashType hashType in SampleDigestDict.Keys)
             {
-                File.Delete(destFile);
-                s.ReturnValue = string.Empty;
+                string destFile = FileHelper.ReserveTempFile("html");
+                try
+                {
+                    s.ReturnValue = string.Empty;
 
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",MD5={GnuHelloSigMD5}";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
+                    string rawCode = $"WebGet,\"{_sampleFileUrl}\",\"{destFile}\",{hashType}={SampleDigestDict[hashType]}";
+                    EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
-                Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
-            }
-        }
-
-        public void WebGet_SHA1(EngineState s)
-        {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
-            {
-                File.Delete(destFile);
-                s.ReturnValue = string.Empty;
-
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",SHA1={GnuHelloSigSHA1}";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
-
-                Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
-            }
-        }
-
-        public void WebGet_SHA256(EngineState s)
-        {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
-            {
-                File.Delete(destFile);
-                s.ReturnValue = string.Empty;
-
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",SHA256={GnuHelloSigSHA256}";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
-
-                Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
-            }
-        }
-
-        public void WebGet_SHA384(EngineState s)
-        {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
-            {
-                File.Delete(destFile);
-                s.ReturnValue = string.Empty;
-
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",SHA384={GnuHelloSigSHA384}";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
-
-                Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
-            }
-        }
-
-        public void WebGet_SHA512(EngineState s)
-        {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
-            try
-            {
-                File.Delete(destFile);
-                s.ReturnValue = string.Empty;
-
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",SHA512={GnuHelloSigSHA512}";
-                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
-
-                Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(destFile))
-                    File.Delete(destFile);
+                    Assert.IsTrue(File.Exists(destFile));
+                    Assert.IsTrue(TestSetup.FileEqual(_sampleSrcFile, destFile));
+                    Assert.IsTrue(s.ReturnValue.Equals("200", StringComparison.Ordinal));
+                }
+                finally
+                {
+                    if (File.Exists(destFile))
+                        File.Delete(destFile);
+                }
             }
         }
 
         public void WebGet_HashError(EngineState s)
         {
-            // FileHelper.GetTempFile ensures very high possibility that returned temp file path is unique per call.
-            string destFile = FileHelper.GetTempFile("html");
+            string destFile = FileHelper.ReserveTempFile("html");
             try
             {
-                File.Delete(destFile);
+                // Try different MD5 digest
                 s.ReturnValue = string.Empty;
 
-                string rawCode = $"WebGet,\"{GnuHelloSigUrl}\",\"{destFile}\",MD5=00000000000000000000000000000000";
+                string rawCode = $"WebGet,\"{_sampleFileUrl}\",\"{destFile}\",MD5=00000000000000000000000000000000";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
 
                 Assert.IsFalse(File.Exists(destFile));
                 Assert.IsTrue(s.ReturnValue.Equals("1", StringComparison.Ordinal));
+
+                // Try invalid MD5 digest
+                File.Delete(destFile);
+                s.ReturnValue = string.Empty;
+
+                rawCode = $"WebGet,\"{_sampleFileUrl}\",\"{destFile}\",MD5=0";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+
+                Assert.IsFalse(File.Exists(destFile));
+                Assert.IsTrue(s.ReturnValue.Length == 0);
             }
             finally
             {
@@ -367,7 +334,7 @@ namespace PEBakery.Core.Tests.Command
         {
             // Let's try a domain which never exists.
             // No one wants to create a domain named 'Never-exist-domain + rand hex' in Korean, right?
-            const string baseUrl = "절대로존재하지않는도메인";
+            const string baseUrl = "절대로존재하지않는無도메인";
             Random rand = new Random();
             string testUrl = null;
             int counter = 0;

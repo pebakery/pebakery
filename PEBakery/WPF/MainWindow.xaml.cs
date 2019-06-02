@@ -460,26 +460,30 @@ namespace PEBakery.WPF
 
             // Run Updater
             Script newScript = null;
-            string msg = string.Empty;
+            LogInfo[] updaterLogs = null;
             Task task = Task.Run(() =>
             {
                 string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
                 FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
-                (newScript, msg) = updater.UpdateScript(sc, true);
+                newScript = updater.UpdateScript(sc, true);
+                updaterLogs = updater.Logs;
             });
             task.Wait();
 
+            // Log messages
+            Logger.SystemWrite(updaterLogs);
+
             if (newScript == null)
             { // Failure
-                MessageBox.Show(msg, "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, msg));
+                foreach (LogInfo log in updaterLogs.Where(x => x.State == LogState.Error))
+                    MessageBox.Show(log.Message, "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
                 Model.PostRefreshScript(Model.CurMainTree, newScript);
 
-                MessageBox.Show(msg, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                Global.Logger.SystemWrite(new LogInfo(LogState.Success, msg));
+                foreach (LogInfo log in updaterLogs.Where(x => x.State == LogState.Success))
+                    MessageBox.Show(log.Message, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             watch.Stop();

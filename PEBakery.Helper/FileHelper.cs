@@ -178,6 +178,34 @@ namespace PEBakery.Helper
                 return tempFile;
             }
         }
+
+        /// <summary>
+        /// Reserve temp file path with synchronization.
+        /// Returned temp file path is virtually unique per call.
+        /// </summary>
+        /// <remarks>
+        /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
+        /// </remarks>
+        public static string ReserveTempFile(string ext = null)
+        {
+            // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
+            string baseTempDir = BaseTempDir();
+
+            // Use tmp by default / Remove '.' from ext
+            ext = ext == null ? "tmp" : ext.Trim('.');
+
+            lock (TempPathLock)
+            {
+                string tempFile;
+                do
+                {
+                    int counter = Interlocked.Increment(ref _tempPathCounter);
+                    tempFile = Path.Combine(baseTempDir, ext.Length == 0 ? $"f{counter:X8}" : $"f{counter:X8}.{ext}");
+                }
+                while (Directory.Exists(tempFile) || File.Exists(tempFile));
+                return tempFile;
+            }
+        }
         #endregion
 
         #region Path Operations

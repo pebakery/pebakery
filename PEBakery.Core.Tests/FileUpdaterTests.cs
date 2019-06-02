@@ -31,10 +31,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Helper;
 using PEBakery.Ini;
@@ -45,11 +42,6 @@ namespace PEBakery.Core.Tests
     public class FileUpdaterTests
     {
         #region Fields and Properties
-        public const int ServerPort = 8380;
-        private static string _webRoot;
-
-        private static Task _fileServerTask;
-        private static CancellationTokenSource _fileServerCancel;
         #endregion
 
         #region Class Init/Cleanup
@@ -57,33 +49,12 @@ namespace PEBakery.Core.Tests
         [ClassInitialize]
         public static void ServerInit(TestContext testContext)
         {
-            _webRoot = Path.Combine(EngineTests.BaseDir, "Updater", "WebRoot");
-
-            IWebHost host = new WebHostBuilder()
-                .UseKestrel()
-                .UseWebRoot(_webRoot)
-                .Configure(app =>
-                {
-                    app.UseStaticFiles(new StaticFileOptions
-                    {
-                        ServeUnknownFileTypes = true,
-                        DefaultContentType = "text/plain",
-                    });
-                    app.UseDefaultFiles();
-                    app.UseDirectoryBrowser();
-                })
-                .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
-                .Build();
-
-            _fileServerCancel = new CancellationTokenSource();
-            _fileServerTask = host.RunAsync(_fileServerCancel.Token);
+            TestSetup.StartWebFileServer();
         }
 
         [ClassCleanup]
         public static void ServerCleanup()
         {
-            _fileServerCancel.Cancel();
-            _fileServerTask.Wait();
         }
 #pragma warning restore IDE0060
         #endregion
@@ -93,14 +64,11 @@ namespace PEBakery.Core.Tests
         [TestCategory("FileUpdater")]
         public void ServerStatus()
         {
-            const string fileName = "index.html";
-
-            string destDir = FileHelper.GetTempDir();
+            string destFile = FileHelper.ReserveTempFile("html");
             try
             {
-                string srcFile = Path.Combine(_webRoot, fileName);
-                string destFile = Path.Combine(destDir, fileName);
-                Uri uri = new Uri($"http://localhost:{ServerPort}/{fileName}");
+                string srcFile = Path.Combine(TestSetup.WebRoot, "index.html");
+                Uri uri = new Uri($"{TestSetup.UrlRoot}/index.html");
 
                 Task<bool> task = DownloadFile(uri, destFile);
                 task.Wait();
@@ -108,12 +76,12 @@ namespace PEBakery.Core.Tests
 
                 Assert.IsTrue(result);
                 Assert.IsTrue(File.Exists(destFile));
-                Assert.IsTrue(EngineTests.FileEqual(srcFile, destFile));
+                Assert.IsTrue(TestSetup.FileEqual(srcFile, destFile));
             }
             finally
             {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
             }
         }
         #endregion
@@ -127,7 +95,7 @@ namespace PEBakery.Core.Tests
             try
             {
                 // Prepare running FileUpdater
-                string srcScriptFile = Path.Combine(_webRoot, "pebakery", "Standalone", "PreserveInterface_r1.script");
+                string srcScriptFile = Path.Combine(TestSetup.WebRoot, "Updater", "Standalone", "PreserveInterface_r1.script");
                 string workScriptFile = Path.Combine(destDir, "PreserveInterface.script");
                 string workScriptTreePath = Path.Combine("TestSuite", "Updater", "PreserveInterface.script");
                 File.Copy(srcScriptFile, workScriptFile);
@@ -142,12 +110,11 @@ namespace PEBakery.Core.Tests
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                // ReSharper disable once UnusedVariable
-                (Script newScript, string errMsg) = updater.UpdateScript(sc, true);
+                Script newScript = updater.UpdateScript(sc, true);
 
                 // Validate updated script
-                if (newScript == null)
-                    Console.WriteLine(errMsg);
+                foreach (LogInfo log in updater.Logs)
+                    Console.WriteLine($"[{log.State}] {log.Message}");
                 Assert.IsNotNull(newScript);
                 Assert.IsTrue(newScript.TidyVersion.Equals("1.2", StringComparison.Ordinal));
                 Assert.AreEqual(SelectedState.True, newScript.Selected);

@@ -29,12 +29,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using PEBakery.Helper;
 
 namespace PEBakery.Core.Tests
 {
@@ -340,12 +336,12 @@ namespace PEBakery.Core.Tests
         #endregion
 
         #region EvalScript
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = "Process")
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, string entrySection = ScriptSection.Names.Process)
         {
             return EvalScript(treePath, check, null, entrySection);
         }
 
-        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> applySetting, string entrySection = "Process")
+        public static (EngineState, List<LogInfo>) EvalScript(string treePath, ErrorCheck check, Action<EngineState> setState, string entrySection = ScriptSection.Names.Process)
         {
             Script sc = Project.GetScriptByTreePath(treePath);
             Assert.IsNotNull(sc);
@@ -353,7 +349,7 @@ namespace PEBakery.Core.Tests
             EngineState s = CreateEngineState(true, sc, entrySection);
 
             Engine engine = new Engine(s);
-            applySetting?.Invoke(s);
+            setState?.Invoke(s);
 
             Task<int> t = engine.Run($"Test [{sc.Title}]");
             t.Wait();
@@ -425,51 +421,6 @@ namespace PEBakery.Core.Tests
                     Assert.Fail();
                     break;
             }
-        }
-        #endregion
-
-        #region ExtractWith7z
-        public static int ExtractWith7Z(string sampleDir, string srcArchive, string destDir)
-        {
-            string binary;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                binary = Path.Combine(sampleDir, "7z.exe");
-            else
-                throw new PlatformNotSupportedException();
-
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = binary,
-                    Arguments = $"x {srcArchive} -o{destDir}",
-                }
-            };
-            proc.Start();
-            proc.WaitForExit();
-            return proc.ExitCode;
-        }
-        #endregion
-
-        #region FileEqual
-        public static bool FileEqual(string x, string y)
-        {
-            byte[] h1;
-            using (FileStream fs = new FileStream(x, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                h1 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
-            }
-
-            byte[] h2;
-            using (FileStream fs = new FileStream(y, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                h2 = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
-            }
-
-            return h1.SequenceEqual(h2);
         }
         #endregion
     }

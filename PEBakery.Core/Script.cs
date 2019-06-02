@@ -914,54 +914,6 @@ namespace PEBakery.Core
             (List<UIControl> uiCtrls, List<LogInfo> errLogs) = UIParser.ParseStatements(lines, ifaceSection);
             return (uiCtrls, errLogs);
         }
-
-        public bool ApplyInterfaceControls(List<UIControl> newCtrls, string destSection = Const.Interface)
-        {
-            if (!Sections.ContainsKey(destSection))
-                return false; // Section [destSection] not found
-
-            (List<UIControl> oldCtrls, _) = GetInterfaceControls(destSection);
-            List<UIControl> updatedCtrls = new List<UIControl>();
-            foreach (UIControl newCtrl in newCtrls)
-            {
-                UIControl oldCtrl = oldCtrls.Find(x => x.Key.Equals(newCtrl.Key, StringComparison.OrdinalIgnoreCase));
-                if (oldCtrl == null)
-                { // newCtrl not exist in oldCtrls, append it.
-                    updatedCtrls.Add(newCtrl);
-                    continue;
-                }
-
-                // newCtrl exist in oldCtrls
-                oldCtrls.Remove(oldCtrl);
-                if (oldCtrl.Type != newCtrl.Type)
-                { // Keep oldCtrl. They are different uiCtrls even though they have same key.
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                string val = newCtrl.GetValue(false);
-                if (val == null)
-                { // This ctrl does not have 'value'. Keep oldCtrl.
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                if (!oldCtrl.SetValue(val, false, out _))
-                { // Unable to write value to oldCtrl
-                    updatedCtrls.Add(oldCtrl);
-                    continue;
-                }
-
-                // Apply newCtrl
-                updatedCtrls.Add(newCtrl);
-            }
-
-            // Append leftover oldCtrls
-            updatedCtrls.AddRange(oldCtrls);
-
-            // Write to file
-            return UIControl.Update(updatedCtrls);
-        }
         #endregion
 
         #region Virtual, Overriden Methods

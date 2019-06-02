@@ -1128,7 +1128,7 @@ namespace PEBakery.Core
         public Script CurrentScript;
         public int CurrentScriptIdx;
         public ScriptSection CurrentSection;
-        public Dictionary<int, string> CurSectionInParams;
+        public Dictionary<int, string> CurSectionInParams; // 1-based index
         public List<string> CurSectionOutParams = null;
         public string ReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>(16);

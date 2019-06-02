@@ -9,9 +9,9 @@ NoWarning=False
 Level=7
 InterfaceList=Interface,ThirdInterface,FourthInterface
 
-[Update]
-ScriptType=Standalone
-ScriptUrl=http://localhost:8380/pebakery/Standalone/PreserveInterface_r2.script
+[ScriptUpdate]
+UpdateType=Standalone
+Url=http://localhost:8380/Updater/Standalone/PreserveInterface_r2.script
 
 [Interface]
 checkbox02=checkbox02,1,3,10,10,200,18,True

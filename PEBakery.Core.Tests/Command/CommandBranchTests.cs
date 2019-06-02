@@ -41,7 +41,6 @@ namespace PEBakery.Core.Tests.Command
     {
         #region RunExec
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void RunExec()
         {
@@ -67,7 +66,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region Loop
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void Loop()
         {
@@ -102,7 +100,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfElse
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void IfElse()
         {
@@ -124,7 +121,6 @@ namespace PEBakery.Core.Tests.Command
 
         #region IfBeginEnd
         [TestMethod]
-        [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void IfBeginEnd()
         {
@@ -143,7 +139,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistFile
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistFile()
         {
@@ -174,7 +170,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistDir
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistDir()
         {
@@ -204,7 +200,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistSection
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistSection()
         {
@@ -248,7 +244,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistRegSubKey
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistRegSubKey()
         {
@@ -274,7 +270,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistRegValue
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistRegValue()
         {
@@ -306,7 +302,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistRegMulti
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistRegMulti()
         {
@@ -338,7 +334,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistVar
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistVar()
         {
@@ -380,7 +376,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region ExistMacro
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfExistMacro()
         {
@@ -424,7 +420,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistIndex
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfWimExistIndex()
         {
@@ -470,7 +466,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistFile
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfWimExistFile()
         {
@@ -498,7 +494,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistDir
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfWimExistDir()
         {
@@ -526,7 +522,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region WimExistImageInfo
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfWimExistImageInfo()
         {
@@ -566,7 +562,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region Equal, NotEqual (!=)
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfEqual()
         {
@@ -651,7 +647,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region Smaller
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfSmaller()
         {
@@ -708,7 +704,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region SmallerEqual
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfSmallerEqual()
         {
@@ -765,7 +761,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region Bigger
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfBigger()
         {
@@ -822,7 +818,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region BiggerEqual
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfBiggerEqual()
         {
@@ -879,7 +875,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region EqualX
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfEqualX()
         {
@@ -939,7 +935,7 @@ namespace PEBakery.Core.Tests.Command
 
         #region Ping
         [TestMethod]
-        [TestCategory("Command")]
+
         [TestCategory("CommandBranch")]
         public void IfPing()
         {

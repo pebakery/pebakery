@@ -46,7 +46,8 @@ namespace PEBakery.Core.Commands
             if (varType == Variables.VarKeyType.None)
             {
                 // Check Macro
-                if (Regex.Match(info.VarKey, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
+                if (Regex.Match(info.VarKey, Macro.MacroNameRegex,
+                    RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                 {
                     string macroCommand = StringEscaper.Preprocess(s, info.VarValue);
 
@@ -54,7 +55,7 @@ namespace PEBakery.Core.Commands
                         macroCommand = null;
 
                     LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Section, info.Permanent, false);
-                    return new List<LogInfo>(1) { log };
+                    return new List<LogInfo>(1) {log};
                 }
             }
 
@@ -64,45 +65,47 @@ namespace PEBakery.Core.Commands
             switch (info.Permanent)
             {
                 case true:
-                    { // Check if interface contains VarKey
-                        List<LogInfo> logs = new List<LogInfo>();
+                {
+                    // Check if interface contains VarKey
+                    List<LogInfo> logs = new List<LogInfo>();
 
-                        if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
+                    if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
+                        goto case false;
+
+                    #region Set interface control's value (Compat)
+                    if (s.CompatAllowSetModifyInterface)
+                    {
+                        string varKey = Variables.TrimPercentMark(info.VarKey);
+                        string finalValue = StringEscaper.Preprocess(s, info.VarValue);
+
+                        Script sc = cmd.Section.Script;
+                        ScriptSection iface = sc.GetInterfaceSection(out _);
+                        if (iface == null)
                             goto case false;
 
-                        #region Set interface control's value (Compat)
-                        if (s.CompatAllowSetModifyInterface)
+                        (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
+                        UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                        if (uiCtrl == null)
+                            goto case false;
+
+                        bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                        logs.AddRange(varLogs);
+
+                        if (valid)
                         {
-                            string varKey = Variables.TrimPercentMark(info.VarKey);
-                            string finalValue = StringEscaper.Preprocess(s, info.VarValue);
+                            // Update uiCtrl into file
+                            uiCtrl.Update();
 
-                            Script sc = cmd.Section.Script;
-                            ScriptSection iface = sc.GetInterfaceSection(out _);
-                            if (iface == null)
-                                goto case false;
-
-                            (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
-                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
-                            if (uiCtrl == null)
-                                goto case false;
-
-                            bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
-                            logs.AddRange(varLogs);
-
-                            if (valid)
-                            {
-                                // Update uiCtrl into file
-                                uiCtrl.Update();
-
-                                // Also update local variables
-                                logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
-                                return logs;
-                            }
+                            // Also update local variables
+                            logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
+                            return logs;
                         }
-
-                        goto case false;
-                        #endregion
                     }
+
+                    goto case false;
+                    #endregion
+                }
+
                 case false:
                 default:
                     return Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
@@ -110,7 +113,8 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
-        { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
+        {
+            // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
             CodeInfo_SetMacro info = cmd.Info.Cast<CodeInfo_SetMacro>();
 
             string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
@@ -119,7 +123,7 @@ namespace PEBakery.Core.Commands
                 macroCommand = null;
 
             LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Section, info.Global, info.Permanent);
-            return new List<LogInfo>(1) { log };
+            return new List<LogInfo>(1) {log};
         }
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
@@ -133,12 +137,14 @@ namespace PEBakery.Core.Commands
 
             // Does section exist?
             if (!sc.Sections.ContainsKey(sectionName))
-                return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
+                return new List<LogInfo>
+                    {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};
 
             // Directly read from file
             List<string> lines = IniReadWriter.ParseRawSection(sc.RealPath, sectionName);
             if (lines == null)
-                return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
+                return new List<LogInfo>
+                    {new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]")};
 
             // Add Variables
             Dictionary<string, string> varDict = IniReadWriter.ParseIniLinesVarStyle(lines);
@@ -150,7 +156,8 @@ namespace PEBakery.Core.Commands
             varLogs.AddRange(macroLogs);
 
             if (varLogs.Count == 0) // No variables
-                varLogs.Add(new LogInfo(LogState.Info, $"Script [{scriptFile}]'s section [{sectionName}] does not have any variables"));
+                varLogs.Add(new LogInfo(LogState.Info,
+                    $"Script [{scriptFile}]'s section [{sectionName}] does not have any variables"));
 
             return varLogs;
         }
@@ -239,6 +246,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        #region GetParam, PackParam
         public static List<LogInfo> GetParam(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(2);
@@ -299,7 +307,8 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                logs.Add(new LogInfo(LogState.Ignore, $"StartIndex [#{startIndex}] is invalid, [{varCount}] section parameters provided."));
+                logs.Add(new LogInfo(LogState.Ignore,
+                    $"StartIndex [#{startIndex}] is invalid, [{varCount}] section parameters provided."));
                 logs.AddRange(Variables.SetVariable(s, info.DestVar, string.Empty, false, false));
             }
 
@@ -308,5 +317,6 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+        #endregion
     }
 }
