@@ -839,7 +839,6 @@
                                 HorizontalAlignment="Stretch"
                                 Visibility="{Binding BuildScriptFullProgressVisibility}"
                                 Margin="20, 0, 20, 10">
-
                         <TextBlock Height="20"
                                    Margin="0, 0, 0, 5"
                                    TextAlignment="Left"
@@ -847,9 +846,10 @@
                                    Text="Script Progress" />
                         <ProgressBar Height="28"
                                      Margin="0, 0, 0, 10"
+                                     Visibility="{Binding BuildScriptProgressVisibility}"
                                      Minimum="0"
-                                     Maximum="{Binding BuildScriptProgressBarMax}"
-                                     Value="{Binding BuildScriptProgressBarValue}" />
+                                     Maximum="{Binding BuildScriptProgressMax}"
+                                     Value="{Binding BuildScriptProgressValue}" />
                         <TextBlock Height="20"
                                    Margin="0, 0, 0, 5"
                                    TextAlignment="Left"

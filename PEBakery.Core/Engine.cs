@@ -118,8 +118,8 @@ namespace PEBakery.Core
                 allLineCount += section.Lines.Length;
             }
 
-            s.MainViewModel.BuildScriptProgressBarMax = allLineCount;
-            s.MainViewModel.BuildScriptProgressBarValue = 0;
+            s.MainViewModel.BuildScriptProgressMax = allLineCount;
+            s.MainViewModel.BuildScriptProgressValue = 0;
             s.MainViewModel.BuildFullProgressBarValue = s.CurrentScriptIdx;
 
             // Skip displaying script information when running single scripts
@@ -864,7 +864,7 @@ namespace PEBakery.Core
             // Increase only if cmd resides in CurrentScript.
             // So if a section is from Macro, it will not be count.
             if (!s.ProcessedSectionHashes.Contains(cmd.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Section.Script))
-                s.MainViewModel.BuildScriptProgressBarValue += 1;
+                s.MainViewModel.BuildScriptProgressValue += 1;
 
             // Return logs, used in unit test
             return logs;

@@ -35,6 +35,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using Newtonsoft.Json;
 using PEBakery.Ini;
 
@@ -127,7 +128,7 @@ namespace PEBakery.Core
             public const string UpdateType = @"UpdateType";
             public const string Url = @"Url";
         }
-        
+
         private enum ScriptUpdateType
         {
             None,
@@ -158,6 +159,7 @@ namespace PEBakery.Core
         {
             _p = p;
             _m = mainViewModel;
+
             string userAgent = customUserAgent ?? Engine.DefaultUserAgent;
             _downloader = new HttpFileDownloader(_m, 10, userAgent);
         }
@@ -186,11 +188,15 @@ namespace PEBakery.Core
             _m?.SetBuildCommandProgress("Download Progress");
             try
             {
+                if (_m != null)
+                    _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
                 newScript = InternalUpdateOneScript(sc, scriptUrl, metaJsonUrl, stateBackup);
             }
             finally
             {
                 _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                    _m.BuildEchoMessage = string.Empty;
             }
             return newScript;
         }
@@ -198,7 +204,7 @@ namespace PEBakery.Core
         public List<Script> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
         {
             // Get update urls
-            List<(Script Script, string ScriptUrl, string MetaJsonUrl)> scriptWithUrls = 
+            List<(Script Script, string ScriptUrl, string MetaJsonUrl)> scriptWithUrls =
                 new List<(Script, string, string)>(scripts.Count);
 
             foreach (Script sc in scripts)
@@ -209,13 +215,19 @@ namespace PEBakery.Core
                     continue;
                 scriptWithUrls.Add((sc, scriptUrl, metaJsonUrl));
             }
-
+            
             List<Script> newScripts = new List<Script>(scriptWithUrls.Count);
+
+            if (_m != null)
+                _m.BuildScriptProgressVisibility = Visibility.Collapsed;
             _m?.SetBuildCommandProgress("Download Progress");
             try
             {
+                int i = 0;
                 foreach ((Script sc, string scriptUrl, string metaJsonUrl) in scriptWithUrls)
                 {
+                    i++;
+
                     ScriptStateBackup stateBackup = null;
                     if (preserveScriptState)
                     {
@@ -223,6 +235,8 @@ namespace PEBakery.Core
                         Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
                     }
 
+                    if (_m != null)
+                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{scriptWithUrls.Count})";
                     Script newScript = InternalUpdateOneScript(sc, scriptUrl, metaJsonUrl, stateBackup);
                     if (newScript != null)
                         newScripts.Add(newScript);
@@ -231,6 +245,11 @@ namespace PEBakery.Core
             finally
             {
                 _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                {
+                    _m.BuildEchoMessage = string.Empty;
+                    _m.BuildScriptProgressVisibility = Visibility.Visible;
+                }
             }
 
             return newScripts;
@@ -297,7 +316,7 @@ namespace PEBakery.Core
             VersionEx localSemVer = VersionEx.Parse(sc.TidyVersion);
             if (localSemVer == null) // Never be triggered, because constructor of Script class check it
             {
-                _logs.Add(new LogInfo(LogState.Error, "Local script does not provide proper version information"));
+                _logs.Add(new LogInfo(LogState.Error, $"Local script [{sc.Title}] does not provide proper version information"));
                 return null;
             }
 
@@ -322,7 +341,7 @@ namespace PEBakery.Core
                 }
                 if (metaJson.ScriptMain.ParsedVersion <= localSemVer)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, "Update is not available"));
+                    _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
                     return null;
                 }
 
@@ -343,7 +362,7 @@ namespace PEBakery.Core
                 });
                 if (remoteScript == null)
                 {
-                    LogInfo.LogErrorMessage(_logs, "Remote script is corrupted");
+                    LogInfo.LogErrorMessage(_logs, $"Remote script [{sc.Title}] is corrupted");
                     return null;
                 }
 
@@ -352,17 +371,17 @@ namespace PEBakery.Core
                 VersionEx remoteSemVer = VersionEx.Parse(newVerStr);
                 if (remoteSemVer == null)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, "Remote script does not provide proper version information"));
+                    _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] does not provide proper version information"));
                     return null;
                 }
                 if (!remoteSemVer.Equals(metaJson.ScriptMain.ParsedVersion))
                 {
-                    _logs.Add(new LogInfo(LogState.Error, "Version of remote script is inconsistent with .meta.json"));
+                    _logs.Add(new LogInfo(LogState.Error, $"Version of remote script [{sc.Title}] is inconsistent with .meta.json"));
                     return null;
                 }
                 if (remoteSemVer <= localSemVer)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, $"Remote script [{remoteSemVer}] is not newer than local script [{localSemVer}]"));
+                    _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] ({remoteSemVer}) is not newer than local script ({localSemVer})"));
                     return null;
                 }
 

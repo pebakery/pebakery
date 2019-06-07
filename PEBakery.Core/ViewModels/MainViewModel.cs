@@ -491,7 +491,7 @@ namespace PEBakery.Core.ViewModels
                 _switchNormalBuildInterface = value;
                 if (value)
                 { // To Normal View
-                    BuildScriptProgressBarValue = 0;
+                    BuildScriptProgressValue = 0;
                     BuildFullProgressBarValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.None;
 
@@ -503,7 +503,7 @@ namespace PEBakery.Core.ViewModels
                     BuildPosition = string.Empty;
                     BuildEchoMessage = string.Empty;
 
-                    BuildScriptProgressBarValue = 0;
+                    BuildScriptProgressValue = 0;
                     BuildFullProgressBarValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.Normal;
 
@@ -577,18 +577,25 @@ namespace PEBakery.Core.ViewModels
         }
 
         // ProgressBar
-        private double _buildScriptProgressBarMax = 100;
-        public double BuildScriptProgressBarMax
+        private Visibility _buildScriptProgressVisibility = Visibility.Visible;
+        public Visibility BuildScriptProgressVisibility
         {
-            get => _buildScriptProgressBarMax;
-            set => SetProperty(ref _buildScriptProgressBarMax, value);
+            get => _buildScriptProgressVisibility;
+            set => SetProperty(ref _buildScriptProgressVisibility, value);
         }
 
-        private double _buildScriptProgressBarValue = 0;
-        public double BuildScriptProgressBarValue
+        private double _buildScriptProgressMax = 100;
+        public double BuildScriptProgressMax
         {
-            get => _buildScriptProgressBarValue;
-            set => SetProperty(ref _buildScriptProgressBarValue, value);
+            get => _buildScriptProgressMax;
+            set => SetProperty(ref _buildScriptProgressMax, value);
+        }
+
+        private double _buildScriptProgressValue = 0;
+        public double BuildScriptProgressValue
+        {
+            get => _buildScriptProgressValue;
+            set => SetProperty(ref _buildScriptProgressValue, value);
         }
 
         private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
@@ -1403,7 +1410,7 @@ namespace PEBakery.Core.ViewModels
             return item;
         }
 
-        public static void ScriptListToTreeViewModel(Project project, List<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
+        public static void ScriptListToTreeViewModel(Project project, IReadOnlyList<Script> scList, bool assertDirExist, ProjectTreeItemModel projectRoot)
         {
             Dictionary<string, ProjectTreeItemModel> dirDict = new Dictionary<string, ProjectTreeItemModel>(StringComparer.OrdinalIgnoreCase);
 

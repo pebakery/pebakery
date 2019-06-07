@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -435,37 +436,61 @@ namespace PEBakery.WPF
 
         private void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // Force update of script interface
+            // MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            // Force update of script interface controls (if changed)
             ScriptUpdateButton.Focus();
 
-            // MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
-            
-            Script sc = Model.CurMainTree.Script;
+            // Must be filtered by ScriptCommand_CanExecute before
+            if (Model.WorkInProgress)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, $"Race condition with {nameof(Model.WorkInProgress)} happened in {nameof(ScriptUpdateCommand_Executed)}"));
+                return;
+            }
+
+            // Turn on progress ring
+            Model.WorkInProgress = true;
+
+            // Get instances of Script and Project
+            Script targetScript = Model.CurMainTree.Script;
             Project p = Model.CurMainTree.Script.Project;
+            bool updateMultipleScript = targetScript.Type == ScriptType.Directory;
 
             // Populate BuildTree
+            Script[] targetScripts = null;
+            ProjectTreeItemModel treeRoot = MainViewModel.PopulateOneTreeItem(targetScript, null, null);
             Model.BuildTreeItems.Clear();
-            ProjectTreeItemModel rootItem = MainViewModel.PopulateOneTreeItem(sc, null, null);
-            Model.BuildTreeItems.Add(rootItem);
+            if (updateMultipleScript)
+            { // Update a list of scripts
+                targetScripts = p.ActiveScripts
+                    .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                MainViewModel.ScriptListToTreeViewModel(p, targetScripts, false, treeRoot);
+                targetScripts = targetScripts.Where(x => x.Type != ScriptType.Directory).ToArray();
+            }
+            Model.BuildTreeItems.Add(treeRoot);
             Model.CurBuildTree = null;
+            Debug.Assert(updateMultipleScript && targetScript == null && targetScripts != null ||
+                         !updateMultipleScript && targetScript != null && targetScripts == null);
 
             // Switch to Build View
             Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
             Model.SwitchNormalBuildInterface = false;
 
-            // Turn on progress ring
-            Model.WorkInProgress = true;
-
             Stopwatch watch = Stopwatch.StartNew();
 
             // Run Updater
             Script newScript = null;
+            List<Script> newScripts = null;
             LogInfo[] updaterLogs = null;
             Task task = Task.Run(() =>
             {
                 string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
                 FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
-                newScript = updater.UpdateScript(sc, true);
+                if (updateMultipleScript) // Update a list of scripts
+                    newScripts = updater.UpdateScripts(targetScripts, true);
+                else
+                    newScript = updater.UpdateScript(targetScript, true);
                 updaterLogs = updater.Logs;
             });
             task.Wait();
@@ -473,26 +498,67 @@ namespace PEBakery.WPF
             // Log messages
             Logger.SystemWrite(updaterLogs);
 
-            if (newScript == null)
-            { // Failure
-                foreach (LogInfo log in updaterLogs.Where(x => x.State == LogState.Error))
-                    MessageBox.Show(log.Message, "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            else
-            {
-                Model.PostRefreshScript(Model.CurMainTree, newScript);
-
-                foreach (LogInfo log in updaterLogs.Where(x => x.State == LogState.Success))
-                    MessageBox.Show(log.Message, "Update Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
             watch.Stop();
             TimeSpan t = watch.Elapsed;
-            Model.StatusBarText = $"Updated {sc.Title} ({t:h\\:mm\\:ss})";
+            Model.StatusBarText = $"Updated {targetScript.Title} ({t:h\\:mm\\:ss})";
 
             // Turn off progress ring
             Model.BuildScriptFullProgressVisibility = Visibility.Visible;
             Model.WorkInProgress = false;
+
+            // Report results
+            if (updateMultipleScript)
+            { // Updated multiple scripts
+                MessageBoxImage msgBoxImage = MessageBoxImage.Information;
+                StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
+                b.AppendLine($"Successfully updated [{newScripts.Count}] scripts");
+
+                foreach (Script newSc in newScripts)
+                {
+                    ProjectTreeItemModel node = Model.CurMainTree.FindScriptByRealPath(newSc.RealPath);
+                    Debug.Assert(node != null, "Internal error with MainTree management");
+                    Model.PostRefreshScript(node, newSc);
+
+                    b.AppendLine($"- {newSc.Title}");
+                }
+
+                LogInfo[] errorLogs = updaterLogs.Where(x => x.State == LogState.Error).ToArray();
+                if (0 < errorLogs.Length)
+                { // Failure
+                    b.AppendLine();
+                    b.AppendLine($"Failed to update [{targetScripts.Length - newScripts.Count}] scripts");
+                    foreach (LogInfo log in errorLogs)
+                        b.AppendLine($"- {log.Message}");
+
+                    msgBoxImage = MessageBoxImage.Error;
+                }
+
+                MessageBox.Show(b.ToString(), "Update Results", MessageBoxButton.OK, msgBoxImage);
+            }
+            else
+            { // Updated single script
+                if (newScript != null)
+                { // Success
+                    ProjectTreeItemModel node = Model.CurMainTree.FindScriptByRealPath(newScript.RealPath);
+                    Debug.Assert(node != null, "Internal error with MainTree management");
+                    Model.PostRefreshScript(node, newScript);
+
+                    MessageBox.Show($"Successfully updated script {newScript.Title}", 
+                        "Update Success", 
+                        MessageBoxButton.OK, 
+                        MessageBoxImage.Information);
+                }
+                else
+                { // Failure
+                    StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
+
+                    LogInfo[] errorLogs = updaterLogs.Where(x => x.State == LogState.Error).ToArray();
+                    foreach (LogInfo log in errorLogs)
+                        b.AppendLine($"- {log.Message}");
+
+                    MessageBox.Show(b.ToString(), "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
 
             // Build Ended, Switch to Normal View
             Model.SwitchNormalBuildInterface = true;
