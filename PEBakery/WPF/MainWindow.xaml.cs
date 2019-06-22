@@ -436,8 +436,6 @@ namespace PEBakery.WPF
 
         private void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            // MessageBox.Show(this, "To be implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
-
             // Force update of script interface controls (if changed)
             ScriptUpdateButton.Focus();
 
@@ -470,8 +468,24 @@ namespace PEBakery.WPF
             }
             Model.BuildTreeItems.Add(treeRoot);
             Model.CurBuildTree = null;
-            Debug.Assert(updateMultipleScript && targetScript == null && targetScripts != null ||
-                         !updateMultipleScript && targetScript != null && targetScripts == null);
+            Debug.Assert(updateMultipleScript && targetScript != null && targetScripts != null ||
+                         !updateMultipleScript && targetScript != null && targetScripts == null, 
+                $"Check {updateMultipleScript}");
+
+
+            // Ask user for confirmation
+            string targetScriptCountStr;
+            if (updateMultipleScript)
+                targetScriptCountStr = targetScripts.Length == 1 ? "1 script" : $"{targetScripts.Length} scripts";
+            else
+                targetScriptCountStr = $"script [{targetScript.Title}]";
+            MessageBoxResult result = MessageBox.Show(this,
+                $"Are you sure to update {targetScriptCountStr}?",
+                "Continue?",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
+                return;
 
             // Switch to Build View
             Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;

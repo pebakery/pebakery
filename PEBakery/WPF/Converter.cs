@@ -552,7 +552,7 @@ namespace PEBakery.WPF
         }
     }
 
-    public class InverseBoolToVisibilityConverter : IValueConverter
+    public class InverseBooleanToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

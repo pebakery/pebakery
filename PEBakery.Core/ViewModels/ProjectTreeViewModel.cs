@@ -131,7 +131,7 @@ namespace PEBakery.Core.ViewModels
             }
             set
             {
-                Task.Run(() => 
+                Task.Run(() =>
                 {
                     SetChecked(value, true);
                 });

@@ -138,6 +138,7 @@
         <local:ScriptTitleConverter x:Key="ScriptTitleConverter" />
         <local:SelectedStateToVisibilityConverter x:Key="SelectedStateToVisibilityConverter" />
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
@@ -492,14 +493,6 @@
                                     <iconPacks:PackIconMaterial Kind="Pencil"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Update Script" 
-                                                Command="local:MainViewCommands.ScriptUpdateCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
                             <cc:CorrectMenuItem Header="Syntax Check"
                                                 Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
                                                 Grid.IsSharedSizeScope="True" 
@@ -535,6 +528,24 @@
                                 </cc:CorrectMenuItem.Visibility>
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="ChevronRight"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <!-- For updating script(s) -->
+                            <Separator />
+                            <cc:CorrectMenuItem Header="Update Script" 
+                                                Command="local:MainViewCommands.ScriptUpdateCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Update Children Scripts" 
+                                                Command="local:MainViewCommands.ScriptUpdateCommand"
+                                                Grid.IsSharedSizeScope="True" 
+                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Download"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <!-- For File and Directory Both -->

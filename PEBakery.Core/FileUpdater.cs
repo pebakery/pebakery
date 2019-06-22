@@ -80,7 +80,7 @@ namespace PEBakery.Core
     // ReSharper restore CommentTypo
     #endregion
 
-    #region
+    #region ProjectUpdateInfo
     public class ProjectUpdateInfo
     {
         #region Const
@@ -526,11 +526,19 @@ namespace PEBakery.Core
 
             // Read json file
             MetaJsonRoot jsonRoot;
-            using (StreamReader sr = new StreamReader(metaJsonFile, Encoding.UTF8, false))
-            using (JsonTextReader jr = new JsonTextReader(sr))
+            try
             {
-                jsonRoot = serializer.Deserialize<MetaJsonRoot>(jr);
+                using (StreamReader sr = new StreamReader(metaJsonFile, Encoding.UTF8, false))
+                using (JsonTextReader jr = new JsonTextReader(sr))
+                {
+                    jsonRoot = serializer.Deserialize<MetaJsonRoot>(jr);
+                }
             }
+            catch (JsonReaderException e)
+            {
+                return (null, $"Unable to parse corrupted remote script meta file\r\n\r\n{e.Message}");
+            }
+           
 
             if (!jsonRoot.CheckSchema(out string errorMsg))
                 return (null, errorMsg);
