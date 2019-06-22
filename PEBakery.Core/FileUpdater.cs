@@ -536,7 +536,7 @@ namespace PEBakery.Core
             }
             catch (JsonReaderException e)
             {
-                return (null, $"Unable to parse corrupted remote script meta file\r\n\r\n{e.Message}");
+                return (null, $"Remote script meta file is corrupted: {e.Message}");
             }
            
 

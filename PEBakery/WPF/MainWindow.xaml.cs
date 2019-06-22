@@ -446,79 +446,90 @@ namespace PEBakery.WPF
                 return;
             }
 
-            // Turn on progress ring
-            Model.WorkInProgress = true;
-
             // Get instances of Script and Project
             Script targetScript = Model.CurMainTree.Script;
             Project p = Model.CurMainTree.Script.Project;
             bool updateMultipleScript = targetScript.Type == ScriptType.Directory;
 
-            // Populate BuildTree
+            // Define local variables
             Script[] targetScripts = null;
-            ProjectTreeItemModel treeRoot = MainViewModel.PopulateOneTreeItem(targetScript, null, null);
-            Model.BuildTreeItems.Clear();
-            if (updateMultipleScript)
-            { // Update a list of scripts
-                targetScripts = p.ActiveScripts
-                    .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
-                MainViewModel.ScriptListToTreeViewModel(p, targetScripts, false, treeRoot);
-                targetScripts = targetScripts.Where(x => x.Type != ScriptType.Directory).ToArray();
-            }
-            Model.BuildTreeItems.Add(treeRoot);
-            Model.CurBuildTree = null;
-            Debug.Assert(updateMultipleScript && targetScript != null && targetScripts != null ||
-                         !updateMultipleScript && targetScript != null && targetScripts == null, 
-                $"Check {updateMultipleScript}");
-
-
-            // Ask user for confirmation
-            string targetScriptCountStr;
-            if (updateMultipleScript)
-                targetScriptCountStr = targetScripts.Length == 1 ? "1 script" : $"{targetScripts.Length} scripts";
-            else
-                targetScriptCountStr = $"script [{targetScript.Title}]";
-            MessageBoxResult result = MessageBox.Show(this,
-                $"Are you sure to update {targetScriptCountStr}?",
-                "Continue?",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            if (result == MessageBoxResult.No)
-                return;
-
-            // Switch to Build View
-            Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
-            Model.SwitchNormalBuildInterface = false;
-
-            Stopwatch watch = Stopwatch.StartNew();
-
-            // Run Updater
             Script newScript = null;
             List<Script> newScripts = null;
             LogInfo[] updaterLogs = null;
-            Task task = Task.Run(() =>
+
+            // Turn on progress ring
+            Model.WorkInProgress = true;
+            try
             {
-                string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
-                FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
-                if (updateMultipleScript) // Update a list of scripts
-                    newScripts = updater.UpdateScripts(targetScripts, true);
+                // Populate BuildTree
+                ProjectTreeItemModel treeRoot = MainViewModel.PopulateOneTreeItem(targetScript, null, null);
+                Model.BuildTreeItems.Clear();
+                if (updateMultipleScript)
+                { // Update a list of scripts
+                    targetScripts = p.AllScripts
+                        .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    MainViewModel.ScriptListToTreeViewModel(p, targetScripts, false, treeRoot);
+                    targetScripts = targetScripts.Where(x => x.Type != ScriptType.Directory).ToArray();
+                }
+                Model.BuildTreeItems.Add(treeRoot);
+                Model.CurBuildTree = null;
+                Debug.Assert(updateMultipleScript && targetScript != null && targetScripts != null ||
+                             !updateMultipleScript && targetScript != null && targetScripts == null,
+                    $"Check {updateMultipleScript}");
+
+                // Ask user for confirmation
+                string targetScriptCountStr;
+                if (updateMultipleScript)
+                    targetScriptCountStr = targetScripts.Length == 1 ? "1 script" : $"{targetScripts.Length} scripts";
                 else
-                    newScript = updater.UpdateScript(targetScript, true);
-                updaterLogs = updater.Logs;
-            });
-            task.Wait();
+                    targetScriptCountStr = $"script [{targetScript.Title}]";
+                MessageBoxResult result = MessageBox.Show(this,
+                    $"Are you sure to update {targetScriptCountStr}?",
+                    "Continue?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (result == MessageBoxResult.No)
+                    return;
 
-            // Log messages
-            Logger.SystemWrite(updaterLogs);
+                // Switch to Build View
+                Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+                Model.SwitchNormalBuildInterface = false;
 
-            watch.Stop();
-            TimeSpan t = watch.Elapsed;
-            Model.StatusBarText = $"Updated {targetScript.Title} ({t:h\\:mm\\:ss})";
+                Stopwatch watch = Stopwatch.StartNew();
 
-            // Turn off progress ring
-            Model.BuildScriptFullProgressVisibility = Visibility.Visible;
-            Model.WorkInProgress = false;
+                // Run Updater
+                Task task = Task.Run(() =>
+                {
+                    string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
+                    FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
+                    if (updateMultipleScript) // Update a list of scripts
+                        newScripts = updater.UpdateScripts(targetScripts, true);
+                    else
+                        newScript = updater.UpdateScript(targetScript, true);
+                    updaterLogs = updater.Logs;
+                });
+                task.Wait();
+
+                // Log messages
+                Logger.SystemWrite(updaterLogs);
+
+                watch.Stop();
+                TimeSpan t = watch.Elapsed;
+                Model.StatusBarText = $"Updated {targetScript.Title} ({t:h\\:mm\\:ss})";
+
+                
+            }
+            finally
+            {
+                // Turn off progress ring
+                Model.BuildScriptFullProgressVisibility = Visibility.Visible;
+                Model.WorkInProgress = false;
+
+                // Build Ended, Switch to Normal View
+                Model.SwitchNormalBuildInterface = true;
+                Model.DisplayScript(Model.CurMainTree.Script);
+            }
 
             // Report results
             if (updateMultipleScript)
@@ -557,9 +568,9 @@ namespace PEBakery.WPF
                     Debug.Assert(node != null, "Internal error with MainTree management");
                     Model.PostRefreshScript(node, newScript);
 
-                    MessageBox.Show($"Successfully updated script {newScript.Title}", 
-                        "Update Success", 
-                        MessageBoxButton.OK, 
+                    MessageBox.Show($"Successfully updated script {newScript.Title}",
+                        "Update Success",
+                        MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
                 else
@@ -574,9 +585,8 @@ namespace PEBakery.WPF
                 }
             }
 
-            // Build Ended, Switch to Normal View
-            Model.SwitchNormalBuildInterface = true;
-            Model.DisplayScript(Model.CurMainTree.Script);
+
+
         }
 
         private void ScriptSyntaxCheckCommand_Executed(object sender, ExecutedRoutedEventArgs e)
