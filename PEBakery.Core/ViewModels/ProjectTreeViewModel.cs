@@ -278,6 +278,35 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region IsDirectoryUpdateable
+        public bool IsDirectoryUpdateable()
+        {
+            if (Script.Type != ScriptType.Directory)
+                return Script.IsUpdateable;
+
+            Queue<ProjectTreeItemModel> itemQueue = new Queue<ProjectTreeItemModel>();
+            itemQueue.Enqueue(this);
+            while (0 < itemQueue.Count)
+            {
+                ProjectTreeItemModel item = itemQueue.Dequeue();
+                Script sc = item.Script;
+
+                if (sc.Type == ScriptType.Directory)
+                {
+                    foreach (ProjectTreeItemModel subItem in item.Children)
+                        itemQueue.Enqueue(subItem);
+                }
+                else
+                {
+                    if (sc.IsUpdateable)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+        #endregion
+
         #region ToString
         public override string ToString() => _sc.Title;
         #endregion

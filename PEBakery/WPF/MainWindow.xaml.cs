@@ -301,7 +301,14 @@ namespace PEBakery.WPF
                 return;
 
             Script targetScript = Model.CurMainTree.Script;
-            e.CanExecute = targetScript.IsUpdateable;
+            if (targetScript.Type == ScriptType.Directory)
+            {
+                e.CanExecute = Model.CurMainTree.IsDirectoryUpdateable();
+            }
+            else
+            {
+                e.CanExecute = targetScript.IsUpdateable;
+            }
         }
 
         private async void ScriptRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
