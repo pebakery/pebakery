@@ -678,6 +678,24 @@ namespace PEBakery.Helper
             }
         }
         #endregion
+
+        #region WindowsVersion
+        /// <summary>
+        /// Instead of deprecated Environment.OSVersion, call Win32 GetVersion directly
+        /// </summary>
+        /// <returns></returns>
+        public static Version WindowsVersion()
+        {
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
+            int major = fvi.FileMajorPart;
+            int minor = fvi.FileMinorPart;
+            int build = fvi.FileBuildPart;
+            int revision = fvi.FilePrivatePart;
+            return new Version(major, minor, build, revision);
+        }
+        #endregion
     }
     #endregion
 }

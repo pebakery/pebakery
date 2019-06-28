@@ -171,30 +171,30 @@ namespace PEBakery.Core
             #region Envrionment Variables
             if (_opts.EnableEnvironmentVariables)
             {
-                List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
+                List<(string WinVarName, string PebVarName)> envVarNames = new List<(string, string)>
                 { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
-                    new Tuple<string, string>("TEMP", "TempDir"),
-                    new Tuple<string, string>("USERNAME", "UserName"),
-                    new Tuple<string, string>("USERPROFILE", "UserProfile"),
-                    new Tuple<string, string>("WINDIR", "WindowsDir"),
-                    new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
+                    ("TEMP", "TempDir"),
+                    ("USERNAME", "UserName"),
+                    ("USERPROFILE", "UserProfile"),
+                    ("WINDIR", "WindowsDir"),
+                    ("ProgramFiles", "ProgramFilesDir"),
                 };
 
                 if (Environment.Is64BitProcess)
-                    envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
+                    envVarNames.Add(("ProgramFiles(x86)", "ProgramFilesDir_x86"));
 
-                foreach (var tuple in envVarNames)
+                foreach ((string winVarName, string pebVarName) in envVarNames)
                 {
-                    string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
+                    string envValue = Environment.GetEnvironmentVariable(winVarName);
                     if (envValue == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
+                        logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{winVarName}%] from Windows"));
                     else
-                        logs.Add(SetValue(VarsType.Fixed, tuple.Item2, envValue));
+                        logs.Add(SetValue(VarsType.Fixed, pebVarName, envValue));
                 }
 
                 // WindowsVersion
-                OperatingSystem sysVer = Environment.OSVersion;
-                logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
+                Version winVer = FileHelper.WindowsVersion();
+                logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", winVer.ToString()));
 
                 // Processor Type
                 switch (RuntimeInformation.OSArchitecture)
@@ -426,7 +426,7 @@ namespace PEBakery.Core
         /// <summary>
         /// Overwrite variable dicts.
         /// </summary>
-        /// <param name="type">Which variables to ovewrite?</param>
+        /// <param name="type">Which variables are to be overwritten?</param>
         /// <param name="varDict">New key-values to overwrite.</param>
         /// <param name="keysToPreserve">Do not overwrite these variables. It should not contain %. </param>
         public void SetVarDict(VarsType type, Dictionary<string, string> varDict, IEnumerable<string> keysToPreserve = null)
@@ -473,14 +473,14 @@ namespace PEBakery.Core
             }
         }
 
-        public LogInfo SetValue(VarsType type, string key, string _value, bool expand = false)
+        public LogInfo SetValue(VarsType type, string key, string value, bool expand = false)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
             if (expand)
-                vars[key] = Expand(_value);
+                vars[key] = Expand(value);
             else
-                vars[key] = _value;
+                vars[key] = value;
 
             return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
         }
