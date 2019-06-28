@@ -151,6 +151,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ScriptSection.cs" />
     <Compile Include="SyntaxChecker.cs" />
     <Compile Include="Commands\CommandArchive.cs" />
     <Compile Include="Commands\CommandBranch.cs" />

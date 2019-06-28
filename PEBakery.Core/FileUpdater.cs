@@ -121,22 +121,6 @@ namespace PEBakery.Core
     #region FileHelper
     public class FileUpdater
     {
-        #region Const and Enum
-        public static class Const
-        {
-            public const string ScriptUpdateSection = @"ScriptUpdate";
-            public const string UpdateType = @"UpdateType";
-            public const string Url = @"Url";
-        }
-
-        private enum ScriptUpdateType
-        {
-            None,
-            Project,
-            Standalone,
-        }
-        #endregion
-
         #region Fields and Properties
         private readonly Project _p;
         private readonly MainViewModel _m;
@@ -168,13 +152,8 @@ namespace PEBakery.Core
         #region Update one or more scripts
         public Script UpdateScript(Script sc, bool preserveScriptState)
         {
-            // Get update urls
-            (string scriptUrl, string metaJsonUrl) = GetScriptUpdateUrl(sc, out string errorMsg);
-            if (errorMsg != null)
-            {
-                _logs.Add(new LogInfo(LogState.Error, errorMsg));
+            if (!sc.IsUpdateable)
                 return null;
-            }
 
             // Backup interface state of original script
             ScriptStateBackup stateBackup = null;
@@ -190,7 +169,7 @@ namespace PEBakery.Core
             {
                 if (_m != null)
                     _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
-                newScript = InternalUpdateOneScript(sc, scriptUrl, metaJsonUrl, stateBackup);
+                newScript = InternalUpdateOneScript(sc, stateBackup);
             }
             finally
             {
@@ -203,20 +182,10 @@ namespace PEBakery.Core
 
         public List<Script> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
         {
-            // Get update urls
-            List<(Script Script, string ScriptUrl, string MetaJsonUrl)> scriptWithUrls =
-                new List<(Script, string, string)>(scripts.Count);
-
-            foreach (Script sc in scripts)
-            {
-                // Skip if ScriptUpdateUrl is not available
-                (string scriptUrl, string metaJsonUrl) = GetScriptUpdateUrl(sc, out string errorMsg);
-                if (errorMsg != null)
-                    continue;
-                scriptWithUrls.Add((sc, scriptUrl, metaJsonUrl));
-            }
+            // Get updateable scripts urls
+            Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
             
-            List<Script> newScripts = new List<Script>(scriptWithUrls.Count);
+            List<Script> newScripts = new List<Script>(updateableScripts.Length);
 
             if (_m != null)
                 _m.BuildScriptProgressVisibility = Visibility.Collapsed;
@@ -224,7 +193,7 @@ namespace PEBakery.Core
             try
             {
                 int i = 0;
-                foreach ((Script sc, string scriptUrl, string metaJsonUrl) in scriptWithUrls)
+                foreach (Script sc in updateableScripts)
                 {
                     i++;
 
@@ -236,8 +205,8 @@ namespace PEBakery.Core
                     }
 
                     if (_m != null)
-                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{scriptWithUrls.Count})";
-                    Script newScript = InternalUpdateOneScript(sc, scriptUrl, metaJsonUrl, stateBackup);
+                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
+                    Script newScript = InternalUpdateOneScript(sc, stateBackup);
                     if (newScript != null)
                         newScripts.Add(newScript);
                 }
@@ -255,63 +224,9 @@ namespace PEBakery.Core
             return newScripts;
         }
 
-        private (string ScriptUrl, string MetaJsonUrl) GetScriptUpdateUrl(Script sc, out string errorMsg)
+        private Script InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
         {
-            errorMsg = null;
 
-            // Check local script's [ScriptUpdate] section
-            if (!sc.Sections.ContainsKey(Const.ScriptUpdateSection))
-            {
-                errorMsg = $"Script [{sc.Title}] does not have update information";
-                return (null, null);
-            }
-
-            Dictionary<string, string> scUpdateDict = sc.Sections[Const.ScriptUpdateSection].IniDict;
-
-            // Parse ScriptUpdateType
-            if (!scUpdateDict.ContainsKey(Const.UpdateType))
-            {
-                errorMsg = $"Script [{sc.Title}] does not have update information";
-                return (null, null);
-            }
-
-            ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[Const.UpdateType]);
-            if (scType == ScriptUpdateType.None)
-            {
-                errorMsg = $"Script [{sc.Title}] does not have update information";
-                return (null, null);
-            }
-
-            // Get ScriptUrl (.script and .meta.json)
-            if (!scUpdateDict.ContainsKey(Const.Url))
-            {
-                errorMsg = $"Script [{sc.Title}] does not have update information";
-                return (null, null);
-            }
-
-            string scriptUrl = scUpdateDict[Const.Url].TrimStart('/');
-
-            // ScriptUpdateType is a project
-            if (scType == ScriptUpdateType.Project)
-            {
-                if (_p.UpdateInfo.Empty)
-                {
-                    errorMsg = $"Project [{_p.ProjectName}] does not have update information";
-                    return (null, null);
-                }
-
-                string baseUrl = _p.UpdateInfo.BaseUrl;
-                string channel = _p.UpdateInfo.SelectedChannel;
-                scriptUrl = $"{baseUrl}/{channel}/{scriptUrl}";
-            }
-
-            // ChannelKey
-            string metaJsonUrl = Path.ChangeExtension(scriptUrl, ".meta.json");
-            return (scriptUrl, metaJsonUrl);
-        }
-
-        private Script InternalUpdateOneScript(Script sc, string scriptUrl, string metaJsonUrl, ScriptStateBackup stateBackup)
-        {
             // Parse version of local script
             VersionEx localSemVer = VersionEx.Parse(sc.TidyVersion);
             if (localSemVer == null) // Never be triggered, because constructor of Script class check it
@@ -320,6 +235,8 @@ namespace PEBakery.Core
                 return null;
             }
 
+            string updateUrl = sc.UpdateUrl;
+            string metaJsonUrl = Path.ChangeExtension(updateUrl, ".meta.json");
             string metaJsonFile = FileHelper.GetTempFile();
             string tempScriptFile = FileHelper.GetTempFile();
             try
@@ -346,7 +263,7 @@ namespace PEBakery.Core
                 }
 
                 // Download .scripts
-                report = DownloadFile(scriptUrl, tempScriptFile);
+                report = DownloadFile(updateUrl, tempScriptFile);
                 if (!report.Result)
                 {
                     LogInfo.LogErrorMessage(_logs, report.ErrorMsg);
@@ -416,10 +333,10 @@ namespace PEBakery.Core
         #endregion
 
         #region UpdateProject
-        public List<LogInfo> UpdateProject()
+        public void UpdateProject()
         {
-            List<LogInfo> logs = new List<LogInfo>();
-            return logs;
+            // List<LogInfo> logs = new List<LogInfo>();
+            // return logs;
         }
         #endregion
 
@@ -539,7 +456,6 @@ namespace PEBakery.Core
                 return (null, $"Remote script meta file is corrupted: {e.Message}");
             }
            
-
             if (!jsonRoot.CheckSchema(out string errorMsg))
                 return (null, errorMsg);
 
@@ -652,15 +568,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Utility
-        private static ScriptUpdateType ParseScriptUpdateType(string str)
-        {
-            if (str.Equals("Project", StringComparison.OrdinalIgnoreCase))
-                return ScriptUpdateType.Project;
-            if (str.Equals("Standalone", StringComparison.OrdinalIgnoreCase))
-                return ScriptUpdateType.Standalone;
-            return ScriptUpdateType.None;
-        }
-
         private HttpFileDownloader.Report DownloadFile(string url, string destFile)
         {
             try

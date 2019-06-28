@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -64,19 +63,21 @@ namespace PEBakery.Core
             public const string SourceDir = "SourceDir";
             public const string TargetDir = "TargetDir";
             public const string IsoFile = "ISOFile";
-
+            // Update
+            public const string UpdateType = @"UpdateType";
+            public const string Url = @"Url";
         }
         #endregion
 
         #region Fields
+        private bool _fullyParsed;
+        private readonly ScriptType _type;
         private readonly string _realPath;
         [NonSerialized]
-        private string _treePath; // No readonly for script caching
-        private bool _fullyParsed;
+        private string _treePath; // _treePath should bypass serialization
         private readonly bool _isMainScript;
         private readonly bool _ignoreMain;
         private Dictionary<string, ScriptSection> _sections;
-        private readonly ScriptType _type;
         [NonSerialized]
         private Project _project;
         [NonSerialized]
@@ -93,6 +94,7 @@ namespace PEBakery.Core
         private SelectedState _selected = SelectedState.None;
         private bool _mandatory = false;
         private readonly List<string> _interfaceList = new List<string>();
+        private string _updateUrl;
         #endregion
 
         #region Properties
@@ -241,6 +243,9 @@ namespace PEBakery.Core
                 return ScriptSection.Names.Interface;
             }
         }
+
+        public string UpdateUrl => _updateUrl;
+        public bool IsUpdateable => _updateUrl != null || Type == ScriptType.Directory;
         #endregion
 
         #region Constructor
@@ -261,6 +266,7 @@ namespace PEBakery.Core
             _linkLoaded = false;
             _isDirLink = isDirLink;
             _ignoreMain = ignoreMain;
+            _updateUrl = null;
 
             if (level is int lv)
                 _level = lv;
@@ -330,7 +336,7 @@ namespace PEBakery.Core
                     idx++;
                     ReadOnlySpan<char> line = rawLine.AsSpan().Trim();
 
-                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) && 
+                    if (line.StartsWith("[".AsSpan(), StringComparison.Ordinal) &&
                         line.EndsWith("]".AsSpan(), StringComparison.Ordinal))
                     { // Start of section
                         FinalizeSection();
@@ -403,7 +409,7 @@ namespace PEBakery.Core
             return type;
         }
 
-        private void DetectTypeOfNotInspectedCodeSection()
+        private void DetectTypeFromNotInspectedCodeSection()
         {
             foreach (var kv in _sections.Where(x => x.Value.Type == SectionType.NotInspected))
             {
@@ -600,7 +606,7 @@ namespace PEBakery.Core
                                         if (_sections.ContainsKey(next))
                                         {
                                             if (!_interfaceList.Contains(next, StringComparer.OrdinalIgnoreCase))
-                                                _interfaceList.Add(next);    
+                                                _interfaceList.Add(next);
                                         }
                                         else
                                         {
@@ -614,6 +620,7 @@ namespace PEBakery.Core
                                 }
                             } // InterfaceList
                             _link = null;
+                            ParseUpdateUrl();
                         }
                         else // _ignoreMain is true
                         {
@@ -639,7 +646,7 @@ namespace PEBakery.Core
                             _interfaceList.Add(InterfaceSectionName);
 
                         // Inspect previously not inspected sections
-                        DetectTypeOfNotInspectedCodeSection();
+                        DetectTypeFromNotInspectedCodeSection();
                     }
                     break;
                 default:
@@ -730,6 +737,59 @@ namespace PEBakery.Core
             }
 
             return filteredPaths.ToArray();
+        }
+        #endregion
+
+        #region GetUpdateUrl
+        private enum ScriptUpdateType
+        {
+            None,
+            Project,
+            Standalone,
+        }
+
+        private static ScriptUpdateType ParseScriptUpdateType(string str)
+        {
+            if (str.Equals("Project", StringComparison.OrdinalIgnoreCase))
+                return ScriptUpdateType.Project;
+            if (str.Equals("Standalone", StringComparison.OrdinalIgnoreCase))
+                return ScriptUpdateType.Standalone;
+            return ScriptUpdateType.None;
+        }
+
+        private void ParseUpdateUrl()
+        {
+            // Check local script's [ScriptUpdate] section
+            if (!Sections.ContainsKey(ScriptSection.Names.ScriptUpdate))
+                return;
+
+            Dictionary<string, string> scUpdateDict = Sections[ScriptSection.Names.ScriptUpdate].IniDict;
+
+            // Parse ScriptUpdateType
+            if (!scUpdateDict.ContainsKey(Const.UpdateType))
+                return;
+
+            ScriptUpdateType scType = ParseScriptUpdateType(scUpdateDict[Const.UpdateType]);
+            if (scType == ScriptUpdateType.None)
+                return;
+
+            // Get ScriptUrl (.script and .meta.json)
+            if (!scUpdateDict.ContainsKey(Const.Url))
+                return;
+            string updateUrl = scUpdateDict[Const.Url].TrimStart('/');
+
+            // ScriptUpdateType is a project
+            if (scType == ScriptUpdateType.Project)
+            {
+                if (Project.UpdateInfo.Empty)
+                    return;
+
+                string baseUrl = Project.UpdateInfo.BaseUrl;
+                string channel = Project.UpdateInfo.SelectedChannel;
+                updateUrl = $"{baseUrl}/{channel}/{updateUrl}";
+            }
+
+            _updateUrl = updateUrl;
         }
         #endregion
 
@@ -878,7 +938,7 @@ namespace PEBakery.Core
                                 // Inspect pattern `IniWrite,%ScriptFile%,Main,Interface,<NewInterfaceSection>`
                                 if (info.FileName.Equals(Const.ScriptFile, StringComparison.OrdinalIgnoreCase) &&
                                     info.Section.Equals(ScriptSection.Names.Main, StringComparison.OrdinalIgnoreCase) &&
-                                    info.Key.Equals(ScriptSection.Names.Interface,StringComparison.OrdinalIgnoreCase) &&
+                                    info.Key.Equals(ScriptSection.Names.Interface, StringComparison.OrdinalIgnoreCase) &&
                                     !CodeParser.StringContainsVariable(info.Value))
                                 {
                                     if (!interfaceSections.Contains(info.Value, StringComparer.OrdinalIgnoreCase))
@@ -1006,278 +1066,6 @@ namespace PEBakery.Core
         {
             return x.GetHashCode();
         }
-    }
-    #endregion
-
-    #region ScriptSection
-    [Serializable]
-    public class ScriptSection : IEquatable<ScriptSection>
-    {
-        #region (Const) Known Section Names
-        public static class Names
-        {
-            public const string Main = "Main";
-            public const string Variables = "Variables";
-            public const string Interface = "Interface";
-            public const string Process = "Process";
-            public const string EncodedFolders = "EncodedFolders";
-            public const string AuthorEncoded = "AuthorEncoded";
-            public const string InterfaceEncoded = "InterfaceEncoded";
-            public const string EncodedFileInterfaceEncodedPrefix = "EncodedFile-InterfaceEncoded-";
-            public const string EncodedFileAuthorEncodedPrefix = "EncodedFile-AuthorEncoded-";
-            public const string EncodedFilePrefix = "EncodedFile-";
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static string GetEncodedSectionName(string folderName, string fileName) => $"EncodedFile-{folderName}-{fileName}";
-        }
-        #endregion
-
-        #region Fields and Properties
-        public Script Script { get; }
-        public Project Project => Script.Project;
-        public string Name { get; }
-        public SectionType Type { get; set; }
-        public int LineIdx { get; }
-        private string[] _lines;
-
-        /// <summary>
-        /// Get lines of this section (Cached)
-        /// </summary>
-        public string[] Lines
-        {
-            get
-            {
-                // Already loaded, return directly
-                if (_lines != null)
-                    return _lines;
-
-                // Load from file, do not keep in memory.
-                // AttachEncodeLazy sections are too large.
-                if (Type == SectionType.AttachEncodeLazy)
-                {
-                    List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
-                    return lineList?.ToArray();
-                }
-
-                // Load from file, keep in memory.
-                if (LoadLines())
-                    return _lines;
-
-                return null;
-            }
-        }
-
-        private Dictionary<string, string> _iniDict;
-        public Dictionary<string, string> IniDict
-        {
-            get
-            {
-                // Already loaded, return directly
-                if (_iniDict != null)
-                    return _iniDict;
-
-                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
-                if (Type == SectionType.AttachEncodeLazy)
-                    return IniReadWriter.ParseIniSectionToDict(Script.RealPath, Name);
-
-                // Load from file, keep in memory.
-                if (LoadIniDict())
-                    return _iniDict;
-                return null;
-            }
-        }
-        #endregion
-
-        #region Constructor
-        public ScriptSection(Script script, string sectionName, SectionType type, bool load, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            LineIdx = lineIdx;
-            if (load)
-                LoadLines();
-        }
-
-        public ScriptSection(Script script, string sectionName, SectionType type, string[] lines, int lineIdx)
-        {
-            Script = script;
-            Name = sectionName;
-            Type = type;
-            LineIdx = lineIdx;
-            _lines = lines;
-        }
-        #endregion
-
-        #region Load, Unload, Reload
-        /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
-        /// </summary>
-        /// <returns>
-        /// true if _lines is valid
-        /// </returns>
-        public bool LoadLines()
-        {
-            if (_lines != null)
-                return true;
-
-            List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
-            if (lineList == null)
-                return false;
-            _lines = lineList.ToArray();
-            return true;
-        }
-
-        /// <summary>
-        /// If _lines is not loaded from file, load it to memory.
-        /// </summary>
-        /// <returns>
-        /// true if _lines is valid
-        /// </returns>
-        public bool LoadIniDict()
-        {
-            bool result = true;
-            if (_lines == null)
-                result = LoadLines();
-            if (!result) // LoadLines failed
-                return false;
-
-            if (_iniDict != null)
-                return true;
-
-            _iniDict = IniReadWriter.ParseIniLinesIniStyle(_lines);
-            return true;
-        }
-
-        /// <summary>
-        /// Discard loaded _lines.
-        /// </summary>
-        /// <remarks>
-        /// Useful to reduce memory usage.
-        /// </remarks>
-        public void Unload()
-        {
-            _lines = null;
-            _iniDict = null;
-        }
-
-        /// <summary>
-        /// Reload _lines from file.
-        /// </summary>
-        public bool Reload()
-        {
-            Unload();
-            return LoadLines();
-        }
-        #endregion
-
-        #region UpdateIniKey, DeleteIniKey
-        /// <summary>
-        /// Update Lines property.
-        /// ScriptSection must not be SectionType.AttachEncodeLazy
-        /// </summary>
-        /// <returns>true if succeeded</returns>
-        public bool UpdateIniKey(string key, string value)
-        {
-            // AttachEncodeLazy cannot be updated 
-            if (Type == SectionType.AttachEncodeLazy)
-                return false;
-            if (_lines == null)
-                return false;
-            _iniDict = null;
-
-            bool updated = false;
-            for (int i = 0; i < _lines.Length; i++)
-            {
-                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
-                string line = _lines[i];
-
-                int eIdx = line.IndexOf('=');
-                if (eIdx != -1 && eIdx != 0)
-                { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _lines[i] = $"{key}={value}";
-                        updated = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!updated)
-            { // Append to last line
-                Array.Resize(ref _lines, _lines.Length + 1);
-                _lines[_lines.Length - 1] = $"{key}={value}";
-            }
-
-            return true;
-        }
-
-        public bool DeleteIniKey(string key)
-        {
-            // AttachEncodeLazy cannot be updated 
-            if (Type == SectionType.AttachEncodeLazy)
-                return false;
-            if (_lines == null)
-                return false;
-            _iniDict = null;
-
-            int targetIdx = -1;
-            for (int i = 0; i < _lines.Length; i++)
-            {
-                // 'line' was already trimmed at the loading time. Do not call Trim() again to avoid new heap allocation.
-                string line = _lines[i];
-
-                int eIdx = line.IndexOf('=');
-                if (eIdx != -1 && eIdx != 0)
-                { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        targetIdx = i;
-                        break;
-                    }
-                }
-            }
-
-            if (targetIdx != -1)
-            { // Delete target line
-                List<string> newLines = _lines.ToList();
-                newLines.RemoveAt(targetIdx);
-                _lines = newLines.ToArray();
-            }
-
-            return true;
-        }
-        #endregion
-
-        #region Equals, GetHashCode
-        public override bool Equals(object obj)
-        {
-            if (obj is ScriptSection section)
-                return Equals(section);
-            return false;
-        }
-
-        public bool Equals(ScriptSection section)
-        {
-            if (section == null) throw new ArgumentNullException(nameof(section));
-
-            return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override int GetHashCode()
-        {
-            return Script.GetHashCode() ^ Name.GetHashCode() ^ LineIdx.GetHashCode();
-        }
-        #endregion
-
-        #region Override Methods
-        public override string ToString()
-        {
-            return Name;
-        }
-        #endregion
     }
     #endregion
 

@@ -110,7 +110,7 @@
                         Executed="ScriptExternalEditorCommand_Executed"/>
         <CommandBinding x:Name="ScriptUpdateCommand"
                         Command="local:MainViewCommands.ScriptUpdateCommand"
-                        CanExecute="ScriptCommand_CanExecute"
+                        CanExecute="ScriptUpdateCommand_CanExecute"
                         Executed="ScriptUpdateCommand_Executed"/>
         <CommandBinding x:Name="ScriptSyntaxCheckCommand"
                         Command="local:MainViewCommands.ScriptSyntaxCheckCommand"

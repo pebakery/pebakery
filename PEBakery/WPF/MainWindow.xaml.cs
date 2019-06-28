@@ -293,6 +293,17 @@ namespace PEBakery.WPF
             e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress;
         }
 
+        private void ScriptUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = false;
+
+            if (Model?.CurMainTree?.Script == null || Model.WorkInProgress)
+                return;
+
+            Script targetScript = Model.CurMainTree.Script;
+            e.CanExecute = targetScript.IsUpdateable;
+        }
+
         private async void ScriptRunCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface
@@ -450,6 +461,11 @@ namespace PEBakery.WPF
             Script targetScript = Model.CurMainTree.Script;
             Project p = Model.CurMainTree.Script.Project;
             bool updateMultipleScript = targetScript.Type == ScriptType.Directory;
+            if (!updateMultipleScript && !targetScript.IsUpdateable)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, $"Race condition with {nameof(Script.IsUpdateable)} happened in {nameof(ScriptUpdateCommand_Executed)}"));
+                return;
+            }
 
             // Define local variables
             Script[] targetScripts = null;
@@ -467,11 +483,23 @@ namespace PEBakery.WPF
                 if (updateMultipleScript)
                 { // Update a list of scripts
                     targetScripts = p.AllScripts
-                        .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase))
+                        .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase) &&
+                                    x.IsUpdateable)
                         .ToArray();
                     MainViewModel.ScriptListToTreeViewModel(p, targetScripts, false, treeRoot);
                     targetScripts = targetScripts.Where(x => x.Type != ScriptType.Directory).ToArray();
+                    if (targetScripts.Length == 0)
+                    {
+                        // Ask user for confirmation
+                        MessageBox.Show(this, 
+                            $"Directory [{targetScript.Title}] does not have updateable children scripts.",
+                            "No updateable scripts",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
                 }
+
                 Model.BuildTreeItems.Add(treeRoot);
                 Model.CurBuildTree = null;
                 Debug.Assert(updateMultipleScript && targetScript != null && targetScripts != null ||
@@ -517,8 +545,6 @@ namespace PEBakery.WPF
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
                 Model.StatusBarText = $"Updated {targetScript.Title} ({t:h\\:mm\\:ss})";
-
-                
             }
             finally
             {
@@ -584,9 +610,6 @@ namespace PEBakery.WPF
                     MessageBox.Show(b.ToString(), "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-
-
-
         }
 
         private void ScriptSyntaxCheckCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -598,10 +621,8 @@ namespace PEBakery.WPF
         private void ScriptOpenFolderCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Script sc = Model.CurMainTree.Script;
-            if (sc.Type == ScriptType.Directory)
-                MainViewModel.OpenFolder(sc.RealPath);
-            else
-                MainViewModel.OpenFolder(Path.GetDirectoryName(sc.RealPath));
+            string openPath = sc.Type == ScriptType.Directory ? sc.RealPath : Path.GetDirectoryName(sc.RealPath);
+            MainViewModel.OpenFolder(openPath);
         }
 
         private void ScriptDirMainCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
