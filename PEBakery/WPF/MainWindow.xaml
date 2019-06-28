@@ -834,7 +834,6 @@
                             x:Name="ScriptUpdateButton"
                             Visibility="{Binding NormalInterfaceVisibility}"
                             Command="local:MainViewCommands.ScriptUpdateCommand"
-                            IsEnabled="{Binding IsTreeEntryFile}"
                             AutomationProperties.Name="{Binding ScriptUpdateButtonToolTip}"
                             ToolTip="{Binding ScriptUpdateButtonToolTip}">
                         <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4"/>

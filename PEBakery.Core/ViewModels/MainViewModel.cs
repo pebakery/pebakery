@@ -380,6 +380,19 @@ namespace PEBakery.Core.ViewModels
             }
         }
 
+        public bool IsUpdateable
+        {
+            get => _isTreeEntryFile;
+            set
+            {
+                _isTreeEntryFile = value;
+                OnPropertyUpdate(nameof(IsTreeEntryFile));
+                OnPropertyUpdate(nameof(ScriptCheckVisibility));
+                OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
+                OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
+            }
+        }
+
         private bool _isTreeEntryMain = true;
         /// <summary>
         /// Selected script is a MainScript
