@@ -341,7 +341,7 @@ namespace PEBakery.Core
         #endregion
 
         #region UIControlToVariable
-        public LogInfo? UIControlToVariable(UIControl uiCmd, string prefix = null)
+        public LogInfo UIControlToVariable(UIControl uiCmd, string prefix = null)
         {
             string destVar = uiCmd.Key;
             if (!string.IsNullOrEmpty(prefix))
@@ -359,9 +359,9 @@ namespace PEBakery.Core
 
             foreach (UIControl uiCtrl in uiCtrls)
             {
-                LogInfo? log = UIControlToVariable(uiCtrl, prefix);
+                LogInfo log = UIControlToVariable(uiCtrl, prefix);
                 if (log != null)
-                    logs.Add((LogInfo)log);
+                    logs.Add(log);
             }
 
             return logs;

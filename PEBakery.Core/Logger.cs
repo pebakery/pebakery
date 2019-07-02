@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace PEBakery.Core
@@ -55,9 +56,9 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region struct LogInfo
+    #region LogInfo
     [Serializable]
-    public struct LogInfo
+    public class LogInfo
     {
         #region Fields
         public LogState State;
@@ -188,26 +189,22 @@ namespace PEBakery.Core
         #endregion
 
         #region AddCommand, AddDepth
-        public static LogInfo AddCommand(LogInfo log, CodeCommand command)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static LogInfo AddCommand(LogInfo log, CodeCommand cmd)
         {
             if (log.Command == null)
-                log.Command = command;
+                log.Command = cmd;
             return log;
         }
 
-        public static List<LogInfo> AddCommand(List<LogInfo> logs, CodeCommand command)
+        public static List<LogInfo> AddCommand(List<LogInfo> logs, CodeCommand cmd)
         {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                if (log.Command == null)
-                    log.Command = command;
-                logs[i] = log;
-            }
-
+            foreach (LogInfo log in logs)
+                AddCommand(log, cmd);
             return logs;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogInfo AddDepth(LogInfo log, int depth)
         {
             log.Depth = depth;
@@ -216,34 +213,25 @@ namespace PEBakery.Core
 
         public static List<LogInfo> AddDepth(List<LogInfo> logs, int depth)
         {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                log.Depth = depth;
-                logs[i] = log;
-            }
+            foreach (LogInfo log in logs)
+                AddDepth(log, depth);
 
             return logs;
         }
 
-        public static LogInfo AddCommandDepth(LogInfo log, CodeCommand command, int depth)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static LogInfo AddCommandDepth(LogInfo log, CodeCommand cmd, int depth)
         {
             if (log.Command == null)
-                log.Command = command;
+                log.Command = cmd;
             log.Depth = depth;
             return log;
         }
 
-        public static List<LogInfo> AddCommandDepth(List<LogInfo> logs, CodeCommand command, int depth)
+        public static List<LogInfo> AddCommandDepth(List<LogInfo> logs, CodeCommand cmd, int depth)
         {
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                if (log.Command == null)
-                    log.Command = command;
-                log.Depth = depth;
-                logs[i] = log;
-            }
+            foreach (LogInfo log in logs)
+                AddCommandDepth(log, cmd, depth);
 
             return logs;
         }
@@ -355,7 +343,7 @@ namespace PEBakery.Core
     }
 
     /// <summary>
-    /// How much information will be logged if an Exception is catched in ExecuteCommand?
+    /// How much information will be logged if an Exception is caught in ExecuteCommand?
     /// </summary>
     public enum LogDebugLevel
     {

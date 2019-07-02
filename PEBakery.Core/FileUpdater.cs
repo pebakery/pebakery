@@ -25,8 +25,10 @@
     not derived from or based on this program. 
 */
 
+using Newtonsoft.Json;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,8 +38,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using Newtonsoft.Json;
-using PEBakery.Ini;
 
 namespace PEBakery.Core
 {
@@ -88,7 +88,7 @@ namespace PEBakery.Core
         {
             public const string ProjectUpdateSection = @"ProjectUpdate";
             public const string SelectedChannel = @"SelectedChannel";
-            public const string BaseUrl = @"ProjectBaseUrl";
+            public const string BaseUrl = @"BaseUrl";
         }
         #endregion
 
@@ -184,7 +184,7 @@ namespace PEBakery.Core
         {
             // Get updateable scripts urls
             Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
-            
+
             List<Script> newScripts = new List<Script>(updateableScripts.Length);
 
             if (_m != null)
@@ -245,7 +245,7 @@ namespace PEBakery.Core
                 HttpFileDownloader.Report report = DownloadFile(metaJsonUrl, metaJsonFile);
                 if (!report.Result)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, report.ErrorMsg));
+                    _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
                     return null;
                 }
 
@@ -455,7 +455,7 @@ namespace PEBakery.Core
             {
                 return (null, $"Remote script meta file is corrupted: {e.Message}");
             }
-           
+
             if (!jsonRoot.CheckSchema(out string errorMsg))
                 return (null, errorMsg);
 

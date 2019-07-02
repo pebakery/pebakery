@@ -1188,16 +1188,12 @@ namespace PEBakery.Core
         public bool IsPathSettingEnabled()
         {
             // If key 'PathSetting' have invalid value or does not exist, default to true
-            if (!MainScript.MainInfo.ContainsKey("PathSetting"))
+            if (!MainScript.MainInfo.ContainsKey(Script.Const.PathSetting))
                 return true;
 
-            string valStr = MainScript.MainInfo["PathSetting"];
-            if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                return true;
-            else if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                return false;
-            else
-                return true;
+            string valStr = MainScript.MainInfo[Script.Const.PathSetting];
+            return !valStr.Equals("False", StringComparison.OrdinalIgnoreCase) && 
+                   !valStr.Equals("0", StringComparison.OrdinalIgnoreCase);
         }
         #endregion
 
@@ -1226,7 +1222,8 @@ namespace PEBakery.Core
 
         public bool Equals(Project project)
         {
-            if (project == null) throw new ArgumentNullException(nameof(project));
+            if (project == null)
+                return false;
 
             return ProjectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
                    ProjectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&

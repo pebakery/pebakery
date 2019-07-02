@@ -399,32 +399,30 @@ namespace PEBakery.Helper
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
 
-            DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
-            if (!dirInfo.Exists)
+            DirectoryInfo root = new DirectoryInfo(dirPath);
+            if (!root.Exists)
                 throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {dirPath}");
 
             List<string> foundDirs = new List<string>();
-            return InternalGetDirsEx(dirInfo, searchPattern, searchOption, foundDirs).ToArray();
-        }
-
-        private static List<string> InternalGetDirsEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundDirs)
-        {
-            if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
-            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
-
-            try
+            Queue<DirectoryInfo> diQueue = new Queue<DirectoryInfo>();
+            diQueue.Enqueue(root);
+            while (0 < diQueue.Count)
             {
-                DirectoryInfo[] dirs = dirInfo.GetDirectories();
-                foreach (DirectoryInfo dir in dirs)
+                DirectoryInfo di = diQueue.Dequeue();
+                try
                 {
-                    foundDirs.Add(dir.FullName);
-                    if (searchOption == SearchOption.AllDirectories)
-                        InternalGetDirsEx(dir, searchPattern, searchOption, foundDirs);
+                    DirectoryInfo[] subDirs = di.GetDirectories(searchPattern);
+                    foreach (DirectoryInfo subDir in subDirs)
+                    {
+                        foundDirs.Add(subDir.FullName);
+                        if (searchOption == SearchOption.AllDirectories)
+                            diQueue.Enqueue(subDir);
+                    }
                 }
+                catch (UnauthorizedAccessException) { } /* Ignore UnauthorizedAccessException */
             }
-            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
-            return foundDirs;
+            return foundDirs.ToArray();
         }
         #endregion
 
@@ -681,11 +679,13 @@ namespace PEBakery.Helper
 
         #region WindowsVersion
         /// <summary>
-        /// Instead of deprecated Environment.OSVersion, call Win32 GetVersion directly
+        /// Read version information of kernel32.dll, instead of deprecated Environment.OSVersion.
         /// </summary>
         /// <returns></returns>
         public static Version WindowsVersion()
         {
+            // Environment.OSVersion is deprecated
+            // https://github.com/dotnet/platform-compat/blob/master/docs/DE0009.md
             string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             string kernel32 = Path.Combine(winDir, "System32", "kernel32.dll");
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernel32);
