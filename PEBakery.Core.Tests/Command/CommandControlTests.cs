@@ -353,7 +353,7 @@ namespace PEBakery.Core.Tests.Command
             
             void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
-                void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = true;
+                void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = false;
 
                 (EngineState s, _) = EngineTests.EvalScript(treePath, check, SetState, entrySection);
                 if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
@@ -363,12 +363,12 @@ namespace PEBakery.Core.Tests.Command
                 }
             }
 
-            ScriptTemplate(scPath, "Process-GetParam00", ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-GetParam01", ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-GetParam09", ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-GetParam12", ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-GetParam16", ErrorCheck.Warning);
-            ScriptTemplate(scPath, "Process-GetParam18", ErrorCheck.Warning);
+            ScriptTemplate(scPath, "Process-GetParam00");
+            ScriptTemplate(scPath, "Process-GetParam01");
+            ScriptTemplate(scPath, "Process-GetParam09");
+            ScriptTemplate(scPath, "Process-GetParam12");
+            ScriptTemplate(scPath, "Process-GetParam16");
+            ScriptTemplate(scPath, "Process-GetParam18");
         }
         #endregion
     }

@@ -354,7 +354,7 @@ namespace PEBakery.Core
                            type == CodeType.Error ||
                            type == CodeType.Comment ||
                            !_opts.AllowLegacyInterfaceCommand && type == CodeType.Visible ||
-                           !_opts.AllowLegacySectionParamCommand && (type == CodeType.GetParam || type == CodeType.PackParam) ||
+                           !_opts.AllowLegacySectionParamCommand && type == CodeType.PackParam ||
                            type == CodeType.Macro ||
                            CodeCommand.OptimizedCodeType.Contains(type);
 

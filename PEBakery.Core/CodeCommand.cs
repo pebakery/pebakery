@@ -83,8 +83,8 @@ namespace PEBakery.Core
         // 80 Branch
         Run = 8000, RunEx, Exec, Loop, LoopEx, LoopLetter, LoopLetterEx, If, Else, Begin, End,
         // 81 Control
-        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
-        GetParam = 8198, PackParam = 8199, // Will be deprecated
+        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep, GetParam,
+        PackParam = 8199, // Will be deprecated
         // 82 System
         System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 98 Debug
@@ -129,7 +129,6 @@ namespace PEBakery.Core
         public static readonly CodeType[] DeprecatedCodeType =
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
-            CodeType.GetParam,
             CodeType.PackParam,
         };
 

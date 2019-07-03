@@ -959,21 +959,21 @@
                                       IsChecked="{Binding CompatLegacyBranchCondition}" />
                         <!-- ReSharper disable once MarkupAttributeTypo -->
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
+                                  VerticalContentAlignment="Center"
+                                  Content="Allow variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; argument"
                                       IsChecked="{Binding CompatLegacyRegWrite}" />
                         <CheckBox Margin="0, 0, 0, 3"
-                                      VerticalContentAlignment="Center"
-                                      Content="Allow Set to modify interface controls"
-                                      IsChecked="{Binding CompatAllowSetModifyInterface}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Allow Set to modify interface controls"
+                                  IsChecked="{Binding CompatAllowSetModifyInterface}" />
                         <CheckBox Margin="0, 0, 0, 3" 
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy interface commands (e.g. Visible)"
-                                      IsChecked="{Binding CompatLegacyInterfaceCommand}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable legacy interface commands (e.g. Visible)"
+                                  IsChecked="{Binding CompatLegacyInterfaceCommand}" />
                         <CheckBox Margin="0, 0, 0, 3" 
-                                      VerticalContentAlignment="Center"
-                                      Content="Enable legacy section parameter commands (e.g. GetParam, PackParam)"
-                                      IsChecked="{Binding CompatLegacySectionParamCommand}" />
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable legacy section parameter commands (e.g. PackParam)"
+                                  IsChecked="{Binding CompatLegacySectionParamCommand}" />
                     </StackPanel>
 
                     <TextBlock Margin="0, 3, 0, 3"
