@@ -2579,31 +2579,6 @@ namespace PEBakery.Core
                     else
                         throw new InvalidCommandException($"Invalid registry value type [0x{valueType:X}]");
             }
-
-            /*
-            switch (typeInt)
-            {
-                case 0:
-                    return RegistryValueKind.None;
-                case 1:
-                    return RegistryValueKind.String;
-                case 2:
-                    return RegistryValueKind.ExpandString;
-                case 3:
-                    return RegistryValueKind.Binary;
-                case 4:
-                    return RegistryValueKind.DWord;
-                case 7:
-                    return RegistryValueKind.MultiString;
-                case 11:
-                    return RegistryValueKind.QWord;
-                default:
-                    if (unsafeMode)
-                        return RegistryValueKind.Unknown;
-                    else
-                        throw new InvalidCommandException($"Invalid registry value type [0x{typeInt:X}]");
-            }
-            */
         }
 
         public static RegMultiType ParseRegMultiType(string typeStr)

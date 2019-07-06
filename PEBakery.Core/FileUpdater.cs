@@ -226,7 +226,6 @@ namespace PEBakery.Core
 
         private Script InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
         {
-
             // Parse version of local script
             VersionEx localSemVer = VersionEx.Parse(sc.TidyVersion);
             if (localSemVer == null) // Never be triggered, because constructor of Script class check it
@@ -349,7 +348,7 @@ namespace PEBakery.Core
             public ScriptStateBackup(SelectedState selected, Dictionary<string, List<UIControl>> ifaceSectionDict)
             {
                 Selected = selected;
-                IfaceSectionDict = ifaceSectionDict;
+                IfaceSectionDict = ifaceSectionDict ?? new Dictionary<string, List<UIControl>>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -361,11 +360,13 @@ namespace PEBakery.Core
 
             foreach (string ifaceSectionName in ifaceSectionNames)
             {
-                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
-
                 // Unable to interface section
-                if (ifaceSectionName == null)
-                    return null;
+                Debug.Assert(ifaceSectionName != null, $"Internal error at {nameof(BackupScriptState)}");
+
+                // Get uiCtrls of a script
+                (List<UIControl> uiCtrls, _) = sc.GetInterfaceControls(ifaceSectionName);
+                if (uiCtrls == null) // Mostly [Interface] section does not exist -> return empty ifaceDict
+                    return new ScriptStateBackup(sc.Selected, ifaceDict);
 
                 // Collect uiCtrls which have value
                 List<UIControl> valueCtrls = new List<UIControl>(uiCtrls.Count);
@@ -395,7 +396,7 @@ namespace PEBakery.Core
             List<string> ifaceSectionNames = sc.GetInterfaceSectionNames(false);
 
             // Restore selected state
-            IniReadWriter.WriteKey(sc.RealPath, "Main", "Selected", backup.Selected.ToString());
+            IniReadWriter.WriteKey(sc.RealPath, ScriptSection.Names.Main, Script.Const.Selected, backup.Selected.ToString());
 
             // Restore interfaces
             List<UIControl> newCtrls = new List<UIControl>();
@@ -451,9 +452,9 @@ namespace PEBakery.Core
                     jsonRoot = serializer.Deserialize<MetaJsonRoot>(jr);
                 }
             }
-            catch (JsonReaderException e)
+            catch (JsonReaderException)
             {
-                return (null, $"Remote script meta file is corrupted: {e.Message}");
+                return (null, "Remote script meta file is corrupted");
             }
 
             if (!jsonRoot.CheckSchema(out string errorMsg))
@@ -536,16 +537,7 @@ namespace PEBakery.Core
             public string Version { get; set; }
 
             private VersionEx _parsedVersion;
-            public VersionEx ParsedVersion
-            {
-                get
-                {
-                    if (_parsedVersion == null)
-                        _parsedVersion = VersionEx.Parse(Version);
-
-                    return _parsedVersion;
-                }
-            }
+            public VersionEx ParsedVersion => _parsedVersion ?? (_parsedVersion = VersionEx.Parse(Version));
 
             /// <summary>
             /// Return true if schema is valid

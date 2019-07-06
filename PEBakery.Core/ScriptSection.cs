@@ -25,11 +25,11 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using PEBakery.Ini;
 
 namespace PEBakery.Core
 {

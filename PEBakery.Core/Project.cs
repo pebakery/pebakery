@@ -63,7 +63,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Properties
-        // Auto properties
         public string ProjectRoot { get; }
         public List<Project> ProjectList { get; } = new List<Project>();
 
@@ -84,6 +83,17 @@ namespace PEBakery.Core
                 }
             }
         }
+
+        /*
+        private bool _updateable;
+        public bool Updateable
+        {
+            get
+            {
+                ProjectList.Any(p => p.Pro)
+            }
+        }
+        */
 
         // Expose _projectNames and _compatDict to public
         public List<string> ProjectNames => FullyLoaded ?
@@ -758,7 +768,7 @@ namespace PEBakery.Core
                 UpdateInfo = new ProjectUpdateInfo();
                 return;
             }
-            
+
             // Read [ProjectUpdateSection]
             Dictionary<string, string> pUpdateDict = MainScript.Sections[ProjectUpdateInfo.Const.ProjectUpdateSection].IniDict;
 
@@ -1192,7 +1202,7 @@ namespace PEBakery.Core
                 return true;
 
             string valStr = MainScript.MainInfo[Script.Const.PathSetting];
-            return !valStr.Equals("False", StringComparison.OrdinalIgnoreCase) && 
+            return !valStr.Equals("False", StringComparison.OrdinalIgnoreCase) &&
                    !valStr.Equals("0", StringComparison.OrdinalIgnoreCase);
         }
         #endregion
