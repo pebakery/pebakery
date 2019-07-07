@@ -543,7 +543,7 @@ namespace PEBakery.Core
             // Build Id
             LogModel.BuildInfo dbBuild = new LogModel.BuildInfo
             {
-                PEBakeryVersion = Global.Const.StringVersionFull,
+                PEBakeryVersion = Global.Const.ProgramVersionStrFull,
                 StartTime = s.StartTime,
                 Name = name,
             };

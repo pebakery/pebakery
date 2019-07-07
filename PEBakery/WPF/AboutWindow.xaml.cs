@@ -57,7 +57,7 @@ namespace PEBakery.WPF
         {
             MonospacedFont = monospacedFont;
 
-            InfoPEBakeryVersion = Global.Const.StringVersionFull;
+            InfoPEBakeryVersion = Global.Const.ProgramVersionStrFull;
             InfoBuildDate = "Build " + Global.BuildDate.ToString("yyyyMMdd");
 
             LicenseText = Properties.Resources.LicenseSimple;

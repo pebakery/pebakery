@@ -60,7 +60,7 @@ namespace PEBakery.Core
                 case LogExportType.Text:
                     {
                         _w.WriteLine("- PEBakery System Log -");
-                        _w.WriteLine($"Exported by PEBakery {Global.Const.StringVersionFull}");
+                        _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
                         _w.WriteLine($"Exported at {DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
                         _w.WriteLine();
                         var logs = _db.Table<LogModel.SystemLog>().OrderBy(x => x.Time);
@@ -78,7 +78,7 @@ namespace PEBakery.Core
                         RazorModel.ExportSystemLog m = new RazorModel.ExportSystemLog
                         {
                             // Information
-                            ExportEngineVersion = Global.Const.StringVersionFull,
+                            ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             ExportTimeStr = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture),
                             // Embed
                             EmbedBootstrapCss = Properties.Resources.HtmlBootstrapCss,
@@ -124,7 +124,7 @@ namespace PEBakery.Core
                         LogModel.BuildInfo dbBuild = _db.Table<LogModel.BuildInfo>().First(x => x.Id == buildId);
                         _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
                         _w.WriteLine($"Built    by PEBakery {dbBuild.PEBakeryVersion}");
-                        _w.WriteLine($"Exported by PEBakery {Global.Const.StringVersionFull}");
+                        _w.WriteLine($"Exported by PEBakery {Global.Const.ProgramVersionStrFull}");
                         _w.WriteLine();
                         _w.WriteLine($"Started  at {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt K", CultureInfo.InvariantCulture)}");
                         if (dbBuild.FinishTime != DateTime.MinValue)
@@ -360,7 +360,7 @@ namespace PEBakery.Core
                         {
                             // Information
                             BuiltEngineVersion = dbBuild.PEBakeryVersion,
-                            ExportEngineVersion = Global.Const.StringVersionFull,
+                            ExportEngineVersion = Global.Const.ProgramVersionStrFull,
                             BuildName = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),
                             BuildEndTimeStr = dbBuild.FinishTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt K", CultureInfo.InvariantCulture),

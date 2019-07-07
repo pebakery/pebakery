@@ -245,7 +245,7 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region Normal Interface Properties
-        public const string DefaultTitleBar = "PEBakery " + Global.Const.StringVersionFull;
+        public const string DefaultTitleBar = "PEBakery " + Global.Const.ProgramVersionStrFull;
         private string _titleBar = DefaultTitleBar;
         public string TitleBar
         {
@@ -267,7 +267,7 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _scriptAuthorText, value);
         }
 
-        private string _scriptVersionText = Global.Const.StringVersionFull;
+        private string _scriptVersionText = Global.Const.ProgramVersionStrFull;
         public string ScriptVersionText
         {
             get => _scriptVersionText;

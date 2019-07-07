@@ -47,10 +47,14 @@ namespace PEBakery.Core
         {
             public const int EngineVersion = 96;
             public const string ScriptCacheRevision = "r14";
-            public const string StringVersion = "0.9.6";
-            public const string StringVersionFull = "0.9.6 beta6";
+            public const string ProgramVersionStr = "0.9.6";
+            public const string ProgramVersionStrFull = "0.9.6 beta6";
 
-            public static readonly VersionEx VersionInstance = VersionEx.Parse(StringVersion);
+            public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
+
+            // Script .meta.json
+            public const string MetaSchemaVerStr = "0.1";
+            public static readonly VersionEx MetaSchemaVerInst = VersionEx.Parse(MetaSchemaVerStr);
         }
         #endregion
 
@@ -88,7 +92,7 @@ namespace PEBakery.Core
 
             // Initialize native libraries
             NativeGlobalInit(AppDomain.CurrentDomain.BaseDirectory);
-            
+
             // Prepare libmagic database
             MagicFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "magic.mgc");
             FileTypeDetector = new FileTypeDetector(MagicFile);

@@ -165,7 +165,7 @@ namespace PEBakery.Core
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetValue(VarsType.Fixed, "EngineVersion", Global.Const.EngineVersion.ToString("000")));
-            logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", Global.Const.StringVersion));
+            logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", Global.Const.ProgramVersionStr));
             #endregion
 
             #region Envrionment Variables

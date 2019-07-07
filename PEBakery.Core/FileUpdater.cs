@@ -466,6 +466,49 @@ namespace PEBakery.Core
             return (jsonRoot, null);
         }
 
+        public void CreateMetaJson(Script sc, string destJsonFile)
+        {
+            // Create MetaJsonRoot instance
+            MetaJsonRoot jsonRoot = new MetaJsonRoot
+            {
+                MetaSchemaVer = Global.Const.MetaSchemaVerStr,
+                PEBakeryMinVer = Global.Const.ProgramVersionStr,
+                ScriptMain = new MetaJsonScriptMain
+                {
+                    Title = sc.Title,
+                    Desc = sc.Description,
+                    Author = sc.Author,
+                    Version = sc.RawVersion,
+                }
+            };
+
+            // Validate MetaJsonRoot instance (Debug-mode only)
+            const string assertErrorMessage = "Incorrect MetaJsonRoot instance creation";
+            Debug.Assert(jsonRoot.MetaSchemaVer != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.PEBakeryMinVer != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.ScriptMain.Title != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.ScriptMain.Desc != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.ScriptMain.Author != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.ScriptMain.Version != null, assertErrorMessage);
+
+            // Prepare JsonSerializer
+            JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
+            JsonSerializer serializer = JsonSerializer.Create(settings);
+
+            using (StreamWriter sw = new StreamWriter(destJsonFile, false, Encoding.UTF8))
+            using (JsonTextWriter jw = new JsonTextWriter(sw))
+            {
+#if DEBUG
+                // https://www.newtonsoft.com/json/help/html/ReducingSerializedJSONSize.htm
+                jw.Formatting = Formatting.Indented;
+                jw.Indentation = 4;
+#else
+                jw.Formatting = Formatting.None;
+#endif
+                serializer.Serialize(jw, jsonRoot);
+            }
+        }
+
         // ReSharper disable once ClassNeverInstantiated.Local
         public class MetaJsonRoot
         {
@@ -473,10 +516,13 @@ namespace PEBakery.Core
             public string MetaSchemaVer { get; set; }
             [JsonProperty(PropertyName = "pebakery_min_ver")]
             public string PEBakeryMinVer { get; set; }
+            [JsonProperty(PropertyName = "hash_sha256")]
+            public string HashSHA256 { get; set; }
             [JsonProperty(PropertyName = "script_main")]
             public MetaJsonScriptMain ScriptMain { get; set; }
 
-            private static readonly VersionEx SchemaParseVer = new VersionEx(0, 1);
+            [JsonIgnore]
+            private static readonly VersionEx SchemaParseVer = Global.Const.MetaSchemaVerInst;
 
             /// <summary>
             /// Return true if schema is valid
@@ -515,9 +561,9 @@ namespace PEBakery.Core
                 }
 
                 // Check pebakery_min_ver
-                if (Global.Const.VersionInstance < engineMinVer)
+                if (Global.Const.ProgramVersionInst < engineMinVer)
                 {
-                    errorMsg = $"Remote script requires PEBakery {Global.Const.StringVersion} or higher";
+                    errorMsg = $"Remote script requires PEBakery {Global.Const.ProgramVersionStr} or higher";
                     return false;
                 }
 
@@ -536,7 +582,9 @@ namespace PEBakery.Core
             [JsonProperty(PropertyName = "version")]
             public string Version { get; set; }
 
+            [JsonIgnore]
             private VersionEx _parsedVersion;
+            [JsonIgnore]
             public VersionEx ParsedVersion => _parsedVersion ?? (_parsedVersion = VersionEx.Parse(Version));
 
             /// <summary>
