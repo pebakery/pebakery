@@ -269,6 +269,19 @@ namespace PEBakery.Core
                     return null;
                 }
 
+                // Calculate sha256 of the script
+                byte[] sha256Digest;
+                using (FileStream fs = new FileStream(tempScriptFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    sha256Digest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                }
+
+                if (!sha256Digest.SequenceEqual(metaJson.HashSHA256))
+                {
+                    LogInfo.LogErrorMessage(_logs, $"Remote script [{sc.Title}] is corrupted");
+                    return null;
+                }
+
                 // Check if remote script is valid
                 Script remoteScript = _p.LoadScriptRuntime(tempScriptFile, new LoadScriptRuntimeOptions
                 {
@@ -468,11 +481,19 @@ namespace PEBakery.Core
 
         public void CreateMetaJson(Script sc, string destJsonFile)
         {
+            // Calculate sha256 of the script
+            byte[] hashDigest;
+            using (FileStream fs = new FileStream(sc.RealPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                hashDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+            }
+
             // Create MetaJsonRoot instance
             MetaJsonRoot jsonRoot = new MetaJsonRoot
             {
                 MetaSchemaVer = Global.Const.MetaSchemaVerStr,
                 PEBakeryMinVer = Global.Const.ProgramVersionStr,
+                HashSHA256 = hashDigest,
                 ScriptMain = new MetaJsonScriptMain
                 {
                     Title = sc.Title,
@@ -486,6 +507,7 @@ namespace PEBakery.Core
             const string assertErrorMessage = "Incorrect MetaJsonRoot instance creation";
             Debug.Assert(jsonRoot.MetaSchemaVer != null, assertErrorMessage);
             Debug.Assert(jsonRoot.PEBakeryMinVer != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.HashSHA256 != null, assertErrorMessage);
             Debug.Assert(jsonRoot.ScriptMain.Title != null, assertErrorMessage);
             Debug.Assert(jsonRoot.ScriptMain.Desc != null, assertErrorMessage);
             Debug.Assert(jsonRoot.ScriptMain.Author != null, assertErrorMessage);
@@ -516,8 +538,9 @@ namespace PEBakery.Core
             public string MetaSchemaVer { get; set; }
             [JsonProperty(PropertyName = "pebakery_min_ver")]
             public string PEBakeryMinVer { get; set; }
+
             [JsonProperty(PropertyName = "hash_sha256")]
-            public string HashSHA256 { get; set; }
+            public byte[] HashSHA256 { get; set; }
             [JsonProperty(PropertyName = "script_main")]
             public MetaJsonScriptMain ScriptMain { get; set; }
 
