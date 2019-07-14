@@ -58,31 +58,6 @@ namespace PEBakery.Core.Tests
         {
         }
 #pragma warning restore IDE0060
-
-        /*
-        public void CreateServerMetaJson()
-        {
-            string serverDir = Path.Combine(TestSetup.WebRoot, "Updater", "Standalone");
-            string[] scriptFiles = Directory.GetFiles(serverDir, "*.script", SearchOption.AllDirectories);
-
-            foreach (string scriptFile in scriptFiles)
-            {
-
-                string scriptMetaJson = Path.ChangeExtension(scriptFile, ".meta.json");
-
-                Project p = EngineTests.Project;
-
-                // scriptFile
-                Script sc = p.LoadScriptRuntime(scriptFile, string.Empty, new LoadScriptRuntimeOptions
-                {
-                    AddToProjectTree = false,
-                    IgnoreMain = false,
-                    OverwriteToProjectTree = false,
-                });
-                FileUpdater.CreateMetaJson(sc, scriptMetaJson);
-            }
-        }
-        */
         #endregion
 
         #region ServerStatus - Is ASP .Net Core successfully running?
