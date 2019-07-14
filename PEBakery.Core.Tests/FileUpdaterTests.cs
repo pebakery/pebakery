@@ -50,6 +50,7 @@ namespace PEBakery.Core.Tests
         public static void ServerInit(TestContext testContext)
         {
             TestSetup.StartWebFileServer();
+            
         }
 
         [ClassCleanup]
@@ -57,6 +58,31 @@ namespace PEBakery.Core.Tests
         {
         }
 #pragma warning restore IDE0060
+
+        /*
+        public void CreateServerMetaJson()
+        {
+            string serverDir = Path.Combine(TestSetup.WebRoot, "Updater", "Standalone");
+            string[] scriptFiles = Directory.GetFiles(serverDir, "*.script", SearchOption.AllDirectories);
+
+            foreach (string scriptFile in scriptFiles)
+            {
+
+                string scriptMetaJson = Path.ChangeExtension(scriptFile, ".meta.json");
+
+                Project p = EngineTests.Project;
+
+                // scriptFile
+                Script sc = p.LoadScriptRuntime(scriptFile, string.Empty, new LoadScriptRuntimeOptions
+                {
+                    AddToProjectTree = false,
+                    IgnoreMain = false,
+                    OverwriteToProjectTree = false,
+                });
+                FileUpdater.CreateMetaJson(sc, scriptMetaJson);
+            }
+        }
+        */
         #endregion
 
         #region ServerStatus - Is ASP .Net Core successfully running?
@@ -89,7 +115,7 @@ namespace PEBakery.Core.Tests
         #region UpdateScript
         [TestMethod]
         [TestCategory("FileUpdater")]
-        public void UpdateScript()
+        public async void UpdateScript()
         {
             string destDir = FileHelper.GetTempDir();
             try
@@ -110,7 +136,7 @@ namespace PEBakery.Core.Tests
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                Script newScript = updater.UpdateScript(sc, true);
+                Script newScript = await updater.UpdateScript(sc, true);
 
                 // Validate updated script
                 foreach (LogInfo log in updater.Logs)

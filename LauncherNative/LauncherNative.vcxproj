@@ -23,7 +23,7 @@
     <ProjectGuid>{45287033-3C86-44AE-8783-240C1475CAB0}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>LauncherC</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
     <ProjectName>LauncherNative</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

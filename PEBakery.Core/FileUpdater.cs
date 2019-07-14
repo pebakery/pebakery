@@ -150,78 +150,84 @@ namespace PEBakery.Core
         #endregion
 
         #region Update one or more scripts
-        public Script UpdateScript(Script sc, bool preserveScriptState)
+        public Task<Script> UpdateScript(Script sc, bool preserveScriptState)
         {
-            if (!sc.IsUpdateable)
-                return null;
+            return Task.Run(() =>
+            {
+                if (!sc.IsUpdateable)
+                    return null;
 
-            // Backup interface state of original script
-            ScriptStateBackup stateBackup = null;
-            if (preserveScriptState)
-            {
-                stateBackup = BackupScriptState(sc);
-                Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
-            }
+                // Backup interface state of original script
+                ScriptStateBackup stateBackup = null;
+                if (preserveScriptState)
+                {
+                    stateBackup = BackupScriptState(sc);
+                    Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
+                }
 
-            Script newScript;
-            _m?.SetBuildCommandProgress("Download Progress");
-            try
-            {
-                if (_m != null)
-                    _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
-                newScript = InternalUpdateOneScript(sc, stateBackup);
-            }
-            finally
-            {
-                _m?.ResetBuildCommandProgress();
-                if (_m != null)
-                    _m.BuildEchoMessage = string.Empty;
-            }
-            return newScript;
+                Script newScript;
+                _m?.SetBuildCommandProgress("Download Progress");
+                try
+                {
+                    if (_m != null)
+                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
+                    newScript = InternalUpdateOneScript(sc, stateBackup);
+                }
+                finally
+                {
+                    _m?.ResetBuildCommandProgress();
+                    if (_m != null)
+                        _m.BuildEchoMessage = string.Empty;
+                }
+                return newScript;
+            });
         }
 
-        public List<Script> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
+        public Task<List<Script>> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
         {
-            // Get updateable scripts urls
-            Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
-
-            List<Script> newScripts = new List<Script>(updateableScripts.Length);
-
-            if (_m != null)
-                _m.BuildScriptProgressVisibility = Visibility.Collapsed;
-            _m?.SetBuildCommandProgress("Download Progress");
-            try
+            return Task.Run(() =>
             {
-                int i = 0;
-                foreach (Script sc in updateableScripts)
-                {
-                    i++;
+                // Get updateable scripts urls
+                Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
 
-                    ScriptStateBackup stateBackup = null;
-                    if (preserveScriptState)
-                    {
-                        stateBackup = BackupScriptState(sc);
-                        Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
-                    }
+                List<Script> newScripts = new List<Script>(updateableScripts.Length);
 
-                    if (_m != null)
-                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
-                    Script newScript = InternalUpdateOneScript(sc, stateBackup);
-                    if (newScript != null)
-                        newScripts.Add(newScript);
-                }
-            }
-            finally
-            {
-                _m?.ResetBuildCommandProgress();
                 if (_m != null)
+                    _m.BuildScriptProgressVisibility = Visibility.Collapsed;
+                _m?.SetBuildCommandProgress("Download Progress");
+                try
                 {
-                    _m.BuildEchoMessage = string.Empty;
-                    _m.BuildScriptProgressVisibility = Visibility.Visible;
-                }
-            }
+                    int i = 0;
+                    foreach (Script sc in updateableScripts)
+                    {
+                        i++;
 
-            return newScripts;
+                        ScriptStateBackup stateBackup = null;
+                        if (preserveScriptState)
+                        {
+                            stateBackup = BackupScriptState(sc);
+                            Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
+                        }
+
+                        if (_m != null)
+                            _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
+                        Script newScript = InternalUpdateOneScript(sc, stateBackup);
+                        if (newScript != null)
+                            newScripts.Add(newScript);
+                    }
+                }
+                finally
+                {
+                    _m?.ResetBuildCommandProgress();
+                    if (_m != null)
+                    {
+                        _m.BuildEchoMessage = string.Empty;
+                        _m.BuildScriptProgressVisibility = Visibility.Visible;
+                    }
+                }
+
+                return newScripts;
+            });
         }
 
         private Script InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
@@ -449,7 +455,7 @@ namespace PEBakery.Core
         /// Check .meta.json
         /// </summary>
         /// <param name="metaJsonFile"></param>
-        public (MetaJsonRoot MetaJson, string ErrorMsg) CheckMetaJson(string metaJsonFile)
+        public static (MetaJsonRoot MetaJson, string ErrorMsg) CheckMetaJson(string metaJsonFile)
         {
             // Prepare JsonSerializer
             JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
@@ -479,7 +485,7 @@ namespace PEBakery.Core
             return (jsonRoot, null);
         }
 
-        public void CreateMetaJson(Script sc, string destJsonFile)
+        public static void CreateMetaJson(Script sc, string destJsonFile)
         {
             // Calculate sha256 of the script
             byte[] hashDigest;

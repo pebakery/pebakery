@@ -1,7 +1,7 @@
 {
   "meta_schema_ver": "0.1",
   "pebakery_min_ver": "0.9.6",
-  "hash_sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE=",
+  "hash_sha256": "n5JBbBoaFJwUvuQ93SXin23iHd0MBpyD/amhM74EwM4=",
   "script_main": {
     "title": "PreserveInterface",
     "desc": "Standalone PreserveInterface",

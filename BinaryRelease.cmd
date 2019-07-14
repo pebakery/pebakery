@@ -14,7 +14,8 @@ res\nuget restore
 REM Build PEBakery solution
 REM Adjust these statements according to your envrionment
 REM SET MSBUILD_PATH="%WinDir%\Microsoft.NET\Framework\v4.0.30319\"
-SET MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin"
+REM SET MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\MSBuild\15.0\bin"
+SET MSBUILD_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin"
 %MSBUILD_PATH%\MSBuild.exe %BaseDir%\LauncherNative /p:Configuration=Release /property:Platform=Win32 /target:Rebuild
 %MSBUILD_PATH%\MSBuild.exe %BaseDir% /p:Configuration=Release /property:Platform="Any CPU" /target:Rebuild
 

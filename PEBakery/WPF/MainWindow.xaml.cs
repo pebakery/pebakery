@@ -453,7 +453,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        private async void ScriptUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             // Force update of script interface controls (if changed)
             ScriptUpdateButton.Focus();
@@ -479,7 +479,7 @@ namespace PEBakery.WPF
             Script[] targetScripts = null;
             Script newScript = null;
             List<Script> newScripts = null;
-            LogInfo[] updaterLogs = null;
+            LogInfo[] updaterLogs;
 
             // Turn on progress ring
             Model.WorkInProgress = true;
@@ -535,17 +535,13 @@ namespace PEBakery.WPF
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run Updater
-                Task task = Task.Run(() =>
-                {
-                    string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
-                    FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
-                    if (updateMultipleScript) // Update a list of scripts
-                        newScripts = updater.UpdateScripts(targetScripts, true);
-                    else
-                        newScript = updater.UpdateScript(targetScript, true);
-                    updaterLogs = updater.Logs;
-                });
-                task.Wait();
+                string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
+                FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
+                if (updateMultipleScript) // Update a list of scripts
+                    newScripts = await updater.UpdateScripts(targetScripts, true);
+                else
+                    newScript = await updater.UpdateScript(targetScript, true);
+                updaterLogs = updater.Logs;
 
                 // Log messages
                 Logger.SystemWrite(updaterLogs);
