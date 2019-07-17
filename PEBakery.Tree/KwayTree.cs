@@ -32,7 +32,7 @@ using System.Linq;
 namespace PEBakery.Tree
 {
     #region class KwayTree
-    public class KwayTree<T> : IEnumerable
+    public class KwayTree<T> : IEnumerable<T>
     {
         #region Fields and Properties
         private readonly List<int> _idList;
@@ -45,10 +45,7 @@ namespace PEBakery.Tree
         public KwayTree()
         {
             Root = new List<KwayTreeNode<T>>();
-            _idList = new List<int>
-            {
-                0
-            };
+            _idList = new List<int> { 0 };
             Count = 0;
         }
         #endregion
@@ -92,27 +89,20 @@ namespace PEBakery.Tree
         /// <returns></returns>
         public bool DeleteNode(int id)
         {
+            // Root NodeList, cannot delete
             if (id == 0)
-            { // Root NodeList, cannot delete
                 return false;
-            }
-            else
-            {
-                List<KwayTreeNode<T>> sibling = new List<KwayTreeNode<T>>();
-                KwayTreeNode<T> node = SearchNode(id, out sibling);
-                Debug.Assert(node != null);
-                if (node == null)
-                    return false;
-                Count -= CountLeaves(node);
-                RecursiveDeleteNodeChild(node);
-                sibling.Remove(node);
-                node = null;
-                Count--;
-                return true;
-            }
+
+            KwayTreeNode<T> node = SearchNode(id, out List<KwayTreeNode<T>> sibling);
+            Debug.Assert(node != null);
+            Count -= CountLeaves(node);
+            RecursiveDeleteNodeChild(node);
+            sibling.Remove(node);
+            Count--;
+            return true;
         }
 
-        private void RecursiveDeleteNodeChild(KwayTreeNode<T> node)
+        private static void RecursiveDeleteNodeChild(KwayTreeNode<T> node)
         {
             foreach (KwayTreeNode<T> next in node.Child)
             {
@@ -150,11 +140,7 @@ namespace PEBakery.Tree
         #region Search
         public KwayTreeNode<T> SearchNode(int id)
         {
-            if (id == 0)
-                return null;
-
-            // Start from root
-            return RecursiveSearchNode(id, Root, out List<KwayTreeNode<T>> dummy);
+            return id == 0 ? null : RecursiveSearchNode(id, Root, out _);
         }
 
         public KwayTreeNode<T> SearchNode(int id, out List<KwayTreeNode<T>> sibling)
@@ -194,7 +180,7 @@ namespace PEBakery.Tree
 
         public KwayTreeNode<T> SearchNode(T data)
         {
-            return RecursiveSearchNode(data, Root, out List<KwayTreeNode<T>> dummy);
+            return RecursiveSearchNode(data, Root, out _);
         }
 
         public KwayTreeNode<T> SearchNode(T data, out List<KwayTreeNode<T>> sibling)
@@ -202,7 +188,7 @@ namespace PEBakery.Tree
             return RecursiveSearchNode(data, Root, out sibling);
         }
 
-        private KwayTreeNode<T> RecursiveSearchNode(T data, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
+        private static KwayTreeNode<T> RecursiveSearchNode(T data, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
         {
             foreach (KwayTreeNode<T> node in list)
             {
@@ -227,10 +213,7 @@ namespace PEBakery.Tree
 
         public bool Contains(int id)
         {
-            if (SearchNode(id) == null)
-                return false;
-            else
-                return true;
+            return SearchNode(id) != null;
         }
 
         public KwayTreeNode<T> GetNext(int id)
@@ -245,12 +228,17 @@ namespace PEBakery.Tree
         #endregion
 
         #region GetEnumerator (DFS, BFS)
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            return GetEnumeratorDFS();
+            return GetEnumerator();
         }
 
-        public IEnumerator GetEnumeratorBFS()
+        public IEnumerator<T> GetEnumerator()
+        {
+            return GetEnumeratorDfs();
+        }
+
+        public IEnumerator<T> GetEnumeratorBfs()
         {
             Queue<List<KwayTreeNode<T>>> q = new Queue<List<KwayTreeNode<T>>>();
             Queue<KwayTreeNode<T>> qFinal = new Queue<KwayTreeNode<T>>();
@@ -272,22 +260,22 @@ namespace PEBakery.Tree
                 yield return qFinal.Dequeue().Data;
         }
 
-        public IEnumerator GetEnumeratorDFS()
+        public IEnumerator<T> GetEnumeratorDfs()
         {
             Queue<KwayTreeNode<T>> qFinal = new Queue<KwayTreeNode<T>>();
-            RecursiveGetEnumeratorDFS(Root, qFinal);
+            RecursiveGetEnumeratorDfs(Root, qFinal);
 
             while (0 < qFinal.Count)
                 yield return qFinal.Dequeue().Data;
         }
 
-        private void RecursiveGetEnumeratorDFS(List<KwayTreeNode<T>> list, Queue<KwayTreeNode<T>> qFinal)
+        private static void RecursiveGetEnumeratorDfs(List<KwayTreeNode<T>> list, Queue<KwayTreeNode<T>> qFinal)
         {
             foreach (KwayTreeNode<T> node in list)
             {
                 qFinal.Enqueue(node);
                 if (0 < node.Child.Count)
-                    RecursiveGetEnumeratorDFS(node.Child, qFinal);
+                    RecursiveGetEnumeratorDfs(node.Child, qFinal);
             }
         }
         #endregion
@@ -302,11 +290,8 @@ namespace PEBakery.Tree
         {
             list.Sort(sortFunc);
 
-            foreach (KwayTreeNode<T> node in list)
-            {
-                if (0 < node.Child.Count)
-                    RecursiveSort(sortFunc, node.Child);
-            }
+            foreach (KwayTreeNode<T> node in list.Where(node => 0 < node.Child.Count))
+                RecursiveSort(sortFunc, node.Child);
         }
         #endregion
     }

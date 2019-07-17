@@ -890,11 +890,7 @@ namespace PEBakery.Core
                 }
             });
 
-            List<Script> newList = new List<Script>();
-            foreach (Script sc in scTree)
-                newList.Add(sc);
-
-            return newList;
+            return scTree.ToList();
         }
         #endregion
 
