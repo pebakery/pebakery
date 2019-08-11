@@ -240,6 +240,25 @@ namespace PEBakery.WPF
                 CommandManager.InvalidateRequerySuggested();
             }
         }
+
+        private void EnableUpdateServerManager_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.GeneralEnableUpdateServerManagement)
+                return;
+
+            _m.CanExecuteCommand = false;
+            try
+            {
+                const string msg = "This option is intended only for project developers!\r\nDo you really want to continue?";
+                MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                _m.GeneralEnableUpdateServerManagement = res == MessageBoxResult.Yes;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
         #endregion
 
         #region Interface Setting Commands
@@ -556,6 +575,13 @@ namespace PEBakery.WPF
         {
             get => _generalEnableLongFilePath;
             set => SetProperty(ref _generalEnableLongFilePath, value);
+        }
+
+        private bool _generalEnableUpdateServerManagement;
+        public bool GeneralEnableUpdateServerManagement
+        {
+            get => _generalEnableUpdateServerManagement;
+            set => SetProperty(ref _generalEnableUpdateServerManagement, value);
         }
 
         private bool _generalUseCustomUserAgent;
@@ -1144,7 +1170,7 @@ namespace PEBakery.WPF
 
                 dest.TargetDir = ProjectTargetDir;
                 dest.IsoFile = ProjectIsoFile;
-            }    
+            }
             else
             {
                 dest.PathSettingEnabled = false;
@@ -1352,6 +1378,7 @@ namespace PEBakery.WPF
             GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
             GeneralStopBuildOnError = Setting.General.StopBuildOnError;
             GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
+            GeneralEnableUpdateServerManagement = Setting.General.EnableUpdateServerManagement;
             GeneralUseCustomUserAgent = Setting.General.UseCustomUserAgent;
             GeneralCustomUserAgent = Setting.General.CustomUserAgent;
 
@@ -1414,6 +1441,7 @@ namespace PEBakery.WPF
             Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
             Setting.General.StopBuildOnError = GeneralStopBuildOnError;
             Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
+            Setting.General.EnableUpdateServerManagement = GeneralEnableUpdateServerManagement;
             Setting.General.UseCustomUserAgent = GeneralUseCustomUserAgent;
             Setting.General.CustomUserAgent = GeneralCustomUserAgent;
 
@@ -1595,6 +1623,7 @@ namespace PEBakery.WPF
 
         #region General Settting
         public static readonly RoutedCommand EnableLongFilePathCommand = new RoutedUICommand("Enable long file path support", "EnableLongFilePath", typeof(SettingViewCommands));
+        public static readonly RoutedCommand EnableUpdateServerManagement = new RoutedUICommand("Enable update server management", "EnableUpdateServerManagement", typeof(SettingViewCommands));
         #endregion
 
         #region Interface Setting

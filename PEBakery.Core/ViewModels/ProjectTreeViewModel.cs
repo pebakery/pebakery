@@ -182,7 +182,7 @@ namespace PEBakery.Core.ViewModels
             {
                 Global.MainViewModel.EnableTreeItems = true;
                 Global.MainViewModel.WorkInProgress = false;
-                Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
             }
         }
 

@@ -150,84 +150,95 @@ namespace PEBakery.Core
         #endregion
 
         #region Update one or more scripts
-        public Task<Script> UpdateScript(Script sc, bool preserveScriptState)
+        public Task<Script> UpdateScriptAsync(Script sc, bool preserveScriptState)
         {
-            return Task.Run(() =>
-            {
-                if (!sc.IsUpdateable)
-                    return null;
-
-                // Backup interface state of original script
-                ScriptStateBackup stateBackup = null;
-                if (preserveScriptState)
-                {
-                    stateBackup = BackupScriptState(sc);
-                    Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
-                }
-
-                Script newScript;
-                _m?.SetBuildCommandProgress("Download Progress");
-                try
-                {
-                    if (_m != null)
-                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
-                    newScript = InternalUpdateOneScript(sc, stateBackup);
-                }
-                finally
-                {
-                    _m?.ResetBuildCommandProgress();
-                    if (_m != null)
-                        _m.BuildEchoMessage = string.Empty;
-                }
-                return newScript;
-            });
+            return Task.Run(() => UpdateScript(sc, preserveScriptState));
         }
 
-        public Task<List<Script>> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
+        public Script UpdateScript(Script sc, bool preserveScriptState)
         {
-            return Task.Run(() =>
-            {
-                // Get updateable scripts urls
-                Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
+            if (!sc.IsUpdateable)
+                return null;
 
-                List<Script> newScripts = new List<Script>(updateableScripts.Length);
+            // Backup interface state of original script
+            ScriptStateBackup stateBackup = null;
+            if (preserveScriptState)
+            {
+                stateBackup = BackupScriptState(sc);
+                Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
+            }
+
+            Script newScript;
+            _m?.SetBuildCommandProgress("Download Progress", 1);
+
+            try
+            {
+                if (_m != null)
+                    _m.BuildEchoMessage = $"Updating script [{sc.Title}]...";
+
+                newScript = InternalUpdateOneScript(sc, stateBackup);
 
                 if (_m != null)
-                    _m.BuildScriptProgressVisibility = Visibility.Collapsed;
-                _m?.SetBuildCommandProgress("Download Progress");
-                try
+                    _m.BuildCommandProgressValue = 1;
+            }
+            finally
+            {
+                _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                    _m.BuildEchoMessage = string.Empty;
+            }
+            return newScript;
+        }
+
+        public Task<List<Script>> UpdateScriptsAsync(IReadOnlyList<Script> scripts, bool preserveScriptState)
+        {
+            return Task.Run(() => UpdateScripts(scripts, preserveScriptState));
+        }
+
+        public List<Script> UpdateScripts(IReadOnlyList<Script> scripts, bool preserveScriptState)
+        {
+            // Get updateable scripts urls
+            Script[] updateableScripts = scripts.Where(s => s.IsUpdateable).ToArray();
+
+            List<Script> newScripts = new List<Script>(updateableScripts.Length);
+
+            if (_m != null)
+                _m.BuildScriptProgressVisibility = Visibility.Collapsed;
+            _m?.SetBuildCommandProgress("Download Progress", scripts.Count);
+            try
+            {
+                int i = 0;
+                foreach (Script sc in updateableScripts)
                 {
-                    int i = 0;
-                    foreach (Script sc in updateableScripts)
+                    i++;
+
+                    ScriptStateBackup stateBackup = null;
+                    if (preserveScriptState)
                     {
-                        i++;
-
-                        ScriptStateBackup stateBackup = null;
-                        if (preserveScriptState)
-                        {
-                            stateBackup = BackupScriptState(sc);
-                            Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
-                        }
-
-                        if (_m != null)
-                            _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
-                        Script newScript = InternalUpdateOneScript(sc, stateBackup);
-                        if (newScript != null)
-                            newScripts.Add(newScript);
+                        stateBackup = BackupScriptState(sc);
+                        Debug.Assert(stateBackup != null, "ScriptStateBackup is null");
                     }
-                }
-                finally
-                {
-                    _m?.ResetBuildCommandProgress();
+
                     if (_m != null)
-                    {
-                        _m.BuildEchoMessage = string.Empty;
-                        _m.BuildScriptProgressVisibility = Visibility.Visible;
-                    }
+                        _m.BuildEchoMessage = $"Updating script [{sc.Title}]... ({i}/{updateableScripts.Length})";
+                    Script newScript = InternalUpdateOneScript(sc, stateBackup);
+                    if (newScript != null)
+                        newScripts.Add(newScript);
+                    if (_m != null)
+                        _m.BuildCommandProgressValue += 1;
                 }
+            }
+            finally
+            {
+                _m?.ResetBuildCommandProgress();
+                if (_m != null)
+                {
+                    _m.BuildEchoMessage = string.Empty;
+                    _m.BuildScriptProgressVisibility = Visibility.Visible;
+                }
+            }
 
-                return newScripts;
-            });
+            return newScripts;
         }
 
         private Script InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
@@ -483,6 +494,11 @@ namespace PEBakery.Core
                 return (null, errorMsg);
 
             return (jsonRoot, null);
+        }
+
+        public static Task CreateMetaJsonAsync(Script sc, string destJsonFile)
+        {
+            return Task.Run(() => CreateMetaJson(sc, destJsonFile));
         }
 
         public static void CreateMetaJson(Script sc, string destJsonFile)

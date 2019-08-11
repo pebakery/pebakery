@@ -129,7 +129,7 @@ namespace PEBakery.Core
             }
             // UICtrls - InterfaceList= (Stage 1)
             if (_sc.MainInfo.ContainsKey(Script.Const.InterfaceList))
-            { 
+            {
                 // Check if InterfaceList contains proper sections
                 string interfaceList = _sc.MainInfo[Script.Const.InterfaceList];
                 try

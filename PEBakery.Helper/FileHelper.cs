@@ -77,30 +77,34 @@ namespace PEBakery.Helper
         private static readonly object TempPathLock = new object();
         private static readonly RNGCryptoServiceProvider SecureRandom = new RNGCryptoServiceProvider();
 
+        private static FileStream _lockFileStream = null;
         private static string _baseTempDir = null;
         public static string BaseTempDir()
         {
             lock (TempPathLock)
             {
-                if (_baseTempDir == null)
+                if (_baseTempDir != null)
+                    return _baseTempDir;
+
+                byte[] randBytes = new byte[4];
+                string systemTempDir = Path.GetTempPath();
+
+                do
                 {
-                    byte[] randBytes = new byte[4];
-                    string systemTempDir = Path.GetTempPath();
+                    // Get 4B of random 
+                    SecureRandom.GetBytes(randBytes);
+                    uint randInt = BitConverter.ToUInt32(randBytes, 0);
 
-                    do
-                    {
-                        // Get 4B of random 
-                        SecureRandom.GetBytes(randBytes);
-                        uint randInt = BitConverter.ToUInt32(randBytes, 0);
-
-                        _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
-                    }
-                    while (Directory.Exists(_baseTempDir) || File.Exists(_baseTempDir));
+                    _baseTempDir = Path.Combine(systemTempDir, $"PEBakery_{randInt:X8}");
                 }
-           
-                // Always call CreateDirectory().
-                // Cleanmgr can delete temp directories while PEBakery is running.
+                while (Directory.Exists(_baseTempDir) || File.Exists(_baseTempDir));
+
+                // Create base temp directory
                 Directory.CreateDirectory(_baseTempDir);
+
+                // Lock base temp directory
+                string lockFilePath = Path.Combine(_baseTempDir, "f.lock");
+                _lockFileStream = new FileStream(lockFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
 
                 return _baseTempDir;
             }
@@ -115,6 +119,8 @@ namespace PEBakery.Helper
             {
                 if (_baseTempDir == null)
                     return;
+
+                _lockFileStream?.Dispose();
 
                 if (Directory.Exists(_baseTempDir))
                     Directory.Delete(_baseTempDir, true);

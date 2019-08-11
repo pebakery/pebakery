@@ -25,11 +25,11 @@
     not derived from or based on this program. 
 */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using PEBakery.Helper;
 using NaturalSort.Extension;
+using PEBakery.Helper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PEBakery.Core.Commands
 {

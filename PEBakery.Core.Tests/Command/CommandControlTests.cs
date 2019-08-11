@@ -350,7 +350,7 @@ namespace PEBakery.Core.Tests.Command
         public void GetParam()
         {
             string scPath = Path.Combine(EngineTests.Project.ProjectName, "Control", "General.script");
-            
+
             void ScriptTemplate(string treePath, string entrySection, ErrorCheck check = ErrorCheck.Success)
             {
                 void SetState(EngineState es) => es.Project.Compat.LegacySectionParamCommand = false;

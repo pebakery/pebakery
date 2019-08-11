@@ -119,6 +119,9 @@
     <Compile Include="WPF\Controls\TextBoxDialog.xaml.cs">
       <DependentUpon>TextBoxDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WPF\Controls\TextViewDialog.xaml.cs">
+      <DependentUpon>TextViewDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\Converter.cs" />
     <Compile Include="WPF\LogExportDialog.xaml.cs">
       <DependentUpon>LogExportDialog.xaml</DependentUpon>
@@ -167,6 +170,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WPF\Controls\TextBoxDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WPF\Controls\TextViewDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

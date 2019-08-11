@@ -24,13 +24,14 @@
 
 using MahApps.Metro.IconPacks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace PEBakery.WPF.Controls
 {
     /// <summary>
-    /// TextBoxDialog.xaml에 대한 상호 작용 논리
+    /// TextViewDialog.xaml에 대한 상호 작용 논리
     /// </summary>
-    public partial class TextBoxDialog : Window
+    public partial class TextViewDialog : Window
     {
         #region Properties
         public PackIconMaterialKind MessageIcon
@@ -53,66 +54,63 @@ namespace PEBakery.WPF.Controls
             set => MessageTextBlock.Text = value;
         }
 
-        public string InputText
+        public string ViewText
         {
-            get => InputTextBox.Text;
-            set => InputTextBox.Text = value;
+            get => ViewTextBox.Text;
+            set => ViewTextBox.Text = value;
+        }
+
+        public TextWrapping TextWrapping
+        {
+            get => ViewTextBox.TextWrapping;
+            set
+            {
+                switch (value)
+                {
+                    case TextWrapping.NoWrap:
+                        TextScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+                        break;
+                    case TextWrapping.Wrap:
+                    case TextWrapping.WrapWithOverflow:
+                        TextScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                        break;
+                }
+                ViewTextBox.TextWrapping = value;
+            }
         }
         #endregion
 
         #region Constructor
-        public TextBoxDialog(string title, string message, PackIconMaterialKind icon = PackIconMaterialKind.None)
+        public TextViewDialog(string title, string message, string viewText,
+            PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
 
             Title = title;
             MessageText = message;
-            InputText = string.Empty;
+            ViewText = viewText;
             MessageIcon = icon;
+            TextWrapping = TextWrapping.NoWrap;
         }
 
-        public TextBoxDialog(string title, string message, string defaultInput, PackIconMaterialKind icon = PackIconMaterialKind.None)
-        {
-            InitializeComponent();
-
-            Title = title;
-            MessageText = message;
-            InputText = defaultInput;
-            MessageIcon = icon;
-        }
-
-        public TextBoxDialog(Window owner, string title, string message, PackIconMaterialKind icon = PackIconMaterialKind.None)
+        public TextViewDialog(Window owner, string title, string message, string viewText,
+            PackIconMaterialKind icon = PackIconMaterialKind.None)
         {
             InitializeComponent();
 
             Owner = owner;
             Title = title;
             MessageText = message;
-            InputText = string.Empty;
+            ViewText = viewText;
             MessageIcon = icon;
-        }
-
-        public TextBoxDialog(Window owner, string title, string message, string defaultInput, PackIconMaterialKind icon = PackIconMaterialKind.None)
-        {
-            InitializeComponent();
-
-            Owner = owner;
-            Title = title;
-            MessageText = message;
-            InputText = defaultInput;
-            MessageIcon = icon;
+            TextWrapping = TextWrapping.NoWrap;
         }
         #endregion
 
         #region Event Handler
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = true;
-        }
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
+            Close();
         }
         #endregion
     }

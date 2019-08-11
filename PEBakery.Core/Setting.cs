@@ -67,6 +67,7 @@ namespace PEBakery.Core
             public bool ShowLogAfterBuild;
             public bool StopBuildOnError;
             public bool EnableLongFilePath;
+            public bool EnableUpdateServerManagement;
             public bool UseCustomUserAgent;
             public string CustomUserAgent;
 
@@ -81,6 +82,7 @@ namespace PEBakery.Core
                 ShowLogAfterBuild = true;
                 StopBuildOnError = true;
                 EnableLongFilePath = false;
+                EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
                 // Default custom User-Agent is set to Edge's on Windows 10 v1809
                 CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
@@ -551,6 +553,7 @@ namespace PEBakery.Core
             Global.MainViewModel.MonospacedFont = Interface.MonospacedFont;
             Global.MainViewModel.DisplayShellExecuteConOut = Interface.DisplayShellExecuteConOut;
             Global.MainViewModel.InterfaceSize = Interface.InterfaceSize;
+            Global.MainViewModel.EnableUpdateServerManagement = General.EnableUpdateServerManagement;
 
             // MainViewModel (Theme)
             Global.MainViewModel.TopPanelBackground = Theme.TopPanelBackground;
@@ -596,6 +599,7 @@ namespace PEBakery.Core
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent)), // String
                 // Interface
@@ -673,6 +677,7 @@ namespace PEBakery.Core
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
                 General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
+                General.EnableUpdateServerManagement = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement);
                 General.UseCustomUserAgent = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent);
                 General.CustomUserAgent = SettingDictParser.ParseString(generalDict, nameof(General.CustomUserAgent), General.CustomUserAgent);
             }
@@ -773,10 +778,11 @@ namespace PEBakery.Core
                 // Project
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject), Project.DefaultProject), // String
                 // General
-                new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.EnableUpdateServerManagement), General.EnableUpdateServerManagement.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.UseCustomUserAgent), General.UseCustomUserAgent.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.CustomUserAgent), General.CustomUserAgent), // String
                 // Interface

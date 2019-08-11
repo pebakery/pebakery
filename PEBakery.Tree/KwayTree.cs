@@ -155,7 +155,7 @@ namespace PEBakery.Tree
             return RecursiveSearchNode(id, Root, out sibling);
         }
 
-        private KwayTreeNode<T> RecursiveSearchNode(int id, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
+        private static KwayTreeNode<T> RecursiveSearchNode(int id, List<KwayTreeNode<T>> list, out List<KwayTreeNode<T>> sibling)
         {
             foreach (KwayTreeNode<T> node in list)
             {

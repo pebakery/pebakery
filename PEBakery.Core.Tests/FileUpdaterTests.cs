@@ -25,6 +25,9 @@
     not derived from or based on this program. 
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Helper;
+using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,9 +35,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Helper;
-using PEBakery.Ini;
 
 namespace PEBakery.Core.Tests
 {
@@ -50,7 +50,7 @@ namespace PEBakery.Core.Tests
         public static void ServerInit(TestContext testContext)
         {
             TestSetup.StartWebFileServer();
-            
+
         }
 
         [ClassCleanup]
@@ -111,7 +111,7 @@ namespace PEBakery.Core.Tests
 
                 // Run an update
                 FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
-                Script newScript = await updater.UpdateScript(sc, true);
+                Script newScript = await updater.UpdateScriptAsync(sc, true);
 
                 // Validate updated script
                 foreach (LogInfo log in updater.Logs)

@@ -47,67 +47,56 @@
         d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Window.CommandBindings>
         <!-- Global -->
-        <CommandBinding x:Name="DefaultSettingCommand"
-                        Command="local:SettingViewCommands.DefaultSettingCommand"
+        <CommandBinding Command="local:SettingViewCommands.DefaultSettingCommand"
                         CanExecute="Command_CanExecute"
                         Executed="DefaultSettingCommand_Executed"/>
-        <CommandBinding x:Name="SaveSettingCommand"
-                        Command="local:SettingViewCommands.SaveSettingCommand"
+        <CommandBinding Command="local:SettingViewCommands.SaveSettingCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SaveSettingCommand_Executed"/>
         <!-- Projects -->
-        <CommandBinding x:Name="SelectSourceDirCommand"
-                        Command="local:SettingViewCommands.SelectSourceDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectSourceDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectSourceDirCommand_Executed"/>
-        <CommandBinding x:Name="ResetSourceDirCommand"
-                        Command="local:SettingViewCommands.ResetSourceDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.ResetSourceDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ResetSourceDirCommand_Executed"/>
-        <CommandBinding x:Name="SelectTargetDirCommand"
-                        Command="local:SettingViewCommands.SelectTargetDirCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectTargetDirCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectTargetDirCommand_Executed"/>
-        <CommandBinding x:Name="SelectIsoFileCommand"
-                        Command="local:SettingViewCommands.SelectIsoFileCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectIsoFileCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectIsoFileCommand_Executed"/>
         <!-- General -->
-        <CommandBinding x:Name="EnableLongFilePathCommand"
-                        Command="local:SettingViewCommands.EnableLongFilePathCommand"
+        <CommandBinding Command="local:SettingViewCommands.EnableLongFilePathCommand"
                         CanExecute="Command_CanExecute"
                         Executed="EnableLongFilePathCommand_Executed"/>
+        <CommandBinding Command="local:SettingViewCommands.EnableUpdateServerManagement"
+                        CanExecute="Command_CanExecute"
+                        Executed="EnableUpdateServerManager_Executed"/>
         <!-- Interface -->
-        <CommandBinding x:Name="ResetScaleFactorCommand"
-                        Command="local:SettingViewCommands.ResetScaleFactorCommand"
+        <CommandBinding Command="local:SettingViewCommands.ResetScaleFactorCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ResetScaleFactorCommand_Executed"/>
-        <CommandBinding x:Name="SelectMonospacedFontCommand"
-                        Command="local:SettingViewCommands.SelectMonospacedFontCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectMonospacedFontCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectMonospacedFontCommand_Executed"/>
-        <CommandBinding x:Name="SelectCustomEditorPathCommand"
-                        Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectCustomEditorPathCommand"
                         CanExecute="SelectCustomEditorPathCommand_CanExecute"
                         Executed="SelectCustomEditorPathCommand_Executed"/>
         <!-- Theme -->
-        <CommandBinding x:Name="SelectThemeCommand"
-                        Command="local:SettingViewCommands.SelectThemeCommand"
+        <CommandBinding Command="local:SettingViewCommands.SelectThemeCommand"
                         CanExecute="Command_CanExecute"
                         Executed="SelectThemeCommand_Executed"/>
         <!-- Script -->
-        <CommandBinding x:Name="ClearCacheDatabaseCommand"
-                        Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
+        <CommandBinding Command="local:SettingViewCommands.ClearCacheDatabaseCommand"
                         CanExecute="ClearCacheDatabaseCommand_CanExecute"
                         Executed="ClearCacheDatabaseCommand_Executed"/>
         <!-- Log -->
-        <CommandBinding x:Name="ClearLogDatabaseCommand"
-                        Command="local:SettingViewCommands.ClearLogDatabaseCommand"
+        <CommandBinding Command="local:SettingViewCommands.ClearLogDatabaseCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ClearLogDatabaseCommand_Executed"/>
         <!-- Compat -->
-        <CommandBinding x:Name="ToggleCompatOptionsCommand"
-                        Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
+        <CommandBinding Command="local:SettingViewCommands.ToggleCompatOptionsCommand"
                         CanExecute="Command_CanExecute"
                         Executed="ToggleCompatOptionsCommand_Executed"/>
     </Window.CommandBindings>
@@ -130,7 +119,7 @@
         <TabControl Grid.Row="0">
             <TabItem Width="80">
                 <TabItem.Header>
-                    <TextBlock FontSize="13" Text="Projects"/>
+                    <TextBlock FontSize="13" Text="Project"/>
                 </TabItem.Header>
                 <StackPanel Margin="5, 5, 5, 0" IsEnabled="{Binding CanExecuteCommand}">
                     <TextBlock Margin="0, 0, 0, 5"
@@ -332,7 +321,7 @@
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"
                                FontSize="13"
-                               Text="Path Length Limit"/>
+                               Text="Advanced"/>
                     <Separator Margin="0, 0, 0, 5"
                                BorderBrush="Black"
                                BorderThickness="2"/>
@@ -344,6 +333,13 @@
                                   Command="local:SettingViewCommands.EnableLongFilePathCommand"
                                   AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                   IsChecked="{Binding GeneralEnableLongFilePath}" />
+                        <CheckBox Height="20"
+                                  VerticalContentAlignment="Center"
+                                  Content="Enable update server management feature"
+                                  ToolTip="Intended for project developers and maintainers only"
+                                  Command="local:SettingViewCommands.EnableUpdateServerManagement"
+                                  AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
+                                  IsChecked="{Binding GeneralEnableUpdateServerManagement}" />
                     </StackPanel>
                     <TextBlock Margin="0, 10, 0, 5"
                                FontWeight="Bold"

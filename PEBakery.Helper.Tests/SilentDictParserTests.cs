@@ -22,11 +22,11 @@
     SOFTWARE.
 */
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Helper.Tests
 {

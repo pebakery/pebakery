@@ -26,8 +26,8 @@
 */
 
 using Ookii.Dialogs.Wpf;
-using PEBakery.Helper;
 using PEBakery.Core.WpfControls;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1179,7 +1179,7 @@ namespace PEBakery.Core.Commands
                 if (timeout <= 0)
                     return LogInfo.LogErrorMessage(logs, $"Timeout must be a positive integer [{timeoutStr}]");
 
-                Application.Current?.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     CustomMessageBox.Show(message, cmd.Section.Script.Title, MessageBoxButton.OK, image, timeout);
                 });

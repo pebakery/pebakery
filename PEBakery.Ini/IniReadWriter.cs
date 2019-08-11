@@ -22,6 +22,7 @@
     SOFTWARE.
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,7 +33,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using PEBakery.Helper;
 // ReSharper disable UnusedMember.Global
 
 namespace PEBakery.Ini

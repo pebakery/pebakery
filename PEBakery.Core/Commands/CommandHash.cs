@@ -57,7 +57,7 @@ namespace PEBakery.Core.Commands
 
             FileInfo fi = new FileInfo(filePath);
             long fileSize = fi.Length;
-            
+
             // If file size is larger than 32MB, turn on progress report
             if (ReportThreshold <= fileSize)
             {
@@ -77,7 +77,7 @@ namespace PEBakery.Core.Commands
             {
                 IProgress<long> progress = new Progress<long>(pos =>
                 {
-                    double percent = (double) pos / fileSize * 100;
+                    double percent = (double)pos / fileSize * 100;
                     s.MainViewModel.BuildCommandProgressValue = percent;
                     s.MainViewModel.BuildCommandProgressText = $"Hashing {hashType}... ({percent:0.0}%)";
                 });

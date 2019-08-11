@@ -25,12 +25,7 @@
     not derived from or based on this program. 
 */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {

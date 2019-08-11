@@ -2032,7 +2032,7 @@ namespace PEBakery.Ini.Tests
                     w.WriteLine("21=國");
                 }
 
-                IniKey[] keys = 
+                IniKey[] keys =
                 {
                     new IniKey("Section1", "SectionA"),
                     new IniKey("Section3", "SectionC"),

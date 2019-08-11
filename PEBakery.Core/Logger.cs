@@ -653,7 +653,7 @@ namespace PEBakery.Core
                 TreePath = sc.TreePath,
                 Version = sc.TidyVersion,
                 StartTime = DateTime.UtcNow,
-                FinishTime = DateTime.MinValue, 
+                FinishTime = DateTime.MinValue,
             };
 
             if (s.LogMode == LogMode.FullDefer)

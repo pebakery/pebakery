@@ -50,6 +50,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 ### Requirement
 
 - [Visual Studio 2017 15.7](https://visualstudio.microsoft.com/ko/thank-you-downloading-visual-studio/?sku=Community&rel=15#) or higher.
+   
 - [.Net Framework 4.7.2 Developer Pack](https://go.microsoft.com/fwlink/?linkid=874338) or higher for C# projects.
 - [.Net Core 2.1 SDK](https://dotnet.microsoft.com/download) or higher for C# libraries.
 - [Windows 8.1 SDK](https://go.microsoft.com/fwlink/p/?LinkId=323507) for compiling [LauncherNative](./LauncherNative).

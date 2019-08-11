@@ -238,7 +238,7 @@ namespace PEBakery.Core.Commands
                             src1 = true;
                         else if (srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
                             src1 = false;
-                        else 
+                        else
                             return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not valid boolean value");
 
                         bool src2;

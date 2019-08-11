@@ -26,13 +26,13 @@
 */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PEBakery.Core.Commands;
+using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using PEBakery.Core.Commands;
-using PEBakery.Helper;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 

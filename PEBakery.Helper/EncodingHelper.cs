@@ -23,10 +23,10 @@
     SOFTWARE.
 */
 
+using PEBakery.Helper.ThirdParty;
 using System;
 using System.IO;
 using System.Text;
-using PEBakery.Helper.ThirdParty;
 
 namespace PEBakery.Helper
 {
@@ -37,7 +37,7 @@ namespace PEBakery.Helper
         private static readonly byte[] Utf16BeBom = { 0xFE, 0xFF };
 
         private static readonly Encoding Utf8EncodingNoBom = new UTF8Encoding(false);
-        public static Encoding DefaultAnsi 
+        public static Encoding DefaultAnsi
         {
             get
             {
@@ -237,7 +237,7 @@ namespace PEBakery.Helper
                     idxZeroBuffer = new byte[count];
                     Array.Copy(buffer, offset, idxZeroBuffer, 0, count);
                 }
-                    
+
                 switch (detect.DetectEncoding(idxZeroBuffer, idxZeroBuffer.Length))
                 {
                     // Binary

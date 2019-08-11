@@ -192,15 +192,15 @@ namespace PEBakery.Core.WpfControls
             switch (image)
             {
                 // Enum value 48 - Also "Warning"
-                case MessageBoxImage.Exclamation: 
+                case MessageBoxImage.Exclamation:
                     icon = System.Drawing.SystemIcons.Exclamation;
                     break;
                 // Enum value 16 - Also "Hand" and "Stop"
-                case MessageBoxImage.Error:       
+                case MessageBoxImage.Error:
                     icon = System.Drawing.SystemIcons.Hand;
                     break;
                 // Enum value 64 - Also "Asterisk"
-                case MessageBoxImage.Information: 
+                case MessageBoxImage.Information:
                     icon = System.Drawing.SystemIcons.Information;
                     break;
                 case MessageBoxImage.Question:

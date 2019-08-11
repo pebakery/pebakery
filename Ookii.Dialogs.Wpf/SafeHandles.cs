@@ -1,11 +1,11 @@
 ﻿// Copyright ?Sven Groot (Ookii.org) 2009
 // BSD license; see license.txt for details.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
-using Microsoft.Win32.SafeHandles;
 
 namespace Ookii.Dialogs.Wpf
 {

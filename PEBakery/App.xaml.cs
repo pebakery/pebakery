@@ -1,7 +1,5 @@
 ﻿using PEBakery.Core;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
 // #define EXPERIMENTAL_GLOBAL_TEXTBOX_AUTOFOCUS
 
@@ -51,6 +49,6 @@ namespace PEBakery
                 textBox.SelectAll();
         }
         #endregion
-    #endif
+#endif
     }
 }

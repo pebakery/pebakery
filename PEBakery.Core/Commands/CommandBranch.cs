@@ -1012,7 +1012,7 @@ namespace PEBakery.Core.Commands
                         if (autoTimeout)
                         {
                             MessageBoxResult result = MessageBoxResult.None;
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 result = CustomMessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
                             });

@@ -22,12 +22,12 @@
 	SOFTWARE.
 */
 
+using PEBakery.Helper;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using PEBakery.Helper;
 
 namespace PEBakery.WPF.Controls
 {
@@ -99,7 +99,7 @@ namespace PEBakery.WPF.Controls
         {
             // Only if NumberBox was touched by the user, not canvases
             if (_focusedElement == FocusedElement.None)
-                Color = Color.FromRgb((byte) e.NewValue, Color.G, Color.B);
+                Color = Color.FromRgb((byte)e.NewValue, Color.G, Color.B);
         }
 
         private void GreenNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
@@ -311,7 +311,7 @@ namespace PEBakery.WPF.Controls
             double r = 0;
             double g = 0;
             double b = 0;
-            switch ((int) h2)
+            switch ((int)h2)
             {
                 case 0:
                     r = c;
@@ -345,7 +345,7 @@ namespace PEBakery.WPF.Controls
                     b = x;
                     break;
             }
-            
+
             // Convert R, G, B to [0, 255] range
             double m = v - c;
             r = r + m;

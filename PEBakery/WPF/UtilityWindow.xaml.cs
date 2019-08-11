@@ -31,7 +31,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -164,7 +163,7 @@ namespace PEBakery.WPF
                     // Build ended, Switch to Normal View
                     mainModel.SwitchNormalBuildInterface = true;
                     mainModel.BuildTreeItems.Clear();
-                    
+
                     // Report elapsed build time
                     await printStatus;
                     string reason = s.RunResultReport();

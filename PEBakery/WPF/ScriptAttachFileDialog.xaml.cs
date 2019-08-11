@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using PEBakery.Core;
+using System;
 using System.IO;
 using System.Windows;
-using Microsoft.Win32;
-using PEBakery.Core;
 
 namespace PEBakery.WPF
 {

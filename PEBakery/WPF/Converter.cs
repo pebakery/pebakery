@@ -33,7 +33,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -231,7 +230,7 @@ namespace PEBakery.WPF
             if (!(value is Project p))
                 return Visibility.Collapsed;
 
-            return p.IsPathSettingEnabled() ? Visibility.Collapsed : Visibility.Visible; ;
+            return p.IsPathSettingEnabled() ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -386,14 +385,14 @@ namespace PEBakery.WPF
             if (!(values[0] is bool visible && values[1] is double width))
                 return Setting.LogViewerSetting.MinColumnWidth;
 
-            // Binding won't work if returned value is not double (for column width)
+            // Binding will not work if returned value is not double (for column width).
             return visible ? width : 0.0;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             // Strange enough, using ConvertBack just locks column width.
-            // So just return Binding.DoNothing...
+            // So just return Binding.DoNothing.
             return new object[2] { Binding.DoNothing, Binding.DoNothing };
         }
     }
@@ -601,8 +600,8 @@ namespace PEBakery.WPF
         {
             if (values == null || values.Length != 3)
                 return null;
-            if (!(values[0] is bool hasIssue && 
-                values[1] is Color normal &&  
+            if (!(values[0] is bool hasIssue &&
+                values[1] is Color normal &&
                 values[2] is Color issue))
                 return null;
 

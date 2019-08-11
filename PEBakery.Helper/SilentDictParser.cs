@@ -133,7 +133,7 @@ namespace PEBakery.Helper
                         return defaultValue;
                 }
             }
-            
+
             notFound = false;
             return valInt;
         }
@@ -164,7 +164,7 @@ namespace PEBakery.Helper
             return kind;
         }
 
-        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue) 
+        public static TEnum ParseIntEnum<TEnum>(Dictionary<string, string> dict, string key, TEnum defaultValue)
             where TEnum : Enum
         {
             return ParseIntEnum(dict, key, defaultValue, out _);

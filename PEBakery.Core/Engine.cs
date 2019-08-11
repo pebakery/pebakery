@@ -256,7 +256,7 @@ namespace PEBakery.Core
                         // Recover mouse cursor icon
                         if (s.CursorWait)
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });

@@ -89,7 +89,7 @@ namespace PEBakery.Core.ViewModels
             set
             {
                 _workInProgress = value;
-                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
                     MainCanvas.IsEnabled = !_workInProgress;
                 }));
@@ -244,6 +244,15 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region UpdateServerManager
+        private bool _enableUpdateServerManagement;
+        public bool EnableUpdateServerManagement
+        {
+            get => _enableUpdateServerManagement;
+            set => SetProperty(ref _enableUpdateServerManagement, value);
+        }
+        #endregion
+
         #region Normal Interface Properties
         public const string DefaultTitleBar = "PEBakery " + Global.Const.ProgramVersionStrFull;
         private string _titleBar = DefaultTitleBar;
@@ -363,6 +372,7 @@ namespace PEBakery.Core.ViewModels
         }
         #endregion
 
+        #region TreeEntry
         private bool _isTreeEntryFile = true;
         /// <summary>
         /// Selected script is a script (.Script or .Link)
@@ -394,6 +404,7 @@ namespace PEBakery.Core.ViewModels
         public PackIconMaterialKind OpenExternalButtonIconKind => IsTreeEntryFile ? PackIconMaterialKind.Pencil : PackIconMaterialKind.Folder;
 
         public string ScriptUpdateButtonToolTip => IsTreeEntryFile ? "Update Script" : "Update Scripts";
+        #endregion
 
         private SyntaxChecker.Result _scriptCheckResult = SyntaxChecker.Result.Unknown;
         public SyntaxChecker.Result ScriptCheckResult
@@ -901,7 +912,7 @@ namespace PEBakery.Core.ViewModels
                             .FirstOrDefault(x => defaultProjectName.Equals(x.Script.Project.ProjectName, StringComparison.OrdinalIgnoreCase));
                         CurMainTree = itemModel ?? MainTreeItems.Last();
                         CurMainTree.IsExpanded = true;
-                        Application.Current?.Dispatcher.Invoke(() => { DisplayScript(CurMainTree.Script); });
+                        Application.Current?.Dispatcher?.Invoke(() => { DisplayScript(CurMainTree.Script); });
 
                         Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Projects [{string.Join(", ", Global.Projects.Select(x => x.ProjectName))}] loaded"));
 
@@ -943,7 +954,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref ProjectsLoading);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -973,7 +984,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref ScriptCache.DbLock);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -1100,7 +1111,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref SyntaxChecking);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -1148,7 +1159,7 @@ namespace PEBakery.Core.ViewModels
                     Interlocked.Decrement(ref ScriptRefreshing);
 
                     // Enable Button/Context Menu Commands
-                    Application.Current?.Dispatcher.Invoke(CommandManager.InvalidateRequerySuggested);
+                    Application.Current?.Dispatcher?.Invoke(CommandManager.InvalidateRequerySuggested);
                 }
             });
         }
@@ -1192,7 +1203,7 @@ namespace PEBakery.Core.ViewModels
         {
             // Current UIRenderer can only run in interface thread.
             // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
-            Application.Current?.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher?.Invoke(() =>
             {
                 // Set scale factor
                 ScaleTransform transform;
@@ -1221,7 +1232,7 @@ namespace PEBakery.Core.ViewModels
             if (_renderer == null)
                 return;
 
-            Application.Current?.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher?.Invoke(() =>
             {
                 _renderer.Clear();
                 _renderer = null;
@@ -1245,7 +1256,7 @@ namespace PEBakery.Core.ViewModels
                     try
                     {
                         // Guard instance ownership exception using Application.Current.Dispatcher.Invoke()
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageFormat type, out _))
                             {
@@ -1580,7 +1591,7 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-                FileHelper.OpenPath(filePath);
+                FileHelper.OpenPath(filePath).Dispose();
             }
         }
 
@@ -1597,11 +1608,11 @@ namespace PEBakery.Core.ViewModels
             }
 
             // In most circumstances, explorer.exe is already running as a shell without Administrator privilege.
-            Process proc = new Process
+            using (Process proc = new Process())
             {
-                StartInfo = new ProcessStartInfo(filePath)
-            };
-            proc.Start();
+                proc.StartInfo = new ProcessStartInfo(filePath);
+                proc.Start();
+            }
         }
         #endregion
     }

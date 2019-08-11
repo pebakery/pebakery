@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                         macroCommand = null;
 
                     LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Section, info.Permanent, false);
-                    return new List<LogInfo>(1) {log};
+                    return new List<LogInfo>(1) { log };
                 }
             }
 
@@ -65,46 +65,46 @@ namespace PEBakery.Core.Commands
             switch (info.Permanent)
             {
                 case true:
-                {
-                    // Check if interface contains VarKey
-                    List<LogInfo> logs = new List<LogInfo>();
-
-                    if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
-                        goto case false;
-
-                    #region Set interface control's value (Compat)
-                    if (s.CompatAllowSetModifyInterface)
                     {
-                        string varKey = Variables.TrimPercentMark(info.VarKey);
-                        string finalValue = StringEscaper.Preprocess(s, info.VarValue);
+                        // Check if interface contains VarKey
+                        List<LogInfo> logs = new List<LogInfo>();
 
-                        Script sc = cmd.Section.Script;
-                        ScriptSection iface = sc.GetInterfaceSection(out _);
-                        if (iface == null)
+                        if (Variables.DetectType(info.VarKey) != Variables.VarKeyType.Variable)
                             goto case false;
 
-                        (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
-                        UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
-                        if (uiCtrl == null)
-                            goto case false;
-
-                        bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
-                        logs.AddRange(varLogs);
-
-                        if (valid)
+                        #region Set interface control's value (Compat)
+                        if (s.CompatAllowSetModifyInterface)
                         {
-                            // Update uiCtrl into file
-                            uiCtrl.Update();
+                            string varKey = Variables.TrimPercentMark(info.VarKey);
+                            string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
-                            // Also update local variables
-                            logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
-                            return logs;
+                            Script sc = cmd.Section.Script;
+                            ScriptSection iface = sc.GetInterfaceSection(out _);
+                            if (iface == null)
+                                goto case false;
+
+                            (List<UIControl> uiCtrls, _) = UIParser.ParseStatements(iface.Lines, iface);
+                            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                            if (uiCtrl == null)
+                                goto case false;
+
+                            bool valid = uiCtrl.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                            logs.AddRange(varLogs);
+
+                            if (valid)
+                            {
+                                // Update uiCtrl into file
+                                uiCtrl.Update();
+
+                                // Also update local variables
+                                logs.AddRange(Variables.SetVariable(s, info.VarKey, info.VarValue, false, false));
+                                return logs;
+                            }
                         }
-                    }
 
-                    goto case false;
-                    #endregion
-                }
+                        goto case false;
+                        #endregion
+                    }
 
                 case false:
                 default:
@@ -123,7 +123,7 @@ namespace PEBakery.Core.Commands
                 macroCommand = null;
 
             LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Section, info.Global, info.Permanent);
-            return new List<LogInfo>(1) {log};
+            return new List<LogInfo>(1) { log };
         }
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)

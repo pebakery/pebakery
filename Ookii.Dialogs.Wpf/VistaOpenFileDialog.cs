@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Sven Groot (Ookii.org) 2006
 // See license.txt for details
 
-using System.ComponentModel;
-using System.IO;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf.Interop;
+using System.ComponentModel;
+using System.IO;
 
 namespace Ookii.Dialogs.Wpf
 {

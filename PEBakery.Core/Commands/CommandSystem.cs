@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
@@ -64,7 +64,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher?.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
@@ -303,7 +303,7 @@ namespace PEBakery.Core.Commands
                         s.Project.SortAllScripts();
 
                         // Update MainWindow.MainTree and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false, false);
                         });
@@ -381,7 +381,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         // Update MainWindow and redraw Script
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher?.Invoke(() =>
                         {
                             s.MainViewModel.UpdateScriptTree(s.Project, false);
                         });
@@ -689,7 +689,7 @@ namespace PEBakery.Core.Commands
                             else
                             {
                                 logs.Add(new LogInfo(LogState.Warning, $"Specified variable name [{info.ExitOutVar}] is not pre-defined"));
-                            }                            
+                            }
                         }
 
                         // PEBakery extension -> Report exit code via #r

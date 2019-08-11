@@ -27,11 +27,11 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core.Commands;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using PEBakery.Helper;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PEBakery.Core.Tests.Command

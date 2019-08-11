@@ -55,79 +55,64 @@
     </Window.DataContext>
     <Window.CommandBindings>
         <!-- Main Buttons -->
-        <CommandBinding x:Name="ProjectBuildStartCommand"
-                        Command="local:MainViewCommands.ProjectBuildStartCommand"
+        <CommandBinding Command="local:MainViewCommands.ProjectBuildStartCommand"
                         CanExecute="ProjectBuildStartCommand_CanExecute"
                         Executed="ProjectBuildStartCommand_Executed"/>
-        <CommandBinding x:Name="ProjectBuildStopCommand"
-                        Command="local:MainViewCommands.ProjectBuildStopCommand"
+        <CommandBinding Command="local:MainViewCommands.ProjectBuildStopCommand"
                         CanExecute="ProjectBuildStopCommand_CanExecute"
                         Executed="ProjectBuildStopCommand_Executed"/>
-        <CommandBinding x:Name="ProjectRefreshCommand"
-                        Command="local:MainViewCommands.ProjectRefreshCommand"
+        <CommandBinding Command="local:MainViewCommands.ProjectRefreshCommand"
                         CanExecute="ProjectLoading_CanExecute"
                         Executed="ProjectRefreshCommand_Executed"/>
-        <CommandBinding x:Name="SettingWindowCommand"
-                        Command="local:MainViewCommands.SettingWindowCommand"
+        <CommandBinding Command="local:MainViewCommands.SettingWindowCommand"
                         CanExecute="ProjectLoading_CanExecute"
                         Executed="SettingWindowCommand_Executed"/>
-        <CommandBinding x:Name="UtilityWindowCommand"
-                        Command="local:MainViewCommands.UtilityWindowCommand"
+        <CommandBinding Command="local:MainViewCommands.UtilityWindowCommand"
                         CanExecute="UtilityWindowCommand_CanExecute"
                         Executed="UtilityWindowCommand_Executed"/>
-        <CommandBinding x:Name="LogWindowCommand"
-                        Command="local:MainViewCommands.LogWindowCommand"
+        <CommandBinding Command="local:MainViewCommands.LogWindowCommand"
                         CanExecute="LogWindowCommand_CanExecute"
                         Executed="LogWindowCommand_Executed"/>
-        <CommandBinding x:Name="ProjectUpdateCommand"
-                        Command="local:MainViewCommands.ProjectUpdateCommand"
+        <CommandBinding Command="local:MainViewCommands.ProjectUpdateCommand"
                         CanExecute="ProjectUpdateCommand_CanExecute"
                         Executed="ProjectUpdateCommand_Executed"/>
-        <CommandBinding x:Name="AboutWindowCommand"
-                        Command="local:MainViewCommands.AboutWindowCommand"
+        <CommandBinding Command="local:MainViewCommands.AboutWindowCommand"
                         CanExecute="AboutWindowCommand_CanExecute"
                         Executed="AboutWindowCommand_Executed"/>
         <!-- Script Buttons and Context Menus -->
-        <CommandBinding x:Name="ScriptRunCommand"
-                        Command="local:MainViewCommands.ScriptRunCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptRunCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptRunCommand_Executed"/>
-        <CommandBinding x:Name="ScriptRefreshCommand"
-                        Command="local:MainViewCommands.ScriptRefreshCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptRefreshCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptRefreshCommand_Executed"/>
-        <CommandBinding x:Name="ScriptEditCommand"
-                        Command="local:MainViewCommands.ScriptEditCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptEditCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptEditCommand_Executed"/>
-        <CommandBinding x:Name="ScriptInternalEditorCommand"
-                        Command="local:MainViewCommands.ScriptInternalEditorCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptInternalEditorCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptInternalEditorCommand_Executed"/>
-        <CommandBinding x:Name="ScriptExternalEditorCommand"
-                        Command="local:MainViewCommands.ScriptExternalEditorCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptExternalEditorCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptExternalEditorCommand_Executed"/>
-        <CommandBinding x:Name="ScriptUpdateCommand"
-                        Command="local:MainViewCommands.ScriptUpdateCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptUpdateCommand"
                         CanExecute="ScriptUpdateCommand_CanExecute"
                         Executed="ScriptUpdateCommand_Executed"/>
-        <CommandBinding x:Name="ScriptSyntaxCheckCommand"
-                        Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptSyntaxCheckCommand_Executed"/>
-        <CommandBinding x:Name="DirectoryExpandTreeCommand"
-                        Command="local:MainViewCommands.DirectoryExpandTreeCommand"
+        <CommandBinding Command="local:MainViewCommands.DirectoryExpandTreeCommand"
                         CanExecute="ScriptDirMainCommand_CanExecute"
                         Executed="DirectoryExpandTreeCommand_Executed"/>
-        <CommandBinding x:Name="DirectoryCollapseTreeCommand"
-                        Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
+        <CommandBinding Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
                         CanExecute="ScriptDirMainCommand_CanExecute"
                         Executed="DirectoryCollapseTreeCommand_Executed"/>
-        <CommandBinding x:Name="ScriptOpenFolderCommand"
-                        Command="local:MainViewCommands.ScriptOpenFolderCommand"
+        <CommandBinding Command="local:MainViewCommands.ScriptOpenFolderCommand"
                         CanExecute="ScriptCommand_CanExecute"
                         Executed="ScriptOpenFolderCommand_Executed"/>
+        <CommandBinding Command="local:MainViewCommands.CreateScriptMetaFilesCommand"
+                        CanExecute="ScriptCommand_CanExecute"
+                        Executed="CreateScriptMetaFilesCommand_Executed"/>
     </Window.CommandBindings>
     <Window.Resources>
         <local:TaskBarProgressConverter x:Key="TaskBarProgressConverter" />
@@ -546,6 +531,14 @@
                                                 Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                                 <cc:CorrectMenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Download"/>
+                                </cc:CorrectMenuItem.Icon>
+                            </cc:CorrectMenuItem>
+                            <cc:CorrectMenuItem Header="Create Script Meta Files"
+                                                Visibility="{Binding Path=DataContext.EnableUpdateServerManagement, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                Command="local:MainViewCommands.CreateScriptMetaFilesCommand"
+                                                Grid.IsSharedSizeScope="True" >
+                                <cc:CorrectMenuItem.Icon>
+                                    <iconPacks:PackIconMaterial Kind="Paperclip"/>
                                 </cc:CorrectMenuItem.Icon>
                             </cc:CorrectMenuItem>
                             <!-- For File and Directory Both -->

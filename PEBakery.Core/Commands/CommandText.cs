@@ -25,13 +25,12 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Text;
-using PEBakery.Helper;
 // ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands

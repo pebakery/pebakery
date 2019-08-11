@@ -139,18 +139,18 @@ namespace PEBakery.Core
             foreach (string projectDir in projectDirs)
             {
                 string mainScript = Path.Combine(projectDir, Project.Names.MainScriptFile);
-                if (File.Exists(mainScript))
-                {
-                    // Feed _projectNames.
-                    string projectName = Path.GetFileName(projectDir);
-                    _projectNames.Add(projectName);
+                if (!File.Exists(mainScript))
+                    continue;
 
-                    // Load per-project compat options.
-                    // Even if compatFile does not exist, CompatOption class will deal with it.
-                    string compatFile = Path.Combine(projectDir, Project.Names.CompatFile);
-                    CompatOption compat = new CompatOption(compatFile);
-                    _compatDict[projectName] = compat;
-                }
+                // Feed _projectNames.
+                string projectName = Path.GetFileName(projectDir);
+                _projectNames.Add(projectName);
+
+                // Load per-project compat options.
+                // Even if compatFile does not exist, CompatOption class will deal with it.
+                string compatFile = Path.Combine(projectDir, Project.Names.CompatFile);
+                CompatOption compat = new CompatOption(compatFile);
+                _compatDict[projectName] = compat;
             }
         }
         #endregion
@@ -691,7 +691,7 @@ namespace PEBakery.Core
             {
                 Debug.Assert(spi.RealPath != null, "spi.RealPath is null");
                 Debug.Assert(spi.TreePath != null, "spi.TreePath is null");
-                Debug.Assert(!spi.IsDir, $"Project.{nameof(Load)} must not handle directory script instance");
+                Debug.Assert(!spi.IsDir, $"{nameof(Project)}.{nameof(Load)} must not handle directory script instance");
 
                 LoadReport cached = LoadReport.Stage1;
                 Script sc = null;
@@ -864,7 +864,7 @@ namespace PEBakery.Core
                 scTree.AddNode(nodeId, sc);
             }
 
-            // Sort - Script first, Directory last
+            // Sort - script first, directory last
             scTree.Sort((x, y) =>
             {
                 if (x.Data.Level == y.Data.Level)

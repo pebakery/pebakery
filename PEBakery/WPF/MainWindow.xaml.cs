@@ -25,9 +25,11 @@
     not derived from or based on this program. 
 */
 
+using MahApps.Metro.IconPacks;
 using PEBakery.Core;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
+using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -114,23 +116,26 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = true;
 
                 // Set StatusBar Text
-                CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Building {p.ProjectName}...", s, ct.Token);
+                Task printStatus;
+                using (CancellationTokenSource ct = new CancellationTokenSource())
+                {
+                    printStatus = MainViewModel.PrintBuildElapsedStatus($"Building {p.ProjectName}...", s, ct.Token);
 
-                // Run
-                int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
+                    // Run
+                    int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
 
 #if DEBUG
-                Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
-                {
-                    IncludeComments = true,
-                    IncludeMacros = true,
-                    ShowLogFlags = true,
-                });
+                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                    {
+                        IncludeComments = true,
+                        IncludeMacros = true,
+                        ShowLogFlags = true,
+                    });
 #endif
 
-                // Cancel and wait until PrintBuildElapsedStatus stops
-                ct.Cancel();
+                    // Cancel and wait until PrintBuildElapsedStatus stops
+                    ct.Cancel();
+                }
 
                 // Turn off progress ring
                 Model.WorkInProgress = false;
@@ -255,7 +260,7 @@ namespace PEBakery.WPF
 
         private void ProjectUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model != null && !Model.WorkInProgress && 
+            e.CanExecute = Model != null && !Model.WorkInProgress &&
                            Global.Projects != null && Global.Projects.FullyLoaded;
         }
 
@@ -342,26 +347,31 @@ namespace PEBakery.WPF
 
                 // Switch to Build View
                 Model.SwitchNormalBuildInterface = false;
-                CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
 
-                // Run
-                int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
+                Task printStatus;
+                TimeSpan t;
+                using (CancellationTokenSource ct = new CancellationTokenSource())
+                {
+                    printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
+                    // Run
+                    int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
-                Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
-                {
-                    IncludeComments = true,
-                    IncludeMacros = true,
-                    ShowLogFlags = true,
-                });
+                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                    {
+                        IncludeComments = true,
+                        IncludeMacros = true,
+                        ShowLogFlags = true,
+                    });
 #endif
 
-                // Cancel and Wait until PrintBuildElapsedStatus stops
-                // Report elapsed time
-                TimeSpan t = s.Elapsed;
+                    // Cancel and Wait until PrintBuildElapsedStatus stops
+                    // Report elapsed time
+                    t = s.Elapsed;
 
-                ct.Cancel();
+                    ct.Cancel();
+                }
+
                 await printStatus;
                 Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
 
@@ -468,6 +478,7 @@ namespace PEBakery.WPF
             // Get instances of Script and Project
             Script targetScript = Model.CurMainTree.Script;
             Project p = Model.CurMainTree.Script.Project;
+            // Do not apply updateMultipleScript to MainScript, because users should use project update for this job.
             bool updateMultipleScript = targetScript.Type == ScriptType.Directory;
             if (!updateMultipleScript && !targetScript.IsUpdateable)
             {
@@ -490,6 +501,8 @@ namespace PEBakery.WPF
                 Model.BuildTreeItems.Clear();
                 if (updateMultipleScript)
                 { // Update a list of scripts
+                    // We have to search in p.AllScripts rather than in ProjectTreeItemModel to find hidden scripts
+                    // (ProjectTreeItemModel only contains visible scripts)
                     targetScripts = p.AllScripts
                         .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase) &&
                                     x.IsUpdateable)
@@ -499,7 +512,7 @@ namespace PEBakery.WPF
                     if (targetScripts.Length == 0)
                     {
                         // Ask user for confirmation
-                        MessageBox.Show(this, 
+                        MessageBox.Show(this,
                             $"Directory [{targetScript.Title}] does not have updateable children scripts.",
                             "No updateable scripts",
                             MessageBoxButton.OK,
@@ -538,9 +551,9 @@ namespace PEBakery.WPF
                 string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
                 FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
                 if (updateMultipleScript) // Update a list of scripts
-                    newScripts = await updater.UpdateScripts(targetScripts, true);
+                    newScripts = await updater.UpdateScriptsAsync(targetScripts, true);
                 else
-                    newScript = await updater.UpdateScript(targetScript, true);
+                    newScript = await updater.UpdateScriptAsync(targetScript, true);
                 updaterLogs = updater.Logs;
 
                 // Log messages
@@ -564,9 +577,10 @@ namespace PEBakery.WPF
             // Report results
             if (updateMultipleScript)
             { // Updated multiple scripts
-                MessageBoxImage msgBoxImage = MessageBoxImage.Information;
+                PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                 StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
-                b.AppendLine($"Successfully updated [{newScripts.Count}] scripts");
+                if (0 < newScripts.Count)
+                    b.AppendLine($"Successfully updated [{newScripts.Count}] scripts");
 
                 foreach (Script newSc in newScripts)
                 {
@@ -580,15 +594,18 @@ namespace PEBakery.WPF
                 LogInfo[] errorLogs = updaterLogs.Where(x => x.State == LogState.Error).ToArray();
                 if (0 < errorLogs.Length)
                 { // Failure
-                    b.AppendLine();
+                    if (0 < newScripts.Count)
+                        b.AppendLine();
                     b.AppendLine($"Failed to update [{targetScripts.Length - newScripts.Count}] scripts");
                     foreach (LogInfo log in errorLogs)
                         b.AppendLine($"- {log.Message}");
 
-                    msgBoxImage = MessageBoxImage.Error;
+                    msgBoxIcon = PackIconMaterialKind.Alert;
                 }
 
-                MessageBox.Show(b.ToString(), "Update Results", MessageBoxButton.OK, msgBoxImage);
+                const string msgTitle = "Script Update Report";
+                TextViewDialog dialog = new TextViewDialog(this, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                dialog.ShowDialog();
             }
             else
             { // Updated single script
@@ -599,7 +616,7 @@ namespace PEBakery.WPF
                     Model.PostRefreshScript(node, newScript);
 
                     MessageBox.Show($"Successfully updated script {newScript.Title}",
-                        "Update Success",
+                        "Script Update Success",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
@@ -611,7 +628,7 @@ namespace PEBakery.WPF
                     foreach (LogInfo log in errorLogs)
                         b.AppendLine($"- {log.Message}");
 
-                    MessageBox.Show(b.ToString(), "Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(b.ToString(), "Script Update Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -671,6 +688,138 @@ namespace PEBakery.WPF
                 foreach (ProjectTreeItemModel subItem in dirItem.Children.Where(x => x.Script.Type == ScriptType.Directory))
                     q.Enqueue(subItem);
             }
+        }
+
+        private async void CreateScriptMetaFilesCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Force update of script interface controls (if changed)
+            ScriptUpdateButton.Focus();
+
+            // Must be filtered by ScriptCommand_CanExecute before
+            if (Model.WorkInProgress)
+            {
+                Global.Logger.SystemWrite(new LogInfo(LogState.CriticalError, $"Race condition with {nameof(Model.WorkInProgress)} happened in {nameof(ScriptUpdateCommand_Executed)}"));
+                return;
+            }
+
+            // Get instances of Script and Project
+            Script targetScript = Model.CurMainTree.Script;
+            Project p = Model.CurMainTree.Script.Project;
+
+            // Define local variables
+            Script[] targetScripts;
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Turn on progress ring
+            Model.WorkInProgress = true;
+            int successCount = 0;
+            int errorCount = 0;
+            try
+            {
+                // Populate BuildTree
+                ProjectTreeItemModel treeRoot = MainViewModel.PopulateOneTreeItem(targetScript, null, null);
+                Model.BuildTreeItems.Clear();
+                if (targetScript.Type == ScriptType.Directory || targetScript.IsMainScript)
+                { // Update a list of scripts
+                    // We have to search in p.AllScripts rather than in ProjectTreeItemModel to find hidden scripts
+                    // (ProjectTreeItemModel only contains visible scripts)
+                    if (targetScript.IsMainScript)
+                    {
+                        targetScripts = p.AllScripts.ToArray();
+                    }
+                    else
+                    {
+                        targetScripts = p.AllScripts
+                            .Where(x => x.TreePath.StartsWith(targetScript.TreePath, StringComparison.OrdinalIgnoreCase))
+                            .ToArray();
+                    }
+
+                    MainViewModel.ScriptListToTreeViewModel(p, targetScripts, false, treeRoot);
+                    targetScripts = targetScripts.Where(x => x.Type != ScriptType.Directory).ToArray();
+                    if (targetScripts.Length == 0)
+                    {
+                        // Ask user for confirmation
+                        MessageBox.Show(this,
+                            $"Directory [{targetScript.Title}] does not have any children scripts.",
+                            "No children scripts",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+                }
+                else
+                {
+                    targetScripts = new Script[] { targetScript };
+                }
+
+                Model.BuildTreeItems.Add(treeRoot);
+                Model.CurBuildTree = null;
+
+                // Switch to Build View
+                Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+                Model.SwitchNormalBuildInterface = false;
+                Model.SetBuildCommandProgress("Creating script meta file for Updater", targetScripts.Length);
+
+                Stopwatch watch = Stopwatch.StartNew();
+
+                // Run Updater
+                foreach (Script sc in targetScripts)
+                {
+                    string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
+                    try
+                    {
+                        await FileUpdater.CreateMetaJsonAsync(sc, destJsonFile);
+                        logs.Add(new LogInfo(LogState.Success, $"Created meta file of [{sc.Title}]"));
+                        successCount += 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"Unable to create meta file of [{sc.Title}] - {Logger.LogExceptionMessage(ex)}"));
+                        errorCount += 1;
+                    }
+
+                    Model.BuildCommandProgressValue += 1;
+                }
+
+                // Log messages
+                Logger.SystemWrite(logs);
+
+                watch.Stop();
+                TimeSpan t = watch.Elapsed;
+                Model.StatusBarText = $"Updated {targetScript.Title} ({t:h\\:mm\\:ss})";
+            }
+            finally
+            {
+                // Turn off progress ring
+                Model.ResetBuildCommandProgress();
+                Model.BuildScriptFullProgressVisibility = Visibility.Visible;
+                Model.WorkInProgress = false;
+
+                // Build Ended, Switch to Normal View
+                Model.SwitchNormalBuildInterface = true;
+                Model.DisplayScript(Model.CurMainTree.Script);
+            }
+
+            PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
+            StringBuilder b = new StringBuilder(targetScripts.Length + 4);
+            b.AppendLine($"Created [{successCount}] script meta files.");
+
+            foreach (LogInfo log in logs.Where(x => x.State == LogState.Success))
+                b.AppendLine($"- {log.Message}");
+
+            if (0 < errorCount)
+            { // Failure
+                b.AppendLine();
+                b.AppendLine($"Failed to create [{errorCount}] script meta files");
+                foreach (LogInfo log in logs.Where(x => x.State == LogState.Error))
+                    b.AppendLine($"- {log.Message}");
+
+                msgBoxIcon = PackIconMaterialKind.Alert;
+            }
+
+            const string msgTitle = "Script Meta Files Report";
+            TextViewDialog dialog = new TextViewDialog(this, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+            dialog.ShowDialog();
         }
         #endregion
 
@@ -822,6 +971,7 @@ namespace PEBakery.WPF
         public static readonly RoutedCommand DirectoryExpandTreeCommand = new RoutedUICommand("Collapse items", "DirectoryExpandTree", typeof(MainViewCommands));
         public static readonly RoutedCommand DirectoryCollapseTreeCommand = new RoutedUICommand("Collapse items", "DirectoryCollapseTree", typeof(MainViewCommands));
         public static readonly RoutedCommand ScriptOpenFolderCommand = new RoutedUICommand("Open Script Folder", "ScriptOpenFolder", typeof(MainViewCommands));
+        public static readonly RoutedCommand CreateScriptMetaFilesCommand = new RoutedUICommand("Create Script Meta Files", "CreateScriptMetaFiles", typeof(MainViewCommands));
         #endregion
     }
     #endregion

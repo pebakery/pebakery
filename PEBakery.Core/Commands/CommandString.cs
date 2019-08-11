@@ -25,15 +25,14 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -594,7 +593,7 @@ namespace PEBakery.Core.Commands
                             return LogInfo.LogErrorMessage(logs, $"[{totalWidthStr}] is not a valid integer");
                         if (totalWidth < 0)
                             return LogInfo.LogErrorMessage(logs, $"[{totalWidth}] must be a positive integer");
-                        
+
                         if (padCharStr.Length != 1)
                             return LogInfo.LogErrorMessage(logs, $"Padding character [{padCharStr}] should be one character");
                         char padChar = padCharStr[0];

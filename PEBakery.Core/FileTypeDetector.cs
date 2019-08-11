@@ -25,8 +25,8 @@
     not derived from or based on this program. 
 */
 
-using System;
 using Joveler.FileMagician;
+using System;
 
 namespace PEBakery.Core
 {

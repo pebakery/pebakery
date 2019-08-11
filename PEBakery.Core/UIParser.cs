@@ -360,7 +360,7 @@ namespace PEBakery.Core
 
                             // Trim one '_' from start and end
                             string rawSectionName = args[cnt - 2];
-                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2); 
+                            sectionName = rawSectionName.Substring(1, rawSectionName.Length - 2);
                             cnt -= 2;
                         }
 

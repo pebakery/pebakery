@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.IO;
 using System.Windows.Media;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace PEBakery.Core.Tests
 {
