@@ -740,8 +740,8 @@ namespace PEBakery.WPF
                     {
                         // Ask user for confirmation
                         MessageBox.Show(this,
-                            $"Directory [{targetScript.Title}] does not have any children scripts.",
-                            "No children scripts",
+                            $"Directory [{targetScript.Title}] does not have any child scripts.",
+                            "No child scripts",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
                         return;
@@ -758,7 +758,7 @@ namespace PEBakery.WPF
                 // Switch to Build View
                 Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
                 Model.SwitchNormalBuildInterface = false;
-                Model.SetBuildCommandProgress("Creating script meta file for Updater", targetScripts.Length);
+                Model.SetBuildCommandProgress("Creating script meta files for Updater", targetScripts.Length);
 
                 Stopwatch watch = Stopwatch.StartNew();
 
@@ -769,12 +769,12 @@ namespace PEBakery.WPF
                     try
                     {
                         await FileUpdater.CreateMetaJsonAsync(sc, destJsonFile);
-                        logs.Add(new LogInfo(LogState.Success, $"Created meta file of [{sc.Title}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Created meta file for [{sc.Title}]"));
                         successCount += 1;
                     }
                     catch (Exception ex)
                     {
-                        logs.Add(new LogInfo(LogState.Error, $"Unable to create meta file of [{sc.Title}] - {Logger.LogExceptionMessage(ex)}"));
+                        logs.Add(new LogInfo(LogState.Error, $"Unable to create meta file for [{sc.Title}] - {Logger.LogExceptionMessage(ex)}"));
                         errorCount += 1;
                     }
 

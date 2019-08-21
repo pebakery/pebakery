@@ -230,7 +230,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                const string msg = "Enabling this option may cause problems if you do not understand the implications of long path support. Please consult the PEBakery manual for details.\r\n\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 _m.GeneralEnableLongFilePath = res == MessageBoxResult.Yes;
             }
@@ -249,7 +249,7 @@ namespace PEBakery.WPF
             _m.CanExecuteCommand = false;
             try
             {
-                const string msg = "This option is intended only for project developers!\r\nDo you really want to continue?";
+                const string msg = "This option is intended only for project developers!\r\n\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 _m.GeneralEnableUpdateServerManagement = res == MessageBoxResult.Yes;
             }

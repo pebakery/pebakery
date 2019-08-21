@@ -335,7 +335,7 @@
                                   IsChecked="{Binding GeneralEnableLongFilePath}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
-                                  Content="Enable update server management feature"
+                                  Content="Enable update server management"
                                   ToolTip="Intended for project developers and maintainers only"
                                   Command="local:SettingViewCommands.EnableUpdateServerManagement"
                                   AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"

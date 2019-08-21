@@ -3201,9 +3201,10 @@ namespace PEBakery.WPF
                     }
 
                     // Success Report
+                    PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                     b.Clear();
                     if (1 < successFiles.Count)
-                    {
+                    {                    
                         b.AppendLine($"{successFiles.Count} files were successfully extracted.");
                         foreach (string fileName in successFiles)
                             b.AppendLine($"- {fileName}");
@@ -3212,20 +3213,23 @@ namespace PEBakery.WPF
                     {
                         b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
                     }
-                    MessageBox.Show(_window, b.ToString(), "Extraction Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
-
+                    
                     // Failure Report
                     if (1 <= failureFiles.Count)
                     {
-                        b.Clear();
+                        msgBoxIcon = PackIconMaterialKind.Alert;
+                        b.AppendLine();
                         b.AppendLine($"Unable to extract {successFiles.Count} files.");
                         foreach ((string fileName, Exception ex) in failureFiles)
                         {
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                             b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
                         }
-                        MessageBox.Show(_window, b.ToString(), "Extraction Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+
+                    const string msgTitle = "Extraction Report";
+                    TextViewDialog reportDialog = new TextViewDialog(_window,msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                    reportDialog.ShowDialog();
                 }
             }
             finally
@@ -3554,6 +3558,7 @@ namespace PEBakery.WPF
                     }
 
                     // Success Report
+                    PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                     StringBuilder b = new StringBuilder();
                     if (1 < successFiles.Count)
                     {
@@ -3565,20 +3570,23 @@ namespace PEBakery.WPF
                     {
                         b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
                     }
-                    MessageBox.Show(_window, b.ToString(), "Extraction Success Report", MessageBoxButton.OK, MessageBoxImage.Information);
-
+                    
                     // Failure Report
                     if (1 <= failureFiles.Count)
                     {
-                        b.Clear();
+                        msgBoxIcon = PackIconMaterialKind.Alert;
+                        b.AppendLine();
                         b.AppendLine($"Unable to extract {successFiles.Count} files.");
                         foreach ((string fileName, Exception ex) in failureFiles)
                         {
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                             b.AppendLine($"- {fileName} ({Logger.LogExceptionMessage(ex)})");
                         }
-                        MessageBox.Show(_window, b.ToString(), "Extraction Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+
+                    const string msgTitle = "Extraction Report";
+                    TextViewDialog reportDialog = new TextViewDialog(_window, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                    reportDialog.ShowDialog();
                 }
             }
             finally
@@ -3657,7 +3665,8 @@ namespace PEBakery.WPF
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                             b.AppendLine($"- {errMsg}");
                         }
-                        MessageBox.Show(_window, b.ToString(), "Delete Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
+                        TextViewDialog reportDialog = new TextViewDialog(_window, "Delete Report", "Delete Failure", b.ToString(), PackIconMaterialKind.Alert);
+                        reportDialog.ShowDialog();
                     }
                 }
             }
@@ -3756,7 +3765,8 @@ namespace PEBakery.WPF
                         b.AppendLine($"- {failure}");
                         Global.Logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to inspect [{failure}]"));
                     }
-                    MessageBox.Show(_window, b.ToString(), "Inspect Failure Report", MessageBoxButton.OK, MessageBoxImage.Error);
+                    TextViewDialog reportDialog = new TextViewDialog(_window, "Inspection Report", "Inspection Failure", b.ToString(), PackIconMaterialKind.Alert);
+                    reportDialog.ShowDialog();
                 }
             }
             finally

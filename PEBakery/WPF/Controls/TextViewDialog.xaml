@@ -31,7 +31,8 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:wpfControls="clr-namespace:PEBakery.Core.WpfControls;assembly=PEBakery.Core"
         mc:Ignorable="d"
-        Title="TextViewDialog" Width="480" Height="320">
+        Title="TextViewDialog" Width="480" Height="320"
+        WindowStartupLocation="CenterOwner">
     <Grid Margin="15" FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
