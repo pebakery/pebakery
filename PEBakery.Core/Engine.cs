@@ -132,7 +132,7 @@ namespace PEBakery.Core
             // Display script information
             s.MainViewModel.DisplayScriptTexts(sc, s);
             s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
-            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
+            Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
             {
                 s.MainViewModel.DisplayScriptLogo(sc);
 

@@ -333,7 +333,6 @@ namespace PEBakery.WPF
             { // Engine is not running, so we can start new engine
                 try
                 {
-
                     Model.BuildTreeItems.Clear();
                     ProjectTreeItemModel rootItem = MainViewModel.PopulateOneTreeItem(sc, null, null);
                     Model.BuildTreeItems.Add(rootItem);
@@ -759,15 +758,36 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 // Switch to Build View
-                Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+                // Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+                Model.BuildFullProgressBarMax = targetScripts.Length;
+                Model.BuildFullProgressBarValue = 0;
+                Model.BuildEchoMessage = "Creating meta files...";
                 Model.SwitchNormalBuildInterface = false;
-                Model.SetBuildCommandProgress("Creating script meta files for Updater", targetScripts.Length);
 
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run Updater
                 foreach (Script sc in targetScripts)
                 {
+                    // Display script information
+                    Model.BuildFullProgressBarValue += 1;
+                    Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
+                    {
+                        Model.DisplayScriptTexts(sc, null);
+                        Model.DisplayScriptLogo(sc);
+
+                        // BuildTree is empty -> return
+                        if (Model.BuildTreeItems.Count == 0)
+                            return;
+
+                        if (Model.CurBuildTree != null)
+                            Model.CurBuildTree.BuildFocus = false;
+                        Model.CurBuildTree = ProjectTreeItemModel.FindScriptByRealPath(Model.BuildTreeItems[0], sc.RealPath);
+                        if (Model.CurBuildTree != null)
+                            Model.CurBuildTree.BuildFocus = true;
+                    }));
+
+                    // Do the real job
                     string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
                     try
                     {
@@ -780,8 +800,6 @@ namespace PEBakery.WPF
                         logs.Add(new LogInfo(LogState.Error, $"Unable to create meta file for [{sc.Title}] - {Logger.LogExceptionMessage(ex)}"));
                         errorCount += 1;
                     }
-
-                    Model.BuildCommandProgressValue += 1;
                 }
 
                 // Log messages
@@ -794,7 +812,6 @@ namespace PEBakery.WPF
             finally
             {
                 // Turn off progress ring
-                Model.ResetBuildCommandProgress();
                 Model.BuildScriptFullProgressVisibility = Visibility.Visible;
                 Model.WorkInProgress = false;
 
