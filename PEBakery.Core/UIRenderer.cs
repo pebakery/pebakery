@@ -1345,13 +1345,14 @@ namespace PEBakery.Core
             }
             else
             { // Directory
+                // TODO: Someone reports that native FolderBrowserDialog of .Net Core 3.0 is Vista-style by default.
                 VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                 string currentPath = StringEscaper.Preprocess(_variables, uiCtrl.Text);
                 if (Directory.Exists(currentPath))
                     dialog.SelectedPath = currentPath;
 
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     bool? result = _window == null ? dialog.ShowDialog() : dialog.ShowDialog(_window);
                     if (result == true)
@@ -1580,13 +1581,14 @@ namespace PEBakery.Core
 
         private static async void InternalRunOneSection(ScriptSection section, string logMsg, bool hideProgress)
         {
-            if (Engine.WorkingLock == 0)
-            {
-                Interlocked.Increment(ref Engine.WorkingLock);
+            MainViewModel mainModel = Global.MainViewModel;
 
+            if (!Engine.TryEnterLock())
+                return;
+            try
+            {
                 Logger logger = Global.Logger;
 
-                MainViewModel mainModel = Global.MainViewModel;
                 // Populate BuildTree
                 if (!hideProgress)
                 {
@@ -1598,7 +1600,8 @@ namespace PEBakery.Core
 
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne, section.Script, section.Name);
+                EngineState s = new EngineState(section.Project, logger, mainModel, EngineMode.RunMainAndOne,
+                    section.Script, section.Name);
                 s.SetOptions(Global.Setting);
                 s.SetCompat(section.Project.Compat);
                 if (s.LogMode == LogMode.PartDefer) // Use FullDefer in UIRenderer
@@ -1643,16 +1646,19 @@ namespace PEBakery.Core
                 mainModel.BuildTreeItems.Clear();
                 mainModel.WorkInProgress = false;
 
+            }
+            finally
+            {
                 Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
+                Engine.ExitLock();
+            }
 
-                if (!hideProgress)
+            if (!hideProgress)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
-                    });
-                }
+                    mainModel.DisplayScript(mainModel.CurMainTree.Script);
+                });
             }
         }
         #endregion

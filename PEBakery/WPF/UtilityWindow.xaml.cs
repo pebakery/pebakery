@@ -97,7 +97,7 @@ namespace PEBakery.WPF
         #region Commands - CodeBox
         private void CodeBoxCommands_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.TabIndex == 0 && _m.CanExecuteCommand && Engine.WorkingLock == 0;
+            e.CanExecute = _m != null && _m.TabIndex == 0 && _m.CanExecuteCommand && !Engine.IsRunning;
         }
 
         private void CodeBoxSaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -131,64 +131,66 @@ namespace PEBakery.WPF
                 _m.SaveCodeBox();
 
                 // Run Engine
-                Interlocked.Increment(ref Engine.WorkingLock);
-                try
+                if (Engine.TryEnterLock())
                 {
-                    Project project = _m.CurrentProject;
-                    Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
+                    try
+                    {
+                        Project project = _m.CurrentProject;
+                        Script sc = project.LoadScriptRuntime(_m.CodeFile, new LoadScriptRuntimeOptions { IgnoreMain = true });
 
-                    MainViewModel mainModel = Global.MainViewModel;
-                    mainModel.BuildTreeItems.Clear();
-                    mainModel.SwitchNormalBuildInterface = false;
-                    mainModel.WorkInProgress = true;
+                        MainViewModel mainModel = Global.MainViewModel;
+                        mainModel.BuildTreeItems.Clear();
+                        mainModel.SwitchNormalBuildInterface = false;
+                        mainModel.WorkInProgress = true;
 
-                    EngineState s = new EngineState(sc.Project, Global.Logger, mainModel, EngineMode.RunMainAndOne, sc);
-                    s.SetOptions(Global.Setting);
-                    s.SetCompat(sc.Project.Compat);
+                        EngineState s = new EngineState(sc.Project, Global.Logger, mainModel, EngineMode.RunMainAndOne, sc);
+                        s.SetOptions(Global.Setting);
+                        s.SetCompat(sc.Project.Compat);
 
-                    Engine.WorkingEngine = new Engine(s);
+                        Engine.WorkingEngine = new Engine(s);
 
-                    // Set StatusBar Text
-                    CancellationTokenSource ct = new CancellationTokenSource();
-                    Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
+                        // Set StatusBar Text
+                        CancellationTokenSource ct = new CancellationTokenSource();
+                        Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
-                    await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+                        await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
-                    // Cancel and Wait until PrintBuildElapsedStatus stops
-                    ct.Cancel();
+                        // Cancel and Wait until PrintBuildElapsedStatus stops
+                        ct.Cancel();
 
-                    // Turn off progress ring
-                    mainModel.WorkInProgress = false;
+                        // Turn off progress ring
+                        mainModel.WorkInProgress = false;
 
-                    // Build ended, Switch to Normal View
-                    mainModel.SwitchNormalBuildInterface = true;
-                    mainModel.BuildTreeItems.Clear();
+                        // Build ended, Switch to Normal View
+                        mainModel.SwitchNormalBuildInterface = true;
+                        mainModel.BuildTreeItems.Clear();
 
-                    // Report elapsed build time
-                    await printStatus;
-                    string reason = s.RunResultReport();
-                    if (reason != null)
-                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
-                    else
-                        mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
+                        // Report elapsed build time
+                        await printStatus;
+                        string reason = s.RunResultReport();
+                        if (reason != null)
+                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";
+                        else
+                            mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}";
 
-                    s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
-                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
-                    { // Open BuildLogWindow
-                        Application.Current?.Dispatcher.Invoke(() =>
-                        {
-                            if (!(Application.Current.MainWindow is MainWindow w))
-                                return;
+                        s.MainViewModel.DisplayScript(mainModel.CurMainTree.Script);
+                        if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                        { // Open BuildLogWindow
+                            Application.Current?.Dispatcher?.Invoke(() =>
+                            {
+                                if (!(Application.Current.MainWindow is MainWindow w))
+                                    return;
 
-                            w.LogDialog = new LogWindow(1);
-                            w.LogDialog.Show();
-                        });
+                                w.LogDialog = new LogWindow(1);
+                                w.LogDialog.Show();
+                            });
+                        }
                     }
-                }
-                finally
-                {
-                    Engine.WorkingEngine = null;
-                    Interlocked.Decrement(ref Engine.WorkingLock);
+                    finally
+                    {
+                        Engine.WorkingEngine = null;
+                        Engine.ExitLock();
+                    }
                 }
             }
             finally

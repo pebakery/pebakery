@@ -81,7 +81,7 @@ namespace PEBakery.WPF
         #region Main Buttons
         private void ProjectBuildStartCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress && Engine.WorkingLock == 0 &&
+            e.CanExecute = Model?.CurMainTree?.Script != null && !Model.WorkInProgress && !Engine.IsRunning &&
                            Global.Projects != null && Global.Projects.FullyLoaded;
         }
 
@@ -90,8 +90,8 @@ namespace PEBakery.WPF
             // Force update of script interface
             ProjectBuildStartButton.Focus();
 
-            // TODO: Better locking system?
-            Interlocked.Increment(ref Engine.WorkingLock);
+            if (!Engine.TryEnterLock())
+                return;
             try
             {
                 // Get current project
@@ -162,14 +162,14 @@ namespace PEBakery.WPF
             finally
             {
                 Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
+                Engine.ExitLock();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
         private void ProjectBuildStopCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Engine.WorkingEngine != null && Engine.WorkingLock != 0;
+            e.CanExecute = Engine.WorkingEngine != null && Engine.IsRunning;
         }
 
         private void ProjectBuildStopCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -329,65 +329,68 @@ namespace PEBakery.WPF
                 return;
             }
 
-            if (Engine.WorkingLock == 0)  // Start Build
-            {
-                Interlocked.Increment(ref Engine.WorkingLock);
-
-                // Populate BuildTree
-                Model.BuildTreeItems.Clear();
-                ProjectTreeItemModel rootItem = MainViewModel.PopulateOneTreeItem(sc, null, null);
-                Model.BuildTreeItems.Add(rootItem);
-                Model.CurBuildTree = null;
-
-                EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
-                s.SetOptions(Global.Setting);
-                s.SetCompat(sc.Project.Compat);
-
-                Engine.WorkingEngine = new Engine(s);
-
-                // Switch to Build View
-                Model.SwitchNormalBuildInterface = false;
-
-                Task printStatus;
-                TimeSpan t;
-                using (CancellationTokenSource ct = new CancellationTokenSource())
+            if (Engine.TryEnterLock()) 
+            { // Engine is not running, so we can start new engine
+                try
                 {
-                    printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
-                    // Run
-                    int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
+
+                    Model.BuildTreeItems.Clear();
+                    ProjectTreeItemModel rootItem = MainViewModel.PopulateOneTreeItem(sc, null, null);
+                    Model.BuildTreeItems.Add(rootItem);
+                    Model.CurBuildTree = null;
+
+                    EngineState s = new EngineState(sc.Project, Logger, Model, EngineMode.RunMainAndOne, sc);
+                    s.SetOptions(Global.Setting);
+                    s.SetCompat(sc.Project.Compat);
+
+                    Engine.WorkingEngine = new Engine(s);
+
+                    // Switch to Build View
+                    Model.SwitchNormalBuildInterface = false;
+
+                    Task printStatus;
+                    TimeSpan t;
+                    using (CancellationTokenSource ct = new CancellationTokenSource())
+                    {
+                        printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
+                        // Run
+                        int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG
-                    Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
-                    {
-                        IncludeComments = true,
-                        IncludeMacros = true,
-                        ShowLogFlags = true,
-                    });
+                        Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId, new LogExporter.BuildLogOptions
+                        {
+                            IncludeComments = true,
+                            IncludeMacros = true,
+                            ShowLogFlags = true,
+                        });
 #endif
 
-                    // Cancel and Wait until PrintBuildElapsedStatus stops
-                    // Report elapsed time
-                    t = s.Elapsed;
+                        // Cancel and Wait until PrintBuildElapsedStatus stops
+                        // Report elapsed time
+                        t = s.Elapsed;
 
-                    ct.Cancel();
+                        ct.Cancel();
+                    }
+
+                    await printStatus;
+                    Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
+
+                    // Build Ended, Switch to Normal View
+                    Model.SwitchNormalBuildInterface = true;
+                    Model.BuildTreeItems.Clear();
+                    Model.DisplayScript(Model.CurMainTree.Script);
+
+                    if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
+                    { // Open BuildLogWindow
+                        LogDialog = new LogWindow(1);
+                        LogDialog.Show();
+                    }
                 }
-
-                await printStatus;
-                Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
-
-                // Build Ended, Switch to Normal View
-                Model.SwitchNormalBuildInterface = true;
-                Model.BuildTreeItems.Clear();
-                Model.DisplayScript(Model.CurMainTree.Script);
-
-                if (Global.Setting.General.ShowLogAfterBuild && LogWindow.Count == 0)
-                { // Open BuildLogWindow
-                    LogDialog = new LogWindow(1);
-                    LogDialog.Show();
+                finally
+                {
+                    Engine.WorkingEngine = null;
+                    Engine.ExitLock();
                 }
-
-                Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
             }
             else // Stop Build
             {
@@ -854,7 +857,7 @@ namespace PEBakery.WPF
             {
                 ProjectTreeItemModel item = Model.CurMainTree = itemModel;
 
-                Dispatcher.Invoke(() =>
+                Dispatcher?.Invoke(() =>
                 {
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
@@ -904,7 +907,7 @@ namespace PEBakery.WPF
                 ScriptEditDialog = null;
             }
 
-            // TODO: Do this in more cleaner way
+            // TODO: No better way?
             while (Model.ScriptRefreshing != 0)
                 await Task.Delay(500);
             while (ScriptCache.DbLock != 0)

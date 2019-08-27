@@ -46,7 +46,10 @@ namespace PEBakery.Core
     {
         #region Variables and Constructor
         public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
-        public static int WorkingLock = 0;
+        private static bool _isRunning;
+        public static bool IsRunning => _isRunning;
+        private static readonly object WorkingLock = new object();
+        private static readonly object EnterLock = new object();
 
         // ReSharper disable once InconsistentNaming
         public EngineState s;
@@ -1065,6 +1068,44 @@ namespace PEBakery.Core
                 return false;
 
             return true;
+        }
+        #endregion
+
+        #region Lock Methods
+        /// <summary>
+        /// Try to acquire global Engine lock 
+        /// </summary>
+        /// <returns>Return true if successfully acquired lock</returns>
+        public static bool TryEnterLock()
+        {
+            lock (EnterLock)
+            {
+                if (_isRunning)
+                    return false;
+
+                if (Monitor.TryEnter(WorkingLock))
+                {
+                    _isRunning = true;
+                    return true;
+                }
+                else
+                {
+                    _isRunning = false;
+                    return false;
+                }
+            }
+        }
+
+        public static void ExitLock()
+        {
+            lock (EnterLock)
+            {
+                if (!_isRunning)
+                    return;
+
+                Monitor.Exit(WorkingLock);
+                _isRunning = false;
+            }
         }
         #endregion
     }

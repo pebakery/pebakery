@@ -335,7 +335,7 @@ namespace PEBakery.WPF
 
         private void ClearCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _m != null && _m.CanExecuteCommand && !Global.MainViewModel.WorkInProgress && Engine.WorkingLock == 0;
+            e.CanExecute = _m != null && _m.CanExecuteCommand && !Global.MainViewModel.WorkInProgress && !Engine.IsRunning;
         }
 
         private async void ClearCommand_Executed(object sender, ExecutedRoutedEventArgs e)
