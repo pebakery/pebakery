@@ -842,8 +842,10 @@
                                 HorizontalAlignment="Stretch"
                                 Visibility="{Binding BuildScriptFullProgressVisibility}"
                                 Margin="20, 0, 20, 10">
+                        <!-- Script Progress -->
                         <TextBlock Height="20"
                                    Margin="0, 0, 0, 5"
+                                   Visibility="{Binding BuildScriptProgressVisibility}"
                                    TextAlignment="Left"
                                    FontWeight="SemiBold"
                                    Text="Script Progress" />
@@ -853,6 +855,7 @@
                                      Minimum="0"
                                      Maximum="{Binding BuildScriptProgressMax}"
                                      Value="{Binding BuildScriptProgressValue}" />
+                        <!-- Full Progress -->
                         <TextBlock Height="20"
                                    Margin="0, 0, 0, 5"
                                    TextAlignment="Left"
@@ -870,6 +873,7 @@
                             BorderThickness="1"
                             Margin="20, 20, 20, 20">
                         <DockPanel>
+                            <!-- Build Echo Message -->
                             <TextBlock DockPanel.Dock="Top"
                                        TextAlignment="Left"
                                        Margin="10, 10, 10, 0"

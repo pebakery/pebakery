@@ -758,22 +758,27 @@ namespace PEBakery.WPF
                 Model.CurBuildTree = null;
 
                 // Switch to Build View
-                // Model.BuildScriptFullProgressVisibility = Visibility.Collapsed;
+                Model.BuildScriptProgressVisibility = Visibility.Collapsed;
                 Model.BuildFullProgressBarMax = targetScripts.Length;
                 Model.BuildFullProgressBarValue = 0;
-                Model.BuildEchoMessage = "Creating meta files...";
                 Model.SwitchNormalBuildInterface = false;
+                // I do not know why, but this line must come after SwitchNormalBuildInterface.
+                Model.BuildEchoMessage = "Creating meta files..."; 
 
                 Stopwatch watch = Stopwatch.StartNew();
 
                 // Run Updater
+                int idx = 0;
                 foreach (Script sc in targetScripts)
                 {
                     // Display script information
-                    Model.BuildFullProgressBarValue += 1;
+                    idx += 1;
+                    Model.BuildFullProgressBarValue = idx;
+                    Model.DisplayScriptTexts(sc, null);
+                    Model.ScriptTitleText = $"({idx}/{targetScripts.Length}) " + Model.ScriptTitleText;
+                    Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
                     Application.Current?.Dispatcher?.BeginInvoke((Action)(() =>
                     {
-                        Model.DisplayScriptTexts(sc, null);
                         Model.DisplayScriptLogo(sc);
 
                         // BuildTree is empty -> return
@@ -812,10 +817,11 @@ namespace PEBakery.WPF
             finally
             {
                 // Turn off progress ring
-                Model.BuildScriptFullProgressVisibility = Visibility.Visible;
                 Model.WorkInProgress = false;
 
                 // Build Ended, Switch to Normal View
+                Model.BuildScriptProgressVisibility = Visibility.Visible;
+                Model.BuildEchoMessage = string.Empty;
                 Model.SwitchNormalBuildInterface = true;
                 Model.DisplayScript(Model.CurMainTree.Script);
             }
@@ -870,31 +876,37 @@ namespace PEBakery.WPF
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel itemModel)
+            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel selectedModel)
             {
-                ProjectTreeItemModel item = Model.CurMainTree = itemModel;
+                Model.CurMainTree = selectedModel;
+                Script sc = selectedModel.Script;
 
                 Dispatcher?.Invoke(() =>
                 {
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    Model.DisplayScript(item.Script);
+                    Model.DisplayScript(sc);
                     watch.Stop();
 
                     double msec = watch.Elapsed.TotalMilliseconds;
-                    Model.StatusBarText = $"{item.Script.Title} rendered ({msec:0}ms)";
+                    Model.StatusBarText = $"{sc.Title} rendered ({msec:0}ms)";
                 });
             }
         }
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            TreeViewItem treeViewItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(e.OriginalSource as DependencyObject);
+            TreeViewItem selectedItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(e.OriginalSource as DependencyObject);
 
-            if (treeViewItem != null)
+            if (selectedItem != null)
             {
-                treeViewItem.Focus();
-                treeViewItem.IsSelected = true;
+                selectedItem.Focus();
+                selectedItem.IsSelected = true;
+
+                ProjectTreeItemModel selectedModel = selectedItem.DataContext as ProjectTreeItemModel;
+                Debug.Assert(selectedModel != null, "DataContext of selected TreeViewItem must not be null");
+                Model.CurMainTree = selectedModel;
+
                 e.Handled = true;
             }
         }
