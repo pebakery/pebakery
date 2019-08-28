@@ -77,7 +77,21 @@ namespace PEBakery.Core.ViewModels
         #endregion
 
         #region TreeItem Properties
-        public ProjectTreeItemModel CurMainTree { get; set; }
+        private ProjectTreeItemModel _curMainTree;
+        public ProjectTreeItemModel CurMainTree
+        {
+            get => _curMainTree;
+            set
+            {
+                SetProperty(ref _curMainTree, value);
+
+                Script sc = value?.Script;
+                if (sc == null)
+                    return;
+                IsTreeEntryFile = sc.Type != ScriptType.Directory;
+                IsTreeEntryMain = sc.Equals(sc.Project.MainScript);
+            }
+        }
         public ProjectTreeItemModel CurBuildTree { get; set; }
         #endregion
 
@@ -382,8 +396,7 @@ namespace PEBakery.Core.ViewModels
             get => _isTreeEntryFile;
             set
             {
-                _isTreeEntryFile = value;
-                OnPropertyUpdate(nameof(IsTreeEntryFile));
+                SetProperty(ref _isTreeEntryFile, value);
                 OnPropertyUpdate(nameof(ScriptCheckVisibility));
                 OnPropertyUpdate(nameof(OpenExternalButtonToolTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
@@ -1194,8 +1207,6 @@ namespace PEBakery.Core.ViewModels
                     StartSyntaxCheck(true);
             }
 
-            IsTreeEntryFile = sc.Type != ScriptType.Directory;
-            IsTreeEntryMain = sc.Equals(sc.Project.MainScript);
             OnPropertyUpdate(nameof(MainCanvas));
         }
 

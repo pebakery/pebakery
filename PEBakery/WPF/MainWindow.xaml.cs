@@ -430,20 +430,20 @@ namespace PEBakery.WPF
             ScriptEditButton.Focus();
 
             Script sc = Model.CurMainTree.Script;
-            if (ScriptEditWindow.Count == 0)
+            if (ScriptEditWindow.Count != 0)
+                return;
+
+            ScriptEditDialog = new ScriptEditWindow(sc, Model) { Owner = this };
+
+            // Open as Modal
+            // If ScriptEditWindow returns true in DialogResult, refresh script
+            if (ScriptEditDialog.ShowDialog() == true)
             {
-                ScriptEditDialog = new ScriptEditWindow(sc, Model) { Owner = this };
+                sc = ScriptEditDialog.Tag as Script;
+                Debug.Assert(sc != null, $"{nameof(sc)} != null");
 
-                // Open as Modal
-                // If ScriptEditWindow returns true in DialogResult, refresh script
-                if (ScriptEditDialog.ShowDialog() == true)
-                {
-                    sc = ScriptEditDialog.Tag as Script;
-                    Debug.Assert(sc != null, $"{nameof(sc)} != null");
-
-                    Model.DisplayScript(sc);
-                    Model.CurMainTree.Script = sc;
-                }
+                Model.DisplayScript(sc);
+                Model.CurMainTree.Script = sc;
             }
         }
 
@@ -852,6 +852,7 @@ namespace PEBakery.WPF
         #region TreeView Event Handler
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
         {
+            // Register MainTreeView_KeyDown as global in MainWindow
             KeyDown += MainTreeView_KeyDown;
         }
 
@@ -876,39 +877,39 @@ namespace PEBakery.WPF
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (sender is TreeView tree && tree.SelectedItem is ProjectTreeItemModel selectedModel)
+            if (!(sender is TreeView tree) || !(tree.SelectedItem is ProjectTreeItemModel selectedModel))
+                return;
+
+            Model.CurMainTree = selectedModel;
+            Script sc = selectedModel.Script;
+
+            Dispatcher?.BeginInvoke(new Action(() =>
             {
-                Model.CurMainTree = selectedModel;
-                Script sc = selectedModel.Script;
+                Stopwatch watch = Stopwatch.StartNew();
+                Model.DisplayScript(sc);
+                watch.Stop();
 
-                Dispatcher?.Invoke(() =>
-                {
-                    Stopwatch watch = new Stopwatch();
-                    watch.Start();
-                    Model.DisplayScript(sc);
-                    watch.Stop();
-
-                    double msec = watch.Elapsed.TotalMilliseconds;
-                    Model.StatusBarText = $"{sc.Title} rendered ({msec:0}ms)";
-                });
-            }
+                double msec = watch.Elapsed.TotalMilliseconds;
+                Model.StatusBarText = $"{sc.Title} rendered ({msec:0}ms)";
+            }));
         }
 
         private void MainTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             TreeViewItem selectedItem = ControlsHelper.VisualUpwardSearch<TreeViewItem>(e.OriginalSource as DependencyObject);
+            if (selectedItem == null)
+                return;
 
-            if (selectedItem != null)
-            {
-                selectedItem.Focus();
-                selectedItem.IsSelected = true;
+            // Invoke MainTreeView_SelectedItemChanged
+            selectedItem.Focus();
+            selectedItem.IsSelected = true;
 
-                ProjectTreeItemModel selectedModel = selectedItem.DataContext as ProjectTreeItemModel;
-                Debug.Assert(selectedModel != null, "DataContext of selected TreeViewItem must not be null");
-                Model.CurMainTree = selectedModel;
+            e.Handled = true;
+        }
 
-                e.Handled = true;
-            }
+        private void MainTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+
         }
         #endregion
 
