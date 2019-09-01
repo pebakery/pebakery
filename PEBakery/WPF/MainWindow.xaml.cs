@@ -556,7 +556,7 @@ namespace PEBakery.WPF
                     newScripts = await updater.UpdateScriptsAsync(targetScripts, true);
                 else
                     newScript = await updater.UpdateScriptAsync(targetScript, true);
-                updaterLogs = updater.Logs;
+                updaterLogs = updater.ReadAndClearLogs();
 
                 // Log messages
                 Logger.SystemWrite(updaterLogs);
@@ -882,7 +882,7 @@ namespace PEBakery.WPF
 
             Model.CurMainTree = selectedModel;
             Script sc = selectedModel.Script;
-
+            
             Dispatcher?.BeginInvoke(new Action(() =>
             {
                 Stopwatch watch = Stopwatch.StartNew();
@@ -900,16 +900,16 @@ namespace PEBakery.WPF
             if (selectedItem == null)
                 return;
 
+            // Do not invoke MainTreeView_SelectedItemChanged
+            // ProjectTreeItemModel selectedModel = selectedItem.DataContext as ProjectTreeItemModel;
+            // Model.CurMainTree = selectedModel;
+
             // Invoke MainTreeView_SelectedItemChanged
             selectedItem.Focus();
             selectedItem.IsSelected = true;
 
+            // Disable event routing, one call to Focus() is enough
             e.Handled = true;
-        }
-
-        private void MainTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-
         }
         #endregion
 

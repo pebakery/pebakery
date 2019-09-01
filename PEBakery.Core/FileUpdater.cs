@@ -118,7 +118,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region FileHelper
+    #region FileUpdater
     public class FileUpdater
     {
         #region Fields and Properties
@@ -127,15 +127,6 @@ namespace PEBakery.Core
         private readonly HttpFileDownloader _downloader;
 
         private readonly List<LogInfo> _logs = new List<LogInfo>();
-        public LogInfo[] Logs
-        {
-            get
-            {
-                LogInfo[] logArray = _logs.ToArray();
-                _logs.Clear();
-                return logArray;
-            }
-        }
         #endregion
 
         #region Constructor
@@ -146,6 +137,15 @@ namespace PEBakery.Core
 
             string userAgent = customUserAgent ?? Engine.DefaultUserAgent;
             _downloader = new HttpFileDownloader(_m, 10, userAgent);
+        }
+        #endregion
+
+        #region ReadAndClearLogs
+        public LogInfo[] ReadAndClearLogs()
+        {
+            LogInfo[] logArray = _logs.ToArray();
+            _logs.Clear();
+            return logArray;
         }
         #endregion
 

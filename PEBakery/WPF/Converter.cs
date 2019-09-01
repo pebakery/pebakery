@@ -533,8 +533,8 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region InverseBool
-    public class InverseBoolConverter : IValueConverter
+    #region Boolean
+    public class InverseBooleanConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
@@ -561,6 +561,26 @@ namespace PEBakery.WPF
                 return Visibility.Collapsed;
 
             return valBool ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
+    public class BooleanToParamConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is bool b))
+                return Binding.DoNothing;
+            if (!(parameter is Array paramArr))
+                return Binding.DoNothing;
+            if (paramArr.Length != 2)
+                return Binding.DoNothing;
+
+            return b ? paramArr.GetValue(0) : paramArr.GetValue(1);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

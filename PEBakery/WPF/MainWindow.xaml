@@ -30,6 +30,7 @@
     This is caused by cc:IconButton, which results in System.Runtime.Remoting.RemotingException.
 -->
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
+<!-- ReSharper disable once Xaml.RedundantNamespaceAlias -->
 <Window x:Name="Main"
         x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -49,6 +50,7 @@
         FontSize="{Binding GlobalFontSize, Mode=OneWay, FallbackValue=13}"
         FontFamily="Segoe UI"
         Title="{Binding TitleBar}"
+        FocusManager.FocusedElement="{Binding RelativeSource={x:Static RelativeSource.Self}, Mode=OneTime}"
         WindowStartupLocation="CenterScreen">
     <Window.DataContext>
         <vm:MainViewModel/>
@@ -127,6 +129,7 @@
         <local:ColorToSolidColorBrushConverter x:Key="ColorToSolidColorBrushConverter"/>
         <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
+        <local:BooleanToParamConverter x:Key="BooleanToParamConverter"/>
         <Style x:Key="MainIconButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -443,119 +446,138 @@
                           PreviewMouseRightButtonDown="MainTreeView_PreviewMouseRightButtonDown"
                           VirtualizingStackPanel.IsVirtualizing="True"
                           VirtualizingStackPanel.VirtualizationMode="Recycling">
-                    <TreeView.ContextMenu>
-                        <ContextMenu>
-                            <!-- For File -->
-                            <cc:CorrectMenuItem Header="Run Script" 
-                                                Command="local:MainViewCommands.ScriptRunCommand"
-                                                Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Play"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Refresh Script" 
-                                                Command="local:MainViewCommands.ScriptRefreshCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Refresh"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Edit Script Properties" 
-                                                Command="local:MainViewCommands.ScriptInternalEditorCommand"
-                                                Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Edit Script Source" 
-                                                Command="local:MainViewCommands.ScriptExternalEditorCommand"
-                                                Grid.IsSharedSizeScope="True"
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Pencil"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Syntax Check"
-                                                Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Magnify"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <!-- For MainScript -->
-                            <Separator Visibility="{Binding Path=DataContext.IsTreeEntryMain, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <!-- For Directory and MainScript -->
-                            <cc:CorrectMenuItem Header="Expand Items"
-                                                Command="local:MainViewCommands.DirectoryExpandTreeCommand"
-                                                Grid.IsSharedSizeScope="True" >
-                                <cc:CorrectMenuItem.Visibility>
-                                    <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
-                                        <Binding Path="DataContext.IsTreeEntryFile" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
-                                        <Binding Path="DataContext.IsTreeEntryMain" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
-                                    </MultiBinding>
-                                </cc:CorrectMenuItem.Visibility>
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="ChevronDown"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Collapse Items"
-                                                Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
-                                                Grid.IsSharedSizeScope="True" >
-                                <cc:CorrectMenuItem.Visibility>
-                                    <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
-                                        <Binding Path="DataContext.IsTreeEntryFile" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
-                                        <Binding Path="DataContext.IsTreeEntryMain" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}"/>
-                                    </MultiBinding>
-                                </cc:CorrectMenuItem.Visibility>
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="ChevronRight"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <!-- For updating script(s) -->
-                            <Separator />
-                            <cc:CorrectMenuItem Header="Update Script" 
-                                                Command="local:MainViewCommands.ScriptUpdateCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Update Children Scripts" 
-                                                Command="local:MainViewCommands.ScriptUpdateCommand"
-                                                Grid.IsSharedSizeScope="True" 
-                                                Visibility="{Binding Path=DataContext.IsTreeEntryFile, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Download"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <cc:CorrectMenuItem Header="Create Script Meta Files"
-                                                Visibility="{Binding Path=DataContext.EnableUpdateServerManagement, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                Command="local:MainViewCommands.CreateScriptMetaFilesCommand"
-                                                Grid.IsSharedSizeScope="True" >
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="Paperclip"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                            <!-- For File and Directory Both -->
-                            <Separator />
-                            <cc:CorrectMenuItem Header="Open Script Folder"
-                                                Command="local:MainViewCommands.ScriptOpenFolderCommand"
-                                                Grid.IsSharedSizeScope="True" >
-                                <cc:CorrectMenuItem.Icon>
-                                    <iconPacks:PackIconMaterial Kind="FolderOpen"/>
-                                </cc:CorrectMenuItem.Icon>
-                            </cc:CorrectMenuItem>
-                        </ContextMenu>
-                    </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate DataType="vm:ProjectTreeItemModel"
                                                   ItemsSource="{Binding Children}">
-                            <Grid>
+                            <Grid Tag="{Binding Path=DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}}">
+                                <Grid.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                        <!-- For File -->
+                                        <cc:CorrectMenuItem Header="Run Script" 
+                                                            Command="local:MainViewCommands.ScriptRunCommand"
+                                                            Grid.IsSharedSizeScope="True"
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Play"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Refresh Script" 
+                                                            Command="local:MainViewCommands.ScriptRefreshCommand"
+                                                            Grid.IsSharedSizeScope="True" 
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Refresh"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Edit Script Properties" 
+                                                            Command="local:MainViewCommands.ScriptInternalEditorCommand"
+                                                            Grid.IsSharedSizeScope="True"
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Edit Script Source" 
+                                                            Command="local:MainViewCommands.ScriptExternalEditorCommand"
+                                                            Grid.IsSharedSizeScope="True"
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Pencil"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Syntax Check"
+                                                            Command="local:MainViewCommands.ScriptSyntaxCheckCommand"
+                                                            Grid.IsSharedSizeScope="True" 
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Magnify"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <!-- For MainScript -->
+                                        <Separator Visibility="{Binding Path=IsTreeEntryMain, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        <!-- For Directory and MainScript -->
+                                        <cc:CorrectMenuItem Header="Expand Items"
+                                                            Command="local:MainViewCommands.DirectoryExpandTreeCommand"
+                                                            Grid.IsSharedSizeScope="True">
+                                            <cc:CorrectMenuItem.Visibility>
+                                                <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
+                                                    <Binding Path="IsTreeEntryFile" />
+                                                    <Binding Path="IsTreeEntryMain" />
+                                                </MultiBinding>
+                                            </cc:CorrectMenuItem.Visibility>
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ChevronDown"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Collapse Items"
+                                                            Command="local:MainViewCommands.DirectoryCollapseTreeCommand"
+                                                            Grid.IsSharedSizeScope="True" >
+                                            <cc:CorrectMenuItem.Visibility>
+                                                <MultiBinding Converter="{StaticResource IsTreeEntryDirMainToVisibilityConverter}">
+                                                    <Binding Path="IsTreeEntryFile"/>
+                                                    <Binding Path="IsTreeEntryMain"/>
+                                                </MultiBinding>
+                                            </cc:CorrectMenuItem.Visibility>
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="ChevronRight"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <!-- For updating script(s) -->
+                                        <Separator />
+                                        <cc:CorrectMenuItem Header="Update Script" 
+                                                            Command="local:MainViewCommands.ScriptUpdateCommand"
+                                                            Grid.IsSharedSizeScope="True" 
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Download"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Header="Update Children Scripts" 
+                                                            Command="local:MainViewCommands.ScriptUpdateCommand"
+                                                            Grid.IsSharedSizeScope="True" 
+                                                            Visibility="{Binding Path=IsTreeEntryFile, Mode=OneWay, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Download"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <cc:CorrectMenuItem Visibility="{Binding Path=EnableUpdateServerManagement, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                            Command="local:MainViewCommands.CreateScriptMetaFilesCommand"
+                                                            Grid.IsSharedSizeScope="True" >
+                                            <cc:CorrectMenuItem.Header>
+                                                <Binding Path="IsTreeEntryFile" Converter="{StaticResource BooleanToParamConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <x:Array Type="s:String">
+                                                            <s:String>Create Script Meta File</s:String>
+                                                            <s:String>Create Script Meta Files</s:String>
+                                                        </x:Array>
+                                                    </Binding.ConverterParameter>
+                                                </Binding>
+                                            </cc:CorrectMenuItem.Header>
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="Paperclip"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                        <!-- For File and Directory Both -->
+                                        <Separator />
+                                        <cc:CorrectMenuItem Command="local:MainViewCommands.ScriptOpenFolderCommand"
+                                                            Grid.IsSharedSizeScope="True" >
+                                            <cc:CorrectMenuItem.Header>
+                                                <Binding Path="IsTreeEntryFile" Converter="{StaticResource BooleanToParamConverter}">
+                                                    <Binding.ConverterParameter>
+                                                        <x:Array Type="s:String">
+                                                            <s:String>Open Script Folder</s:String>
+                                                            <s:String>Open Folder</s:String>
+                                                        </x:Array>
+                                                    </Binding.ConverterParameter>
+                                                </Binding>
+                                            </cc:CorrectMenuItem.Header>
+                                            <cc:CorrectMenuItem.Icon>
+                                                <iconPacks:PackIconMaterial Kind="FolderOpen"/>
+                                            </cc:CorrectMenuItem.Icon>
+                                        </cc:CorrectMenuItem>
+                                    </ContextMenu>
+                                </Grid.ContextMenu>
+
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="20"/>
                                 </Grid.RowDefinitions>
@@ -564,6 +586,7 @@
                                     <ColumnDefinition Width="20"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
+                                
 
                                 <CheckBox Grid.Row="0" Grid.Column="0"
                                           VerticalAlignment="Center"

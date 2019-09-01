@@ -114,7 +114,7 @@ namespace PEBakery.Core.Tests
                 Script newScript = await updater.UpdateScriptAsync(sc, true);
 
                 // Validate updated script
-                foreach (LogInfo log in updater.Logs)
+                foreach (LogInfo log in updater.ReadAndClearLogs())
                     Console.WriteLine($"[{log.State}] {log.Message}");
                 Assert.IsNotNull(newScript);
                 Assert.IsTrue(newScript.TidyVersion.Equals("1.2", StringComparison.Ordinal));
