@@ -474,15 +474,6 @@ namespace PEBakery.Core
 
         // DelayedLogging
         private DeferredLogging _deferred;
-        public DeferredLogging Deferred
-        {
-            get
-            {
-                DeferredLogging ret = _deferred;
-                _deferred = null;
-                return ret;
-            }
-        }
         #endregion
 
         #region Constructor, Destructor
@@ -531,6 +522,15 @@ namespace PEBakery.Core
                     return _deferred.FlushFullDeferred(s);
             }
             return s.BuildId;
+        }
+        #endregion
+
+        #region ClearDeferredLogging
+        public DeferredLogging ReadAndClearDeferredLogs()
+        {
+            DeferredLogging deferred = _deferred;
+            _deferred = null;
+            return deferred;
         }
         #endregion
 

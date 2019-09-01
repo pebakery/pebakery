@@ -1638,7 +1638,7 @@ namespace PEBakery.Core
                 // Flush FullDelayedLogs
                 if (s.LogMode == LogMode.FullDefer)
                 {
-                    DeferredLogging deferred = logger.Deferred;
+                    DeferredLogging deferred = logger.ReadAndClearDeferredLogs();
                     deferred.FlushFullDeferred(s);
                 }
 
