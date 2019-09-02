@@ -177,7 +177,7 @@ namespace PEBakery.WPF
             ProjectBuildStopButton.Focus();
 
             // Do not set Engine.WorkingEngine to null, it will take some time to finish a build.
-            Engine.WorkingEngine?.ForceStop(false);
+            Engine.WorkingEngine?.ForceStop();
         }
 
         private void ProjectLoading_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -391,7 +391,7 @@ namespace PEBakery.WPF
             }
             else // Stop Build
             {
-                Engine.WorkingEngine?.ForceStop(false);
+                Engine.WorkingEngine?.ForceStop();
             }
         }
 
@@ -915,7 +915,7 @@ namespace PEBakery.WPF
         private async void Window_Closing(object sender, CancelEventArgs e)
         {
             if (Engine.WorkingEngine != null)
-                await Engine.WorkingEngine.ForceStopWait(false);
+                await Engine.WorkingEngine.ForceStopWait();
 
             if (0 < LogWindow.Count)
             {

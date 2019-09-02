@@ -575,7 +575,7 @@ namespace PEBakery.WPF
         {
             if (!(value is bool b))
                 return Binding.DoNothing;
-            if (!(parameter is Array paramArr && paramArr.Length != 2))
+            if (!(parameter is Array paramArr && paramArr.Length == 2))
                 return Binding.DoNothing;
 
             return b ? paramArr.GetValue(0) : paramArr.GetValue(1);
@@ -631,29 +631,6 @@ namespace PEBakery.WPF
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             return new object[] { Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing };
-        }
-    }
-    #endregion
-
-    #region Integer
-    public class IntegerToPercentConverter : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (!(values is Array valueArr && valueArr.Length != 2))
-                return Binding.DoNothing;
-            if (!(values[0] is int numerator && values[1] is int denominator))
-                return Binding.DoNothing;
-            if (!(parameter is string format))
-                return Binding.DoNothing;
-
-            double percent = (double) numerator / denominator;
-            return percent.ToString(format);
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            return new object[] { Binding.DoNothing };
         }
     }
     #endregion

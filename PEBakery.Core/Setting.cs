@@ -64,6 +64,7 @@ namespace PEBakery.Core
             public const string SectionName = "General";
 
             public bool OptimizeCode;
+            public bool KillSubProcessAtBuildStop;
             public bool ShowLogAfterBuild;
             public bool StopBuildOnError;
             public bool EnableLongFilePath;
@@ -79,13 +80,14 @@ namespace PEBakery.Core
             public void Default()
             {
                 OptimizeCode = true;
+                KillSubProcessAtBuildStop = false;
                 ShowLogAfterBuild = true;
                 StopBuildOnError = true;
                 EnableLongFilePath = false;
                 EnableUpdateServerManagement = false;
                 UseCustomUserAgent = false;
-                // Default custom User-Agent is set to Edge's on Windows 10 v1809
-                CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763";
+                // Default custom User-Agent is set to Edge's on Windows 10 v1903
+                CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18362";
             }
         }
 
@@ -596,6 +598,7 @@ namespace PEBakery.Core
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject)), // String
                 // General
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode)), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.KillSubProcessAtBuildStop)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError)), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath)), // Boolean
@@ -672,8 +675,9 @@ namespace PEBakery.Core
             if (keyDict.ContainsKey(GeneralSetting.SectionName))
             {
                 Dictionary<string, string> generalDict = keyDict[GeneralSetting.SectionName];
-
+                
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
+                General.KillSubProcessAtBuildStop = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.KillSubProcessAtBuildStop), General.KillSubProcessAtBuildStop);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);
                 General.EnableLongFilePath = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath);
@@ -779,6 +783,7 @@ namespace PEBakery.Core
                 new IniKey(ProjectSetting.SectionName, nameof(Project.DefaultProject), Project.DefaultProject), // String
                 // General
                 new IniKey(GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode.ToString()), // Boolean
+                new IniKey(GeneralSetting.SectionName, nameof(General.KillSubProcessAtBuildStop), General.KillSubProcessAtBuildStop.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError.ToString()), // Boolean
                 new IniKey(GeneralSetting.SectionName, nameof(General.EnableLongFilePath), General.EnableLongFilePath.ToString()), // Boolean

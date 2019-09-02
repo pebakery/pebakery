@@ -302,10 +302,10 @@ namespace PEBakery.Core
         #endregion
 
         #region ForceStop
-        public void ForceStop(bool killSubProc)
+        public void ForceStop()
         {
             s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-            if (killSubProc && s.RunningSubProcess != null)
+            if (s.KillSubProcessAtBuildStop && s.RunningSubProcess != null)
             {
                 try { s.RunningSubProcess.Kill(); }
                 catch { /* Ignore error */ }
@@ -317,9 +317,9 @@ namespace PEBakery.Core
             s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
         }
 
-        public Task ForceStopWait(bool killSubProc)
+        public Task ForceStopWait()
         {
-            ForceStop(killSubProc);
+            ForceStop();
             return Task.Run(() => _task.Wait());
         }
         #endregion
@@ -1216,6 +1216,7 @@ namespace PEBakery.Core
         public bool TestMode = false; // For test of engine -> Engine.RunCommands will return logs
         public bool DisableLogger = false; // If engine is called by interface and FullDelayed is not set, disabling logger is advised for performance.
         public string CustomUserAgent = null; // For WebGet
+        public bool KillSubProcessAtBuildStop = false;
         public bool StopBuildOnError = true;
 
         // Compat Options
@@ -1305,11 +1306,13 @@ namespace PEBakery.Core
             MainViewModel = mainModel;
 
             // Use secure random number generator to feed seed to pseudo random number generator.
-            byte[] seedArray = new byte[4];
-            RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider();
-            secureRandom.GetBytes(seedArray);
-            int seed = BitConverter.ToInt32(seedArray, 0);
-            Random = new Random(seed);
+            using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
+            {
+                byte[] seedArray = new byte[4];
+                secureRandom.GetBytes(seedArray);
+                int seed = BitConverter.ToInt32(seedArray, 0);
+                Random = new Random(seed);
+            }
         }
         #endregion
 
@@ -1317,6 +1320,7 @@ namespace PEBakery.Core
         public void SetOptions(Setting setting)
         {
             CustomUserAgent = setting.General.UseCustomUserAgent ? setting.General.CustomUserAgent : null;
+            KillSubProcessAtBuildStop = setting.General.KillSubProcessAtBuildStop;
             StopBuildOnError = setting.General.StopBuildOnError;
 
             LogMode = setting.Log.DeferredLogging ? LogMode.PartDefer : LogMode.NoDefer;

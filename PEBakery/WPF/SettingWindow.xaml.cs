@@ -222,6 +222,25 @@ namespace PEBakery.WPF
         #endregion
 
         #region General Setting Commands
+        private void EnableKillSubProcessAtBuildStopCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!_m.GeneralKillSubProcessAtBuildStop)
+                return;
+
+            _m.CanExecuteCommand = false;
+            try
+            {
+                const string msg = "This option is recommended to be turned off.\r\n\r\nForce-killing a process always have a risk to corrupt a system, and PEBakery cannot kill grandchild processes.\r\n\r\nDo you really want to continue?";
+                MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                _m.GeneralKillSubProcessAtBuildStop = res == MessageBoxResult.Yes;
+            }
+            finally
+            {
+                _m.CanExecuteCommand = true;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         private void EnableLongFilePathCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             if (!_m.GeneralEnableLongFilePath)
@@ -392,6 +411,7 @@ namespace PEBakery.WPF
         }
 
         #endregion
+
         #endregion
     }
     #endregion
@@ -554,6 +574,13 @@ namespace PEBakery.WPF
         {
             get => _generalOptimizeCode;
             set => SetProperty(ref _generalOptimizeCode, value);
+        }
+
+        private bool _generalKillSubProcessAtBuildStop;
+        public bool GeneralKillSubProcessAtBuildStop
+        {
+            get => _generalKillSubProcessAtBuildStop;
+            set => SetProperty(ref _generalKillSubProcessAtBuildStop, value);
         }
 
         private bool _generalShowLogAfterBuild;
@@ -1305,6 +1332,7 @@ namespace PEBakery.WPF
             // [General]
             Setting.GeneralSetting newGeneral = new Setting.GeneralSetting();
             GeneralOptimizeCode = newGeneral.OptimizeCode;
+            GeneralKillSubProcessAtBuildStop = newGeneral.KillSubProcessAtBuildStop;
             GeneralShowLogAfterBuild = newGeneral.ShowLogAfterBuild;
             GeneralStopBuildOnError = newGeneral.StopBuildOnError;
             GeneralEnableLongFilePath = newGeneral.EnableLongFilePath;
@@ -1375,6 +1403,7 @@ namespace PEBakery.WPF
 
             // [General]
             GeneralOptimizeCode = Setting.General.OptimizeCode;
+            GeneralKillSubProcessAtBuildStop = Setting.General.KillSubProcessAtBuildStop;
             GeneralShowLogAfterBuild = Setting.General.ShowLogAfterBuild;
             GeneralStopBuildOnError = Setting.General.StopBuildOnError;
             GeneralEnableLongFilePath = Setting.General.EnableLongFilePath;
@@ -1438,6 +1467,7 @@ namespace PEBakery.WPF
 
             // [General]
             Setting.General.OptimizeCode = GeneralOptimizeCode;
+            Setting.General.KillSubProcessAtBuildStop = GeneralKillSubProcessAtBuildStop;
             Setting.General.ShowLogAfterBuild = GeneralShowLogAfterBuild;
             Setting.General.StopBuildOnError = GeneralStopBuildOnError;
             Setting.General.EnableLongFilePath = GeneralEnableLongFilePath;
@@ -1622,6 +1652,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region General Settting
+        public static readonly RoutedCommand EnableKillSubProcessAtBuildStopCommand = new RoutedUICommand("Enable kill sub-process when stopping a build", "KillSubProcessAtBuildStop", typeof(SettingViewCommands));
         public static readonly RoutedCommand EnableLongFilePathCommand = new RoutedUICommand("Enable long file path support", "EnableLongFilePath", typeof(SettingViewCommands));
         public static readonly RoutedCommand EnableUpdateServerManagement = new RoutedUICommand("Enable update server management", "EnableUpdateServerManagement", typeof(SettingViewCommands));
         #endregion
