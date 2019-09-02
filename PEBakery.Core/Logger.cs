@@ -453,27 +453,27 @@ namespace PEBakery.Core
     public class Logger : IDisposable
     {
         #region Fields and Properties
+        public const string LogSeparator = "--------------------------------------------------------------------------------";
+
         public LogDatabase Db { get; private set; }
         public bool SuspendBuildLog = false;
 
         public static LogDebugLevel DebugLevel;
         public static bool MinifyHtmlExport;
 
+        // Deferred logging and LogModel pool
+        private DeferredLogging _deferred;
         private readonly ConcurrentDictionary<int, LogModel.BuildInfo> _buildDict = new ConcurrentDictionary<int, LogModel.BuildInfo>();
         private readonly ConcurrentDictionary<int, LogModel.Script> _scriptDict = new ConcurrentDictionary<int, LogModel.Script>();
         private readonly ConcurrentDictionary<string, LogModel.Script> _scriptRefIdDict = new ConcurrentDictionary<string, LogModel.Script>(StringComparer.Ordinal);
 
+        // Event
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
         public event BuildInfoUpdateEventHandler BuildInfoUpdated;
         public event ScriptUpdateEventHandler ScriptUpdated;
         public event VariableUpdateEventHandler VariableUpdated;
         public event FullRefreshEventHandler FullRefresh;
-
-        public const string LogSeparator = "--------------------------------------------------------------------------------";
-
-        // DelayedLogging
-        private DeferredLogging _deferred;
         #endregion
 
         #region Constructor, Destructor

@@ -30,7 +30,6 @@
     This is caused by cc:IconButton, which results in System.Runtime.Remoting.RemotingException.
 -->
 <!-- ReSharper disable Xaml.BindingWithContextNotResolved -->
-<!-- ReSharper disable once Xaml.RedundantNamespaceAlias -->
 <Window x:Name="Main"
         x:Class="PEBakery.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -586,7 +585,6 @@
                                     <ColumnDefinition Width="20"/>
                                     <ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                
 
                                 <CheckBox Grid.Row="0" Grid.Column="0"
                                           VerticalAlignment="Center"
@@ -866,12 +864,22 @@
                                 Visibility="{Binding BuildScriptFullProgressVisibility}"
                                 Margin="20, 0, 20, 10">
                         <!-- Script Progress -->
-                        <TextBlock Height="20"
-                                   Margin="0, 0, 0, 5"
-                                   Visibility="{Binding BuildScriptProgressVisibility}"
-                                   TextAlignment="Left"
-                                   FontWeight="SemiBold"
-                                   Text="Script Progress" />
+                        <Grid Height="20" Margin="0, 0, 0, 5" 
+                              Visibility="{Binding BuildScriptProgressVisibility}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="120"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       TextAlignment="Left"
+                                       FontWeight="SemiBold"
+                                       Text="Script Progress" />
+                            <TextBlock Grid.Column="1"
+                                       TextAlignment="Right"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding BuildScriptProgressPercentStr, Mode=OneWay}" />
+                        </Grid>
                         <ProgressBar Height="28"
                                      Margin="0, 0, 0, 10"
                                      Visibility="{Binding BuildScriptProgressVisibility}"
@@ -879,16 +887,26 @@
                                      Maximum="{Binding BuildScriptProgressMax}"
                                      Value="{Binding BuildScriptProgressValue}" />
                         <!-- Full Progress -->
-                        <TextBlock Height="20"
-                                   Margin="0, 0, 0, 5"
-                                   TextAlignment="Left"
-                                   FontWeight="SemiBold"
-                                   Text="Full Progress"/>
+                        <Grid Height="20" Margin="0, 0, 0, 5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="120"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       TextAlignment="Left"
+                                       FontWeight="SemiBold"
+                                       Text="Full Progress" />
+                            <TextBlock Grid.Column="1"
+                                       TextAlignment="Right"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding BuildFullProgressPercentStr, Mode=OneWay}" />
+                        </Grid>
                         <ProgressBar Height="28"
                                      Margin="0, 0, 0, 10"
                                      Minimum="0"
-                                     Maximum="{Binding BuildFullProgressBarMax}"
-                                     Value="{Binding BuildFullProgressBarValue}" />
+                                     Maximum="{Binding BuildFullProgressMax}"
+                                     Value="{Binding BuildFullProgressValue}" />
                     </StackPanel>
 
                     <Border DockPanel.Dock="Top"
@@ -981,8 +999,8 @@
         <TaskbarItemInfo ProgressState="{Binding TaskBarProgressState}" >
             <TaskbarItemInfo.ProgressValue>
                 <MultiBinding Converter="{StaticResource TaskBarProgressConverter}" >
-                    <Binding Path="BuildFullProgressBarMax" />
-                    <Binding Path="BuildFullProgressBarValue" />
+                    <Binding Path="BuildFullProgressMax" />
+                    <Binding Path="BuildFullProgressValue" />
                 </MultiBinding>
             </TaskbarItemInfo.ProgressValue>
         </TaskbarItemInfo>

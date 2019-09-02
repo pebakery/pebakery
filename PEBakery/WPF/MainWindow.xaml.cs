@@ -116,10 +116,9 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = true;
 
                 // Set StatusBar Text
-                Task printStatus;
                 using (CancellationTokenSource ct = new CancellationTokenSource())
                 {
-                    printStatus = MainViewModel.PrintBuildElapsedStatus($"Building {p.ProjectName}...", s, ct.Token);
+                    Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Building {p.ProjectName}...", s, ct.Token);
 
                     // Run
                     int buildId = await Engine.WorkingEngine.Run($"Project {p.ProjectName}");
@@ -135,6 +134,7 @@ namespace PEBakery.WPF
 
                     // Cancel and wait until PrintBuildElapsedStatus stops
                     ct.Cancel();
+                    await printStatus;
                 }
 
                 // Turn off progress ring
@@ -146,7 +146,6 @@ namespace PEBakery.WPF
                 Model.DisplayScript(Model.CurMainTree.Script);
 
                 // Report elapsed time
-                await printStatus;
                 string reason = s.RunResultReport();
                 if (reason != null)
                     Model.StatusBarText = $"{p.ProjectName} build stopped by {reason}. ({s.Elapsed:h\\:mm\\:ss})";
@@ -178,7 +177,7 @@ namespace PEBakery.WPF
             ProjectBuildStopButton.Focus();
 
             // Do not set Engine.WorkingEngine to null, it will take some time to finish a build.
-            Engine.WorkingEngine?.ForceStop();
+            Engine.WorkingEngine?.ForceStop(false);
         }
 
         private void ProjectLoading_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -347,11 +346,10 @@ namespace PEBakery.WPF
                     // Switch to Build View
                     Model.SwitchNormalBuildInterface = false;
 
-                    Task printStatus;
                     TimeSpan t;
                     using (CancellationTokenSource ct = new CancellationTokenSource())
                     {
-                        printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
+                        Task printStatus = MainViewModel.PrintBuildElapsedStatus($"Running {sc.Title}...", s, ct.Token);
                         // Run
                         int buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
@@ -369,9 +367,9 @@ namespace PEBakery.WPF
                         t = s.Elapsed;
 
                         ct.Cancel();
+                        await printStatus;
                     }
 
-                    await printStatus;
                     Model.StatusBarText = $"{sc.Title} processed in {t:h\\:mm\\:ss}";
 
                     // Build Ended, Switch to Normal View
@@ -393,7 +391,7 @@ namespace PEBakery.WPF
             }
             else // Stop Build
             {
-                Engine.WorkingEngine?.ForceStop();
+                Engine.WorkingEngine?.ForceStop(false);
             }
         }
 
@@ -759,8 +757,8 @@ namespace PEBakery.WPF
 
                 // Switch to Build View
                 Model.BuildScriptProgressVisibility = Visibility.Collapsed;
-                Model.BuildFullProgressBarMax = targetScripts.Length;
-                Model.BuildFullProgressBarValue = 0;
+                Model.BuildFullProgressMax = targetScripts.Length;
+                Model.BuildFullProgressValue = 0;
                 Model.SwitchNormalBuildInterface = false;
                 // I do not know why, but this line must come after SwitchNormalBuildInterface.
                 Model.BuildEchoMessage = "Creating meta files..."; 
@@ -773,7 +771,7 @@ namespace PEBakery.WPF
                 {
                     // Display script information
                     idx += 1;
-                    Model.BuildFullProgressBarValue = idx;
+                    Model.BuildFullProgressValue = idx;
                     Model.DisplayScriptTexts(sc, null);
                     Model.ScriptTitleText = $"({idx}/{targetScripts.Length}) " + Model.ScriptTitleText;
                     Model.BuildEchoMessage = $"Creating meta files... ({idx * 100 / targetScripts.Length}%)";
@@ -917,7 +915,7 @@ namespace PEBakery.WPF
         private async void Window_Closing(object sender, CancelEventArgs e)
         {
             if (Engine.WorkingEngine != null)
-                await Engine.WorkingEngine.ForceStopWait();
+                await Engine.WorkingEngine.ForceStopWait(false);
 
             if (0 < LogWindow.Count)
             {

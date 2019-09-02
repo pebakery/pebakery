@@ -86,7 +86,7 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(SyntaxChecker.Result))
-                return null;
+                return Binding.DoNothing;
 
             PackIconMaterialKind icon;
             SyntaxChecker.Result result = (SyntaxChecker.Result)value;
@@ -119,7 +119,7 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || value.GetType() != typeof(SyntaxChecker.Result))
-                return null;
+                return Binding.DoNothing;
 
             Brush brush;
             SyntaxChecker.Result result = (SyntaxChecker.Result)value;
@@ -152,9 +152,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is Script sc))
-                return null;
+                return Binding.DoNothing;
 
             return sc.Title;
         }
@@ -170,9 +170,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is Script sc))
-                return null;
+                return Binding.DoNothing;
 
             return sc.Selected == SelectedState.None ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -465,9 +465,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is FontHelper.FontInfo fi))
-                return null;
+                return Binding.DoNothing;
 
             return fi.FontFamily;
         }
@@ -483,9 +483,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is FontHelper.FontInfo fi))
-                return null;
+                return Binding.DoNothing;
 
             return fi.FontWeight;
         }
@@ -501,9 +501,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is FontHelper.FontInfo fi))
-                return null;
+                return Binding.DoNothing;
 
             return fi.DeviceIndependentPixelSize;
         }
@@ -575,9 +575,7 @@ namespace PEBakery.WPF
         {
             if (!(value is bool b))
                 return Binding.DoNothing;
-            if (!(parameter is Array paramArr))
-                return Binding.DoNothing;
-            if (paramArr.Length != 2)
+            if (!(parameter is Array paramArr && paramArr.Length != 2))
                 return Binding.DoNothing;
 
             return b ? paramArr.GetValue(0) : paramArr.GetValue(1);
@@ -596,9 +594,9 @@ namespace PEBakery.WPF
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is Color c))
-                return null;
+                return Binding.DoNothing;
 
             return new SolidColorBrush(c);
         }
@@ -606,9 +604,9 @@ namespace PEBakery.WPF
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null)
-                return null;
+                return Binding.DoNothing;
             if (!(value is SolidColorBrush b))
-                return null;
+                return Binding.DoNothing;
 
             return b.Color;
         }
@@ -619,11 +617,11 @@ namespace PEBakery.WPF
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values == null || values.Length != 3)
-                return null;
+                return Binding.DoNothing;
             if (!(values[0] is bool hasIssue &&
                 values[1] is Color normal &&
                 values[2] is Color issue))
-                return null;
+                return Binding.DoNothing;
 
             SolidColorBrush brush = new SolidColorBrush(hasIssue ? issue : normal);
             brush.Freeze();
@@ -633,6 +631,29 @@ namespace PEBakery.WPF
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             return new object[] { Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing, Binding.DoNothing };
+        }
+    }
+    #endregion
+
+    #region Integer
+    public class IntegerToPercentConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(values is Array valueArr && valueArr.Length != 2))
+                return Binding.DoNothing;
+            if (!(values[0] is int numerator && values[1] is int denominator))
+                return Binding.DoNothing;
+            if (!(parameter is string format))
+                return Binding.DoNothing;
+
+            double percent = (double) numerator / denominator;
+            return percent.ToString(format);
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            return new object[] { Binding.DoNothing };
         }
     }
     #endregion

@@ -45,9 +45,10 @@ namespace PEBakery.Core
     public class Engine
     {
         #region Variables and Constructor
-        public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         private static bool _isRunning;
+        // ReSharper disable once ConvertToAutoPropertyWithPrivateSetter
         public static bool IsRunning => _isRunning;
+        public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         private static readonly object WorkingLock = new object();
         private static readonly object EnterLock = new object();
 
@@ -111,7 +112,7 @@ namespace PEBakery.Core
             s.CurSectionOutParams = null;
 
             // Clear Processed Section Hashes
-            s.ProcessedSectionHashes.Clear();
+            s.ProcessedSectionSet.Clear();
 
             // Set Interface using MainWindow, MainViewModel
             long allLineCount = 0;
@@ -123,7 +124,7 @@ namespace PEBakery.Core
 
             s.MainViewModel.BuildScriptProgressMax = allLineCount;
             s.MainViewModel.BuildScriptProgressValue = 0;
-            s.MainViewModel.BuildFullProgressBarValue = s.CurrentScriptIdx;
+            s.MainViewModel.BuildFullProgressValue = s.CurrentScriptIdx;
 
             // Skip displaying script information when running single scripts
             if (s.RunMode != EngineMode.RunAll && s.MainScript.Equals(s.CurrentScript) && s.CurrentScriptIdx == 0)
@@ -168,7 +169,7 @@ namespace PEBakery.Core
                 if (s.Macro.MacroEnabled)
                     s.Logger.BuildRefScriptWrite(s, s.Macro.MacroScript, true);
 
-                s.MainViewModel.BuildFullProgressBarMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
+                s.MainViewModel.BuildFullProgressMax = s.RunMode == EngineMode.RunMainAndOne ? 1 : s.Scripts.Count;
 
                 // Update project variables
                 s.Project.UpdateProjectVariables();
@@ -301,10 +302,10 @@ namespace PEBakery.Core
         #endregion
 
         #region ForceStop
-        public void ForceStop()
+        public void ForceStop(bool killSubProc)
         {
             s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-            if (s.RunningSubProcess != null)
+            if (killSubProc && s.RunningSubProcess != null)
             {
                 try { s.RunningSubProcess.Kill(); }
                 catch { /* Ignore error */ }
@@ -316,9 +317,9 @@ namespace PEBakery.Core
             s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
         }
 
-        public Task ForceStopWait()
+        public Task ForceStopWait(bool killSubProc)
         {
-            ForceStop();
+            ForceStop(killSubProc);
             return Task.Run(() => _task.Wait());
         }
         #endregion
@@ -350,7 +351,7 @@ namespace PEBakery.Core
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(section.Script))
-                s.ProcessedSectionHashes.Add(section.GetHashCode());
+                s.ProcessedSectionSet.Add(section.Name);
 
             // Pop ExecutionDepth
             s.PopLocalState();
@@ -379,7 +380,7 @@ namespace PEBakery.Core
 
             // Increase only if cmd resides in CurrentScript
             if (s.CurrentScript.Equals(section.Script))
-                s.ProcessedSectionHashes.Add(section.GetHashCode());
+                s.ProcessedSectionSet.Add(section.Name);
 
             // Pop ExecutionDepth
             s.PopLocalState();
@@ -865,8 +866,8 @@ namespace PEBakery.Core
             s.Logger.BuildWrite(s, LogInfo.AddCommandDepth(logs, cmd, ls.Depth));
 
             // Increase only if cmd resides in CurrentScript.
-            // So if a section is from Macro, it will not be count.
-            if (!s.ProcessedSectionHashes.Contains(cmd.Section.GetHashCode()) && s.CurrentScript.Equals(cmd.Section.Script))
+            // If the current section is from Macro, it won't be counted in progress bar.
+            if (s.ProcessedSectionSet.Contains(cmd.Section.Name) && s.CurrentScript.Equals(cmd.Section.Script))
                 s.MainViewModel.BuildScriptProgressValue += 1;
 
             // Return logs, used in unit test
@@ -1172,7 +1173,7 @@ namespace PEBakery.Core
         public Dictionary<int, string> CurSectionInParams; // 1-based index
         public List<string> CurSectionOutParams = null;
         public string ReturnValue = string.Empty;
-        public List<int> ProcessedSectionHashes = new List<int>(16);
+        public HashSet<string> ProcessedSectionSet = new HashSet<string>(16, StringComparer.OrdinalIgnoreCase);
         public bool ElseFlag = false;
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false; // Did error occur?
@@ -1382,7 +1383,7 @@ namespace PEBakery.Core
 
                 MainViewModel.BuildEndedWithIssue = true;
                 MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-                MainViewModel.BuildFullProgressBarValue = MainViewModel.BuildFullProgressBarMax;
+                MainViewModel.BuildFullProgressValue = MainViewModel.BuildFullProgressMax;
             }
             else
             {
@@ -1443,6 +1444,9 @@ namespace PEBakery.Core
             Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
             return _localStateStack.Peek();
         }
+        #endregion
+
+        #region Add
         #endregion
     }
     #endregion

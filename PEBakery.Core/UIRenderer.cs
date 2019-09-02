@@ -67,11 +67,11 @@ namespace PEBakery.Core
         /// </summary>
         private readonly bool _viewMode;
         // Compatibility Option
-        private readonly bool _ignoreWidthOfWebLabel = false;
+        private readonly bool _ignoreWidthOfWebLabel;
 
         public readonly List<UIControl> UICtrls;
-        private UIControl[] _visibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility).ToArray() : UICtrls.ToArray();
-        private UIControl[] _radioButtons => _visibleCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+        private IEnumerable<UIControl> VisibleCtrls => _viewMode ? UICtrls.Where(x => x.Visibility) : UICtrls;
+        private IEnumerable<UIControl> RadioButtons => VisibleCtrls.Where(x => x.Type == UIControlType.RadioButton);
         private readonly List<RenderCleanInfo> _cleanInfos = new List<RenderCleanInfo>();
         #endregion
 
@@ -144,7 +144,7 @@ namespace PEBakery.Core
 
             InitCanvas(_canvas);
             _cleanInfos.Clear();
-            foreach (UIControl uiCtrl in _visibleCtrls)
+            foreach (UIControl uiCtrl in VisibleCtrls)
             {
                 try
                 {
@@ -1081,7 +1081,7 @@ namespace PEBakery.Core
 
         public void WebLabel_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            FileHelper.OpenUri(e.Uri.AbsoluteUri);
+            FileHelper.OpenUri(e.Uri.AbsoluteUri).Dispose();
         }
         #endregion
 
@@ -1140,7 +1140,7 @@ namespace PEBakery.Core
             info.Selected = true;
 
             // Uncheck the other RadioButtons
-            List<UIControl> updateList = _radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+            List<UIControl> updateList = RadioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (UIControl uncheck in updateList)
             {
                 UIInfo_RadioButton unInfo = uncheck.Info.Cast<UIInfo_RadioButton>();
@@ -1613,15 +1613,18 @@ namespace PEBakery.Core
                 if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = false;
 
-                // Set StatusBar Text
-                CancellationTokenSource ct = new CancellationTokenSource();
-                Task printStatus = MainViewModel.PrintBuildElapsedStatus(logMsg, s, ct.Token);
+                Task printStatus;
+                using (CancellationTokenSource ct = new CancellationTokenSource())
+                {
+                    // Set StatusBar Text
+                    printStatus = MainViewModel.PrintBuildElapsedStatus(logMsg, s, ct.Token);
 
-                // Run
-                await Engine.WorkingEngine.Run(logMsg);
+                    // Run
+                    await Engine.WorkingEngine.Run(logMsg);
 
-                // Cancel and wait until PrintBuildElapsedStatus stops
-                ct.Cancel();
+                    // Cancel and wait until PrintBuildElapsedStatus stops
+                    ct.Cancel();
+                }
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
@@ -1645,7 +1648,6 @@ namespace PEBakery.Core
                 // Turn off ProgressRing
                 mainModel.BuildTreeItems.Clear();
                 mainModel.WorkInProgress = false;
-
             }
             finally
             {

@@ -71,19 +71,18 @@ namespace PEBakery.Core
         {
             get
             {
-                // Already loaded, return directly
+                // Return cached line array.
                 if (_lines != null)
                     return _lines;
 
-                // Load from file, do not keep in memory.
-                // AttachEncodeLazy sections are too large.
+                // Load from file, do not keep in memory. AttachEncodeLazy sections are too large.
                 if (Type == SectionType.AttachEncodeLazy)
                 {
                     List<string> lineList = IniReadWriter.ParseRawSection(Script.RealPath, Name);
                     return lineList?.ToArray();
                 }
 
-                // Load from file, keep in memory.
+                // Load from file, cache them in the memory.
                 if (LoadLines())
                     return _lines;
 
@@ -96,7 +95,7 @@ namespace PEBakery.Core
         {
             get
             {
-                // Already loaded, return directly
+                // Return cached line array.
                 if (_iniDict != null)
                     return _iniDict;
 
@@ -104,7 +103,7 @@ namespace PEBakery.Core
                 if (Type == SectionType.AttachEncodeLazy)
                     return IniReadWriter.ParseIniSectionToDict(Script.RealPath, Name);
 
-                // Load from file, keep in memory.
+                // Load from file, cache them in the memory.
                 if (LoadIniDict())
                     return _iniDict;
                 return null;
@@ -219,8 +218,8 @@ namespace PEBakery.Core
                 int eIdx = line.IndexOf('=');
                 if (eIdx != -1 && eIdx != 0)
                 { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    ReadOnlySpan<char> keyName = line.AsSpan().Slice(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    if (keyName.Equals(key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     {
                         _lines[i] = $"{key}={value}";
                         updated = true;
@@ -256,8 +255,8 @@ namespace PEBakery.Core
                 int eIdx = line.IndexOf('=');
                 if (eIdx != -1 && eIdx != 0)
                 { // Key Found
-                    string keyName = line.Substring(0, eIdx).TrimEnd(); // Do not need to trim start of the line
-                    if (keyName.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    ReadOnlySpan<char> keyName = line.AsSpan().Slice(0, eIdx).TrimEnd(); // Do not need to trim start of the line
+                    if (keyName.Equals(key.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     {
                         targetIdx = i;
                         break;

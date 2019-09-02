@@ -150,13 +150,16 @@ namespace PEBakery.WPF
                         Engine.WorkingEngine = new Engine(s);
 
                         // Set StatusBar Text
-                        CancellationTokenSource ct = new CancellationTokenSource();
-                        Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
+                        using (CancellationTokenSource ct = new CancellationTokenSource())
+                        {
+                            Task printStatus = MainViewModel.PrintBuildElapsedStatus("Running CodeBox...", s, ct.Token);
 
-                        await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+                            await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
-                        // Cancel and Wait until PrintBuildElapsedStatus stops
-                        ct.Cancel();
+                            // Cancel and Wait until PrintBuildElapsedStatus stops
+                            ct.Cancel();
+                            await printStatus;
+                        }
 
                         // Turn off progress ring
                         mainModel.WorkInProgress = false;
@@ -166,7 +169,6 @@ namespace PEBakery.WPF
                         mainModel.BuildTreeItems.Clear();
 
                         // Report elapsed build time
-                        await printStatus;
                         string reason = s.RunResultReport();
                         if (reason != null)
                             mainModel.StatusBarText = $"CodeBox took {s.Elapsed:h\\:mm\\:ss}, stopped by {reason}";

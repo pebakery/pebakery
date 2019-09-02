@@ -516,7 +516,7 @@ namespace PEBakery.Core.ViewModels
                 if (value)
                 { // To Normal View
                     BuildScriptProgressValue = 0;
-                    BuildFullProgressBarValue = 0;
+                    BuildFullProgressValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.None;
 
                     NormalInterfaceVisibility = Visibility.Visible;
@@ -528,7 +528,7 @@ namespace PEBakery.Core.ViewModels
                     BuildEchoMessage = string.Empty;
 
                     BuildScriptProgressValue = 0;
-                    BuildFullProgressBarValue = 0;
+                    BuildFullProgressValue = 0;
                     TaskBarProgressState = TaskbarItemProgressState.Normal;
 
                     NormalInterfaceVisibility = Visibility.Collapsed;
@@ -608,18 +608,35 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildScriptProgressVisibility, value);
         }
 
+        public string BuildScriptProgressPercentStr
+        {
+            get
+            {
+                double percent = (BuildScriptProgressValue + 1) / BuildScriptProgressMax;
+                return $"{BuildScriptProgressValue + 1}/{BuildScriptProgressMax} ({percent:P1})";
+            }
+        }
+
         private double _buildScriptProgressMax = 100;
         public double BuildScriptProgressMax
         {
             get => _buildScriptProgressMax;
-            set => SetProperty(ref _buildScriptProgressMax, value);
+            set
+            {
+                SetProperty(ref _buildScriptProgressMax, value);
+                OnPropertyUpdate(nameof(BuildScriptProgressPercentStr));
+            }
         }
 
         private double _buildScriptProgressValue = 0;
         public double BuildScriptProgressValue
         {
             get => _buildScriptProgressValue;
-            set => SetProperty(ref _buildScriptProgressValue, value);
+            set
+            {
+                SetProperty(ref _buildScriptProgressValue, value);
+                OnPropertyUpdate(nameof(BuildScriptProgressPercentStr));
+            }
         }
 
         private Visibility _buildScriptFullProgressVisibility = Visibility.Visible;
@@ -629,18 +646,35 @@ namespace PEBakery.Core.ViewModels
             set => SetProperty(ref _buildScriptFullProgressVisibility, value);
         }
 
-        private double _buildFullProgressBarMax = 100;
-        public double BuildFullProgressBarMax
+        public string BuildFullProgressPercentStr
         {
-            get => _buildFullProgressBarMax;
-            set => SetProperty(ref _buildFullProgressBarMax, value);
+            get
+            {
+                double percent = (BuildFullProgressValue + 1) / BuildFullProgressMax;
+                return $"{BuildFullProgressValue + 1}/{BuildFullProgressMax} ({percent:P1})";
+            }
         }
 
-        private double _buildFullProgressBarValue = 0;
-        public double BuildFullProgressBarValue
+        private double _buildFullProgressMax = 100;
+        public double BuildFullProgressMax
         {
-            get => _buildFullProgressBarValue;
-            set => SetProperty(ref _buildFullProgressBarValue, value);
+            get => _buildFullProgressMax;
+            set
+            {
+                SetProperty(ref _buildFullProgressMax, value);
+                OnPropertyUpdate(nameof(BuildFullProgressPercentStr));
+            }
+        }
+
+        private double _buildFullProgressValue = 0;
+        public double BuildFullProgressValue
+        {
+            get => _buildFullProgressValue;
+            set
+            {
+                SetProperty(ref _buildFullProgressValue, value);
+                OnPropertyUpdate(nameof(BuildFullProgressPercentStr));
+            }
         }
 
         // ShellExecute Console Output
@@ -1022,7 +1056,7 @@ namespace PEBakery.Core.ViewModels
                 try
                 {
                     SyntaxChecker v = new SyntaxChecker(sc);
-                    (List<LogInfo> logs, SyntaxChecker.Result result) = v.Validate();
+                    (List<LogInfo> logs, SyntaxChecker.Result result) = v.CheckScript();
                     LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
                     LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
 
