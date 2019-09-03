@@ -366,18 +366,38 @@
 
                 <cc:IconButton Grid.Row="1" Grid.Column="2"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="ProjectBuildStopButton"
                                Style="{StaticResource MainIconButtonStyle}"
                                IconMaterialKind="StopCircle"
                                Command="local:MainViewCommands.ProjectBuildStopCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
-                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"/>
+                               ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
+                    <cc:IconButton.BaseForeground>
+                        <MultiBinding Converter="{StaticResource MultiColorToSolidColorBrushConverter}" 
+                                      Mode="OneWay" FallbackValue="White">
+                            <MultiBinding.Bindings>
+                                <Binding Path="WaitingSubProcFinish"/>
+                                <Binding Path="TopPanelForeground"/>
+                                <Binding Path="TopPanelReportIssueColor"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </cc:IconButton.BaseForeground>
+                </cc:IconButton>
                 <TextBlock Grid.Row="2" Grid.Column="2"
-                           Text="Stop"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                            HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center">
+                    <TextBlock.Text>
+                        <Binding Path="WaitingSubProcFinish" Converter="{StaticResource BooleanToParamConverter}">
+                            <Binding.ConverterParameter>
+                                <x:Array Type="s:String">
+                                    <s:String>Force</s:String>
+                                    <s:String>Stop</s:String>
+                                </x:Array>
+                            </Binding.ConverterParameter>
+                        </Binding>
+                    </TextBlock.Text>
+                </TextBlock>
                 <cc:IconButton Grid.Row="1" Grid.Column="3"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                                BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"

@@ -753,6 +753,13 @@ namespace PEBakery.Core.ViewModels
             get => _buildCommandProgressVisibility;
             set => SetProperty(ref _buildCommandProgressVisibility, value);
         }
+
+        private bool _waitingSubProcFinish = false;
+        public bool WaitingSubProcFinish
+        {
+            get => _waitingSubProcFinish;
+            set => SetProperty(ref _waitingSubProcFinish, value);
+        }
         #endregion
 
         #region TaskBar Progress State

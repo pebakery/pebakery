@@ -627,7 +627,10 @@ namespace PEBakery.Core.Commands
 
                     // Register process instance to EngineState
                     if (cmd.Type != CodeType.ShellExecuteEx)
-                        s.RunningSubProcess = proc;
+                    {
+                        lock (s.RunningSubProcLock)
+                            s.RunningSubProcess = proc;
+                    }
 
                     Stopwatch watch = Stopwatch.StartNew();
                     proc.Start();
@@ -649,7 +652,8 @@ namespace PEBakery.Core.Commands
                         proc.WaitForExit();
 
                         // Un-register process instance from EngineState
-                        s.RunningSubProcess = null;
+                        lock (s.RunningSubProcLock)
+                            s.RunningSubProcess = null;
 
                         watch.Stop();
                         long tookTime = (long)watch.Elapsed.TotalSeconds;

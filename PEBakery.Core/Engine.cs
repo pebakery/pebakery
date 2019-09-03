@@ -47,7 +47,6 @@ namespace PEBakery.Core
         #region Variables and Constructor
         private static bool _isRunning;
         public static bool IsRunning => _isRunning;
-        
 
         public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         private static readonly object WorkingLock = new object();
@@ -293,8 +292,12 @@ namespace PEBakery.Core
                     s.PassCurrentScriptFlag = false;
                 }
 
+                // Log Finished Time
                 s.EndTime = DateTime.UtcNow;
                 s.Logger.BuildFinish(s);
+
+                // Cleanup MainViewModel
+                s.MainViewModel.WaitingSubProcFinish = false;
 
                 return s.BuildId;
             });
@@ -303,12 +306,37 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ForceStop
+        #region ForceStop, KillSubProcess
         public void ForceStop(bool forceKillSubProc)
         {
-            s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-            if ((s.KillSubProcessAtBuildStop || forceKillSubProc) && s.RunningSubProcess != null)
+            lock (s.ForceStopLock)
             {
+                s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
+                if (s.KillSubProcessAtBuildStop || forceKillSubProc)
+                    KillSubProcess();
+
+                s.CancelWebGet?.Cancel();
+                s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
+                if (s.RunningSubProcess != null)
+                    s.MainViewModel.WaitingSubProcFinish = true;
+
+                s.UserHaltFlag = true;
+            }
+        }
+
+        public Task ForceStopWait(bool forceKillSubProc)
+        {
+            ForceStop(forceKillSubProc);
+            return Task.Run(() => _task.Wait());
+        }
+
+        public void KillSubProcess()
+        {
+            lock (s.KillSubProcLock)
+            {
+                if (s.RunningSubProcess == null)
+                    return;
+
                 try
                 {
                     s.RunningSubProcess.Kill();
@@ -317,16 +345,6 @@ namespace PEBakery.Core
                 catch { /* Ignore error */ }
                 s.RunningSubProcess = null;
             }
-
-            s.CancelWebGet?.Cancel();
-            s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
-            s.UserHaltFlag = true;
-        }
-
-        public Task ForceStopWait(bool forceKillSubProc)
-        {
-            ForceStop(forceKillSubProc);
-            return Task.Run(() => _task.Wait());
         }
         #endregion
 
@@ -1247,6 +1265,11 @@ namespace PEBakery.Core
         public Process RunningSubProcess = null;
         // |- WebGet
         public CancellationTokenSource CancelWebGet = null;
+
+        // Lock
+        public readonly object ForceStopLock = new object();
+        public readonly object KillSubProcLock = new object();
+        public readonly object RunningSubProcLock = new object();
 
         // Readonly Fields
         public readonly string RunOneEntrySection;

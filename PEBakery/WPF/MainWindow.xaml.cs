@@ -176,14 +176,8 @@ namespace PEBakery.WPF
             // Force update of script interface
             ProjectBuildStopButton.Focus();
 
-            // Safety check
-            if (Engine.WorkingEngine == null)
-                return;
-
-            // Do not set Engine.WorkingEngine to null, it will take some time to finish a build.
-            //EngineState s = Engine.WorkingEngine.State;
-            //if (s.UserHaltFlag)
-            Engine.WorkingEngine.ForceStop(false);
+            // Request build to stop.
+            ForceStopBuild();
         }
 
         private void ProjectLoading_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -397,7 +391,8 @@ namespace PEBakery.WPF
             }
             else // Stop Build
             {
-                Engine.WorkingEngine?.ForceStop(false);
+                // Request engine to stop the build.
+                ForceStopBuild();
             }
         }
 
@@ -958,6 +953,51 @@ namespace PEBakery.WPF
                 return;
             listBox.Items.MoveCurrentToLast();
             listBox.ScrollIntoView(listBox.Items.CurrentItem);
+        }
+        #endregion
+
+        #region ForceStopBuild
+        /// <summary>
+        /// Request engine to stop the build.
+        /// </summary>
+        private void ForceStopBuild()
+        {
+            // Safety check
+            if (Engine.WorkingEngine == null)
+                return;
+            if (!Engine.IsRunning)
+                return;
+
+            // Stop and wait for the build to end, or forcefully stop it immediately.
+            EngineState s = Engine.WorkingEngine.State;
+            if (s.UserHaltFlag && !s.KillSubProcessAtBuildStop && s.RunningSubProcess != null)
+            { // Stop is already requested, but waiting for sub-process to end
+                MessageBoxResult result;
+                lock (s.RunningSubProcLock)
+                { // Lock s.RunningSubProcess so no one can modity the Process instance
+                    // Ugly, but required to prevent null exception.
+                    if (s.RunningSubProcess == null)
+                        return;
+
+                    Process proc = s.RunningSubProcess;
+                    string msgBox = $"PEBakery is wating for sub-process [{proc.ProcessName}] to finish.\r\nTerminating a process may corrupt the system, and some processes may not be truly terminated.\r\n\r\nAre you sure to terminate it?";
+                    result = MessageBox.Show(this, msgBox, "Terminate Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    // Sub-process may have finished while PEBakery waited for user input.
+                    // We need to make sure the build is still running.
+                    if (result == MessageBoxResult.Yes && Engine.IsRunning && Engine.WorkingEngine != null && s.RunningSubProcess != null)
+                    {
+                        Model.ScriptDescriptionText = "Immediate build stop requested, killing the sub-process...";
+                        Engine.WorkingEngine.KillSubProcess();
+                    }
+                }
+            }
+            else
+            {
+                // Request engine to stop the build.
+                // Do not set Engine.WorkingEngine to null, it takes some time to finish a build.
+                Engine.WorkingEngine.ForceStop(false);
+            }
         }
         #endregion
     }
