@@ -1704,6 +1704,24 @@ namespace PEBakery.WPF
         #region Property - Attachment
         public bool ScriptAttachUpdated { get; set; } = false;
 
+        private long _scriptFileSize;
+        public long ScriptFileSize
+        {
+            get => _scriptFileSize;
+            set
+            {
+                SetProperty(ref _scriptFileSize, value);
+                ScriptFileSizeStr = NumberHelper.NaturalByteSizeToSIUnit(value);
+            }
+        }
+
+        private string _scriptFileSizeStr;
+        public string ScriptFileSizeStr
+        {
+            get => _scriptFileSizeStr;
+            set => SetProperty(ref _scriptFileSizeStr, value);
+        }
+
         private readonly object _attachedFoldersLock = new object();
         private ObservableCollection<AttachFolderItem> _attachedFolders;
         public ObservableCollection<AttachFolderItem> AttachedFolders
@@ -3986,6 +4004,9 @@ namespace PEBakery.WPF
 
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
+
+            // Attachment
+            ScriptFileSize = new FileInfo(Script.RealPath).Length;
         }
 
         /// <summary>

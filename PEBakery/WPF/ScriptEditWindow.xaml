@@ -1242,6 +1242,21 @@
                     <!-- Buttons -->
                     <StackPanel Grid.Row="0" Grid.Column="0"
                                 Margin="0, 0, 10, 0">
+                        <!-- Script File Size -->
+                        <StackPanel Margin="0, 0, 0, 10">
+                            <TextBlock Margin="0, 0, 0, 5"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Text="Script File Size"/>
+                            <Separator Margin="0, 0, 0, 5"
+                                       SnapsToDevicePixels="True"
+                                       BorderBrush="Black"
+                                       BorderThickness="2"/>
+                            <StackPanel Margin="3, 0, 3, 0">
+                                <TextBlock Text="{Binding ScriptFileSizeStr, Mode=OneWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- Folder Management -->
                         <StackPanel Margin="0, 0, 0, 10">
                             <TextBlock Margin="0, 0, 0, 5"
                                        FontWeight="Bold"
@@ -1301,6 +1316,7 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
+                        <!-- File Management -->
                         <StackPanel Margin="0, 0, 0, 10">
                             <TextBlock Margin="0, 0, 0, 5"
                                        FontWeight="Bold"
@@ -1384,6 +1400,7 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
+                        <!-- Advanced View -->
                         <StackPanel Margin="0, 0, 0, 10">
                             <DockPanel Margin="0, 0, 0, 5">
                                 <CheckBox DockPanel.Dock="Right"
@@ -1451,7 +1468,7 @@
                                                 Width="100"
                                                 DisplayMemberBinding="{Binding EncodedSize}"/>
                                 <GridViewColumn Header="Compression"
-                                                Width="100"
+                                                Width="90"
                                                 DisplayMemberBinding="{Binding Compression}"/>
                             </GridView>
                         </ListView.View>
