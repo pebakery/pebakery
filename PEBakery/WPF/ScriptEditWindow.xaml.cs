@@ -3289,27 +3289,102 @@ namespace PEBakery.WPF
                 ScriptAttachFileDialog dialog = new ScriptAttachFileDialog { Owner = _window };
                 if (dialog.ShowDialog() != true)
                     return;
+
+                (string Name, string Path)[] srcFiles;
+                if (dialog.MultiSelect)
+                {
+                    srcFiles = dialog.FilePaths.Select(path => (Path.GetFileName(path), path)).ToArray();
+                }
+                else
+                {
+                    srcFiles = new (string, string)[] { (dialog.FileName, dialog.FilePath) };
+                }
+                EncodedFile.EncodeMode mode = dialog.EncodeMode;
+               
+                // Check validity of srcFile
+                foreach ((string srcFileName, string srcFilePath) in srcFiles)
+                {
+                    if (srcFilePath.Length == 0)
+                    {
+                        MessageBox.Show(_window, "You must choose a file to attach!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    if (!File.Exists(srcFilePath))
+                    {
+                        MessageBox.Show(_window, $"Invalid path:\r\n[{srcFilePath}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(srcFileName))
+                    {
+                        MessageBox.Show(_window, "File name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                // EncodedFile exception guard
+                try
+                {
+                    // Confirm overwrite
+                    string[] overwriteFileNames = srcFiles
+                        .Where(tup => EncodedFile.ContainsFile(Script, folder.FolderName, tup.Name))
+                        .Select(tup => tup.Name).ToArray();
+                    if (1 <= overwriteFileNames.Length)
+                    {
+                        StringBuilder b = new StringBuilder(overwriteFileNames.Length + 3);
+                        if (overwriteFileNames.Length == 1)
+                        {
+                            b.AppendLine($"Attached file [{overwriteFileNames[0]}] will be overwritten.");
+                        }
+                        else
+                        {
+                            b.AppendLine($"[{overwriteFileNames.Length}] attached file will be overwritten.");
+                            foreach (string overwriteFileName in overwriteFileNames)
+                                b.AppendLine($"- {overwriteFileName}");
+                        }
+                        b.AppendLine();
+                        b.Append("Would you like to proceed?");
+
+                        MessageBoxResult result = MessageBox.Show(
+                            b.ToString(),
+                            "Confirm Overwrite",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Error);
+                        if (result == MessageBoxResult.No)
+                            return;
+                    }
+
+                    try
+                    {
+                        CanExecuteCommand = false;
+                        AttachProgressValue = 0;
+                        IProgress<double> progress = new Progress<double>(x => { AttachProgressValue = x; });
+                        await EncodedFile.AttachFilesAsync(Script, folder.FolderName, srcFiles, mode, progress);
+                    }
+                    finally
+                    {
+                        AttachProgressValue = -1;
+                        CanExecuteCommand = true;
+                    }
+                    MessageBox.Show(_window, "File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Finalize and update interface
+                    ScriptAttachUpdated = true;
+                    ReadScriptAttachment();
+
+                    SelectScriptAttachedFolder(folder.FolderName);
+                    SelectScriptAttachedFile(srcFiles[0].Name);
+                }
+                catch (Exception ex)
+                {
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                /*
                 string srcFilePath = dialog.FilePath;
                 string srcFileName = dialog.FileName;
-                EncodedFile.EncodeMode mode = dialog.EncodeMode;
 
-                if (srcFilePath.Length == 0)
-                {
-                    MessageBox.Show(_window, "You must choose a file to attach!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                if (!File.Exists(srcFilePath))
-                {
-                    MessageBox.Show(_window, $"Invalid path:\r\n[{srcFilePath}]\r\n\r\nThe file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(srcFileName))
-                {
-                    MessageBox.Show(_window, "The file name cannot be empty", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
 
                 try
                 {
@@ -3349,6 +3424,7 @@ namespace PEBakery.WPF
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+                */
             }
             finally
             {
@@ -3703,7 +3779,9 @@ namespace PEBakery.WPF
                         await EncodedFile.ExtractFileAsync(Script, fi.FolderName, fi.FileName, fs, progress);
                     }
 
+#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                     FileHelper.OpenPath(tempFile);
+#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                 }
                 catch (Exception ex)
                 {

@@ -95,7 +95,7 @@ namespace PEBakery.Core
         {
             get
             {
-                // Return cached line array.
+                // Return cached dictionary.
                 if (_iniDict != null)
                     return _iniDict;
 

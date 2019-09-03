@@ -46,14 +46,16 @@ namespace PEBakery.Core
     {
         #region Variables and Constructor
         private static bool _isRunning;
-        // ReSharper disable once ConvertToAutoPropertyWithPrivateSetter
         public static bool IsRunning => _isRunning;
+        
+
         public static Engine WorkingEngine; // Only 1 instance allowed to run at one time
         private static readonly object WorkingLock = new object();
         private static readonly object EnterLock = new object();
 
         // ReSharper disable once InconsistentNaming
-        public EngineState s;
+        private readonly EngineState s;
+        public EngineState State => s;
         private Task<int> _task;
 
         public static readonly string DefaultUserAgent = $"PEBakery/{Global.Const.ProgramVersionStr}";
@@ -302,24 +304,28 @@ namespace PEBakery.Core
         #endregion
 
         #region ForceStop
-        public void ForceStop()
+        public void ForceStop(bool forceKillSubProc)
         {
             s.MainViewModel.TaskBarProgressState = TaskbarItemProgressState.Error;
-            if (s.KillSubProcessAtBuildStop && s.RunningSubProcess != null)
+            if ((s.KillSubProcessAtBuildStop || forceKillSubProc) && s.RunningSubProcess != null)
             {
-                try { s.RunningSubProcess.Kill(); }
+                try
+                {
+                    s.RunningSubProcess.Kill();
+                    s.RunningSubProcess.Dispose();
+                }
                 catch { /* Ignore error */ }
                 s.RunningSubProcess = null;
             }
 
             s.CancelWebGet?.Cancel();
-            s.UserHaltFlag = true;
             s.MainViewModel.ScriptDescriptionText = "Build stop requested, please wait...";
+            s.UserHaltFlag = true;
         }
 
-        public Task ForceStopWait()
+        public Task ForceStopWait(bool forceKillSubProc)
         {
-            ForceStop();
+            ForceStop(forceKillSubProc);
             return Task.Run(() => _task.Wait());
         }
         #endregion
@@ -1306,13 +1312,13 @@ namespace PEBakery.Core
             MainViewModel = mainModel;
 
             // Use secure random number generator to feed seed to pseudo random number generator.
+            byte[] seedArray = new byte[4];
             using (RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider())
             {
-                byte[] seedArray = new byte[4];
                 secureRandom.GetBytes(seedArray);
-                int seed = BitConverter.ToInt32(seedArray, 0);
-                Random = new Random(seed);
             }
+            int seed = BitConverter.ToInt32(seedArray, 0);
+            Random = new Random(seed);
         }
         #endregion
 
@@ -1448,9 +1454,6 @@ namespace PEBakery.Core
             Debug.Assert(0 < _localStateStack.Count, "InitDepth() was not called properly");
             return _localStateStack.Peek();
         }
-        #endregion
-
-        #region Add
         #endregion
     }
     #endregion

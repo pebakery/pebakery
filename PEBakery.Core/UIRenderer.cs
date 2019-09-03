@@ -1081,7 +1081,7 @@ namespace PEBakery.Core
 
         public void WebLabel_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            FileHelper.OpenUri(e.Uri.AbsoluteUri).Dispose();
+            FileHelper.OpenUri(e.Uri.AbsoluteUri);
         }
         #endregion
 

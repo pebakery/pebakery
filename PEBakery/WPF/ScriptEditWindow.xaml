@@ -1317,8 +1317,7 @@
                                         Command="{Binding AttachFileCommand}">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Plus"
-                                                                    Width="Auto"
-                                                                    Height="Auto"
+                                                                    Width="Auto" Height="Auto"
                                                                     Margin="0, 5, 5, 5"/>
                                         <TextBlock Text="Attach File"
                                                    VerticalAlignment="Center"/>

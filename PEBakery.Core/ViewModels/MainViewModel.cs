@@ -1636,7 +1636,7 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
-                FileHelper.OpenPath(filePath).Dispose();
+                FileHelper.OpenPath(filePath);
             }
         }
 

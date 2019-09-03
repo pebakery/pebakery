@@ -245,6 +245,38 @@ namespace PEBakery.Core
             Encode(sc, folderName, fileName, srcBuffer, type, false, progress);
         }
 
+        public static Task AttachFilesAsync(Script sc, string folderName, (string Name, string Path)[] srcFiles, EncodeMode type, IProgress<double> progress)
+        {
+            return Task.Run(() => AttachFiles(sc, folderName, srcFiles, type, progress));
+        }
+
+        public static void AttachFiles(Script sc, string folderName, (string Name, string Path)[] srcFiles, EncodeMode type, IProgress<double> progress)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] { '[', ']', '\t' }))
+                throw new ArgumentException($"[{folderName}] contains invalid character");
+            foreach ((string fileName, _) in srcFiles)
+            {
+                if (!StringEscaper.IsFileNameValid(fileName, new char[] { '[', ']', '\t' }))
+                    throw new ArgumentException($"[{fileName}] contains invalid character");
+            }
+
+            // TODO: Implement multiple file attachment in Encode() method.
+            // This is just a temporary shim. Need proper rework.
+            int i = 0;
+            IProgress<double> progressShim = new Progress<double>(x => { progress.Report((x + i) / srcFiles.Length); });
+            foreach ((string fileName, string srcFilePath) in srcFiles)
+            {
+                using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    Encode(sc, folderName, fileName, fs, type, false, progressShim);
+                }
+                i += 1;
+            }
+        }
+
         public static bool ContainsFile(Script sc, string folderName, string fileName)
         {
             if (!sc.Sections.ContainsKey(folderName))
@@ -678,16 +710,18 @@ namespace PEBakery.Core
 
             foreach (string fileName in fileDict.Keys)
             {
+                string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
+                if (!sc.Sections.ContainsKey(section))
+                    throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
+
                 string destFile = Path.Combine(destDir, fileName);
                 if (!overwrite && File.Exists(destFile))
                     throw new InvalidOperationException($"File [{destFile}] cannot be overwritten");
 
+#pragma warning disable IDE0068 // 권장 dispose 패턴 사용
                 using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+#pragma warning restore IDE0068 // 권장 dispose 패턴 사용
                 {
-                    string section = ScriptSection.Names.GetEncodedSectionName(folderName, fileName);
-                    if (!sc.Sections.ContainsKey(section))
-                        throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
-
                     Decode(sc.RealPath, section, fs, null);
                 }
             }
@@ -2157,6 +2191,9 @@ namespace PEBakery.Core
     #endregion
 
     #region SplitBase64
+    /// <summary>
+    /// Memory-efficient 4090-char tokenizing base64 encoder/decoder
+    /// </summary>
     public static class SplitBase64
     {
         #region Encode

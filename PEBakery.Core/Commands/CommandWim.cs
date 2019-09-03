@@ -260,7 +260,7 @@ namespace PEBakery.Core.Commands
         private static WimMessageResult WimgApiCallback(WimMessageType msgType, object msg, object userData)
         { // https://github.com/josemesona/ManagedWimgApi/wiki/Message-Callbacks
             Debug.Assert(Engine.WorkingEngine != null);
-            EngineState s = Engine.WorkingEngine.s;
+            EngineState s = Engine.WorkingEngine.State;
 
             switch (msgType)
             {
