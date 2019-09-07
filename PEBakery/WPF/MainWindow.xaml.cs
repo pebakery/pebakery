@@ -980,14 +980,14 @@ namespace PEBakery.WPF
                         return;
 
                     Process proc = s.RunningSubProcess;
-                    string msgBox = $"PEBakery is wating for sub-process [{proc.ProcessName}] to finish.\r\nTerminating a process may corrupt the system, and some processes may not be truly terminated.\r\n\r\nAre you sure to terminate it?";
-                    result = MessageBox.Show(this, msgBox, "Terminate Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    string msgBox = $"PEBakery is wating for sub-process [{proc.ProcessName}] (PID: {proc.Id}) to terminate.\r\n\r\nKilling a running process may corrupt the system, and in some instances child/grandchild processes may not be truly terminated.\r\n\r\nAre you sure you want to forcefully stop the build?";
+                    result = MessageBox.Show(this, msgBox, "Force Stop?", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                     // Sub-process may have finished while PEBakery waited for user input.
                     // We need to make sure the build is still running.
                     if (result == MessageBoxResult.Yes && Engine.IsRunning && Engine.WorkingEngine != null && s.RunningSubProcess != null)
                     {
-                        Model.ScriptDescriptionText = "Immediate build stop requested, killing the sub-process...";
+                        Model.ScriptDescriptionText = "Immediate build stop requested, killing the sub-process [{proc.ProcessName}]...";
                         Engine.WorkingEngine.KillSubProcess();
                     }
                 }

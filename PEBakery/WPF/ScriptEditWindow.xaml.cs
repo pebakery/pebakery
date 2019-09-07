@@ -122,7 +122,7 @@ namespace PEBakery.WPF
 
             if (m.InterfaceNotSaved)
             {
-                switch (MessageBox.Show(this, "The interface was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                switch (MessageBox.Show(this, "The script interface was modified.\r\n\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
                 {
                     case MessageBoxResult.Yes:
                         // Do not use e.Cancel here, when script file is moved the method will always fail
@@ -3385,7 +3385,7 @@ namespace PEBakery.WPF
                         AttachProgressValue = -1;
                         CanExecuteCommand = true;
                     }
-                    MessageBox.Show(_window, "File successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(_window, "File(s) successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     // Finalize and update interface
                     ScriptAttachUpdated = true;
@@ -3397,7 +3397,7 @@ namespace PEBakery.WPF
                 catch (Exception ex)
                 {
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(_window, $"File attachment failed.\r\n\r\n[Message]\r\n{Logger.LogExceptionMessage(ex)}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 /*
                 string srcFilePath = dialog.FilePath;
@@ -3508,8 +3508,8 @@ namespace PEBakery.WPF
                 if (!oldExt.Equals(newExt, StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBoxResult result = MessageBox.Show(_window,
-                        $"File's extension is being changed to [{newExt}] from [{oldExt}].\r\nAre you sure to continue?",
-                        "Extension Changed",
+                        $"The file's extension is being changed from [{oldExt}] to [{newExt}].\r\nAre you sure you want to continue?",
+                        "File Extension Changed",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Information);
                     if (result != MessageBoxResult.Yes)
@@ -4005,8 +4005,6 @@ namespace PEBakery.WPF
             ScriptHeaderNotSaved = false;
             ScriptHeaderUpdated = false;
 
-            // Attachment
-            ScriptFileSize = new FileInfo(Script.RealPath).Length;
         }
 
         /// <summary>
@@ -4092,6 +4090,9 @@ namespace PEBakery.WPF
                 if (fi.EncodedSize <= EncodedFile.DecodeInMemorySizeLimit)
                     fi.EncodeMode = EncodedFile.GetEncodeMode(Script, fi.FolderName, fi.FileName, true);
             });
+
+            // Attachment
+            ScriptFileSize = new FileInfo(Script.RealPath).Length;
         }
 
         public void SelectScriptAttachedFolder(string folderName)
