@@ -67,9 +67,6 @@
                         CanExecute="Command_CanExecute"
                         Executed="SelectIsoFileCommand_Executed"/>
         <!-- General -->
-        <CommandBinding Command="local:SettingViewCommands.EnableKillSubProcessAtBuildStopCommand"
-                        CanExecute="Command_CanExecute"
-                        Executed="EnableKillSubProcessAtBuildStopCommand_Executed"/>
         <CommandBinding Command="local:SettingViewCommands.EnableLongFilePathCommand"
                         CanExecute="Command_CanExecute"
                         Executed="EnableLongFilePathCommand_Executed"/>
@@ -312,12 +309,6 @@
                                   VerticalContentAlignment="Center"
                                   Content="Optimize code"
                                   IsChecked="{Binding GeneralOptimizeCode}" />
-                        <CheckBox Height="20"
-                                  VerticalContentAlignment="Center"
-                                  Content="Kill a sub-process when stopping a build"
-                                  ToolTip="Kill a sub-process created by ShellExecute command when stopping a build."
-                                  Command="local:SettingViewCommands.EnableKillSubProcessAtBuildStopCommand"
-                                  IsChecked="{Binding GeneralKillSubProcessAtBuildStop}" />
                         <CheckBox Height="20"
                                   VerticalContentAlignment="Center"
                                   Content="Show log viewer after a build"
