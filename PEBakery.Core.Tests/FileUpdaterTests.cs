@@ -50,7 +50,6 @@ namespace PEBakery.Core.Tests
         public static void ServerInit(TestContext testContext)
         {
             TestSetup.StartWebFileServer();
-
         }
 
         [ClassCleanup]
@@ -90,7 +89,7 @@ namespace PEBakery.Core.Tests
         #region UpdateScript
         [TestMethod]
         [TestCategory("FileUpdater")]
-        public async void UpdateScript()
+        public async Task UpdateScript()
         {
             string destDir = FileHelper.GetTempDir();
             try

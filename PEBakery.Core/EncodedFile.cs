@@ -269,7 +269,9 @@ namespace PEBakery.Core
             IProgress<double> progressShim = new Progress<double>(x => { progress.Report((x + i) / srcFiles.Length); });
             foreach ((string fileName, string srcFilePath) in srcFiles)
             {
+#pragma warning disable IDE0068 // 권장 dispose 패턴 사용
                 using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+#pragma warning restore IDE0068 // 권장 dispose 패턴 사용
                 {
                     Encode(sc, folderName, fileName, fs, type, false, progressShim);
                 }
@@ -1347,7 +1349,7 @@ namespace PEBakery.Core
             // [Stage 1] Backup original script and prepare temp files
             string backupFile = FileHelper.GetTempFile("");
             File.Copy(sc.RealPath, backupFile, true);
-            string tempCompressed = FileHelper.GetTempFile();
+            string tempCompressed = FileHelper.GetTempFile(".bin");
             try
             {
                 int encodedLen;
@@ -1572,8 +1574,8 @@ namespace PEBakery.Core
         #region Decode
         private static long Decode(string scPath, string section, Stream outStream, IProgress<double> progress)
         {
-            string tempDecode = FileHelper.GetTempFile();
-            string tempComp = FileHelper.GetTempFile();
+            string tempDecode = FileHelper.GetTempFile(".bin");
+            string tempComp = FileHelper.GetTempFile(".bin");
             try
             {
                 using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite))
