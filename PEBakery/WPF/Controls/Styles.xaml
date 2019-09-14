@@ -74,4 +74,29 @@
             <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="LightBlue" />
         </Style.Resources>
     </Style>
+    <Style x:Key="IconButtonStyle" TargetType="cc:IconButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type cc:IconButton}">
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="IconOpacity" Value="0.4"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="IconOpacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                    <Border BorderThickness="0" BorderBrush="Transparent" Focusable="True">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </Border.Style>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

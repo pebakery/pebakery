@@ -1643,7 +1643,9 @@ namespace PEBakery.Core.ViewModels
             }
             else
             {
+#pragma warning disable IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
                 FileHelper.OpenPath(filePath);
+#pragma warning restore IDE0067 // 범위를 벗어나기 전에 개체를 삭제하십시오.
             }
         }
 

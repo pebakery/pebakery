@@ -781,7 +781,7 @@ namespace PEBakery.Core
             // ScriptUpdateType is a project
             if (scType == ScriptUpdateType.Project)
             {
-                if (Project.UpdateInfo.Empty)
+                if (Project.UpdateInfo.IsUpdateable)
                     return;
 
                 string baseUrl = Project.UpdateInfo.BaseUrl;

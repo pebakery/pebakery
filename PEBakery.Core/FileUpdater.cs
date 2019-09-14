@@ -93,7 +93,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Fields and Properties
-        public bool Empty => SelectedChannel == null || BaseUrl == null;
+        public bool IsUpdateable => SelectedChannel != null && BaseUrl != null;
         public string SelectedChannel { get; }
         public string BaseUrl { get; }
         #endregion

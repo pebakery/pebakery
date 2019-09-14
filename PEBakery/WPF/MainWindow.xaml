@@ -129,23 +129,6 @@
         <local:MultiColorToSolidColorBrushConverter x:Key="MultiColorToSolidColorBrushConverter"/>
         <local:IsTreeEntryDirMainToVisibilityConverter x:Key="IsTreeEntryDirMainToVisibilityConverter"/>
         <local:BooleanToParamConverter x:Key="BooleanToParamConverter"/>
-        <Style x:Key="MainIconButtonStyle" TargetType="Button">
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border BorderThickness="0" BorderBrush="Transparent" Focusable="True">
-                            <Border.Style>
-                                <Style TargetType="{x:Type Border}">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                </Style>
-                            </Border.Style>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
     <DockPanel ccc:SelectTextOnFocus.Active="True">
         <Grid DockPanel.Dock="Top"
@@ -205,9 +188,9 @@
 
                 <cc:IconButton Grid.Row="1" Grid.Column="2" 
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=Black}"
                                x:Name="ProjectBuildStartButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.ProjectBuildStartCommand"
                                IconMaterialKind="Play"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -219,9 +202,9 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="3"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="ProjectRefreshButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.ProjectRefreshCommand"
                                IconMaterialKind="Refresh"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -233,9 +216,9 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="4"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="SettingWindowButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.SettingWindowCommand"
                                IconMaterialKind="Settings"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -248,12 +231,12 @@
                 <cc:IconButton Grid.Row="1" Grid.Column="5"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
                                x:Name="LogWindowButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.LogWindowCommand"
                                IconMaterialKind="CommentCheck"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                    <cc:IconButton.BaseForeground>
+                    <cc:IconButton.IconForeground>
                         <MultiBinding Converter="{StaticResource MultiColorToSolidColorBrushConverter}" 
                                       Mode="OneWay" FallbackValue="White">
                             <MultiBinding.Bindings>
@@ -262,7 +245,7 @@
                                 <Binding Path="TopPanelReportIssueColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
-                    </cc:IconButton.BaseForeground>
+                    </cc:IconButton.IconForeground>
                 </cc:IconButton>
                 <TextBlock Grid.Row="2" Grid.Column="5"
                            Text="Logs"
@@ -271,9 +254,9 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="6"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="UtilityWindowButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.UtilityWindowCommand"
                                IconMaterialKind="Layers"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -285,9 +268,9 @@
                            VerticalAlignment="Center" />
                 <cc:IconButton Grid.Row="1" Grid.Column="7"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="ProjectUpdateButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.ProjectUpdateCommand"
                                IconMaterialKind="Download"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -299,9 +282,9 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="8"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=8}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
                                x:Name="AboutWindowButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                Command="local:MainViewCommands.AboutWindowCommand"
                                IconMaterialKind="Help"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -367,12 +350,12 @@
                 <cc:IconButton Grid.Row="1" Grid.Column="2"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
                                x:Name="ProjectBuildStopButton"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               Style="{StaticResource IconButtonStyle}"
                                IconMaterialKind="StopCircle"
                                Command="local:MainViewCommands.ProjectBuildStopCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
                                ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}">
-                    <cc:IconButton.BaseForeground>
+                    <cc:IconButton.IconForeground>
                         <MultiBinding Converter="{StaticResource MultiColorToSolidColorBrushConverter}" 
                                       Mode="OneWay" FallbackValue="White">
                             <MultiBinding.Bindings>
@@ -381,7 +364,7 @@
                                 <Binding Path="TopPanelReportIssueColor"/>
                             </MultiBinding.Bindings>
                         </MultiBinding>
-                    </cc:IconButton.BaseForeground>
+                    </cc:IconButton.IconForeground>
                 </cc:IconButton>
                 <TextBlock Grid.Row="2" Grid.Column="2"
                            Foreground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
@@ -400,8 +383,8 @@
                 </TextBlock>
                 <cc:IconButton Grid.Row="1" Grid.Column="3"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               Style="{StaticResource IconButtonStyle}"
                                IconMaterialKind="CommentCheck"
                                Command="local:MainViewCommands.LogWindowCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -413,8 +396,8 @@
                            VerticalAlignment="Center"/>
                 <cc:IconButton Grid.Row="1" Grid.Column="4"
                                IconMargin="{Binding MainIconButtonMargin, Mode=OneWay, FallbackValue=4}"
-                               BaseForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
-                               Style="{StaticResource MainIconButtonStyle}"
+                               IconForeground="{Binding TopPanelForeground, Converter={StaticResource ColorToSolidColorBrushConverter}, FallbackValue=White}"
+                               Style="{StaticResource IconButtonStyle}"
                                IconMaterialKind="Help"
                                Command="local:MainViewCommands.AboutWindowCommand"
                                AutomationProperties.Name="{Binding RelativeSource={RelativeSource Self}, Path=Command.Text}"
@@ -783,7 +766,7 @@
                                        Visibility="{Binding ScriptCheckVisibility}"
                                        BorderThickness="0"
                                        Background="Transparent"
-                                       BaseForeground="{Binding ScriptCheckResult, Converter={StaticResource SyntaxCheckerResultColorConverter}}"
+                                       IconForeground="{Binding ScriptCheckResult, Converter={StaticResource SyntaxCheckerResultColorConverter}}"
                                        IconMaterialKind="{Binding ScriptCheckResult, Converter={StaticResource SyntaxCheckerResultIconConverter}, FallbackValue=None}"
                                        ToolTip="Syntax Check"/>
                         <TextBlock DockPanel.Dock="Right"

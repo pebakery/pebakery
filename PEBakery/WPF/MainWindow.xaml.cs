@@ -259,8 +259,23 @@ namespace PEBakery.WPF
 
         private void ProjectUpdateCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
+            if (Model != null && !Model.WorkInProgress &&
+                Global.Projects != null && Global.Projects.FullyLoaded &&
+                Model.CurMainTree != null)
+            {
+                Project p = Model.CurMainTree.Script.Project;
+                e.CanExecute = p.IsUpdateable;
+            }
+            else
+            {
+                e.CanExecute = false;
+            }
+
+            /*
             e.CanExecute = Model != null && !Model.WorkInProgress &&
                            Global.Projects != null && Global.Projects.FullyLoaded;
+                           */
+            
         }
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)

@@ -84,17 +84,6 @@ namespace PEBakery.Core
             }
         }
 
-        /*
-        private bool _updateable;
-        public bool Updateable
-        {
-            get
-            {
-                ProjectList.Any(p => p.Pro)
-            }
-        }
-        */
-
         // Expose _projectNames and _compatDict to public
         public List<string> ProjectNames => FullyLoaded ?
             ProjectList.Select(x => x.ProjectName).ToList() :
@@ -632,6 +621,7 @@ namespace PEBakery.Core
         public Variables Variables { get; set; }
         public CompatOption Compat { get; }
         public ProjectUpdateInfo UpdateInfo { get; private set; }
+        public bool IsUpdateable => UpdateInfo != null ? UpdateInfo.IsUpdateable : false;
 
         public int LoadedScriptCount { get; private set; }
         public int AllScriptCount { get; private set; }
@@ -650,7 +640,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Load
+        #region enum LoadReport
         public enum LoadReport
         {
             None,
