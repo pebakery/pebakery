@@ -1,11 +1,16 @@
 {
-  "meta_schema_ver": "0.1",
-  "pebakery_min_ver": "0.9.6",
-  "hash_sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE=",
-  "script_main": {
-    "title": "PreserveInterface",
-    "desc": "Standalone PreserveInterface",
-    "author": "ied206",
-    "version": "1.2"
-  }
+    "meta_schema_ver": "0.1",
+    "pebakery_min_ver": "0.9.6",
+    "hash_sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE=",
+    "last_write": "2019-08-16T20:13:47.2649463Z",
+    "file_size": 1093,
+    "script_format": "Winbuilder",
+    "wb_script_info": {
+        "title": "PreserveInterface",
+        "desc": "Standalone PreserveInterface",
+        "author": "ied206",
+        "version": "1.2"
+    }
 }
+
+

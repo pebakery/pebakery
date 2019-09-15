@@ -26,22 +26,25 @@
 */
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using PEBakery.Core.ViewModels;
 using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace PEBakery.Core
 {
-    #region PEBakery's new update scheme
+    #region (Docs) PEBakery Update Scheme
     /*
     - script.project
     [Update]
@@ -55,7 +58,7 @@ namespace PEBakery.Core
     */
     #endregion
 
-    #region Classic updates.ini (No plan to implement)
+    #region (Docs) Classic updates.ini (No plan to implement)
     // ReSharper disable CommentTypo
     /*
     - Classic updates.ini
@@ -78,6 +81,40 @@ namespace PEBakery.Core
     Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
     */
     // ReSharper restore CommentTypo
+    #endregion
+
+    #region (Docs) Script meta file (*.meta.json)
+    /*
+    Example of *.meta.json
+    {
+        "meta_schema_ver": "0.1",
+        "pebakery_min_ver": "0.9.6",
+        "hash_sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE=",
+        "script_main": {
+            "title": "PreserveInterface",
+            "desc": "Standalone PreserveInterface",
+            "author": "ied206",
+            "version": "1.2"
+        }
+    }
+    */
+    #endregion
+
+    #region (Docs) ProjectMetaJson (project.meta.json)
+    /*
+    Example of *.meta.json
+    {
+        "meta_schema_ver": "0.1",
+        "pebakery_min_ver": "0.9.6",
+        "hash_sha256": "ObyT2vDKEsNzvEPNCrd7TTwXtmsYvbxXr3kKY4obXsE=",
+        "script_main": {
+            "title": "PreserveInterface",
+            "desc": "Standalone PreserveInterface",
+            "author": "ied206",
+            "version": "1.2"
+        }
+    }
+    */
     #endregion
 
     #region ProjectUpdateInfo
@@ -266,13 +303,18 @@ namespace PEBakery.Core
                 }
 
                 // Check .meta.json
-                (MetaJsonRoot metaJson, string errMsg) = CheckMetaJson(metaJsonFile);
+                (ScriptMetaJson.Root metaJson, string errMsg) = CheckScriptMetaJson(metaJsonFile);
                 if (metaJson == null)
                 {
                     _logs.Add(new LogInfo(LogState.Error, errMsg));
                     return null;
                 }
-                if (metaJson.ScriptMain.ParsedVersion <= localSemVer)
+                if (metaJson.ScriptFormat != ScriptMetaJson.ScriptFormat.Winbuilder)
+                { // Currently only supports only "winbuilder" script_format
+                    _logs.Add(new LogInfo(LogState.Error, $"Not supported script format {metaJson.ScriptFormat}"));
+                    return null;
+                }
+                if (metaJson.WbScriptInfo.ParsedVersion <= localSemVer)
                 {
                     _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
                     return null;
@@ -320,7 +362,7 @@ namespace PEBakery.Core
                     _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] does not provide proper version information"));
                     return null;
                 }
-                if (!remoteSemVer.Equals(metaJson.ScriptMain.ParsedVersion))
+                if (!remoteSemVer.Equals(metaJson.WbScriptInfo.ParsedVersion))
                 {
                     _logs.Add(new LogInfo(LogState.Error, $"Version of remote script [{sc.Title}] is inconsistent with .meta.json"));
                     return null;
@@ -461,25 +503,21 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region MetaJsonRoot class (.meta.json)
-        /// <summary>
-        /// Check .meta.json
-        /// </summary>
-        /// <param name="metaJsonFile"></param>
-        public static (MetaJsonRoot MetaJson, string ErrorMsg) CheckMetaJson(string metaJsonFile)
+        #region ScriptMetaJson methods (.meta.json)
+        public static (ScriptMetaJson.Root MetaJson, string ErrorMsg) CheckScriptMetaJson(string metaJsonFile)
         {
             // Prepare JsonSerializer
             JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
             JsonSerializer serializer = JsonSerializer.Create(settings);
 
             // Read json file
-            MetaJsonRoot jsonRoot;
+            ScriptMetaJson.Root jsonRoot;
             try
             {
                 using (StreamReader sr = new StreamReader(metaJsonFile, Encoding.UTF8, false))
                 using (JsonTextReader jr = new JsonTextReader(sr))
                 {
-                    jsonRoot = serializer.Deserialize<MetaJsonRoot>(jr);
+                    jsonRoot = serializer.Deserialize<ScriptMetaJson.Root>(jr);
                 }
             }
             catch (JsonReaderException)
@@ -490,18 +528,23 @@ namespace PEBakery.Core
             if (!jsonRoot.CheckSchema(out string errorMsg))
                 return (null, errorMsg);
 
-            if (!jsonRoot.ScriptMain.CheckSchema(out errorMsg))
+            if (!jsonRoot.CheckScriptInfo(out errorMsg))
                 return (null, errorMsg);
 
             return (jsonRoot, null);
         }
 
-        public static Task CreateMetaJsonAsync(Script sc, string destJsonFile)
+        public static Task CreateScriptMetaJsonAsync(Script sc, string destJsonFile)
         {
-            return Task.Run(() => CreateMetaJson(sc, destJsonFile));
+            return Task.Run(() => CreateScriptMetaJson(sc, destJsonFile));
         }
 
-        public static void CreateMetaJson(Script sc, string destJsonFile)
+        /// <summary>
+        /// Currently supports only "winbuilder" script format
+        /// </summary>
+        /// <param name="sc"></param>
+        /// <param name="destJsonFile"></param>
+        public static void CreateScriptMetaJson(Script sc, string destJsonFile)
         {
             // Calculate sha256 of the script
             byte[] hashDigest;
@@ -510,13 +553,19 @@ namespace PEBakery.Core
                 hashDigest = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
             }
 
+            // Get last modified time and file size of the script
+            FileInfo fi = new FileInfo(sc.RealPath);
+
             // Create MetaJsonRoot instance
-            MetaJsonRoot jsonRoot = new MetaJsonRoot
+            ScriptMetaJson.Root jsonRoot = new ScriptMetaJson.Root
             {
                 MetaSchemaVer = Global.Const.MetaSchemaVerStr,
                 PEBakeryMinVer = Global.Const.ProgramVersionStr,
+                LastWrite = fi.LastWriteTimeUtc,
+                FileSize = fi.Length,
                 HashSHA256 = hashDigest,
-                ScriptMain = new MetaJsonScriptMain
+                ScriptFormat = ScriptMetaJson.ScriptFormat.Winbuilder,
+                WbScriptInfo = new ScriptMetaJson.WbScriptInfo
                 {
                     Title = sc.Title,
                     Desc = sc.Description,
@@ -526,20 +575,24 @@ namespace PEBakery.Core
             };
 
             // Validate MetaJsonRoot instance (Debug-mode only)
-            const string assertErrorMessage = "Incorrect MetaJsonRoot instance creation";
+            const string assertErrorMessage = "Incorrect ScriptMetaJson instance creation";
             Debug.Assert(jsonRoot.MetaSchemaVer != null, assertErrorMessage);
             Debug.Assert(jsonRoot.PEBakeryMinVer != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.LastWrite != null, assertErrorMessage);
+            Debug.Assert(0 <= jsonRoot.FileSize, assertErrorMessage);
+            Debug.Assert(jsonRoot.ScriptFormat == ScriptMetaJson.ScriptFormat.Winbuilder, assertErrorMessage);
             Debug.Assert(jsonRoot.HashSHA256 != null, assertErrorMessage);
-            Debug.Assert(jsonRoot.ScriptMain.Title != null, assertErrorMessage);
-            Debug.Assert(jsonRoot.ScriptMain.Desc != null, assertErrorMessage);
-            Debug.Assert(jsonRoot.ScriptMain.Author != null, assertErrorMessage);
-            Debug.Assert(jsonRoot.ScriptMain.Version != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.WbScriptInfo.Title != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.WbScriptInfo.Desc != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.WbScriptInfo.Author != null, assertErrorMessage);
+            Debug.Assert(jsonRoot.WbScriptInfo.Version != null, assertErrorMessage);
 
             // Prepare JsonSerializer
             JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
             JsonSerializer serializer = JsonSerializer.Create(settings);
 
-            using (StreamWriter sw = new StreamWriter(destJsonFile, false, Encoding.UTF8))
+            // Use UTF-8 without a BOM signature, as the file is going to be served in web server
+            using (StreamWriter sw = new StreamWriter(destJsonFile, false, new UTF8Encoding(false)))
             using (JsonTextWriter jw = new JsonTextWriter(sw))
             {
 #if DEBUG
@@ -552,10 +605,41 @@ namespace PEBakery.Core
                 serializer.Serialize(jw, jsonRoot);
             }
         }
+        #endregion
 
-        // ReSharper disable once ClassNeverInstantiated.Local
-        public class MetaJsonRoot
+        #region Utility
+        private HttpFileDownloader.Report DownloadFile(string url, string destFile)
         {
+            try
+            {
+                Task<HttpFileDownloader.Report> task = _downloader.Download(url, destFile);
+                task.Wait();
+
+                return task.Result;
+            }
+            catch (Exception e)
+            {
+                return new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
+            }
+        }
+        #endregion
+    }
+    #endregion
+
+    #region class ScriptMetaJson (.meta.json)
+    public class ScriptMetaJson
+    {
+        public enum ScriptFormat
+        {
+            /// <summary>
+            /// WinBuilder format
+            /// </summary>
+            Winbuilder = 1,
+        }
+
+        public class Root
+        {
+            // Shared
             [JsonProperty(PropertyName = "meta_schema_ver")]
             public string MetaSchemaVer { get; set; }
             [JsonProperty(PropertyName = "pebakery_min_ver")]
@@ -563,24 +647,64 @@ namespace PEBakery.Core
 
             [JsonProperty(PropertyName = "hash_sha256")]
             public byte[] HashSHA256 { get; set; }
-            [JsonProperty(PropertyName = "script_main")]
-            public MetaJsonScriptMain ScriptMain { get; set; }
+            /// <summary>
+            /// Last modified time in UTC
+            /// </summary>
+            [JsonProperty(PropertyName = "last_write")]
+            public DateTime LastWrite { get; set; }
+            [JsonProperty(PropertyName = "file_size")]
+            public long FileSize { get; set; }
+            [JsonProperty(PropertyName = "script_format")]
+            [JsonConverter(typeof(StringEnumConverter))]
+            public ScriptFormat ScriptFormat { get; set; }
+
+            // One instance per format
+            [JsonProperty(PropertyName = "wb_script_info")]
+            public WbScriptInfo WbScriptInfo { get; set; }
 
             [JsonIgnore]
             private static readonly VersionEx SchemaParseVer = Global.Const.MetaSchemaVerInst;
 
+            #region Methods
             /// <summary>
             /// Return true if schema is valid
             /// </summary>
-            /// <returns></returns>
+            /// <returns>True if valid</returns>
             public bool CheckSchema(out string errorMsg)
             {
                 errorMsg = string.Empty;
 
                 // Check if properties are not null
-                if (MetaSchemaVer == null || PEBakeryMinVer == null || ScriptMain == null)
+                if (MetaSchemaVer == null || PEBakeryMinVer == null)
                 {
                     errorMsg = "Meta file of remote script is corrupted";
+                    return false;
+                }
+
+                if (!Enum.IsDefined(typeof(ScriptFormat), ScriptFormat))
+                {
+                    errorMsg = $"Not supported script format {ScriptFormat}";
+                    return false;
+                }
+
+                /*
+                bool scriptInfoNotProvided = true;
+                
+                switch (ScriptFormat)
+                {
+                    case ScriptFormat.Winbuilder:
+                        if (WbScriptInfo != null)
+                            scriptInfoNotProvided = false;
+                        break;
+                    default:
+                        Debug.Assert(false, $"Update {nameof(ScriptMetaJson)}.{nameof(Root)}.{nameof(CheckSchema)} with the key {ScriptFormat}");
+                        break;
+                }
+                if (scriptInfoNotProvided)
+                */
+                if (GetScriptInfo() == null)
+                {
+                    errorMsg = $"Unable to find script info of the format {ScriptFormat}";
                     return false;
                 }
 
@@ -614,9 +738,73 @@ namespace PEBakery.Core
 
                 return true;
             }
+
+            public ScriptInfo GetScriptInfo()
+            {
+                switch (ScriptFormat)
+                {
+                    case ScriptFormat.Winbuilder:
+                        return WbScriptInfo;
+                    default:
+                        Debug.Assert(false, $"Update {nameof(ScriptMetaJson)}.{nameof(Root)}.{nameof(GetScriptInfo)} with the key {ScriptFormat}");
+                        return null;
+                }
+            }
+
+            /// <summary>
+            /// Return true if schema is valid
+            /// </summary>
+            /// <returns>True if valid</returns>
+            public bool CheckScriptInfo(out string errorMsg)
+            {
+                ScriptInfo info = GetScriptInfo();
+                if (info != null)
+                {
+                    return info.CheckScriptInfo(out errorMsg);
+                }
+                else
+                {
+                    errorMsg = $"Unable to find script info of the format {ScriptFormat}";
+                    return false;
+                }
+            }
+            #endregion
         }
 
-        public class MetaJsonScriptMain
+        public abstract class ScriptInfo
+        {
+            #region Cast
+            /// <summary>
+            /// Type safe casting helper
+            /// </summary>
+            /// <typeparam name="T">Child of CodeInfo</typeparam>
+            /// <returns>CodeInfo casted as T</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T Cast<T>() where T : CodeInfo
+            {
+                T cast = this as T;
+                Debug.Assert(cast != null, "Invalid CodeInfo");
+                return cast;
+            }
+
+            /// <summary>
+            /// Type safe casting helper
+            /// </summary>
+            /// <typeparam name="T">Child of CodeInfo</typeparam>
+            /// <returns>CodeInfo casted as T</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static T Cast<T>(CodeInfo info) where T : CodeInfo
+            {
+                return info.Cast<T>();
+            }
+            #endregion
+
+            #region CheckScriptInfo
+            public abstract bool CheckScriptInfo(out string errorMsg);
+            #endregion
+        }
+
+        public class WbScriptInfo : ScriptInfo
         {
             [JsonProperty(PropertyName = "title")]
             public string Title { get; set; }
@@ -632,11 +820,12 @@ namespace PEBakery.Core
             [JsonIgnore]
             public VersionEx ParsedVersion => _parsedVersion ?? (_parsedVersion = VersionEx.Parse(Version));
 
+            #region CheckScriptInfo
             /// <summary>
             /// Return true if schema is valid
             /// </summary>
             /// <returns></returns>
-            public bool CheckSchema(out string errorMsg)
+            public override bool CheckScriptInfo(out string errorMsg)
             {
                 errorMsg = string.Empty;
 
@@ -649,25 +838,8 @@ namespace PEBakery.Core
 
                 return true;
             }
+            #endregion
         }
-        #endregion
-
-        #region Utility
-        private HttpFileDownloader.Report DownloadFile(string url, string destFile)
-        {
-            try
-            {
-                Task<HttpFileDownloader.Report> task = _downloader.Download(url, destFile);
-                task.Wait();
-
-                return task.Result;
-            }
-            catch (Exception e)
-            {
-                return new HttpFileDownloader.Report(false, 0, Logger.LogExceptionMessage(e));
-            }
-        }
-        #endregion
     }
     #endregion
 }

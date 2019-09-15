@@ -60,23 +60,23 @@ namespace PEBakery.Core
 
         #region Fields and Properties
         // Build-time constant
-        public static DateTime BuildDate;
+        public static DateTime BuildDate { get; set; }
 
         // Start-time variables
-        public static string[] Args;
-        public static string BaseDir;
-        public static string MagicFile;
+        public static string[] Args { get; set; }
+        public static string BaseDir { get; set; }
+        public static string MagicFile { get; set; }
 
         // Buffer Pool
         public static RecyclableMemoryStreamManager MemoryStreamManager = new RecyclableMemoryStreamManager();
 
         // Global Instances
-        public static Logger Logger;
-        public static MainViewModel MainViewModel;
-        public static Setting Setting;
-        public static ProjectCollection Projects;
-        public static ScriptCache ScriptCache;
-        public static FileTypeDetector FileTypeDetector;
+        public static Logger Logger { get; set; }
+        public static MainViewModel MainViewModel { get; set; }
+        public static Setting Setting { get; set; }
+        public static ProjectCollection Projects { get; set; }
+        public static ScriptCache ScriptCache { get; set; }
+        public static FileTypeDetector FileTypeDetector { get; set; }
         #endregion
 
         #region Init

@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Tests
@@ -155,6 +156,48 @@ namespace PEBakery.Core.Tests
                 Assert.IsTrue(ifaceDict["RadioButton03"].Equals("C,1,11,10,70,120,20,True", StringComparison.Ordinal));
 
                 Assert.IsFalse(IniReadWriter.ContainsSection(newScript.RealPath, "SecondInterface"));
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region PrintScriptMetaJson (Log)
+        [TestMethod]
+        [TestCategory("FileUpdater")]
+        public void PrintScriptMetaJson()
+        {
+            string destDir = FileHelper.GetTempDir();
+            
+            try
+            {
+                // Prepare running FileUpdater
+                string srcScriptFile = Path.Combine(TestSetup.WebRoot, "Updater", "Standalone", "PreserveInterface_r2.script");
+                string workScriptFile = Path.Combine(destDir, "PreserveInterface.script");
+                string workScriptTreePath = Path.Combine("TestSuite", "Updater", "PreserveInterface.script");
+                string destJson = Path.Combine(destDir, "PreserveInterface_r2.meta.json");
+                File.Copy(srcScriptFile, workScriptFile);
+
+                Project p = EngineTests.Project;
+                Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
+                {
+                    AddToProjectTree = true,
+                    IgnoreMain = false,
+                    OverwriteToProjectTree = true,
+                });
+
+                // Create a script meta json
+                FileUpdater.CreateScriptMetaJson(sc, destJson);
+
+                string metaJsonText;
+                using (StreamReader sr = new StreamReader(destJson, new UTF8Encoding(false), false))
+                {
+                    metaJsonText = sr.ReadToEnd();
+                }
+                Console.WriteLine(metaJsonText);
             }
             finally
             {

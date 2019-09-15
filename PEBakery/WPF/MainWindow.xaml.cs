@@ -810,7 +810,7 @@ namespace PEBakery.WPF
                     string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
                     try
                     {
-                        await FileUpdater.CreateMetaJsonAsync(sc, destJsonFile);
+                        await FileUpdater.CreateScriptMetaJsonAsync(sc, destJsonFile);
                         logs.Add(new LogInfo(LogState.Success, $"Created meta file for [{sc.Title}]"));
                         successCount += 1;
                     }
