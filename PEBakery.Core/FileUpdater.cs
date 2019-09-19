@@ -32,7 +32,6 @@ using PEBakery.Helper;
 using PEBakery.Ini;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -55,32 +54,11 @@ namespace PEBakery.Core
     [Update]
     ScriptType={Project|Standalone}
     ScriptUrl=<Url>
+
+    - Structure
+    Each script has its pair script meta file. (ABC.script -> ABC.meta.json)
+    Deleted script marks its deletiton with empty .deleted file. (ABC.script -> ABC.deleted)
     */
-    #endregion
-
-    #region (Docs) Classic updates.ini (No plan to implement)
-    // ReSharper disable CommentTypo
-    /*
-    - Classic updates.ini
-    [Updates]
-    Win10PESE=Folder
-    Tools=Folder
-
-    [Updates\Win10PESE]
-    Win10PESE\Apps=Folder
-    Win10PESE\Build=Folder
-
-    [Updates\Win10PESE\Apps\Network]
-    Win10PESE\Apps\Network\Firewall=Folder
-    Win10PESE\Apps\Network\Remote Connect=Folder
-    Flash_Add.Script=Projects/Win10PESE/Apps/Network/Flash_Add.Script,93cc0d650b4e1ff459c43d45a531903f,015,Flash#$sAdd,Adds#$sFlash#$sPlayer.,Lancelot,http://TheOven.org,#23082,2,
-    Flash_Package.script=Projects/Win10PESE/Apps/Network/Flash_Package.script,bc42776b7140ea8d022b49d5b6c2f0de,030,Flash#$sPackage#$sx86,(v32.0.0.114#$s-#$s(x86#$s18#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#9821195,0,
-    Flash_Package64.script=Projects/Win10PESE/Apps/Network/Flash_Package64.script,a637cba7ddc866126cf903c07f9e4f79,030,Flash#$sPackage#$sx64,(v32.0.0.114#$s-#$s(x64#$s25#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#11565119,0,
-    folder.project=Projects/Win10PESE/Apps/Network/folder.project,5799a43137daa1554d36361da513b9a5,003,Net,Web#$sBrowsers#$sand#$sother#$sInternet#$srelated#$saddons,TheOven#$sChefs#$s(Galapo#$c#$sLancelot),http://TheOven.org,#4375,0,
-    Mozilla_Firefox_ESR.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR.Script,0b0a4fcaf7113aa4de40f7c10e1fd7a2,009,Mozilla#$sFirefox#$sESR#$s(P),(x86/x64#$sNT6x)#$sMozilla#$sFirefox#$sESR#$s(Extended#$sSupport#$sRelease).#$sCommitted#$sto#$syou#$c#$syour#$sprivacy#$sand#$san#$sopen#$sWeb.,ChrisR,http://TheOven.org,#3249630,2,
-    Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
-    */
-    // ReSharper restore CommentTypo
     #endregion
 
     #region (Docs) Script meta file (*.meta.json)
@@ -115,6 +93,31 @@ namespace PEBakery.Core
         }
     }
     */
+    #endregion
+
+    #region (Docs) Classic updates.ini (No plan to implement)
+    // ReSharper disable CommentTypo
+    /*
+    - Classic updates.ini
+    [Updates]
+    Win10PESE=Folder
+    Tools=Folder
+
+    [Updates\Win10PESE]
+    Win10PESE\Apps=Folder
+    Win10PESE\Build=Folder
+
+    [Updates\Win10PESE\Apps\Network]
+    Win10PESE\Apps\Network\Firewall=Folder
+    Win10PESE\Apps\Network\Remote Connect=Folder
+    Flash_Add.Script=Projects/Win10PESE/Apps/Network/Flash_Add.Script,93cc0d650b4e1ff459c43d45a531903f,015,Flash#$sAdd,Adds#$sFlash#$sPlayer.,Lancelot,http://TheOven.org,#23082,2,
+    Flash_Package.script=Projects/Win10PESE/Apps/Network/Flash_Package.script,bc42776b7140ea8d022b49d5b6c2f0de,030,Flash#$sPackage#$sx86,(v32.0.0.114#$s-#$s(x86#$s18#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#9821195,0,
+    Flash_Package64.script=Projects/Win10PESE/Apps/Network/Flash_Package64.script,a637cba7ddc866126cf903c07f9e4f79,030,Flash#$sPackage#$sx64,(v32.0.0.114#$s-#$s(x64#$s25#$sMB))#$sThis#$sis#$sa#$sFlash#$sPackage#$sPlugin#$sto#$sbe#$sused#$sby#$sother#$sPlugins.,Saydin77#$c#$sChrisR,http://TheOven.org,#11565119,0,
+    folder.project=Projects/Win10PESE/Apps/Network/folder.project,5799a43137daa1554d36361da513b9a5,003,Net,Web#$sBrowsers#$sand#$sother#$sInternet#$srelated#$saddons,TheOven#$sChefs#$s(Galapo#$c#$sLancelot),http://TheOven.org,#4375,0,
+    Mozilla_Firefox_ESR.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR.Script,0b0a4fcaf7113aa4de40f7c10e1fd7a2,009,Mozilla#$sFirefox#$sESR#$s(P),(x86/x64#$sNT6x)#$sMozilla#$sFirefox#$sESR#$s(Extended#$sSupport#$sRelease).#$sCommitted#$sto#$syou#$c#$syour#$sprivacy#$sand#$san#$sopen#$sWeb.,ChrisR,http://TheOven.org,#3249630,2,
+    Mozilla_Firefox_ESR_x64_File.Script=Projects/Win10PESE/Apps/Network/Mozilla_Firefox_ESR_x64_File.Script,797536a97821660f48ea6be36c934d12,003,Mozilla#$sFirefox#$sESR#$s(P)#$s-#$sx64#$sFile,File#$sContainer#$sPlugin,Lancelot,http://TheOven.org,#52183423,2,
+    */
+    // ReSharper restore CommentTypo
     #endregion
 
     #region ProjectUpdateInfo
@@ -280,25 +283,52 @@ namespace PEBakery.Core
 
         private Script InternalUpdateOneScript(Script sc, ScriptStateBackup stateBackup)
         {
-            // Parse version of local script
-            VersionEx localSemVer = VersionEx.Parse(sc.TidyVersion);
-            if (localSemVer == null) // Never be triggered, because constructor of Script class check it
-            {
-                _logs.Add(new LogInfo(LogState.Error, $"Local script [{sc.Title}] does not provide proper version information"));
-                return null;
-            }
+            // Never be triggered, because Script class constructor check it
+            Debug.Assert(sc.ParsedVersion != null, $"Local script [{sc.Title}] does not provide proper version information");
 
             string updateUrl = sc.UpdateUrl;
             string metaJsonUrl = Path.ChangeExtension(updateUrl, ".meta.json");
-            string metaJsonFile = FileHelper.GetTempFile();
-            string tempScriptFile = FileHelper.GetTempFile();
+            string metaJsonFile = FileHelper.GetTempFile(".meta.json");
+            string tempScriptFile = FileHelper.GetTempFile(".script");
             try
             {
                 // Download .meta.json
                 HttpFileDownloader.Report report = DownloadFile(metaJsonUrl, metaJsonFile);
                 if (!report.Result)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
+                    if (report.StatusCode == 0)
+                    {  // Failed to send a request, such as network not available
+                        _logs.Add(new LogInfo(LogState.Error, $"Unable to connect to the server"));
+                        return null;
+                    }
+
+                    // Try downloading .deleted to check if a script is deleted
+                    string deletedUrl = Path.ChangeExtension(updateUrl, ".deleted");
+                    string deletedFile = Path.ChangeExtension(metaJsonFile, ".deleted");
+                    try
+                    {
+                        report = DownloadFile(deletedUrl, deletedFile);
+                        if (report.Result)
+                        { // Successfully received response
+                            if (report.StatusCode == 200) // .deleted file exists in the server
+                                _logs.Add(new LogInfo(LogState.Error, $"[{sc.Title}] was deleted from the server"));
+                            else // There is no .deleted file in the server
+                                _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
+                        }
+                        else
+                        {
+                            if (report.StatusCode == 0) // Failed to send a request, such as network not available
+                                _logs.Add(new LogInfo(LogState.Error, $"Unable to connect to the server"));
+                            else
+                                _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
+                        }
+                    }
+                    finally
+                    {
+                        if (File.Exists(deletedFile))
+                            File.Delete(deletedFile);
+                    }
+
                     return null;
                 }
 
@@ -314,7 +344,7 @@ namespace PEBakery.Core
                     _logs.Add(new LogInfo(LogState.Error, $"Not supported script format {metaJson.ScriptFormat}"));
                     return null;
                 }
-                if (metaJson.WbScriptInfo.ParsedVersion <= localSemVer)
+                if (metaJson.WbScriptInfo.Version <= sc.ParsedVersion)
                 {
                     _logs.Add(new LogInfo(LogState.Error, $"Update is not available for [{sc.Title}]"));
                     return null;
@@ -362,14 +392,14 @@ namespace PEBakery.Core
                     _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] does not provide proper version information"));
                     return null;
                 }
-                if (!remoteSemVer.Equals(metaJson.WbScriptInfo.ParsedVersion))
+                if (!remoteSemVer.Equals(metaJson.WbScriptInfo.Version))
                 {
                     _logs.Add(new LogInfo(LogState.Error, $"Version of remote script [{sc.Title}] is inconsistent with .meta.json"));
                     return null;
                 }
-                if (remoteSemVer <= localSemVer)
+                if (remoteSemVer <= sc.ParsedVersion)
                 {
-                    _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] ({remoteSemVer}) is not newer than local script ({localSemVer})"));
+                    _logs.Add(new LogInfo(LogState.Error, $"Remote script [{sc.Title}] ({remoteSemVer}) is not newer than local script ({sc.ParsedVersion})"));
                     return null;
                 }
 
@@ -508,6 +538,7 @@ namespace PEBakery.Core
         {
             // Prepare JsonSerializer
             JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
+            settings.Converters.Add(new VersionExJsonConverter());
             JsonSerializer serializer = JsonSerializer.Create(settings);
 
             // Read json file
@@ -559,8 +590,8 @@ namespace PEBakery.Core
             // Create MetaJsonRoot instance
             ScriptMetaJson.Root jsonRoot = new ScriptMetaJson.Root
             {
-                MetaSchemaVer = Global.Const.MetaSchemaVerStr,
-                PEBakeryMinVer = Global.Const.ProgramVersionStr,
+                MetaSchemaVer = Global.Const.MetaSchemaVerInst,
+                PEBakeryMinVer = Global.Const.ProgramVersionInst,
                 LastWrite = fi.LastWriteTimeUtc,
                 FileSize = fi.Length,
                 HashSHA256 = hashDigest,
@@ -570,7 +601,7 @@ namespace PEBakery.Core
                     Title = sc.Title,
                     Desc = sc.Description,
                     Author = sc.Author,
-                    Version = sc.RawVersion,
+                    Version = sc.ParsedVersion,
                 }
             };
 
@@ -589,19 +620,17 @@ namespace PEBakery.Core
 
             // Prepare JsonSerializer
             JsonSerializerSettings settings = new JsonSerializerSettings { Culture = CultureInfo.InvariantCulture };
+            settings.Converters.Add(new VersionExJsonConverter());
             JsonSerializer serializer = JsonSerializer.Create(settings);
 
             // Use UTF-8 without a BOM signature, as the file is going to be served in web server
             using (StreamWriter sw = new StreamWriter(destJsonFile, false, new UTF8Encoding(false)))
             using (JsonTextWriter jw = new JsonTextWriter(sw))
             {
-#if DEBUG
                 // https://www.newtonsoft.com/json/help/html/ReducingSerializedJSONSize.htm
                 jw.Formatting = Formatting.Indented;
-                jw.Indentation = 4;
-#else
-                jw.Formatting = Formatting.None;
-#endif
+                jw.Indentation = 2;
+                // jw.Formatting = Formatting.None;
                 serializer.Serialize(jw, jsonRoot);
             }
         }
@@ -641,9 +670,9 @@ namespace PEBakery.Core
         {
             // Shared
             [JsonProperty(PropertyName = "meta_schema_ver")]
-            public string MetaSchemaVer { get; set; }
+            public VersionEx MetaSchemaVer { get; set; }
             [JsonProperty(PropertyName = "pebakery_min_ver")]
-            public string PEBakeryMinVer { get; set; }
+            public VersionEx PEBakeryMinVer { get; set; }
 
             [JsonProperty(PropertyName = "hash_sha256")]
             public byte[] HashSHA256 { get; set; }
@@ -663,7 +692,7 @@ namespace PEBakery.Core
             public WbScriptInfo WbScriptInfo { get; set; }
 
             [JsonIgnore]
-            private static readonly VersionEx SchemaParseVer = Global.Const.MetaSchemaVerInst;
+            public static readonly VersionEx SchemaParseVer = Global.Const.MetaSchemaVerInst;
 
             #region Methods
             /// <summary>
@@ -687,21 +716,6 @@ namespace PEBakery.Core
                     return false;
                 }
 
-                /*
-                bool scriptInfoNotProvided = true;
-                
-                switch (ScriptFormat)
-                {
-                    case ScriptFormat.Winbuilder:
-                        if (WbScriptInfo != null)
-                            scriptInfoNotProvided = false;
-                        break;
-                    default:
-                        Debug.Assert(false, $"Update {nameof(ScriptMetaJson)}.{nameof(Root)}.{nameof(CheckSchema)} with the key {ScriptFormat}");
-                        break;
-                }
-                if (scriptInfoNotProvided)
-                */
                 if (GetScriptInfo() == null)
                 {
                     errorMsg = $"Unable to find script info of the format {ScriptFormat}";
@@ -709,28 +723,26 @@ namespace PEBakery.Core
                 }
 
                 // Check if version string are valid
-                VersionEx metaSchemaVer = VersionEx.Parse(MetaSchemaVer);
-                VersionEx engineMinVer = VersionEx.Parse(PEBakeryMinVer);
-                if (metaSchemaVer == null)
+                if (MetaSchemaVer == null)
                 {
                     errorMsg = "Meta file of remote script is corrupted";
                     return false;
                 }
-                if (engineMinVer == null)
+                if (PEBakeryMinVer == null)
                 {
                     errorMsg = "Meta file of remote script is corrupted";
                     return false;
                 }
 
                 // Check meta_schema_ver
-                if (SchemaParseVer < metaSchemaVer)
+                if (SchemaParseVer < MetaSchemaVer)
                 {
                     errorMsg = "Meta file of remote script requires newer version of PEBakery";
                     return false;
                 }
 
                 // Check pebakery_min_ver
-                if (Global.Const.ProgramVersionInst < engineMinVer)
+                if (Global.Const.ProgramVersionInst < PEBakeryMinVer)
                 {
                     errorMsg = $"Remote script requires PEBakery {Global.Const.ProgramVersionStr} or higher";
                     return false;
@@ -746,7 +758,6 @@ namespace PEBakery.Core
                     case ScriptFormat.Winbuilder:
                         return WbScriptInfo;
                     default:
-                        Debug.Assert(false, $"Update {nameof(ScriptMetaJson)}.{nameof(Root)}.{nameof(GetScriptInfo)} with the key {ScriptFormat}");
                         return null;
                 }
             }
@@ -774,13 +785,8 @@ namespace PEBakery.Core
         public abstract class ScriptInfo
         {
             #region Cast
-            /// <summary>
-            /// Type safe casting helper
-            /// </summary>
-            /// <typeparam name="T">Child of CodeInfo</typeparam>
-            /// <returns>CodeInfo casted as T</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public T Cast<T>() where T : CodeInfo
+            public T Cast<T>() where T : ScriptInfo
             {
                 T cast = this as T;
                 Debug.Assert(cast != null, "Invalid CodeInfo");
@@ -793,7 +799,7 @@ namespace PEBakery.Core
             /// <typeparam name="T">Child of CodeInfo</typeparam>
             /// <returns>CodeInfo casted as T</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static T Cast<T>(CodeInfo info) where T : CodeInfo
+            public static T Cast<T>(ScriptInfo info) where T : ScriptInfo
             {
                 return info.Cast<T>();
             }
@@ -813,12 +819,7 @@ namespace PEBakery.Core
             [JsonProperty(PropertyName = "author")]
             public string Author { get; set; }
             [JsonProperty(PropertyName = "version")]
-            public string Version { get; set; }
-
-            [JsonIgnore]
-            private VersionEx _parsedVersion;
-            [JsonIgnore]
-            public VersionEx ParsedVersion => _parsedVersion ?? (_parsedVersion = VersionEx.Parse(Version));
+            public VersionEx Version { get; set; }
 
             #region CheckScriptInfo
             /// <summary>
@@ -830,7 +831,7 @@ namespace PEBakery.Core
                 errorMsg = string.Empty;
 
                 // Check if properties are not null
-                if (Title == null || Desc == null || Author == null || ParsedVersion == null)
+                if (Title == null || Desc == null || Author == null || Version == null)
                 {
                     errorMsg = "Meta file of remote script is corrupted";
                     return false;

@@ -1,0 +1,19 @@
+[Main]
+Title=Removed
+Description=The script designed for testing .deleted support
+Author=ied206
+Version=1
+Selected=False
+Mandatory=False
+NoWarning=False
+Level=7
+
+[ScriptUpdate]
+UpdateType=Standalone
+Url=http://localhost:8380/Updater/Standalone/Removed.script
+
+[Process]
+Run,%ScriptFile%,TestSection
+
+[TestSection]
+Echo,"The script designed for testing .deleted support"

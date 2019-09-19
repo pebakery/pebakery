@@ -152,7 +152,8 @@ namespace PEBakery.Core.Tests
                         {
                             Mappings =
                             {
-                                [".script"] = "text/plain"
+                                [".script"] = "text/plain",
+                                [".deleted"] = "text/plain",
                             }
                         };
 

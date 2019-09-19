@@ -90,6 +90,7 @@ namespace PEBakery.Core
         private string _author = string.Empty;
         private string _description = string.Empty;
         private string _version = "0";
+        private VersionEx _parsedVersion = new VersionEx(0);
         private int _level;
         private SelectedState _selected = SelectedState.None;
         private bool _mandatory = false;
@@ -195,6 +196,7 @@ namespace PEBakery.Core
         }
 
         public string TidyVersion => StringEscaper.ProcessVersionString(RawVersion) ?? RawVersion;
+        public VersionEx ParsedVersion => _parsedVersion;
         public int Level
         {
             get
@@ -509,6 +511,7 @@ namespace PEBakery.Core
                         // Optional Entries
                         _author = string.Empty;
                         _version = "0";
+                        _parsedVersion = new VersionEx(0);
                         _selected = SelectedState.None; // This value should be adjusted later!
                         _mandatory = false;
                         _link = null;
@@ -576,7 +579,10 @@ namespace PEBakery.Core
                             if (mainSection.IniDict.ContainsKey("Author"))
                                 _author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
+                            {
                                 _version = mainSection.IniDict["Version"];
+                                _parsedVersion = VersionEx.Parse(_version) ?? new VersionEx(0);
+                            }
                             if (mainSection.IniDict.ContainsKey(Const.Selected))
                             {
                                 string src = mainSection.IniDict[Const.Selected];

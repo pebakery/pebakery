@@ -91,6 +91,7 @@
     <Compile Include="Commands\CommandWim.cs" />
     <Compile Include="CompatOption.cs" />
     <Compile Include="FileTypeDetector.cs" />
+    <Compile Include="JsonConverters.cs" />
     <Compile Include="WpfControls\CustomMessageBox.xaml.cs">
       <DependentUpon>CustomMessageBox.xaml</DependentUpon>
     </Compile>

@@ -30,7 +30,13 @@ namespace PEBakery.Core
         #region Download
         public struct Report
         {
+            /// <summary>
+            /// Successfully finished receiving the reposne without exceptions
+            /// </summary>
             public bool Result;
+            /// <summary>
+            /// HTTP status code came with respose. When the request could not be sent, it is set to 0.
+            /// </summary>
             public int StatusCode;
             public string ErrorMsg;
 
@@ -157,6 +163,7 @@ namespace PEBakery.Core
                     File.Delete(destPath);
             }
 
+            Debug.Assert((result && statusCode != 0) || !result, $"Inconsistent Result {result} and StatusCode {(int)statusCode}");
             return new Report(result, (int)statusCode, errorMsg);
         }
         #endregion

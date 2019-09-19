@@ -29,6 +29,7 @@ using System.Text;
 
 namespace PEBakery.Helper
 {
+    #region VersionEx
     /// <summary>
     /// Extended VersionEx to support single integer
     /// Ex) 5 vs 5.1.2600.1234
@@ -149,6 +150,29 @@ namespace PEBakery.Helper
         #endregion
 
         #region Operators
+        public static bool operator ==(VersionEx v1, VersionEx v2)
+        {
+            if (v1 is null)
+            {
+                if (v2 is null)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                if (v2 is null)
+                    return false;
+                else
+                    return v1.CompareTo(v2) == 0;
+            }
+        }
+
+        public static bool operator !=(VersionEx v1, VersionEx v2)
+        {
+            return !(v1 == v2);
+        }
+
         public static bool operator <(VersionEx v1, VersionEx v2)
         {
             if (v1 is null)
@@ -202,4 +226,5 @@ namespace PEBakery.Helper
         }
         #endregion
     }
+    #endregion
 }

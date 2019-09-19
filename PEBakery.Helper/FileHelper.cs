@@ -162,7 +162,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
         /// </remarks>
-        public static string GetTempFile(string ext = null)
+        public static string GetTempFile(string ext = null, bool createFile = true)
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
             string baseTempDir = BaseTempDir();
@@ -180,7 +180,9 @@ namespace PEBakery.Helper
                 }
                 while (Directory.Exists(tempFile) || File.Exists(tempFile));
 
-                File.Create(tempFile).Dispose();
+                if (createFile)
+                    File.Create(tempFile).Dispose();
+
                 return tempFile;
             }
         }

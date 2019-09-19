@@ -40,6 +40,7 @@ using System.Threading.Tasks;
 namespace PEBakery.Core.Tests
 {
     [TestClass]
+    [TestCategory(nameof(FileUpdater))]
     public class FileUpdaterTests
     {
         #region Fields and Properties
@@ -165,10 +166,49 @@ namespace PEBakery.Core.Tests
         }
         #endregion
 
-        #region PrintScriptMetaJson (Log)
+        #region DeletedScript
         [TestMethod]
-        [TestCategory("FileUpdater")]
-        public void PrintScriptMetaJson()
+        public async Task DeletedScript()
+        {
+            string destDir = FileHelper.GetTempDir();
+            try
+            {
+                // Prepare running FileUpdater
+                string workbench = EngineTests.Project.Variables["TestBench"];
+                string srcScriptFile = Path.Combine(workbench, "FileUpdater", "Removed.script");
+                string workScriptFile = Path.Combine(destDir, "Removed.script");
+                string workScriptTreePath = Path.Combine("TestSuite", "Updater", "Removed.script");
+                File.Copy(srcScriptFile, workScriptFile);
+
+                Project p = EngineTests.Project;
+                Script sc = p.LoadScriptRuntime(workScriptFile, workScriptTreePath, new LoadScriptRuntimeOptions
+                {
+                    AddToProjectTree = true,
+                    IgnoreMain = false,
+                    OverwriteToProjectTree = true,
+                });
+
+                // Run an update, which must fail
+                FileUpdater updater = new FileUpdater(EngineTests.Project, null, null);
+                Script newScript = await updater.UpdateScriptAsync(sc, true);
+
+                LogInfo[] logs = updater.ReadAndClearLogs();
+                foreach (LogInfo log in logs)
+                    Console.WriteLine($"[{log.State}] {log.Message}");
+                Assert.IsTrue(logs[0].Message.Equals($"[{sc.Title}] was deleted from the server", StringComparison.Ordinal));
+                Assert.IsNull(newScript);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region CreateScriptMetaJson
+        [TestMethod]
+        public void CreateScriptMetaJson()
         {
             string destDir = FileHelper.GetTempDir();
             
@@ -191,13 +231,46 @@ namespace PEBakery.Core.Tests
 
                 // Create a script meta json
                 FileUpdater.CreateScriptMetaJson(sc, destJson);
-
+                
+                // Print metaJsonText (Log)
                 string metaJsonText;
                 using (StreamReader sr = new StreamReader(destJson, new UTF8Encoding(false), false))
                 {
                     metaJsonText = sr.ReadToEnd();
                 }
                 Console.WriteLine(metaJsonText);
+
+                // Check sanity of created script meta json
+                (ScriptMetaJson.Root root, string errMsg) = FileUpdater.CheckScriptMetaJson(destJson);
+                Assert.IsNotNull(root);
+                Assert.IsNull(errMsg);
+
+                Assert.IsTrue(root.MetaSchemaVer == ScriptMetaJson.Root.SchemaParseVer);
+                Assert.IsTrue(root.PEBakeryMinVer == Global.Const.ProgramVersionInst);
+                byte[] scriptHash;
+                using (FileStream fs = new FileStream(workScriptFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    scriptHash = HashHelper.GetHash(HashHelper.HashType.SHA256, fs);
+                }
+                Assert.IsTrue(scriptHash.SequenceEqual(root.HashSHA256));
+                FileInfo fi = new FileInfo(workScriptFile);
+                Assert.AreEqual(fi.LastWriteTimeUtc, root.LastWrite);
+                Assert.AreEqual(fi.Length, root.FileSize);
+                Assert.AreEqual(ScriptMetaJson.ScriptFormat.Winbuilder, root.ScriptFormat);
+
+                IniKey[] keys = new IniKey[]
+                {
+                    new IniKey(ScriptSection.Names.Main, "Title"),
+                    new IniKey(ScriptSection.Names.Main, "Description"),
+                    new IniKey(ScriptSection.Names.Main, "Author"),
+                    new IniKey(ScriptSection.Names.Main, "Version"),
+                };
+                keys = IniReadWriter.ReadKeys(workScriptFile, keys);
+                ScriptMetaJson.WbScriptInfo si = root.GetScriptInfo().Cast<ScriptMetaJson.WbScriptInfo>();
+                Assert.IsTrue(si.Title.Equals(keys[0].Value, StringComparison.Ordinal));
+                Assert.IsTrue(si.Desc.Equals(keys[1].Value, StringComparison.Ordinal));
+                Assert.IsTrue(si.Author.Equals(keys[2].Value, StringComparison.Ordinal));
+                Assert.IsTrue(si.Version.Equals(VersionEx.Parse(keys[3].Value)));
             }
             finally
             {
