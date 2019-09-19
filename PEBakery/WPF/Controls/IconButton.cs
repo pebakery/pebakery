@@ -72,10 +72,10 @@ namespace PEBakery.WPF.Controls
         }
 
         public static readonly DependencyProperty IconForegroundProperty = DependencyProperty.Register(nameof(IconForeground),
-            typeof(SolidColorBrush), typeof(IconButton), new FrameworkPropertyMetadata(new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)), OnIconForegroundPropertyChanged));
-        public SolidColorBrush IconForeground
+            typeof(Brush), typeof(IconButton), new FrameworkPropertyMetadata(new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)), OnIconForegroundPropertyChanged));
+        public Brush IconForeground
         {
-            get => (SolidColorBrush)GetValue(IconForegroundProperty);
+            get => (Brush)GetValue(IconForegroundProperty);
             set => SetValue(IconForegroundProperty, value);
         }
 
