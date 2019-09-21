@@ -285,7 +285,8 @@ namespace PEBakery.Core
 
         public bool Equals(ScriptSection section)
         {
-            if (section == null) throw new ArgumentNullException(nameof(section));
+            if (section == null)
+                return false;
 
             return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
         }

@@ -24,6 +24,10 @@ RD /S /Q %DestDir%
 MKDIR %DestDir%
 COPY %BaseDir%\LauncherNative\Release\PEBakeryLauncher.exe %DestDir%\PEBakeryLauncher.exe
 XCOPY /S /E /C /I %BaseDir%\PEBakery\bin\Release %DestDir%\Binary
+COPY %BaseDir%\LICENSE %DestDir%\Binary
+COPY %BaseDir%\LICENSE.GPLv3 %DestDir%\Binary
+
+REM Delete Unnecessary Files
 IF EXIST %DestDir%\Binary\*.pdb DEL %DestDir%\Binary\*.pdb
 IF EXIST %DestDir%\Binary\*.xml DEL %DestDir%\Binary\*.xml
 IF EXIST %DestDir%\Binary\x86\*.so DEL %DestDir%\Binary\x86\*.so
@@ -33,6 +37,5 @@ IF EXIST %DestDir%\Binary\arm64 RD /S /Q %DestDir%\Binary\arm64
 IF EXIST %DestDir%\Binary\*.db DEL %DestDir%\Binary\*.db
 IF EXIST %DestDir%\Binary\Database RD /S /Q %DestDir%\Binary\Database
 IF EXIST %DestDir%\Database RD /S /Q %DestDir%\Database
-COPY %BaseDir%\LICENSE %DestDir%\Binary
-COPY %BaseDir%\LICENSE.GPLv3 %DestDir%\Binary
+
 ENDLOCAL

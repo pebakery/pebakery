@@ -485,7 +485,6 @@ namespace PEBakery.Core
         ~Logger()
         {
             Dispose(false);
-            GC.SuppressFinalize(this);
         }
 
         public void Dispose()

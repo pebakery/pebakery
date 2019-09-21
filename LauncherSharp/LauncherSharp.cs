@@ -34,7 +34,7 @@ using System.Windows;
 
 namespace PEBakeryLauncher
 {
-    public class Launcher
+    public static class Launcher
     {
 #if ENABLE_DOTNETFX_472
         public const string DotNetFxVerStr = "4.7.2";
@@ -83,18 +83,19 @@ namespace PEBakeryLauncher
             string argStr = b.ToString();
             Console.WriteLine(argStr);
 
-            Process proc = new Process
+            using (Process proc = new Process())
             {
-                StartInfo = new ProcessStartInfo
+                proc.StartInfo = new ProcessStartInfo
                 {
                     UseShellExecute = true,
                     Verb = "Open",
                     FileName = pebakeryPath,
                     WorkingDirectory = absPath,
                     Arguments = argStr,
-                }
-            };
-            proc.Start();
+                };
+                proc.Start();
+            }
+            
         }
 
         public static string GetProgramAbsolutePath()

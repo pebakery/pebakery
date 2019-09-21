@@ -25,6 +25,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace PEBakery.Helper
@@ -34,7 +35,7 @@ namespace PEBakery.Helper
     /// Extended VersionEx to support single integer
     /// Ex) 5 vs 5.1.2600.1234
     /// </summary>
-    public class VersionEx : IComparable<VersionEx>, IEquatable<VersionEx>
+    public class VersionEx : IComparable<VersionEx>, IEquatable<VersionEx>, ISerializable
     {
         #region Properties
         public int Major { get; }
@@ -223,6 +224,24 @@ namespace PEBakery.Helper
         public override int GetHashCode()
         {
             return (ushort)Major * 0x1000000 + (ushort)Minor * 0x10000 + (ushort)Build * 0x100 + (ushort)Revision;
+        }
+        #endregion
+
+        #region Serailizable
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(nameof(Major), Major, typeof(int));
+            info.AddValue(nameof(Minor), Minor, typeof(int));
+            info.AddValue(nameof(Build), Build, typeof(int));
+            info.AddValue(nameof(Revision), Revision, typeof(int));
+        }
+
+        public VersionEx(SerializationInfo info, StreamingContext context)
+        {
+            Major = (int)info.GetValue(nameof(Major), typeof(int));
+            Minor = (int)info.GetValue(nameof(Minor), typeof(int));
+            Build = (int)info.GetValue(nameof(Build), typeof(int));
+            Revision = (int)info.GetValue(nameof(Revision), typeof(int));
         }
         #endregion
     }

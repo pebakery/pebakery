@@ -181,7 +181,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Optimize
+#pragma warning disable IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
         public bool OptimizeCompare(CodeInfo info) => false;
+#pragma warning restore IDE0060 // 사용하지 않는 매개 변수를 제거하세요.
         #endregion
     }
     #endregion
@@ -324,8 +326,6 @@ namespace PEBakery.Core
                     b.Append(",UTF16BE");
                 else if (Encoding.Equals(EncodingHelper.DefaultAnsi))
                     b.Append(",ANSI");
-                else
-                    throw new InternalException("Internal Logic Error at CodeInfo_FileCreateBlank");
             }
             return b.ToString();
         }
@@ -743,6 +743,7 @@ namespace PEBakery.Core
         [NonSerialized]
         public RegistryKey HSrcKey;
         public string SrcKeyPath;
+        [NonSerialized]
         public RegistryKey HDestKey;
         public string DestKeyPath;
         public bool WildcardFlag;
@@ -2133,8 +2134,6 @@ namespace PEBakery.Core
                 case ArchiveFile.ArchiveCompressFormat.SevenZip:
                     b.Append("SevenZip");
                     break;
-                default:
-                    throw new InternalException($"Wrong ArchiveFormat [{Format}]");
             }
             b.Append(",");
             b.Append(SrcPath);

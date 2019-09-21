@@ -174,40 +174,32 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.ResetBuildCommandProgress();
             }
 
-            Process proc = new Process
+            string _params = null;
+            using (Process proc = new Process())
             {
-                EnableRaisingEvents = true,
-                StartInfo = new ProcessStartInfo
+                proc.EnableRaisingEvents = true;
+                proc.StartInfo = new ProcessStartInfo
                 {
                     FileName = tempPath,
                     UseShellExecute = true,
+                };
+
+                if (!string.IsNullOrEmpty(info.Params))
+                {
+                    _params = StringEscaper.Preprocess(s, info.Params);
+                    proc.StartInfo.Arguments = _params;
                 }
-            };
 
-            string _params = null;
-            if (!string.IsNullOrEmpty(info.Params))
-            {
-                _params = StringEscaper.Preprocess(s, info.Params);
-                proc.StartInfo.Arguments = _params;
-            }
+                proc.Exited += (object sender, EventArgs e) =>
+                {
+                    if (Directory.Exists(tempDir))
+                        Directory.Delete(tempDir, true);
 
-            proc.Exited += (object sender, EventArgs e) =>
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
+                    // ReSharper disable once AccessToDisposedClosure
+                    proc.Dispose();
+                };
 
-                // ReSharper disable once AccessToDisposedClosure
-                proc.Dispose();
-            };
-
-            try
-            {
                 proc.Start();
-            }
-            catch (Exception)
-            {
-                proc.Dispose();
-                throw;
             }
 
             if (_params == null)

@@ -69,7 +69,6 @@ namespace PEBakery.Ini.Tests
                 {
                     w.WriteLine("[Section]");
                     w.WriteLine("Key=Value");
-                    w.Close();
                 }
 
                 Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
@@ -105,7 +104,6 @@ namespace PEBakery.Ini.Tests
                     w.WriteLine("6=F");
                     w.WriteLine("7=G");
                     w.WriteLine("8=H");
-                    w.Close();
                 }
 
                 Assert.IsTrue(IniReadWriter.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));

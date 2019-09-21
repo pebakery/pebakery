@@ -631,15 +631,16 @@ namespace PEBakery.Helper
         /// </summary>
         /// <param name="uri"></param>
         /// <returns></returns>
-        public static Process OpenUri(string uri)
+        public static void OpenUri(string uri)
         {
+            Process proc = null;
             try
             {
                 string protocol = StringHelper.GetUriProtocol(uri);
                 string exePath = RegistryHelper.GetDefaultWebBrowserPath(protocol, true);
                 string quoteUri = uri.Contains(' ') ? $"\"{uri}\"" : uri;
 
-                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
                     FileName = exePath,
                     Arguments = quoteUri,
@@ -647,9 +648,13 @@ namespace PEBakery.Helper
             }
             catch
             {
-                Process proc = new Process { StartInfo = new ProcessStartInfo(uri) };
+                proc = new Process { StartInfo = new ProcessStartInfo(uri) };
                 proc.Start();
-                return proc;
+            }
+            finally
+            {
+                if (proc != null)
+                    proc.Dispose();
             }
         }
 
@@ -658,18 +663,19 @@ namespace PEBakery.Helper
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static Process OpenPath(string path)
+        public static void OpenPath(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
+            Process proc = null;
             try
             {
                 string ext = Path.GetExtension(path);
                 string exePath = RegistryHelper.GetDefaultExecutablePath(ext, true);
                 string quotePath = path.Contains(' ') ? $"\"{path}\"" : path;
 
-                return UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
+                proc = UACHelper.UACHelper.StartWithShell(new ProcessStartInfo
                 {
                     UseShellExecute = false,
                     FileName = exePath,
@@ -678,9 +684,13 @@ namespace PEBakery.Helper
             }
             catch
             {
-                Process proc = new Process { StartInfo = new ProcessStartInfo(path) };
+                proc = new Process { StartInfo = new ProcessStartInfo(path) };
                 proc.Start();
-                return proc;
+            }
+            finally
+            {
+                if (proc != null)
+                    proc.Dispose();
             }
         }
         #endregion
