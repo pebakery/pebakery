@@ -654,11 +654,7 @@ namespace PEBakery.Core.Commands
 
                         // Un-register process instance from EngineState
                         lock (s.RunningSubProcLock)
-                        {
-                            if (s.RunningSubProcess != null)
-                                s.RunningSubProcess.Dispose();
                             s.RunningSubProcess = null;
-                        }
 
                         watch.Stop();
                         long tookTime = (long)watch.Elapsed.TotalSeconds;
