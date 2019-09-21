@@ -111,7 +111,7 @@ namespace PEBakery.Core
     #endregion
 
     #region EncodedFile
-    public class EncodedFile
+    public static class EncodedFile
     {
         #region Enum EncodeMode 
         [SuppressMessage("ReSharper", "InconsistentNaming")]

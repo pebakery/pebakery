@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
@@ -141,7 +142,7 @@ namespace PEBakery.Core.Commands
                         if (lastFreeLetter != '\0') // Success
                         {
                             logs.Add(new LogInfo(LogState.Success, $"Last free drive letter is [{lastFreeLetter}]"));
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString());
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString(CultureInfo.InvariantCulture));
                             logs.AddRange(varLogs);
                         }
                         else // No Free Drives
@@ -165,7 +166,7 @@ namespace PEBakery.Core.Commands
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
                         long freeSpaceMegaByte = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, freeSpaceMegaByte.ToString(CultureInfo.InvariantCulture));
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -185,7 +186,7 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is not running as Administrator"));
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString(CultureInfo.InvariantCulture));
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -669,7 +670,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
-                        string exitCodeStr = proc.ExitCode.ToString();
+                        string exitCodeStr = proc.ExitCode.ToString(CultureInfo.InvariantCulture);
                         LogInfo log = Variables.SetVariable(s, "%ExitCode%", exitCodeStr).First();
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [%ExitCode%]"));

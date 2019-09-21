@@ -37,36 +37,21 @@ namespace PEBakery.Helper
 {
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public class NativeMethods
+    public static class NativeMethods
     {
         #region FileHelper
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, SHFILEINFO psfi, uint cbFileInfo, uint uFalgs);
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class SHFILEINFO
-        {
-            public IntPtr hIcon;
-            public int iIcon;
-            public uint dwAttributes;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            public string szDisplayName;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
-            public string szTypeName;
-        }
-
         #region DOS 8.3 Path
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern int GetShortPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string longPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder shortPath,
+            [MarshalAs(UnmanagedType.LPWStr)] string longPath,
+            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder shortPath,
             int cchBuffer
         );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern int GetLongPathName(
-            [MarshalAs(UnmanagedType.LPTStr)] string shortPath,
-            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder longPath,
+            [MarshalAs(UnmanagedType.LPWStr)] string shortPath,
+            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder longPath,
             int cchBuffer
         );
         #endregion
@@ -265,26 +250,26 @@ namespace PEBakery.Helper
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
 
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
 
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
         internal static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint len, IntPtr prev, IntPtr relen);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern unsafe int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName, uint* lpReserved, uint* lpType, void* lpData, uint* lpcbData);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern unsafe int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName, uint reserved, uint dwType, void* lpData, uint cbData);
 
-        [DllImport("shlwapi.dll", SetLastError = true)]
+        [DllImport("shlwapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int SHCopyKey(SafeRegistryHandle hKeySrc, string pszSrcSubKey, SafeRegistryHandle hKeyDest, uint reserved);
 
         [DllImport("kernel32.dll", SetLastError = true)]
