@@ -3222,7 +3222,7 @@ namespace PEBakery.WPF
                     PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                     b.Clear();
                     if (1 < successFiles.Count)
-                    {                    
+                    {
                         b.AppendLine($"{successFiles.Count} files were successfully extracted.");
                         foreach (string fileName in successFiles)
                             b.AppendLine($"- {fileName}");
@@ -3231,7 +3231,7 @@ namespace PEBakery.WPF
                     {
                         b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
                     }
-                    
+
                     // Failure Report
                     if (1 <= failureFiles.Count)
                     {
@@ -3246,7 +3246,7 @@ namespace PEBakery.WPF
                     }
 
                     const string msgTitle = "Extraction Report";
-                    TextViewDialog reportDialog = new TextViewDialog(_window,msgTitle, msgTitle, b.ToString(), msgBoxIcon);
+                    TextViewDialog reportDialog = new TextViewDialog(_window, msgTitle, msgTitle, b.ToString(), msgBoxIcon);
                     reportDialog.ShowDialog();
                 }
             }
@@ -3318,7 +3318,7 @@ namespace PEBakery.WPF
                     srcFiles = new (string, string)[] { (dialog.FileName, dialog.FilePath) };
                 }
                 EncodedFile.EncodeMode mode = dialog.EncodeMode;
-               
+
                 // Check validity of srcFile
                 foreach ((string srcFileName, string srcFilePath) in srcFiles)
                 {
@@ -3664,7 +3664,7 @@ namespace PEBakery.WPF
                     {
                         b.AppendLine($"File [{successFiles[0]}] was successfully extracted.");
                     }
-                    
+
                     // Failure Report
                     if (1 <= failureFiles.Count)
                     {

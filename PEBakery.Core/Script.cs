@@ -1026,7 +1026,9 @@ namespace PEBakery.Core
     #region Enums
     public enum ScriptType
     {
-        Script, Link, Directory
+        Script = 0,
+        Link = 1,
+        Directory = 2,
     }
 
     public enum SelectedState

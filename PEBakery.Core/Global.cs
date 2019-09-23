@@ -52,9 +52,11 @@ namespace PEBakery.Core
 
             public static readonly VersionEx ProgramVersionInst = VersionEx.Parse(ProgramVersionStr);
 
-            // Script .meta.json
-            public const string MetaSchemaVerStr = "0.1";
-            public static readonly VersionEx MetaSchemaVerInst = VersionEx.Parse(MetaSchemaVerStr);
+            // Update json version
+            public const string UpdateSchemaMaxVerStr = "0.1.1";
+            public const string UpdateSchemaMinVerStr = "0.1.1";
+            public static readonly VersionEx UpdateSchemaMaxVerInst = VersionEx.Parse(UpdateSchemaMaxVerStr);
+            public static readonly VersionEx UpdateSchemaMinVerInst = VersionEx.Parse(UpdateSchemaMinVerStr);
         }
         #endregion
 

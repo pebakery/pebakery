@@ -115,6 +115,14 @@ namespace PEBakery.Helper
             }
         }
 
+        public static byte[] GetHash(HashType type, string file)
+        {
+            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return GetHash(type, fs, 0, null);
+            }
+        }
+
         public static byte[] GetHash(HashType type, Stream stream)
         {
             return GetHash(type, stream, 0, null);

@@ -169,10 +169,9 @@ namespace PEBakery.Core.Tests
                     .ConfigureKestrel((ctx, opts) => { opts.Listen(IPAddress.Loopback, ServerPort); })
                     .Build();
 
+                UrlRoot = $"http://localhost:{ServerPort}";
                 _fileServerCancel = new CancellationTokenSource();
                 _fileServerTask = host.RunAsync(_fileServerCancel.Token);
-
-                UrlRoot = $"http://localhost:{ServerPort}";
             }
         }
 

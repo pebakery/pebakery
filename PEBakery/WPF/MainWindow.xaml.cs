@@ -275,7 +275,7 @@ namespace PEBakery.WPF
             e.CanExecute = Model != null && !Model.WorkInProgress &&
                            Global.Projects != null && Global.Projects.FullyLoaded;
                            */
-            
+
         }
 
         private void ProjectUpdateCommand_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -343,7 +343,7 @@ namespace PEBakery.WPF
                 return;
             }
 
-            if (Engine.TryEnterLock()) 
+            if (Engine.TryEnterLock())
             { // Engine is not running, so we can start new engine
                 try
                 {
@@ -504,9 +504,12 @@ namespace PEBakery.WPF
 
             // Define local variables
             Script[] targetScripts = null;
+            // Update one script
             Script newScript = null;
-            List<Script> newScripts = null;
-            LogInfo[] updaterLogs;
+            LogInfo updaterLog = null;
+            // Update scripts
+            Script[] newScripts = null;
+            LogInfo[] updaterLogs = null;
 
             // Turn on progress ring
             Model.WorkInProgress = true;
@@ -567,13 +570,15 @@ namespace PEBakery.WPF
                 string customUserAgent = Global.Setting.General.UseCustomUserAgent ? Global.Setting.General.CustomUserAgent : null;
                 FileUpdater updater = new FileUpdater(p, Model, customUserAgent);
                 if (updateMultipleScript) // Update a list of scripts
-                    newScripts = await updater.UpdateScriptsAsync(targetScripts, true);
+                {
+                    (newScripts, updaterLogs) = await updater.UpdateScriptsAsync(targetScripts, true);
+                    Logger.SystemWrite(updaterLogs);
+                }
                 else
-                    newScript = await updater.UpdateScriptAsync(targetScript, true);
-                updaterLogs = updater.ReadAndClearLogs();
-
-                // Log messages
-                Logger.SystemWrite(updaterLogs);
+                {
+                    (newScript, updaterLog) = await updater.UpdateScriptAsync(targetScript, true);
+                    Logger.SystemWrite(updaterLog);
+                }
 
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
@@ -595,8 +600,8 @@ namespace PEBakery.WPF
             { // Updated multiple scripts
                 PackIconMaterialKind msgBoxIcon = PackIconMaterialKind.Information;
                 StringBuilder b = new StringBuilder(updaterLogs.Length + 6);
-                if (0 < newScripts.Count)
-                    b.AppendLine($"Successfully updated [{newScripts.Count}] scripts");
+                if (0 < newScripts.Length)
+                    b.AppendLine($"Successfully updated [{newScripts.Length}] scripts");
 
                 foreach (Script newSc in newScripts)
                 {
@@ -610,9 +615,9 @@ namespace PEBakery.WPF
                 LogInfo[] errorLogs = updaterLogs.Where(x => x.State == LogState.Error).ToArray();
                 if (0 < errorLogs.Length)
                 { // Failure
-                    if (0 < newScripts.Count)
+                    if (0 < newScripts.Length)
                         b.AppendLine();
-                    b.AppendLine($"Failed to update [{targetScripts.Length - newScripts.Count}] scripts");
+                    b.AppendLine($"Failed to update [{targetScripts.Length - newScripts.Length}] scripts");
                     foreach (LogInfo log in errorLogs)
                         b.AppendLine($"- {log.Message}");
 
@@ -777,7 +782,7 @@ namespace PEBakery.WPF
                 Model.BuildFullProgressValue = 0;
                 Model.SwitchNormalBuildInterface = false;
                 // I do not know why, but this line must come after SwitchNormalBuildInterface.
-                Model.BuildEchoMessage = "Creating meta files..."; 
+                Model.BuildEchoMessage = "Creating meta files...";
 
                 Stopwatch watch = Stopwatch.StartNew();
 
@@ -810,7 +815,7 @@ namespace PEBakery.WPF
                     string destJsonFile = Path.ChangeExtension(sc.RealPath, ".meta.json");
                     try
                     {
-                        await FileUpdater.CreateScriptMetaJsonAsync(sc, destJsonFile);
+                        await UpdateJson.CreateScriptUpdateJsonAsync(sc, destJsonFile);
                         logs.Add(new LogInfo(LogState.Success, $"Created meta file for [{sc.Title}]"));
                         successCount += 1;
                     }
@@ -896,7 +901,7 @@ namespace PEBakery.WPF
 
             Model.CurMainTree = selectedModel;
             Script sc = selectedModel.Script;
-            
+
             Dispatcher?.BeginInvoke(new Action(() =>
             {
                 Stopwatch watch = Stopwatch.StartNew();

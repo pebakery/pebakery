@@ -25,7 +25,6 @@
 using MahApps.Metro.IconPacks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace PEBakery.WPF.Controls

@@ -672,7 +672,7 @@ namespace PEBakery.Core
             if (keyDict.ContainsKey(GeneralSetting.SectionName))
             {
                 Dictionary<string, string> generalDict = keyDict[GeneralSetting.SectionName];
-                
+
                 General.OptimizeCode = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.OptimizeCode), General.OptimizeCode);
                 General.ShowLogAfterBuild = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.ShowLogAfterBuild), General.ShowLogAfterBuild);
                 General.StopBuildOnError = SettingDictParser.ParseBoolean(generalDict, GeneralSetting.SectionName, nameof(General.StopBuildOnError), General.StopBuildOnError);

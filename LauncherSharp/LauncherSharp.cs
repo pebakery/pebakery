@@ -95,7 +95,7 @@ namespace PEBakeryLauncher
                 };
                 proc.Start();
             }
-            
+
         }
 
         public static string GetProgramAbsolutePath()

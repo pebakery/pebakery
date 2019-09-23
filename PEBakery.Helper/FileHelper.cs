@@ -162,7 +162,7 @@ namespace PEBakery.Helper
         /// <remarks>
         /// Returned temp file path is unique per call unless this method is called uint.MaxValue times.
         /// </remarks>
-        public static string GetTempFile(string ext = null, bool createFile = true)
+        public static string GetTempFile(string ext = null)
         {
             // Never call BaseTempDir in the _tempPathLock, it would cause a deadlock!
             string baseTempDir = BaseTempDir();
@@ -180,9 +180,7 @@ namespace PEBakery.Helper
                 }
                 while (Directory.Exists(tempFile) || File.Exists(tempFile));
 
-                if (createFile)
-                    File.Create(tempFile).Dispose();
-
+                File.Create(tempFile).Dispose();
                 return tempFile;
             }
         }
@@ -697,9 +695,8 @@ namespace PEBakery.Helper
 
         #region WindowsVersion
         /// <summary>
-        /// Read version information of kernel32.dll, instead of deprecated Environment.OSVersion.
+        /// Read Windows version information from kernel32.dll, instead of deprecated Environment.OSVersion.
         /// </summary>
-        /// <returns></returns>
         public static Version WindowsVersion()
         {
             // Environment.OSVersion is deprecated
@@ -712,6 +709,47 @@ namespace PEBakery.Helper
             int build = fvi.FileBuildPart;
             int revision = fvi.FilePrivatePart;
             return new Version(major, minor, build, revision);
+        }
+        #endregion
+
+        #region CheckWin32Path
+        public static readonly char[] Win32InvalidFileNameChars = new char[]
+        {
+            // ASCII control codes
+            '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
+            '\u0008', '\u0009', '\u000A', '\u000B', '\u000C', '\u000D', '\u000E', '\u000F',
+            '\u0010', '\u0011', '\u0012', '\u0013', '\u0014', '\u0015', '\u0016', '\u0017',
+            '\u0018', '\u0019', '\u001A', '\u001B', '\u001C', '\u001D', '\u001E', '\u001F',
+            // ASCII Punctuation & Symbols
+            ':', '"', '<', '>',  '|',
+        };
+
+        public static readonly char[] Win32Wildcard = new char[]
+        {
+            // ASCII Punctuation & Symbols
+            '*', '?',
+        };
+
+        public static readonly char[] DirSeparators = new char[]
+        {
+            // ASCII Punctuation & Symbols
+            '\\', '/',
+        };
+
+        /// <summary>
+        /// Return true if the path is valid Win32 path.
+        /// </summary>
+        /// <remarks>
+        /// It works only on Windows.  
+        /// </remarks>
+        public static bool CheckWin32Path(string path, bool allowDirSep, bool allowWildcard)
+        {
+            bool valid = !path.Any(ch => Win32InvalidFileNameChars.Contains(ch));
+            if (!allowDirSep)
+                valid &= !path.Any(ch => Win32Wildcard.Contains(ch));
+            if (!allowWildcard)
+                valid &= !path.Any(ch => DirSeparators.Contains(ch));
+            return valid;
         }
         #endregion
     }

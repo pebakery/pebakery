@@ -73,6 +73,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestSetup.cs" />
     <Compile Include="FileUpdaterTests.cs" />
+    <Compile Include="UpdateJsonTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NativeLibraries\NativeLibraries.csproj">

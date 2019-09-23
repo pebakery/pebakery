@@ -65,11 +65,13 @@
     <Compile Include="CodeParser.cs" />
     <Compile Include="Commands\CommandDebug.cs" />
     <Compile Include="HttpFileDownloader.cs" />
+    <Compile Include="LogInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ResultReport.cs" />
     <Compile Include="ScriptSection.cs" />
     <Compile Include="SyntaxChecker.cs" />
     <Compile Include="Commands\CommandArchive.cs" />
@@ -92,6 +94,7 @@
     <Compile Include="CompatOption.cs" />
     <Compile Include="FileTypeDetector.cs" />
     <Compile Include="JsonConverters.cs" />
+    <Compile Include="UpdateJson.cs" />
     <Compile Include="WpfControls\CustomMessageBox.xaml.cs">
       <DependentUpon>CustomMessageBox.xaml</DependentUpon>
     </Compile>
