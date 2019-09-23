@@ -471,9 +471,9 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(string fileName, bool detail, EncodedFileInfo comp)
             {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
-                Assert.IsNull(errMsg);
-                Assert.IsTrue(comp.Equals(info));
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetFileInfo(sc, folderExample, fileName, detail);
+                Assert.IsTrue(report.Success);
+                Assert.IsTrue(comp.Equals(report.Result));
             }
 
             Template("Type1.jpg", true, new EncodedFileInfo
@@ -544,16 +544,16 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(Script testScript, bool detail, EncodedFileInfo comp)
             {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(testScript, detail);
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(testScript, detail);
                 if (comp == null)
                 {
-                    Assert.IsNotNull(errMsg);
-                    Assert.IsNull(info);
+                    Assert.IsFalse(report.Success);
+                    Assert.IsNull(report.Result);
                 }
                 else
                 {
-                    Assert.IsNull(errMsg);
-                    Assert.IsTrue(info.Equals(comp));
+                    Assert.IsTrue(report.Success);
+                    Assert.IsTrue(report.Result.Equals(comp));
                 }
             }
 
@@ -594,9 +594,10 @@ namespace PEBakery.Core.Tests
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
             void Template(bool detail, List<EncodedFileInfo> comps)
             {
-                (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
-                Assert.IsNull(errMsg);
-                Assert.AreEqual(comps.Count, infos.Count);
+                ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(sc, FolderExample, detail);
+                Assert.IsTrue(report.Success);
+                EncodedFileInfo[] infos = report.Result;
+                Assert.AreEqual(comps.Count, infos.Length);
                 for (int i = 0; i < comps.Count; i++)
                     Assert.IsTrue(comps[i].Equals(infos[i]));
             }
@@ -662,8 +663,9 @@ namespace PEBakery.Core.Tests
                 {
                     InspectEncodeMode = inspectEncodedSize,
                 };
-                (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) = EncodedFile.GetAllFilesInfo(sc, opts);
-                Assert.IsNull(errMsg);
+                ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(sc, opts);
+                Assert.IsTrue(report.Success);
+                Dictionary<string, List<EncodedFileInfo>> infoDict = report.Result;
                 Assert.AreEqual(compDict.Count, infoDict.Count);
                 foreach (var kv in compDict)
                 {
@@ -894,16 +896,15 @@ namespace PEBakery.Core.Tests
 
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
 
-                    string errMsg;
-                    (sc, errMsg) = EncodedFile.DeleteFile(sc, folderName, fileName);
-                    if (errMsg != null)
+                    ResultReport<Script> report = EncodedFile.DeleteFile(sc, folderName, fileName);
+                    if (!report.Success)
                     {
                         Assert.IsFalse(result);
                         return;
                     }
-
                     Assert.IsTrue(result);
 
+                    sc = report.Result;
                     Assert.IsFalse(sc.Sections.ContainsKey(GetSectionName(folderName, fileName)));
 
                     Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
@@ -949,16 +950,15 @@ namespace PEBakery.Core.Tests
                     if (result)
                         fileDict = sc.Sections[folderName].IniDict;
 
-                    string errMsg;
-                    (sc, errMsg) = EncodedFile.DeleteFolder(sc, folderName);
-
-                    if (errMsg != null)
+                    ResultReport<Script> report = EncodedFile.DeleteFolder(sc, folderName);
+                    if (!report.Success)
                     {
                         Assert.IsFalse(result);
                         return;
                     }
                     Assert.IsTrue(result);
 
+                    sc = report.Result;
                     Assert.IsFalse(sc.Sections.ContainsKey(folderName));
                     Assert.IsFalse(IniReadWriter.ContainsSection(destScript, folderName));
 
@@ -1003,18 +1003,17 @@ namespace PEBakery.Core.Tests
                 {
                     File.Copy(testScriptPath, destScript, true);
 
-                    string errMsg;
                     Script sc = s.Project.LoadScriptRuntime(destScript, new LoadScriptRuntimeOptions());
-                    (sc, errMsg) = EncodedFile.DeleteLogo(sc);
+                    ResultReport<Script> report = EncodedFile.DeleteLogo(sc);
 
-                    if (errMsg != null)
+                    if (!report.Success)
                     {
                         Assert.IsFalse(result);
                         return;
                     }
                     Assert.IsTrue(result);
 
-                    Assert.IsFalse(EncodedFile.ContainsLogo(sc));
+                    Assert.IsFalse(EncodedFile.ContainsLogo(report.Result));
                 }
                 finally
                 {

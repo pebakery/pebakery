@@ -776,12 +776,12 @@ namespace PEBakery.Core
         #endregion
 
         #region GetFileInfo, GetLogoInfo, GetFolderInfo, GetAllFilesInfo
-        public static Task<(EncodedFileInfo, string)> GetFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
+        public static Task<ResultReport<EncodedFileInfo>> GetFileInfoAsync(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
             return Task.Run(() => GetFileInfo(sc, folderName, fileName, inspectEncodeMode));
         }
 
-        public static (EncodedFileInfo info, string errMsg) GetFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo> GetFileInfo(Script sc, string folderName, string fileName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -793,18 +793,18 @@ namespace PEBakery.Core
             };
 
             if (!sc.Sections.ContainsKey(folderName))
-                return (null, $"Directory [{folderName}] does not exist");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Directory [{folderName}] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
             if (!fileDict.ContainsKey(fileName))
-                return (null, $"File index of [{fileName}] does not exist");
+                return new ResultReport<EncodedFileInfo>(false, null, $"File index of [{fileName}] does not exist");
 
             string fileIndex = fileDict[fileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
             if (info.RawSize == -1)
-                return (null, $"Unable to parse raw size of [{fileName}]");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Unable to parse raw size of [{fileName}]");
             if (info.EncodedSize == -1)
-                return (null, $"Unable to parse encoded size of [{fileName}]");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Unable to parse encoded size of [{fileName}]");
 
             if (inspectEncodeMode)
             {
@@ -812,15 +812,15 @@ namespace PEBakery.Core
                 info.EncodeMode = ReadEncodeMode(sc.RealPath, section);
             }
 
-            return (info, null);
+            return new ResultReport<EncodedFileInfo>(true, info, null);
         }
 
-        public static Task<(EncodedFileInfo info, string errMsg)> GetLogoInfoAsync(Script sc, bool inspectEncodeMode = false)
+        public static Task<ResultReport<EncodedFileInfo>> GetLogoInfoAsync(Script sc, bool inspectEncodeMode = false)
         {
             return Task.Run(() => GetLogoInfo(sc, inspectEncodeMode));
         }
 
-        public static (EncodedFileInfo info, string errMsg) GetLogoInfo(Script sc, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo> GetLogoInfo(Script sc, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -828,22 +828,22 @@ namespace PEBakery.Core
             EncodedFileInfo info = new EncodedFileInfo { FolderName = ScriptSection.Names.AuthorEncoded };
 
             if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
-                return (null, $"Directory [{ScriptSection.Names.AuthorEncoded}] does not exist");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Directory [{ScriptSection.Names.AuthorEncoded}] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
             if (!fileDict.ContainsKey("Logo"))
-                return (null, "Logo does not exist");
+                return new ResultReport<EncodedFileInfo>(false, null, "Logo does not exist");
 
             info.FileName = fileDict["Logo"];
             if (!fileDict.ContainsKey(info.FileName))
-                return (null, "File index of [Logo] does not exist");
+                return new ResultReport<EncodedFileInfo>(false, null, "File index of [Logo] does not exist");
 
             string fileIndex = fileDict[info.FileName].Trim();
             (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
             if (info.RawSize == -1)
-                return (null, $"Unable to parse raw size of [{info.FileName}]");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Unable to parse raw size of [{info.FileName}]");
             if (info.EncodedSize == -1)
-                return (null, $"Unable to parse encoded size of [{info.FileName}]");
+                return new ResultReport<EncodedFileInfo>(false, null, $"Unable to parse encoded size of [{info.FileName}]");
 
             if (inspectEncodeMode)
             {
@@ -855,21 +855,21 @@ namespace PEBakery.Core
                 info.EncodeMode = ReadEncodeModeInMem(encoded);
             }
 
-            return (info, null);
+            return new ResultReport<EncodedFileInfo>(true, info, null);
         }
 
-        public static Task<(List<EncodedFileInfo> infos, string errMsg)> GetFolderInfoAsync(Script sc, string folderName, bool inspectEncodeMode = false)
+        public static Task<ResultReport<EncodedFileInfo[]>> GetFolderInfoAsync(Script sc, string folderName, bool inspectEncodeMode = false)
         {
             return Task.Run(() => GetFolderInfo(sc, folderName, inspectEncodeMode));
         }
 
-        public static (List<EncodedFileInfo> infos, string errMsg) GetFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
+        public static ResultReport<EncodedFileInfo[]> GetFolderInfo(Script sc, string folderName, bool inspectEncodeMode = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             if (!sc.Sections.ContainsKey(folderName))
-                return (null, $"Directory [{folderName}] does not exist");
+                return new ResultReport<EncodedFileInfo[]>(false, null, $"Directory [{folderName}] does not exist");
 
             List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
             Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
@@ -882,14 +882,14 @@ namespace PEBakery.Core
                 };
 
                 if (!fileDict.ContainsKey(fileName))
-                    return (null, $"File index of [{fileName}] does not exist");
+                    return new ResultReport<EncodedFileInfo[]>(false, null, $"File index of [{fileName}] does not exist");
 
                 string fileIndex = fileDict[fileName].Trim();
                 (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
                 if (info.RawSize == -1)
-                    return (null, $"Unable to parse raw size of [{fileName}]");
+                    return new ResultReport<EncodedFileInfo[]>(false, null, $"Unable to parse raw size of [{fileName}]");
                 if (info.EncodedSize == -1)
-                    return (null, $"Unable to parse encoded size of [{fileName}]");
+                    return new ResultReport<EncodedFileInfo[]>(false, null, $"Unable to parse encoded size of [{fileName}]");
 
                 if (inspectEncodeMode)
                 {
@@ -900,7 +900,7 @@ namespace PEBakery.Core
                 infos.Add(info);
             }
 
-            return (infos, null);
+            return new ResultReport<EncodedFileInfo[]>(true, infos.ToArray(), null);
         }
 
         public struct GetFileInfoOptions
@@ -910,19 +910,19 @@ namespace PEBakery.Core
             public bool InspectEncodeMode;
         }
 
-        public static Task<(Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg)> GetAllFilesInfoAsync(Script sc, GetFileInfoOptions opts)
+        public static Task<ResultReport<Dictionary<string, List<EncodedFileInfo>>>> GetAllFilesInfoAsync(Script sc, GetFileInfoOptions opts)
         {
             return Task.Run(() => GetAllFilesInfo(sc, opts));
         }
 
-        public static (Dictionary<string, List<EncodedFileInfo>> infoDict, string errMsg) GetAllFilesInfo(Script sc, GetFileInfoOptions opts)
+        public static ResultReport<Dictionary<string, List<EncodedFileInfo>>> GetAllFilesInfo(Script sc, GetFileInfoOptions opts)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
             if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                return (infoDict, null); // Return empty dict
+                return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null); // Return empty dict
 
             List<string> folderNames = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
             int aeIdx = folderNames.FindIndex(x => x.Equals(ScriptSection.Names.AuthorEncoded, StringComparison.OrdinalIgnoreCase));
@@ -978,13 +978,13 @@ namespace PEBakery.Core
                         continue;
 
                     if (!fileDict.ContainsKey(fileName))
-                        return (null, $"File index of [{fileName}] does not exist");
+                        return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(false, null, $"File index of [{fileName}] does not exist");
 
                     (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
                     if (info.RawSize == -1)
-                        return (null, $"Unable to parse raw size of [{fileName}]");
+                        return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(false, null, $"Unable to parse raw size of [{fileName}]");
                     if (info.EncodedSize == -1)
-                        return (null, $"Unable to parse encoded size of [{fileName}]");
+                        return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(false, null, $"Unable to parse encoded size of [{fileName}]");
 
                     if (opts.InspectEncodeMode)
                     {
@@ -996,7 +996,7 @@ namespace PEBakery.Core
                 }
             }
 
-            return (infoDict, null);
+            return new ResultReport<Dictionary<string, List<EncodedFileInfo>>>(true, infoDict, null);
         }
 
         public static Task<EncodeMode> GetEncodeModeAsync(Script sc, string folderName, string fileName, bool inMem = false)
@@ -1044,12 +1044,12 @@ namespace PEBakery.Core
         #endregion
 
         #region DeleteFile, DeleteFolder, DeleteLogo
-        public static Task<(Script, string)> DeleteFileAsync(Script sc, string folderName, string fileName)
+        public static Task<ResultReport<Script>> DeleteFileAsync(Script sc, string folderName, string fileName)
         {
             return Task.Run(() => DeleteFile(sc, folderName, fileName));
         }
 
-        public static (Script, string) DeleteFile(Script sc, string folderName, string fileName)
+        public static ResultReport<Script> DeleteFile(Script sc, string folderName, string fileName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -1065,12 +1065,12 @@ namespace PEBakery.Core
             try
             {
                 if (!sc.Sections.ContainsKey(folderName))
-                    return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+                    return new ResultReport<Script>(false, sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                 // Get encoded file index
                 Dictionary<string, string> fileDict = sc.Sections[folderName].IniDict;
                 if (!fileDict.ContainsKey(fileName))
-                    return (sc, $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]");
+                    return new ResultReport<Script>(false, sc, $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]");
 
                 // Delete encoded file index
                 if (!IniReadWriter.DeleteKey(sc.RealPath, folderName, fileName))
@@ -1093,15 +1093,15 @@ namespace PEBakery.Core
 
             // Return refreshed script
             sc = sc.Project.RefreshScript(sc);
-            return (sc, errorMsg);
+            return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
 
-        public static Task<(Script, List<string>)> DeleteFilesAsync(Script sc, string folderName, IReadOnlyList<string> fileNames)
+        public static Task<ResultReport<Script, string[]>> DeleteFilesAsync(Script sc, string folderName, IReadOnlyList<string> fileNames)
         {
             return Task.Run(() => DeleteFiles(sc, folderName, fileNames));
         }
 
-        public static (Script, List<string>) DeleteFiles(Script sc, string folderName, IReadOnlyList<string> fileNames)
+        public static ResultReport<Script, string[]> DeleteFiles(Script sc, string folderName, IReadOnlyList<string> fileNames)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -1120,7 +1120,7 @@ namespace PEBakery.Core
                 if (!sc.Sections.ContainsKey(folderName))
                 {
                     errorMessages.Add($"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
-                    return (sc, errorMessages);
+                    return new ResultReport<Script, string[]>(false, sc, errorMessages.ToArray());
                 }
 
                 // Get encoded file index
@@ -1172,15 +1172,15 @@ namespace PEBakery.Core
 
             // Return refreshed script
             sc = sc.Project.RefreshScript(sc);
-            return (sc, errorMessages);
+            return new ResultReport<Script, string[]>(true, sc, errorMessages.ToArray());
         }
 
-        public static Task<(Script, string)> DeleteFolderAsync(Script sc, string folderName)
+        public static Task<ResultReport<Script>> DeleteFolderAsync(Script sc, string folderName)
         {
             return Task.Run(() => DeleteFolder(sc, folderName));
         }
 
-        public static (Script, string) DeleteFolder(Script sc, string folderName)
+        public static ResultReport<Script> DeleteFolder(Script sc, string folderName)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -1197,11 +1197,11 @@ namespace PEBakery.Core
                     !folderName.Equals(ScriptSection.Names.InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!sc.Sections.ContainsKey(ScriptSection.Names.EncodedFolders))
-                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+                        return new ResultReport<Script>(false, sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     List<string> folders = IniReadWriter.FilterCommentLines(sc.Sections[ScriptSection.Names.EncodedFolders].Lines);
                     if (!folders.Contains(folderName, StringComparer.OrdinalIgnoreCase))
-                        return (sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
+                        return new ResultReport<Script>(false, sc, $"Index of encoded folder [{folderName}] not found in [{sc.RealPath}]");
 
                     // Delete index of encoded folder
                     int idx = folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase));
@@ -1210,12 +1210,12 @@ namespace PEBakery.Core
                     // Cannot use RenameKey, since [EncodedFolders] does not use '=' in its content.
                     // Rewrite entire [EncodedFolders] with DeleteSection and WriteRawLine.
                     if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.EncodedFolders))
-                        return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
+                        return new ResultReport<Script>(false, sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
 
                     foreach (IniKey key in folders.Select(x => new IniKey(ScriptSection.Names.EncodedFolders, x)))
                     {
                         if (!IniReadWriter.WriteRawLine(sc.RealPath, key))
-                            return (sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
+                            return new ResultReport<Script>(false, sc, $"Unable to delete index of encoded folder [{folderName}] from [{sc.RealPath}]");
                     }
                 }
 
@@ -1259,15 +1259,15 @@ namespace PEBakery.Core
 
             // Return refreshed script
             sc = sc.Project.RefreshScript(sc);
-            return (sc, errorMsg);
+            return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
 
-        public static Task<(Script, string)> DeleteLogoAsync(Script sc)
+        public static Task<ResultReport<Script>> DeleteLogoAsync(Script sc)
         {
             return Task.Run(() => DeleteLogo(sc));
         }
 
-        public static (Script, string) DeleteLogo(Script sc)
+        public static ResultReport<Script> DeleteLogo(Script sc)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -1281,17 +1281,17 @@ namespace PEBakery.Core
             {
                 // Get encoded file index
                 if (!sc.Sections.ContainsKey(ScriptSection.Names.AuthorEncoded))
-                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                    return new ResultReport<Script>(false, sc, $"Logo not found in [{sc.RealPath}]");
 
                 Dictionary<string, string> fileDict = sc.Sections[ScriptSection.Names.AuthorEncoded].IniDict;
 
                 // Get filename of logo
                 if (!fileDict.ContainsKey("Logo"))
-                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                    return new ResultReport<Script>(false, sc, $"Logo not found in [{sc.RealPath}]");
 
                 string logoFile = fileDict["Logo"];
                 if (!fileDict.ContainsKey(logoFile))
-                    return (sc, $"Logo not found in [{sc.RealPath}]");
+                    return new ResultReport<Script>(false, sc, $"Logo not found in [{sc.RealPath}]");
 
                 // Delete encoded file section
                 if (!IniReadWriter.DeleteSection(sc.RealPath, ScriptSection.Names.GetEncodedSectionName(ScriptSection.Names.AuthorEncoded, logoFile)))
@@ -1314,7 +1314,7 @@ namespace PEBakery.Core
 
             // Return refreshed script
             sc = sc.Project.RefreshScript(sc);
-            return (sc, errorMsg);
+            return new ResultReport<Script>(errorMsg == null, sc, errorMsg);
         }
         #endregion
 

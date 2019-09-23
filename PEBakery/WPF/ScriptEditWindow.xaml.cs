@@ -1931,10 +1931,10 @@ namespace PEBakery.WPF
                     return;
                 }
 
-                string errMsg;
-                (Script, errMsg) = EncodedFile.DeleteLogo(Script);
-                if (errMsg == null)
+                ResultReport<Script> report = EncodedFile.DeleteLogo(Script);
+                if (report.Success)
                 {
+                    Script = report.Result;
                     MessageBox.Show(_window, "Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     ScriptLogoUpdated = true;
@@ -1942,6 +1942,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
+                    string errMsg = report.Message;
                     Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
                     MessageBox.Show(_window, $"There was an issue with deleting the logo.\r\n\r\n[Message]\r\n{errMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -2704,14 +2705,14 @@ namespace PEBakery.WPF
 
                 if (EncodedFile.ContainsInterface(Script, srcFileName))
                 {
-                    (List<EncodedFileInfo> infos, string errMsg) = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
-                    if (errMsg != null)
+                    ResultReport<EncodedFileInfo[]> report = EncodedFile.GetFolderInfo(Script, ScriptSection.Names.InterfaceEncoded, false);
+                    if (!report.Success)
                     {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                        MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                        MessageBox.Show(_window, $"Attach failed.\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
-
+                    EncodedFileInfo[] infos = report.Result;
                     srcFileName = StringEscaper.GetUniqueFileName(srcFileName, infos.Select(x => x.FileName));
                 }
 
@@ -2945,9 +2946,9 @@ namespace PEBakery.WPF
         {
             async void InternalDeleteInterfaceEncodedFile(string delFileName)
             {
-                (Script sc, _) = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
-                if (sc != null)
-                    Script = sc;
+                ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, ScriptSection.Names.InterfaceEncoded, delFileName);
+                if (report.Success)
+                    Script = report.Result;
                 else
                     MessageBox.Show(_window, $"Unable to delete encoded file [{delFileName}].", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
@@ -3275,17 +3276,17 @@ namespace PEBakery.WPF
 
                 AttachProgressIndeterminate = true;
 
-                string errMsg;
-                (Script, errMsg) = await EncodedFile.DeleteFolderAsync(Script, folder.FolderName);
-                if (errMsg == null)
+                ResultReport<Script> report = await EncodedFile.DeleteFolderAsync(Script, folder.FolderName);
+                if (report.Success)
                 {
+                    Script = report.Result;
                     ScriptAttachUpdated = true;
                     ReadScriptAttachment();
                 }
                 else // Failure
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                    MessageBox.Show(_window, $"Delete failed.\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -3711,10 +3712,10 @@ namespace PEBakery.WPF
 
                     AttachProgressIndeterminate = true;
 
-                    string errMsg;
-                    (Script, errMsg) = await EncodedFile.DeleteFileAsync(Script, fi.FolderName, fi.FileName);
-                    if (errMsg == null)
+                    ResultReport<Script> report = await EncodedFile.DeleteFileAsync(Script, fi.FolderName, fi.FileName);
+                    if (report.Success)
                     {
+                        Script = report.Result;
                         ScriptAttachUpdated = true;
                         ReadScriptAttachment();
 
@@ -3722,8 +3723,8 @@ namespace PEBakery.WPF
                     }
                     else // Failure
                     {
-                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                        MessageBox.Show(_window, $"Unable to delete file [{fi.FileName}]\r\n- {errMsg}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                        MessageBox.Show(_window, $"Unable to delete file [{fi.FileName}]\r\n- {report.Message}", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else if (1 < SelectedAttachedFiles.Length)
@@ -3739,11 +3740,11 @@ namespace PEBakery.WPF
                     string folderName = SelectedAttachedFolder.FolderName;
                     string[] fileNames = SelectedAttachedFiles.Select(fi => fi.FileName).ToArray();
 
-                    List<string> errorMessages;
-                    (Script, errorMessages) = await EncodedFile.DeleteFilesAsync(Script, folderName, fileNames);
 
-                    if (errorMessages.Count == 0)
+                    ResultReport<Script, string[]> report = await EncodedFile.DeleteFilesAsync(Script, folderName, fileNames);
+                    if (report.Success)
                     {
+                        Script = report.Result1;
                         ScriptAttachUpdated = true;
                         ReadScriptAttachment();
 
@@ -3751,9 +3752,11 @@ namespace PEBakery.WPF
                     }
                     else
                     {
+                        string[] errorMessages = report.Result2;
+
                         // Failure Report
                         StringBuilder b = new StringBuilder();
-                        b.AppendLine($"Unable to delete {errorMessages.Count} files.");
+                        b.AppendLine($"Unable to delete {errorMessages.Length} files.");
                         foreach (string errMsg in errorMessages)
                         {
                             Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
@@ -3836,11 +3839,11 @@ namespace PEBakery.WPF
                     if (fi.EncodeMode != null)
                         return;
 
-                    string errMsg;
-                    (fi, errMsg) = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
-                    if (errMsg == null)
+                    ResultReport<EncodedFileInfo> report = await EncodedFile.GetFileInfoAsync(Script, dirName, fileName, true);
+                    if (report.Success)
                     { // Success
-                        file.Info = fi;
+                        EncodedFileInfo newInfo = report.Result;
+                        file.Info = newInfo;
                         file.PropertyUpdate();
                     }
                     else
@@ -3960,11 +3963,11 @@ namespace PEBakery.WPF
             // General
             if (EncodedFile.ContainsLogo(Script))
             {
-                (EncodedFileInfo info, string errMsg) = EncodedFile.GetLogoInfo(Script, true);
-                if (errMsg != null)
+                ResultReport<EncodedFileInfo> report = EncodedFile.GetLogoInfo(Script, true);
+                if (!report.Success)
                 {
-                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                    MessageBox.Show(_window, $"Unable to read script logo\r\n\r\n[Message]\r\n\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                    MessageBox.Show(_window, $"Unable to read script logo\r\n\r\n[Message]\r\n\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -3985,7 +3988,7 @@ namespace PEBakery.WPF
                             break;
                     }
                 }
-                ScriptLogoInfo = info;
+                ScriptLogoInfo = report.Result;
             }
             else
             { // No script logo
@@ -4070,14 +4073,15 @@ namespace PEBakery.WPF
                 InspectEncodeMode = false,
             };
 
-            (Dictionary<string, List<EncodedFileInfo>> fileDict, string errMsg) = EncodedFile.GetAllFilesInfo(Script, opts);
-            if (errMsg != null)
+            ResultReport<Dictionary<string, List<EncodedFileInfo>>> report = EncodedFile.GetAllFilesInfo(Script, opts);
+            if (!report.Success)
             {
-                Global.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show(_window, $"Unable to read script attachments\r\n\r\n[Message]\r\n{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Global.Logger.SystemWrite(new LogInfo(LogState.Error, report.Message));
+                MessageBox.Show(_window, $"Unable to read script attachments\r\n\r\n[Message]\r\n{report.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
+            Dictionary<string, List<EncodedFileInfo>> fileDict = report.Result;
             List<EncodedFileInfo> files = new List<EncodedFileInfo>();
             foreach (var kv in fileDict.OrderBy(kv => kv.Key, StringComparer.InvariantCulture))
             {

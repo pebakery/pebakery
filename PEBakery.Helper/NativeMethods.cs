@@ -41,14 +41,14 @@ namespace PEBakery.Helper
     {
         #region FileHelper
         #region DOS 8.3 Path
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int GetShortPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string longPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder shortPath,
             int cchBuffer
         );
 
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int GetLongPathName(
             [MarshalAs(UnmanagedType.LPWStr)] string shortPath,
             [MarshalAs(UnmanagedType.LPWStr)] StringBuilder longPath,
@@ -58,7 +58,7 @@ namespace PEBakery.Helper
         #endregion
 
         #region FontHelper
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal class LOGFONT
         {
             public int lfHeight;
@@ -171,7 +171,7 @@ namespace PEBakery.Helper
             FF_DECORATIVE = 5 << 4,
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct CHOOSEFONT
         {
             public int lStructSize;
@@ -228,7 +228,7 @@ namespace PEBakery.Helper
             CF_INACTIVEFONTS = 0x02000000
         }
 
-        [DllImport("comdlg32.dll", CharSet = CharSet.Auto, EntryPoint = "ChooseFont", SetLastError = true)]
+        [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, EntryPoint = "ChooseFont", SetLastError = true)]
         internal static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
         #endregion
 
@@ -312,6 +312,25 @@ namespace PEBakery.Helper
         public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
         public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
         */
+        #endregion
+
+        #region SystemHelper
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool GlobalMemoryStatusEx(MEMORYSTATUSEX lpBuffer);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal class MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
         #endregion
     }
 }
