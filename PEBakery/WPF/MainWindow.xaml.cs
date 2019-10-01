@@ -302,6 +302,9 @@ namespace PEBakery.WPF
 
         private void AboutWindowCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            SystemHelper.MemorySnapshot m = SystemHelper.GetMemorySnapshot();
+            Logger.SystemWrite(m.ToString());
+
             AboutWindow dialog = new AboutWindow(Global.Setting.Interface.MonospacedFont) { Owner = this };
             dialog.ShowDialog();
         }

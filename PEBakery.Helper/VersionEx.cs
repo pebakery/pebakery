@@ -35,6 +35,7 @@ namespace PEBakery.Helper
     /// Extended VersionEx to support single integer
     /// Ex) 5 vs 5.1.2600.1234
     /// </summary>
+    [Serializable]
     public class VersionEx : IComparable<VersionEx>, IEquatable<VersionEx>, ISerializable
     {
         #region Properties
@@ -236,7 +237,7 @@ namespace PEBakery.Helper
             info.AddValue(nameof(Revision), Revision, typeof(int));
         }
 
-        public VersionEx(SerializationInfo info, StreamingContext context)
+        protected VersionEx(SerializationInfo info, StreamingContext context)
         {
             Major = (int)info.GetValue(nameof(Major), typeof(int));
             Minor = (int)info.GetValue(nameof(Minor), typeof(int));

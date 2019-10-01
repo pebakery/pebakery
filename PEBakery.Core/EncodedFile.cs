@@ -28,6 +28,7 @@
 // #define DEBUG_MIDDLE_FILE
 
 using Joveler.Compression.XZ;
+using Joveler.Compression.XZ.Checksum;
 using Joveler.Compression.ZLib;
 using PEBakery.Helper;
 using PEBakery.Ini;
@@ -1364,7 +1365,12 @@ namespace PEBakery.Core
                     switch (mode)
                     {
                         case EncodeMode.ZLib:
-                            using (ZLibStream zs = new ZLibStream(encodeStream, ZLibMode.Compress, ZLibCompLevel.Level6, true))
+                            ZLibCompressOptions zCompOpts = new ZLibCompressOptions()
+                            {
+                                Level = ZLibCompLevel.Level6,
+                                LeaveOpen = true,
+                            };
+                            using (ZLibStream zs = new ZLibStream(encodeStream, zCompOpts))
                             {
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
@@ -1389,9 +1395,38 @@ namespace PEBakery.Core
                             }
                             break;
                         case EncodeMode.XZ:
-                            // Multi-threading will take up too much memory, use single thread instead.
-                            using (XZStream xzs = new XZStream(encodeStream, LzmaMode.Compress, XZStream.DefaultPreset, true))
+                            // Multi-threaded xz takes up way too much memory.
+                            // Employ adaptive multi-thread to avoid memory starvation.
+                            // Ex) We want to avoid taking up to ~1300MB in 2GB ram sysetm.
+                            int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryXZCompressMemUsage, NumberHelper.GigaByte, 0.9);
+                            XZStream xzs = null;
+                            try
                             {
+                                XZCompressOptions xzCompOpts = new XZCompressOptions()
+                                {
+                                    Level = LzmaCompLevel.Default,
+                                    LeaveOpen = true,
+                                };
+                                XZThreadedCompressOptions xzThreadOpts = new XZThreadedCompressOptions()
+                                {
+                                    Threads = threads,
+                                };
+
+                                try
+                                {
+                                    // Try with multi-threaded mode.
+                                    xzs = new XZStream(encodeStream, xzCompOpts, xzThreadOpts);
+                                }
+                                catch (XZException e)
+                                {
+                                    if (e.ReturnCode != LzmaRet.MemError)
+                                        throw;
+
+                                    // Backoff to single-threaded mode.
+                                    // Single-threaded mode take less memory compared to multi-threaded mode with 1 thread.
+                                    xzs = new XZStream(encodeStream, xzCompOpts);
+                                }
+
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
                                     crc32.Append(buffer, 0, bytesRead);
@@ -1401,6 +1436,11 @@ namespace PEBakery.Core
                                     if (offset % ReportInterval == 0)
                                         progress?.Report((double)offset / inputLen * CompReportFactor);
                                 }
+                            }
+                            finally
+                            {
+                                Debug.Assert(xzs != null, $"XZStream is null in {nameof(Encode)}!");
+                                xzs.Dispose();
                             }
                             break;
                         default:
@@ -1451,7 +1491,7 @@ namespace PEBakery.Core
                                 rawFooter[0x225] = 0;
                                 break;
                             case EncodeMode.XZ: // Type 3
-                                rawFooter[0x225] = (byte)XZStream.DefaultPreset;
+                                rawFooter[0x225] = (byte)LzmaCompLevel.Default;
                                 break;
                             default:
                                 throw new InternalException($"Wrong EncodeMode [{mode}]");
@@ -1460,7 +1500,12 @@ namespace PEBakery.Core
 
                     // [Stage 4] Compress first footer and concat to body
                     long compressedFooterLen = encodeStream.Position;
-                    using (ZLibStream zs = new ZLibStream(encodeStream, ZLibMode.Compress, ZLibCompLevel.Level6, true))
+                    ZLibCompressOptions footerCompOpts = new ZLibCompressOptions()
+                    {
+                        Level = ZLibCompLevel.Level6,
+                        LeaveOpen = true,
+                    };
+                    using (ZLibStream zs = new ZLibStream(encodeStream, footerCompOpts))
                     {
                         zs.Write(rawFooter, 0, rawFooter.Length);
                     }
@@ -1627,7 +1672,8 @@ namespace PEBakery.Core
 
                         compressedFooter.Flush();
                         compressedFooter.Position = 0;
-                        using (ZLibStream zs = new ZLibStream(compressedFooter, ZLibMode.Decompress))
+                        ZLibDecompressOptions decompOpts = new ZLibDecompressOptions();
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, decompOpts))
                         {
                             bytesRead = zs.Read(firstFooter, 0, firstFooter.Length);
                             Debug.Assert(bytesRead == firstFooter.Length);
@@ -1701,7 +1747,11 @@ namespace PEBakery.Core
                                 compStream.Position = 0;
 
                                 int offset = 0;
-                                using (ZLibStream zs = new ZLibStream(compStream, ZLibMode.Decompress, true))
+                                ZLibDecompressOptions decompOpts = new ZLibDecompressOptions()
+                                {
+                                    LeaveOpen = true,
+                                };
+                                using (ZLibStream zs = new ZLibStream(compStream, decompOpts))
                                 {
                                     while ((bytesRead = zs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -1748,7 +1798,7 @@ namespace PEBakery.Core
                                 }
 
 #if DEBUG_MIDDLE_FILE
-                                debug.Close();
+                                debug.Dispose();
 #endif
                             }
                             break;
@@ -1773,7 +1823,11 @@ namespace PEBakery.Core
                                 compStream.Position = 0;
 
                                 int offset = 0;
-                                using (XZStream xzs = new XZStream(compStream, LzmaMode.Decompress))
+                                XZDecompressOptions decompOpts = new XZDecompressOptions()
+                                {
+                                    LeaveOpen = true,
+                                };
+                                using (XZStream xzs = new XZStream(compStream, decompOpts))
                                 {
                                     while ((bytesRead = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -1830,7 +1884,8 @@ namespace PEBakery.Core
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
-            uint calcFullCrc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
+            Crc32Checksum crc32 = new Crc32Checksum();
+            uint calcFullCrc32 = crc32.Append(decoded, 0, finalFooterIdx);
             if (fullCrc32 != calcFullCrc32)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
@@ -1838,8 +1893,10 @@ namespace PEBakery.Core
             byte[] rawFooter;
             using (MemoryStream rawFooterStream = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage4"))
             {
+                ZLibDecompressOptions decompOpts = new ZLibDecompressOptions();
+
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
+                using (ZLibStream zs = new ZLibStream(ms, decompOpts))
                 {
                     zs.CopyTo(rawFooterStream);
                 }
@@ -1903,8 +1960,10 @@ namespace PEBakery.Core
                             ms.CopyTo(debug);
                         }
 #endif
+                        ZLibDecompressOptions decompOpts = new ZLibDecompressOptions();
+
                         using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage7.ZLib", decoded, 0, compressedBodyLen))
-                        using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
+                        using (ZLibStream zs = new ZLibStream(ms, decompOpts))
                         {
                             zs.CopyTo(rawBodyStream);
                         }
@@ -1936,8 +1995,10 @@ namespace PEBakery.Core
                             ms.CopyTo(debug);
                         }
 #endif
+                        XZDecompressOptions decompOpts = new XZDecompressOptions();
+
                         using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.DecodeInMem.Stage7.XZ", decoded, 0, compressedBodyLen))
-                        using (XZStream xzs = new XZStream(ms, LzmaMode.Decompress))
+                        using (XZStream xzs = new XZStream(ms, decompOpts))
                         {
                             xzs.CopyTo(rawBodyStream);
                         }
@@ -1950,7 +2011,8 @@ namespace PEBakery.Core
             rawBodyStream.Position = 0;
 
             // [Stage 8] Validate decompressed body
-            uint calcCompBodyCrc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
+            crc32.Reset();
+            uint calcCompBodyCrc32 = crc32.Append(rawBodyStream.ToArray());
             if (compressedBodyCrc32 != calcCompBodyCrc32)
                 throw new InvalidOperationException("Encoded file is corrupted: body");
 
@@ -2011,7 +2073,9 @@ namespace PEBakery.Core
 
                         compressedFooter.Flush();
                         compressedFooter.Position = 0;
-                        using (ZLibStream zs = new ZLibStream(compressedFooter, ZLibMode.Decompress))
+
+                        ZLibDecompressOptions decompOpts = new ZLibDecompressOptions();
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, decompOpts))
                         {
                             readByte = zs.Read(firstFooter, 0, firstFooter.Length);
                             Debug.Assert(readByte == firstFooter.Length);
@@ -2074,7 +2138,8 @@ namespace PEBakery.Core
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
-            uint calcFullCrc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
+            Crc32Checksum crc32 = new Crc32Checksum();
+            uint calcFullCrc32 = crc32.Append(decoded, 0, finalFooterIdx);
             if (fullCrc32 != calcFullCrc32)
                 throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
@@ -2082,8 +2147,10 @@ namespace PEBakery.Core
             byte[] rawFooter;
             using (MemoryStream rawFooterStream = Global.MemoryStreamManager.GetStream("EncodedFile.GetEncodeMode.Stage4"))
             {
+                ZLibDecompressOptions decompOpts = new ZLibDecompressOptions();
+
                 using (MemoryStream ms = Global.MemoryStreamManager.GetStream("EncodedFile.GetEncodeMode.Stage4.ZLib", decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZLibStream zs = new ZLibStream(ms, ZLibMode.Decompress))
+                using (ZLibStream zs = new ZLibStream(ms, decompOpts))
                 {
                     zs.CopyTo(rawFooterStream);
                 }
@@ -2187,6 +2254,11 @@ namespace PEBakery.Core
 
                 offset += readByte;
             }
+        }
+
+        private static ulong QueryXZCompressMemUsage(int threads)
+        {
+            return XZInit.EncoderMultiMemUsage(LzmaCompLevel.Default, false, threads);
         }
         #endregion
     }

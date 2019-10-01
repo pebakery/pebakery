@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,20 +34,134 @@ namespace PEBakery.Helper
 {
     public static class SystemHelper
     {
-        public static ulong GetTotalPhysicalMemory()
+        /// <summary>
+        /// Abbreviated version of MEMORYSTATUSEX
+        /// </summary>
+        public class MemorySnapshot
         {
-            NativeMethods.MEMORYSTATUSEX status = new NativeMethods.MEMORYSTATUSEX();
-            if (!NativeMethods.GlobalMemoryStatusEx(status))
-                return 0;
-            return status.ullTotalPhys;
+            public ulong TotalPhysical;
+            public ulong AvailPhysical;
+            public ulong TotalPageFile;
+            public ulong AvailPageFile;
+            public ulong TotalVirtual;
+            public ulong AvailVirtual;
+
+            public override string ToString()
+            {
+                StringBuilder b = new StringBuilder();
+                b.AppendLine($"Total Physical : {TotalPhysical}");
+                b.AppendLine($"Avail Physical : {AvailPhysical}");
+                b.AppendLine($"Total PageFile : {TotalPageFile}");
+                b.AppendLine($"Avail PageFile : {AvailPageFile}");
+                b.AppendLine($"Total Virtual  : {TotalVirtual}");
+                b.AppendLine($"Avail Virtual  : {AvailVirtual}");
+                return b.ToString();
+            }
         }
 
-        public static ulong GetAvailablePhysicalMemory()
+        /// <remarks>
+        /// It works only on Windows.  
+        /// </remarks>
+        public static MemorySnapshot GetMemorySnapshot()
         {
-            NativeMethods.MEMORYSTATUSEX status = new NativeMethods.MEMORYSTATUSEX();
-            if (!NativeMethods.GlobalMemoryStatusEx(status))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                NativeMethods.MEMORYSTATUSEX native = new NativeMethods.MEMORYSTATUSEX();
+                if (!NativeMethods.GlobalMemoryStatusEx(native))
+                    return null;
+                return new MemorySnapshot
+                {
+                    TotalPhysical = native.ullTotalPhys,
+                    AvailPhysical = native.ullAvailPhys,
+                    TotalPageFile = native.ullTotalPageFile,
+                    AvailPageFile = native.ullAvailPageFile,
+                    TotalVirtual = native.ullTotalVirtual,
+                    AvailVirtual = native.ullAvailVirtual,
+                };
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// Query how much system memory is available 
+        /// </summary>
+        /// <param name="maxReqMem">Max limit of requested memory which program is going to use</param>
+        /// <param name="usableSysMemPercent">How much percent of memory program is allowed to use</param>
+        /// <returns></returns>
+        public static ulong AvailableSystemMemory(ulong maxReqMem, double usableSysMemPercent)
+        {
+            // Get the max capacity of physical memory we can use
+            MemorySnapshot m = GetMemorySnapshot();
+            ulong reservedPhysical = (ulong)(m.TotalPhysical * (1 - usableSysMemPercent));
+            if (m.AvailPhysical < reservedPhysical) // Possibly no free physical memory (aside from reserved memory)!
                 return 0;
-            return status.ullAvailPhys;
+
+            // Get the max capacity of virtual memory we can use
+            ulong totalVirtual = m.TotalVirtual;
+            switch (RuntimeInformation.OSArchitecture)
+            {
+                case Architecture.X86:
+                case Architecture.Arm: // Not tested yet
+                    // In some cases 32bit Windows process can use 3GB of virtual memory, but let's be safe
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        totalVirtual = Math.Max(totalVirtual, 2 * NumberHelper.GigaByte);
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        totalVirtual = Math.Max(totalVirtual, 3 * NumberHelper.GigaByte);
+                    break;
+            }
+            ulong reservedVirtual = (ulong)(totalVirtual * (1 - usableSysMemPercent));
+            if (m.AvailVirtual < reservedVirtual) // Possibly no free virtual memory (aside from reserved memory)!
+                return 0;
+            ulong freePhysical = Math.Min(m.AvailPhysical - reservedPhysical, maxReqMem);
+            ulong freeVirtual = Math.Min(m.AvailVirtual - reservedVirtual, maxReqMem);
+            return Math.Min(freePhysical, freeVirtual);
+        }
+
+        public static int AdaptThreadCount(int reqThreads, ulong memPerThread, ulong maxReqMem, double usableSysMemPercent)
+        {
+            if (usableSysMemPercent < 0 || 1 < usableSysMemPercent)
+                throw new ArgumentOutOfRangeException(nameof(usableSysMemPercent), $"The allowed range is 0 <= nameof({usableSysMemPercent}) <= 1");
+
+            // Max amount of free memory program is allowed to use
+            ulong freeMem = AvailableSystemMemory(maxReqMem, usableSysMemPercent);
+
+            // Max thread count with Environment.ProcessCount
+            int threads = Math.Min(reqThreads, Environment.ProcessorCount);
+
+            // System has enough free memory, so thread is enough
+            if ((uint)threads * memPerThread <= freeMem)
+                return threads;
+            // System has not enough free memory, so adapt the thread count to the limit
+            return Math.Max((int)(freeMem / memPerThread), 1);
+        }
+
+        public delegate ulong QueryMemoryUsageDelegate(int threads);
+
+        public static int AdaptThreadCount(int reqThreads, QueryMemoryUsageDelegate memQuery, ulong maxReqMem, double usableSysMemPercent)
+        {
+            if (usableSysMemPercent < 0 || 1 < usableSysMemPercent)
+                throw new ArgumentOutOfRangeException(nameof(usableSysMemPercent), $"The allowed range is 0 <= nameof({usableSysMemPercent}) <= 1");
+
+            // Max amount of free memory program is allowed to use
+            ulong freeMem = AvailableSystemMemory(maxReqMem, usableSysMemPercent);
+
+            // Max thread count with Environment.ProcessCount
+            int threads = Math.Min(reqThreads, Environment.ProcessorCount);
+
+            for (int t = threads; 0 < t; t--)
+            {
+                ulong memUsage = memQuery(t);
+
+                // System has enough free memory to allow `t` threads
+                if (memUsage <= freeMem)
+                    return t;
+            }
+
+            // Every try failed, fail-safe to 1 threads
+            return 1;
         }
     }
 }

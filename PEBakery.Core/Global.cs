@@ -237,8 +237,8 @@ namespace PEBakery.Core
             string sevenZipPath = Path.Combine(baseDir, arch, "7z.dll");
             string magicPath = Path.Combine(baseDir, arch, "libmagic-1.dll");
 
-            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath, 64 * 1024); // 64K
-            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath, 64 * 1024); // 64K
+            Joveler.Compression.ZLib.ZLibInit.GlobalInit(zlibPath);
+            Joveler.Compression.XZ.XZInit.GlobalInit(xzPath);
             ManagedWimLib.Wim.GlobalInit(wimlibPath);
             SevenZip.SevenZipBase.SetLibraryPath(sevenZipPath);
             Joveler.FileMagician.Magic.GlobalInit(magicPath);

@@ -739,9 +739,6 @@ namespace PEBakery.Helper
         /// <summary>
         /// Return true if the path is valid Win32 path.
         /// </summary>
-        /// <remarks>
-        /// It works only on Windows.  
-        /// </remarks>
         public static bool CheckWin32Path(string path, bool allowDirSep, bool allowWildcard)
         {
             bool valid = !path.Any(ch => Win32InvalidFileNameChars.Contains(ch));
