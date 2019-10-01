@@ -26,6 +26,7 @@
 */
 
 // #define DEBUG_MIDDLE_FILE
+// #define DEBUG_XZ_MEM_USAGE
 
 using Joveler.Compression.XZ;
 using Joveler.Compression.XZ.Checksum;
@@ -1395,13 +1396,23 @@ namespace PEBakery.Core
                             }
                             break;
                         case EncodeMode.XZ:
-                            // Multi-threaded xz takes up way too much memory.
-                            // Employ adaptive multi-thread to avoid memory starvation.
-                            // Ex) We want to avoid taking up to ~1300MB in 2GB ram sysetm.
-                            int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryXZCompressMemUsage, NumberHelper.GigaByte, 0.9);
                             XZStream xzs = null;
                             try
                             {
+                                // Multi-threaded xz takes up way a lot of memory. Employ adaptive multi-thread to avoid memory starvation.
+                                // When using default compress level, using 8 threads will results in about 1.3GB of memory.
+                                // PEBakery will use 12 threads at maximum when the system has enough memory. 
+                                // Let's set max limit to 2GB, because Windows 32bit process has limit of 2GB virtual memory address at baseline.
+                                int threads = SystemHelper.AdaptThreadCount(Environment.ProcessorCount, QueryXZCompressMemUsage, 2 * NumberHelper.GigaByte, 0.9);
+
+#if DEBUG_XZ_MEM_USAGE
+                                {
+                                    ulong memUsage = QueryXZCompressMemUsage(threads);
+                                    string msg = NumberHelper.ByteSizeToSIUnit((long)memUsage, 2);
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Tried thread count : {threads}, {msg}"));
+                                }
+#endif
+
                                 XZCompressOptions xzCompOpts = new XZCompressOptions()
                                 {
                                     Level = LzmaCompLevel.Default,
@@ -1416,6 +1427,9 @@ namespace PEBakery.Core
                                 {
                                     // Try with multi-threaded mode.
                                     xzs = new XZStream(encodeStream, xzCompOpts, xzThreadOpts);
+#if DEBUG_XZ_MEM_USAGE
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Compressing XZ with multi-threaded mode"));
+#endif
                                 }
                                 catch (XZException e)
                                 {
@@ -1423,8 +1437,11 @@ namespace PEBakery.Core
                                         throw;
 
                                     // Backoff to single-threaded mode.
-                                    // Single-threaded mode take less memory compared to multi-threaded mode with 1 thread.
+                                    // Single-threaded mode takes less memory even compared to multi-threaded mode with 1 thread.
                                     xzs = new XZStream(encodeStream, xzCompOpts);
+#if DEBUG_XZ_MEM_USAGE
+                                    Global.Logger.SystemWrite(new LogInfo(LogState.Info, $"Compressing XZ with single-threaded mode (Backoff)"));
+#endif
                                 }
 
                                 while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
@@ -1450,6 +1467,7 @@ namespace PEBakery.Core
                     progress?.Report(0.8);
 
                     // [Stage 3] Generate first footer
+                    uint rawFileCrc32 = crc32.Checksum;
                     byte[] rawFooter = new byte[0x226]; // 0x550
                     {
                         // 0x000 - 0x1FF : Filename and its length
@@ -1478,7 +1496,7 @@ namespace PEBakery.Core
                                 throw new InternalException($"Wrong EncodeMode [{mode}]");
                         }
                         // 0x220 - 0x223 : CRC32 of raw file
-                        BitConverter.GetBytes(crc32.Checksum).CopyTo(rawFooter, 0x220);
+                        BitConverter.GetBytes(rawFileCrc32).CopyTo(rawFooter, 0x220);
                         // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
                         rawFooter[0x224] = (byte)mode;
                         // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)

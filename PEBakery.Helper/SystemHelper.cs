@@ -32,33 +32,33 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Helper
 {
+    /// <summary>
+    /// Abbreviated version of MEMORYSTATUSEX
+    /// </summary>
+    public class MemorySnapshot
+    {
+        public ulong TotalPhysical;
+        public ulong AvailPhysical;
+        public ulong TotalPageFile;
+        public ulong AvailPageFile;
+        public ulong TotalVirtual;
+        public ulong AvailVirtual;
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.AppendLine($"Total Physical : {NumberHelper.ByteSizeToSIUnit((long)TotalPhysical, 1)} ({TotalPhysical})");
+            b.AppendLine($"Avail Physical : {NumberHelper.ByteSizeToSIUnit((long)AvailPhysical, 1)} ({AvailPhysical})");
+            b.AppendLine($"Total PageFile : {NumberHelper.ByteSizeToSIUnit((long)TotalPageFile, 1)} ({TotalPageFile})");
+            b.AppendLine($"Avail PageFile : {NumberHelper.ByteSizeToSIUnit((long)AvailPageFile, 1)} ({AvailPageFile})");
+            b.AppendLine($"Total Virtual  : {NumberHelper.ByteSizeToSIUnit((long)TotalVirtual, 1)} ({TotalVirtual})");
+            b.AppendLine($"Avail Virtual  : {NumberHelper.ByteSizeToSIUnit((long)AvailVirtual, 1)} ({AvailVirtual})");
+            return b.ToString();
+        }
+    }
+
     public static class SystemHelper
     {
-        /// <summary>
-        /// Abbreviated version of MEMORYSTATUSEX
-        /// </summary>
-        public class MemorySnapshot
-        {
-            public ulong TotalPhysical;
-            public ulong AvailPhysical;
-            public ulong TotalPageFile;
-            public ulong AvailPageFile;
-            public ulong TotalVirtual;
-            public ulong AvailVirtual;
-
-            public override string ToString()
-            {
-                StringBuilder b = new StringBuilder();
-                b.AppendLine($"Total Physical : {TotalPhysical}");
-                b.AppendLine($"Avail Physical : {AvailPhysical}");
-                b.AppendLine($"Total PageFile : {TotalPageFile}");
-                b.AppendLine($"Avail PageFile : {AvailPageFile}");
-                b.AppendLine($"Total Virtual  : {TotalVirtual}");
-                b.AppendLine($"Avail Virtual  : {AvailVirtual}");
-                return b.ToString();
-            }
-        }
-
         /// <remarks>
         /// It works only on Windows.  
         /// </remarks>
